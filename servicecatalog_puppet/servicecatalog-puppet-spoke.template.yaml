@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  MasterAccountId:
+    Type: String
+    MinLength: 12
+    MaxLength: 12
+  Version:
+    Type: String
+    Default: "{{ VERSION }}"
+
+Resources:
+  Param:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: service-catalog-puppet-spoke-version
+      Type: String
+      Value: !Ref Version
+
+  PuppetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: PuppetRole
+      Path: /servicecatalog-puppet/
+      Policies:
+        - PolicyName: "acceptShares"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: servicecatalog:AcceptPortfolioShare
+                Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:portfolio/*"
+              - Effect: "Allow"
+                Action: servicecatalog:AssociatePrincipalWithPortfolio
+                Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:portfolio/*"
+              - Effect: "Allow"
+                Action: iam:GetRole
+                Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/servicecatalog-puppet/PuppetRole"
+              - Effect: "Allow"
+                Action: servicecatalog:SearchProductsAsAdmin
+                Resource: !Sub "arn:aws:servicecatalog:*:${AWS::AccountId}:*/*"
+              - Effect: "Allow"
+                Action: servicecatalog:SearchProductsAsAdmin
+                Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:portfolio/*"
+              - Effect: "Allow"
+                Action: servicecatalog:ListAcceptedPortfolioShares
+                Resource: !Sub "arn:aws:servicecatalog:*:${AWS::AccountId}:*/*"
+              - Effect: "Allow"
+                Action: servicecatalog:ListProvisioningArtifacts
+                Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:product/*"
+
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Sub "arn:aws:iam::${MasterAccountId}:root"
+            Action:
+              - "sts:AssumeRole"
+          - Effect: "Allow"
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSServiceCatalogEndUserFullAccess
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+Outputs:
+  Version:
+    Value: !GetAtt Param.Value

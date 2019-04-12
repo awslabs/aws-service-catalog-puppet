@@ -1,0 +1,10 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: deployment of product {{ launch_details.product }} {{ launch_details.version }}
+
+Resources:
+  CloudFormationProvisionedProduct:
+    Type: AWS::ServiceCatalog::CloudFormationProvisionedProduct
+    Properties:
+      ProductId: {{ launch_details.product_id }}
+      ProvisioningArtifactId: {{ launch_details.provisioning_artifact_id }}
+      ProvisionedProductName: {{ launch_details.product }}-{{ launch_details.version }}

@@ -1,0 +1,37 @@
+import setuptools
+
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
+setuptools.setup(
+    name="aws-service-catalog-puppet",
+    version="0.0.8",
+    author="Eamonn Faherty",
+    author_email="aws-service-catalog-tools@amazon.com",
+    description="Making it easier to deploy ServiceCatalog products",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/awslabs/aws-service-catalog-puppet-framework",
+    packages=setuptools.find_packages(),
+    package_data={'servicecatalog_puppet': ['*','*/*','*/*/*']},
+    classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: OS Independent",
+        "Natural Language :: English",
+    ],
+    entry_points={
+        'console_scripts': [
+            'servicecatalog-puppet = servicecatalog_puppet.cli:cli'
+        ]},
+    install_requires=[
+        'pyyaml',
+        'click',
+        'Jinja2',
+        'boto3',
+        'pykwalify',
+        'better-boto',
+    ],
+)

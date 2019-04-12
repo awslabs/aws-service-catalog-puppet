@@ -1,0 +1,63 @@
+schema: puppet-2019-04-01
+
+parameters:
+  Foo:
+    default: default_foo
+#
+accounts:
+  - account_id: '761322130273'
+    name: eamonnf+sc-product-factory-spoke-3-1
+    default_region: us-east-1
+    regions_enabled:
+      - us-east-1
+      - us-west-2
+    tags:
+      - type:prod
+      - partition:us
+      - scope:pci
+    parameters:
+      Foo:
+        default: account_foo
+  - account_id: '778388402036'
+    name: eamonnf+sc-product-factory-spoke-3-1
+    default_region: us-east-1
+    regions_enabled:
+      - us-east-1
+      - us-west-2
+    tags:
+      - type:prod
+      - partition:us
+      - scope:pci
+    parameters:
+      Foo:
+        default: account_foo
+
+
+launches:
+  guardduty-master-account:
+    portfolio: ccoe-account-inflation
+    product: guardduty-master-account
+    version: v1
+    parameters:
+      SpokeAccounts:
+        macro:
+          method: get_accounts_for_path
+          args: /
+    deploy_to:
+      accounts:
+        - account_id: "38579342856438965"
+          regions:
+            - us-east-1
+            - us-east-2
+
+  development-account-iam-prod:
+    portfolio: ccoe-account-inflation
+    product: development-account-iam
+    version: v1
+    parameters:
+      RoleName:
+        default: DevAdmin
+    deploy_to:
+      tags:
+        - tag: type:prod
+          regions: default_region

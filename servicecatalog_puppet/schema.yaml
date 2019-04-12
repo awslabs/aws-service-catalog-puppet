@@ -1,0 +1,115 @@
+schema;seq_tags:
+  type: map
+  mapping:
+    Key:
+      type: str
+    Value:
+      type: str
+
+schema;map_params:
+  type: map
+  mapping:
+    regex;(.+):
+      type: map
+      mapping:
+        default:
+          type: str
+        macro:
+          type: map
+          mapping:
+            method:
+              type: str
+              enum: ['get_accounts_for_path']
+            args:
+              type: str
+
+schema;map_account_id:
+  type: map
+  mapping:
+    account_id:
+      type: str
+    name:
+      type: str
+    default_region:
+      type: str
+    regions_enabled:
+      type: seq
+      sequence:
+        - type: str
+    tags:
+      type: seq
+      sequence:
+        - type: str
+    parameters:
+      include: map_params
+
+schema;map_account_ou:
+  type: map
+  mapping:
+    ou:
+      type: str
+      pattern: \/|(\/.{1,250})+|ou-[a-z0-9]{4,32}-[a-z0-9]{4,32}
+    name:
+      type: str
+    default_region:
+      type: str
+    regions_enabled:
+      type: seq
+      sequence:
+        - type: str
+    tags:
+      type: seq
+      sequence:
+        - type: str
+    parameters:
+      include: map_params
+
+type: map
+mapping:
+  schema:
+    type: str
+    enum: ['puppet-2019-04-01']
+    required: yes
+  parameters:
+    include: map_params
+  accounts:
+    type: seq
+    matching: "any"
+    sequence:
+      - include: map_account_id
+      - include: map_account_ou
+  launches:
+    type: map
+    mapping:
+      regex;(.+):
+        type: map
+        mapping:
+          portfolio:
+            type: str
+          product:
+            type: str
+          version:
+            type: str
+          parameters:
+            include: map_params
+          deploy_to:
+            type: map
+            mapping:
+              accounts:
+                type: seq
+                sequence:
+                  - type: map
+                    mapping:
+                      account_id:
+                        type: str
+                      regions:
+                        type: any
+              tags:
+                type: seq
+                sequence:
+                  - type: map
+                    mapping:
+                      tag:
+                        type: str
+                      regions:
+                        type: any

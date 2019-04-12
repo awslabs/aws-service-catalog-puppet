@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Shares
+
+Resources:
+  ShareAcceptFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: !Sub |
+          import json
+          import logging
+          import boto3
+          from urllib.request import Request, urlopen
+
+          LOGGER = logging.getLogger()
+          LOGGER.setLevel(logging.INFO)
+
+
+          def handler(event, context):
+              try:
+                  LOGGER.info('REQUEST RECEIVED:\n %s', event)
+                  LOGGER.info('REQUEST RECEIVED:\n %s', context)
+                  if event['RequestType'] == 'Create':
+                      LOGGER.info('CREATE!')
+                      sts_client = boto3.client('sts')
+                      assumed_role_object = sts_client.assume_role(
+                          RoleArn="arn:aws:iam::" + event['ResourceProperties']['AccountId'] + ":role/servicecatalog-puppet/PuppetRole",
+                          RoleSessionName="CatalogManager"
+                      )
+                      credentials = assumed_role_object['Credentials']
+                      servicecatalog = boto3.client(
+                          'servicecatalog',
+                          aws_access_key_id=credentials['AccessKeyId'],
+                          aws_secret_access_key=credentials['SecretAccessKey'],
+                          aws_session_token=credentials['SessionToken'],
+                      )
+                      servicecatalog.accept_portfolio_share(
+                          PortfolioId=event['ResourceProperties']['PortfolioId'],
+                      )
+                      servicecatalog.associate_principal_with_portfolio(
+                          PortfolioId=event['ResourceProperties']['PortfolioId'],
+                          PrincipalARN="arn:aws:iam::" + event['ResourceProperties']['AccountId'] + ":role/servicecatalog-puppet/PuppetRole",
+                          PrincipalType='IAM',
+                      )
+                      send_response(event, context, "SUCCESS",
+                                    {"Message": "Resource creation successful!"})
+                  elif event['RequestType'] == 'Update':
+                      LOGGER.info('UPDATE!')
+                      send_response(event, context, "SUCCESS",
+                                    {"Message": "Resource update successful!"})
+                  elif event['RequestType'] == 'Delete':
+                      LOGGER.info('DELETE!')
+                      send_response(event, context, "SUCCESS",
+                                    {"Message": "Resource deletion successful!"})
+                  else:
+                      LOGGER.info('FAILED!')
+                      send_response(event, context, "FAILED",
+                                    {"Message": "Unexpected event received from CloudFormation"})
+              except Exception as e:
+                  LOGGER.info('FAILED! Exception: {}'.format(str(e)))
+                  send_response(event, context, "FAILED", {
+                      "Message": "Exception during processing"})
+
+
+          def send_response(event, context, response_status, response_data):
+              response_body = json.dumps({
+                  "Status": response_status,
+                  "Reason": "See the details in CloudWatch Log Stream: " + context.log_stream_name,
+                  "PhysicalResourceId": context.log_stream_name,
+                  "StackId": event['StackId'],
+                  "RequestId": event['RequestId'],
+                  "LogicalResourceId": event['LogicalResourceId'],
+                  "Data": response_data
+              })
+
+              LOGGER.info('ResponseURL: %s', event['ResponseURL'])
+              LOGGER.info('ResponseBody: %s', response_body)
+
+              data = str.encode(response_body)
+              headers = {
+                  'content-type': '',
+                  'content-length': str(len(data))
+              }
+              req = Request(event['ResponseURL'], data=data, method='PUT', headers=headers)
+              response = urlopen(req)
+              LOGGER.info("Status code: %s", response.getcode())
+              LOGGER.info("Status message: %s", response.msg)
+
+      Handler: index.handler
+      Description: Lambda for accepting shares
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/servicecatalog-puppet/ShareAcceptFunctionRole"
+      Runtime: python3.7
+      Timeout: 30
+
+
+
+{% for account_id, portfolios in portfolio_use_by_account.items() %}
+  {% if account_id != host_account_id %}
+  BucketPolicyFor{{ account_id }}:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Sub "sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}"
+      PolicyDocument:
+        Statement:
+          - Action:
+              - "s3:GetObject"
+            Effect: "Allow"
+            Resource: !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
+            Principal:
+              AWS: "arn:aws:iam::{{ account_id }}:root"
+
+{% for portfolio in portfolios %}
+  ShareForAccount{{ portfolio|title|replace('-','') }}{{ account_id }}:
+    Type: AWS::ServiceCatalog::PortfolioShare
+    Properties:
+      AccountId: "{{ account_id }}"
+      PortfolioId: {{ portfolio }}
+
+  AcceptForAccount{{ portfolio|title|replace('-','') }}{{ account_id }}:
+    Type: Custom::CustomResource
+    DependsOn: ShareForAccount{{ portfolio|title|replace('-','') }}{{ account_id }}
+    Properties:
+      ServiceToken: !GetAtt ShareAcceptFunction.Arn
+      AccountId: "{{ account_id }}"
+      PortfolioId: {{ portfolio }}
+{% endfor %}
+{% endif %}
+{% endfor %}

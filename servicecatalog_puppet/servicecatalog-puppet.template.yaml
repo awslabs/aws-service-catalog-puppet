@@ -1,0 +1,579 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  Version:
+    Type: String
+    Default: "{{ VERSION }}"
+
+Resources:
+  Param:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: service-catalog-puppet-version
+      Type: String
+      Value: !Ref Version
+
+  ShareAcceptFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      RoleName: ShareAcceptFunctionRole
+      Path: /servicecatalog-puppet/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ServiceCatalogActions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource: arn:aws:iam::*:role/servicecatalog-puppet/PuppetRole
+
+  ProvisioningRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: PuppetProvisioningRole
+      Path: /servicecatalog-puppet/
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+          - Effect: "Allow"
+            Principal:
+              AWS: !Sub "${AWS::AccountId}"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+  CloudFormationDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CloudFormationDeployRole
+      Path: /servicecatalog-puppet/
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "cloudformation.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+          - Effect: "Allow"
+            Principal:
+              AWS: !Sub "${AWS::AccountId}"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+  PipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: PuppetCodePipelineRole
+      Path: /servicecatalog-puppet/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codepipeline.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+
+  SourceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: PuppetSourceRole
+      Path: /servicecatalog-puppet/
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codepipeline.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+          - Effect: "Allow"
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+  CodeRepo:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryDescription: Repo to store the servicecatalog puppet solution
+      RepositoryName: ServiceCatalogPuppet
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt PipelineRole.Arn
+      Name: !Sub "${AWS::StackName}-pipeline"
+      ArtifactStores:
+        - Region: us-east-2
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-us-east-2"
+        - Region: us-east-1
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-us-east-1"
+        - Region: us-west-1
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-us-west-1"
+        - Region: us-west-2
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-us-west-2"
+        - Region: ap-south-1
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-ap-south-1"
+        - Region: ap-northeast-2
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-ap-northeast-2"
+        - Region: ap-southeast-1
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-ap-southeast-1"
+        - Region: ap-southeast-2
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-ap-southeast-2"
+        - Region: ap-northeast-1
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-ap-northeast-1"
+        - Region: ca-central-1
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-ca-central-1"
+        - Region: eu-central-1
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-eu-central-1"
+        - Region: eu-west-1
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-eu-west-1"
+        - Region: eu-west-2
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-eu-west-2"
+        - Region: eu-west-3
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-eu-west-3"
+        - Region: sa-east-1
+          ArtifactStore:
+            Type: S3
+            Location: !Sub "sc-puppet-pipeline-artifacts-${AWS::AccountId}-sa-east-1"
+      RestartExecutionOnUpdate: true
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: CodeCommit
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: CodeCommit
+              Configuration:
+                RepositoryName: !GetAtt CodeRepo.Name
+                BranchName: master
+              OutputArtifacts:
+                - Name: Source
+              RunOrder: 1
+              RoleArn: !GetAtt SourceRole.Arn
+        - Name: Generate
+          Actions:
+            - Name: GenerateShares
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref GenerateSharesProject
+              RunOrder: 1
+              InputArtifacts:
+                - Name: Source
+              OutputArtifacts:
+                - Name: GenerateShares
+        - Name: SetUpShares
+          Actions:
+            - Name: Deploy-us-east-1
+              Region: us-east-1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/us-east-1/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-us-east-2
+              Region: us-east-2
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/us-east-2/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-us-west-1
+              Region: us-west-1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/us-west-1/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-us-west-2
+              Region: us-west-2
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/us-west-2/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-ap-south-1
+              Region: ap-south-1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/ap-south-1/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-ap-northeast-1
+              Region: ap-northeast-1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/ap-northeast-1/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-ap-northeast-2
+              Region: ap-northeast-2
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/ap-northeast-2/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-ap-southeast-1
+              Region: ap-southeast-1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/ap-southeast-1/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-ap-southeast-2
+              Region: ap-southeast-2
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/ap-southeast-2/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-ca-central-1
+              Region: ca-central-1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/ca-central-1/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-eu-central-1
+              Region: eu-central-1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/eu-central-1/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-eu-west-1
+              Region: eu-west-1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/eu-west-1/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-eu-west-2
+              Region: eu-west-2
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/eu-west-2/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-eu-west-3
+              Region: eu-west-3
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/eu-west-3/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+            - Name: Deploy-sa-east-1
+              Region: sa-east-1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                StackName: !Sub "${AWS::StackName}-shares"
+                TemplatePath: !Sub "GenerateShares::output/templates/shares/sa-east-1/shares.template.yaml"
+              RunOrder: 1
+              InputArtifacts:
+                - Name: GenerateShares
+        - Name: Deploy
+          Actions:
+            - Name: Deploy
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref DeployProject
+                PrimarySource: Source
+              RunOrder: 1
+              InputArtifacts:
+                - Name: Source
+              OutputArtifacts:
+                - Name: Deploy
+
+  GenerateRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: PuppetGenerateRole
+      Path: /servicecatalog-puppet/
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: PuppetDeployRole
+      Path: /servicecatalog-puppet/
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+  GenerateSharesProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: servicecatalog-puppet-generate
+      Description: "builds out the products to be deployed"
+      ServiceRole: !GetAtt GenerateRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: linuxContainer
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/python:3.7.1
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              commands:
+                - pip install aws-service-catalog-puppet=={{ VERSION }}
+            build:
+              commands:
+                - servicecatalog-puppet --info generate-shares manifest.yaml
+          artifacts:
+            files:
+              - output/*/*/*/*.template.yaml
+            name: GenerateShares
+      TimeoutInMinutes: 30
+
+  DeployProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: servicecatalog-puppet-deploy
+      Description: "deploys out the products to be deployed"
+      ServiceRole: !GetAtt DeployRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: linuxContainer
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/python:3.7.1
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              commands:
+                - pip install aws-service-catalog-puppet=={{ VERSION }}
+            build:
+              commands:
+                - servicecatalog-puppet --info deploy manifest.yaml
+
+      TimeoutInMinutes: 30
+
+Outputs:
+  Version:
+    Value: !GetAtt Param.Value

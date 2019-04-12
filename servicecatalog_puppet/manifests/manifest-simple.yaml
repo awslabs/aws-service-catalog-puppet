@@ -1,0 +1,28 @@
+schema: puppet-2019-04-01
+
+accounts:
+  - account_id: '<YOUR_ACCOUNT_ID>'
+    name: '<YOUR_ACCOUNT_NAME>'
+    default_region: us-east-1
+    regions_enabled:
+      - us-east-1
+      - us-west-2
+    tags:
+      - type:prod
+      - partition:us
+      - scope:pci
+
+launches:
+  account-iam-for-prod:
+    portfolio: example-simple-central-it-team-portfolio
+    product: account-iam
+    version: v1
+    parameters:
+      RoleName:
+        default: DevAdmin
+      Path:
+        default: /human-roles/
+    deploy_to:
+      tags:
+        - tag: type:prod
+          regions: default_region
