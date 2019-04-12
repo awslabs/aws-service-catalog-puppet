@@ -478,6 +478,7 @@ def deploy_launches_for_region_and_product(region, account, role, deployment_map
                 'SearchQuery': ['productId:{}'.format(product_id)]
             }
         )
+        already_provisioned_successfully = False
         for provisioned_product in response.get('ProvisionedProducts', []):
             logger.info("Found previous vend of product: {}".format(provisioned_product.get('Id')))
             if provisioned_product.get('Status') == 'ERROR':
@@ -497,66 +498,68 @@ def deploy_launches_for_region_and_product(region, account, role, deployment_map
                     else:
                         break
 
-                logger.info('Creating plan, params: {}'.format(params))
-                response = service_catalog.create_provisioned_product_plan(
-                    PlanName=stack_name,
-                    PlanType='CLOUDFORMATION',
-                    PathId=path_id,
-                    ProductId=product_id,
-                    ProvisionedProductName=provisioned_product_name,
-                    ProvisioningArtifactId=provisioning_artifact_id,
-                    ProvisioningParameters=params,
-                    Tags=[
-                        {
-                            'Key': 'launch_name',
-                            'Value': launch_name,
-                        }
-                    ],
-                )
-                logger.info('Plan created, waiting for completion')
-
-                plan_id = response.get('PlanId')
-                plan_status = 'CREATE_IN_PROGRESS'
-
-                while plan_status == 'CREATE_IN_PROGRESS':
-                    response = service_catalog.describe_provisioned_product_plan(
-                        PlanId=plan_id
-                    )
-                    plan_status = response.get('ProvisionedProductPlanDetails').get('Status')
-                    logger.info('Waiting for product plan: {}'.format(plan_status))
-                    time.sleep(5)
-
-                if plan_status == 'CREATE_SUCCESS':
-                    logging.info(
-                        'Changes in the product: {}'.format(
-                            yaml.safe_dump(response.get('ResourceChanges'))
-                        )
-                    )
-                else:
-                    raise Exception(
-                        "Plan was not successful: {}".format(
-                            response.get('ProvisionedProductPlanDetails').get('StatusMessage')
-                        )
-                    )
-
-                logger.info("Executing product plan")
-                service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
-                execute_status = 'EXECUTE_IN_PROGRESS'
-                while execute_status == 'EXECUTE_IN_PROGRESS':
-                    response = service_catalog.describe_provisioned_product_plan(
-                        PlanId=plan_id
-                    )
-                    execute_status = response.get('ProvisionedProductPlanDetails').get('Status')
-                    logger.info('Waiting for execute: {}'.format(execute_status))
-                    time.sleep(5)
-
-                if execute_status == 'CREATE_SUCCESS':
-                    logger.info("Product provisioned")
-                else:
-                    raise Exception("Execute was not successful: {}".format(execute_status))
-
             elif provisioned_product.get('Status') == 'AVAILABLE':
                 logger.info('Already provisioned product')
+                already_provisioned_successfully = True
+
+        if not already_provisioned_successfully:
+            logger.info('Creating plan, params: {}'.format(params))
+            response = service_catalog.create_provisioned_product_plan(
+                PlanName=stack_name,
+                PlanType='CLOUDFORMATION',
+                PathId=path_id,
+                ProductId=product_id,
+                ProvisionedProductName=provisioned_product_name,
+                ProvisioningArtifactId=provisioning_artifact_id,
+                ProvisioningParameters=params,
+                Tags=[
+                    {
+                        'Key': 'launch_name',
+                        'Value': launch_name,
+                    }
+                ],
+            )
+            logger.info('Plan created, waiting for completion')
+
+            plan_id = response.get('PlanId')
+            plan_status = 'CREATE_IN_PROGRESS'
+
+            while plan_status == 'CREATE_IN_PROGRESS':
+                response = service_catalog.describe_provisioned_product_plan(
+                    PlanId=plan_id
+                )
+                plan_status = response.get('ProvisionedProductPlanDetails').get('Status')
+                logger.info('Waiting for product plan: {}'.format(plan_status))
+                time.sleep(5)
+
+            if plan_status == 'CREATE_SUCCESS':
+                logging.info(
+                    'Changes in the product: {}'.format(
+                        yaml.safe_dump(response.get('ResourceChanges'))
+                    )
+                )
+            else:
+                raise Exception(
+                    "Plan was not successful: {}".format(
+                        response.get('ProvisionedProductPlanDetails').get('StatusMessage')
+                    )
+                )
+
+            logger.info("Executing product plan")
+            service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
+            execute_status = 'EXECUTE_IN_PROGRESS'
+            while execute_status == 'EXECUTE_IN_PROGRESS':
+                response = service_catalog.describe_provisioned_product_plan(
+                    PlanId=plan_id
+                )
+                execute_status = response.get('ProvisionedProductPlanDetails').get('Status')
+                logger.info('Waiting for execute: {}'.format(execute_status))
+                time.sleep(5)
+
+            if execute_status == 'CREATE_SUCCESS':
+                logger.info("Product provisioned")
+            else:
+                raise Exception("Execute was not successful: {}".format(execute_status))
 
 
 def deploy_launches(deployment_map, parameters):
