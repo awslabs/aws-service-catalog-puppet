@@ -27,4 +27,3 @@ deploy:
       all_branches: true
 after_success:
   - codecov --token=${CODECOV_TOKEN}
-
