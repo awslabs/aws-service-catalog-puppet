@@ -29,20 +29,20 @@ source venv/bin/activate
 
 Install the package:
 ```bash
-pip install aws-service-catalog-puppet==0.0.9
+pip install aws-service-catalog-puppet
 ```
 
 ### Bootstrap your account
 Set up your spoke accounts:
 ```bash
-servicecatalog-puppet bootstrap-spoke 0.0.9 <MASTER_ACCOUNT_ID>
+servicecatalog-puppet bootstrap-spoke <MASTER_ACCOUNT_ID>
 ```
 
 ### Bootstrap your account
 Create the AWS CodeCommit repo and AWS CodePipeline resources to run the puppet for your 
 master account:
 ```bash
-servicecatalog-puppet bootstrap 0.0.9
+servicecatalog-puppet bootstrap
 ```
 
 ### Setup your puppet

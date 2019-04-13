@@ -1,3 +1,5 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 import json
 import shutil
 import time
@@ -12,6 +14,11 @@ from pykwalify.core import Core
 
 from jinja2 import Environment, FileSystemLoader, Template
 from betterboto import client as betterboto_client
+import pkg_resources
+
+
+VERSION = pkg_resources.require("aws-service-catalog-puppet")[0].version
+
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -593,13 +600,12 @@ def deploy_launches(deployment_map, parameters):
 
 
 @cli.command()
-@click.argument('version')
 @click.argument('master_account_id')
-def bootstrap_spoke(version, master_account_id):
+def bootstrap_spoke(master_account_id):
     logger.info('Starting bootstrap of spoke')
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
         template = read_from_site_packages('{}-spoke.template.yaml'.format(BOOTSTRAP_STACK_NAME))
-        template = Template(template).render(VERSION=version)
+        template = Template(template).render(VERSION=VERSION)
         args = {
             'StackName': "{}-spoke".format(BOOTSTRAP_STACK_NAME),
             'TemplateBody': template,
@@ -610,7 +616,7 @@ def bootstrap_spoke(version, master_account_id):
                     'ParameterValue': str(master_account_id),
                 },{
                     'ParameterKey': 'Version',
-                    'ParameterValue': version,
+                    'ParameterValue': VERSION,
                     'UsePreviousValue': False,
                 },
             ],
@@ -620,14 +626,13 @@ def bootstrap_spoke(version, master_account_id):
 
 
 @cli.command()
-@click.argument('version')
-def bootstrap(version):
+def bootstrap():
     logger.info('Starting bootstrap')
     with betterboto_client.MultiRegionClientContextManager('cloudformation', ALL_REGIONS) as clients:
         logger.info('Creating {}-regional'.format(BOOTSTRAP_STACK_NAME))
         threads = []
         template = read_from_site_packages('{}.template.yaml'.format('{}-regional'.format(BOOTSTRAP_STACK_NAME)))
-        template = Template(template).render(VERSION=version)
+        template = Template(template).render(VERSION=VERSION)
         args = {
             'StackName': '{}-regional'.format(BOOTSTRAP_STACK_NAME),
             'TemplateBody': template,
@@ -635,7 +640,7 @@ def bootstrap(version):
             'Parameters': [
                 {
                     'ParameterKey': 'Version',
-                    'ParameterValue': version,
+                    'ParameterValue': VERSION,
                     'UsePreviousValue': False,
                 },
             ],
@@ -651,7 +656,7 @@ def bootstrap(version):
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
         logger.info('Creating {}'.format(BOOTSTRAP_STACK_NAME))
         template = read_from_site_packages('{}.template.yaml'.format(BOOTSTRAP_STACK_NAME))
-        template = Template(template).render(VERSION=version)
+        template = Template(template).render(VERSION=VERSION)
         args = {
             'StackName': BOOTSTRAP_STACK_NAME,
             'TemplateBody': template,
@@ -659,7 +664,7 @@ def bootstrap(version):
             'Parameters': [
                 {
                     'ParameterKey': 'Version',
-                    'ParameterValue': version,
+                    'ParameterValue': VERSION,
                     'UsePreviousValue': False,
                 },
             ],
@@ -854,6 +859,11 @@ def validate(f):
     c.validate(raise_exception=True)
     click.echo("Finished validating: {}".format(f.name))
     click.echo("Finished validating: OK")
+
+
+@cli.command()
+def version():
+    click.echo(VERSION)
 
 
 if __name__ == "__main__":
