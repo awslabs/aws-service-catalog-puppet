@@ -53,23 +53,15 @@ OUTPUT = "output"
 TEMPLATES = os.path.sep.join([OUTPUT, "templates"])
 LAUNCHES = os.path.sep.join([OUTPUT, "launches"])
 
-ALL_REGIONS = [
-    'us-east-2',
-    'us-east-1',
-    'us-west-1',
-    'us-west-2',
-    'ap-south-1',
-    'ap-northeast-2',
-    'ap-southeast-1',
-    'ap-southeast-2',
-    'ap-northeast-1',
-    'ca-central-1',
-    'eu-central-1',
-    'eu-west-1',
-    'eu-west-2',
-    'eu-west-3',
-    'sa-east-1',
-]
+HOME_REGION = os.environ.get('AWS_DEFAULT_REGION', 'eu-west-1')
+CONFIG_PARAM_NAME = "/servicecatalog-puppet/config"
+
+
+def get_regions():
+    with betterboto_client.ClientContextManager('ssm', region_name=HOME_REGION) as ssm:
+        response = ssm.get_parameter(Name=CONFIG_PARAM_NAME)
+        config = yaml.safe_load(response.get('Parameter').get('Value'))
+        return config.get('regions')
 
 
 def get_accounts_for_path(client, path):
@@ -251,6 +243,7 @@ def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name,
 
 def write_templates(deployment_map):
     logger.info('Starting to write the templates')
+    ALL_REGIONS = get_regions()
     for account_id, account_details in deployment_map.items():
         for launch_name, launch_details in account_details.get('launches').items():
             logger.info('Looking at account: {} and launch: {}'.format(account_id, launch_name))
@@ -361,6 +354,7 @@ def build_deployment_map(manifest):
 
 
 def create_share_template(deployment_map):
+    ALL_REGIONS = get_regions()
     for region in ALL_REGIONS:
         logger.info("starting to build shares for region: {}".format(region))
         with betterboto_client.ClientContextManager('servicecatalog', region_name=region) as servicecatalog:
@@ -639,9 +633,10 @@ def bootstrap():
 
 
 def do_bootstrap():
-    logger.info('Starting bootstrap')
+    click.echo('Starting bootstrap')
+    ALL_REGIONS = get_regions()
     with betterboto_client.MultiRegionClientContextManager('cloudformation', ALL_REGIONS) as clients:
-        logger.info('Creating {}-regional'.format(BOOTSTRAP_STACK_NAME))
+        click.echo('Creating {}-regional'.format(BOOTSTRAP_STACK_NAME))
         threads = []
         template = read_from_site_packages('{}.template.yaml'.format('{}-regional'.format(BOOTSTRAP_STACK_NAME)))
         template = Template(template).render(VERSION=VERSION)
@@ -663,10 +658,10 @@ def do_bootstrap():
             threads.append(process)
         for process in threads:
             process.join()
-        logger.info('Finished creating {}-regional'.format(BOOTSTRAP_STACK_NAME))
+        click.echo('Finished creating {}-regional'.format(BOOTSTRAP_STACK_NAME))
 
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
-        logger.info('Creating {}'.format(BOOTSTRAP_STACK_NAME))
+        click.echo('Creating {}'.format(BOOTSTRAP_STACK_NAME))
         template = read_from_site_packages('{}.template.yaml'.format(BOOTSTRAP_STACK_NAME))
         template = Template(template).render(VERSION=VERSION)
         args = {
@@ -682,7 +677,7 @@ def do_bootstrap():
             ],
         }
         cloudformation.create_or_update(**args)
-        logger.info('Finished creating {}.'.format(BOOTSTRAP_STACK_NAME))
+        click.echo('Finished creating {}.'.format(BOOTSTRAP_STACK_NAME))
     with betterboto_client.ClientContextManager('codecommit') as codecommit:
         response = codecommit.get_repository(repositoryName=SERVICE_CATALOG_PUPPET_REPO_NAME)
         clone_url = response.get('repositoryMetadata').get('cloneUrlHttp')
@@ -729,6 +724,7 @@ def reseed(p):
 @cli.command()
 @click.argument('f', type=click.File())
 def list_launches(f):
+    ALL_REGIONS = get_regions()
     manifest = yaml.safe_load(f.read())
     account_ids = [a.get('account_id') for a in manifest.get('accounts')]
     for account_id in account_ids:
@@ -876,6 +872,20 @@ def validate(f):
 @cli.command()
 def version():
     click.echo(VERSION)
+
+
+@cli.command()
+@click.argument('p', type=click.Path(exists=True))
+def upload_config(p):
+    content = open(p, 'r').read()
+    with betterboto_client.ClientContextManager('ssm') as ssm:
+        ssm.put_parameter(
+            Name=CONFIG_PARAM_NAME,
+            Type='String',
+            Value=content,
+            Overwrite=True,
+        )
+    click.echo("Uploaded config")
 
 
 if __name__ == "__main__":
