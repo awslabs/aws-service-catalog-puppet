@@ -19,7 +19,7 @@ deploy:
     distributions: sdist bdist_wheel
     on:
       tags: true
-      repo: awslabs/aws-service-catalog-puppet-framework
+      repo: awslabs/aws-service-catalog-puppet
       all_branches: true
     user:
       secure: hl3b67RDXOrCikjpyZoYyAPBL/Sa2LiYOE8qxKaBhdJv3uzR3PMYKm22zFuhlaOx/FzGmq6rmYLxc+Yqe7Q/hEQOH5C6DjMVIW9LtW1W9RtoXwURJizeOdF2OSb5FkWG1y9TTWDIMTHXiInIUG10WOqHw68iegCl/JXkE6Rgi8lqBMzHEXKtEoQPoMKtX7+lxy6cSeTDZepzU64WwhZ+GldYG2GLoCiITIubYABnuMQZzwarLBwzlu4KwvVON1wkaOdsLJaVikYdHEn2Y61ao/Gm5p7rGNBPy21ra316YwQBuvQorl5uIG8dLJIuG68b41uwGO0iIhcLyos7MAmLhKe8Cigyd0+CNpkaZushRIusbouPX3TGqAdpyc5+oinurggWpTEAUjpc/pb8pP6a16epPGIxj/QFdmqEnHpkZcbmhx180Mknj2yv9TUFyi52+SEuVGRfnQiMpKpnz+d73FjTh7HmQfrBPrsAlciwYo+pabLCKoaQSJlCRiw4gBEPdWNLz6iGItDJCSSCPeuGBz+ZeezlGjUrFvtpASCaeL5WKEyZk8CGI9Eg3HYs6L3JBSfdr1mrY43QDwBoYP8yq+l6L2pS/XkfXjNEd6ipvHOz77bQDPZ6oMeCmRsDn3hg77sCgpL2uKkiGYW+CEDej8ALPngkmbWfkDLIECcIIv0=
