@@ -663,7 +663,7 @@ def do_bootstrap():
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
         click.echo('Creating {}'.format(BOOTSTRAP_STACK_NAME))
         template = read_from_site_packages('{}.template.yaml'.format(BOOTSTRAP_STACK_NAME))
-        template = Template(template).render(VERSION=VERSION)
+        template = Template(template).render(VERSION=VERSION, ALL_REGIONS=ALL_REGIONS)
         args = {
             'StackName': BOOTSTRAP_STACK_NAME,
             'TemplateBody': template,
