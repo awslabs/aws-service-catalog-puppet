@@ -626,7 +626,19 @@ def bootstrap_spoke(master_account_id):
 
 
 @cli.command()
+@click.argument('branch-name')
+def bootstrap_branch(branch_name):
+    global VERSION
+    VERSION = "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(branch_name)
+    do_bootstrap()
+
+
+@cli.command()
 def bootstrap():
+    do_bootstrap()
+
+
+def do_bootstrap():
     logger.info('Starting bootstrap')
     with betterboto_client.MultiRegionClientContextManager('cloudformation', ALL_REGIONS) as clients:
         logger.info('Creating {}-regional'.format(BOOTSTRAP_STACK_NAME))
