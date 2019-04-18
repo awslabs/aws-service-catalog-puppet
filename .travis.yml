@@ -7,9 +7,7 @@ install:
 - pip install -r servicecatalog_puppet/requirements.txt
 - pip install .
 script:
-- pip install pytest==4.4.0
-- pip install pytest-cov==2.6.1
-- pip install codecov
+- pip install -r servicecatalog_puppet/requirements-test.txt
 - pytest --cov=./ servicecatalog_puppet
 before_deploy:
 - python setup.py sdist
