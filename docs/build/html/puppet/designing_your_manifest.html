@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Designing your manifest &#8212; aws-service-catalog-puppet  documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="&lt;no title&gt;" href="diving_into_the_pipeline.html" />
+    <link rel="prev" title="Getting up and running" href="getting_up_and_running.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="diving_into_the_pipeline.html" title="&lt;no title&gt;"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="getting_up_and_running.html" title="Getting up and running"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">aws-service-catalog-puppet  documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="designing-your-manifest">
+<h1>Designing your manifest<a class="headerlink" href="#designing-your-manifest" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="purpose-of-the-manifest-file">
+<h2>Purpose of the manifest file<a class="headerlink" href="#purpose-of-the-manifest-file" title="Permalink to this headline">¶</a></h2>
+<p>The manifest file is there to describe what you want to provision and into which accounts you want to provision products
+into.  It is possible to use AWS Organizations to make your manifest file more concise and easier to work with but the
+premise is the same - it is just a list of accounts and AWS Service Catalog products.</p>
+</div>
+<div class="section" id="sections-of-the-manifest-file">
+<h2>Sections of the manifest file<a class="headerlink" href="#sections-of-the-manifest-file" title="Permalink to this headline">¶</a></h2>
+<p>There are three sections to a manifest file - the global parameters, the accounts list and the launches.  Each of the
+three are described in the following sections.</p>
+<div class="section" id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h3>
+<p>It is possible to specify global parameters that should be used when provisioning your AWS Service Catalog Products.
+You can set the value to an explicit value or you can set the value to the result of a function call - using funcation
+calls to set parameter values is known as using a macro.</p>
+<p>Here is an example of a simple parameter:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">schema</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">puppet-2019-04-01</span>
+
+<span class="nt">parameters</span><span class="p">:</span>
+    <span class="nt">CloudTrailLoggingBucketName</span><span class="p">:</span>
+      <span class="nt">default</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cloudtrail-logs-for-aws</span>
+</pre></div>
+</div>
+<p>Whenever Puppet provisions a product it checks the parameters for the product.  If it sees the name match one of the
+parameter values it will use it.  In order to avoid clashes with parameter names we recommend using descriptive names
+like in the example - using the parameter names like <code class="docutils literal notranslate"><span class="pre">BucketName</span></code> will lead you into trouble pretty quickly.</p>
+<div class="section" id="macros">
+<h4>Macros<a class="headerlink" href="#macros" title="Permalink to this headline">¶</a></h4>
+<p>You can also use a macro to set the value of a parameter.  It works in the same way as a normal parameter except it
+executes a function to get the value first.  Here is an an example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">schema</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">puppet-2019-04-01</span>
+
+<span class="nt">parameters</span><span class="p">:</span>
+    <span class="nt">AllAccountIds</span><span class="p">:</span>
+      <span class="nt">macro</span><span class="p">:</span> 
+        <span class="nt">method</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">get_accounts_for_path</span>
+        <span class="nt">args</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/</span>
+</pre></div>
+</div>
+<p>At the moment there are the following macros supported:</p>
+<div class="highlight-eval_rst notranslate"><div class="highlight"><pre><span></span>+------------------------+------------------------------+----------------------------------------------+ 
+| macro method name      | args                         | description                                  |
++========================+==============================+==============================================+ 
+| get_accounts_for_path  | ou path to get accounts for  | Returns a comma seperated list of account ids|
++------------------------+------------------------------+----------------------------------------------+
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="accounts">
+<h3>Accounts<a class="headerlink" href="#accounts" title="Permalink to this headline">¶</a></h3>
+<p>Description coming soon</p>
+</div>
+<div class="section" id="launches">
+<h3>Launches<a class="headerlink" href="#launches" title="Permalink to this headline">¶</a></h3>
+<p>Description coming soon</p>
+</div>
+<div class="section" id="example">
+<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">schema</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">puppet-2019-04-01</span>
+
+<span class="nt">accounts</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">account_id</span><span class="p">:</span> <span class="s">&#39;&lt;YOUR_ACCOUNT_ID&gt;&#39;</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="s">&#39;&lt;YOUR_ACCOUNT_NAME&gt;&#39;</span>
+    <span class="nt">default_region</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">us-east-1</span>
+    <span class="nt">regions_enabled</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">us-east-1</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">us-west-2</span>
+    <span class="nt">tags</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">type:prod</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">partition:us</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">scope:pci</span>
+
+<span class="nt">launches</span><span class="p">:</span>
+  <span class="nt">account-iam-for-prod</span><span class="p">:</span>
+    <span class="nt">portfolio</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-simple-central-it-team-portfolio</span>
+    <span class="nt">product</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">account-iam</span>
+    <span class="nt">version</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
+    <span class="nt">parameters</span><span class="p">:</span>
+      <span class="nt">RoleName</span><span class="p">:</span>
+        <span class="nt">default</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DevAdmin</span>
+      <span class="nt">Path</span><span class="p">:</span>
+        <span class="nt">default</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/human-roles/</span>
+    <span class="nt">deploy_to</span><span class="p">:</span>
+      <span class="nt">tags</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">tag</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">type:prod</span>
+          <span class="nt">regions</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">default_region</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Designing your manifest</a><ul>
+<li><a class="reference internal" href="#purpose-of-the-manifest-file">Purpose of the manifest file</a></li>
+<li><a class="reference internal" href="#sections-of-the-manifest-file">Sections of the manifest file</a><ul>
+<li><a class="reference internal" href="#parameters">Parameters</a><ul>
+<li><a class="reference internal" href="#macros">Macros</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#accounts">Accounts</a></li>
+<li><a class="reference internal" href="#launches">Launches</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="getting_up_and_running.html"
+                        title="previous chapter">Getting up and running</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="diving_into_the_pipeline.html"
+                        title="next chapter">&lt;no title&gt;</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/puppet/designing_your_manifest.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="diving_into_the_pipeline.html" title="&lt;no title&gt;"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="getting_up_and_running.html" title="Getting up and running"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">aws-service-catalog-puppet  documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Eamonn Faherty.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.0.0.
+    </div>
+  </body>
+</html>
