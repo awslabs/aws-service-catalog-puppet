@@ -789,14 +789,17 @@ def expand_ou(original_account, client):
 @cli.command()
 @click.argument('f', type=click.File())
 def expand(f):
+    logger.info('Expanding')
     manifest = yaml.safe_load(f.read())
     org_iam_role_arn = get_org_iam_role_arn()
+    logger.info('Using role: {}'.format(org_iam_role_arn))
     with betterboto_client.CrossAccountClientContextManager(
             'organizations', org_iam_role_arn, 'org-iam-role'
     ) as client:
         new_manifest = do_expand(manifest, client)
-
+    logger.info('Expanded')
     new_name = f.name.replace(".yaml", '-expanded.yaml')
+    logger.info('Writing new manifest: {}'.format(new_name))
     with open(new_name, 'w') as output:
         output.write(
             yaml.safe_dump(new_manifest, default_flow_style=False)
