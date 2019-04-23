@@ -288,7 +288,7 @@ Resources:
     Properties:
       Name: servicecatalog-puppet-generate
       Description: "builds out the products to be deployed"
-      ServiceRole: !Sub "arn:aws:iam::${AWS::AccountId}:role/servicecatalog-puppet/PuppetGenerateProjectRole"
+      ServiceRole: !Sub "arn:aws:iam::${AWS::AccountId}:role/PuppetGenerateProjectRole"
       Artifacts:
         Type: CODEPIPELINE
       Environment:
