@@ -169,9 +169,9 @@ Resources:
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !Ref GenerateSharesProject
-              RunOrder: 1
+              RunOrder: 2
               InputArtifacts:
-                - Name: Source
+                - Name: Expand
               OutputArtifacts:
                 - Name: GenerateShares
         - Name: SetUpShares
@@ -245,6 +245,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
 
+
   GenerateSharesProject:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -271,9 +272,11 @@ Resources:
           {% endif %}
             build:
               commands:
-                - servicecatalog-puppet --info generate-shares manifest.yaml
+                - servicecatalog-puppet --info expand manifest.yaml
+                - servicecatalog-puppet --info generate-shares manifest-expanded.yaml
           artifacts:
             files:
+              - manifest-expanded.yaml
               - output/*/*/*/*.template.yaml
             name: GenerateShares
       TimeoutInMinutes: 30
@@ -304,7 +307,7 @@ Resources:
           {% endif %}
             build:
               commands:
-                - servicecatalog-puppet --info deploy manifest.yaml
+                - servicecatalog-puppet --info deploy manifest-expanded.yaml
 
       TimeoutInMinutes: 30
 

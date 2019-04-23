@@ -16,9 +16,7 @@ from jinja2 import Environment, FileSystemLoader, Template
 from betterboto import client as betterboto_client
 import pkg_resources
 
-
 VERSION = pkg_resources.require("aws-service-catalog-puppet")[0].version
-
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -62,6 +60,13 @@ def get_regions():
         response = ssm.get_parameter(Name=CONFIG_PARAM_NAME)
         config = yaml.safe_load(response.get('Parameter').get('Value'))
         return config.get('regions')
+
+
+def get_org_iam_role_arn():
+    with betterboto_client.ClientContextManager('ssm', region_name=HOME_REGION) as ssm:
+        response = ssm.get_parameter(Name=CONFIG_PARAM_NAME)
+        config = yaml.safe_load(response.get('Parameter').get('Value'))
+        return config.get('org_iam_role_arn')
 
 
 def get_accounts_for_path(client, path):
@@ -608,7 +613,7 @@ def bootstrap_spoke(master_account_id):
                 {
                     'ParameterKey': 'MasterAccountId',
                     'ParameterValue': str(master_account_id),
-                },{
+                }, {
                     'ParameterKey': 'Version',
                     'ParameterValue': VERSION,
                     'UsePreviousValue': False,
@@ -783,20 +788,22 @@ def expand_ou(original_account, client):
 
 @cli.command()
 @click.argument('f', type=click.File())
-@click.option('--org-iam-role')
-def expand(f, org_iam_role=None):
+def expand(f):
     manifest = yaml.safe_load(f.read())
-    new_name = f.name.replace('.yaml', '-expanded.yaml')
-    if org_iam_role:
-        with betterboto_client.CrossAccountClientContextManager('organizations', org_iam_role,
-                                                                'org-iam-role') as client:
-            do_expand(manifest, new_name, client)
-    else:
-        with betterboto_client.ClientContextManager('organizations') as client:
-            do_expand(manifest, new_name, client)
+    org_iam_role_arn = get_org_iam_role_arn()
+    with betterboto_client.CrossAccountClientContextManager(
+            'organizations', org_iam_role_arn, 'org-iam-role'
+    ) as client:
+        new_manifest = do_expand(manifest, client)
+
+    new_name = f.name.replace(".yaml", '-expanded.yaml')
+    with open(new_name, 'w') as output:
+        output.write(
+            yaml.safe_dump(new_manifest, default_flow_style=False)
+        )
 
 
-def do_expand(manifest, new_name, client):
+def do_expand(manifest, client):
     new_manifest = deepcopy(manifest)
     new_accounts = new_manifest['accounts'] = []
 
@@ -855,8 +862,7 @@ def do_expand(manifest, new_name, client):
                 parameter_details['default'] = result
                 del parameter_details['macro']
 
-    with open(new_name, 'w') as nf:
-        nf.write(yaml.safe_dump(new_manifest, default_flow_style=False))
+    return new_manifest
 
 
 @cli.command()
