@@ -81,11 +81,12 @@ servicecatalog-puppet bootstrap
 ```
 
 ### Setup your puppet
-Clone the configuration repo and configure your factory:
+Clone the configuration repo and configure your factory by editing the ```manifest.yaml``` file:
 ```bash
 git clone --config 'credential.helper=!aws codecommit credential-helper $@' --config 'credential.UseHttpPath=true' https://git-codecommit.eu-west-1.amazonaws.com/v1/repos/ServiceCatalogPuppet
 servicecatalog-puppet seed simple ServiceCatalogPuppet
 cd ServiceCatalogPuppet
+vim manifest.yaml
 git add .
 git commit -am "initial add"
 git push
