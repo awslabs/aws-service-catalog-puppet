@@ -53,6 +53,7 @@ LAUNCHES = os.path.sep.join([OUTPUT, "launches"])
 
 HOME_REGION = os.environ.get('AWS_DEFAULT_REGION', 'eu-west-1')
 CONFIG_PARAM_NAME = "/servicecatalog-puppet/config"
+CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN = "/servicecatalog-puppet/org-iam-role-arn"
 
 
 def get_regions():
@@ -64,9 +65,8 @@ def get_regions():
 
 def get_org_iam_role_arn():
     with betterboto_client.ClientContextManager('ssm', region_name=HOME_REGION) as ssm:
-        response = ssm.get_parameter(Name=CONFIG_PARAM_NAME)
-        config = yaml.safe_load(response.get('Parameter').get('Value'))
-        return config.get('org_iam_role_arn')
+        response = ssm.get_parameter(Name=CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN)
+        return yaml.safe_load(response.get('Parameter').get('Value'))
 
 
 def get_accounts_for_path(client, path):
@@ -679,6 +679,11 @@ def do_bootstrap():
                     'ParameterValue': VERSION,
                     'UsePreviousValue': False,
                 },
+                {
+                    'ParameterKey': 'OrgIamRoleArn',
+                    'ParameterValue': get_org_iam_role_arn(),
+                    'UsePreviousValue': False,
+                },
             ],
         }
         cloudformation.create_or_update(**args)
@@ -892,6 +897,19 @@ def upload_config(p):
             Name=CONFIG_PARAM_NAME,
             Type='String',
             Value=content,
+            Overwrite=True,
+        )
+    click.echo("Uploaded config")
+
+
+@cli.command()
+@click.argument('org-iam-role-arn')
+def set_org_iam_role_arn(org_iam_role_arn):
+    with betterboto_client.ClientContextManager('ssm') as ssm:
+        ssm.put_parameter(
+            Name=CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN,
+            Type='String',
+            Value=org_iam_role_arn,
             Overwrite=True,
         )
     click.echo("Uploaded config")

@@ -8,6 +8,13 @@ Parameters:
   Version:
     Type: String
     Default: "{{ VERSION }}"
+  OrgIamRoleArn:
+    Type: String
+    Default: "None"
+
+Conditions:
+  ShouldNotUseOrgs: !Equals [ !Ref OrgIamRoleArn, None ]
+  ShouldUseOrgs: !Not[ !Equals [ !Ref OrgIamRoleArn, None ]]
 
 Resources:
   Param:
@@ -213,8 +220,36 @@ Resources:
               OutputArtifacts:
                 - Name: Deploy
 
-  GenerateRole:
+  GenerateRoleForOrg:
     Type: AWS::IAM::Role
+    Condition: ShouldUseOrgs
+    Properties:
+      RoleName: PuppetGenerateRole
+      Path: /servicecatalog-puppet/
+      Policies:
+        - PolicyName: Org
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource: !Ref OrgIamRoleArn
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+  GenerateRoleNotForOrg:
+    Type: AWS::IAM::Role
+    Condition: ShouldNotUseOrgs
     Properties:
       RoleName: PuppetGenerateRole
       Path: /servicecatalog-puppet/
@@ -253,7 +288,7 @@ Resources:
     Properties:
       Name: servicecatalog-puppet-generate
       Description: "builds out the products to be deployed"
-      ServiceRole: !GetAtt GenerateRole.Arn
+      ServiceRole: !Sub "arn:aws:iam::${AWS::AccountId}:role/servicecatalog-puppet/PuppetGenerateRole"
       Artifacts:
         Type: CODEPIPELINE
       Environment:
