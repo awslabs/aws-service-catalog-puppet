@@ -599,8 +599,8 @@ def deploy_launches(deployment_map, parameters):
 
 
 @cli.command()
-@click.argument('master_account_id')
-def bootstrap_spoke(master_account_id):
+@click.argument('puppet_account_id')
+def bootstrap_spoke(puppet_account_id):
     logger.info('Starting bootstrap of spoke')
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
         template = read_from_site_packages('{}-spoke.template.yaml'.format(BOOTSTRAP_STACK_NAME))
@@ -611,8 +611,8 @@ def bootstrap_spoke(master_account_id):
             'Capabilities': ['CAPABILITY_NAMED_IAM'],
             'Parameters': [
                 {
-                    'ParameterKey': 'MasterAccountId',
-                    'ParameterValue': str(master_account_id),
+                    'ParameterKey': 'PuppetAccountId',
+                    'ParameterValue': str(puppet_account_id),
                 }, {
                     'ParameterKey': 'Version',
                     'ParameterValue': VERSION,

@@ -213,10 +213,10 @@ Resources:
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !Ref DeployProject
-                PrimarySource: Source
+                PrimarySource: GenerateShares
               RunOrder: 1
               InputArtifacts:
-                - Name: Source
+                - Name: GenerateShares
               OutputArtifacts:
                 - Name: Deploy
 
@@ -288,7 +288,7 @@ Resources:
     Properties:
       Name: servicecatalog-puppet-generate
       Description: "builds out the products to be deployed"
-      ServiceRole: !Sub "arn:aws:iam::${AWS::AccountId}:role/PuppetGenerateProjectRole"
+      ServiceRole: !If [ShouldUseOrgs, !GetAtt GenerateRoleForOrg.Arn, !GetAtt GenerateRoleNotForOrg.Arn]
       Artifacts:
         Type: CODEPIPELINE
       Environment:
