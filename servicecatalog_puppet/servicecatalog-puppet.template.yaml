@@ -14,7 +14,7 @@ Parameters:
 
 Conditions:
   ShouldNotUseOrgs: !Equals [ !Ref OrgIamRoleArn, None ]
-  ShouldUseOrgs: !Not[ !Equals [ !Ref OrgIamRoleArn, None ]]
+  ShouldUseOrgs: !Not [!Equals [!Ref OrgIamRoleArn, None]]
 
 Resources:
   Param:
