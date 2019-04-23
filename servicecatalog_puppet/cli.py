@@ -53,6 +53,7 @@ LAUNCHES = os.path.sep.join([OUTPUT, "launches"])
 
 HOME_REGION = os.environ.get('AWS_DEFAULT_REGION', 'eu-west-1')
 CONFIG_PARAM_NAME = "/servicecatalog-puppet/config"
+CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN = "/servicecatalog-puppet/org-iam-role-arn"
 
 
 def get_regions():
@@ -64,9 +65,8 @@ def get_regions():
 
 def get_org_iam_role_arn():
     with betterboto_client.ClientContextManager('ssm', region_name=HOME_REGION) as ssm:
-        response = ssm.get_parameter(Name=CONFIG_PARAM_NAME)
-        config = yaml.safe_load(response.get('Parameter').get('Value'))
-        return config.get('org_iam_role_arn')
+        response = ssm.get_parameter(Name=CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN)
+        return yaml.safe_load(response.get('Parameter').get('Value'))
 
 
 def get_accounts_for_path(client, path):
@@ -599,8 +599,8 @@ def deploy_launches(deployment_map, parameters):
 
 
 @cli.command()
-@click.argument('master_account_id')
-def bootstrap_spoke(master_account_id):
+@click.argument('puppet_account_id')
+def bootstrap_spoke(puppet_account_id):
     logger.info('Starting bootstrap of spoke')
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
         template = read_from_site_packages('{}-spoke.template.yaml'.format(BOOTSTRAP_STACK_NAME))
@@ -611,8 +611,8 @@ def bootstrap_spoke(master_account_id):
             'Capabilities': ['CAPABILITY_NAMED_IAM'],
             'Parameters': [
                 {
-                    'ParameterKey': 'MasterAccountId',
-                    'ParameterValue': str(master_account_id),
+                    'ParameterKey': 'PuppetAccountId',
+                    'ParameterValue': str(puppet_account_id),
                 }, {
                     'ParameterKey': 'Version',
                     'ParameterValue': VERSION,
@@ -677,6 +677,11 @@ def do_bootstrap():
                 {
                     'ParameterKey': 'Version',
                     'ParameterValue': VERSION,
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'OrgIamRoleArn',
+                    'ParameterValue': get_org_iam_role_arn(),
                     'UsePreviousValue': False,
                 },
             ],
@@ -892,6 +897,19 @@ def upload_config(p):
             Name=CONFIG_PARAM_NAME,
             Type='String',
             Value=content,
+            Overwrite=True,
+        )
+    click.echo("Uploaded config")
+
+
+@cli.command()
+@click.argument('org-iam-role-arn')
+def set_org_iam_role_arn(org_iam_role_arn):
+    with betterboto_client.ClientContextManager('ssm') as ssm:
+        ssm.put_parameter(
+            Name=CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN,
+            Type='String',
+            Value=org_iam_role_arn,
             Overwrite=True,
         )
     click.echo("Uploaded config")
