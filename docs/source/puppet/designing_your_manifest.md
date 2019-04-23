@@ -187,38 +187,48 @@ accounts:
       - scope:pci
 ```
 
-
 ### Launches
-Description coming soon
+Launches allow you to decide which products get provisioned into each account.  You link product launches to accounts 
+using tags or explicit account ids and you can set which regions the products are launched into.
 
-### Example
+#### Tag based launches
+You can specify a launch to occur using ```tags``` in the ```deploy_to``` section of a launch.  
+
+Here is an example, it deploys a ```v1``` of a product named ```account-iam``` from the portfolio 
+```example-simple-central-it-team-portfolio``` into into the ```default_region``` of all accounts tagged ```type:prod```:  
+
 ```yaml
 schema: puppet-2019-04-01
-
-accounts:
-  - account_id: '<YOUR_ACCOUNT_ID>'
-    name: '<YOUR_ACCOUNT_NAME>'
-    default_region: us-east-1
-    regions_enabled:
-      - us-east-1
-      - us-west-2
-    tags:
-      - type:prod
-      - partition:us
-      - scope:pci
 
 launches:
   account-iam-for-prod:
     portfolio: example-simple-central-it-team-portfolio
     product: account-iam
     version: v1
-    parameters:
-      RoleName:
-        default: DevAdmin
-      Path:
-        default: /human-roles/
     deploy_to:
       tags:
         - tag: type:prod
+          regions: default_region
+```
+
+
+#### Account based launches
+You can also specify a launch to occur explicity in an account by using the ```accounts``` section in the 
+```deploy_to``` section of a launch.  
+
+Here is an example, it deploys a ```v1``` of a product named ```account-iam``` from the portfolio 
+```example-simple-central-it-team-portfolio``` into into the ```default_region``` of the accounts ```0123456789010```:  
+
+```yaml
+schema: puppet-2019-04-01
+
+launches:
+  account-iam-for-prod:
+    portfolio: example-simple-central-it-team-portfolio
+    product: account-iam
+    version: v1
+    deploy_to:
+      accounts:
+        - account_id: '0123456789010'
           regions: default_region
 ```
