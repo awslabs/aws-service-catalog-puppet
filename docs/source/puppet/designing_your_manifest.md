@@ -137,6 +137,57 @@ In this example there the following tags:
 
 The goal of tags is to provide a classification for your accounts that can be used to a deployment time.  
 
+#### Using an OU id or path (integration with AWS Organizations)
+When specifying an account you can use short hand notation of ```ou``` instead of ```account_id``` to build out a list 
+of accounts with the same properties.
+
+For example you can use an AWS Organizations path:
+```yaml
+schema: puppet-2019-04-01
+
+accounts:
+  - ou: /prod
+    name: '<YOUR_ACCOUNT_NAME>'
+    default_region: us-east-1
+    regions_enabled:
+      - us-east-1
+      - us-west-2
+    tags:
+      - type:prod
+      - partition:us
+      - scope:pci
+```
+
+The framework will get a list of all AWS accounts within the ```/prod``` Organizational unit and expand your manifest to
+look like the following  (assuming accounts 0123456789010 and 0109876543210 are the only accountss within ```/prod```):
+
+```yaml
+schema: puppet-2019-04-01
+
+accounts:
+  - account_id: 0123456789010
+    name: '<YOUR_ACCOUNT_NAME>'
+    default_region: us-east-1
+    regions_enabled:
+      - us-east-1
+      - us-west-2
+    tags:
+      - type:prod
+      - partition:us
+      - scope:pci
+  - account_id: 0109876543210
+    name: '<YOUR_ACCOUNT_NAME>'
+    default_region: us-east-1
+    regions_enabled:
+      - us-east-1
+      - us-west-2
+    tags:
+      - type:prod
+      - partition:us
+      - scope:pci
+```
+
+
 ### Launches
 Description coming soon
 
