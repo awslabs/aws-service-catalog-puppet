@@ -169,7 +169,7 @@ Resources:
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !Ref GenerateSharesProject
-              RunOrder: 2
+              RunOrder: 1
               InputArtifacts:
                 - Name: Expand
               OutputArtifacts:
