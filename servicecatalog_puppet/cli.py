@@ -16,9 +16,7 @@ from jinja2 import Environment, FileSystemLoader, Template
 from betterboto import client as betterboto_client
 import pkg_resources
 
-
 VERSION = pkg_resources.require("aws-service-catalog-puppet")[0].version
-
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -55,6 +53,7 @@ LAUNCHES = os.path.sep.join([OUTPUT, "launches"])
 
 HOME_REGION = os.environ.get('AWS_DEFAULT_REGION', 'eu-west-1')
 CONFIG_PARAM_NAME = "/servicecatalog-puppet/config"
+CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN = "/servicecatalog-puppet/org-iam-role-arn"
 
 
 def get_regions():
@@ -62,6 +61,12 @@ def get_regions():
         response = ssm.get_parameter(Name=CONFIG_PARAM_NAME)
         config = yaml.safe_load(response.get('Parameter').get('Value'))
         return config.get('regions')
+
+
+def get_org_iam_role_arn():
+    with betterboto_client.ClientContextManager('ssm', region_name=HOME_REGION) as ssm:
+        response = ssm.get_parameter(Name=CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN)
+        return yaml.safe_load(response.get('Parameter').get('Value'))
 
 
 def get_accounts_for_path(client, path):
@@ -594,8 +599,8 @@ def deploy_launches(deployment_map, parameters):
 
 
 @cli.command()
-@click.argument('master_account_id')
-def bootstrap_spoke(master_account_id):
+@click.argument('puppet_account_id')
+def bootstrap_spoke(puppet_account_id):
     logger.info('Starting bootstrap of spoke')
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
         template = read_from_site_packages('{}-spoke.template.yaml'.format(BOOTSTRAP_STACK_NAME))
@@ -606,9 +611,9 @@ def bootstrap_spoke(master_account_id):
             'Capabilities': ['CAPABILITY_NAMED_IAM'],
             'Parameters': [
                 {
-                    'ParameterKey': 'MasterAccountId',
-                    'ParameterValue': str(master_account_id),
-                },{
+                    'ParameterKey': 'PuppetAccountId',
+                    'ParameterValue': str(puppet_account_id),
+                }, {
                     'ParameterKey': 'Version',
                     'ParameterValue': VERSION,
                     'UsePreviousValue': False,
@@ -672,6 +677,11 @@ def do_bootstrap():
                 {
                     'ParameterKey': 'Version',
                     'ParameterValue': VERSION,
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'OrgIamRoleArn',
+                    'ParameterValue': get_org_iam_role_arn(),
                     'UsePreviousValue': False,
                 },
             ],
@@ -783,20 +793,25 @@ def expand_ou(original_account, client):
 
 @cli.command()
 @click.argument('f', type=click.File())
-@click.option('--org-iam-role')
-def expand(f, org_iam_role=None):
+def expand(f):
+    logger.info('Expanding')
     manifest = yaml.safe_load(f.read())
-    new_name = f.name.replace('.yaml', '-expanded.yaml')
-    if org_iam_role:
-        with betterboto_client.CrossAccountClientContextManager('organizations', org_iam_role,
-                                                                'org-iam-role') as client:
-            do_expand(manifest, new_name, client)
-    else:
-        with betterboto_client.ClientContextManager('organizations') as client:
-            do_expand(manifest, new_name, client)
+    org_iam_role_arn = get_org_iam_role_arn()
+    logger.info('Using role: {}'.format(org_iam_role_arn))
+    with betterboto_client.CrossAccountClientContextManager(
+            'organizations', org_iam_role_arn, 'org-iam-role'
+    ) as client:
+        new_manifest = do_expand(manifest, client)
+    logger.info('Expanded')
+    new_name = f.name.replace(".yaml", '-expanded.yaml')
+    logger.info('Writing new manifest: {}'.format(new_name))
+    with open(new_name, 'w') as output:
+        output.write(
+            yaml.safe_dump(new_manifest, default_flow_style=False)
+        )
 
 
-def do_expand(manifest, new_name, client):
+def do_expand(manifest, client):
     new_manifest = deepcopy(manifest)
     new_accounts = new_manifest['accounts'] = []
 
@@ -855,8 +870,7 @@ def do_expand(manifest, new_name, client):
                 parameter_details['default'] = result
                 del parameter_details['macro']
 
-    with open(new_name, 'w') as nf:
-        nf.write(yaml.safe_dump(new_manifest, default_flow_style=False))
+    return new_manifest
 
 
 @cli.command()
@@ -883,6 +897,19 @@ def upload_config(p):
             Name=CONFIG_PARAM_NAME,
             Type='String',
             Value=content,
+            Overwrite=True,
+        )
+    click.echo("Uploaded config")
+
+
+@cli.command()
+@click.argument('org-iam-role-arn')
+def set_org_iam_role_arn(org_iam_role_arn):
+    with betterboto_client.ClientContextManager('ssm') as ssm:
+        ssm.put_parameter(
+            Name=CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN,
+            Type='String',
+            Value=org_iam_role_arn,
             Overwrite=True,
         )
     click.echo("Uploaded config")

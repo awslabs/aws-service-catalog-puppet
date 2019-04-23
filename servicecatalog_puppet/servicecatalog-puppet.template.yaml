@@ -1,11 +1,20 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 AWSTemplateFormatVersion: "2010-09-09"
+Description: |
+  Bootstrap template used to bring up the main ServiceCatalog-Puppet AWS CodePipeline with dependencies
 
 Parameters:
   Version:
     Type: String
     Default: "{{ VERSION }}"
+  OrgIamRoleArn:
+    Type: String
+    Default: "None"
+
+Conditions:
+  ShouldNotUseOrgs: !Equals [ !Ref OrgIamRoleArn, None ]
+  ShouldUseOrgs: !Not [!Equals [!Ref OrgIamRoleArn, None]]
 
 Resources:
   Param:
@@ -204,17 +213,45 @@ Resources:
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !Ref DeployProject
-                PrimarySource: Source
+                PrimarySource: GenerateShares
               RunOrder: 1
               InputArtifacts:
-                - Name: Source
+                - Name: GenerateShares
               OutputArtifacts:
                 - Name: Deploy
 
-  GenerateRole:
+  GenerateRoleForOrg:
     Type: AWS::IAM::Role
+    Condition: ShouldUseOrgs
     Properties:
-      RoleName: PuppetGenerateRole
+      RoleName: PuppetGenerateProjectRole
+      Path: /servicecatalog-puppet/
+      Policies:
+        - PolicyName: Org
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource: !Ref OrgIamRoleArn
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+  GenerateRoleNotForOrg:
+    Type: AWS::IAM::Role
+    Condition: ShouldNotUseOrgs
+    Properties:
+      RoleName: PuppetGenerateProjectRole
       Path: /servicecatalog-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -245,12 +282,13 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
 
+
   GenerateSharesProject:
     Type: AWS::CodeBuild::Project
     Properties:
       Name: servicecatalog-puppet-generate
       Description: "builds out the products to be deployed"
-      ServiceRole: !GetAtt GenerateRole.Arn
+      ServiceRole: !If [ShouldUseOrgs, !GetAtt GenerateRoleForOrg.Arn, !GetAtt GenerateRoleNotForOrg.Arn]
       Artifacts:
         Type: CODEPIPELINE
       Environment:
@@ -271,9 +309,11 @@ Resources:
           {% endif %}
             build:
               commands:
-                - servicecatalog-puppet --info generate-shares manifest.yaml
+                - servicecatalog-puppet --info expand manifest.yaml
+                - servicecatalog-puppet --info generate-shares manifest-expanded.yaml
           artifacts:
             files:
+              - manifest-expanded.yaml
               - output/*/*/*/*.template.yaml
             name: GenerateShares
       TimeoutInMinutes: 30
@@ -304,7 +344,7 @@ Resources:
           {% endif %}
             build:
               commands:
-                - servicecatalog-puppet --info deploy manifest.yaml
+                - servicecatalog-puppet --info deploy manifest-expanded.yaml
 
       TimeoutInMinutes: 30
 

@@ -35,15 +35,17 @@ configuration for it to run smoothly.
 You will also need to provision an IAM Role within the _spoke_ accounts - those you want to provision products in.
 
 ### Bootstrap your spokes
-Set up your spoke accounts:
+You will need to bootstrap each of your spokes.  In order to do so please export your credentials and then run:
 ```bash
 servicecatalog-puppet bootstrap-spoke <ACCOUNT_ID_OF_YOUR_PUPPET>
 ```
 
 ### Bootstrap your account
 
-There are two parts to bootstrapping the puppet.  The first is concerned with setting the global configurations.  To do 
-this we use AWS SSM Parameters.  To get setup you need to create a configuration file with a list of regions you want to 
+There are two or threes parts to bootstrapping the puppet.  
+
+The first is concerned with setting the global configurations.  
+To do this we use AWS SSM Parameters.  To get setup you need to create a configuration file with a list of regions you want to 
 use - for example config.yaml:
 
 ```yaml
@@ -73,6 +75,30 @@ servicecatalog-puppet upload-config config.yaml
 If you make changes to this you will need to run upload-config and bootstrap commands again for the changes to occur.
 
 Once that has completed you are ready to bring up the rest of the puppet.
+
+The second part to bootstrapping is optional.  If you would like to use AWS Organizations features in your manifest file 
+you will need to set which IAM Role should be used to perform these actions.  In order to do this you will need to run 
+the following:
+
+```bash
+servicecatalog-puppet set-org-iam-role-arn arn:aws:iam::0123456789010:role/Admin  
+```
+
+Please replace 0123456789010 with the master account id you want to use.  Please note this IAM Role needs the following 
+IAM Policy:
+
+```yaml
+PolicyDocument:
+  Version: 2012-10-17
+  Statement:
+    - Effect: Allow
+      Action:
+        - organizations:ListRoots
+        - organizations:ListOrganizationalUnitsForParent
+      Resource: '*'
+```
+
+Once you have run that command you are ready for the final stage.
 
 Create the AWS CodeCommit repo and AWS CodePipeline resources to run the puppet for your 
 master account:

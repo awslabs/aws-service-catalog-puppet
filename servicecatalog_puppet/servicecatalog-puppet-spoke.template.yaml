@@ -3,7 +3,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
 Parameters:
-  MasterAccountId:
+  PuppetAccountId:
     Type: String
     MinLength: 12
     MaxLength: 12
@@ -56,7 +56,7 @@ Resources:
         Statement:
           - Effect: "Allow"
             Principal:
-              AWS: !Sub "arn:aws:iam::${MasterAccountId}:root"
+              AWS: !Sub "arn:aws:iam::${PuppetAccountId}:root"
             Action:
               - "sts:AssumeRole"
           - Effect: "Allow"

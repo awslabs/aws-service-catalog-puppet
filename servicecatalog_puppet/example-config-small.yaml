@@ -1,0 +1,6 @@
+regions: [
+  'eu-west-1',
+  'eu-west-2',
+  'eu-west-3'
+]
+org_iam_role_arn: "arn:aws:sts::309052327790:assumed-role/Admin/eamonnf-Isengard"
