@@ -44,6 +44,7 @@ servicecatalog-puppet bootstrap-spoke <ACCOUNT_ID_OF_YOUR_PUPPET>
 
 There are two or threes parts to bootstrapping the puppet.  
 
+#### Setting up your global configuration
 The first is concerned with setting the global configurations.  
 To do this we use AWS SSM Parameters.  To get setup you need to create a configuration file with a list of regions you want to 
 use - for example config.yaml:
@@ -76,6 +77,7 @@ If you make changes to this you will need to run upload-config and bootstrap com
 
 Once that has completed you are ready to bring up the rest of the puppet.
 
+#### Setting to to use AWS Organizations
 The second part to bootstrapping is optional.  If you would like to use AWS Organizations features in your manifest file 
 you will need to set which IAM Role should be used to perform these actions.  In order to do this you will need to run 
 the following:
@@ -100,11 +102,12 @@ PolicyDocument:
 
 Once you have run that command you are ready for the final stage.
 
+#### Configuring your puppet
 Create the AWS CodeCommit repo and AWS CodePipeline resources to run the puppet for your 
 master account:
 ```bash
 servicecatalog-puppet bootstrap
-```
+``` 
 
 ### Setup your puppet
 Clone the configuration repo and configure your factory by editing the ```manifest.yaml``` file:
