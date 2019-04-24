@@ -50,6 +50,9 @@ Resources:
               - Effect: "Allow"
                 Action: servicecatalog:ListProvisioningArtifacts
                 Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:product/*"
+              - Effect: "Allow"
+                Action: servicecatalog:ListPortfolios
+                Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:product/*"
 
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
