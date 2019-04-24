@@ -5,3 +5,4 @@ ServiceCatalogPuppet/
 aws_service_catalog_puppet.egg-info/
 dist
 __pycache__
+output

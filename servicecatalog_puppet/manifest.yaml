@@ -37,25 +37,9 @@ accounts:
 
 
 launches:
-  guardduty-master-account:
-    portfolio: ccoe-account-inflation
-    product: guardduty-master-account
-    version: v1
-    parameters:
-      SpokeAccounts:
-        macro:
-          method: get_accounts_for_path
-          args: /
-    deploy_to:
-      accounts:
-        - account_id: "38579342856438965"
-          regions:
-            - us-east-1
-            - us-east-2
-
   development-account-iam-prod:
-    portfolio: ccoe-account-inflation
-    product: development-account-iam
+    portfolio: demo-central-it-team-portfolio
+    product: account-iam
     version: v1
     parameters:
       RoleName:

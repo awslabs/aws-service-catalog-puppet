@@ -348,6 +348,47 @@ Resources:
 
       TimeoutInMinutes: 30
 
+
+  SingleAccountRunProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: servicecatalog-puppet-single-account-run
+      Description: "Runs puppet for a single account - SINGLE_ACCOUNT_ID"
+      ServiceRole: !If [ShouldUseOrgs, !GetAtt GenerateRoleForOrg.Arn, !GetAtt GenerateRoleNotForOrg.Arn]
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: linuxContainer
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/python:3.7.1
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              commands:
+          {% if 'http' in VERSION %}
+                - pip install {{ VERSION }}
+          {% else %}
+                - pip install aws-service-catalog-puppet=={{ VERSION }}
+          {% endif %}
+            build:
+              commands:
+                - git clone https://git-codecommit.${AWS_DEFAULT_REGION}.amazonaws.com/v1/repos/ServiceCatalogPuppet
+                - cd ServiceCatalogPuppet
+                - servicecatalog-puppet --info expand manifest.yaml
+                - servicecatalog-puppet --info generate-shares manifest-expanded.yaml
+                - servicecatalog-puppet --info deploy-templates-into-regions output/templates/shares shares
+                - servicecatalog-puppet --info deploy --single-account ${SINGLE_ACCOUNT_ID} manifest-expanded.yaml
+          artifacts:
+            files:
+              - manifest-expanded.yaml
+              - output/*/*/*/*.template.yaml
+            name: SingleAccountArtifacts
+      TimeoutInMinutes: 30
+
+
 Outputs:
   Version:
     Value: !GetAtt Param.Value

@@ -110,8 +110,11 @@ Resources:
             Resource: !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
             Principal:
               AWS: "arn:aws:iam::{{ account_id }}:root"
+  {% endif %}
 
 {% for portfolio in portfolios %}
+{% if account_id != host_account_id %}
+
   ShareForAccount{{ portfolio|title|replace('-','') }}{{ account_id }}:
     Type: AWS::ServiceCatalog::PortfolioShare
     Properties:
@@ -125,6 +128,16 @@ Resources:
       ServiceToken: !GetAtt ShareAcceptFunction.Arn
       AccountId: "{{ account_id }}"
       PortfolioId: {{ portfolio }}
-{% endfor %}
+
+{% else %}
+
+  AssociationFor{{ portfolio|title|replace('-','') }}PuppetAccount:
+    Type: "AWS::ServiceCatalog::PortfolioPrincipalAssociation"
+    Properties:
+      PrincipalARN: !Sub "arn:aws:iam::${AWS::AccountId}:role/servicecatalog-puppet/PuppetRole"
+      PortfolioId: {{ portfolio }}
+      PrincipalType: IAM
+
 {% endif %}
+{% endfor %}
 {% endfor %}

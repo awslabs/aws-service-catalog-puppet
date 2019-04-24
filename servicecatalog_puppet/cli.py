@@ -65,8 +65,12 @@ def get_regions():
 
 def get_org_iam_role_arn():
     with betterboto_client.ClientContextManager('ssm', region_name=HOME_REGION) as ssm:
-        response = ssm.get_parameter(Name=CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN)
-        return yaml.safe_load(response.get('Parameter').get('Value'))
+        try:
+            response = ssm.get_parameter(Name=CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN)
+            return yaml.safe_load(response.get('Parameter').get('Value'))
+        except ssm.exceptions.ParameterNotFound as e:
+            logger.info("No parameter set for: {}".format(CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN))
+            return None
 
 
 def get_accounts_for_path(client, path):
@@ -203,7 +207,7 @@ def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name,
     ))
     role = "arn:aws:iam::{}:role/{}".format(account_id, 'servicecatalog-puppet/PuppetRole')
     with betterboto_client.CrossAccountClientContextManager(
-            'servicecatalog', role, account_id, region_name=region
+            'servicecatalog', role, "-".join([account_id, region]), region_name=region
     ) as cross_account_servicecatalog:
         product_id = None
         version_id = None
@@ -216,6 +220,15 @@ def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name,
                 if portfolio_detail.get('DisplayName') == portfolio_name:
                     portfolio_id = portfolio_detail.get('Id')
                     break
+
+            if portfolio_id is None:
+                response = cross_account_servicecatalog.list_portfolios()
+                for portfolio_detail in response.get('PortfolioDetails', []):
+                    if portfolio_detail.get('DisplayName') == portfolio_name:
+                        portfolio_id = portfolio_detail.get('Id')
+                        break
+
+
 
             assert portfolio_id is not None, "Could not find portfolio"
             logger.info("Found portfolio: {}".format(portfolio_id))
@@ -385,6 +398,7 @@ def create_share_template(deployment_map):
                 if portfolio_use_by_account.get(account_id) is None:
                     portfolio_use_by_account[account_id] = []
                 for launch_id, launch in launch_details.get('launches').items():
+                    logger.info(portfolio_ids)
                     p = portfolio_ids[launch.get('portfolio')]
                     if p not in portfolio_use_by_account[account_id]:
                         portfolio_use_by_account[account_id].append(p)
@@ -403,12 +417,13 @@ def generate_shares(f):
 
 @cli.command()
 @click.argument('f', type=click.File())
-def deploy(f):
+@click.option('--single-account', default=None)
+def deploy(f, single_account):
     manifest = yaml.safe_load(f.read())
     deployment_map = build_deployment_map(manifest)
     write_templates(deployment_map)
     logger.info('Starting to deploy')
-    deploy_launches(deployment_map, manifest.get('parameters', {}))
+    deploy_launches(deployment_map, manifest.get('parameters', {}), single_account)
     logger.info('Finished deploy')
 
 
@@ -486,7 +501,7 @@ def deploy_launches_for_region_and_product(region, account, role, deployment_map
         )
         already_provisioned_successfully = False
         for provisioned_product in response.get('ProvisionedProducts', []):
-            logger.info("Found previous vend of product: {}".format(provisioned_product.get('Id')))
+            logger.info("Found previous vend of product: {}".format(provisioned_product))
             if provisioned_product.get('Status') == 'ERROR':
                 logger.info("Removing product: {}".format(provisioned_product.get('Id')))
                 service_catalog.terminate_provisioned_product(
@@ -568,7 +583,7 @@ def deploy_launches_for_region_and_product(region, account, role, deployment_map
                 raise Exception("Execute was not successful: {}".format(execute_status))
 
 
-def deploy_launches(deployment_map, parameters):
+def deploy_launches(deployment_map, parameters, single_account):
     logger.info('Deploying launches')
     accounts = os.listdir(TEMPLATES)
     logger.info('Creating stacks')
@@ -576,24 +591,24 @@ def deploy_launches(deployment_map, parameters):
     for account in accounts:
         if account == "shares":
             continue
+        if single_account is None or account == single_account:
+            logger.info('Deploying to: {}'.format(account))
+            regions = os.listdir(os.sep.join([TEMPLATES, account]))
 
-        logger.info('Deploying to: {}'.format(account))
-        regions = os.listdir(os.sep.join([TEMPLATES, account]))
+            role = "arn:aws:iam::{}:role/{}".format(account, 'servicecatalog-puppet/PuppetRole')
+            for region in regions:
+                process = Thread(
+                    name='-'.join([account, region]),
+                    target=deploy_launches_for_region,
+                    args=[
+                        region, account, role, deployment_map, parameters
+                    ]
+                )
+                process.start()
+                threads.append(process)
 
-        role = "arn:aws:iam::{}:role/{}".format(account, 'servicecatalog-puppet/PuppetRole')
-        for region in regions:
-            process = Thread(
-                name='-'.join([account, region]),
-                target=deploy_launches_for_region,
-                args=[
-                    region, account, role, deployment_map, parameters
-                ]
-            )
-            process.start()
-            threads.append(process)
-
-    for process in threads:
-        process.join()
+        for process in threads:
+            process.join()
 
     logger.info('Finished creating stacks')
 
@@ -681,7 +696,7 @@ def do_bootstrap():
                 },
                 {
                     'ParameterKey': 'OrgIamRoleArn',
-                    'ParameterValue': get_org_iam_role_arn(),
+                    'ParameterValue': str(get_org_iam_role_arn()),
                     'UsePreviousValue': False,
                 },
             ],
@@ -783,7 +798,8 @@ def expand_ou(original_account, client):
         response = client.describe_account(AccountId=new_account_id)
         new_account = deepcopy(original_account)
         del new_account['ou']
-        new_account['name'] = response.get('Account').get('Name')
+        if response.get('Account').get('Name') is not None:
+            new_account['name'] = response.get('Account').get('Name')
         new_account['email'] = response.get('Account').get('Email')
         new_account['account_id'] = new_account_id
         new_account['expanded_from'] = original_account.get('ou')
@@ -794,15 +810,19 @@ def expand_ou(original_account, client):
 @cli.command()
 @click.argument('f', type=click.File())
 def expand(f):
-    logger.info('Expanding')
+    click.echo('Expanding')
     manifest = yaml.safe_load(f.read())
     org_iam_role_arn = get_org_iam_role_arn()
-    logger.info('Using role: {}'.format(org_iam_role_arn))
-    with betterboto_client.CrossAccountClientContextManager(
-            'organizations', org_iam_role_arn, 'org-iam-role'
-    ) as client:
-        new_manifest = do_expand(manifest, client)
-    logger.info('Expanded')
+    if org_iam_role_arn is None:
+        click.echo('No org role set - not expanding')
+        new_manifest = manifest
+    else:
+        click.echo('Expanding using role: {}'.format(org_iam_role_arn))
+        with betterboto_client.CrossAccountClientContextManager(
+                'organizations', org_iam_role_arn, 'org-iam-role'
+        ) as client:
+            new_manifest = do_expand(manifest, client)
+    click.echo('Expanded')
     new_name = f.name.replace(".yaml", '-expanded.yaml')
     logger.info('Writing new manifest: {}'.format(new_name))
     with open(new_name, 'w') as output:
@@ -913,6 +933,26 @@ def set_org_iam_role_arn(org_iam_role_arn):
             Overwrite=True,
         )
     click.echo("Uploaded config")
+
+
+@cli.command()
+@click.argument('p', type=click.Path(exists=True))
+@click.argument('stack-name-suffix')
+def deploy_templates_into_regions(p, stack_name_suffix):
+    for region in os.listdir(p):
+        logger.info('deploying into: {}'.format(region))
+        stack_name = "{}-{}".format(BOOTSTRAP_STACK_NAME, stack_name_suffix)
+        template = open(
+            os.path.sep.join(
+                [p, region, "{}.template.yaml".format(stack_name_suffix)]
+            ), 'r'
+        ).read()
+        with betterboto_client.ClientContextManager('cloudformation', region_name=region) as cloudformation:
+            cloudformation.create_or_update(
+                StackName=stack_name,
+                TemplateBody=template,
+                Capabilities= ['CAPABILITY_NAMED_IAM'],
+            )
 
 
 if __name__ == "__main__":
