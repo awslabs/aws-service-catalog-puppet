@@ -147,7 +147,7 @@ schema: puppet-2019-04-01
 
 accounts:
   - ou: /prod
-    name: '<YOUR_ACCOUNT_NAME>'
+    name: '<CHOOSE A NAME FOR YOUR ACCOUNTS LIST>'
     default_region: us-east-1
     regions_enabled:
       - us-east-1
