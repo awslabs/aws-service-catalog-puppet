@@ -98,7 +98,7 @@ Resources:
 {% for account_id, portfolios in portfolio_use_by_account.items() %}
   {% if account_id != host_account_id %}
   TopicPolicyFor{{ account_id }}:
-    Type: AWS::SNS:TopicPolicy
+    Type: AWS::SNS::TopicPolicy
     Properties:
       Topics:
         - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:servicecatalog-puppet-product"
