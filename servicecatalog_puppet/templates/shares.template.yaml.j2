@@ -106,7 +106,7 @@ Resources:
         Id: MyTopicPolicy
         Version: '2012-10-17'
         Statement:
-          - Sid: My-statement-id
+          - Sid: "{{ account_id }}"
             Effect: Allow
             Principal:
               AWS: "{{ account_id }}"
