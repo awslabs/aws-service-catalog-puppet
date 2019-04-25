@@ -539,6 +539,9 @@ def deploy_launches_for_region_and_product(region, account, role, deployment_map
                         'Value': launch_name,
                     }
                 ],
+                NotificationArns=[
+                    "arn:aws:sns:{}:{}:servicecatalog-puppet-product".format(region, account),
+                ],
             )
             logger.info('Plan created, waiting for completion')
 
