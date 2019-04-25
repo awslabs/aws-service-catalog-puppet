@@ -4,7 +4,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Shares for puppet
 
 Conditions:
-  RunningInHomeRegion: !Equals [ !Sub "${{AWS::Region}}", {{ HOME_REGION }} ]
+  RunningInHomeRegion: !Equals [ !Sub "${AWS::Region}", {{ HOME_REGION }} ]
 
 Resources:
   ShareAcceptFunction:
