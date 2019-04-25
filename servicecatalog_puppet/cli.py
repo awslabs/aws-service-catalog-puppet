@@ -887,7 +887,25 @@ def validate(f):
 
 @cli.command()
 def version():
-    click.echo(VERSION)
+    click.echo("cli version: {}".format(VERSION))
+    with betterboto_client.ClientContextManager('ssm', region_name=HOME_REGION) as ssm:
+        response = ssm.get_parameter(
+            Name="service-catalog-puppet-regional-version"
+        )
+        click.echo(
+            "regional stack version: {} for region: {}".format(
+                response.get('Parameter').get('Value'),
+                response.get('Parameter').get('ARN').split(':')[3]
+            )
+        )
+        response = ssm.get_parameter(
+            Name="service-catalog-puppet-version"
+        )
+        click.echo(
+            "stack version: {}".format(
+                response.get('Parameter').get('Value'),
+            )
+        )
 
 
 @cli.command()
