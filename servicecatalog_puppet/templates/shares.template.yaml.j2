@@ -95,9 +95,23 @@ Resources:
       Timeout: 30
 
 
-
 {% for account_id, portfolios in portfolio_use_by_account.items() %}
   {% if account_id != host_account_id %}
+  TopicPolicyFor{{ account_id }}:
+    Type: AWS::SNS:TopicPolicy
+    Topics:
+      - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:servicecatalog-puppet-product"
+    PolicyDocument:
+      Id: MyTopicPolicy
+        Version: '2012-10-17'
+        Statement:
+          - Sid: My-statement-id
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt myuser.Arn
+            Action: sns:Publish
+            Resource: "*"
+
   BucketPolicyFor{{ account_id }}:
     Type: AWS::S3::BucketPolicy
     Properties:
