@@ -109,7 +109,7 @@ Resources:
           - Sid: My-statement-id
             Effect: Allow
             Principal:
-              AWS: !GetAtt myuser.Arn
+              AWS: "{{ account_id }}"
             Action: sns:Publish
             Resource: "*"
 
