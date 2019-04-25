@@ -729,24 +729,6 @@ def seed(complexity, p):
 
 
 @cli.command()
-@click.argument('p', type=click.Path(exists=True))
-def reseed(p):
-    for f in ['requirements.txt', 'cli.py', ]:
-        shutil.copy2(
-            resolve_from_site_packages(f),
-            os.path.sep.join([p, f])
-        )
-    for d in ['templates']:
-        target = os.path.sep.join([p, d])
-        if os.path.exists(target):
-            shutil.rmtree(target)
-        shutil.copytree(
-            resolve_from_site_packages(d),
-            target
-        )
-
-
-@cli.command()
 @click.argument('f', type=click.File())
 def list_launches(f):
     ALL_REGIONS = get_regions()
