@@ -105,7 +105,7 @@ Resources:
     Condition: RunningInHomeRegion
     Properties:
       Topics:
-        - !Sub "arn:aws:sns:{{ HOME_REGION }}:${AWS::AccountId}:servicecatalog-puppet-product"
+        - !Sub "arn:aws:sns:{{ HOME_REGION }}:${AWS::AccountId}:servicecatalog-puppet-cloudformation-events"
       PolicyDocument:
         Id: MyTopicPolicy
         Version: '2012-10-17'
