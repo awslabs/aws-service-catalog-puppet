@@ -8,6 +8,7 @@ Parameters:
     Default: "{{ VERSION }}"
 
 Resources:
+
   Param:
     Type: AWS::SSM::Parameter
     Properties:

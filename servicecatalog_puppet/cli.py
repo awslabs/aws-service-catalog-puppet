@@ -343,6 +343,7 @@ def write_share_template(portfolio_use_by_account, region, host_account_id):
             env.get_template('shares.template.yaml.j2').render(
                 portfolio_use_by_account=portfolio_use_by_account,
                 host_account_id=host_account_id,
+                HOME_REGION=HOME_REGION,
             )
         )
 
@@ -423,20 +424,24 @@ def deploy(f, single_account):
     deployment_map = build_deployment_map(manifest)
     write_templates(deployment_map)
     logger.info('Starting to deploy')
-    deploy_launches(deployment_map, manifest.get('parameters', {}), single_account)
+    with betterboto_client.ClientContextManager('sts') as sts:
+        puppet_account_id = sts.get_caller_identity().get('Account')
+    deploy_launches(deployment_map, manifest.get('parameters', {}), single_account, puppet_account_id)
     logger.info('Finished deploy')
 
 
-def deploy_launches_for_region(region, account, role, deployment_map, parameters):
+def deploy_launches_for_region(region, account, role, deployment_map, parameters, puppet_account_id):
     logger.info("Starting region: {}".format(region))
     templates = os.listdir(os.sep.join([TEMPLATES, account, region]))
     for template_name in templates:
         deploy_launches_for_region_and_product(
-            region, account, role, deployment_map, parameters, template_name
+            region, account, role, deployment_map, parameters, template_name, puppet_account_id
         )
 
 
-def deploy_launches_for_region_and_product(region, account, role, deployment_map, parameters, template_name):
+def deploy_launches_for_region_and_product(
+        region, account, role, deployment_map, parameters, template_name, puppet_account_id
+):
     logger.info("Starting template: {} in region: {}".format(template_name, region))
     launch_name = template_name.replace('.template.yaml', '')
     stack_name = "-".join([PREFIX, account, region, launch_name])
@@ -539,6 +544,9 @@ def deploy_launches_for_region_and_product(region, account, role, deployment_map
                         'Value': launch_name,
                     }
                 ],
+                NotificationArns=[
+                    "arn:aws:sns:{}:{}:servicecatalog-puppet-cloudformation-events".format(HOME_REGION, puppet_account_id),
+                ],
             )
             logger.info('Plan created, waiting for completion')
 
@@ -583,7 +591,7 @@ def deploy_launches_for_region_and_product(region, account, role, deployment_map
                 raise Exception("Execute was not successful: {}".format(execute_status))
 
 
-def deploy_launches(deployment_map, parameters, single_account):
+def deploy_launches(deployment_map, parameters, single_account, puppet_account_id):
     logger.info('Deploying launches')
     accounts = os.listdir(TEMPLATES)
     logger.info('Creating stacks')
@@ -601,7 +609,7 @@ def deploy_launches(deployment_map, parameters, single_account):
                     name='-'.join([account, region]),
                     target=deploy_launches_for_region,
                     args=[
-                        region, account, role, deployment_map, parameters
+                        region, account, role, deployment_map, parameters, puppet_account_id
                     ]
                 )
                 process.start()
@@ -726,24 +734,6 @@ def seed(complexity, p):
         ),
         os.path.sep.join([p, "manifest.yaml"])
     )
-
-
-@cli.command()
-@click.argument('p', type=click.Path(exists=True))
-def reseed(p):
-    for f in ['requirements.txt', 'cli.py', ]:
-        shutil.copy2(
-            resolve_from_site_packages(f),
-            os.path.sep.join([p, f])
-        )
-    for d in ['templates']:
-        target = os.path.sep.join([p, d])
-        if os.path.exists(target):
-            shutil.rmtree(target)
-        shutil.copytree(
-            resolve_from_site_packages(d),
-            target
-        )
 
 
 @cli.command()
@@ -905,7 +895,25 @@ def validate(f):
 
 @cli.command()
 def version():
-    click.echo(VERSION)
+    click.echo("cli version: {}".format(VERSION))
+    with betterboto_client.ClientContextManager('ssm', region_name=HOME_REGION) as ssm:
+        response = ssm.get_parameter(
+            Name="service-catalog-puppet-regional-version"
+        )
+        click.echo(
+            "regional stack version: {} for region: {}".format(
+                response.get('Parameter').get('Value'),
+                response.get('Parameter').get('ARN').split(':')[3]
+            )
+        )
+        response = ssm.get_parameter(
+            Name="service-catalog-puppet-version"
+        )
+        click.echo(
+            "stack version: {}".format(
+                response.get('Parameter').get('Value'),
+            )
+        )
 
 
 @cli.command()

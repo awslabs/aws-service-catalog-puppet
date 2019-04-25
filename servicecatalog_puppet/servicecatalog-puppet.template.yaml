@@ -391,6 +391,16 @@ Resources:
       TimeoutInMinutes: 30
 
 
+  ProductTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: servicecatalog-puppet-cloudformation-events
+      TopicName: servicecatalog-puppet-cloudformation-events
+
 Outputs:
+  ProductTopicArn:
+    Value: !Ref ProductTopic
+  ProductTopicName:
+    Value: !GetAtt ProductTopic.TopicName
   Version:
     Value: !GetAtt Param.Value
