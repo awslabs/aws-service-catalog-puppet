@@ -423,20 +423,24 @@ def deploy(f, single_account):
     deployment_map = build_deployment_map(manifest)
     write_templates(deployment_map)
     logger.info('Starting to deploy')
-    deploy_launches(deployment_map, manifest.get('parameters', {}), single_account)
+    with betterboto_client.ClientContextManager('sts') as sts:
+        puppet_account_id = sts.get_caller_identity().get('Account')
+    deploy_launches(deployment_map, manifest.get('parameters', {}), single_account, puppet_account_id)
     logger.info('Finished deploy')
 
 
-def deploy_launches_for_region(region, account, role, deployment_map, parameters):
+def deploy_launches_for_region(region, account, role, deployment_map, parameters, puppet_account_id):
     logger.info("Starting region: {}".format(region))
     templates = os.listdir(os.sep.join([TEMPLATES, account, region]))
     for template_name in templates:
         deploy_launches_for_region_and_product(
-            region, account, role, deployment_map, parameters, template_name
+            region, account, role, deployment_map, parameters, template_name, puppet_account_id
         )
 
 
-def deploy_launches_for_region_and_product(region, account, role, deployment_map, parameters, template_name):
+def deploy_launches_for_region_and_product(
+        region, account, role, deployment_map, parameters, template_name, puppet_account_id
+):
     logger.info("Starting template: {} in region: {}".format(template_name, region))
     launch_name = template_name.replace('.template.yaml', '')
     stack_name = "-".join([PREFIX, account, region, launch_name])
@@ -540,7 +544,7 @@ def deploy_launches_for_region_and_product(region, account, role, deployment_map
                     }
                 ],
                 NotificationArns=[
-                    "arn:aws:sns:{}:{}:servicecatalog-puppet-product".format(region, account),
+                    "arn:aws:sns:{}:{}:servicecatalog-puppet-product".format(region, puppet_account_id),
                 ],
             )
             logger.info('Plan created, waiting for completion')
@@ -586,7 +590,7 @@ def deploy_launches_for_region_and_product(region, account, role, deployment_map
                 raise Exception("Execute was not successful: {}".format(execute_status))
 
 
-def deploy_launches(deployment_map, parameters, single_account):
+def deploy_launches(deployment_map, parameters, single_account, puppet_account_id):
     logger.info('Deploying launches')
     accounts = os.listdir(TEMPLATES)
     logger.info('Creating stacks')
@@ -604,7 +608,7 @@ def deploy_launches(deployment_map, parameters, single_account):
                     name='-'.join([account, region]),
                     target=deploy_launches_for_region,
                     args=[
-                        region, account, role, deployment_map, parameters
+                        region, account, role, deployment_map, parameters, puppet_account_id
                     ]
                 )
                 process.start()
