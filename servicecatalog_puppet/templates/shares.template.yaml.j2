@@ -1,7 +1,10 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Shares
+Description: Shares for puppet
+
+Conditions:
+  RunningInHomeRegion: !Equals [ !Sub "${{AWS::Region}}", {{ HOME_REGION }} ]
 
 Resources:
   ShareAcceptFunction:
@@ -99,6 +102,7 @@ Resources:
   {% if account_id != host_account_id %}
   TopicPolicyFor{{ account_id }}:
     Type: AWS::SNS::TopicPolicy
+    Condition: RunningInHomeRegion
     Properties:
       Topics:
         - !Sub "arn:aws:sns:{{ HOME_REGION }}:${AWS::AccountId}:servicecatalog-puppet-product"
