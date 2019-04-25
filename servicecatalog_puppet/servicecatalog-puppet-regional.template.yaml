@@ -27,16 +27,6 @@ Resources:
       VersioningConfiguration:
         Status: Enabled
 
-  ProductTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      DisplayName: servicecatalog-puppet-product
-      TopicName: servicecatalog-puppet-product
-
 Outputs:
   Version:
     Value: !GetAtt Param.Value
-  ProductTopicArn:
-    Value: !Ref ProductTopic
-  ProductTopicName:
-    Value: !GetAtt ProductTopic.TopicName

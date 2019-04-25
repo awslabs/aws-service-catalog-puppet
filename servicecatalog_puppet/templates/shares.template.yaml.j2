@@ -101,7 +101,7 @@ Resources:
     Type: AWS::SNS::TopicPolicy
     Properties:
       Topics:
-        - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:servicecatalog-puppet-product"
+        - !Sub "arn:aws:sns:{{ HOME_REGION }}:${AWS::AccountId}:servicecatalog-puppet-product"
       PolicyDocument:
         Id: MyTopicPolicy
         Version: '2012-10-17'

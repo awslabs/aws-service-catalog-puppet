@@ -391,6 +391,16 @@ Resources:
       TimeoutInMinutes: 30
 
 
+  ProductTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: servicecatalog-puppet-product
+      TopicName: servicecatalog-puppet-product
+
 Outputs:
+  ProductTopicArn:
+    Value: !Ref ProductTopic
+  ProductTopicName:
+    Value: !GetAtt ProductTopic.TopicName
   Version:
     Value: !GetAtt Param.Value

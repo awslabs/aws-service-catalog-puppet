@@ -343,6 +343,7 @@ def write_share_template(portfolio_use_by_account, region, host_account_id):
             env.get_template('shares.template.yaml.j2').render(
                 portfolio_use_by_account=portfolio_use_by_account,
                 host_account_id=host_account_id,
+                HOME_REGION=HOME_REGION,
             )
         )
 
@@ -544,7 +545,7 @@ def deploy_launches_for_region_and_product(
                     }
                 ],
                 NotificationArns=[
-                    "arn:aws:sns:{}:{}:servicecatalog-puppet-product".format(region, puppet_account_id),
+                    "arn:aws:sns:{}:{}:servicecatalog-puppet-product".format(HOME_REGION, puppet_account_id),
                 ],
             )
             logger.info('Plan created, waiting for completion')
