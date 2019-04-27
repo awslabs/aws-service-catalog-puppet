@@ -390,12 +390,66 @@ Resources:
                 - servicecatalog-puppet --info deploy --single-account ${SINGLE_ACCOUNT_ID} manifest-expanded.yaml
       TimeoutInMinutes: 30
 
-
   ProductTopic:
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: servicecatalog-puppet-cloudformation-events
       TopicName: servicecatalog-puppet-cloudformation-events
+
+  BootstrapperRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /account-vending/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+
+  BootstrapperProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: servicecatalog-puppet-single-account-bootstrapper
+      Description: "Bootstraps an account for use with ServiceCatalog-Puppet"
+      ServiceRole: !GetAtt BootstrapperRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: linuxContainer
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/python:3.7.1
+        EnvironmentVariables:
+          - Name: TARGET_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: CHANGE_ME
+          - Name: PUPPET_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: CHANGE_ME
+          - Name: ORGANIZATION_ACCOUNT_ACCESS_ROLE_ARN
+            Type: PLAINTEXT
+            Value: CHANGE_ME
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              commands:
+          {% if 'http' in VERSION %}
+                - pip install {{ VERSION }}
+          {% else %}
+                - pip install aws-service-catalog-puppet=={{ VERSION }}
+          {% endif %}
+            build:
+              commands:
+                - servicecatalog-puppet bootstrap-spoke-as ${PUPPET_ACCOUNT_ID} ${ORGANIZATION_ACCOUNT_ACCESS_ROLE_ARN}
+      TimeoutInMinutes: 30
 
 Outputs:
   ProductTopicArn:
