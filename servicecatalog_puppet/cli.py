@@ -623,27 +623,39 @@ def deploy_launches(deployment_map, parameters, single_account, puppet_account_i
 
 @cli.command()
 @click.argument('puppet_account_id')
+@click.argument('iam_role_arn')
+def bootstrap_spoke_as(puppet_account_id, iam_role_arn):
+    with betterboto_client.CrossAccountClientContextManager('cloudformation', iam_role_arn, 'bootstrapping') as cloudformation:
+        do_bootstrap_spoke(puppet_account_id, cloudformation)
+
+
+@cli.command()
+@click.argument('puppet_account_id')
 def bootstrap_spoke(puppet_account_id):
-    logger.info('Starting bootstrap of spoke')
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
-        template = read_from_site_packages('{}-spoke.template.yaml'.format(BOOTSTRAP_STACK_NAME))
-        template = Template(template).render(VERSION=VERSION)
-        args = {
-            'StackName': "{}-spoke".format(BOOTSTRAP_STACK_NAME),
-            'TemplateBody': template,
-            'Capabilities': ['CAPABILITY_NAMED_IAM'],
-            'Parameters': [
-                {
-                    'ParameterKey': 'PuppetAccountId',
-                    'ParameterValue': str(puppet_account_id),
-                }, {
-                    'ParameterKey': 'Version',
-                    'ParameterValue': VERSION,
-                    'UsePreviousValue': False,
-                },
-            ],
-        }
-        cloudformation.create_or_update(**args)
+        do_bootstrap_spoke(puppet_account_id, cloudformation)
+
+
+def do_bootstrap_spoke(puppet_account_id, cloudformation):
+    logger.info('Starting bootstrap of spoke')
+    template = read_from_site_packages('{}-spoke.template.yaml'.format(BOOTSTRAP_STACK_NAME))
+    template = Template(template).render(VERSION=VERSION)
+    args = {
+        'StackName': "{}-spoke".format(BOOTSTRAP_STACK_NAME),
+        'TemplateBody': template,
+        'Capabilities': ['CAPABILITY_NAMED_IAM'],
+        'Parameters': [
+            {
+                'ParameterKey': 'PuppetAccountId',
+                'ParameterValue': str(puppet_account_id),
+            }, {
+                'ParameterKey': 'Version',
+                'ParameterValue': VERSION,
+                'UsePreviousValue': False,
+            },
+        ],
+    }
+    cloudformation.create_or_update(**args)
     logger.info('Finished bootstrap of spoke')
 
 
