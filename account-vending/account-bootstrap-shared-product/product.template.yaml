@@ -39,7 +39,7 @@ Resources:
           - Name: PUPPET_ACCOUNT_ID
             Type: PLAINTEXT
             Value: CHANGE_ME
-          - Name: ORGANIZATION_ACCOUNT_ACCESS_ROLE
+          - Name: ORGANIZATION_ACCOUNT_ACCESS_ROLE_ARN
             Type: PLAINTEXT
             Value: CHANGE_ME
       Source:
@@ -56,7 +56,6 @@ Resources:
           {% endif %}
             build:
               commands:
-                -
-                - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID}
+                - servicecatalog-puppet bootstrap-spoke-as ${PUPPET_ACCOUNT_ID} ${ORGANIZATION_ACCOUNT_ACCESS_ROLE_ARN}
       TimeoutInMinutes: 30
 
