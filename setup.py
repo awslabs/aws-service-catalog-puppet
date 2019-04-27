@@ -5,9 +5,13 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+
+with open("servicecatalog_puppet/requirements.txt", "r") as fh:
+    requirements = fh.read().split("\n")
+
 setuptools.setup(
     name="aws-service-catalog-puppet",
-    version="0.0.20",
+    version="0.0.21",
     author="Eamonn Faherty",
     author_email="aws-service-catalog-tools@amazon.com",
     description="Making it easier to deploy ServiceCatalog products",
@@ -28,12 +32,5 @@ setuptools.setup(
         'console_scripts': [
             'servicecatalog-puppet = servicecatalog_puppet.cli:cli'
         ]},
-    install_requires=[
-        'pyyaml',
-        'click',
-        'Jinja2',
-        'boto3',
-        'pykwalify',
-        'better-boto',
-    ],
+    install_requires=requirements,
 )
