@@ -13,7 +13,6 @@ Parameters:
     Default: "None"
 
 Conditions:
-  ShouldNotUseOrgs: !Equals [ !Ref OrgIamRoleArn, None ]
   ShouldUseOrgs: !Not [!Equals [!Ref OrgIamRoleArn, None]]
 
 Resources:
@@ -220,50 +219,34 @@ Resources:
               OutputArtifacts:
                 - Name: Deploy
 
-  GenerateRoleForOrg:
+  GenerateRole:
     Type: AWS::IAM::Role
-    Condition: ShouldUseOrgs
     Properties:
-      RoleName: PuppetGenerateProjectRole
+      RoleName: PuppetGenerateRole
       Path: /servicecatalog-puppet/
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
       Policies:
-        - PolicyName: Org
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - sts:AssumeRole
-                Resource: !Ref OrgIamRoleArn
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: "Allow"
-            Principal:
-              Service:
-                - "codebuild.amazonaws.com"
-            Action:
-              - "sts:AssumeRole"
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
-
-  GenerateRoleNotForOrg:
-    Type: AWS::IAM::Role
-    Condition: ShouldNotUseOrgs
-    Properties:
-      RoleName: PuppetGenerateProjectRole
-      Path: /servicecatalog-puppet/
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: "Allow"
-            Principal:
-              Service:
-                - "codebuild.amazonaws.com"
-            Action:
-              - "sts:AssumeRole"
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - !If
+          - ShouldUseOrgs
+          - PolicyName: Org
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - sts:AssumeRole
+                  Resource: !Ref OrgIamRoleArn
+          - !Ref AWS::NoValue
 
   DeployRole:
     Type: AWS::IAM::Role
@@ -288,7 +271,7 @@ Resources:
     Properties:
       Name: servicecatalog-puppet-generate
       Description: "builds out the products to be deployed"
-      ServiceRole: !If [ShouldUseOrgs, !GetAtt GenerateRoleForOrg.Arn, !GetAtt GenerateRoleNotForOrg.Arn]
+      ServiceRole: !GetAtt GenerateRole.Arn
       Artifacts:
         Type: CODEPIPELINE
       Environment:
@@ -354,7 +337,7 @@ Resources:
     Properties:
       Name: servicecatalog-puppet-single-account-run
       Description: "Runs puppet for a single account - SINGLE_ACCOUNT_ID"
-      ServiceRole: !If [ShouldUseOrgs, !GetAtt GenerateRoleForOrg.Arn, !GetAtt GenerateRoleNotForOrg.Arn]
+      ServiceRole: !GetAtt GenerateRole.Arn
       Artifacts:
         Type: NO_ARTIFACTS
       Environment:
