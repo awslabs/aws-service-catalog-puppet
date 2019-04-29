@@ -529,6 +529,7 @@ def deploy_launches_for_region_and_product(
                 already_provisioned_successfully = True
 
         if not already_provisioned_successfully or provisioned_product.get('ProvisioningArtifactId') != provisioning_artifact_id:
+
             logger.info('Creating plan, params: {}'.format(params))
             response = service_catalog.create_provisioned_product_plan(
                 PlanName=stack_name,
@@ -589,6 +590,7 @@ def deploy_launches_for_region_and_product(
                 logger.info("Product provisioned")
             else:
                 raise Exception("Execute was not successful: {}".format(execute_status))
+            service_catalog.delete_provisioned_product_plan(PlanId=plan_id)
 
 
 def deploy_launches(deployment_map, parameters, single_account, puppet_account_id):
