@@ -764,6 +764,7 @@ def seed(complexity, p):
 @cli.command()
 @click.argument('f', type=click.File())
 def list_launches(f):
+    click.echo("Getting details from your account...")
     ALL_REGIONS = get_regions()
     manifest = yaml.safe_load(f.read())
     account_ids = [a.get('account_id') for a in manifest.get('accounts')]
