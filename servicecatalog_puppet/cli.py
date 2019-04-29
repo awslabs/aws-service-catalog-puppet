@@ -230,8 +230,6 @@ def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name,
                         portfolio_id = portfolio_detail.get('Id')
                         break
 
-
-
             assert portfolio_id is not None, "Could not find portfolio"
             logger.info("Found portfolio: {}".format(portfolio_id))
 
@@ -557,7 +555,8 @@ def deploy_launches_for_region_and_product(
                     }
                 ],
                 NotificationArns=[
-                    "arn:aws:sns:{}:{}:servicecatalog-puppet-cloudformation-events".format(HOME_REGION, puppet_account_id),
+                    "arn:aws:sns:{}:{}:servicecatalog-puppet-cloudformation-events".format(HOME_REGION,
+                                                                                           puppet_account_id),
                 ],
             )
             logger.info('Plan created, waiting for completion')
@@ -638,7 +637,8 @@ def deploy_launches(deployment_map, parameters, single_account, puppet_account_i
 @click.argument('puppet_account_id')
 @click.argument('iam_role_arn')
 def bootstrap_spoke_as(puppet_account_id, iam_role_arn):
-    with betterboto_client.CrossAccountClientContextManager('cloudformation', iam_role_arn, 'bootstrapping') as cloudformation:
+    with betterboto_client.CrossAccountClientContextManager('cloudformation', iam_role_arn,
+                                                            'bootstrapping') as cloudformation:
         do_bootstrap_spoke(puppet_account_id, cloudformation)
 
 
@@ -767,10 +767,10 @@ def list_launches(f):
     click.echo("Getting details from your account...")
     ALL_REGIONS = get_regions()
     manifest = yaml.safe_load(f.read())
+    deployment_map = build_deployment_map(manifest)
+
     account_ids = [a.get('account_id') for a in manifest.get('accounts')]
-    table_data = [
-        ['Account', 'Region', 'Portfolio', 'Launch','Product', 'Version', 'Status']
-    ]
+    deployments = {}
     for account_id in account_ids:
         for region_name in ALL_REGIONS:
             role = "arn:aws:iam::{}:role/{}".format(account_id, 'servicecatalog-puppet/PuppetRole')
@@ -790,19 +790,28 @@ def list_launches(f):
                         for provisioned_product in response.get('ProvisionedProducts', []):
                             launch_name = provisioned_product.get('Name')
                             status = provisioned_product.get('Status')
-                            if status == "AVAILABLE":
-                                status = Color("{green}"+status+"{/green}")
-                            else:
-                                status = Color("{red}"+status+"{/red}")
-                            table_data.append([
-                                account_id,
-                                region_name,
-                                portfolio.get('DisplayName'),
-                                launch_name,
-                                manifest.get('launches').get(launch_name).get('product'),
-                                manifest.get('launches').get(launch_name).get('version'),
-                                status,
-                            ])
+
+                            provisioning_artifact_response = spoke_service_catalog.describe_provisioning_artifact(
+                                ProvisioningArtifactId=provisioned_product.get('ProvisioningArtifactId'),
+                                ProductId=provisioned_product.get('ProductId'),
+                            ).get('ProvisioningArtifactDetail')
+
+                            if deployments.get(account_id) is None:
+                                deployments[account_id] = {'account_id': account_id, 'launches': {}}
+
+
+                            if deployments[account_id]['launches'].get(launch_name) is None:
+                                deployments[account_id]['launches'][launch_name] = {}
+
+                            deployments[account_id]['launches'][launch_name][region_name] = {
+                                    'launch_name': launch_name,
+                                    'portfolio': portfolio.get('DisplayName'),
+                                    'product': manifest.get('launches').get(launch_name).get('product'),
+                                    'version': provisioning_artifact_response.get('Name'),
+                                    'active': provisioning_artifact_response.get('Active'),
+                                    'region': region_name,
+                                    'status': status,
+                            }
                             output_path = os.path.sep.join([
                                 LAUNCHES,
                                 account_id,
@@ -817,7 +826,47 @@ def list_launches(f):
                                     provisioned_product,
                                     indent=4, default=str
                                 ))
-    click.echo(AsciiTable(table_data).table)
+
+    table = [
+        ['account_id', 'region', 'launch', 'portfolio', 'product', 'expected_version', 'actual_version', 'active', 'status']
+    ]
+    for account_id, details in deployment_map.items():
+        for launch_name, launch in details.get('launches').items():
+            if deployments.get(account_id).get('launches').get(launch_name) is None:
+                pass
+            else:
+                for region, regional_details in deployments[account_id]['launches'][launch_name].items():
+                    if regional_details.get('status') == "AVAILABLE":
+                        status = Color("{green}" + regional_details.get('status') + "{/green}")
+                    else:
+                        status = Color("{red}" + regional_details.get('status') + "{/red}")
+                    expected_version = launch.get('version')
+                    actual_version = regional_details.get('version')
+                    if expected_version == actual_version:
+                        actual_version = Color("{green}" + actual_version + "{/green}")
+                    else:
+                        actual_version = Color("{red}" + actual_version + "{/red}")
+                    active = regional_details.get('active')
+                    if active:
+                        active = Color("{green}" + str(active) + "{/green}")
+                    else:
+                        active = Color("{orange}" + str(active) + "{/orange}")
+                    table.append([
+                        account_id,
+                        region,
+                        launch_name,
+                        regional_details.get('portfolio'),
+                        regional_details.get('product'),
+                        expected_version,
+                        actual_version,
+                        active,
+                        status,
+                    ])
+    click.echo(AsciiTable(table).table)
+
+
+
+
 
 
 def expand_path(account, client):
@@ -1005,7 +1054,7 @@ def deploy_templates_into_regions(p, stack_name_suffix):
             cloudformation.create_or_update(
                 StackName=stack_name,
                 TemplateBody=template,
-                Capabilities= ['CAPABILITY_NAMED_IAM'],
+                Capabilities=['CAPABILITY_NAMED_IAM'],
             )
 
 
