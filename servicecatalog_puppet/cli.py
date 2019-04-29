@@ -525,10 +525,10 @@ def deploy_launches_for_region_and_product(
                         break
 
             elif provisioned_product.get('Status') == 'AVAILABLE':
-                logger.info('Already provisioned product')
+                logger.info('Already provisioned product: {}'.format(provisioned_product.get('ProvisioningArtifactId')))
                 already_provisioned_successfully = True
 
-        if not already_provisioned_successfully:
+        if not already_provisioned_successfully or provisioned_product.get('ProvisioningArtifactId') != provisioning_artifact_id:
             logger.info('Creating plan, params: {}'.format(params))
             response = service_catalog.create_provisioned_product_plan(
                 PlanName=stack_name,
