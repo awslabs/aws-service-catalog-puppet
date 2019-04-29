@@ -113,7 +113,7 @@ Resources:
           - Sid: "{{ account_id }}"
             Effect: Allow
             Principal:
-              AWS: "{{ account_id }}"
+              AWS: !Sub "arn:aws:iam::{{ account_id }}:root"
             Action: sns:Publish
             Resource: "*"
 
