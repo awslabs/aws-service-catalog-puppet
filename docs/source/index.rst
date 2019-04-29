@@ -9,4 +9,5 @@ Welcome to aws-service-catalog-puppets's documentation!
    puppet/getting_up_and_running
    puppet/designing_your_manifest
    puppet/notifications
+   puppet/utils
    puppet/upgrading
