@@ -98,9 +98,7 @@ Resources:
       Timeout: 30
 
 
-{% for account_id, portfolios in portfolio_use_by_account.items() %}
-  {% if account_id != host_account_id %}
-  TopicPolicyFor{{ account_id }}:
+  TopicPolicies:
     Type: AWS::SNS::TopicPolicy
     Condition: RunningInHomeRegion
     Properties:
@@ -109,28 +107,30 @@ Resources:
       PolicyDocument:
         Id: MyTopicPolicy
         Version: '2012-10-17'
-        Statement:
+        Statement: {% for account_id, portfolios in portfolio_use_by_account.items() %} {% if account_id != host_account_id %}
           - Sid: "{{ account_id }}"
             Effect: Allow
             Principal:
               AWS: !Sub "arn:aws:iam::{{ account_id }}:root"
             Action: sns:Publish
-            Resource: "*"
+            Resource: "*"{% endif %}{% endfor %}
 
-  BucketPolicyFor{{ account_id }}:
+
+  BucketPolicies:
     Type: AWS::S3::BucketPolicy
     Properties:
       Bucket: !Sub "sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}"
       PolicyDocument:
-        Statement:
+        Statement:{% for account_id, portfolios in portfolio_use_by_account.items() %} {% if account_id != host_account_id %}
           - Action:
               - "s3:GetObject"
             Effect: "Allow"
             Resource: !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
             Principal:
-              AWS: "arn:aws:iam::{{ account_id }}:root"
-  {% endif %}
+              AWS: "arn:aws:iam::{{ account_id }}:root"{% endif %}{% endfor %}
 
+
+{% for account_id, portfolios in portfolio_use_by_account.items() %}
 {% for portfolio in portfolios %}
 {% if account_id != host_account_id %}
 
