@@ -15,6 +15,8 @@ from pykwalify.core import Core
 from jinja2 import Environment, FileSystemLoader, Template
 from betterboto import client as betterboto_client
 import pkg_resources
+from terminaltables import AsciiTable
+from colorclass import Color
 
 VERSION = pkg_resources.require("aws-service-catalog-puppet")[0].version
 
@@ -765,9 +767,13 @@ def list_launches(f):
     ALL_REGIONS = get_regions()
     manifest = yaml.safe_load(f.read())
     account_ids = [a.get('account_id') for a in manifest.get('accounts')]
+    table_data = [
+        ['Account', 'Region', 'Portfolio', 'Launch','Product', 'Version', 'Status']
+    ]
     for account_id in account_ids:
         for region_name in ALL_REGIONS:
             role = "arn:aws:iam::{}:role/{}".format(account_id, 'servicecatalog-puppet/PuppetRole')
+            logger.info("Looking at region: {} in account: {}".format(region_name, account_id))
             with betterboto_client.CrossAccountClientContextManager(
                     'servicecatalog', role, 'sc-{}-{}'.format(account_id, region_name), region_name=region_name
             ) as spoke_service_catalog:
@@ -781,6 +787,21 @@ def list_launches(f):
                         response = spoke_service_catalog.search_provisioned_products(
                             Filters={'SearchQuery': ["productId:{}".format(product_id)]})
                         for provisioned_product in response.get('ProvisionedProducts', []):
+                            launch_name = provisioned_product.get('Name')
+                            status = provisioned_product.get('Status')
+                            if status == "AVAILABLE":
+                                status = Color("{green}"+status+"{/green}")
+                            else:
+                                status = Color("{red}"+status+"{/red}")
+                            table_data.append([
+                                account_id,
+                                region_name,
+                                portfolio.get('DisplayName'),
+                                launch_name,
+                                manifest.get('launches').get(launch_name).get('product'),
+                                manifest.get('launches').get(launch_name).get('version'),
+                                status,
+                            ])
                             output_path = os.path.sep.join([
                                 LAUNCHES,
                                 account_id,
@@ -795,6 +816,7 @@ def list_launches(f):
                                     provisioned_product,
                                     indent=4, default=str
                                 ))
+    click.echo(AsciiTable(table_data).table)
 
 
 def expand_path(account, client):
