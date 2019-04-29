@@ -504,7 +504,7 @@ def deploy_launches_for_region_and_product(
                 'SearchQuery': ['productId:{}'.format(product_id)]
             }
         )
-        already_provisioned_successfully = False
+        needs_to_be_provisioned = True
         for provisioned_product in response.get('ProvisionedProducts', []):
             logger.info("Found previous vend of product: {}".format(provisioned_product))
             if provisioned_product.get('Status') == 'ERROR':
@@ -525,10 +525,20 @@ def deploy_launches_for_region_and_product(
                         break
 
             elif provisioned_product.get('Status') == 'AVAILABLE':
-                logger.info('Already provisioned product')
-                already_provisioned_successfully = True
+                logger.info('Already provisioned product: {}'.format(provisioned_product.get('ProvisioningArtifactId')))
+                if provisioned_product.get('ProvisioningArtifactId') != provisioning_artifact_id:
+                    needs_to_be_provisioned = True
+                    r = service_catalog.list_provisioned_product_plans(
+                        ProvisionProductId=provisioned_product.get('Id')
+                    )
+                    for provisioned_product_plan in r.get('ProvisionedProductPlans', []):
+                        service_catalog.delete_provisioned_product_plan(
+                            PlanId=provisioned_product_plan.get('PlanId'),
+                        )
+                else:
+                    needs_to_be_provisioned = False
 
-        if not already_provisioned_successfully:
+        if needs_to_be_provisioned:
             logger.info('Creating plan, params: {}'.format(params))
             response = service_catalog.create_provisioned_product_plan(
                 PlanName=stack_name,
@@ -589,6 +599,7 @@ def deploy_launches_for_region_and_product(
                 logger.info("Product provisioned")
             else:
                 raise Exception("Execute was not successful: {}".format(execute_status))
+            service_catalog.delete_provisioned_product_plan(PlanId=plan_id)
 
 
 def deploy_launches(deployment_map, parameters, single_account, puppet_account_id):
