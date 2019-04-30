@@ -334,16 +334,33 @@ def write_templates(deployment_map):
     logger.info('Finished writing the templates')
 
 
-def write_share_template(portfolio_use_by_account, region, host_account_id):
+def generate_bucket_policies_for_shares(deployment_map):
+    shares = {
+        'accounts': [],
+        'ous': [],
+    }
+    for account_id, deployment in deployment_map.items():
+        if deployment.get('expanded_from') is None:
+            if account_id not in shares['accounts']:
+                shares['accounts'].append(account_id)
+        else:
+            if deployment.get('expanded_from') not in shares['ous']:
+                shares['ous'].append(deployment.get('expanded_from'))
+    return shares
+
+
+def write_share_template(portfolio_use_by_account, region, host_account_id, sharing_policies):
     output = os.path.sep.join([TEMPLATES, 'shares', region])
     if not os.path.exists(output):
         os.makedirs(output)
+
     with open(os.sep.join([output, "shares.template.yaml"]), 'w') as f:
         f.write(
             env.get_template('shares.template.yaml.j2').render(
                 portfolio_use_by_account=portfolio_use_by_account,
                 host_account_id=host_account_id,
                 HOME_REGION=HOME_REGION,
+                sharing_policies=sharing_policies,
             )
         )
 
@@ -404,7 +421,8 @@ def create_share_template(deployment_map):
                     if p not in portfolio_use_by_account[account_id]:
                         portfolio_use_by_account[account_id].append(p)
             host_account_id = response.get('PortfolioDetails')[0].get('ARN').split(":")[4]
-            write_share_template(portfolio_use_by_account, region, host_account_id)
+            sharing_policies = generate_bucket_policies_for_shares(deployment_map)
+            write_share_template(portfolio_use_by_account, region, host_account_id, sharing_policies)
 
 
 @cli.command()
