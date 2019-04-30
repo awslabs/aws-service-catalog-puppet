@@ -119,6 +119,7 @@ Resources:
               - sns:Publish
             Effect: "Allow"
             Resource: "*"
+            Principal: "*"
             Condition:
               StringEquals:
                 aws:PrincipalOrgID: {{ ou }}{% endfor %}
@@ -141,6 +142,7 @@ Resources:
               - "s3:GetObject"
             Effect: "Allow"
             Resource: !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
+            Principal: "*"
             Condition:
               StringEquals:
                 aws:PrincipalOrgID: {{ ou }}{% endfor %}
