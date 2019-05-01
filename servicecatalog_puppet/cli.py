@@ -132,9 +132,10 @@ def check_for_duplicate_products_in_launches(launches_by_product):
                     accounts_seen[account_id] = product_launch
                 else:
                     raise Exception(
-                        "Cannot process {}.  Account {} is already listed in launch: {}".format(
+                        "Cannot process {}. {} is already receiving product: {} as it was listed in launch: {}".format(
                             product_launch.get('launch_name'),
                             account_id,
+                            accounts_seen[account_id].get('product'),
                             accounts_seen[account_id].get('launch_name'),
                         )
                     )
@@ -378,7 +379,7 @@ def build_deployment_map(manifest):
     verify_no_ous_in_manifest(accounts)
 
     launches_by_product = group_by_product(launches)
-    check_for_duplicate_products_in_launches(launches_by_product)
+    # check_for_duplicate_products_in_launches(launches_by_product)
     launches_by_tag = group_by_tag(launches)
     launches_by_account = group_by_account(launches)
 
@@ -444,209 +445,255 @@ def deploy(f, single_account):
     logger.info('Starting to deploy')
     with betterboto_client.ClientContextManager('sts') as sts:
         puppet_account_id = sts.get_caller_identity().get('Account')
-    deploy_launches(deployment_map, manifest.get('parameters', {}), single_account, puppet_account_id)
+    deploy_launches(
+        deployment_map,
+        manifest.get('parameters', {}),
+        single_account,
+        puppet_account_id
+    )
     logger.info('Finished deploy')
 
 
-def deploy_launches_for_region(region, account, role, deployment_map, parameters, puppet_account_id):
-    logger.info("Starting region: {}".format(region))
-    templates = os.listdir(os.sep.join([TEMPLATES, account, region]))
-    for template_name in templates:
-        deploy_launches_for_region_and_product(
-            region, account, role, deployment_map, parameters, template_name, puppet_account_id
+def deploy_launches(deployment_map, parameters, single_account, puppet_account_id):
+    logger.info('Deploying launches')
+    streams = {}
+    threads = []
+    for account_id, deployments in deployment_map.items():
+        if single_account is None or account_id == single_account:
+            for launch_name, launch_details in deployments.get('launches').items():
+                for region in launch_details.get('regions', []):
+                    stream_name = "{}/{}".format(account_id, region)
+                    if streams.get(stream_name) is None:
+                        streams[stream_name] = []
+                    location = 0
+                    for dependency in launch_details.get('depends_on', []):
+                        for l in streams[stream_name]:
+                            if l.get('launch_name') == dependency:
+                                location = streams[stream_name].index(l) + 1
+                                print(location)
+                    streams[stream_name].insert(location, launch_details)
+
+    for stream_name, stream in streams.items():
+        process = Thread(
+            name=stream_name,
+            target=process_stream,
+            args=[stream_name, stream, parameters, puppet_account_id, deployment_map]
         )
+        process.start()
+        threads.append(process)
+    for thread in threads:
+        thread.join()
 
 
-def deploy_launches_for_region_and_product(
-        region, account, role, deployment_map, parameters, template_name, puppet_account_id
-):
-    logger.info("Starting template: {} in region: {}".format(template_name, region))
-    launch_name = template_name.replace('.template.yaml', '')
-    stack_name = "-".join([PREFIX, account, region, launch_name])
-    template_contents = open(os.sep.join([TEMPLATES, account, region, template_name]), 'r').read()
-    template = yaml.safe_load(template_contents)
-    template_properties = template.get('Resources').get('CloudFormationProvisionedProduct').get('Properties')
+def is_launch_deployed_to_account_and_region_already(service_catalog, launch, provisioning_artifact_id, product_id):
+    logger.info('is launch: {} deployed'.format(launch.get('launch_name')))
 
-    product_id = template_properties.get('ProductId')
-    provisioning_artifact_id = template_properties.get('ProvisioningArtifactId')
-    provisioned_product_name = template_properties.get('ProvisionedProductName')
+    response = service_catalog.search_provisioned_products(
+        Filters={'SearchQuery': [
+            "productId:{}".format(product_id)
+        ]}
+    )
 
-    with betterboto_client.CrossAccountClientContextManager(
-            'servicecatalog', role, "servicecatalog_for_account_{}".format(account), region_name=region
-    ) as service_catalog:
-
-        logger.info('Getting path for product')
-        response = service_catalog.list_launch_paths(ProductId=product_id)
-        if len(response.get('LaunchPathSummaries')) != 1:
-            raise Exception("Found unexpected amount of LaunchPathSummaries")
-        path_id = response.get('LaunchPathSummaries')[0].get('Id')
-        logger.info('Got path for product')
-
-        logger.info(
-            "About to get provisioning params for: {} {} in path: {}".format(
-                product_id,
-                provisioning_artifact_id,
-                path_id
-            )
-        )
-        response = service_catalog.describe_provisioning_parameters(
-            ProductId=product_id,
-            ProvisioningArtifactId=provisioning_artifact_id,
-            PathId=path_id,
-        )
-        params = []
-        for provisioning_artifact_parameters in response.get('ProvisioningArtifactParameters', []):
-            parameter_key = provisioning_artifact_parameters.get('ParameterKey')
-            if deployment_map.get(account).get('parameters', {}).get(parameter_key, {}).get('default'):
-                params.append({
-                    'Key': str(parameter_key),
-                    'Value': str(deployment_map.get(account).get('parameters', {}).get(parameter_key, {}).get(
-                        'default'))
-                })
-            elif deployment_map.get(account).get('launches', {}).get(launch_name, {}).get('parameters', {}).get(
-                    parameter_key, {}).get('default'):
-                params.append({
-                    'Key': str(parameter_key),
-                    'Value': str(deployment_map.get(account).get('launches', {}).get(launch_name, {}).get(
-                        'parameters', {}).get(parameter_key, {}).get('default'))
-                })
-            elif parameters.get(parameter_key, {}).get('default'):
-                params.append({
-                    'Key': str(parameter_key),
-                    'Value': str(parameters.get(parameter_key, {}).get('default'))
-                })
-
-        logger.info('Checking for previously provisioned products')
-        response = service_catalog.search_provisioned_products(
-            Filters={
-                'SearchQuery': ['productId:{}'.format(product_id)]
-            }
-        )
-        needs_to_be_provisioned = True
-        for provisioned_product in response.get('ProvisionedProducts', []):
-            logger.info("Found previous vend of product: {}".format(provisioned_product))
-            if provisioned_product.get('Status') == 'ERROR':
-                logger.info("Removing product: {}".format(provisioned_product.get('Id')))
+    for r in response.get('ProvisionedProducts', []):
+        if r.get('Name') == launch.get('launch_name'):
+            if r.get('Status') == "AVAILABLE" and False:
+                logger.info("Product and version has been provisioned already")
+                if r.get('ProvisioningArtifactId') == provisioning_artifact_id:
+                    return True
+                else:
+                    return False
+            else:
+                logger.info("Product and version needs terminating: {}".format(r.get('Status')))
                 service_catalog.terminate_provisioned_product(
-                    ProvisionedProductId=provisioned_product.get('Id')
+                    ProvisionedProductId=r.get('Id')
                 )
                 logger.info("now waiting for delete")
                 while True:
                     response = service_catalog.search_provisioned_products(
                         Filters={
-                            'SearchQuery': ['id:{}'.format(provisioned_product.get('Id'))]
+                            'SearchQuery': ['name:{}'.format(launch.get('launch_name'))]
                         }
                     )
                     if len(response.get('ProvisionedProducts')) > 0:
                         time.sleep(5)
                     else:
                         break
+    return False
 
-            elif provisioned_product.get('Status') == 'AVAILABLE':
-                logger.info('Already provisioned product: {}'.format(provisioned_product.get('ProvisioningArtifactId')))
-                if provisioned_product.get('ProvisioningArtifactId') != provisioning_artifact_id:
-                    needs_to_be_provisioned = True
-                    r = service_catalog.list_provisioned_product_plans(
-                        ProvisionProductId=provisioned_product.get('Id')
-                    )
-                    for provisioned_product_plan in r.get('ProvisionedProductPlans', []):
-                        service_catalog.delete_provisioned_product_plan(
-                            PlanId=provisioned_product_plan.get('PlanId'),
-                        )
-                else:
-                    needs_to_be_provisioned = False
 
-        if needs_to_be_provisioned:
-            logger.info('Creating plan, params: {}'.format(params))
-            response = service_catalog.create_provisioned_product_plan(
-                PlanName=stack_name,
-                PlanType='CLOUDFORMATION',
-                PathId=path_id,
-                ProductId=product_id,
-                ProvisionedProductName=provisioned_product_name,
-                ProvisioningArtifactId=provisioning_artifact_id,
-                ProvisioningParameters=params,
-                Tags=[
-                    {
-                        'Key': 'launch_name',
-                        'Value': launch_name,
-                    }
-                ],
-                NotificationArns=[
-                    "arn:aws:sns:{}:{}:servicecatalog-puppet-cloudformation-events".format(HOME_REGION,
-                                                                                           puppet_account_id),
-                ],
+def deploy_launch_to_account_and_region(
+        service_catalog,
+        launch,
+        account,
+        region,
+        product_id,
+        provisioning_artifact_id,
+        provisioned_product_name,
+        puppet_account_id,
+        path_id,
+        params
+):
+    launch_name = launch.get('launch_name')
+    stack_name = "-".join([PREFIX, account, region, launch_name])
+
+    logger.info('Creating plan, params: {}'.format(params))
+    response = service_catalog.create_provisioned_product_plan(
+        PlanName=stack_name,
+        PlanType='CLOUDFORMATION',
+        PathId=path_id,
+        ProductId=product_id,
+        ProvisionedProductName=provisioned_product_name,
+        ProvisioningArtifactId=provisioning_artifact_id,
+        ProvisioningParameters=params,
+        Tags=[
+            {
+                'Key': 'launch_name',
+                'Value': launch_name,
+            }
+        ],
+        NotificationArns=[
+            "arn:aws:sns:{}:{}:servicecatalog-puppet-cloudformation-events".format(
+                HOME_REGION,
+                puppet_account_id
+            ),
+        ],
+    )
+    logger.info('Plan created, waiting for completion')
+
+    plan_id = response.get('PlanId')
+    plan_status = 'CREATE_IN_PROGRESS'
+
+    while plan_status == 'CREATE_IN_PROGRESS':
+        response = service_catalog.describe_provisioned_product_plan(
+            PlanId=plan_id
+        )
+        plan_status = response.get('ProvisionedProductPlanDetails').get('Status')
+        logger.info('Waiting for product plan: {}'.format(plan_status))
+        time.sleep(5)
+
+    if plan_status == 'CREATE_SUCCESS':
+        logging.info(
+            'Changes in the product: {}'.format(
+                yaml.safe_dump(response.get('ResourceChanges'))
             )
-            logger.info('Plan created, waiting for completion')
+        )
+    else:
+        raise Exception(
+            "Plan was not successful: {}".format(
+                response.get('ProvisionedProductPlanDetails').get('StatusMessage')
+            )
+        )
 
-            plan_id = response.get('PlanId')
-            plan_status = 'CREATE_IN_PROGRESS'
+    logger.info("Executing product plan")
+    service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
+    execute_status = 'EXECUTE_IN_PROGRESS'
+    while execute_status == 'EXECUTE_IN_PROGRESS':
+        response = service_catalog.describe_provisioned_product_plan(
+            PlanId=plan_id
+        )
+        execute_status = response.get('ProvisionedProductPlanDetails').get('Status')
+        logger.info('Waiting for execute: {}'.format(execute_status))
+        time.sleep(5)
 
-            while plan_status == 'CREATE_IN_PROGRESS':
-                response = service_catalog.describe_provisioned_product_plan(
-                    PlanId=plan_id
+    if execute_status == 'CREATE_SUCCESS':
+        logger.info("Product provisioned")
+    else:
+        raise Exception("Execute was not successful: {}".format(execute_status))
+    service_catalog.delete_provisioned_product_plan(PlanId=plan_id)
+
+
+def generate_params(account, deployment_map, launch_name, parameters, path_id, product_id, provisioning_artifact_id,
+                    service_catalog):
+    response = service_catalog.describe_provisioning_parameters(
+        ProductId=product_id,
+        ProvisioningArtifactId=provisioning_artifact_id,
+        PathId=path_id,
+    )
+    params = []
+    for provisioning_artifact_parameters in response.get('ProvisioningArtifactParameters', []):
+        parameter_key = provisioning_artifact_parameters.get('ParameterKey')
+        if deployment_map.get(account).get('parameters', {}).get(parameter_key, {}).get('default'):
+            params.append({
+                'Key': str(parameter_key),
+                'Value': str(deployment_map.get(account).get('parameters', {}).get(parameter_key, {}).get(
+                    'default'))
+            })
+        elif deployment_map.get(account).get('launches', {}).get(launch_name, {}).get('parameters', {}).get(
+                parameter_key, {}).get('default'):
+            params.append({
+                'Key': str(parameter_key),
+                'Value': str(deployment_map.get(account).get('launches', {}).get(launch_name, {}).get(
+                    'parameters', {}).get(parameter_key, {}).get('default'))
+            })
+        elif parameters.get(parameter_key, {}).get('default'):
+            params.append({
+                'Key': str(parameter_key),
+                'Value': str(parameters.get(parameter_key, {}).get('default'))
+            })
+    return params
+
+
+def process_stream(stream_name, stream, parameters, puppet_account_id, deployment_map):
+    logger.info("Processing stream of length: {}".format(len(stream)))
+
+    account, region = stream_name.split("/")
+    role = "arn:aws:iam::{}:role/{}".format(account, 'servicecatalog-puppet/PuppetRole')
+    with betterboto_client.CrossAccountClientContextManager(
+            'servicecatalog', role, stream_name.replace("/", "-")
+    ) as service_catalog:
+        for launch in stream:
+            logger.info('is launch: {} deployed'.format(launch.get('launch_name')))
+            path = os.path.sep.join([
+                TEMPLATES,
+                account,
+                region,
+                "{}.template.yaml".format(launch.get('launch_name'))
+            ])
+            template_contents = open(path, 'r').read()
+            template = yaml.safe_load(template_contents)
+            template_properties = template.get('Resources').get('CloudFormationProvisionedProduct').get(
+                'Properties')
+            product_id = template_properties.get('ProductId')
+            provisioning_artifact_id = template_properties.get('ProvisioningArtifactId')
+            provisioned_product_name = template_properties.get('ProvisionedProductName')
+            launch_name = launch.get('launch_name')
+
+            if not is_launch_deployed_to_account_and_region_already(
+                    service_catalog,
+                    launch,
+                    provisioning_artifact_id,
+                    product_id,
+            ):
+                logger.info('Getting path for product')
+                response = service_catalog.list_launch_paths(ProductId=product_id)
+                if len(response.get('LaunchPathSummaries')) != 1:
+                    raise Exception("Found unexpected amount of LaunchPathSummaries")
+                path_id = response.get('LaunchPathSummaries')[0].get('Id')
+                logger.info('Got path for product')
+
+                params = generate_params(
+                    account,
+                    deployment_map,
+                    launch_name,
+                    parameters,
+                    path_id,
+                    product_id,
+                    provisioning_artifact_id,
+                    service_catalog
                 )
-                plan_status = response.get('ProvisionedProductPlanDetails').get('Status')
-                logger.info('Waiting for product plan: {}'.format(plan_status))
-                time.sleep(5)
 
-            if plan_status == 'CREATE_SUCCESS':
-                logging.info(
-                    'Changes in the product: {}'.format(
-                        yaml.safe_dump(response.get('ResourceChanges'))
-                    )
+                deploy_launch_to_account_and_region(
+                    service_catalog,
+                    launch,
+                    account,
+                    region,
+                    product_id,
+                    provisioning_artifact_id,
+                    provisioned_product_name,
+                    puppet_account_id,
+                    path_id,
+                    params,
                 )
-            else:
-                raise Exception(
-                    "Plan was not successful: {}".format(
-                        response.get('ProvisionedProductPlanDetails').get('StatusMessage')
-                    )
-                )
-
-            logger.info("Executing product plan")
-            service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
-            execute_status = 'EXECUTE_IN_PROGRESS'
-            while execute_status == 'EXECUTE_IN_PROGRESS':
-                response = service_catalog.describe_provisioned_product_plan(
-                    PlanId=plan_id
-                )
-                execute_status = response.get('ProvisionedProductPlanDetails').get('Status')
-                logger.info('Waiting for execute: {}'.format(execute_status))
-                time.sleep(5)
-
-            if execute_status == 'CREATE_SUCCESS':
-                logger.info("Product provisioned")
-            else:
-                raise Exception("Execute was not successful: {}".format(execute_status))
-            service_catalog.delete_provisioned_product_plan(PlanId=plan_id)
-
-
-def deploy_launches(deployment_map, parameters, single_account, puppet_account_id):
-    logger.info('Deploying launches')
-    accounts = os.listdir(TEMPLATES)
-    logger.info('Creating stacks')
-    threads = []
-    for account in accounts:
-        if account == "shares":
-            continue
-        if single_account is None or account == single_account:
-            logger.info('Deploying to: {}'.format(account))
-            regions = os.listdir(os.sep.join([TEMPLATES, account]))
-
-            role = "arn:aws:iam::{}:role/{}".format(account, 'servicecatalog-puppet/PuppetRole')
-            for region in regions:
-                process = Thread(
-                    name='-'.join([account, region]),
-                    target=deploy_launches_for_region,
-                    args=[
-                        region, account, role, deployment_map, parameters, puppet_account_id
-                    ]
-                )
-                process.start()
-                threads.append(process)
-
-        for process in threads:
-            process.join()
 
     logger.info('Finished creating stacks')
 
@@ -817,18 +864,17 @@ def list_launches(f):
                             if deployments.get(account_id) is None:
                                 deployments[account_id] = {'account_id': account_id, 'launches': {}}
 
-
                             if deployments[account_id]['launches'].get(launch_name) is None:
                                 deployments[account_id]['launches'][launch_name] = {}
 
                             deployments[account_id]['launches'][launch_name][region_name] = {
-                                    'launch_name': launch_name,
-                                    'portfolio': portfolio.get('DisplayName'),
-                                    'product': manifest.get('launches').get(launch_name).get('product'),
-                                    'version': provisioning_artifact_response.get('Name'),
-                                    'active': provisioning_artifact_response.get('Active'),
-                                    'region': region_name,
-                                    'status': status,
+                                'launch_name': launch_name,
+                                'portfolio': portfolio.get('DisplayName'),
+                                'product': manifest.get('launches').get(launch_name).get('product'),
+                                'version': provisioning_artifact_response.get('Name'),
+                                'active': provisioning_artifact_response.get('Active'),
+                                'region': region_name,
+                                'status': status,
                             }
                             output_path = os.path.sep.join([
                                 LAUNCHES,
@@ -846,7 +892,8 @@ def list_launches(f):
                                 ))
 
     table = [
-        ['account_id', 'region', 'launch', 'portfolio', 'product', 'expected_version', 'actual_version', 'active', 'status']
+        ['account_id', 'region', 'launch', 'portfolio', 'product', 'expected_version', 'actual_version', 'active',
+         'status']
     ]
     for account_id, details in deployment_map.items():
         for launch_name, launch in details.get('launches').items():
