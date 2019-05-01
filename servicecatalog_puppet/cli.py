@@ -337,15 +337,15 @@ def write_templates(deployment_map):
 def generate_bucket_policies_for_shares(deployment_map):
     shares = {
         'accounts': [],
-        'ous': [],
+        'organizations': [],
     }
     for account_id, deployment in deployment_map.items():
         if deployment.get('expanded_from') is None:
             if account_id not in shares['accounts']:
                 shares['accounts'].append(account_id)
         else:
-            if deployment.get('expanded_from') not in shares['ous']:
-                shares['ous'].append(deployment.get('expanded_from'))
+            if deployment.get('organization') not in shares['organizations']:
+                shares['organizations'].append(deployment.get('organization'))
     return shares
 
 
@@ -883,10 +883,6 @@ def list_launches(f):
     click.echo(AsciiTable(table).table)
 
 
-
-
-
-
 def expand_path(account, client):
     ou = client.convert_path_to_ou(account.get('ou'))
     account['ou'] = ou
@@ -906,6 +902,7 @@ def expand_ou(original_account, client):
         new_account['email'] = response.get('Account').get('Email')
         new_account['account_id'] = new_account_id
         new_account['expanded_from'] = original_account.get('ou')
+        new_account['organization'] = response.get('Account').get('Arn').split(":")[5].split("/")[1]
         expanded.append(new_account)
     return expanded
 
