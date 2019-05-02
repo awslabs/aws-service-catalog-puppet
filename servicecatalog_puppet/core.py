@@ -315,7 +315,8 @@ def deploy_launch_to_account_and_region(
         provisioned_product_name,
         puppet_account_id,
         path_id,
-        params
+        params,
+        version,
 ):
     launch_name = launch.get('launch_name')
     stack_name = "-".join([PREFIX, account, region, launch_name])
@@ -333,7 +334,11 @@ def deploy_launch_to_account_and_region(
             {
                 'Key': 'launch_name',
                 'Value': launch_name,
-            }
+            },
+            {
+                'Key': 'version',
+                'Value': version,
+            },
         ],
         NotificationArns=[
             "arn:aws:sns:{}:{}:servicecatalog-puppet-cloudformation-events".format(
@@ -477,6 +482,7 @@ def process_stream(stream_name, stream, parameters, puppet_account_id, deploymen
                     puppet_account_id,
                     path_id,
                     params,
+                    launch.get('version'),
                 )
 
     logger.info('Finished creating stacks')
