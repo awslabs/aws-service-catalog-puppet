@@ -46,6 +46,11 @@ def cli(info, info_line_numbers):
         )
 
 
+def get_puppet_account_id():
+    with betterboto_client.ClientContextManager('sts') as sts:
+        return sts.get_caller_identity().get('Account')
+
+
 @cli.command()
 @click.argument('f', type=click.File())
 def generate_shares(f):
@@ -53,7 +58,7 @@ def generate_shares(f):
 
     manifest = manifest_utils.load(f)
     deployment_map = build_deployment_map(manifest)
-    create_share_template(deployment_map)
+    create_share_template(deployment_map, get_puppet_account_id())
 
 
 @cli.command()
@@ -64,13 +69,11 @@ def deploy(f, single_account):
     deployment_map = build_deployment_map(manifest)
     write_templates(deployment_map)
     logger.info('Starting to deploy')
-    with betterboto_client.ClientContextManager('sts') as sts:
-        puppet_account_id = sts.get_caller_identity().get('Account')
     deploy_launches(
         deployment_map,
         manifest.get('parameters', {}),
         single_account,
-        puppet_account_id
+        get_puppet_account_id()
     )
     logger.info('Finished deploy')
 

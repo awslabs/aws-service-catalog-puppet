@@ -161,12 +161,14 @@ def write_templates(deployment_map):
     logger.info('Finished writing the templates')
 
 
-def generate_bucket_policies_for_shares(deployment_map):
+def generate_bucket_policies_for_shares(deployment_map, puppet_account_id):
     shares = {
         'accounts': [],
         'organizations': [],
     }
     for account_id, deployment in deployment_map.items():
+        if account_id == puppet_account_id:
+            continue
         if deployment.get('expanded_from') is None:
             if account_id not in shares['accounts']:
                 shares['accounts'].append(account_id)
@@ -192,7 +194,7 @@ def write_share_template(portfolio_use_by_account, region, host_account_id, shar
         )
 
 
-def create_share_template(deployment_map):
+def create_share_template(deployment_map, puppet_account_id):
     ALL_REGIONS = get_regions()
     for region in ALL_REGIONS:
         logger.info("starting to build shares for region: {}".format(region))
@@ -224,7 +226,7 @@ def create_share_template(deployment_map):
                     if p not in portfolio_use_by_account[account_id]:
                         portfolio_use_by_account[account_id].append(p)
             host_account_id = response.get('PortfolioDetails')[0].get('ARN').split(":")[4]
-            sharing_policies = generate_bucket_policies_for_shares(deployment_map)
+            sharing_policies = generate_bucket_policies_for_shares(deployment_map, puppet_account_id)
             write_share_template(portfolio_use_by_account, region, host_account_id, sharing_policies)
 
 
