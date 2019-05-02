@@ -361,28 +361,36 @@ def create_share_template(deployment_map):
 
 def deploy_launches(deployment_map, parameters, single_account, puppet_account_id):
     logger.info('Deploying launches')
-    streams = {}
-    threads = []
+    streams_without_depends_on= {}
+    streams_with_depends_on = {}
     for account_id, deployments in deployment_map.items():
         if single_account is None or account_id == single_account:
             for launch_name, launch_details in deployments.get('launches').items():
                 for region in launch_details.get('regions', []):
                     stream_name = "{}/{}".format(account_id, region)
-                    if streams.get(stream_name) is None:
-                        streams[stream_name] = []
-                    location = 0
-                    for dependency in launch_details.get('depends_on', []):
-                        for l in streams[stream_name]:
-                            if l.get('launch_name') == dependency:
-                                location = streams[stream_name].index(l) + 1
-                                print(location)
-                    streams[stream_name].insert(location, launch_details)
+                    has_dependency = launch_details.get('depends_on') is None
+                    logger.info("{} has dependencies: {}".format(launch_details.get('launch_name'), has_dependency))
+                    if has_dependency:
+                        if streams_without_depends_on.get(stream_name) is None:
+                            streams_without_depends_on[stream_name] = []
+                        streams_without_depends_on[stream_name].append(launch_details)
+                    else:
+                        if streams_with_depends_on.get(stream_name) is None:
+                            streams_with_depends_on[stream_name] = []
+                        streams_with_depends_on[stream_name].append(launch_details)
 
-    for stream_name, stream in streams.items():
+    deploy_stream("streams_without_depends_on", streams_without_depends_on, parameters, puppet_account_id, deployment_map)
+    deploy_stream("streams_with_depends_on", streams_with_depends_on, parameters, puppet_account_id, deployment_map)
+
+
+def deploy_stream(streams_name, streams, parameters, puppet_account_id, deployment_map):
+    logger.info("deploying streams: {}".format(streams_name))
+    threads = []
+    for stream_name, stream_detail in streams.items():
         process = Thread(
             name=stream_name,
             target=process_stream,
-            args=[stream_name, stream, parameters, puppet_account_id, deployment_map]
+            args=[stream_name, stream_detail, parameters, puppet_account_id, deployment_map]
         )
         process.start()
         threads.append(process)
