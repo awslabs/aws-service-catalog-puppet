@@ -280,7 +280,7 @@ def is_launch_deployed_to_account_and_region_already(service_catalog, launch, pr
 
     for r in response.get('ProvisionedProducts', []):
         if r.get('Name') == launch.get('launch_name'):
-            if r.get('Status') == "AVAILABLE" and False:
+            if r.get('Status') == "AVAILABLE":
                 logger.info("Product and version has been provisioned already")
                 if r.get('ProvisioningArtifactId') == provisioning_artifact_id:
                     return True
