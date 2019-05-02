@@ -4,6 +4,7 @@ import json
 import shutil
 
 import click
+import pkg_resources
 import yaml
 import logging
 import os
@@ -13,12 +14,16 @@ from betterboto import client as betterboto_client
 from terminaltables import AsciiTable
 from colorclass import Color
 
-import core
-from asset_helpers import resolve_from_site_packages
-from constants import LAUNCHES, HOME_REGION, \
+from servicecatalog_puppet.utils import manifest as manifest_utils
+from servicecatalog_puppet.asset_helpers import resolve_from_site_packages
+from servicecatalog_puppet.constants import LAUNCHES, HOME_REGION, \
     CONFIG_PARAM_NAME, CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN
-from core import get_regions, get_org_iam_role_arn, write_templates, build_deployment_map, create_share_template, \
-    deploy_launches, do_bootstrap_spoke, do_bootstrap, do_expand, VERSION
+from servicecatalog_puppet.core import get_regions, get_org_iam_role_arn, write_templates, create_share_template, \
+    deploy_launches
+from servicecatalog_puppet.commands.bootstrap import do_bootstrap
+from servicecatalog_puppet.commands.bootstrap_spoke import do_bootstrap_spoke
+from servicecatalog_puppet.commands.expand import do_expand
+from servicecatalog_puppet.utils.manifest import build_deployment_map
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -45,7 +50,8 @@ def cli(info, info_line_numbers):
 @click.argument('f', type=click.File())
 def generate_shares(f):
     logger.info('Starting to generate shares for: {}'.format(f.name))
-    manifest = yaml.safe_load(f.read())
+
+    manifest = manifest_utils.load(f)
     deployment_map = build_deployment_map(manifest)
     create_share_template(deployment_map)
 
@@ -54,7 +60,7 @@ def generate_shares(f):
 @click.argument('f', type=click.File())
 @click.option('--single-account', default=None)
 def deploy(f, single_account):
-    manifest = yaml.safe_load(f.read())
+    manifest = manifest_utils.load(f)
     deployment_map = build_deployment_map(manifest)
     write_templates(deployment_map)
     logger.info('Starting to deploy')
@@ -75,26 +81,29 @@ def deploy(f, single_account):
 def bootstrap_spoke_as(puppet_account_id, iam_role_arn):
     with betterboto_client.CrossAccountClientContextManager('cloudformation', iam_role_arn,
                                                             'bootstrapping') as cloudformation:
-        do_bootstrap_spoke(puppet_account_id, cloudformation)
+        do_bootstrap_spoke(puppet_account_id, cloudformation, get_puppet_version())
 
 
 @cli.command()
 @click.argument('puppet_account_id')
 def bootstrap_spoke(puppet_account_id):
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
-        do_bootstrap_spoke(puppet_account_id, cloudformation)
+        do_bootstrap_spoke(puppet_account_id, cloudformation, get_puppet_version())
 
 
 @cli.command()
 @click.argument('branch-name')
 def bootstrap_branch(branch_name):
-    core.VERSION = "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(branch_name)
-    do_bootstrap()
+    do_bootstrap("https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(branch_name))
+
+
+def get_puppet_version():
+    return pkg_resources.require("aws-service-catalog-puppet")[0].version
 
 
 @cli.command()
 def bootstrap():
-    do_bootstrap()
+    do_bootstrap(get_puppet_version())
 
 
 @cli.command()
@@ -115,7 +124,7 @@ def seed(complexity, p):
 def list_launches(f):
     click.echo("Getting details from your account...")
     ALL_REGIONS = get_regions()
-    manifest = yaml.safe_load(f.read())
+    manifest = manifest_utils.load(f)
     deployment_map = build_deployment_map(manifest)
 
     account_ids = [a.get('account_id') for a in manifest.get('accounts')]
@@ -218,7 +227,7 @@ def list_launches(f):
 @click.argument('f', type=click.File())
 def expand(f):
     click.echo('Expanding')
-    manifest = yaml.safe_load(f.read())
+    manifest = manifest_utils.load(f)
     org_iam_role_arn = get_org_iam_role_arn()
     if org_iam_role_arn is None:
         click.echo('No org role set - not expanding')
@@ -250,7 +259,7 @@ def validate(f):
 
 @cli.command()
 def version():
-    click.echo("cli version: {}".format(VERSION))
+    click.echo("cli version: {}".format(pkg_resources.require("aws-service-catalog-puppet")[0].version))
     with betterboto_client.ClientContextManager('ssm', region_name=HOME_REGION) as ssm:
         response = ssm.get_parameter(
             Name="service-catalog-puppet-regional-version"

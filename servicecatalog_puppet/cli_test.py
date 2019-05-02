@@ -10,10 +10,6 @@ def sut():
     return cli
 
 
-def test_version(sut):
-    assert sut.VERSION == pkg_resources.require("aws-service-catalog-puppet")[0].version
-
-
 def test_bootstrap_stack_name(sut):
     assert sut.BOOTSTRAP_STACK_NAME == 'servicecatalog-puppet'
 
