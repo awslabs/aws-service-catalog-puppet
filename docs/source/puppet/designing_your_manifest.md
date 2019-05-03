@@ -315,3 +315,6 @@ launches:
 
 In this example the framework will deploy ```account-vending-account-creation``` only when 
 ```account-vending-account-bootstrap-shared``` and ```account-vending-account-creation-shared``` have been attempted.
+
+At the moment there is only support for one level of dependencies, so only the previous example will work.  It is not 
+possible to say a depends_on b which depends_on c.
