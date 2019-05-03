@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 from servicecatalog_puppet.macros import macros
-
+from betterboto import client as betterboto_client
 
 import logging
 
@@ -59,6 +59,8 @@ def do_expand(manifest, client):
             parameter_details['default'] = result
             del parameter_details['macro']
 
+        expand_parameter_ssm(parameter_details)
+
     for first_account in new_accounts:
         for parameter_name, parameter_details in first_account.get('parameters', {}).items():
             if parameter_details.get('macro'):
@@ -66,6 +68,8 @@ def do_expand(manifest, client):
                 result = macro_to_run(client, parameter_details.get('macro').get('args'))
                 parameter_details['default'] = result
                 del parameter_details['macro']
+
+            expand_parameter_ssm(parameter_details)
 
         times_seen = 0
         for second_account in new_accounts:
@@ -91,4 +95,24 @@ def do_expand(manifest, client):
                 parameter_details['default'] = result
                 del parameter_details['macro']
 
+            expand_parameter_ssm(parameter_details)
+
     return new_manifest
+
+
+def expand_parameter_ssm(parameter_details):
+    if parameter_details.get('ssm'):
+        param_name = parameter_details.get('ssm').get('name')
+        if parameter_details.get('ssm').get('region'):
+            client_kwargs = {
+                'region_name': parameter_details.get('ssm').get('region')
+            }
+        else:
+            client_kwargs = {}
+        with betterboto_client.ClientContextManager('ssm', **client_kwargs) as ssm:
+            try:
+                param_value = ssm.get_parameter(Name=param_name).get('Parameter').get('Value')
+            except ssm.exceptions.ParameterNotFound:
+                raise Exception("There is no SSM parameter in this region with the name: {}".format(param_name))
+        parameter_details['default'] = param_value
+        del parameter_details['ssm']
