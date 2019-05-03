@@ -24,6 +24,14 @@ schema;map_params:
               enum: ['get_accounts_for_path']
             args:
               type: str
+        ssm:
+          type: map
+          mapping:
+            name:
+              type: str
+            region:
+              type: str
+
 
 schema;map_account_id:
   type: map
