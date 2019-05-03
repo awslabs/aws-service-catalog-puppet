@@ -78,10 +78,20 @@ def deploy(f, single_account):
 
 @cli.command()
 @click.argument('puppet_account_id')
-@click.argument('iam_role_arn')
-def bootstrap_spoke_as(puppet_account_id, iam_role_arn):
-    with betterboto_client.CrossAccountClientContextManager('cloudformation', iam_role_arn,
-                                                            'bootstrapping') as cloudformation:
+@click.argument('iam_role_arn', nargs=-1)
+def bootstrap_spoke_as(puppet_account_id, roles):
+    cross_accounts = []
+    index = 0
+    for role in roles:
+        cross_accounts.append(
+            (role, 'bootstrapping-role-{}'.format(index))
+        )
+        index += 1
+
+    with betterboto_client.CrossMultipleAccountsClientContextManager(
+        'cloudformation',
+        cross_accounts
+    ) as cloudformation:
         do_bootstrap_spoke(puppet_account_id, cloudformation, get_puppet_version())
 
 
