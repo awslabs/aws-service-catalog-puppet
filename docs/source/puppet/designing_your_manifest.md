@@ -274,3 +274,44 @@ launches:
         - account_id: '0123456789010'
           regions: default_region
 ```
+
+#### Dependencies between launches
+Where possible we recommend building launches to be independent.  However, there are cases where you may need to setup a
+hub account before setting up a spoke or there may be times you are using AWS Lambda to back AWS CloudFormation custom 
+resources.  In these examples it would be beneficial to be able to say deploy launch x and then launch y.  To achieve this
+You can use ```depends_on``` within your launch like so:
+```yaml
+launches:
+  account-vending-account-creation:
+    portfolio: demo-central-it-team-portfolio
+    product: account-vending-account-creation
+    version: v1
+    depends_on:
+      - account-vending-account-bootstrap-shared
+      - account-vending-account-creation-shared    
+    deploy_to:
+      tags:
+        - tag: scope:puppet-hub
+          regions: default_region
+
+  account-vending-account-bootstrap-shared:
+    portfolio: demo-central-it-team-portfolio
+    product: account-vending-account-bootstrap-shared
+    version: v1
+    deploy_to:
+      tags:
+        - tag: scope:puppet-hub
+          regions: default_region
+
+  account-vending-account-creation-shared:
+    portfolio: demo-central-it-team-portfolio
+    product: account-vending-account-creation-shared
+    version: v1
+    deploy_to:
+      tags:
+        - tag: scope:puppet-hub
+          regions: default_region
+``` 
+
+In this example the framework will deploy ```account-vending-account-creation``` only when 
+```account-vending-account-bootstrap-shared``` and ```account-vending-account-creation-shared``` have been attempted.
