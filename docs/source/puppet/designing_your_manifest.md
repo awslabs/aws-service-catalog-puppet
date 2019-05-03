@@ -71,6 +71,28 @@ like in the example - using the parameter names like ```BucketName``` will lead 
 The order of precedence for parameters is account level parameters override all others and launch level parameters 
 override global.
 
+#### AWS SSM Parameters 
+You can retrieve parameter values from SSM.  Here is an an example:
+```yaml
+schema: puppet-2019-04-01
+
+parameters:
+    CentralLoggingBucketName:
+      ssm: 
+        name: central-logging-bucket-name
+```
+
+You can get a different value for each region:
+```yaml
+schema: puppet-2019-04-01
+
+parameters:
+    CentralLoggingBucketName:
+      ssm: 
+        name: central-logging-bucket-name
+        region: eu-west-1
+```
+
 #### Macros 
 You can also use a macro to set the value of a parameter.  It works in the same way as a normal parameter except it 
 executes a function to get the value first.  Here is an an example:
