@@ -17,7 +17,7 @@ It is possible to specify global parameters that should be used when provisionin
 You can set the value to an explicit value or you can set the value to the result of a function call - using funcation 
 calls to set parameter values is known as using a macro.
 
-Here is an example of a simple parameter:
+Here is an example of a simple global parameter:
 ```yaml
 schema: puppet-2019-04-01
 
@@ -25,9 +25,51 @@ parameters:
     CloudTrailLoggingBucketName:
       default: cloudtrail-logs-for-aws
 ```
+
+It is possible to also specify a parameter at the account level:
+```yaml
+accounts:
+  - account_id: '<YOUR_ACCOUNT_ID>'
+    name: '<YOUR_ACCOUNT_NAME>'
+    default_region: eu-west-1
+    regions_enabled:
+      - eu-west-1
+      - eu-west-1
+    tags:
+      - type:prod
+      - partition:eu
+      - scope:pci
+    parameters:
+      RoleName:
+        default: DevAdmin
+      Path:
+        default: /human-roles/
+```
+
+And finally you specify parameters at the launch level:
+```yaml
+launches:
+  account-iam-for-prod:
+    portfolio: demo-central-it-team-portfolio
+    product: account-iam
+    version: v1
+    parameters:
+      RoleName:
+        default: DevAdmin
+      Path:
+        default: /human-roles/
+    deploy_to:
+      tags:
+        - tag: type:prod
+          regions: default_region
+```
+
 Whenever Puppet provisions a product it checks the parameters for the product.  If it sees the name match one of the 
 parameter values it will use it.  In order to avoid clashes with parameter names we recommend using descriptive names 
-like in the example - using the parameter names like ```BucketName``` will lead you into trouble pretty quickly.  
+like in the example - using the parameter names like ```BucketName``` will lead you into trouble pretty quickly.
+
+The order of precedence for parameters is account level parameters override all others and launch level parameters 
+override global.
 
 #### Macros 
 You can also use a macro to set the value of a parameter.  It works in the same way as a normal parameter except it 
