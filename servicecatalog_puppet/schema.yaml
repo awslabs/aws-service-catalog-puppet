@@ -92,6 +92,10 @@ mapping:
             type: str
           version:
             type: str
+          depends_on:
+            type: seq
+            sequence:
+              - type: str
           parameters:
             include: map_params
           deploy_to:
