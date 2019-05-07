@@ -320,7 +320,6 @@ def deploy_launch_to_account_and_region(
 ):
     launch_name = launch.get('launch_name')
     stack_name = "-".join([PREFIX, account, region, launch_name])
-
     logger.info('Creating plan, params: {}'.format(params))
     response = service_catalog.create_provisioned_product_plan(
         PlanName=stack_name,
@@ -380,12 +379,67 @@ def deploy_launch_to_account_and_region(
         response = service_catalog.describe_provisioned_product_plan(
             PlanId=plan_id
         )
+        logger.info("plan_id is: {}".format(plan_id))
         execute_status = response.get('ProvisionedProductPlanDetails').get('Status')
         logger.info('Waiting for execute: {}'.format(execute_status))
         time.sleep(5)
 
     if execute_status == 'CREATE_SUCCESS':
-        logger.info("Product provisioned")
+        if launch.get('outputs', {}).get('ssm') is not None:
+            logger.info("There are ssm outputs that need processing")
+            provision_product_id = response.get('ProvisionedProductPlanDetails').get('ProvisionProductId')
+            stack_name = "SC-{}-{}".format(account, provision_product_id)
+            logger.info("Need to wait for stack completion for outputs to become available")
+            role = "arn:aws:iam::{}:role/{}".format(account, 'servicecatalog-puppet/PuppetRole')
+            with betterboto_client.CrossAccountClientContextManager(
+                        'cloudformation', role, 'xross', region_name=region
+                ) as cloudformation:
+                waiter = cloudformation.get_waiter('stack_create_complete')
+                waiter.wait(StackName=stack_name)
+                logger.info("Stack is now completed, continuing")
+
+                for outputs in launch.get('outputs', {}).get('ssm', []):
+                    ssm_param_name = outputs.get('param_name')
+                    ssm_param_value = outputs.get('stack_output')
+                    ssm_param_region = outputs.get('region', HOME_REGION)
+                    logger.info('Trying to set SSM parameter: {}'.format(ssm_param_name))
+                    logger.info(('Looking for stack: {}'.format(stack_name)))
+                    stack_response = cloudformation.describe_stacks(
+                        StackName=stack_name
+                    )
+                    if len(stack_response.get('Stacks')) != 1:
+                        raise Exception("Found more or less than 1 stack with the name: {}".format(
+                            stack_name
+                        ))
+                    stack = stack_response.get('Stacks')[0]
+                    logger.info(('Looking for output: {} in: {}'.format(ssm_param_value, stack.get('Outputs', []))))
+                    for stack_output in stack.get('Outputs', []):
+                        if stack_output.get('OutputKey') == ssm_param_value:
+                            logger.info('Adding SSM parameter: {} of value: {} in region: {}'.format(
+                                ssm_param_name, stack_output.get('OutputValue'), ssm_param_region
+                            ))
+                            with betterboto_client.ClientContextManager('ssm', region_name=ssm_param_region) as ssm:
+                                ssm.put_parameter(
+                                    Name=ssm_param_name,
+                                    Value=stack_output.get('OutputValue'),
+                                    Description=stack_output.get('Description', ''),
+                                    Type='String',
+                                    Tags=[
+                                        {
+                                            "Key": "SourceStackName",
+                                            "Value": stack_name,
+                                        },
+                                        {
+                                            "Key": "SourceStackOutputName",
+                                            "Value": ssm_param_value,
+                                        },
+                                        {
+                                            "Key": "SourceStackId",
+                                            "Value": stack.get('StackId'),
+                                        },
+                                    ]
+                                )
+            logger.info("Product provisioned")
     else:
         raise Exception("Execute was not successful: {}".format(execute_status))
     service_catalog.delete_provisioned_product_plan(PlanId=plan_id)
