@@ -240,13 +240,19 @@ def deploy_launches(deployment_map, parameters, single_account, puppet_account_i
             for launch_name, launch_details in deployments.get('launches').items():
                 for region in launch_details.get('regions', []):
                     stream_name = "{}/{}".format(account_id, region)
-                    has_dependency = launch_details.get('depends_on') is None
-                    logger.info("{} has dependencies: {}".format(launch_details.get('launch_name'), has_dependency))
+                    has_dependency = launch_details.get('depends_on') is not None
+                    logger.info(
+                        "{} has dependencies: {}, {}".format(
+                            launch_details.get('launch_name'),
+                            has_dependency,
+                            launch_details.get('depends_on')
+                        )
+                    )
+                    dependency_names += launch_details.get('depends_on', [])
                     if has_dependency:
                         if second_run_stream.get(stream_name) is None:
                             second_run_stream[stream_name] = []
                         second_run_stream[stream_name].append(launch_details)
-                        dependency_names += launch_details.get('depends_on', [])
                     else:
                         if first_run_stream.get(stream_name) is None:
                             first_run_stream[stream_name] = []
