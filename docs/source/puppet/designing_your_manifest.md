@@ -146,6 +146,11 @@ You can also set override which region the output is read from and which region 
 There is currently no capability of reading a value from a CloudFormation stack from one region and setting an SSM param 
 in another.
 
+SSM parameters can only be set using the framework when the product is deployed the first time and can only be set once 
+- there is no overriding.  We would advise outputting SSM parameters only when a product is deployed to a single account.
+
+
+
 #### Macros 
 You can also use a macro to set the value of a parameter.  It works in the same way as a normal parameter except it 
 executes a function to get the value first.  Here is an an example:
