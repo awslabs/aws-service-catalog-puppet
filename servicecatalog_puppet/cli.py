@@ -78,11 +78,11 @@ def deploy(f, single_account):
 
 @cli.command()
 @click.argument('puppet_account_id')
-@click.argument('iam_role_arn', nargs=-1)
-def bootstrap_spoke_as(puppet_account_id, roles):
+@click.argument('iam_role_arns', nargs=-1)
+def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
     cross_accounts = []
     index = 0
-    for role in roles:
+    for role in iam_role_arns:
         cross_accounts.append(
             (role, 'bootstrapping-role-{}'.format(index))
         )
