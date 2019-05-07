@@ -232,26 +232,53 @@ def create_share_template(deployment_map, puppet_account_id):
 
 def deploy_launches(deployment_map, parameters, single_account, puppet_account_id):
     logger.info('Deploying launches')
-    streams_without_depends_on= {}
-    streams_with_depends_on = {}
+    first_run_stream = {}
+    second_run_stream = {}
+    dependency_names = []
     for account_id, deployments in deployment_map.items():
         if single_account is None or account_id == single_account:
             for launch_name, launch_details in deployments.get('launches').items():
                 for region in launch_details.get('regions', []):
                     stream_name = "{}/{}".format(account_id, region)
-                    has_dependency = launch_details.get('depends_on') is None
-                    logger.info("{} has dependencies: {}".format(launch_details.get('launch_name'), has_dependency))
+                    has_dependency = launch_details.get('depends_on') is not None
+                    logger.info(
+                        "{} has dependencies: {}, {}".format(
+                            launch_details.get('launch_name'),
+                            has_dependency,
+                            launch_details.get('depends_on')
+                        )
+                    )
+                    dependency_names += launch_details.get('depends_on', [])
                     if has_dependency:
-                        if streams_without_depends_on.get(stream_name) is None:
-                            streams_without_depends_on[stream_name] = []
-                        streams_without_depends_on[stream_name].append(launch_details)
+                        if second_run_stream.get(stream_name) is None:
+                            second_run_stream[stream_name] = []
+                        second_run_stream[stream_name].append(launch_details)
                     else:
-                        if streams_with_depends_on.get(stream_name) is None:
-                            streams_with_depends_on[stream_name] = []
-                        streams_with_depends_on[stream_name].append(launch_details)
+                        if first_run_stream.get(stream_name) is None:
+                            first_run_stream[stream_name] = []
+                        first_run_stream[stream_name].append(launch_details)
 
-    deploy_stream("streams_without_depends_on", streams_without_depends_on, parameters, puppet_account_id, deployment_map)
-    deploy_stream("streams_with_depends_on", streams_with_depends_on, parameters, puppet_account_id, deployment_map)
+    logger.info("Launches that are dependencies: {}".format(dependency_names))
+    for dependency in dependency_names:
+        for stream_name, launch_details_list in first_run_stream.items():
+            for launch_detail in launch_details_list:
+                if launch_detail.get('launch_name') == dependency:
+                    launch_detail['should_wait_for_cloudformation'] = True
+
+    deploy_stream(
+        "first_run_stream",
+        first_run_stream,
+        parameters,
+        puppet_account_id,
+        deployment_map
+    )
+    deploy_stream(
+        "second_run_stream",
+        second_run_stream,
+        parameters,
+        puppet_account_id,
+        deployment_map
+    )
 
 
 def deploy_stream(streams_name, streams, parameters, puppet_account_id, deployment_map):
@@ -385,19 +412,20 @@ def deploy_launch_to_account_and_region(
         time.sleep(5)
 
     if execute_status == 'CREATE_SUCCESS':
-        if launch.get('outputs', {}).get('ssm') is not None:
-            logger.info("There are ssm outputs that need processing")
-            provision_product_id = response.get('ProvisionedProductPlanDetails').get('ProvisionProductId')
-            stack_name = "SC-{}-{}".format(account, provision_product_id)
-            logger.info("Need to wait for stack completion for outputs to become available")
-            role = "arn:aws:iam::{}:role/{}".format(account, 'servicecatalog-puppet/PuppetRole')
-            with betterboto_client.CrossAccountClientContextManager(
+        provision_product_id = response.get('ProvisionedProductPlanDetails').get('ProvisionProductId')
+        stack_name = "SC-{}-{}".format(account, provision_product_id)
+        role = "arn:aws:iam::{}:role/{}".format(account, 'servicecatalog-puppet/PuppetRole')
+        with betterboto_client.CrossAccountClientContextManager(
                         'cloudformation', role, 'xross', region_name=region
-                ) as cloudformation:
+        ) as cloudformation:
+            if launch.get('outputs', {}).get('ssm') is not None or launch.get('should_wait_for_cloudformation'):
+                logger.info("Need to wait for stack completion")
                 waiter = cloudformation.get_waiter('stack_create_complete')
                 waiter.wait(StackName=stack_name)
                 logger.info("Stack is now completed, continuing")
 
+            if launch.get('outputs', {}).get('ssm') is not None:
+                logger.info("There are ssm outputs that need processing")
                 for outputs in launch.get('outputs', {}).get('ssm', []):
                     ssm_param_name = outputs.get('param_name')
                     ssm_param_value = outputs.get('stack_output')
@@ -439,7 +467,7 @@ def deploy_launch_to_account_and_region(
                                         },
                                     ]
                                 )
-            logger.info("Product provisioned")
+                logger.info("Product provisioned")
     else:
         raise Exception("Execute was not successful: {}".format(execute_status))
     service_catalog.delete_provisioned_product_plan(PlanId=plan_id)
