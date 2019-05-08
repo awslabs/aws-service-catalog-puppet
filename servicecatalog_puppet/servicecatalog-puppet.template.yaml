@@ -365,12 +365,7 @@ Resources:
           {% endif %}
             build:
               commands:
-                - git clone --config 'credential.helper=!aws codecommit credential-helper $@' --config 'credential.UseHttpPath=true' ${GIT_REPO}
-                - cd ServiceCatalogPuppet
-                - servicecatalog-puppet --info expand manifest.yaml
-                - servicecatalog-puppet --info generate-shares manifest-expanded.yaml
-                - servicecatalog-puppet --info deploy-templates-into-regions output/templates/shares shares
-                - servicecatalog-puppet --info deploy --single-account ${SINGLE_ACCOUNT_ID} manifest-expanded.yaml
+                - aws codepipeline start-pipeline-execution  --name servicecatalog-puppet-pipeline
       TimeoutInMinutes: 30
 
 
