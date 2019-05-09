@@ -110,7 +110,9 @@ PolicyDocument:
     - Effect: Allow
       Action:
         - organizations:ListRoots
+        - organizations:DescribeAccount
         - organizations:ListOrganizationalUnitsForParent
+        - organizations:ListChildren
       Resource: '*'
 ```
 
