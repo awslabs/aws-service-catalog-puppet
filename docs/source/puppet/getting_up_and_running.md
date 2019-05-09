@@ -4,6 +4,20 @@ Getting up and running
 ServiceCatalog-Puppet runs in your AWS Account.  In order for you to install it into your account you can use the 
 aws-service-catalog-puppet cli.  This is distributed via [PyPi](https://pypi.org/project/aws-service-catalog-puppet/)
 
+
+
+## What am I going to install?
+ServiceCatalog-Puppet is bootstrapped from your local machine.  You install a command line utility that will provision
+the resources you need into your AWS Account.  Once you have completed the bootstrap you will have the following pipeline
+in your account:
+
+![](./puppet-getting-started-what-am-i-going-to-install-pipeline.png)
+
+using the following services:
+
+![](./puppet-getting-started-what-am-i-going-to-install.png)
+
+
 ## Before you install
 You should consider which account will be the home for your puppet.  This account will contain the AWS CodePipelines
 and will need to be accessible to any accounts you would like to share with.  If you are using ServiceCatalog-Factory,
