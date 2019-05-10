@@ -5,7 +5,7 @@ import logging
 
 from servicecatalog_puppet.asset_helpers import read_from_site_packages
 from servicecatalog_puppet.constants import BOOTSTRAP_STACK_NAME
-
+from servicecatalog_puppet.constants import PUPPET_ORG_ROLE_FOR_EXPANDS_ARN
 
 logger = logging.getLogger(__file__)
 
@@ -35,10 +35,11 @@ def do_bootstrap_org_master(puppet_account_id, cloudformation, puppet_version):
     if len(response.get('Stacks')) != 1:
         raise Exception("Expected there to be only one {} stack".format(stack_name))
     stack = response.get('Stacks')[0]
+
     for output in stack.get('Outputs'):
-        if output.get('OutputKey') == output_name:
+        if output.get('OutputKey') == PUPPET_ORG_ROLE_FOR_EXPANDS_ARN:
             logger.info('Finished bootstrap of org-master')
             return output.get("OutputValue")
 
-    raise Exception("Could not find output: {} in stack: {}".format(output_name, stack_name))
+    raise Exception("Could not find output: {} in stack: {}".format(PUPPET_ORG_ROLE_FOR_EXPANDS_ARN, stack_name))
 

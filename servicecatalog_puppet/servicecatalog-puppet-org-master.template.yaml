@@ -19,7 +19,7 @@ Resources:
       Type: String
       Value: !Ref Version
 
-  PuppetRole:
+  PuppetOrgRoleForExpands:
     Type: AWS::IAM::Role
     Properties:
       RoleName: PuppetOrgRoleForExpands
@@ -47,5 +47,8 @@ Resources:
               - "sts:AssumeRole"
 
 Outputs:
+  PuppetOrgRoleForExpandsArn:
+    Value: !GetAtt PuppetOrgRoleForExpands.Arn
+
   Version:
     Value: !GetAtt Param.Value

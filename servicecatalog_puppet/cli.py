@@ -22,7 +22,7 @@ from servicecatalog_puppet.commands.bootstrap import do_bootstrap
 from servicecatalog_puppet.commands.bootstrap_spoke import do_bootstrap_spoke
 from servicecatalog_puppet.commands.expand import do_expand
 from servicecatalog_puppet.utils.manifest import build_deployment_map
-from servicecatalog_puppet.commands import bootstrap_org_master
+from servicecatalog_puppet.commands.bootstrap_org_master import do_bootstrap_org_master
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -228,7 +228,7 @@ def bootstrap_org_master(puppet_account_id):
     with betterboto_client.ClientContextManager(
         'cloudformation',
     ) as cloudformation:
-        org_iam_role_arn = bootstrap_org_master.do_bootstrap_org_master(
+        org_iam_role_arn = do_bootstrap_org_master(
             puppet_account_id, cloudformation, get_puppet_version()
         )
     click.echo("Bootstrapped org master, org-iam-role-arn: {}".format(org_iam_role_arn))
