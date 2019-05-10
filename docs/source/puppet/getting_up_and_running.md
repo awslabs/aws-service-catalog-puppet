@@ -93,27 +93,21 @@ Once that has completed you are ready to bring up the rest of the puppet.
 
 #### Setting to to use AWS Organizations
 The second part to bootstrapping is optional.  If you would like to use AWS Organizations features in your manifest file 
-you will need to set which IAM Role should be used to perform these actions.  In order to do this you will need to run 
-the following:
+you will need to set which IAM Role should be used to perform these actions.  
 
+To create the correct role in your organization master export your credentials or change profile and run the following:
 ```bash
-servicecatalog-puppet set-org-iam-role-arn arn:aws:iam::0123456789010:role/Admin  
+servicecatalog-puppet bootstrap-org-master <ACCOUNT_ID_OF_YOUR_PUPPET>
 ```
 
-Please replace 0123456789010 with the master account id you want to use.  Please note this IAM Role needs the following 
-IAM Policy:
+This command will provision a role the account you specified and output the ARN of the role.
 
-```yaml
-PolicyDocument:
-  Version: 2012-10-17
-  Statement:
-    - Effect: Allow
-      Action:
-        - organizations:ListRoots
-        - organizations:DescribeAccount
-        - organizations:ListOrganizationalUnitsForParent
-        - organizations:ListChildren
-      Resource: '*'
+Once you have the ARN or you know the ARN you want to use you can configure the framework to use it.  Export the 
+credentials for your puppet account or change your profile so you are using your puppet account and run the following 
+command:
+
+```bash
+servicecatalog-puppet set-org-iam-role-arn <THE_ARN_YOU_WANT_TO_USE>  
 ```
 
 Once you have run that command you are ready for the final stage.

@@ -1,0 +1,54 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  PuppetAccountId:
+    Type: String
+    MinLength: 12
+    MaxLength: 12
+  Version:
+    Type: String
+    Default: "{{ VERSION }}"
+
+Resources:
+  Param:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: service-catalog-puppet-org-master-version
+      Type: String
+      Value: !Ref Version
+
+  PuppetOrgRoleForExpands:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: PuppetOrgRoleForExpands
+      Path: /servicecatalog-puppet/
+      Policies:
+        - PolicyName: "allowExpands"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - organizations:ListRoots
+                  - organizations:DescribeAccount
+                  - organizations:ListOrganizationalUnitsForParent
+                  - organizations:ListChildren
+                Resource: "*"
+
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Sub "arn:aws:iam::${PuppetAccountId}:root"
+            Action:
+              - "sts:AssumeRole"
+
+Outputs:
+  PuppetOrgRoleForExpandsArn:
+    Value: !GetAtt PuppetOrgRoleForExpands.Arn
+
+  Version:
+    Value: !GetAtt Param.Value
