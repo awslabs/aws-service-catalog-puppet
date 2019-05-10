@@ -22,6 +22,7 @@ from servicecatalog_puppet.commands.bootstrap import do_bootstrap
 from servicecatalog_puppet.commands.bootstrap_spoke import do_bootstrap_spoke
 from servicecatalog_puppet.commands.expand import do_expand
 from servicecatalog_puppet.utils.manifest import build_deployment_map
+from servicecatalog_puppet.commands import bootstrap_org_master
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -219,6 +220,18 @@ def set_org_iam_role_arn(org_iam_role_arn):
             Overwrite=True,
         )
     click.echo("Uploaded config")
+
+
+@cli.command()
+@click.argument('puppet_account_id')
+def bootstrap_org_master(puppet_account_id):
+    with betterboto_client.ClientContextManager(
+        'cloudformation',
+    ) as cloudformation:
+        org_iam_role_arn = bootstrap_org_master.do_bootstrap_org_master(
+            puppet_account_id, cloudformation, get_puppet_version()
+        )
+    click.echo("Bootstrapped org master, org-iam-role-arn: {}".format(org_iam_role_arn))
 
 
 if __name__ == "__main__":
