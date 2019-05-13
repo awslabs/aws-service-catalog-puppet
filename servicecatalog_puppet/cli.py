@@ -14,8 +14,7 @@ from betterboto import client as betterboto_client
 from servicecatalog_puppet.commands.list_launches import do_list_launches
 from servicecatalog_puppet.utils import manifest as manifest_utils
 from servicecatalog_puppet.asset_helpers import resolve_from_site_packages
-from servicecatalog_puppet.constants import HOME_REGION, \
-    CONFIG_PARAM_NAME, CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN
+from servicecatalog_puppet.constants import CONFIG_PARAM_NAME, CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN
 from servicecatalog_puppet.core import get_org_iam_role_arn, write_templates, create_share_template, \
     deploy_launches
 from servicecatalog_puppet.commands.bootstrap import do_bootstrap
@@ -175,7 +174,7 @@ def validate(f):
 @cli.command()
 def version():
     click.echo("cli version: {}".format(pkg_resources.require("aws-service-catalog-puppet")[0].version))
-    with betterboto_client.ClientContextManager('ssm', region_name=HOME_REGION) as ssm:
+    with betterboto_client.ClientContextManager('ssm') as ssm:
         response = ssm.get_parameter(
             Name="service-catalog-puppet-regional-version"
         )

@@ -1,5 +1,5 @@
 from threading import Thread
-
+import os
 import click
 from betterboto import client as betterboto_client
 from jinja2 import Template
@@ -11,7 +11,7 @@ from servicecatalog_puppet.core import get_regions, get_org_iam_role_arn
 
 def do_bootstrap(puppet_version):
     click.echo('Starting bootstrap')
-    ALL_REGIONS = get_regions()
+    ALL_REGIONS = get_regions(os.environ.get("AWS_DEFAULT_REGION"))
     with betterboto_client.MultiRegionClientContextManager('cloudformation', ALL_REGIONS) as clients:
         click.echo('Creating {}-regional'.format(BOOTSTRAP_STACK_NAME))
         threads = []
@@ -25,6 +25,11 @@ def do_bootstrap(puppet_version):
                 {
                     'ParameterKey': 'Version',
                     'ParameterValue': puppet_version,
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'DefaultRegionValue',
+                    'ParameterValue': os.environ.get('AWS_DEFAULT_REGION'),
                     'UsePreviousValue': False,
                 },
             ],
@@ -59,7 +64,8 @@ def do_bootstrap(puppet_version):
             ],
         }
         cloudformation.create_or_update(**args)
-        click.echo('Finished creating {}.'.format(BOOTSTRAP_STACK_NAME))
+
+    click.echo('Finished creating {}.'.format(BOOTSTRAP_STACK_NAME))
     with betterboto_client.ClientContextManager('codecommit') as codecommit:
         response = codecommit.get_repository(repositoryName=SERVICE_CATALOG_PUPPET_REPO_NAME)
         clone_url = response.get('repositoryMetadata').get('cloneUrlHttp')
