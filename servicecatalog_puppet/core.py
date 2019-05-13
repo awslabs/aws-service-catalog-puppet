@@ -205,6 +205,7 @@ def write_share_template(portfolio_use_by_account, region, host_account_id, shar
 
 
 def create_share_template(deployment_map, puppet_account_id):
+    logger.info("deployment_map: {}".format(deployment_map))
     ALL_REGIONS = get_regions()
     for region in ALL_REGIONS:
         logger.info("starting to build shares for region: {}".format(region))
@@ -231,7 +232,7 @@ def create_share_template(deployment_map, puppet_account_id):
                 if portfolio_use_by_account.get(account_id) is None:
                     portfolio_use_by_account[account_id] = []
                 for launch_id, launch in launch_details.get('launches').items():
-                    logger.info(portfolio_ids)
+                    logger.info("portfolio ids: {}".format(portfolio_ids))
                     p = portfolio_ids[launch.get('portfolio')]
                     if p not in portfolio_use_by_account[account_id]:
                         portfolio_use_by_account[account_id].append(p)

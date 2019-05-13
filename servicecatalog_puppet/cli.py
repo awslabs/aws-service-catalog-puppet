@@ -7,13 +7,15 @@ import pkg_resources
 import yaml
 import logging
 import os
+
+from jinja2 import Template
 from pykwalify.core import Core
 
 from betterboto import client as betterboto_client
 
 from servicecatalog_puppet.commands.list_launches import do_list_launches
 from servicecatalog_puppet.utils import manifest as manifest_utils
-from servicecatalog_puppet.asset_helpers import resolve_from_site_packages
+from servicecatalog_puppet.asset_helpers import resolve_from_site_packages, read_from_site_packages
 from servicecatalog_puppet.constants import CONFIG_PARAM_NAME, CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN
 from servicecatalog_puppet.core import get_org_iam_role_arn, write_templates, create_share_template, \
     deploy_launches
@@ -89,8 +91,8 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
         index += 1
 
     with betterboto_client.CrossMultipleAccountsClientContextManager(
-        'cloudformation',
-        cross_accounts
+            'cloudformation',
+            cross_accounts
     ) as cloudformation:
         do_bootstrap_spoke(puppet_account_id, cloudformation, get_puppet_version())
 
@@ -225,12 +227,77 @@ def set_org_iam_role_arn(org_iam_role_arn):
 @click.argument('puppet_account_id')
 def bootstrap_org_master(puppet_account_id):
     with betterboto_client.ClientContextManager(
-        'cloudformation',
+            'cloudformation',
     ) as cloudformation:
         org_iam_role_arn = do_bootstrap_org_master(
             puppet_account_id, cloudformation, get_puppet_version()
         )
     click.echo("Bootstrapped org master, org-iam-role-arn: {}".format(org_iam_role_arn))
+
+
+@cli.command()
+def quick_start():
+    click.echo("Quick Start running...")
+    puppet_version = get_puppet_version()
+    with betterboto_client.ClientContextManager('sts') as sts:
+        puppet_account_id = sts.get_caller_identity().get('Account')
+        click.echo("Going to use puppet_account_id: {}".format(puppet_account_id))
+    click.echo("Bootstrapping account as a spoke")
+    with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
+        do_bootstrap_spoke(puppet_account_id, cloudformation, puppet_version)
+
+    click.echo("Setting the config")
+    content = yaml.safe_dump({
+        "regions": [
+            'eu-west-1',
+            'eu-west-2',
+            'eu-west-3'
+        ]
+    })
+    with betterboto_client.ClientContextManager('ssm') as ssm:
+        ssm.put_parameter(
+            Name=CONFIG_PARAM_NAME,
+            Type='String',
+            Value=content,
+            Overwrite=True,
+        )
+        click.echo("Bootstrapping account as the master")
+        org_iam_role_arn = do_bootstrap_org_master(
+            puppet_account_id, cloudformation, puppet_version
+        )
+        ssm.put_parameter(
+            Name=CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN,
+            Type='String',
+            Value=org_iam_role_arn,
+            Overwrite=True,
+        )
+    click.echo("Bootstrapping the account now!")
+    do_bootstrap(puppet_version)
+
+    if os.path.exists('ServiceCatalogPuppet'):
+        click.echo("Found ServiceCatalogPuppet so not cloning or seeding")
+    else:
+        click.echo("Cloning for you")
+        command = "git clone " \
+                  "--config 'credential.helper=!aws codecommit credential-helper $@' " \
+                  "--config 'credential.UseHttpPath=true' " \
+                  "https://git-codecommit.{}.amazonaws.com/v1/repos/ServiceCatalogPuppet".format(
+            os.environ.get("AWS_DEFAULT_REGION")
+        )
+        os.system(command)
+        click.echo("Seeding")
+        manifest = Template(
+            read_from_site_packages(os.path.sep.join(["manifests","manifest-quickstart.yaml"]))
+        ).render(
+            ACCOUNT_ID=puppet_account_id
+        )
+        open(os.path.sep.join(["ServiceCatalogPuppet", "manifest.yaml"]), 'w').write(
+            manifest
+        )
+        click.echo("Pushing manifest")
+        os.system("cd ServiceCatalogPuppet && git add manifest.yaml && git commit -am 'initial add' && git push")
+
+    click.echo("All done!")
 
 
 if __name__ == "__main__":
