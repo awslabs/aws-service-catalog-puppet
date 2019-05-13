@@ -5,7 +5,7 @@ from betterboto import client as betterboto_client
 from jinja2 import Template
 
 from servicecatalog_puppet.asset_helpers import read_from_site_packages
-from servicecatalog_puppet.constants import BOOTSTRAP_STACK_NAME, SERVICE_CATALOG_PUPPET_REPO_NAME, HOME_REGION_PARAM_NAME
+from servicecatalog_puppet.constants import BOOTSTRAP_STACK_NAME, SERVICE_CATALOG_PUPPET_REPO_NAME
 from servicecatalog_puppet.core import get_regions, get_org_iam_role_arn
 
 
