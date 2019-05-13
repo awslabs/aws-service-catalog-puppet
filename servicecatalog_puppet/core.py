@@ -360,7 +360,7 @@ def deploy_launch_to_account_and_region(
     launch_name = launch.get('launch_name')
     stack_name = "-".join([PREFIX, account, region, launch_name])
     logger.info('Creating plan, params: {}'.format(params))
-    regional_sns_topic = "arn:aws:sns:{}:{}:servicecatalog-puppet-cloudformation-events".format(
+    regional_sns_topic = "arn:aws:sns:{}:{}:servicecatalog-puppet-cloudformation-regional-events".format(
         region,
         puppet_account_id
     )
