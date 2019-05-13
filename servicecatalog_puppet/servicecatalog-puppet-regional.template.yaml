@@ -36,6 +36,14 @@ Resources:
       VersioningConfiguration:
         Status: Enabled
 
+  RegionalProductTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: servicecatalog-puppet-cloudformation-regional-events
+      TopicName: servicecatalog-puppet-cloudformation-regional-events
+
 Outputs:
   Version:
     Value: !GetAtt Param.Value
+  RegionalProductTopic:
+    Value: !Ref RegionalProductTopic
