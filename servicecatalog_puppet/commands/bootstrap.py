@@ -11,7 +11,7 @@ from servicecatalog_puppet.core import get_regions, get_org_iam_role_arn
 
 def do_bootstrap(puppet_version):
     click.echo('Starting bootstrap')
-    ALL_REGIONS = get_regions()
+    ALL_REGIONS = get_regions(os.environ.get("AWS_DEFAULT_REGION"))
     with betterboto_client.MultiRegionClientContextManager('cloudformation', ALL_REGIONS) as clients:
         click.echo('Creating {}-regional'.format(BOOTSTRAP_STACK_NAME))
         threads = []
@@ -28,7 +28,7 @@ def do_bootstrap(puppet_version):
                     'UsePreviousValue': False,
                 },
                 {
-                    'ParameterKey': 'DefaultRegionParam',
+                    'ParameterKey': 'DefaultRegionValue',
                     'ParameterValue': os.environ.get('AWS_DEFAULT_REGION'),
                     'UsePreviousValue': False,
                 },

@@ -13,8 +13,12 @@ from servicecatalog_puppet.constants import HOME_REGION_PARAM_NAME, CONFIG_PARAM
 logger = logging.getLogger()
 
 
-def get_regions():
-    with betterboto_client.ClientContextManager('ssm', region_name=get_home_region()) as ssm:
+def get_regions(default_region=None):
+    logger.info("getting regions,  default_region: {}".format(default_region))
+    with betterboto_client.ClientContextManager(
+            'ssm',
+            region_name=default_region if default_region else get_home_region()
+    ) as ssm:
         response = ssm.get_parameter(Name=CONFIG_PARAM_NAME)
         config = yaml.safe_load(response.get('Parameter').get('Value'))
         return config.get('regions')

@@ -17,7 +17,7 @@ logger = logging.getLogger(__file__)
 
 def do_list_launches(manifest):
     click.echo("Getting details from your account...")
-    ALL_REGIONS = get_regions()
+    ALL_REGIONS = get_regions(os.environ.get("AWS_DEFAULT_REGION"))
     deployment_map = build_deployment_map(manifest)
     account_ids = [a.get('account_id') for a in manifest.get('accounts')]
     deployments = {}
