@@ -510,7 +510,7 @@ def process_stream(stream_name, stream, parameters, puppet_account_id, deploymen
     account, region = stream_name.split("/")
     role = "arn:aws:iam::{}:role/{}".format(account, 'servicecatalog-puppet/PuppetRole')
     with betterboto_client.CrossAccountClientContextManager(
-            'servicecatalog', role, stream_name.replace("/", "-")
+            'servicecatalog', role, stream_name.replace("/", "-"), region_name=region
     ) as service_catalog:
         for launch in stream:
             logger.info('is launch: {} deployed'.format(launch.get('launch_name')))
