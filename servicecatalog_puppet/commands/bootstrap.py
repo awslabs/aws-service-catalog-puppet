@@ -5,7 +5,7 @@ from betterboto import client as betterboto_client
 from jinja2 import Template
 
 from servicecatalog_puppet.asset_helpers import read_from_site_packages
-from servicecatalog_puppet.constants import BOOTSTRAP_STACK_NAME, SERVICE_CATALOG_PUPPET_REPO_NAME
+from servicecatalog_puppet.constants import BOOTSTRAP_STACK_NAME, SERVICE_CATALOG_PUPPET_REPO_NAME, HOME_REGION_PARAM_NAME
 from servicecatalog_puppet.core import get_regions, get_org_iam_role_arn
 
 
@@ -59,7 +59,18 @@ def do_bootstrap(puppet_version):
             ],
         }
         cloudformation.create_or_update(**args)
-        click.echo('Finished creating {}.'.format(BOOTSTRAP_STACK_NAME))
+        default_region = cloudformation.describe_stacks(
+            StackName=BOOTSTRAP_STACK_NAME
+        ).get('Stacks')[0].get('StackId').split(":")[3]
+    with betterboto_client.ClientContextManager('ssm') as ssm:
+        ssm.put_parameter(
+            Name=HOME_REGION_PARAM_NAME,
+            Value=default_region,
+            Type='String',
+            Overwrite=True,
+        )
+
+    click.echo('Finished creating {}.'.format(BOOTSTRAP_STACK_NAME))
     with betterboto_client.ClientContextManager('codecommit') as codecommit:
         response = codecommit.get_repository(repositoryName=SERVICE_CATALOG_PUPPET_REPO_NAME)
         clone_url = response.get('repositoryMetadata').get('cloneUrlHttp')
