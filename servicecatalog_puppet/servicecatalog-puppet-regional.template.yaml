@@ -6,8 +6,17 @@ Parameters:
   Version:
     Type: String
     Default: "{{ VERSION }}"
+  DefaultRegionValue:
+    Type: String
 
 Resources:
+
+  DefaultRegionParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /servicecatalog-puppet/home-region
+      Type: String
+      Value: !Ref DefaultRegionValue
 
   Param:
     Type: AWS::SSM::Parameter

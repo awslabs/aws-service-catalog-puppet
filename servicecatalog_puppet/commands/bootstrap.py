@@ -1,5 +1,5 @@
 from threading import Thread
-
+import os
 import click
 from betterboto import client as betterboto_client
 from jinja2 import Template
@@ -25,6 +25,11 @@ def do_bootstrap(puppet_version):
                 {
                     'ParameterKey': 'Version',
                     'ParameterValue': puppet_version,
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'DefaultRegionParam',
+                    'ParameterValue': os.environ.get('AWS_DEFAULT_REGION'),
                     'UsePreviousValue': False,
                 },
             ],
@@ -59,16 +64,6 @@ def do_bootstrap(puppet_version):
             ],
         }
         cloudformation.create_or_update(**args)
-        default_region = cloudformation.describe_stacks(
-            StackName=BOOTSTRAP_STACK_NAME
-        ).get('Stacks')[0].get('StackId').split(":")[3]
-    with betterboto_client.ClientContextManager('ssm') as ssm:
-        ssm.put_parameter(
-            Name=HOME_REGION_PARAM_NAME,
-            Value=default_region,
-            Type='String',
-            Overwrite=True,
-        )
 
     click.echo('Finished creating {}.'.format(BOOTSTRAP_STACK_NAME))
     with betterboto_client.ClientContextManager('codecommit') as codecommit:
