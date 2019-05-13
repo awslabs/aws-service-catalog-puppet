@@ -360,11 +360,11 @@ def deploy_launch_to_account_and_region(
     launch_name = launch.get('launch_name')
     stack_name = "-".join([PREFIX, account, region, launch_name])
     logger.info('Creating plan, params: {}'.format(params))
-    central_sns_topic = "arn:aws:sns:{}:{}:servicecatalog-puppet-cloudformation-events".format(
-        get_home_region(),
+    regional_sns_topic = "arn:aws:sns:{}:{}:servicecatalog-puppet-cloudformation-events".format(
+        region,
         puppet_account_id
     )
-    logger.info("central_sns_topic is: {}".format(central_sns_topic))
+    logger.info("regional_sns_topic is: {}".format(regional_sns_topic))
     response = service_catalog.create_provisioned_product_plan(
         PlanName=stack_name,
         PlanType='CLOUDFORMATION',
@@ -384,7 +384,7 @@ def deploy_launch_to_account_and_region(
             },
         ],
         NotificationArns=[
-            central_sns_topic,
+            regional_sns_topic,
         ],
     )
     logger.info('Plan created, waiting for completion')
