@@ -368,17 +368,13 @@ Resources:
                 - aws codepipeline start-pipeline-execution  --name servicecatalog-puppet-pipeline
       TimeoutInMinutes: 30
 
-
-  ProductTopic:
-    Type: AWS::SNS::Topic
+  CloudFormationEventsQueue:
+    Type: AWS::SQS::Queue
     Properties:
-      DisplayName: servicecatalog-puppet-cloudformation-events
-      TopicName: servicecatalog-puppet-cloudformation-events
+      QueueName: servicecatalog-puppet-cloudformation-events
 
 Outputs:
-  ProductTopicArn:
-    Value: !Ref ProductTopic
-  ProductTopicName:
-    Value: !GetAtt ProductTopic.TopicName
+  CloudFormationEventsQueueArn:
+    Value: !GetAtt CloudFormationEventsQueue.Arn
   Version:
     Value: !GetAtt Param.Value
