@@ -205,6 +205,7 @@ def write_share_template(portfolio_use_by_account, region, host_account_id, shar
 
 
 def create_share_template(deployment_map, puppet_account_id):
+    logger.info("deployment_map: {}".format(deployment_map))
     ALL_REGIONS = get_regions()
     for region in ALL_REGIONS:
         logger.info("starting to build shares for region: {}".format(region))
@@ -212,6 +213,7 @@ def create_share_template(deployment_map, puppet_account_id):
             portfolio_ids = {}
             args = {}
             while True:
+
                 response = servicecatalog.list_portfolios(
                     **args
                 )
@@ -231,7 +233,7 @@ def create_share_template(deployment_map, puppet_account_id):
                 if portfolio_use_by_account.get(account_id) is None:
                     portfolio_use_by_account[account_id] = []
                 for launch_id, launch in launch_details.get('launches').items():
-                    logger.info(portfolio_ids)
+                    logger.info("portfolio ids: {}".format(portfolio_ids))
                     p = portfolio_ids[launch.get('portfolio')]
                     if p not in portfolio_use_by_account[account_id]:
                         portfolio_use_by_account[account_id].append(p)
@@ -358,6 +360,11 @@ def deploy_launch_to_account_and_region(
     launch_name = launch.get('launch_name')
     stack_name = "-".join([PREFIX, account, region, launch_name])
     logger.info('Creating plan, params: {}'.format(params))
+    regional_sns_topic = "arn:aws:sns:{}:{}:servicecatalog-puppet-cloudformation-regional-events".format(
+        region,
+        puppet_account_id
+    )
+    logger.info("regional_sns_topic is: {}".format(regional_sns_topic))
     response = service_catalog.create_provisioned_product_plan(
         PlanName=stack_name,
         PlanType='CLOUDFORMATION',
@@ -377,10 +384,7 @@ def deploy_launch_to_account_and_region(
             },
         ],
         NotificationArns=[
-            "arn:aws:sns:{}:{}:servicecatalog-puppet-cloudformation-events".format(
-                get_home_region(),
-                puppet_account_id
-            ),
+            regional_sns_topic,
         ],
     )
     logger.info('Plan created, waiting for completion')

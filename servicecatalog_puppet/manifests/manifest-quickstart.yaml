@@ -1,0 +1,57 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+schema: puppet-2019-04-01
+
+accounts:
+  - account_id: '{{ ACCOUNT_ID }}'
+    name: '{{ ACCOUNT_ID }}'
+    default_region: eu-west-1
+    regions_enabled:
+      - eu-west-1
+      - eu-west-2
+      - eu-west-3
+    tags:
+      - type:prod
+      - partition:eu
+      - scope:pci
+
+launches:
+  devops-iam-for-prod:
+    portfolio: demo-central-it-team-portfolio
+    product: account-iam
+    version: v1
+    parameters:
+      RoleName:
+        default: DevOps
+      Path:
+        default: /human-roles/
+    deploy_to:
+      tags:
+        - tag: type:prod
+          regions: default_region
+  sysops-iam-for-prod:
+    portfolio: demo-central-it-team-portfolio
+    product: account-iam
+    version: v1
+    parameters:
+      RoleName:
+        default: SysOps
+      Path:
+        default: /human-roles/
+    deploy_to:
+      tags:
+        - tag: type:prod
+          regions: eu-west-2
+  secops-iam-for-prod:
+    portfolio: demo-central-it-team-portfolio
+    product: account-iam
+    version: v1
+    parameters:
+      RoleName:
+        default: SecOps
+      Path:
+        default: /human-roles/
+    deploy_to:
+      tags:
+        - tag: type:prod
+          regions: eu-west-3
