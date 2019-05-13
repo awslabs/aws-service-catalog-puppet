@@ -373,6 +373,26 @@ Resources:
     Properties:
       QueueName: servicecatalog-puppet-cloudformation-events
 
+  CloudFormationEventsQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Id: AllowSNS
+        Version: '2012-10-17'
+        Statement:
+          - Sid: allow-send-message
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - sqs:SendMessage
+            Resource: "*"
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !Sub "arn:aws:sns:*:${AWS::AccountId}:servicecatalog-puppet-cloudformation-regional-events"
+      Queues:
+        - !Ref CloudFormationEventsQueue
+
+
 Outputs:
   CloudFormationEventsQueueArn:
     Value: !GetAtt CloudFormationEventsQueue.Arn
