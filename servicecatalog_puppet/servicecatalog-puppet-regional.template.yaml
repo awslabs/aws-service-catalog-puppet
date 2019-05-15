@@ -45,10 +45,9 @@ Resources:
         - Endpoint: !Sub "arn:aws:sqs:${DefaultRegionValue}:${AWS::AccountId}:servicecatalog-puppet-cloudformation-events"
           Protocol: "sqs"
 
-
-
 Outputs:
   Version:
     Value: !GetAtt Param.Value
+
   RegionalProductTopic:
     Value: !Ref RegionalProductTopic

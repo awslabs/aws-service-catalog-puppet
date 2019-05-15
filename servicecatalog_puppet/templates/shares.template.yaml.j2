@@ -101,10 +101,9 @@ Resources:
   {% if sharing_policies.get('accounts')|length > 0 or sharing_policies.get('organizations')|length > 0 %}
   TopicPolicies:
     Type: AWS::SNS::TopicPolicy
-    Condition: RunningInHomeRegion
     Properties:
       Topics:
-        - !Sub "arn:aws:sns:{{ HOME_REGION }}:${AWS::AccountId}:servicecatalog-puppet-cloudformation-events"
+        - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:servicecatalog-puppet-cloudformation-regional-events"
       PolicyDocument:
         Id: MyTopicPolicy
         Version: '2012-10-17'
