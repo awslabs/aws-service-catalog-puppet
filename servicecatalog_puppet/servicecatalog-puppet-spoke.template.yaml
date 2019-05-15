@@ -55,7 +55,7 @@ Resources:
                 Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:product/*"
               - Effect: "Allow"
                 Action: sns:Publish
-                Resource: !Sub "arn:aws:sns:*:${PuppetAccountId}:servicecatalog-puppet-cloudformation-events"
+                Resource: !Sub "arn:aws:sns:*:${PuppetAccountId}:servicecatalog-puppet-cloudformation-regional-events"
 
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
