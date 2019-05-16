@@ -14,6 +14,7 @@ accounts:
       - type:prod
       - partition:eu
       - scope:pci
+      - scope:sc-hub
 
 launches:
   devops-iam-for-prod:
@@ -55,3 +56,45 @@ launches:
       tags:
         - tag: type:prod
           regions: eu-west-3
+
+  account-vending-account-bootstrap-shared:
+    portfolio: demo-central-it-team-portfolio
+    product: account-vending-account-bootstrap-shared
+    version: v1
+    deploy_to:
+      tags:
+        - tag: scope:sc-hub
+          regions: default_region
+
+  account-vending-account-creation-shared:
+    portfolio: demo-central-it-team-portfolio
+    product: account-vending-account-creation-shared
+    version: v1
+    deploy_to:
+      tags:
+        - tag: scope:sc-hub
+          regions: default_region
+
+#  test-account-test-0001:
+#    portfolio: demo-central-it-team-portfolio
+#    product: account-vending-account-creation
+#    depends_on:
+#      - account-vending-account-bootstrap-shared
+#      - account-vending-account-creation-shared
+#    version: v1
+#    parameters:
+#      Email:
+#        default: email@domain.com
+#      AccountName:
+#        default: a_nice_account_name
+#      OrganizationAccountAccessRole:
+#        default: OrganizationAccountAccessRole
+#      IamUserAccessToBilling:
+#        default: "ALLOW"
+#      TargetOU:
+#        default: /
+#    deploy_to:
+#      tags:
+#        - tag: scope:sc-hub
+#          regions: default_region
+#
