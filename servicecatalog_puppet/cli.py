@@ -17,8 +17,8 @@ from servicecatalog_puppet.commands.list_launches import do_list_launches
 from servicecatalog_puppet.utils import manifest as manifest_utils
 from servicecatalog_puppet.asset_helpers import resolve_from_site_packages, read_from_site_packages
 from servicecatalog_puppet.constants import CONFIG_PARAM_NAME, CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN
-from servicecatalog_puppet.core import get_org_iam_role_arn, write_templates, create_share_template, \
-    deploy_launches
+from servicecatalog_puppet.core import get_org_iam_role_arn, create_share_template, \
+    deploy_launches, get_regions, get_provisioning_artifact_id_for
 from servicecatalog_puppet.commands.bootstrap import do_bootstrap
 from servicecatalog_puppet.commands.bootstrap_spoke import do_bootstrap_spoke
 from servicecatalog_puppet.commands.expand import do_expand
@@ -61,21 +61,372 @@ def generate_shares(f):
     create_share_template(deployment_map, get_puppet_account_id())
 
 
+
+
+
+
+
+from betterboto import client as betterboto_client
+import luigi
+import time
+import json
+
+
+class SSMParamTarget(luigi.Target):
+    def __init__(self, param_name):
+        super().__init__()
+        self.param_name = param_name
+
+    def exists(self):
+        with betterboto_client.ClientContextManager('ssm') as ssm:
+            try:
+                ssm.get_parameter(
+                    Name=self.param_name,
+                ).get('Parameter')
+                return True
+            except ssm.exceptions.ParameterNotFound:
+                return False
+
+    def read(self):
+        with betterboto_client.ClientContextManager('ssm') as ssm:
+            ssm.get_parameter(
+                Name=self.param_name,
+            ).get('Parameter')
+
+
+class GetSSMParamTask(luigi.Task):
+    name = luigi.Parameter()
+
+    def output(self):
+        return SSMParamTarget(self.name)
+
+    def run(self):
+        pass
+
+
+class SetSSMParamTask(luigi.Task):
+    param_name = luigi.Parameter()
+    param_type = luigi.Parameter(default='String')
+    stack_output = luigi.Parameter()
+
+    def output(self):
+        return SSMParamTarget(self.param_name)
+
+    def run(self):
+        with betterboto_client.ClientContextManager('ssm') as ssm:
+            value = self.stack_output
+            ssm.put_parameter(
+                Name=self.param_name,
+                Value=value,
+                Type=self.param_type,
+                Overwrite=True,
+            )
+
+
+class ProvisionProductCloudFormationTask(luigi.Task):
+    launch_name = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    parameters = luigi.ListParameter()
+
+    # @property
+    # def resources(self):
+    #     return { f"cloudformation-in-{self.account_id}-{self.region}": 1 }
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.portfolio}-{self.product}-{self.version}-{self.account_id}-{self.region}-cloudformation.log"
+        )
+
+    def run(self):
+        f = self.output().open('w')
+        f.write(
+            json.dumps({
+                'portfolio': self.portfolio,
+                'product': self.product,
+                'version': self.version,
+                'account_id': self.account_id,
+                'region': self.region,
+            })
+        )
+        f.close()
+
+
+class ProvisionProductTask(luigi.Task):
+    delay = luigi.FloatParameter(significant=False)
+    launch_name = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    dependencies = luigi.ListParameter(default=[])
+    parameters = luigi.ListParameter(default=[])
+    ssm_param_outputs = luigi.ListParameter(default=[])
+    ssm_param_inputs = luigi.ListParameter(default=[])
+
+    def add_requires(self, task):
+        self.reqs.append(task)
+
+    def requires(self):
+        return [
+            self.__class__(**r) for r in self.dependencies
+        ]
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.portfolio}-{self.product}-{self.version}-{self.account_id}-{self.region}.log"
+        )
+
+    def run(self):
+        time.sleep(self.delay)
+        f = self.output().open('w')
+        f.write(
+            json.dumps({
+                'portfolio': self.portfolio,
+                'product': self.product,
+                'version': self.version,
+                'account_id': self.account_id,
+                'region': self.region,
+            })
+        )
+        f.close()
+
+        for param_input in self.ssm_param_inputs:
+            yield GetSSMParamTask(
+                **param_input
+            )
+
+        parameters = []
+        yield ProvisionProductCloudFormationTask(
+            self.launch_name,
+            self.portfolio,
+            self.product,
+            self.version,
+            self.account_id,
+            self.region,
+            parameters,
+        )
+
+        for param_output in self.ssm_param_outputs:
+            yield SetSSMParamTask(
+                **param_output
+            )
+
+#
+# if __name__ == '__main__':
+#     luigi.build(
+#         [
+#             ProvisionProductTask(
+#                 delay=1,
+#                 launch_name='launch_3',
+#                 portfolio='my_portfolio_3',
+#                 product='my_product_3',
+#                 version='my_version_3',
+#                 account_id='my_account_id_3',
+#                 region='my_region_3',
+#                 parameters=[],
+#                 dependencies=[
+#                     {
+#                         'launch_name': 'launch_1',
+#                         'portfolio': 'my_portfolio_1',
+#                         'product': 'my_product_1',
+#                         'version': 'my_version_1',
+#                         'account_id': 'my_account_id_1',
+#                         'region': 'my_region_1',
+#                         'delay': 1,
+#                         'dependencies': [
+#                             {
+#                                 'launch_name': 'launch_2',
+#                                 'portfolio': 'my_portfolio_2',
+#                                 'product': 'my_product_2',
+#                                 'version': 'my_version_2',
+#                                 'account_id': 'my_account_id_2',
+#                                 'region': 'my_region_2',
+#                                 'delay': 1,
+#                             }
+#                         ]
+#                     }
+#                 ],
+#                 ssm_param_inputs=[
+#                     {
+#                         'name': 'foooooo'
+#                     }
+#                 ],
+#                 ssm_param_outputs=[
+#                     {
+#                         'param_name': 'foooooo',
+#                         'stack_output': 'bar',
+#                     },
+#                 ],
+#             ),
+#             ProvisionProductTask(
+#                 delay=1,
+#                 launch_name='launch_4',
+#                 portfolio='my_portfolio_4',
+#                 product='my_product_4',
+#                 version='my_version_4',
+#                 account_id='my_account_id_4',
+#                 region='my_region_4',
+#                 parameters=[],
+#                 dependencies=[
+#                     {
+#                         'launch_name': 'launch_2',
+#                         'portfolio': 'my_portfolio_2',
+#                         'product': 'my_product_2',
+#                         'version': 'my_version_2',
+#                         'account_id': 'my_account_id_2',
+#                         'region': 'my_region_2',
+#                         'delay': 1,
+#                     }
+#                 ],
+#                 ssm_param_inputs=[
+#                     {
+#                         'name': 'foooooo'
+#                     }
+#                 ],
+#                 ssm_param_outputs=[
+#                     {
+#                         'param_name': 'foooooo',
+#                         'stack_output': 'bar',
+#                     },
+#                 ],
+#             )
+#         ],
+#         # local_scheduler=True,
+#         workers=5,
+#     )
+
+
+
+def write_templates(deployment_map):
+    logger.info('Starting to write the templates')
+    ALL_REGIONS = get_regions()
+    for account_id, account_details in deployment_map.items():
+        for launch_name, launch_details in account_details.get('launches').items():
+            logger.info('Looking at account: {} and launch: {}'.format(account_id, launch_name))
+            if launch_details.get('match') == 'account_match':
+                logger.info('Setting regions for account matched')
+                for a in launch_details.get('deploy_to').get('accounts'):
+                    if a.get('account_id') == account_id:
+                        regions = a.get('regions')
+                        if regions == "enabled":
+                            regions = account_details.get('regions_enabled')
+                        elif regions == "default_region":
+                            regions = account_details.get('default_region')
+                        elif regions == "all":
+                            regions = ALL_REGIONS
+                        elif isinstance(regions, list):
+                            for region in regions:
+                                if region not in ALL_REGIONS:
+                                    raise Exception("Unknown region: {}".format(region))
+                        elif isinstance(regions, str) and regions in ALL_REGIONS:
+                            pass
+                        else:
+                            raise Exception("Unknown regions: {}".format(regions))
+                        if isinstance(regions, str):
+                            regions = [regions]
+                        launch_details['regions'] = regions
+
+            elif launch_details.get('match') == 'tag_match':
+                logger.info('Setting regions for tag matched')
+                for t in launch_details.get('deploy_to').get('tags'):
+                    if t.get('tag') in account_details.get('tags'):
+                        regions = t.get('regions')
+                        if regions == "enabled":
+                            regions = account_details.get('regions_enabled')
+                        elif regions == "default_region":
+                            regions = account_details.get('default_region')
+                        elif regions == "all":
+                            regions = ALL_REGIONS
+                        elif isinstance(regions, list):
+                            for region in regions:
+                                if region not in ALL_REGIONS:
+                                    raise Exception("Unknown region: {}".format(region))
+                        elif isinstance(regions, str) and regions in ALL_REGIONS:
+                            pass
+                        else:
+                            raise Exception("Unknown regions: {}".format(regions))
+                        if isinstance(regions, str):
+                            regions = [regions]
+                        launch_details['regions'] = regions
+
+            assert launch_details.get('regions') is not None, "Launch {} has no regions set".format(launch_name)
+            launch_details['regional_details'] = {}
+            for region in launch_details.get('regions'):
+                logger.info('Starting region: {}'.format(region))
+                product_id, version_id = get_provisioning_artifact_id_for(
+                    launch_details.get('portfolio'),
+                    launch_details.get('product'),
+                    launch_details.get('version'),
+                    account_id,
+                    region
+                )
+                launch_details['regional_details'][region] = {
+                    'product_id': product_id,
+                    'version_id': version_id,
+                }
+    return deployment_map
+
+
 @cli.command()
 @click.argument('f', type=click.File())
 @click.option('--single-account', default=None)
 def deploy(f, single_account):
     manifest = manifest_utils.load(f)
     deployment_map = build_deployment_map(manifest)
-    write_templates(deployment_map)
-    logger.info('Starting to deploy')
-    deploy_launches(
-        deployment_map,
-        manifest.get('parameters', {}),
-        single_account,
-        get_puppet_account_id()
-    )
-    logger.info('Finished deploy')
+    deployment_map = write_templates(deployment_map)
+
+    all_tasks = {}
+
+    for account_id, deployments_for_account in deployment_map.items():
+        for launch_name, launch_details in deployments_for_account.get('launches').items():
+            for region_name, regional_details in launch_details.get('regional_details').items():
+                task = {
+                    'launch_name': launch_name,
+                    'portfolio': launch_details.get('portfolio'),
+                    'product': launch_details.get('product'),
+                    'version': launch_details.get('version'),
+
+                    'product_id': regional_details.get('product_id'),
+                    'version_id': regional_details.get('version_id'),
+
+                    'account_id': account_id,
+                    'region': region_name,
+
+                    'depends_on': launch_details.get('depends_on', []),
+
+                    'dependencies': [],
+                }
+                all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
+
+    for task_uid, task in all_tasks.items():
+        for dependency in task.get('depends_on', []):
+            for task_uid_2, task_2 in all_tasks.items():
+                if task_2.get('launch_name') == dependency:
+                    task.get('dependencies').append(task_2)
+        # del task['depends_on']
+
+    logger.info(all_tasks)
+
+
+
+
+
+    # logger.info('Starting to deploy')
+    # deploy_launches(
+    #     deployment_map,
+    #     manifest.get('parameters', {}),
+    #     single_account,
+    #     get_puppet_account_id()
+    # )
+    # logger.info('Finished deploy')
 
 
 @cli.command()
