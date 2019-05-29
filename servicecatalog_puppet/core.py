@@ -563,7 +563,6 @@ def process_stream(stream_name, stream, parameters, puppet_account_id, deploymen
             should_deploy = True
 
             if provisioned_product_id:
-                #  [{'Key': 'Path', 'Value': '/human-roles/'}, {'Key': 'RoleName', 'Value': 'DevOps'}]
                 with betterboto_client.CrossAccountClientContextManager(
                         'cloudformation', role, f"cfn-{account}-{region}", region_name=region
                 ) as cloudformation:
