@@ -2,6 +2,7 @@ import logging
 import os
 import time
 from threading import Thread
+import traceback
 
 import yaml
 from betterboto import client as betterboto_client
@@ -582,19 +583,23 @@ def process_stream(stream_name, stream, parameters, puppet_account_id, deploymen
                         should_deploy = False
 
             if should_deploy:
-                deploy_launch_to_account_and_region(
-                    service_catalog,
-                    launch,
-                    account,
-                    region,
-                    product_id,
-                    provisioning_artifact_id,
-                    provisioned_product_name,
-                    puppet_account_id,
-                    path_id,
-                    params,
-                    launch.get('version'),
-                )
+                try:
+                    deploy_launch_to_account_and_region(
+                        service_catalog,
+                        launch,
+                        account,
+                        region,
+                        product_id,
+                        provisioning_artifact_id,
+                        provisioned_product_name,
+                        puppet_account_id,
+                        path_id,
+                        params,
+                        launch.get('version'),
+                    )
+                except Exception as e:
+                    logger.error(''.join(traceback.format_exception(None, e, e.__traceback__)))
+
 
     logger.info('Finished creating stacks')
 
