@@ -192,7 +192,6 @@ def deploy(f, single_account):
                         SetSSMParamTask(**output, dependency=task)
                     )
 
-                # 'ssm_param_outputs': launch_details.get('outputs', {}).get('ssm', [])
                 all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
 
 
@@ -203,89 +202,6 @@ def deploy(f, single_account):
                     task.get('dependencies').append(task_2)
         del task['depends_on']
         tasks_to_run.append(ProvisionProductTask(**task))
-
-    # d = [
-    #     {
-    #         "delay": 1,
-    #         "launch_name": "test-account-test-0001",
-    #         "portfolio": "demo-central-it-team-portfolio",
-    #         "product": "account-vending-account-creation",
-    #         "version": "v1",
-    #         "product_id": "prod-3rmsfujfpshea",
-    #         "version_id": "pa-az3naadf2up2q",
-    #         "account_id": "169800327496",
-    #         "region": "eu-west-1",
-    #         "parameters": [
-    #             {
-    #                 "name": "Email",
-    #                 "value": "email@domain.com"
-    #             },
-    #             {
-    #                 "name": "AccountName",
-    #                 "value": "a_nice_account_name"
-    #             },
-    #             {
-    #                 "name": "OrganizationAccountAccessRole",
-    #                 "value": "OrganizationAccountAccessRole"
-    #             },
-    #             {
-    #                 "name": "IamUserAccessToBilling",
-    #                 "value": "ALLOW"
-    #             },
-    #             {
-    #                 "name": "TargetOU",
-    #                 "value": "/"
-    #             }
-    #         ],
-    #         "ssm_param_inputs": [
-    #             # {
-    #             #     "name": "central-logging-bucket-name",
-    #             #     "region": "eu-west-1"
-    #             # },
-    #             # {
-    #             #     "name": "central-logging-bucket-name"
-    #             # }
-    #         ],
-    #         "dependencies": [
-    #             {
-    #                 "delay": 1,
-    #                 "launch_name": "account-vending-account-bootstrap-shared",
-    #                 "portfolio": "demo-central-it-team-portfolio",
-    #                 "product": "account-vending-account-bootstrap-shared",
-    #                 "version": "v1",
-    #                 "product_id": "prod-6azmxmkffmjrq",
-    #                 "version_id": "pa-egbnqrkgmsi4a",
-    #                 "account_id": "169800327496",
-    #                 "region": "eu-west-1",
-    #                 "parameters": [],
-    #                 "ssm_param_inputs": [],
-    #                 "dependencies": [],
-    #                 "ssm_param_outputs": []
-    #             },
-    #             {
-    #                 "delay": 1,
-    #                 "launch_name": "account-vending-account-creation-shared",
-    #                 "portfolio": "demo-central-it-team-portfolio",
-    #                 "product": "account-vending-account-creation-shared",
-    #                 "version": "v1",
-    #                 "product_id": "prod-ht45yp6kr6a2g",
-    #                 "version_id": "pa-j6vu4ac2nw2yc",
-    #                 "account_id": "169800327496",
-    #                 "region": "eu-west-1",
-    #                 "parameters": [],
-    #                 "ssm_param_inputs": [],
-    #                 "dependencies": [],
-    #                 "ssm_param_outputs": []
-    #             }
-    #         ],
-    #         "ssm_param_outputs": [
-    #             # {
-    #             #     "param_name": "account-iam-sysops-role-arn",
-    #             #     "stack_output": "RoleArn"
-    #             # }
-    #         ]
-    #     }
-    # ]
 
     luigi.build(
         tasks_to_run,
