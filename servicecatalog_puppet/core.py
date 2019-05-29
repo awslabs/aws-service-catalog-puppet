@@ -308,9 +308,9 @@ def deploy_stream(streams_name, streams, parameters, puppet_account_id, deployme
         thread.join()
 
 
-def is_launch_deployed_to_account_and_region_already(service_catalog, launch, provisioning_artifact_id, product_id):
+def terminate_if_need_to(service_catalog, launch, provisioning_artifact_id, product_id):
     logger.info('is launch: {} deployed'.format(launch.get('launch_name')))
-
+    provisioned_product_id = False
     response = service_catalog.search_provisioned_products(
         Filters={'SearchQuery': [
             "productId:{}".format(product_id)
@@ -320,11 +320,7 @@ def is_launch_deployed_to_account_and_region_already(service_catalog, launch, pr
     for r in response.get('ProvisionedProducts', []):
         if r.get('Name') == launch.get('launch_name'):
             if r.get('Status') == "AVAILABLE":
-                logger.info("Product and version has been provisioned already")
-                if r.get('ProvisioningArtifactId') == provisioning_artifact_id:
-                    return True
-                else:
-                    return False
+                provisioned_product_id = r.get('Id')
             else:
                 logger.info("Product and version needs terminating: {}".format(r.get('Status')))
                 service_catalog.terminate_provisioned_product(
@@ -341,7 +337,8 @@ def is_launch_deployed_to_account_and_region_already(service_catalog, launch, pr
                         time.sleep(5)
                     else:
                         break
-    return False
+
+    return provisioned_product_id
 
 
 def deploy_launch_to_account_and_region(
@@ -543,30 +540,49 @@ def process_stream(stream_name, stream, parameters, puppet_account_id, deploymen
             provisioned_product_name = template_properties.get('ProvisionedProductName')
             launch_name = launch.get('launch_name')
 
-            if not is_launch_deployed_to_account_and_region_already(
-                    service_catalog,
-                    launch,
-                    provisioning_artifact_id,
-                    product_id,
-            ):
-                logger.info('Getting path for product')
-                response = service_catalog.list_launch_paths(ProductId=product_id)
-                if len(response.get('LaunchPathSummaries')) != 1:
-                    raise Exception("Found unexpected amount of LaunchPathSummaries")
-                path_id = response.get('LaunchPathSummaries')[0].get('Id')
-                logger.info('Got path for product')
+            provisioned_product_id = terminate_if_need_to(service_catalog, launch, provisioning_artifact_id, product_id)
 
-                params = generate_params(
-                    account,
-                    deployment_map,
-                    launch_name,
-                    parameters,
-                    path_id,
-                    product_id,
-                    provisioning_artifact_id,
-                    service_catalog
-                )
+            logger.info('Getting path for product')
+            response = service_catalog.list_launch_paths(ProductId=product_id)
+            if len(response.get('LaunchPathSummaries')) != 1:
+                raise Exception("Found unexpected amount of LaunchPathSummaries")
+            path_id = response.get('LaunchPathSummaries')[0].get('Id')
+            logger.info('Got path for product')
 
+            params = generate_params(
+                account,
+                deployment_map,
+                launch_name,
+                parameters,
+                path_id,
+                product_id,
+                provisioning_artifact_id,
+                service_catalog
+            )
+
+            should_deploy = True
+
+            if provisioned_product_id:
+                #  [{'Key': 'Path', 'Value': '/human-roles/'}, {'Key': 'RoleName', 'Value': 'DevOps'}]
+                with betterboto_client.CrossAccountClientContextManager(
+                        'cloudformation', role, f"cfn-{account}-{region}", region_name=region
+                ) as cloudformation:
+                    stack = cloudformation.describe_stacks(
+                        StackName=f"SC-{account}-{provisioned_product_id}"
+                    ).get('Stacks')[0]
+                    existing_stack_params_dict = {}
+                    for stack_param in stack.get('Parameters'):
+                        existing_stack_params_dict[stack_param.get('ParameterKey')] = stack_param.get('ParameterValue')
+
+                    new_stack_params_dict = {}
+                    for existing_param in params:
+                        new_stack_params_dict[existing_param.get('Key')] = existing_param.get('Value')
+
+                    if new_stack_params_dict == existing_stack_params_dict:
+                        logger.info("Skipping deploy as parameters are the same")
+                        should_deploy = False
+
+            if should_deploy:
                 deploy_launch_to_account_and_region(
                     service_catalog,
                     launch,
