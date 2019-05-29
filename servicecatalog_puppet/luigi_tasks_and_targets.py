@@ -27,6 +27,11 @@ class SetSSMParamTask(luigi.Task):
     param_type = luigi.Parameter(default='String')
     stack_output = luigi.Parameter()
 
+    dependency = luigi.Parameter()
+
+    def requires(self):
+        ProvisionProductTask(**self.dependency)
+
     def output(self):
         return SSMParamTarget(self.param_name, False)
 
@@ -93,8 +98,6 @@ class ProvisionProductTask(luigi.Task):
     ssm_param_inputs = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
 
-    ssm_param_outputs = luigi.ListParameter(default=[])
-
     def add_requires(self, task):
         self.reqs.append(task)
 
@@ -120,22 +123,16 @@ class ProvisionProductTask(luigi.Task):
         time.sleep(self.delay)
 
         logger.info(f'doing cfn')
-        # parameters = []
-        # yield ProvisionProductCloudFormationTask(
-        #     self.launch_name,
-        #     self.portfolio,
-        #     self.product,
-        #     self.version,
-        #     self.account_id,
-        #     self.region,
-        #     parameters,
-        # )
-
-        # logger.info(f'doing outputs')
-        # for param_output in self.ssm_param_outputs:
-        #     yield SetSSMParamTask(
-        #         **param_output
-        #     )
+        parameters = []
+        yield ProvisionProductCloudFormationTask(
+            self.launch_name,
+            self.portfolio,
+            self.product,
+            self.version,
+            self.account_id,
+            self.region,
+            parameters,
+        )
 
         logger.info(f'writing to file')
         f = self.output().open('w')

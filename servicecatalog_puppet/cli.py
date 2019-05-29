@@ -14,7 +14,7 @@ import luigi
 from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet.luigi_tasks_and_targets import ProvisionProductTask
+from servicecatalog_puppet.luigi_tasks_and_targets import ProvisionProductTask, SetSSMParamTask
 from servicecatalog_puppet.commands.list_launches import do_list_launches
 from servicecatalog_puppet.utils import manifest as manifest_utils
 from servicecatalog_puppet.asset_helpers import resolve_from_site_packages, read_from_site_packages
@@ -142,6 +142,7 @@ def deploy(f, single_account):
     deployment_map = write_templates(deployment_map)
 
     all_tasks = {}
+    tasks_to_run = []
 
     for account_id, deployments_for_account in deployment_map.items():
         for launch_name, launch_details in deployments_for_account.get('launches').items():
@@ -184,12 +185,16 @@ def deploy(f, single_account):
                     'depends_on': launch_details.get('depends_on', []),
 
                     'dependencies': [],
-
-                    'ssm_param_outputs': launch_details.get('outputs', {}).get('ssm', [])
                 }
+
+                for output in launch_details.get('outputs', {}).get('ssm', []):
+                    tasks_to_run.append(
+                        SetSSMParamTask(**output, dependency=task)
+                    )
+
+                # 'ssm_param_outputs': launch_details.get('outputs', {}).get('ssm', [])
                 all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
 
-    tasks_to_run = []
 
     for task_uid, task in all_tasks.items():
         for dependency in task.get('depends_on', []):
