@@ -6,19 +6,21 @@ import click
 import pkg_resources
 import yaml
 import logging
+import json
 import os
 
 from jinja2 import Template
+import luigi
 from pykwalify.core import Core
-
 from betterboto import client as betterboto_client
 
+from servicecatalog_puppet.luigi_tasks_and_targets import ProvisionProductTask
 from servicecatalog_puppet.commands.list_launches import do_list_launches
 from servicecatalog_puppet.utils import manifest as manifest_utils
 from servicecatalog_puppet.asset_helpers import resolve_from_site_packages, read_from_site_packages
 from servicecatalog_puppet.constants import CONFIG_PARAM_NAME, CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN
 from servicecatalog_puppet.core import get_org_iam_role_arn, create_share_template, \
-    deploy_launches, get_regions, get_provisioning_artifact_id_for
+    get_regions, get_provisioning_artifact_id_for
 from servicecatalog_puppet.commands.bootstrap import do_bootstrap
 from servicecatalog_puppet.commands.bootstrap_spoke import do_bootstrap_spoke
 from servicecatalog_puppet.commands.expand import do_expand
@@ -59,250 +61,6 @@ def generate_shares(f):
     manifest = manifest_utils.load(f)
     deployment_map = build_deployment_map(manifest)
     create_share_template(deployment_map, get_puppet_account_id())
-
-
-
-
-
-
-
-from betterboto import client as betterboto_client
-import luigi
-import time
-import json
-
-
-class SSMParamTarget(luigi.Target):
-    def __init__(self, param_name):
-        super().__init__()
-        self.param_name = param_name
-
-    def exists(self):
-        with betterboto_client.ClientContextManager('ssm') as ssm:
-            try:
-                ssm.get_parameter(
-                    Name=self.param_name,
-                ).get('Parameter')
-                return True
-            except ssm.exceptions.ParameterNotFound:
-                return False
-
-    def read(self):
-        with betterboto_client.ClientContextManager('ssm') as ssm:
-            ssm.get_parameter(
-                Name=self.param_name,
-            ).get('Parameter')
-
-
-class GetSSMParamTask(luigi.Task):
-    name = luigi.Parameter()
-
-    def output(self):
-        return SSMParamTarget(self.name)
-
-    def run(self):
-        pass
-
-
-class SetSSMParamTask(luigi.Task):
-    param_name = luigi.Parameter()
-    param_type = luigi.Parameter(default='String')
-    stack_output = luigi.Parameter()
-
-    def output(self):
-        return SSMParamTarget(self.param_name)
-
-    def run(self):
-        with betterboto_client.ClientContextManager('ssm') as ssm:
-            value = self.stack_output
-            ssm.put_parameter(
-                Name=self.param_name,
-                Value=value,
-                Type=self.param_type,
-                Overwrite=True,
-            )
-
-
-class ProvisionProductCloudFormationTask(luigi.Task):
-    launch_name = luigi.Parameter()
-    portfolio = luigi.Parameter()
-    product = luigi.Parameter()
-    version = luigi.Parameter()
-
-    account_id = luigi.Parameter()
-    region = luigi.Parameter()
-
-    parameters = luigi.ListParameter()
-
-    # @property
-    # def resources(self):
-    #     return { f"cloudformation-in-{self.account_id}-{self.region}": 1 }
-
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/{self.portfolio}-{self.product}-{self.version}-{self.account_id}-{self.region}-cloudformation.log"
-        )
-
-    def run(self):
-        f = self.output().open('w')
-        f.write(
-            json.dumps({
-                'portfolio': self.portfolio,
-                'product': self.product,
-                'version': self.version,
-                'account_id': self.account_id,
-                'region': self.region,
-            })
-        )
-        f.close()
-
-
-class ProvisionProductTask(luigi.Task):
-    delay = luigi.FloatParameter(significant=False)
-    launch_name = luigi.Parameter()
-    portfolio = luigi.Parameter()
-    product = luigi.Parameter()
-    version = luigi.Parameter()
-
-    account_id = luigi.Parameter()
-    region = luigi.Parameter()
-    dependencies = luigi.ListParameter(default=[])
-    parameters = luigi.ListParameter(default=[])
-    ssm_param_outputs = luigi.ListParameter(default=[])
-    ssm_param_inputs = luigi.ListParameter(default=[])
-
-    def add_requires(self, task):
-        self.reqs.append(task)
-
-    def requires(self):
-        return [
-            self.__class__(**r) for r in self.dependencies
-        ]
-
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/{self.portfolio}-{self.product}-{self.version}-{self.account_id}-{self.region}.log"
-        )
-
-    def run(self):
-        time.sleep(self.delay)
-        f = self.output().open('w')
-        f.write(
-            json.dumps({
-                'portfolio': self.portfolio,
-                'product': self.product,
-                'version': self.version,
-                'account_id': self.account_id,
-                'region': self.region,
-            })
-        )
-        f.close()
-
-        for param_input in self.ssm_param_inputs:
-            yield GetSSMParamTask(
-                **param_input
-            )
-
-        parameters = []
-        yield ProvisionProductCloudFormationTask(
-            self.launch_name,
-            self.portfolio,
-            self.product,
-            self.version,
-            self.account_id,
-            self.region,
-            parameters,
-        )
-
-        for param_output in self.ssm_param_outputs:
-            yield SetSSMParamTask(
-                **param_output
-            )
-
-#
-# if __name__ == '__main__':
-#     luigi.build(
-#         [
-#             ProvisionProductTask(
-#                 delay=1,
-#                 launch_name='launch_3',
-#                 portfolio='my_portfolio_3',
-#                 product='my_product_3',
-#                 version='my_version_3',
-#                 account_id='my_account_id_3',
-#                 region='my_region_3',
-#                 parameters=[],
-#                 dependencies=[
-#                     {
-#                         'launch_name': 'launch_1',
-#                         'portfolio': 'my_portfolio_1',
-#                         'product': 'my_product_1',
-#                         'version': 'my_version_1',
-#                         'account_id': 'my_account_id_1',
-#                         'region': 'my_region_1',
-#                         'delay': 1,
-#                         'dependencies': [
-#                             {
-#                                 'launch_name': 'launch_2',
-#                                 'portfolio': 'my_portfolio_2',
-#                                 'product': 'my_product_2',
-#                                 'version': 'my_version_2',
-#                                 'account_id': 'my_account_id_2',
-#                                 'region': 'my_region_2',
-#                                 'delay': 1,
-#                             }
-#                         ]
-#                     }
-#                 ],
-#                 ssm_param_inputs=[
-#                     {
-#                         'name': 'foooooo'
-#                     }
-#                 ],
-#                 ssm_param_outputs=[
-#                     {
-#                         'param_name': 'foooooo',
-#                         'stack_output': 'bar',
-#                     },
-#                 ],
-#             ),
-#             ProvisionProductTask(
-#                 delay=1,
-#                 launch_name='launch_4',
-#                 portfolio='my_portfolio_4',
-#                 product='my_product_4',
-#                 version='my_version_4',
-#                 account_id='my_account_id_4',
-#                 region='my_region_4',
-#                 parameters=[],
-#                 dependencies=[
-#                     {
-#                         'launch_name': 'launch_2',
-#                         'portfolio': 'my_portfolio_2',
-#                         'product': 'my_product_2',
-#                         'version': 'my_version_2',
-#                         'account_id': 'my_account_id_2',
-#                         'region': 'my_region_2',
-#                         'delay': 1,
-#                     }
-#                 ],
-#                 ssm_param_inputs=[
-#                     {
-#                         'name': 'foooooo'
-#                     }
-#                 ],
-#                 ssm_param_outputs=[
-#                     {
-#                         'param_name': 'foooooo',
-#                         'stack_output': 'bar',
-#                     },
-#                 ],
-#             )
-#         ],
-#         # local_scheduler=True,
-#         workers=5,
-#     )
-
 
 
 def write_templates(deployment_map):
@@ -388,7 +146,27 @@ def deploy(f, single_account):
     for account_id, deployments_for_account in deployment_map.items():
         for launch_name, launch_details in deployments_for_account.get('launches').items():
             for region_name, regional_details in launch_details.get('regional_details').items():
+                regular_parameters = []
+                ssm_parameters = []
+                for parameter_name, parameter_detail in launch_details.get('parameters', {}).items():
+                    if parameter_detail.get('default') is not None:
+                        regular_parameters.append({
+                            'name': parameter_name,
+                            'value': parameter_detail.get('default')
+                        })
+                    if parameter_detail.get('ssm') is not None:
+                        if parameter_detail.get('ssm').get('region') is not None:
+                            ssm_parameters.append({
+                                'name': parameter_detail.get('ssm').get('name'),
+                                'region': parameter_detail.get('ssm').get('region')
+                            })
+                        else:
+                            ssm_parameters.append({
+                                'name': parameter_detail.get('ssm').get('name'),
+                            })
+
                 task = {
+                    'delay': 1,
                     'launch_name': launch_name,
                     'portfolio': launch_details.get('portfolio'),
                     'product': launch_details.get('product'),
@@ -400,33 +178,115 @@ def deploy(f, single_account):
                     'account_id': account_id,
                     'region': region_name,
 
+                    'parameters': regular_parameters,
+                    'ssm_param_inputs': ssm_parameters,
+
                     'depends_on': launch_details.get('depends_on', []),
 
                     'dependencies': [],
+
+                    'ssm_param_outputs': launch_details.get('outputs', {}).get('ssm', [])
                 }
                 all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
+
+    tasks_to_run = []
 
     for task_uid, task in all_tasks.items():
         for dependency in task.get('depends_on', []):
             for task_uid_2, task_2 in all_tasks.items():
                 if task_2.get('launch_name') == dependency:
                     task.get('dependencies').append(task_2)
-        # del task['depends_on']
+        del task['depends_on']
+        tasks_to_run.append(ProvisionProductTask(**task))
 
-    logger.info(all_tasks)
+    # d = [
+    #     {
+    #         "delay": 1,
+    #         "launch_name": "test-account-test-0001",
+    #         "portfolio": "demo-central-it-team-portfolio",
+    #         "product": "account-vending-account-creation",
+    #         "version": "v1",
+    #         "product_id": "prod-3rmsfujfpshea",
+    #         "version_id": "pa-az3naadf2up2q",
+    #         "account_id": "169800327496",
+    #         "region": "eu-west-1",
+    #         "parameters": [
+    #             {
+    #                 "name": "Email",
+    #                 "value": "email@domain.com"
+    #             },
+    #             {
+    #                 "name": "AccountName",
+    #                 "value": "a_nice_account_name"
+    #             },
+    #             {
+    #                 "name": "OrganizationAccountAccessRole",
+    #                 "value": "OrganizationAccountAccessRole"
+    #             },
+    #             {
+    #                 "name": "IamUserAccessToBilling",
+    #                 "value": "ALLOW"
+    #             },
+    #             {
+    #                 "name": "TargetOU",
+    #                 "value": "/"
+    #             }
+    #         ],
+    #         "ssm_param_inputs": [
+    #             # {
+    #             #     "name": "central-logging-bucket-name",
+    #             #     "region": "eu-west-1"
+    #             # },
+    #             # {
+    #             #     "name": "central-logging-bucket-name"
+    #             # }
+    #         ],
+    #         "dependencies": [
+    #             {
+    #                 "delay": 1,
+    #                 "launch_name": "account-vending-account-bootstrap-shared",
+    #                 "portfolio": "demo-central-it-team-portfolio",
+    #                 "product": "account-vending-account-bootstrap-shared",
+    #                 "version": "v1",
+    #                 "product_id": "prod-6azmxmkffmjrq",
+    #                 "version_id": "pa-egbnqrkgmsi4a",
+    #                 "account_id": "169800327496",
+    #                 "region": "eu-west-1",
+    #                 "parameters": [],
+    #                 "ssm_param_inputs": [],
+    #                 "dependencies": [],
+    #                 "ssm_param_outputs": []
+    #             },
+    #             {
+    #                 "delay": 1,
+    #                 "launch_name": "account-vending-account-creation-shared",
+    #                 "portfolio": "demo-central-it-team-portfolio",
+    #                 "product": "account-vending-account-creation-shared",
+    #                 "version": "v1",
+    #                 "product_id": "prod-ht45yp6kr6a2g",
+    #                 "version_id": "pa-j6vu4ac2nw2yc",
+    #                 "account_id": "169800327496",
+    #                 "region": "eu-west-1",
+    #                 "parameters": [],
+    #                 "ssm_param_inputs": [],
+    #                 "dependencies": [],
+    #                 "ssm_param_outputs": []
+    #             }
+    #         ],
+    #         "ssm_param_outputs": [
+    #             # {
+    #             #     "param_name": "account-iam-sysops-role-arn",
+    #             #     "stack_output": "RoleArn"
+    #             # }
+    #         ]
+    #     }
+    # ]
 
-
-
-
-
-    # logger.info('Starting to deploy')
-    # deploy_launches(
-    #     deployment_map,
-    #     manifest.get('parameters', {}),
-    #     single_account,
-    #     get_puppet_account_id()
-    # )
-    # logger.info('Finished deploy')
+    luigi.build(
+        tasks_to_run,
+        local_scheduler=True,
+        workers=10,
+    )
 
 
 @cli.command()
@@ -638,7 +498,7 @@ def quick_start():
         os.system(command)
         click.echo("Seeding")
         manifest = Template(
-            read_from_site_packages(os.path.sep.join(["manifests","manifest-quickstart.yaml"]))
+            read_from_site_packages(os.path.sep.join(["manifests", "manifest-quickstart.yaml"]))
         ).render(
             ACCOUNT_ID=puppet_account_id
         )
