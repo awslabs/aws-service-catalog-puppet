@@ -143,6 +143,7 @@ def deploy(f, single_account):
 
     all_tasks = {}
     tasks_to_run = []
+    puppet_account_id = get_puppet_account_id()
 
     for account_id, deployments_for_account in deployment_map.items():
         for launch_name, launch_details in deployments_for_account.get('launches').items():
@@ -178,6 +179,7 @@ def deploy(f, single_account):
 
                     'account_id': account_id,
                     'region': region_name,
+                    'puppet_account_id': puppet_account_id,
 
                     'parameters': regular_parameters,
                     'ssm_param_inputs': ssm_parameters,
@@ -193,7 +195,6 @@ def deploy(f, single_account):
                     )
 
                 all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
-
 
     for task_uid, task in all_tasks.items():
         for dependency in task.get('depends_on', []):
