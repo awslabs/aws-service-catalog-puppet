@@ -6,7 +6,6 @@ import click
 import pkg_resources
 import yaml
 import logging
-import json
 import os
 
 from jinja2 import Template
@@ -14,7 +13,7 @@ import luigi
 from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet.luigi_tasks_and_targets import ProvisionProductTask, SetSSMParamTask
+from servicecatalog_puppet.luigi_tasks_and_targets import ProvisionProductTask, SetSSMParamFromProvisionProductTask
 from servicecatalog_puppet.commands.list_launches import do_list_launches
 from servicecatalog_puppet.utils import manifest as manifest_utils
 from servicecatalog_puppet.asset_helpers import resolve_from_site_packages, read_from_site_packages
@@ -63,7 +62,7 @@ def generate_shares(f):
     create_share_template(deployment_map, get_puppet_account_id())
 
 
-def write_templates(deployment_map):
+def set_regions_for_deployment_map(deployment_map):
     logger.info('Starting to write the templates')
     ALL_REGIONS = get_regions()
     for account_id, account_details in deployment_map.items():
@@ -139,7 +138,7 @@ def write_templates(deployment_map):
 def deploy(f, single_account):
     manifest = manifest_utils.load(f)
     deployment_map = build_deployment_map(manifest)
-    deployment_map = write_templates(deployment_map)
+    deployment_map = set_regions_for_deployment_map(deployment_map)
 
     all_tasks = {}
     tasks_to_run = []
@@ -191,7 +190,7 @@ def deploy(f, single_account):
 
                 for output in launch_details.get('outputs', {}).get('ssm', []):
                     tasks_to_run.append(
-                        SetSSMParamTask(**output, dependency=task)
+                        SetSSMParamFromProvisionProductTask(**output, dependency=task)
                     )
 
                 all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task

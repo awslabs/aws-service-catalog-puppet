@@ -44,8 +44,12 @@ def terminate_if_status_is_not_available(
     return provisioned_product_id, provisioning_artifact_id
 
 
+def get_stack_output_for(cloudformation, stack_name):
+    return cloudformation.describe_stacks(StackName=stack_name).get('Stacks')[0]
+
+
 def get_parameters_for_stack(cloudformation, stack_name):
-    stack = cloudformation.describe_stacks(StackName=stack_name).get('Stacks')[0]
+    stack = get_stack_output_for(cloudformation, stack_name)
     existing_stack_params_dict = {}
     for stack_param in stack.get('Parameters', []):
         existing_stack_params_dict[stack_param.get('ParameterKey')] = stack_param.get('ParameterValue')
@@ -115,27 +119,53 @@ def provision_product(
                 yaml.safe_dump(response.get('ResourceChanges'))
             )
         )
-    else:
-        raise Exception(
-            "Plan was not successful: {}".format(
-                response.get('ProvisionedProductPlanDetails').get('StatusMessage')
+        logger.info("Executing product plan")
+        service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
+        execute_status = 'EXECUTE_IN_PROGRESS'
+        while execute_status == 'EXECUTE_IN_PROGRESS':
+            response = service_catalog.describe_provisioned_product_plan(
+                PlanId=plan_id
             )
-        )
+            logger.info("plan_id is: {}".format(plan_id))
+            execute_status = response.get('ProvisionedProductPlanDetails').get('Status')
+            logger.info('Waiting for execute: {}'.format(execute_status))
+            time.sleep(5)
 
-    logger.info("Executing product plan")
-    service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
-    execute_status = 'EXECUTE_IN_PROGRESS'
-    while execute_status == 'EXECUTE_IN_PROGRESS':
-        response = service_catalog.describe_provisioned_product_plan(
-            PlanId=plan_id
-        )
-        logger.info("plan_id is: {}".format(plan_id))
-        execute_status = response.get('ProvisionedProductPlanDetails').get('Status')
-        logger.info('Waiting for execute: {}'.format(execute_status))
-        time.sleep(5)
+        if execute_status == 'CREATE_SUCCESS':
+            logger.info(f"Product plan for {launch_name} is {execute_status}")
+            provisioned_product_id = response.get('ProvisionedProductPlanDetails').get('ProvisionProductId')
 
-    if execute_status == 'CREATE_SUCCESS':
-        pass
+            logger.info(f"Waiting for product to finish updating")
+            while True:
+                response = service_catalog.describe_provisioned_product(
+                    Id=provisioned_product_id
+                )
+                logger.info(f"Status for {launch_name} is {response.get('ProvisionedProductDetail').get('Status')}")
+                execute_status = response.get('ProvisionedProductDetail').get('Status')
+                if execute_status in ['AVAILABLE', 'TAINTED', 'ERROR']:
+                    break
+                else:
+                    time.sleep(5)
+
+            service_catalog.delete_provisioned_product_plan(PlanId=plan_id)
+            return provisioned_product_id
+
+        else:
+            logger.error(f"[{launch_name}] {account_id}:{region} :: "
+                     f"Execute failed: {execute_status}")
+            return False
+
     else:
-        raise Exception("Execute was not successful: {}".format(execute_status))
-    service_catalog.delete_provisioned_product_plan(PlanId=plan_id)
+        logger.error(f"[{launch_name}] {account_id}:{region} :: "
+                     f"Plan failed: {response.get('ProvisionedProductPlanDetails').get('StatusMessage')}")
+        return False
+
+
+def get_path_for_product(service_catalog, product_id):
+    logger.info('Getting path for product')
+    response = service_catalog.list_launch_paths(ProductId=product_id)
+    if len(response.get('LaunchPathSummaries')) != 1:
+        raise Exception("Found unexpected amount of LaunchPathSummaries")
+    path_id = response.get('LaunchPathSummaries')[0].get('Id')
+    logger.info('Got path for product')
+    return path_id
