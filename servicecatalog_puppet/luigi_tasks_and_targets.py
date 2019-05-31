@@ -38,6 +38,7 @@ class SSMParamTarget(luigi.Target):
 
 
 class GetSSMParamTask(luigi.Task):
+    parameter_name = luigi.Parameter()
     name = luigi.Parameter()
     region = luigi.Parameter(default=None)
 
@@ -96,7 +97,7 @@ class ProvisionProductTask(luigi.Task):
     def requires(self):
         ssm_params = {}
         for param_input in self.ssm_param_inputs:
-            ssm_params[param_input.get('name')] = GetSSMParamTask(**param_input)
+            ssm_params[param_input.get('parameter_name')] = GetSSMParamTask(**param_input)
 
         return {
             'dependencies': [
@@ -112,17 +113,15 @@ class ProvisionProductTask(luigi.Task):
         )
 
     def run(self):
-        logger.info(
-            f'starting main {self.launch_name} {self.portfolio} {self.product} {self.version} {self.account_id} {self.region}')
-        time.sleep(self.delay)
-
-        logger.info(f'doing cfn')
+        logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: starting deploy")
 
         all_params = {}
 
+        logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: collecting ssm params")
         for ssm_param_name, ssm_param in self.input().get('ssm_params', {}).items():
             all_params[ssm_param_name] = ssm_param.read()
 
+        logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: collecting manifest params")
         for parameter in self.parameters:
             all_params[parameter.get('name')] = parameter.get('value')
 
@@ -130,17 +129,16 @@ class ProvisionProductTask(luigi.Task):
         with betterboto_client.CrossAccountClientContextManager(
                 'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
         ) as service_catalog:
+            logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
             provisioned_product_id, provisioning_artifact_id = aws.terminate_if_status_is_not_available(
                 service_catalog, self.launch_name, self.product_id
             )
 
             need_to_provision = True
             if provisioning_artifact_id == self.version_id:
-                logger.info(
-                    f"{self.launch_name} version {self.version_id} was already provisioned into {self.account_id}"
-                )
+                logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: found previous good provision")
                 if provisioned_product_id:
-                    logger.info(f"Checking to see if parameters have changed")
+                    logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: checking params for diffs")
                     with betterboto_client.CrossAccountClientContextManager(
                             'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
                     ) as cloudformation:
@@ -149,13 +147,14 @@ class ProvisionProductTask(luigi.Task):
                             f"SC-{self.account_id}-{provisioned_product_id}"
                         )
                         if provisioned_parameters == all_params:
-                            logger.info("Parameters the same, doing nothing")
+                            logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: params unchanged")
                             need_to_provision = False
                         else:
-                            logger.info("Parameters have changed, need to update")
+                            logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: params changed")
 
             if need_to_provision:
-                logger.info(f"Provisioning {self.launch_name} into account {self.account_id} {self.region}")
+                logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: about to provision with "
+                             f"params: {all_params}")
                 provisioned_product_id = aws.provision_product(
                     service_catalog,
                     self.launch_name,
@@ -181,7 +180,4 @@ class ProvisionProductTask(luigi.Task):
                     )
                 )
             f.close()
-            logger.info(
-                f'finished {self.launch_name} {self.portfolio} {self.product} {self.version} '
-                f'for {self.account_id} {self.region}'
-            )
+            logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished provisioning")

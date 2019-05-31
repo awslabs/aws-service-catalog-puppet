@@ -159,11 +159,13 @@ def deploy(f, single_account):
                         if parameter_detail.get('ssm').get('region') is not None:
                             ssm_parameters.append({
                                 'name': parameter_detail.get('ssm').get('name'),
-                                'region': parameter_detail.get('ssm').get('region')
+                                'region': parameter_detail.get('ssm').get('region'),
+                                'parameter_name': parameter_name,
                             })
                         else:
                             ssm_parameters.append({
                                 'name': parameter_detail.get('ssm').get('name'),
+                                'parameter_name': parameter_name,
                             })
 
                 task = {
@@ -206,7 +208,9 @@ def deploy(f, single_account):
     luigi.build(
         tasks_to_run,
         local_scheduler=True,
+        detailed_summary=True,
         workers=10,
+        log_level='INFO',
     )
 
 
