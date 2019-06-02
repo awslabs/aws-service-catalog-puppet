@@ -54,23 +54,29 @@ class SetSSMParamFromProvisionProductTask(luigi.Task):
     param_type = luigi.Parameter(default='String')
     stack_output = luigi.Parameter()
 
-    dependency = luigi.Parameter()
+    dependency = luigi.DictParameter()
 
     def requires(self):
-        ProvisionProductTask(**self.dependency)
+        return ProvisionProductTask(**self.dependency)
 
     def output(self):
         return SSMParamTarget(self.param_name, False)
 
     def run(self):
         with betterboto_client.ClientContextManager('ssm') as ssm:
-            value = self.stack_output
-            ssm.put_parameter(
-                Name=self.param_name,
-                Value=value,
-                Type=self.param_type,
-                Overwrite=True,
-            )
+            outputs = json.loads(self.input().open('r').read()).get('Outputs')
+            written = False
+            for output in outputs:
+                if output.get('OutputKey') == self.stack_output:
+                    written = True
+                    ssm.put_parameter(
+                        Name=self.param_name,
+                        Value=output.get('OutputValue'),
+                        Type=self.param_type,
+                        Overwrite=True,
+                    )
+            if not written:
+                raise Exception("Could not write SSM Param from Provisioned Product. Wrong stack_output?")
 
 
 class ProvisionProductTask(luigi.Task):
@@ -154,7 +160,7 @@ class ProvisionProductTask(luigi.Task):
 
             if need_to_provision:
                 logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: about to provision with "
-                             f"params: {all_params}")
+                             f"params: {json.dumps(all_params)}")
                 provisioned_product_id = aws.provision_product(
                     service_catalog,
                     self.launch_name,

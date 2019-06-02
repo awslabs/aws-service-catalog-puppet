@@ -1,5 +1,7 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
+import copy
+
 import shutil
 
 import click
@@ -168,6 +170,8 @@ def deploy(f, single_account):
                                 'parameter_name': parameter_name,
                             })
 
+                logger.info(f"Found a new launch: {launch_name}")
+
                 task = {
                     'delay': 1,
                     'launch_name': launch_name,
@@ -191,8 +195,10 @@ def deploy(f, single_account):
                 }
 
                 for output in launch_details.get('outputs', {}).get('ssm', []):
+                    t = copy.deepcopy(task)
+                    del t['depends_on']
                     tasks_to_run.append(
-                        SetSSMParamFromProvisionProductTask(**output, dependency=task)
+                        SetSSMParamFromProvisionProductTask(**output, dependency=t)
                     )
 
                 all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
