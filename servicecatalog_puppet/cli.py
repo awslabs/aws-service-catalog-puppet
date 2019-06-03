@@ -77,7 +77,7 @@ def set_regions_for_deployment_map(deployment_map):
                         regions = a.get('regions')
                         if regions == "enabled":
                             regions = account_details.get('regions_enabled')
-                        elif regions == "default_region":
+                        elif regions == "default_region" or regions is None:
                             regions = account_details.get('default_region')
                         elif regions == "all":
                             regions = ALL_REGIONS
@@ -100,7 +100,7 @@ def set_regions_for_deployment_map(deployment_map):
                         regions = t.get('regions')
                         if regions == "enabled":
                             regions = account_details.get('regions_enabled')
-                        elif regions == "default_region":
+                        elif regions == "default_region" or regions is None:
                             regions = account_details.get('default_region')
                         elif regions == "all":
                             regions = ALL_REGIONS
