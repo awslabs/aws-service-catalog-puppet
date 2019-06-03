@@ -193,6 +193,10 @@ def deploy(f, single_account):
                     'dependencies': [],
                 }
 
+                if manifest.get('configuration'):
+                    if manifest.get('configuration').get('retry_count'):
+                        task['retry_count'] = manifest.get('configuration').get('retry_count')
+
                 if launch_details.get('configuration'):
                     if launch_details.get('configuration').get('retry_count'):
                         task['retry_count'] = launch_details.get('configuration').get('retry_count')
