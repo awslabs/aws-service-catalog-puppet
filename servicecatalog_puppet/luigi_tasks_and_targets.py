@@ -7,7 +7,7 @@ import json
 
 import logging
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger("tasks")
 
 
 class SSMParamTarget(luigi.Target):
@@ -162,7 +162,27 @@ class ProvisionProductTask(luigi.Task):
 
             if need_to_provision:
                 logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: about to provision with "
-                             f"params: {json.dumps(all_params)}")
+                            f"params: {json.dumps(all_params)}")
+
+                if provisioned_product_id:
+                    with betterboto_client.CrossAccountClientContextManager(
+                            'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
+                    ) as cloudformation:
+                        stack = aws.get_stack_output_for(
+                            cloudformation,
+                            f"SC-{self.account_id}-{provisioned_product_id}"
+                        )
+                        stack_status = stack.get('StackStatus')
+                        logger.info(
+                            f"[{self.launch_name}] {self.account_id}:{self.region} :: current cfn stack_status is "
+                            f"{stack_status}")
+                        if stack_status != "UPDATE_COMPLETE":
+                            raise Exception(
+                                f"[{self.launch_name}] {self.account_id}:{self.region} :: current cfn stack_status is "
+                                f"{stack_status}"
+                            )
+
+
                 provisioned_product_id = aws.provision_product(
                     service_catalog,
                     self.launch_name,
