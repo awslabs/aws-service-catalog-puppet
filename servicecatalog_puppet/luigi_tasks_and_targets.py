@@ -1,5 +1,3 @@
-import time
-
 from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import aws
@@ -80,7 +78,6 @@ class SetSSMParamFromProvisionProductTask(luigi.Task):
 
 
 class ProvisionProductTask(luigi.Task):
-    delay = luigi.FloatParameter(significant=False)
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
     product = luigi.Parameter()

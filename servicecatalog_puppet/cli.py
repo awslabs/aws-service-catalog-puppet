@@ -173,7 +173,6 @@ def deploy(f, single_account):
                 logger.info(f"Found a new launch: {launch_name}")
 
                 task = {
-                    'delay': 1,
                     'launch_name': launch_name,
                     'portfolio': launch_details.get('portfolio'),
                     'product': launch_details.get('product'),
