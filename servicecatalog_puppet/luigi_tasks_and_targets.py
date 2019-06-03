@@ -119,15 +119,15 @@ class ProvisionProductTask(luigi.Task):
         )
 
     def run(self):
-        logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: starting deploy")
+        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: starting deploy")
 
         all_params = {}
 
-        logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: collecting ssm params")
+        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: collecting ssm params")
         for ssm_param_name, ssm_param in self.input().get('ssm_params', {}).items():
             all_params[ssm_param_name] = ssm_param.read()
 
-        logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: collecting manifest params")
+        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: collecting manifest params")
         for parameter in self.parameters:
             all_params[parameter.get('name')] = parameter.get('value')
 
@@ -135,16 +135,16 @@ class ProvisionProductTask(luigi.Task):
         with betterboto_client.CrossAccountClientContextManager(
                 'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
         ) as service_catalog:
-            logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
+            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
             provisioned_product_id, provisioning_artifact_id = aws.terminate_if_status_is_not_available(
                 service_catalog, self.launch_name, self.product_id
             )
 
             need_to_provision = True
             if provisioning_artifact_id == self.version_id:
-                logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: found previous good provision")
+                logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: found previous good provision")
                 if provisioned_product_id:
-                    logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: checking params for diffs")
+                    logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: checking params for diffs")
                     with betterboto_client.CrossAccountClientContextManager(
                             'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
                     ) as cloudformation:
@@ -153,13 +153,13 @@ class ProvisionProductTask(luigi.Task):
                             f"SC-{self.account_id}-{provisioned_product_id}"
                         )
                         if provisioned_parameters == all_params:
-                            logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: params unchanged")
+                            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: params unchanged")
                             need_to_provision = False
                         else:
-                            logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: params changed")
+                            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: params changed")
 
             if need_to_provision:
-                logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: about to provision with "
+                logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: about to provision with "
                              f"params: {json.dumps(all_params)}")
                 provisioned_product_id = aws.provision_product(
                     service_catalog,
@@ -186,4 +186,4 @@ class ProvisionProductTask(luigi.Task):
                     )
                 )
             f.close()
-            logger.error(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished provisioning")
+            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished provisioning")

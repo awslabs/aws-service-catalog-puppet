@@ -29,7 +29,7 @@ def terminate_if_status_is_not_available(
                 service_catalog.terminate_provisioned_product(
                     ProvisionedProductId=r.get('Id')
                 )
-                logger.info("Waiting for termination")
+                logger.info(f"Waiting for termination of {provisioned_product_name}")
                 while True:
                     response = service_catalog.search_provisioned_products(
                         Filters={
@@ -45,10 +45,12 @@ def terminate_if_status_is_not_available(
 
 
 def get_stack_output_for(cloudformation, stack_name):
+    logger.info(f"Getting stack output for {stack_name}")
     return cloudformation.describe_stacks(StackName=stack_name).get('Stacks')[0]
 
 
 def get_parameters_for_stack(cloudformation, stack_name):
+    logger.info(f"Getting parameters for for {stack_name}")
     stack = get_stack_output_for(cloudformation, stack_name)
     existing_stack_params_dict = {}
     for stack_param in stack.get('Parameters', []):
@@ -69,9 +71,8 @@ def provision_product(
         version,
 ):
     stack_name = "-".join([PREFIX, account_id, region, launch_name])
-    logger.info('Creating plan, params: {}'.format(params))
+    logger.info(f"[{launch_name}] {account_id}:{region} :: Creating a plan")
     regional_sns_topic = f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-    logger.info("regional_sns_topic is: {}".format(regional_sns_topic))
     provisioning_parameters = []
     for p in params.keys():
         provisioning_parameters.append({
@@ -100,7 +101,7 @@ def provision_product(
             regional_sns_topic,
         ],
     )
-    logger.info('Plan created, waiting for completion')
+    logger.info(f"[{launch_name}] {account_id}:{region} :: Plan created, waiting for completion")
 
     plan_id = response.get('PlanId')
     plan_status = 'CREATE_IN_PROGRESS'
@@ -115,32 +116,33 @@ def provision_product(
 
     if plan_status == 'CREATE_SUCCESS':
         logger.info(
-            'Changes in the product: {}'.format(
-                yaml.safe_dump(response.get('ResourceChanges'))
-            )
+            f"[{launch_name}] {account_id}:{region} :: Plan created, "
+            f"changes: {yaml.safe_dump(response.get('ResourceChanges'))}"
         )
-        logger.info("Executing product plan")
+        logger.info(f"[{launch_name}] {account_id}:{region} :: executing changes")
         service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
         execute_status = 'EXECUTE_IN_PROGRESS'
         while execute_status == 'EXECUTE_IN_PROGRESS':
             response = service_catalog.describe_provisioned_product_plan(
                 PlanId=plan_id
             )
-            logger.info("plan_id is: {}".format(plan_id))
+            logger.info(f"[{launch_name}] {account_id}:{region} :: executing changes for plan: {plan_id}")
             execute_status = response.get('ProvisionedProductPlanDetails').get('Status')
-            logger.info('Waiting for execute: {}'.format(execute_status))
+            logger.info(f"[{launch_name}] {account_id}:{region} :: waiting for execution to complete: {execute_status}")
             time.sleep(5)
 
         if execute_status == 'CREATE_SUCCESS':
-            logger.info(f"Product plan for {launch_name} is {execute_status}")
             provisioned_product_id = response.get('ProvisionedProductPlanDetails').get('ProvisionProductId')
 
-            logger.info(f"Waiting for product to finish updating")
+            logger.info(f"[{launch_name}] {account_id}:{region} :: waiting for change to complete")
             while True:
                 response = service_catalog.describe_provisioned_product(
                     Id=provisioned_product_id
                 )
-                logger.info(f"Status for {launch_name} is {response.get('ProvisionedProductDetail').get('Status')}")
+                logger.info(
+                    f"[{launch_name}] {account_id}:{region} :: "
+                    f"waiting for change to complete: {response.get('ProvisionedProductDetail').get('Status')}"
+                )
                 execute_status = response.get('ProvisionedProductDetail').get('Status')
                 if execute_status in ['AVAILABLE', 'TAINTED', 'ERROR']:
                     break
@@ -151,8 +153,7 @@ def provision_product(
             return provisioned_product_id
 
         else:
-            logger.error(f"[{launch_name}] {account_id}:{region} :: "
-                     f"Execute failed: {execute_status}")
+            logger.error(f"[{launch_name}] {account_id}:{region} :: Execute failed: {execute_status}")
             return False
 
     else:
@@ -162,10 +163,10 @@ def provision_product(
 
 
 def get_path_for_product(service_catalog, product_id):
-    logger.info('Getting path for product')
+    logger.info(f'Getting path for product {product_id}')
     response = service_catalog.list_launch_paths(ProductId=product_id)
     if len(response.get('LaunchPathSummaries')) != 1:
         raise Exception("Found unexpected amount of LaunchPathSummaries")
     path_id = response.get('LaunchPathSummaries')[0].get('Id')
-    logger.info('Got path for product')
+    logger.info(f'Got path: {path_id} for product: {product_id}')
     return path_id
