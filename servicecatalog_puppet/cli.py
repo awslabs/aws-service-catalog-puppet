@@ -194,6 +194,10 @@ def deploy(f, single_account):
                     'dependencies': [],
                 }
 
+                if launch_details.get('configuration'):
+                    if launch_details.get('configuration').get('retry_count'):
+                        task['retry_count'] = launch_details.get('configuration').get('retry_count')
+
                 for output in launch_details.get('outputs', {}).get('ssm', []):
                     t = copy.deepcopy(task)
                     del t['depends_on']

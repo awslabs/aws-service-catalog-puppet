@@ -97,6 +97,10 @@ class ProvisionProductTask(luigi.Task):
     ssm_param_inputs = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
 
+    retry_count = luigi.IntParameter(default=1)
+
+    try_count = 1
+
     def add_requires(self, task):
         self.reqs.append(task)
 
@@ -119,7 +123,8 @@ class ProvisionProductTask(luigi.Task):
         )
 
     def run(self):
-        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: starting deploy")
+        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
+                    f"starting deploy try {self.try_count} of {self.retry_count}")
 
         all_params = {}
 
