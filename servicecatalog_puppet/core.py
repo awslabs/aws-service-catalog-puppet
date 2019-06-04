@@ -2,6 +2,7 @@ import logging
 import os
 import time
 from threading import Thread
+import traceback
 
 import yaml
 from betterboto import client as betterboto_client
