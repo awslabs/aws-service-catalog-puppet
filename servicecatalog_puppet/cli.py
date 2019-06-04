@@ -5,6 +5,7 @@ import copy
 import shutil
 import json
 
+import luigi
 import click
 import pkg_resources
 import yaml
@@ -12,7 +13,6 @@ import logging
 import os
 
 from jinja2 import Template
-import luigi
 from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
@@ -213,14 +213,7 @@ def deploy(f, single_account):
 
     logger.info(f"Deployment plan: {json.dumps(all_tasks)}")
 
-    for task_uid, task in all_tasks.items():
-        for dependency in task.get('depends_on', []):
-            for task_uid_2, task_2 in all_tasks.items():
-                if task_2.get('launch_name') == dependency:
-                    task.get('dependencies').append(task_2)
-        del task['depends_on']
-        logger.info(f"Scheduling ProvisionProductTask: {json.dumps(task)}")
-        tasks_to_run.append(ProvisionProductTask(**task))
+    tasks_to_run = [ProvisionProductTask(**task) for task in wire_dependencies(all_tasks)]
 
     luigi.build(
         tasks_to_run,
@@ -229,6 +222,19 @@ def deploy(f, single_account):
         workers=10,
         log_level='INFO',
     )
+
+
+def wire_dependencies(all_tasks):
+    tasks_to_run = []
+    for task_uid, task in all_tasks.items():
+        for dependency in task.get('depends_on', []):
+            for task_uid_2, task_2 in all_tasks.items():
+                if task_2.get('launch_name') == dependency:
+                    task.get('dependencies').append(task_2)
+        del task['depends_on']
+        logger.info(f"Scheduling ProvisionProductTask: {json.dumps(task)}")
+        tasks_to_run.append(task)
+    return tasks_to_run
 
 
 @cli.command()
