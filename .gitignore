@@ -1,4 +1,4 @@
-venv
+ venv
 .idea
 *.iml
 ServiceCatalogPuppet/
@@ -7,3 +7,4 @@ dist
 __pycache__
 output
 .envrc
+ignored

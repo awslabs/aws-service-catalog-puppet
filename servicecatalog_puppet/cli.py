@@ -3,6 +3,7 @@
 import copy
 
 import shutil
+import json
 
 import click
 import pkg_resources
@@ -210,12 +211,15 @@ def deploy(f, single_account):
 
                 all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
 
+    logger.info(f"Deployment plan: {json.dumps(all_tasks)}")
+
     for task_uid, task in all_tasks.items():
         for dependency in task.get('depends_on', []):
             for task_uid_2, task_2 in all_tasks.items():
                 if task_2.get('launch_name') == dependency:
                     task.get('dependencies').append(task_2)
         del task['depends_on']
+        logger.info(f"Scheduling ProvisionProductTask: {json.dumps(task)}")
         tasks_to_run.append(ProvisionProductTask(**task))
 
     luigi.build(
