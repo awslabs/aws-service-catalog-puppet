@@ -111,7 +111,7 @@ def provision_product(
             PlanId=plan_id
         )
         plan_status = response.get('ProvisionedProductPlanDetails').get('Status')
-        logger.info('Waiting for product plan: {}'.format(plan_status))
+        logger.info(f"[{launch_name}] {account_id}:{region} :: Waiting for product plan: {plan_status}")
         time.sleep(5)
 
     if plan_status == 'CREATE_SUCCESS':

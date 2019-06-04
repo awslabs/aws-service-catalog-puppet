@@ -16,6 +16,7 @@ from jinja2 import Template
 from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
+from servicecatalog_puppet import aws
 from servicecatalog_puppet.luigi_tasks_and_targets import ProvisionProductTask, SetSSMParamFromProvisionProductTask
 from servicecatalog_puppet.commands.list_launches import do_list_launches
 from servicecatalog_puppet.utils import manifest as manifest_utils
@@ -152,6 +153,37 @@ def deploy(f, single_account):
             for region_name, regional_details in launch_details.get('regional_details').items():
                 regular_parameters = []
                 ssm_parameters = []
+
+                product_id = regional_details.get('product_id')
+
+                role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
+                with betterboto_client.CrossAccountClientContextManager(
+                        'servicecatalog', role, f'sc-{account_id}-{region_name}', region_name=region_name
+                ) as service_catalog:
+                    response = service_catalog.describe_provisioning_parameters(
+                        ProductId=product_id,
+                        ProvisioningArtifactId=regional_details.get('version_id'),
+                        PathId=aws.get_path_for_product(service_catalog, product_id),
+                    )
+                    for provisioning_artifact_parameters in response.get('ProvisioningArtifactParameters', []):
+                        parameter_key = provisioning_artifact_parameters.get('ParameterKey')
+                        if deployment_map.get(account_id).get('parameters', {}).get(parameter_key, {}).get('default'):
+                            regular_parameters.append({
+                                'name': str(parameter_key),
+                                'value': str(
+                                    deployment_map.get(
+                                        account_id
+                                    ).get('parameters', {}).get(parameter_key, {}).get('default')
+                                )
+                            })
+                        elif manifest.get('parameters', {}).get(parameter_key, {}).get('default'):
+                            regular_parameters.append({
+                                'name': str(parameter_key),
+                                'value': str(
+                                    manifest.get('parameters', {}).get(parameter_key, {}).get('default')
+                                )
+                            })
+
                 for parameter_name, parameter_detail in launch_details.get('parameters', {}).items():
                     if parameter_detail.get('default') is not None:
                         regular_parameters.append({

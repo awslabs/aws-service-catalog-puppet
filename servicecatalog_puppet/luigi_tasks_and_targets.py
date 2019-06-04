@@ -182,7 +182,6 @@ class ProvisionProductTask(luigi.Task):
                                 f"{stack_status}"
                             )
 
-
                 provisioned_product_id = aws.provision_product(
                     service_catalog,
                     self.launch_name,
