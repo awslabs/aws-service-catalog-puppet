@@ -176,7 +176,7 @@ class ProvisionProductTask(luigi.Task):
                         logger.info(
                             f"[{self.launch_name}] {self.account_id}:{self.region} :: current cfn stack_status is "
                             f"{stack_status}")
-                        if stack_status != "UPDATE_COMPLETE":
+                        if stack_status not in ["UPDATE_COMPLETE", "CREATE_COMPLETE"]:
                             raise Exception(
                                 f"[{self.launch_name}] {self.account_id}:{self.region} :: current cfn stack_status is "
                                 f"{stack_status}"
