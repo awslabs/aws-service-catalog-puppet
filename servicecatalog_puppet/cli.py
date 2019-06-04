@@ -1,5 +1,7 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
+import copy
+
 import shutil
 
 import click
@@ -9,16 +11,17 @@ import logging
 import os
 
 from jinja2 import Template
+import luigi
 from pykwalify.core import Core
-
 from betterboto import client as betterboto_client
 
+from servicecatalog_puppet.luigi_tasks_and_targets import ProvisionProductTask, SetSSMParamFromProvisionProductTask
 from servicecatalog_puppet.commands.list_launches import do_list_launches
 from servicecatalog_puppet.utils import manifest as manifest_utils
 from servicecatalog_puppet.asset_helpers import resolve_from_site_packages, read_from_site_packages
 from servicecatalog_puppet.constants import CONFIG_PARAM_NAME, CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN
-from servicecatalog_puppet.core import get_org_iam_role_arn, write_templates, create_share_template, \
-    deploy_launches
+from servicecatalog_puppet.core import get_org_iam_role_arn, create_share_template, \
+    get_regions, get_provisioning_artifact_id_for
 from servicecatalog_puppet.commands.bootstrap import do_bootstrap
 from servicecatalog_puppet.commands.bootstrap_spoke import do_bootstrap_spoke
 from servicecatalog_puppet.commands.expand import do_expand
@@ -61,21 +64,167 @@ def generate_shares(f):
     create_share_template(deployment_map, get_puppet_account_id())
 
 
+def set_regions_for_deployment_map(deployment_map):
+    logger.info('Starting to write the templates')
+    ALL_REGIONS = get_regions()
+    for account_id, account_details in deployment_map.items():
+        for launch_name, launch_details in account_details.get('launches').items():
+            logger.info('Looking at account: {} and launch: {}'.format(account_id, launch_name))
+            if launch_details.get('match') == 'account_match':
+                logger.info('Setting regions for account matched')
+                for a in launch_details.get('deploy_to').get('accounts'):
+                    if a.get('account_id') == account_id:
+                        regions = a.get('regions')
+                        if regions == "enabled":
+                            regions = account_details.get('regions_enabled')
+                        elif regions == "default_region" or regions is None:
+                            regions = account_details.get('default_region')
+                        elif regions == "all":
+                            regions = ALL_REGIONS
+                        elif isinstance(regions, list):
+                            for region in regions:
+                                if region not in ALL_REGIONS:
+                                    raise Exception("Unknown region: {}".format(region))
+                        elif isinstance(regions, str) and regions in ALL_REGIONS:
+                            pass
+                        else:
+                            raise Exception("Unknown regions: {}".format(regions))
+                        if isinstance(regions, str):
+                            regions = [regions]
+                        launch_details['regions'] = regions
+
+            elif launch_details.get('match') == 'tag_match':
+                logger.info('Setting regions for tag matched')
+                for t in launch_details.get('deploy_to').get('tags'):
+                    if t.get('tag') in account_details.get('tags'):
+                        regions = t.get('regions')
+                        if regions == "enabled":
+                            regions = account_details.get('regions_enabled')
+                        elif regions == "default_region" or regions is None:
+                            regions = account_details.get('default_region')
+                        elif regions == "all":
+                            regions = ALL_REGIONS
+                        elif isinstance(regions, list):
+                            for region in regions:
+                                if region not in ALL_REGIONS:
+                                    raise Exception("Unknown region: {}".format(region))
+                        elif isinstance(regions, str) and regions in ALL_REGIONS:
+                            pass
+                        else:
+                            raise Exception("Unknown regions: {}".format(regions))
+                        if isinstance(regions, str):
+                            regions = [regions]
+                        launch_details['regions'] = regions
+
+            assert launch_details.get('regions') is not None, "Launch {} has no regions set".format(launch_name)
+            launch_details['regional_details'] = {}
+            for region in launch_details.get('regions'):
+                logger.info('Starting region: {}'.format(region))
+                product_id, version_id = get_provisioning_artifact_id_for(
+                    launch_details.get('portfolio'),
+                    launch_details.get('product'),
+                    launch_details.get('version'),
+                    account_id,
+                    region
+                )
+                launch_details['regional_details'][region] = {
+                    'product_id': product_id,
+                    'version_id': version_id,
+                }
+    return deployment_map
+
+
 @cli.command()
 @click.argument('f', type=click.File())
 @click.option('--single-account', default=None)
 def deploy(f, single_account):
     manifest = manifest_utils.load(f)
     deployment_map = build_deployment_map(manifest)
-    write_templates(deployment_map)
-    logger.info('Starting to deploy')
-    deploy_launches(
-        deployment_map,
-        manifest.get('parameters', {}),
-        single_account,
-        get_puppet_account_id()
+    deployment_map = set_regions_for_deployment_map(deployment_map)
+
+    all_tasks = {}
+    tasks_to_run = []
+    puppet_account_id = get_puppet_account_id()
+
+    for account_id, deployments_for_account in deployment_map.items():
+        for launch_name, launch_details in deployments_for_account.get('launches').items():
+            for region_name, regional_details in launch_details.get('regional_details').items():
+                regular_parameters = []
+                ssm_parameters = []
+                for parameter_name, parameter_detail in launch_details.get('parameters', {}).items():
+                    if parameter_detail.get('default') is not None:
+                        regular_parameters.append({
+                            'name': parameter_name,
+                            'value': parameter_detail.get('default')
+                        })
+                    if parameter_detail.get('ssm') is not None:
+                        if parameter_detail.get('ssm').get('region') is not None:
+                            ssm_parameters.append({
+                                'name': parameter_detail.get('ssm').get('name'),
+                                'region': parameter_detail.get('ssm').get('region'),
+                                'parameter_name': parameter_name,
+                            })
+                        else:
+                            ssm_parameters.append({
+                                'name': parameter_detail.get('ssm').get('name'),
+                                'parameter_name': parameter_name,
+                            })
+
+                logger.info(f"Found a new launch: {launch_name}")
+
+                task = {
+                    'launch_name': launch_name,
+                    'portfolio': launch_details.get('portfolio'),
+                    'product': launch_details.get('product'),
+                    'version': launch_details.get('version'),
+
+                    'product_id': regional_details.get('product_id'),
+                    'version_id': regional_details.get('version_id'),
+
+                    'account_id': account_id,
+                    'region': region_name,
+                    'puppet_account_id': puppet_account_id,
+
+                    'parameters': regular_parameters,
+                    'ssm_param_inputs': ssm_parameters,
+
+                    'depends_on': launch_details.get('depends_on', []),
+
+                    'dependencies': [],
+                }
+
+                if manifest.get('configuration'):
+                    if manifest.get('configuration').get('retry_count'):
+                        task['retry_count'] = manifest.get('configuration').get('retry_count')
+
+                if launch_details.get('configuration'):
+                    if launch_details.get('configuration').get('retry_count'):
+                        task['retry_count'] = launch_details.get('configuration').get('retry_count')
+
+                for output in launch_details.get('outputs', {}).get('ssm', []):
+                    t = copy.deepcopy(task)
+                    del t['depends_on']
+                    tasks_to_run.append(
+                        SetSSMParamFromProvisionProductTask(**output, dependency=t)
+                    )
+
+                all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
+
+    for task_uid, task in all_tasks.items():
+        for dependency in task.get('depends_on', []):
+            for task_uid_2, task_2 in all_tasks.items():
+                if task_2.get('launch_name') == dependency:
+                    task.get('dependencies').append(task_2)
+        del task['depends_on']
+        tasks_to_run.append(ProvisionProductTask(**task))
+
+    luigi.build(
+        tasks_to_run,
+        local_scheduler=True,
+        detailed_summary=True,
+        workers=10,
+        log_level='INFO',
     )
-    logger.info('Finished deploy')
 
 
 @cli.command()
@@ -287,7 +436,7 @@ def quick_start():
         os.system(command)
         click.echo("Seeding")
         manifest = Template(
-            read_from_site_packages(os.path.sep.join(["manifests","manifest-quickstart.yaml"]))
+            read_from_site_packages(os.path.sep.join(["manifests", "manifest-quickstart.yaml"]))
         ).render(
             ACCOUNT_ID=puppet_account_id
         )
