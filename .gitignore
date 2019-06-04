@@ -8,3 +8,5 @@ __pycache__
 output
 .envrc
 ignored
+.coverage
+venv
