@@ -21,7 +21,7 @@ def terminate_if_status_is_not_available(
     provisioning_artifact_id = False
     for r in response.get('ProvisionedProducts', []):
         if r.get('Name') == provisioned_product_name:
-            if r.get('Status') == "AVAILABLE":
+            if r.get('Status') in ["AVAILABLE", "TAINTED"]:
                 provisioned_product_id = r.get('Id')
                 provisioning_artifact_id = r.get('ProvisioningArtifactId')
             else:
