@@ -136,6 +136,69 @@ def set_regions_for_deployment_map(deployment_map):
     return deployment_map
 
 
+def get_parameters_for_launch(required_parameters, deployment_map, manifest, launch_details, account_id):
+    regular_parameters = []
+    ssm_parameters = []
+
+    for required_parameter_name in required_parameters.keys():
+        account_ssm_param = deployment_map.get(account_id).get('parameters', {}).get(required_parameter_name, {}).get('ssm')
+        account_regular_param = deployment_map.get(account_id).get('parameters', {}).get(required_parameter_name, {}).get('default')
+
+        launch_params = launch_details.get('parameters', {})
+        launch_ssm_param = launch_params.get(required_parameter_name, {}).get('ssm')
+        launch_regular_param = launch_params.get(required_parameter_name, {}).get('default')
+
+        manifest_params = manifest.get('parameters')
+        manifest_ssm_param = manifest_params.get(required_parameter_name, {}).get('ssm')
+        manifest_regular_param = manifest_params.get(required_parameter_name, {}).get('default')
+
+        if account_ssm_param:
+            ssm_parameters.append(
+                get_ssm_config_for_parameter(account_ssm_param, required_parameter_name)
+            )
+        elif account_regular_param:
+            regular_parameters.append({
+                'name': required_parameter_name,
+                'value': str(account_regular_param),
+            })
+
+        elif launch_ssm_param:
+            ssm_parameters.append(
+                get_ssm_config_for_parameter(launch_ssm_param, required_parameter_name)
+            )
+        elif launch_regular_param:
+            regular_parameters.append({
+                'name': required_parameter_name,
+                'value': launch_regular_param,
+            })
+
+        elif manifest_ssm_param:
+            ssm_parameters.append(
+                get_ssm_config_for_parameter(manifest_ssm_param, required_parameter_name)
+            )
+        elif manifest_regular_param:
+            regular_parameters.append({
+                'name': required_parameter_name,
+                'value': manifest_regular_param,
+            })
+
+    return regular_parameters, ssm_parameters
+
+
+def get_ssm_config_for_parameter(account_ssm_param, required_parameter_name):
+    if account_ssm_param.get('region') is not None:
+        return {
+            'name': account_ssm_param.get('name'),
+            'region': account_ssm_param.get('region'),
+            'parameter_name': required_parameter_name,
+        }
+    else:
+        return {
+            'name': account_ssm_param.get('name'),
+            'parameter_name': required_parameter_name,
+        }
+
+
 @cli.command()
 @click.argument('f', type=click.File())
 @click.option('--single-account', default=None)
@@ -151,10 +214,8 @@ def deploy(f, single_account):
     for account_id, deployments_for_account in deployment_map.items():
         for launch_name, launch_details in deployments_for_account.get('launches').items():
             for region_name, regional_details in launch_details.get('regional_details').items():
-                regular_parameters = []
-                ssm_parameters = []
-
                 product_id = regional_details.get('product_id')
+                required_parameters = {}
 
                 role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
                 with betterboto_client.CrossAccountClientContextManager(
@@ -167,41 +228,11 @@ def deploy(f, single_account):
                     )
                     for provisioning_artifact_parameters in response.get('ProvisioningArtifactParameters', []):
                         parameter_key = provisioning_artifact_parameters.get('ParameterKey')
-                        if deployment_map.get(account_id).get('parameters', {}).get(parameter_key, {}).get('default'):
-                            regular_parameters.append({
-                                'name': str(parameter_key),
-                                'value': str(
-                                    deployment_map.get(
-                                        account_id
-                                    ).get('parameters', {}).get(parameter_key, {}).get('default')
-                                )
-                            })
-                        elif manifest.get('parameters', {}).get(parameter_key, {}).get('default'):
-                            regular_parameters.append({
-                                'name': str(parameter_key),
-                                'value': str(
-                                    manifest.get('parameters', {}).get(parameter_key, {}).get('default')
-                                )
-                            })
+                        required_parameters[parameter_key] = True
 
-                for parameter_name, parameter_detail in launch_details.get('parameters', {}).items():
-                    if parameter_detail.get('default') is not None:
-                        regular_parameters.append({
-                            'name': parameter_name,
-                            'value': parameter_detail.get('default')
-                        })
-                    if parameter_detail.get('ssm') is not None:
-                        if parameter_detail.get('ssm').get('region') is not None:
-                            ssm_parameters.append({
-                                'name': parameter_detail.get('ssm').get('name'),
-                                'region': parameter_detail.get('ssm').get('region'),
-                                'parameter_name': parameter_name,
-                            })
-                        else:
-                            ssm_parameters.append({
-                                'name': parameter_detail.get('ssm').get('name'),
-                                'parameter_name': parameter_name,
-                            })
+                    regular_parameters, ssm_parameters = get_parameters_for_launch(
+                        required_parameters, deployment_map, manifest, launch_details, account_id
+                    )
 
                 logger.info(f"Found a new launch: {launch_name}")
 
