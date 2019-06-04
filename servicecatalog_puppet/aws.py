@@ -8,9 +8,9 @@ logger = logging.getLogger(__file__)
 
 
 def terminate_if_status_is_not_available(
-        service_catalog, provisioned_product_name, product_id
+        service_catalog, provisioned_product_name, product_id, account_id, region
 ):
-    logger.info(f"Checking if {provisioned_product_name} should be terminated")
+    logger.info(f"Checking if {provisioned_product_name} {account_id} {region} should be terminated")
     # TODO - change to name query?
     response = service_catalog.search_provisioned_products(
         Filters={'SearchQuery': [
@@ -25,11 +25,11 @@ def terminate_if_status_is_not_available(
                 provisioned_product_id = r.get('Id')
                 provisioning_artifact_id = r.get('ProvisioningArtifactId')
             else:
-                logger.info(f"Terminating {provisioned_product_name} as its status is {r.get('Status')}")
+                logger.info(f"Terminating {provisioned_product_name} {account_id} {region} as its status is {r.get('Status')}")
                 service_catalog.terminate_provisioned_product(
                     ProvisionedProductId=r.get('Id')
                 )
-                logger.info(f"Waiting for termination of {provisioned_product_name}")
+                logger.info(f"Waiting for termination of {provisioned_product_name} {account_id} {region}")
                 while True:
                     response = service_catalog.search_provisioned_products(
                         Filters={
@@ -40,7 +40,7 @@ def terminate_if_status_is_not_available(
                         time.sleep(5)
                     else:
                         break
-    logger.info(f"Finished checking if {provisioned_product_name} should be terminated")
+    logger.info(f"Finished checking if {provisioned_product_name} {account_id} {region} should be terminated")
     return provisioned_product_id, provisioning_artifact_id
 
 

@@ -139,7 +139,7 @@ class ProvisionProductTask(luigi.Task):
         ) as service_catalog:
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
             provisioned_product_id, provisioning_artifact_id = aws.terminate_if_status_is_not_available(
-                service_catalog, self.launch_name, self.product_id
+                service_catalog, self.launch_name, self.product_id, self.account_id, self.region
             )
 
             need_to_provision = True
