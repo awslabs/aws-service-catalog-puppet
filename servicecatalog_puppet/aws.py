@@ -145,6 +145,12 @@ def provision_product(
             f"[{launch_name}] {account_id}:{region} :: Plan created, "
             f"changes: {yaml.safe_dump(response.get('ResourceChanges'))}"
         )
+        if len(response.get('ResourceChanges')) == 0:
+            logger.warning(f"[{launch_name}] {account_id}:{region} :: There are no resource changes in this plan, "
+                        f"running this anyway - your product will be marked as tainted as your CloudFormation changeset"
+                        f"will fail but your product will be the correct version and in tact.")
+
+
         logger.info(f"[{launch_name}] {account_id}:{region} :: executing changes")
         service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
         execute_status = 'EXECUTE_IN_PROGRESS'
