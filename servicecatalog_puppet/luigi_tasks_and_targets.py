@@ -141,70 +141,79 @@ class ProvisionProductTask(luigi.Task):
             provisioned_product_id, provisioning_artifact_id = aws.terminate_if_status_is_not_available(
                 service_catalog, self.launch_name, self.product_id, self.account_id, self.region
             )
-
-            need_to_provision = True
-            if provisioning_artifact_id == self.version_id:
-                logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: found previous good provision")
-                if provisioned_product_id:
-                    logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: checking params for diffs")
-                    with betterboto_client.CrossAccountClientContextManager(
-                            'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
-                    ) as cloudformation:
+            with betterboto_client.CrossAccountClientContextManager(
+                    'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
+            ) as cloudformation:
+                need_to_provision = True
+                default_cfn_params = aws.get_default_parameters_for_stack(cloudformation, f"SC-{self.account_id}-{provisioned_product_id}")
+                for default_cfn_param_name in default_cfn_params.keys():
+                    if all_params.get(default_cfn_param_name) is None:
+                        all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
+                if provisioning_artifact_id == self.version_id:
+                    logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: found previous good provision")
+                    if provisioned_product_id:
+                        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: checking params for diffs")
                         provisioned_parameters = aws.get_parameters_for_stack(
                             cloudformation,
                             f"SC-{self.account_id}-{provisioned_product_id}"
                         )
+                        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
+                                    f"current params: {provisioned_parameters}")
+
+                        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
+                                    f"new params: {all_params}")
+
                         if provisioned_parameters == all_params:
                             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: params unchanged")
                             need_to_provision = False
                         else:
                             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: params changed")
 
-            if need_to_provision:
-                logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: about to provision with "
-                            f"params: {json.dumps(all_params)}")
+                if need_to_provision:
+                    logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: about to provision with "
+                                f"params: {json.dumps(all_params)}")
 
-                if provisioned_product_id:
-                    with betterboto_client.CrossAccountClientContextManager(
-                            'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
-                    ) as cloudformation:
-                        stack = aws.get_stack_output_for(
-                            cloudformation,
-                            f"SC-{self.account_id}-{provisioned_product_id}"
-                        )
-                        stack_status = stack.get('StackStatus')
-                        logger.info(
-                            f"[{self.launch_name}] {self.account_id}:{self.region} :: current cfn stack_status is "
-                            f"{stack_status}")
-                        if stack_status not in ["UPDATE_COMPLETE", "CREATE_COMPLETE"]:
-                            raise Exception(
-                                f"[{self.launch_name}] {self.account_id}:{self.region} :: current cfn stack_status is "
-                                f"{stack_status}"
+                    if provisioned_product_id:
+                        with betterboto_client.CrossAccountClientContextManager(
+                                'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
+                        ) as cloudformation:
+                            stack = aws.get_stack_output_for(
+                                cloudformation,
+                                f"SC-{self.account_id}-{provisioned_product_id}"
                             )
+                            stack_status = stack.get('StackStatus')
+                            logger.info(
+                                f"[{self.launch_name}] {self.account_id}:{self.region} :: current cfn stack_status is "
+                                f"{stack_status}")
+                            if stack_status not in ["UPDATE_COMPLETE", "CREATE_COMPLETE"]:
+                                raise Exception(
+                                    f"[{self.launch_name}] {self.account_id}:{self.region} :: current cfn stack_status is "
+                                    f"{stack_status}"
+                                )
 
-                provisioned_product_id = aws.provision_product(
-                    service_catalog,
-                    self.launch_name,
-                    self.account_id,
-                    self.region,
-                    self.product_id,
-                    self.version_id,
-                    self.puppet_account_id,
-                    aws.get_path_for_product(service_catalog, self.product_id),
-                    all_params,
-                    self.version,
-                )
-
-            f = self.output().open('w')
-            with betterboto_client.CrossAccountClientContextManager(
-                    'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
-            ) as cloudformation:
-                f.write(
-                    json.dumps(
-                        aws.get_stack_output_for(cloudformation, f"SC-{self.account_id}-{provisioned_product_id}"),
-                        indent=4,
-                        default=str,
+                    provisioned_product_id = aws.provision_product(
+                        service_catalog,
+                        self.launch_name,
+                        self.account_id,
+                        self.region,
+                        self.product_id,
+                        self.version_id,
+                        self.puppet_account_id,
+                        aws.get_path_for_product(service_catalog, self.product_id),
+                        all_params,
+                        self.version,
                     )
-                )
-            f.close()
-            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished provisioning")
+
+                f = self.output().open('w')
+                with betterboto_client.CrossAccountClientContextManager(
+                        'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
+                ) as cloudformation:
+                    f.write(
+                        json.dumps(
+                            aws.get_stack_output_for(cloudformation, f"SC-{self.account_id}-{provisioned_product_id}"),
+                            indent=4,
+                            default=str,
+                        )
+                    )
+                f.close()
+                logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished provisioning")

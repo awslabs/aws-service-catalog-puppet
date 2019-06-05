@@ -21,10 +21,24 @@ def terminate_if_status_is_not_available(
     provisioning_artifact_id = False
     for r in response.get('ProvisionedProducts', []):
         if r.get('Name') == provisioned_product_name:
-            if r.get('Status') in ["AVAILABLE", "TAINTED"]:
+            current_status = r.get('Status')
+            if current_status in ["AVAILABLE", "TAINTED"]:
                 provisioned_product_id = r.get('Id')
                 provisioning_artifact_id = r.get('ProvisioningArtifactId')
-            else:
+            elif current_status in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
+                logger.info(f"[{provisioned_product_name}] {account_id}:{region} :: current status is {current_status}")
+                while True:
+                    status = service_catalog.describe_provisioned_product(
+                        Id=r.get('Id')
+                    ).get('ProvisionedProductDetail').get('Status')
+                    logger.info(f"[{provisioned_product_name}] {account_id}:{region} :: waiting to complete: {status}")
+                    time.sleep(5)
+                    if status not in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
+                        return terminate_if_status_is_not_available(
+                            service_catalog, provisioned_product_name, product_id, account_id, region
+                        )
+
+            elif current_status == 'ERROR':
                 logger.info(f"[{provisioned_product_name}] {account_id}:{region} :: terminating as its status is {r.get('Status')}")
                 service_catalog.terminate_provisioned_product(
                     ProvisionedProductId=r.get('Id')
@@ -49,10 +63,22 @@ def get_stack_output_for(cloudformation, stack_name):
     return cloudformation.describe_stacks(StackName=stack_name).get('Stacks')[0]
 
 
+def get_default_parameters_for_stack(cloudformation, stack_name):
+    logger.info(f"Getting default parameters for for {stack_name}")
+    existing_stack_params_dict = {}
+    summary_response = cloudformation.get_template_summary(
+        StackName=stack_name,
+    )
+    for parameter in summary_response.get('Parameters'):
+        existing_stack_params_dict[parameter.get('ParameterKey')] = parameter.get('DefaultValue')
+    return existing_stack_params_dict
+
+
 def get_parameters_for_stack(cloudformation, stack_name):
+    existing_stack_params_dict = get_default_parameters_for_stack(cloudformation, stack_name)
+
     logger.info(f"Getting parameters for for {stack_name}")
     stack = get_stack_output_for(cloudformation, stack_name)
-    existing_stack_params_dict = {}
     for stack_param in stack.get('Parameters', []):
         existing_stack_params_dict[stack_param.get('ParameterKey')] = stack_param.get('ParameterValue')
     return existing_stack_params_dict

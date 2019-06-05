@@ -148,7 +148,7 @@ def get_parameters_for_launch(required_parameters, deployment_map, manifest, lau
         launch_ssm_param = launch_params.get(required_parameter_name, {}).get('ssm')
         launch_regular_param = launch_params.get(required_parameter_name, {}).get('default')
 
-        manifest_params = manifest.get('parameters')
+        manifest_params = manifest.get('parameters', {})
         manifest_ssm_param = manifest_params.get(required_parameter_name, {}).get('ssm')
         manifest_regular_param = manifest_params.get(required_parameter_name, {}).get('default')
 
