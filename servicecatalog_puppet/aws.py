@@ -63,10 +63,22 @@ def get_stack_output_for(cloudformation, stack_name):
     return cloudformation.describe_stacks(StackName=stack_name).get('Stacks')[0]
 
 
+def get_default_parameters_for_stack(cloudformation, stack_name):
+    logger.info(f"Getting default parameters for for {stack_name}")
+    existing_stack_params_dict = {}
+    summary_response = cloudformation.get_template_summary(
+        StackName=stack_name,
+    )
+    for parameter in summary_response.get('Parameters'):
+        existing_stack_params_dict[parameter.get('ParameterKey')] = parameter.get('DefaultValue')
+    return existing_stack_params_dict
+
+
 def get_parameters_for_stack(cloudformation, stack_name):
+    existing_stack_params_dict = get_default_parameters_for_stack(cloudformation, stack_name)
+
     logger.info(f"Getting parameters for for {stack_name}")
     stack = get_stack_output_for(cloudformation, stack_name)
-    existing_stack_params_dict = {}
     for stack_param in stack.get('Parameters', []):
         existing_stack_params_dict[stack_param.get('ParameterKey')] = stack_param.get('ParameterValue')
     return existing_stack_params_dict
