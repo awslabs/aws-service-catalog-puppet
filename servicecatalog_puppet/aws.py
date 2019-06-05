@@ -21,10 +21,24 @@ def terminate_if_status_is_not_available(
     provisioning_artifact_id = False
     for r in response.get('ProvisionedProducts', []):
         if r.get('Name') == provisioned_product_name:
-            if r.get('Status') in ["AVAILABLE", "TAINTED"]:
+            current_status = r.get('Status')
+            if current_status in ["AVAILABLE", "TAINTED"]:
                 provisioned_product_id = r.get('Id')
                 provisioning_artifact_id = r.get('ProvisioningArtifactId')
-            else:
+            elif current_status in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
+                logger.info(f"[{provisioned_product_name}] {account_id}:{region} :: current status is {current_status}")
+                while True:
+                    status = service_catalog.describe_provisioned_product(
+                        Id=r.get('Id')
+                    ).get('ProvisionedProductDetail').get('Status')
+                    logger.info(f"[{provisioned_product_name}] {account_id}:{region} :: waiting to complete: {status}")
+                    time.sleep(5)
+                    if status not in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
+                        return terminate_if_status_is_not_available(
+                            service_catalog, provisioned_product_name, product_id, account_id, region
+                        )
+
+            elif current_status == 'ERROR':
                 logger.info(f"[{provisioned_product_name}] {account_id}:{region} :: terminating as its status is {r.get('Status')}")
                 service_catalog.terminate_provisioned_product(
                     ProvisionedProductId=r.get('Id')
