@@ -17,7 +17,8 @@ from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import aws
-from servicecatalog_puppet.luigi_tasks_and_targets import ProvisionProductTask, SetSSMParamFromProvisionProductTask
+from servicecatalog_puppet.luigi_tasks_and_targets import ProvisionProductTask, SetSSMParamFromProvisionProductTask, \
+    TerminateProductTask
 from servicecatalog_puppet.commands.list_launches import do_list_launches
 from servicecatalog_puppet.utils import manifest as manifest_utils
 from servicecatalog_puppet.asset_helpers import resolve_from_site_packages, read_from_site_packages
@@ -32,6 +33,15 @@ from servicecatalog_puppet.commands.bootstrap_org_master import do_bootstrap_org
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+PROVISIONED = 'provisioned'
+TERMINATED = 'terminated'
+
+DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES = [
+    'depends_on',
+    'outputs',
+    'parameters',
+]
 
 
 @click.group()
@@ -254,6 +264,8 @@ def deploy(f, single_account):
 
                     'depends_on': launch_details.get('depends_on', []),
 
+                    "status": launch_details.get('status', PROVISIONED),
+
                     'dependencies': [],
                 }
 
@@ -276,7 +288,20 @@ def deploy(f, single_account):
 
     logger.info(f"Deployment plan: {json.dumps(all_tasks)}")
 
-    tasks_to_run = [ProvisionProductTask(**task) for task in wire_dependencies(all_tasks)]
+    for task in wire_dependencies(all_tasks):
+        task_status = task.get('status')
+        del task['status']
+        if task_status == PROVISIONED:
+            tasks_to_run.append(ProvisionProductTask(**task))
+        elif task_status == TERMINATED:
+            for attribute in DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES:
+                logger.info(f"checking {launch_name} for disallowed attributes")
+                if task.get(attribute) is not None:
+                    raise Exception(f"Launch {task.get('launch_name')} has disallowed attribute: {attribute}")
+            tasks_to_run.append(TerminateProductTask(**task))
+        else:
+            raise Exception(f"Unsupported status of {task_status}")
+
 
     luigi.build(
         tasks_to_run,
