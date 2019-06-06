@@ -96,6 +96,8 @@ class ProvisionProductTask(luigi.Task):
 
     retry_count = luigi.IntParameter(default=1)
 
+    status = luigi.Parameter(default='', significant=False)
+
     try_count = 1
 
     def add_requires(self, task):
