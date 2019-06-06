@@ -141,11 +141,19 @@ class ProvisionProductTask(luigi.Task):
             provisioned_product_id, provisioning_artifact_id = aws.terminate_if_status_is_not_available(
                 service_catalog, self.launch_name, self.product_id, self.account_id, self.region
             )
+            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
+                        f"provisioned_product_id: {provisioned_product_id}, "
+                        f"provisioning_artifact_id : {provisioning_artifact_id}")
+
             with betterboto_client.CrossAccountClientContextManager(
                     'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
             ) as cloudformation:
                 need_to_provision = True
-                default_cfn_params = aws.get_default_parameters_for_stack(cloudformation, f"SC-{self.account_id}-{provisioned_product_id}")
+                if provisioned_product_id:
+                    default_cfn_params = aws.get_default_parameters_for_stack(cloudformation, f"SC-{self.account_id}-{provisioned_product_id}")
+                else:
+                    default_cfn_params = {}
+
                 for default_cfn_param_name in default_cfn_params.keys():
                     if all_params.get(default_cfn_param_name) is None:
                         all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
@@ -217,3 +225,54 @@ class ProvisionProductTask(luigi.Task):
                     )
                 f.close()
                 logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished provisioning")
+
+
+class TerminateProductTask(luigi.Task):
+    launch_name = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+
+    product_id = luigi.Parameter()
+    version_id = luigi.Parameter()
+
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+
+    retry_count = luigi.IntParameter(default=1)
+
+    try_count = 1
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/TerminateProductTask/"
+            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+        )
+
+    def run(self):
+        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
+                    f"starting terminate try {self.try_count} of {self.retry_count}")
+
+        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        with betterboto_client.CrossAccountClientContextManager(
+                'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
+        ) as service_catalog:
+            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
+            provisioned_product_id, provisioning_artifact_id = aws.ensure_is_terminated(
+                service_catalog, self.launch_name, self.product_id
+            )
+            log_output = self.to_str_params()
+            log_output.update({
+                "provisioned_product_id": provisioned_product_id,
+            })
+            f = self.output().open('w')
+            f.write(
+                json.dumps(
+                    log_output,
+                    indent=4,
+                    default=str,
+                )
+            )
+            f.close()
+            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished terminating")

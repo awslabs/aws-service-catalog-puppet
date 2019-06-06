@@ -202,3 +202,42 @@ def get_path_for_product(service_catalog, product_id):
     path_id = response.get('LaunchPathSummaries')[0].get('Id')
     logger.info(f'Got path: {path_id} for product: {product_id}')
     return path_id
+
+
+def ensure_is_terminated(
+        service_catalog, provisioned_product_name, product_id
+):
+    logger.info(f"Ensuring {provisioned_product_name} is terminated")
+    response = service_catalog.search_provisioned_products(
+        Filters={'SearchQuery': [
+            "productId:{}".format(product_id)
+        ]}
+    )
+    provisioned_product_id = False
+    provisioning_artifact_id = False
+    for r in response.get('ProvisionedProducts', []):
+        if r.get('Name') == provisioned_product_name:
+            provisioned_product_id = r.get('Id')
+            provisioning_artifact_id = r.get('ProvisioningArtifactId')
+
+            if r.get('Status') != "TERMINATED":
+                logger.info(f"Terminating {provisioned_product_name}, its status is: {r.get('Status')}")
+                service_catalog.terminate_provisioned_product(
+                    ProvisionedProductId=r.get('Id')
+                )
+                logger.info(f"Waiting for termination of {provisioned_product_name}")
+                while True:
+                    response = service_catalog.search_provisioned_products(
+                        Filters={
+                            'SearchQuery': [f'name:{provisioned_product_name}']
+                        }
+                    )
+                    if len(response.get('ProvisionedProducts')) > 0:
+                        time.sleep(5)
+                    else:
+                        break
+            else:
+                logger.info(f"Skipping terminated launch: {provisioned_product_name}")
+
+    logger.info(f"Finished ensuring {provisioned_product_name} is terminated")
+    return provisioned_product_id, provisioning_artifact_id

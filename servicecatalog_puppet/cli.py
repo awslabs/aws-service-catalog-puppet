@@ -17,7 +17,8 @@ from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import aws
-from servicecatalog_puppet.luigi_tasks_and_targets import ProvisionProductTask, SetSSMParamFromProvisionProductTask
+from servicecatalog_puppet.luigi_tasks_and_targets import ProvisionProductTask, SetSSMParamFromProvisionProductTask, \
+    TerminateProductTask
 from servicecatalog_puppet.commands.list_launches import do_list_launches
 from servicecatalog_puppet.utils import manifest as manifest_utils
 from servicecatalog_puppet.asset_helpers import resolve_from_site_packages, read_from_site_packages
@@ -32,6 +33,15 @@ from servicecatalog_puppet.commands.bootstrap_org_master import do_bootstrap_org
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+PROVISIONED = 'provisioned'
+TERMINATED = 'terminated'
+
+DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES = [
+    'depends_on',
+    'outputs',
+    'parameters',
+]
 
 
 @click.group()
@@ -136,7 +146,7 @@ def set_regions_for_deployment_map(deployment_map):
     return deployment_map
 
 
-def get_parameters_for_launch(required_parameters, deployment_map, manifest, launch_details, account_id):
+def get_parameters_for_launch(required_parameters, deployment_map, manifest, launch_details, account_id, status):
     regular_parameters = []
     ssm_parameters = []
 
@@ -152,11 +162,11 @@ def get_parameters_for_launch(required_parameters, deployment_map, manifest, lau
         manifest_ssm_param = manifest_params.get(required_parameter_name, {}).get('ssm')
         manifest_regular_param = manifest_params.get(required_parameter_name, {}).get('default')
 
-        if account_ssm_param:
+        if status == PROVISIONED and account_ssm_param:
             ssm_parameters.append(
                 get_ssm_config_for_parameter(account_ssm_param, required_parameter_name)
             )
-        elif account_regular_param:
+        elif status == PROVISIONED and account_regular_param:
             regular_parameters.append({
                 'name': required_parameter_name,
                 'value': str(account_regular_param),
@@ -172,11 +182,11 @@ def get_parameters_for_launch(required_parameters, deployment_map, manifest, lau
                 'value': launch_regular_param,
             })
 
-        elif manifest_ssm_param:
+        elif status == PROVISIONED and manifest_ssm_param:
             ssm_parameters.append(
                 get_ssm_config_for_parameter(manifest_ssm_param, required_parameter_name)
             )
-        elif manifest_regular_param:
+        elif status == PROVISIONED and manifest_regular_param:
             regular_parameters.append({
                 'name': required_parameter_name,
                 'value': manifest_regular_param,
@@ -231,7 +241,12 @@ def deploy(f, single_account):
                         required_parameters[parameter_key] = True
 
                     regular_parameters, ssm_parameters = get_parameters_for_launch(
-                        required_parameters, deployment_map, manifest, launch_details, account_id
+                        required_parameters,
+                        deployment_map,
+                        manifest,
+                        launch_details,
+                        account_id,
+                        launch_details.get('status', PROVISIONED),
                     )
 
                 logger.info(f"Found a new launch: {launch_name}")
@@ -253,6 +268,8 @@ def deploy(f, single_account):
                     'ssm_param_inputs': ssm_parameters,
 
                     'depends_on': launch_details.get('depends_on', []),
+
+                    "status": launch_details.get('status', PROVISIONED),
 
                     'dependencies': [],
                 }
@@ -276,7 +293,31 @@ def deploy(f, single_account):
 
     logger.info(f"Deployment plan: {json.dumps(all_tasks)}")
 
-    tasks_to_run = [ProvisionProductTask(**task) for task in wire_dependencies(all_tasks)]
+    for task in wire_dependencies(all_tasks):
+        task_status = task.get('status')
+        del task['status']
+        if task_status == PROVISIONED:
+            tasks_to_run.append(ProvisionProductTask(**task))
+        elif task_status == TERMINATED:
+            for attribute in DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES:
+                logger.info(f"checking {launch_name} for disallowed attributes")
+                attribute_value = task.get(attribute)
+                if attribute_value is not None:
+                    if isinstance(attribute_value, list):
+                        if len(attribute_value) != 0:
+                            raise Exception(f"Launch {task.get('launch_name')} has disallowed attribute: {attribute}")
+                    elif isinstance(attribute_value, dict):
+                        if len(attribute_value.keys()) != 0:
+                            raise Exception(f"Launch {task.get('launch_name')} has disallowed attribute: {attribute}")
+                    else:
+                        raise Exception(f"Launch {task.get('launch_name')} has disallowed attribute: {attribute}")
+
+            for a in ['parameters', 'ssm_param_inputs', 'outputs', 'dependencies']:
+                if task.get(a, None) is not None:
+                    del task[a]
+            tasks_to_run.append(TerminateProductTask(**task))
+        else:
+            raise Exception(f"Unsupported status of {task_status}")
 
     luigi.build(
         tasks_to_run,
