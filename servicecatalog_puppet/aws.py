@@ -2,7 +2,7 @@ import logging
 import time
 import yaml
 
-from servicecatalog_puppet.constants import PREFIX
+from servicecatalog_puppet import constants
 
 logger = logging.getLogger(__file__)
 
@@ -96,7 +96,7 @@ def provision_product(
         params,
         version,
 ):
-    stack_name = "-".join([PREFIX, account_id, region, launch_name])
+    stack_name = "-".join([constants.PREFIX, account_id, region, launch_name])
     logger.info(f"[{launch_name}] {account_id}:{region} :: Creating a plan")
     regional_sns_topic = f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
     provisioning_parameters = []

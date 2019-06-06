@@ -3,31 +3,23 @@
 from threading import Thread
 
 import click
-import os
 
 from copy import deepcopy
 
 import pkg_resources
 import json
-from betterboto import client as betterboto_client
 from jinja2 import Template
 
-from asset_helpers import read_from_site_packages
-from constants import BOOTSTRAP_STACK_NAME, PUPPET_ORG_ROLE_FOR_EXPANDS_ARN, SERVICE_CATALOG_PUPPET_REPO_NAME
-
+from servicecatalog_puppet import asset_helpers
+from servicecatalog_puppet import constants
 import logging
 
 import os
-import time
 from threading import Thread
-import traceback
 
 import yaml
 from betterboto import client as betterboto_client
 from jinja2 import Environment, FileSystemLoader
-
-from servicecatalog_puppet.asset_helpers import resolve_from_site_packages
-from servicecatalog_puppet.constants import HOME_REGION_PARAM_NAME, CONFIG_PARAM_NAME, CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN, TEMPLATES, PREFIX
 
 
 logger = logging.getLogger()
@@ -40,24 +32,24 @@ def get_regions(default_region=None):
             'ssm',
             region_name=default_region if default_region else get_home_region()
     ) as ssm:
-        response = ssm.get_parameter(Name=CONFIG_PARAM_NAME)
+        response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME)
         config = yaml.safe_load(response.get('Parameter').get('Value'))
         return config.get('regions')
 
 
 def get_home_region():
     with betterboto_client.ClientContextManager('ssm') as ssm:
-        response = ssm.get_parameter(Name=HOME_REGION_PARAM_NAME)
+        response = ssm.get_parameter(Name=constants.HOME_REGION_PARAM_NAME)
         return response.get('Parameter').get('Value')
 
 
 def get_org_iam_role_arn():
     with betterboto_client.ClientContextManager('ssm', region_name=get_home_region()) as ssm:
         try:
-            response = ssm.get_parameter(Name=CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN)
+            response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN)
             return yaml.safe_load(response.get('Parameter').get('Value'))
         except ssm.exceptions.ParameterNotFound as e:
-            logger.info("No parameter set for: {}".format(CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN))
+            logger.info("No parameter set for: {}".format(constants.CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN))
             return None
 
 
@@ -135,7 +127,7 @@ def generate_bucket_policies_for_shares(deployment_map, puppet_account_id):
 
 
 def write_share_template(portfolio_use_by_account, region, host_account_id, sharing_policies):
-    output = os.path.sep.join([TEMPLATES, 'shares', region])
+    output = os.path.sep.join([constants.TEMPLATES, 'shares', region])
     if not os.path.exists(output):
         os.makedirs(output)
 
@@ -188,7 +180,7 @@ def create_share_template(deployment_map, puppet_account_id):
             write_share_template(portfolio_use_by_account, region, host_account_id, sharing_policies)
 
 
-template_dir = resolve_from_site_packages('templates')
+template_dir = asset_helpers.resolve_from_site_packages('templates')
 env = Environment(
     loader=FileSystemLoader(template_dir),
     extensions=['jinja2.ext.do'],
@@ -285,11 +277,11 @@ def get_parameters_for_launch(required_parameters, deployment_map, manifest, lau
         manifest_ssm_param = manifest_params.get(required_parameter_name, {}).get('ssm')
         manifest_regular_param = manifest_params.get(required_parameter_name, {}).get('default')
 
-        if status == PROVISIONED and account_ssm_param:
+        if status == constants.PROVISIONED and account_ssm_param:
             ssm_parameters.append(
                 get_ssm_config_for_parameter(account_ssm_param, required_parameter_name)
             )
-        elif status == PROVISIONED and account_regular_param:
+        elif status == constants.PROVISIONED and account_regular_param:
             regular_parameters.append({
                 'name': required_parameter_name,
                 'value': str(account_regular_param),
@@ -305,11 +297,11 @@ def get_parameters_for_launch(required_parameters, deployment_map, manifest, lau
                 'value': launch_regular_param,
             })
 
-        elif status == PROVISIONED and manifest_ssm_param:
+        elif status == constants.PROVISIONED and manifest_ssm_param:
             ssm_parameters.append(
                 get_ssm_config_for_parameter(manifest_ssm_param, required_parameter_name)
             )
-        elif status == PROVISIONED and manifest_regular_param:
+        elif status == constants.PROVISIONED and manifest_regular_param:
             regular_parameters.append({
                 'name': required_parameter_name,
                 'value': manifest_regular_param,
@@ -349,34 +341,10 @@ def get_puppet_version():
     return pkg_resources.require("aws-service-catalog-puppet")[0].version
 
 
-def expand_path(account, client):
-    ou = client.convert_path_to_ou(account.get('ou'))
-    account['ou'] = ou
-    return expand_ou(account, client)
-
-
-def expand_ou(original_account, client):
-    expanded = []
-    response = client.list_children_nested(ParentId=original_account.get('ou'), ChildType='ACCOUNT')
-    for result in response:
-        new_account_id = result.get('Id')
-        response = client.describe_account(AccountId=new_account_id)
-        new_account = deepcopy(original_account)
-        del new_account['ou']
-        if response.get('Account').get('Name') is not None:
-            new_account['name'] = response.get('Account').get('Name')
-        new_account['email'] = response.get('Account').get('Email')
-        new_account['account_id'] = new_account_id
-        new_account['expanded_from'] = original_account.get('ou')
-        new_account['organization'] = response.get('Account').get('Arn').split(":")[5].split("/")[1]
-        expanded.append(new_account)
-    return expanded
-
-
 def _do_bootstrap_org_master(puppet_account_id, cloudformation, puppet_version):
     logger.info('Starting bootstrap of org master')
-    stack_name = "{}-org-master".format(BOOTSTRAP_STACK_NAME)
-    template = read_from_site_packages('{}.template.yaml'.format(stack_name))
+    stack_name = "{}-org-master".format(constants.BOOTSTRAP_STACK_NAME)
+    template = asset_helpers.read_from_site_packages('{}.template.yaml'.format(stack_name))
     template = Template(template).render(VERSION=puppet_version)
     args = {
         'StackName': stack_name,
@@ -400,19 +368,19 @@ def _do_bootstrap_org_master(puppet_account_id, cloudformation, puppet_version):
     stack = response.get('Stacks')[0]
 
     for output in stack.get('Outputs'):
-        if output.get('OutputKey') == PUPPET_ORG_ROLE_FOR_EXPANDS_ARN:
+        if output.get('OutputKey') == constants.PUPPET_ORG_ROLE_FOR_EXPANDS_ARN:
             logger.info('Finished bootstrap of org-master')
             return output.get("OutputValue")
 
-    raise Exception("Could not find output: {} in stack: {}".format(PUPPET_ORG_ROLE_FOR_EXPANDS_ARN, stack_name))
+    raise Exception("Could not find output: {} in stack: {}".format(constants.PUPPET_ORG_ROLE_FOR_EXPANDS_ARN, stack_name))
 
 
 def _do_bootstrap_spoke(puppet_account_id, cloudformation, puppet_version):
     logger.info('Starting bootstrap of spoke')
-    template = read_from_site_packages('{}-spoke.template.yaml'.format(BOOTSTRAP_STACK_NAME))
+    template = asset_helpers.read_from_site_packages('{}-spoke.template.yaml'.format(constants.BOOTSTRAP_STACK_NAME))
     template = Template(template).render(VERSION=puppet_version)
     args = {
-        'StackName': "{}-spoke".format(BOOTSTRAP_STACK_NAME),
+        'StackName': "{}-spoke".format(constants.BOOTSTRAP_STACK_NAME),
         'TemplateBody': template,
         'Capabilities': ['CAPABILITY_NAMED_IAM'],
         'Parameters': [
@@ -434,12 +402,12 @@ def _do_bootstrap(puppet_version):
     click.echo('Starting bootstrap')
     ALL_REGIONS = get_regions(os.environ.get("AWS_DEFAULT_REGION"))
     with betterboto_client.MultiRegionClientContextManager('cloudformation', ALL_REGIONS) as clients:
-        click.echo('Creating {}-regional'.format(BOOTSTRAP_STACK_NAME))
+        click.echo('Creating {}-regional'.format(constants.BOOTSTRAP_STACK_NAME))
         threads = []
-        template = read_from_site_packages('{}.template.yaml'.format('{}-regional'.format(BOOTSTRAP_STACK_NAME)))
+        template = asset_helpers.read_from_site_packages('{}.template.yaml'.format('{}-regional'.format(constants.BOOTSTRAP_STACK_NAME)))
         template = Template(template).render(VERSION=puppet_version)
         args = {
-            'StackName': '{}-regional'.format(BOOTSTRAP_STACK_NAME),
+            'StackName': '{}-regional'.format(constants.BOOTSTRAP_STACK_NAME),
             'TemplateBody': template,
             'Capabilities': ['CAPABILITY_IAM'],
             'Parameters': [
@@ -461,14 +429,14 @@ def _do_bootstrap(puppet_version):
             threads.append(process)
         for process in threads:
             process.join()
-        click.echo('Finished creating {}-regional'.format(BOOTSTRAP_STACK_NAME))
+        click.echo('Finished creating {}-regional'.format(constants.BOOTSTRAP_STACK_NAME))
 
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
-        click.echo('Creating {}'.format(BOOTSTRAP_STACK_NAME))
-        template = read_from_site_packages('{}.template.yaml'.format(BOOTSTRAP_STACK_NAME))
+        click.echo('Creating {}'.format(constants.BOOTSTRAP_STACK_NAME))
+        template = asset_helpers.read_from_site_packages('{}.template.yaml'.format(constants.BOOTSTRAP_STACK_NAME))
         template = Template(template).render(VERSION=puppet_version, ALL_REGIONS=ALL_REGIONS)
         args = {
-            'StackName': BOOTSTRAP_STACK_NAME,
+            'StackName': constants.BOOTSTRAP_STACK_NAME,
             'TemplateBody': template,
             'Capabilities': ['CAPABILITY_NAMED_IAM'],
             'Parameters': [
@@ -486,9 +454,9 @@ def _do_bootstrap(puppet_version):
         }
         cloudformation.create_or_update(**args)
 
-    click.echo('Finished creating {}.'.format(BOOTSTRAP_STACK_NAME))
+    click.echo('Finished creating {}.'.format(constants.BOOTSTRAP_STACK_NAME))
     with betterboto_client.ClientContextManager('codecommit') as codecommit:
-        response = codecommit.get_repository(repositoryName=SERVICE_CATALOG_PUPPET_REPO_NAME)
+        response = codecommit.get_repository(repositoryName=constants.SERVICE_CATALOG_PUPPET_REPO_NAME)
         clone_url = response.get('repositoryMetadata').get('cloneUrlHttp')
         clone_command = "git clone --config 'credential.helper=!aws codecommit credential-helper $@' " \
                         "--config 'credential.UseHttpPath=true' {}".format(clone_url)
