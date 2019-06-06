@@ -396,5 +396,27 @@ launches:
 In this example the framework will deploy ```account-vending-account-creation``` only when 
 ```account-vending-account-bootstrap-shared``` and ```account-vending-account-creation-shared``` have been attempted.
 
-At the moment there is only support for one level of dependencies, so only the previous example will work.  It is not 
-possible to say a depends_on b which depends_on c.
+
+#### Termination of products 
+To terminate the provisioned product from a spoke account (which will delete the resources deployed) you can change
+the status of the launch using the ```status``` keyword:
+
+```yaml
+launches:
+  account-vending-account-creation:
+    portfolio: demo-central-it-team-portfolio
+    product: account-vending-account-creation
+    version: v1
+    status: terminated
+    deploy_to:
+      tags:
+        - tag: scope:puppet-hub
+          regions: default_region
+```
+
+When you mark a launch as terminated and run your pipeline the resources will be deleted and you can then remove the 
+launch from your manifest.  Leaving it in will not cause any errors but will result in your pipeline running time to be 
+longer than it needs to be.
+
+Please note, when mark your launch as ```terminated``` it cannot have dependencies, parameters or outputs.  Leaving 
+these in will cause the termination action to fail.

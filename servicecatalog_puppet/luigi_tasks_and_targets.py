@@ -141,11 +141,19 @@ class ProvisionProductTask(luigi.Task):
             provisioned_product_id, provisioning_artifact_id = aws.terminate_if_status_is_not_available(
                 service_catalog, self.launch_name, self.product_id, self.account_id, self.region
             )
+            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
+                        f"provisioned_product_id: {provisioned_product_id}, "
+                        f"provisioning_artifact_id : {provisioning_artifact_id}")
+
             with betterboto_client.CrossAccountClientContextManager(
                     'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
             ) as cloudformation:
                 need_to_provision = True
-                default_cfn_params = aws.get_default_parameters_for_stack(cloudformation, f"SC-{self.account_id}-{provisioned_product_id}")
+                if provisioned_product_id:
+                    default_cfn_params = aws.get_default_parameters_for_stack(cloudformation, f"SC-{self.account_id}-{provisioned_product_id}")
+                else:
+                    default_cfn_params = {}
+
                 for default_cfn_param_name in default_cfn_params.keys():
                     if all_params.get(default_cfn_param_name) is None:
                         all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
