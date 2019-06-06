@@ -20,22 +20,17 @@ from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
 
-from servicecatalog_puppet import cli_command_helpers, luigi_tasks_and_targets
-
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import luigi_tasks_and_targets
+from servicecatalog_puppet import cli_command_helpers
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import manifest_utils
 
 
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.cli_command_helpers import get_org_iam_role_arn, create_share_template, get_regions
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-PROVISIONED = 'provisioned'
-TERMINATED = 'terminated'
 
 DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES = [
     'depends_on',
@@ -63,7 +58,7 @@ def generate_shares(f):
 
     manifest = manifest_utils.load(f)
     deployment_map = manifest_utils.build_deployment_map(manifest)
-    create_share_template(deployment_map, cli_command_helpers.get_puppet_account_id())
+    cli_command_helpers.create_share_template(deployment_map, cli_command_helpers.get_puppet_account_id())
 
 
 def deploy(f, single_account):
@@ -100,7 +95,7 @@ def deploy(f, single_account):
                         manifest,
                         launch_details,
                         account_id,
-                        launch_details.get('status', PROVISIONED),
+                        launch_details.get('status', constants.PROVISIONED),
                     )
 
                 logger.info(f"Found a new launch: {launch_name}")
@@ -123,7 +118,7 @@ def deploy(f, single_account):
 
                     'depends_on': launch_details.get('depends_on', []),
 
-                    "status": launch_details.get('status', PROVISIONED),
+                    "status": launch_details.get('status', constants.PROVISIONED),
 
                     'dependencies': [],
                 }
@@ -150,9 +145,9 @@ def deploy(f, single_account):
     for task in cli_command_helpers.wire_dependencies(all_tasks):
         task_status = task.get('status')
         del task['status']
-        if task_status == PROVISIONED:
+        if task_status == constants.PROVISIONED:
             tasks_to_run.append(luigi_tasks_and_targets.ProvisionProductTask(**task))
-        elif task_status == TERMINATED:
+        elif task_status == constants.TERMINATED:
             for attribute in DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES:
                 logger.info(f"checking {launch_name} for disallowed attributes")
                 attribute_value = task.get(attribute)
@@ -224,7 +219,7 @@ def seed(complexity, p):
 def list_launches(f):
     manifest = manifest_utils.load(f)
     click.echo("Getting details from your account...")
-    ALL_REGIONS = get_regions(os.environ.get("AWS_DEFAULT_REGION"))
+    ALL_REGIONS = cli_command_helpers.get_regions(os.environ.get("AWS_DEFAULT_REGION"))
     deployment_map = manifest_utils.build_deployment_map(manifest)
     account_ids = [a.get('account_id') for a in manifest.get('accounts')]
     deployments = {}
@@ -331,7 +326,7 @@ def list_launches(f):
 def expand(f):
     click.echo('Expanding')
     manifest = manifest_utils.load(f)
-    org_iam_role_arn = get_org_iam_role_arn()
+    org_iam_role_arn = cli_command_helpers.get_org_iam_role_arn()
     if org_iam_role_arn is None:
         click.echo('No org role set - not expanding')
         new_manifest = manifest
