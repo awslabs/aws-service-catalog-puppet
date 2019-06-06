@@ -297,6 +297,9 @@ def deploy(f, single_account):
         task_status = task.get('status')
         del task['status']
         if task_status == PROVISIONED:
+            for dependency in task.get('dependencies'):
+                if dependency.get('status'):
+                    del dependency['status']
             tasks_to_run.append(ProvisionProductTask(**task))
         elif task_status == TERMINATED:
             for attribute in DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES:
