@@ -332,7 +332,6 @@ def wire_dependencies(all_tasks):
                 if task_2.get('launch_name') == dependency:
                     task.get('dependencies').append(task_2)
         del task['depends_on']
-        logger.info(f"Scheduling ProvisionProductTask: {json.dumps(task)}")
         tasks_to_run.append(task)
     return tasks_to_run
 
