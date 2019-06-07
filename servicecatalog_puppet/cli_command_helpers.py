@@ -1,16 +1,17 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-from threading import Thread
+import time
+
+import copy
 
 import click
 
-from copy import deepcopy
-
 import pkg_resources
 import json
+import luigi
 from jinja2 import Template
 
-from servicecatalog_puppet import asset_helpers
+from servicecatalog_puppet import asset_helpers, manifest_utils, aws, luigi_tasks_and_targets
 from servicecatalog_puppet import constants
 import logging
 
@@ -20,7 +21,6 @@ from threading import Thread
 import yaml
 from betterboto import client as betterboto_client
 from jinja2 import Environment, FileSystemLoader
-
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -51,62 +51,6 @@ def get_org_iam_role_arn():
         except ssm.exceptions.ParameterNotFound as e:
             logger.info("No parameter set for: {}".format(constants.CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN))
             return None
-
-
-def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name, account_id, region):
-    logger.info("Getting provisioning artifact id for: {} {} {} in the region: {} of account: {}".format(
-        portfolio_name, product_name, version_name, region, account_id
-    ))
-    role = "arn:aws:iam::{}:role/{}".format(account_id, 'servicecatalog-puppet/PuppetRole')
-    with betterboto_client.CrossAccountClientContextManager(
-            'servicecatalog', role, "-".join([account_id, region]), region_name=region
-    ) as cross_account_servicecatalog:
-        product_id = None
-        version_id = None
-        portfolio_id = None
-        args = {}
-        while True:
-            response = cross_account_servicecatalog.list_accepted_portfolio_shares()
-            assert response.get('NextPageToken') is None, "Pagination not supported"
-            for portfolio_detail in response.get('PortfolioDetails'):
-                if portfolio_detail.get('DisplayName') == portfolio_name:
-                    portfolio_id = portfolio_detail.get('Id')
-                    break
-
-            if portfolio_id is None:
-                response = cross_account_servicecatalog.list_portfolios()
-                for portfolio_detail in response.get('PortfolioDetails', []):
-                    if portfolio_detail.get('DisplayName') == portfolio_name:
-                        portfolio_id = portfolio_detail.get('Id')
-                        break
-
-            assert portfolio_id is not None, "Could not find portfolio"
-            logger.info("Found portfolio: {}".format(portfolio_id))
-
-            args['PortfolioId'] = portfolio_id
-            response = cross_account_servicecatalog.search_products_as_admin(
-                **args
-            )
-            for product_view_details in response.get('ProductViewDetails'):
-                product_view = product_view_details.get('ProductViewSummary')
-                if product_view.get('Name') == product_name:
-                    logger.info('Found product: {}'.format(product_view))
-                    product_id = product_view.get('ProductId')
-            if response.get('NextPageToken', None) is not None:
-                args['PageToken'] = response.get('NextPageToken')
-            else:
-                break
-        assert product_id is not None, "Did not find product looking for"
-
-        response = cross_account_servicecatalog.list_provisioning_artifacts(
-            ProductId=product_id
-        )
-        assert response.get('NextPageToken') is None, "Pagination not support"
-        for provisioning_artifact_detail in response.get('ProvisioningArtifactDetails'):
-            if provisioning_artifact_detail.get('Name') == version_name:
-                version_id = provisioning_artifact_detail.get('Id')
-        assert version_id is not None, "Did not find version looking for"
-        return product_id, version_id
 
 
 def generate_bucket_policies_for_shares(deployment_map, puppet_account_id):
@@ -186,16 +130,17 @@ env = Environment(
     extensions=['jinja2.ext.do'],
 )
 
+
 def get_puppet_account_id():
     with betterboto_client.ClientContextManager('sts') as sts:
         return sts.get_caller_identity().get('Account')
 
 
-def set_regions_for_deployment_map(deployment_map):
+def set_regions_for_deployment_map(deployment_map, section):
     logger.info('Starting to write the templates')
     ALL_REGIONS = get_regions()
     for account_id, account_details in deployment_map.items():
-        for launch_name, launch_details in account_details.get('launches').items():
+        for launch_name, launch_details in account_details.get(section).items():
             logger.info('Looking at account: {} and launch: {}'.format(account_id, launch_name))
             if launch_details.get('match') == 'account_match':
                 logger.info('Setting regions for account matched')
@@ -245,19 +190,22 @@ def set_regions_for_deployment_map(deployment_map):
 
             assert launch_details.get('regions') is not None, "Launch {} has no regions set".format(launch_name)
             launch_details['regional_details'] = {}
-            for region in launch_details.get('regions'):
-                logger.info('Starting region: {}'.format(region))
-                product_id, version_id = get_provisioning_artifact_id_for(
-                    launch_details.get('portfolio'),
-                    launch_details.get('product'),
-                    launch_details.get('version'),
-                    account_id,
-                    region
-                )
-                launch_details['regional_details'][region] = {
-                    'product_id': product_id,
-                    'version_id': version_id,
-                }
+
+            if section == constants.LAUNCHES:
+                # TODO move this to provision product task so this if statement is no longer needed
+                for region in launch_details.get('regions'):
+                    logger.info('Starting region: {}'.format(region))
+                    product_id, version_id = aws.get_provisioning_artifact_id_for(
+                        launch_details.get('portfolio'),
+                        launch_details.get('product'),
+                        launch_details.get('version'),
+                        account_id,
+                        region
+                    )
+                    launch_details['regional_details'][region] = {
+                        'product_id': product_id,
+                        'version_id': version_id,
+                    }
     return deployment_map
 
 
@@ -266,8 +214,10 @@ def get_parameters_for_launch(required_parameters, deployment_map, manifest, lau
     ssm_parameters = []
 
     for required_parameter_name in required_parameters.keys():
-        account_ssm_param = deployment_map.get(account_id).get('parameters', {}).get(required_parameter_name, {}).get('ssm')
-        account_regular_param = deployment_map.get(account_id).get('parameters', {}).get(required_parameter_name, {}).get('default')
+        account_ssm_param = deployment_map.get(account_id).get('parameters', {}).get(required_parameter_name, {}).get(
+            'ssm')
+        account_regular_param = deployment_map.get(account_id).get('parameters', {}).get(required_parameter_name,
+                                                                                         {}).get('default')
 
         launch_params = launch_details.get('parameters', {})
         launch_ssm_param = launch_params.get(required_parameter_name, {}).get('ssm')
@@ -371,7 +321,8 @@ def _do_bootstrap_org_master(puppet_account_id, cloudformation, puppet_version):
             logger.info('Finished bootstrap of org-master')
             return output.get("OutputValue")
 
-    raise Exception("Could not find output: {} in stack: {}".format(constants.PUPPET_ORG_ROLE_FOR_EXPANDS_ARN, stack_name))
+    raise Exception(
+        "Could not find output: {} in stack: {}".format(constants.PUPPET_ORG_ROLE_FOR_EXPANDS_ARN, stack_name))
 
 
 def _do_bootstrap_spoke(puppet_account_id, cloudformation, puppet_version):
@@ -403,7 +354,8 @@ def _do_bootstrap(puppet_version):
     with betterboto_client.MultiRegionClientContextManager('cloudformation', ALL_REGIONS) as clients:
         click.echo('Creating {}-regional'.format(constants.BOOTSTRAP_STACK_NAME))
         threads = []
-        template = asset_helpers.read_from_site_packages('{}.template.yaml'.format('{}-regional'.format(constants.BOOTSTRAP_STACK_NAME)))
+        template = asset_helpers.read_from_site_packages(
+            '{}.template.yaml'.format('{}-regional'.format(constants.BOOTSTRAP_STACK_NAME)))
         template = Template(template).render(VERSION=puppet_version)
         args = {
             'StackName': '{}-regional'.format(constants.BOOTSTRAP_STACK_NAME),
@@ -464,3 +416,214 @@ def _do_bootstrap(puppet_version):
                 clone_command
             )
         )
+
+
+def deploy_spoke_local_portfolios(manifest):
+    section = constants.SPOKE_LOCAL_PORTFOLIOS
+    deployment_map = manifest_utils.build_deployment_map(manifest, section)
+    deployment_map = set_regions_for_deployment_map(deployment_map, section)
+
+    all_tasks = {}
+    tasks_to_run = []
+    puppet_account_id = get_puppet_account_id()
+
+    for account_id, deployments_for_account in deployment_map.items():
+        for launch_name, launch_details in deployments_for_account.get(section).items():
+            for region_name in launch_details.get('regions'):
+
+                # get source portfolio
+                # get or create target portfolio
+                # get source portfolio
+                # get the source products
+                # for each source product
+                ## copy the product then associate with the portfolio
+
+                with betterboto_client.ClientContextManager('servicecatalog',
+                                                            region_name=region_name) as service_catalog:
+                    hub_portfolio = aws.get_portfolio_for(launch_details.get('portfolio'), puppet_account_id,
+                                                          region_name)
+
+                    role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
+                    with betterboto_client.CrossAccountClientContextManager(
+                            'servicecatalog', role, f'sc-{account_id}-{region_name}', region_name=region_name
+                    ) as spoke_service_catalog:
+                        spoke_portfolio_id = aws.ensure_portfolio(
+                            spoke_service_catalog,
+                            hub_portfolio.get('DisplayName'),
+                            hub_portfolio.get('ProviderName'),
+                            hub_portfolio.get('Description'),
+                        )
+
+                    response = service_catalog.search_products_as_admin_single_page(PortfolioId=hub_portfolio.get('Id'))
+                    for product_view_detail in response.get('ProductViewDetails', []):
+                        product_view_summary = product_view_detail.get('ProductViewSummary')
+                        hub_product_name = product_view_summary.get('Name')
+                        logger.info(f"Copying {hub_portfolio.get('DisplayName')}-{hub_product_name} to "
+                                    f"{account_id} {region_name}")
+
+                        hub_product_arn = product_view_detail.get('ProductARN')
+                        copy_args = {'SourceProductArn': hub_product_arn}
+
+                        p = spoke_service_catalog.search_products_as_admin_single_page(
+                            PortfolioId=hub_portfolio.get('Id'),
+                            Filters={'FullTextSearch': [hub_product_name]}
+                        )
+                        for product_view_details in p.get('ProductViewDetails'):
+                            product_view = product_view_details.get('ProductViewSummary')
+                            if product_view.get('Name') == hub_product_name:
+                                logger.info(f'Found product: {product_view}')
+                                copy_args['TargetProductId'] = product_view.get('Id')
+
+                        copy_product_token = spoke_service_catalog.copy_product(
+                            **copy_args
+                        ).get('CopyProductToken')
+                        target_product_id = None
+                        while True:
+                            time.sleep(5)
+                            r = spoke_service_catalog.describe_copy_product_status(
+                                CopyProductToken=copy_product_token
+                            )
+                            target_product_id = r.get('TargetProductId')
+                            logger.info(f"{hub_product_name} status: {r.get('CopyProductStatus')}")
+                            if r.get('CopyProductStatus') == 'FAILED':
+                                raise Exception(f"Copying {hub_product_name} from {hub_portfolio.get('DisplayName')} "
+                                                f"into {account_id} {region_name} failed: {r.get('StatusDetail')}")
+                            elif r.get('CopyProductStatus') == 'SUCCEEDED':
+                                break
+
+                        logger.info(f"adding to portfolio {hub_portfolio.get('DisplayName')}-{hub_product_name} to "
+                                    f"{account_id} {region_name}")
+                        service_catalog.associate_product_with_portfolio(
+                            ProductId=target_product_id,
+                            PortfolioId=hub_portfolio.get('Id')
+                        )
+
+                        # associate_product_with_portfolio is not a synchronous request
+                        logger.info(f"waiting for add to portfolio {hub_portfolio.get('DisplayName')}-{hub_product_name} "
+                                    f"to {account_id} {region_name}")
+
+                        while True:
+                            time.sleep(2)
+                            response = service_catalog.search_products_as_admin_single_page(PortfolioId=hub_portfolio.get('Id'))
+                            products_ids = [
+                                product_view_detail.get('ProductViewSummary').get('ProductId') for product_view_detail in response.get('ProductViewDetails')
+                            ]
+                            logger.info(f'Looking for {target_product_id} in {products_ids} for {hub_portfolio.get("Id")}')
+                            if target_product_id in products_ids:
+                                break
+
+
+                launch_details_value = {
+                    'portfolio': 'demo-central-it-team-portfolio',
+                    'depends_on': [
+                        'product-that-deploys-iam-needed-for-associations-and-launch-constraints'
+                    ],
+                    'associations': [
+                        'arn:aws:iam::${AWS::AccountId}:role/Admin'
+                    ],
+                    'constraints': {
+                        'launch': [
+                            {
+                                'product': 'rds-services', 'version': 'v1',
+                                'roles': [
+                                    'arn:aws:iam::${AWS::AccountId}:role/Admin',
+                                    'arn:aws:iam::${AWS::AccountId}:role/DevOps',
+                                    'arn:aws:iam::${AWS::AccountId}:role/SysOps'
+                                ]
+                            }
+                        ]
+                    },
+                    'deploy_to': {'tags': [{'tag': 'scope:sc-hub', 'regions': 'default_region'}]},
+                    'launch_name': 'account-vending-account-creation-shared',
+                    'match': 'tag_match',
+                    'matching_tag': 'scope:sc-hub',
+                    'regions': ['eu-west-1'], 'regional_details': {}
+                }
+
+    logger.info(f"Deployment plan: {json.dumps(all_tasks)}")
+    return all_tasks, tasks_to_run
+
+
+def deploy_launches(manifest):
+    section = constants.LAUNCHES
+    deployment_map = manifest_utils.build_deployment_map(manifest, section)
+    deployment_map = set_regions_for_deployment_map(deployment_map, section)
+
+    all_tasks = {}
+    tasks_to_run = []
+    puppet_account_id = get_puppet_account_id()
+
+    for account_id, deployments_for_account in deployment_map.items():
+        for launch_name, launch_details in deployments_for_account.get(section).items():
+            for region_name, regional_details in launch_details.get('regional_details').items():
+                product_id = regional_details.get('product_id')
+                required_parameters = {}
+
+                role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
+                with betterboto_client.CrossAccountClientContextManager(
+                        'servicecatalog', role, f'sc-{account_id}-{region_name}', region_name=region_name
+                ) as service_catalog:
+                    response = service_catalog.describe_provisioning_parameters(
+                        ProductId=product_id,
+                        ProvisioningArtifactId=regional_details.get('version_id'),
+                        PathId=aws.get_path_for_product(service_catalog, product_id),
+                    )
+                    for provisioning_artifact_parameters in response.get('ProvisioningArtifactParameters', []):
+                        parameter_key = provisioning_artifact_parameters.get('ParameterKey')
+                        required_parameters[parameter_key] = True
+
+                    regular_parameters, ssm_parameters = get_parameters_for_launch(
+                        required_parameters,
+                        deployment_map,
+                        manifest,
+                        launch_details,
+                        account_id,
+                        launch_details.get('status', constants.PROVISIONED),
+                    )
+
+                logger.info(f"Found a new launch: {launch_name}")
+
+                task = {
+                    'launch_name': launch_name,
+                    'portfolio': launch_details.get('portfolio'),
+                    'product': launch_details.get('product'),
+                    'version': launch_details.get('version'),
+
+                    'product_id': regional_details.get('product_id'),
+                    'version_id': regional_details.get('version_id'),
+
+                    'account_id': account_id,
+                    'region': region_name,
+                    'puppet_account_id': puppet_account_id,
+
+                    'parameters': regular_parameters,
+                    'ssm_param_inputs': ssm_parameters,
+
+                    'depends_on': launch_details.get('depends_on', []),
+
+                    "status": launch_details.get('status', constants.PROVISIONED),
+
+                    "worker_timeout": launch_details.get('timeoutInSeconds', constants.DEFAULT_TIMEOUT),
+
+                    'dependencies': [],
+                }
+
+                if manifest.get('configuration'):
+                    if manifest.get('configuration').get('retry_count'):
+                        task['retry_count'] = manifest.get('configuration').get('retry_count')
+
+                if launch_details.get('configuration'):
+                    if launch_details.get('configuration').get('retry_count'):
+                        task['retry_count'] = launch_details.get('configuration').get('retry_count')
+
+                for output in launch_details.get('outputs', {}).get('ssm', []):
+                    t = copy.deepcopy(task)
+                    del t['depends_on']
+                    tasks_to_run.append(
+                        luigi_tasks_and_targets.SetSSMParamFromProvisionProductTask(**output, dependency=t)
+                    )
+
+                all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
+
+    logger.info(f"Deployment plan: {json.dumps(all_tasks)}")
+    return all_tasks, tasks_to_run
