@@ -98,6 +98,8 @@ class ProvisionProductTask(luigi.Task):
 
     status = luigi.Parameter(default='', significant=False)
 
+    worker_timeout = luigi.IntParameter(default=0, significant=False)
+
     try_count = 1
 
     def add_requires(self, task):

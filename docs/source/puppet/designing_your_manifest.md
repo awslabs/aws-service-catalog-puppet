@@ -313,6 +313,25 @@ accounts:
 Launches allow you to decide which products get provisioned into each account.  You link product launches to accounts 
 using tags or explicit account ids and you can set which regions the products are launched into.
 
+#### Timeouts
+If you are worried that a launch may fail and take a long time to fail you can set a timeout ```timeoutInSeconds```:
+
+```yaml
+schema: puppet-2019-04-01
+
+launches:
+  account-iam-for-prod:
+    portfolio: example-simple-central-it-team-portfolio
+    product: account-iam
+    timeoutInSeconds: 10
+    version: v1
+    deploy_to:
+      tags:
+        - tag: type:prod
+          regions: default_region
+```
+
+
 #### Tag based launches
 You can specify a launch to occur using ```tags``` in the ```deploy_to``` section of a launch.  
 

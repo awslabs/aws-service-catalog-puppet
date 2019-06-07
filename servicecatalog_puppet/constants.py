@@ -13,3 +13,6 @@ HOME_REGION_PARAM_NAME = "/servicecatalog-puppet/home-region"
 
 PROVISIONED = 'provisioned'
 TERMINATED = 'terminated'
+
+
+DEFAULT_TIMEOUT = 0
