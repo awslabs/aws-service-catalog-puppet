@@ -431,6 +431,8 @@ def deploy_spoke_local_portfolios(manifest):
         for launch_name, launch_details in deployments_for_account.get(section).items():
             for region_name in launch_details.get('regions'):
 
+                product_name_to_id_dict = {}
+
                 with betterboto_client.ClientContextManager('servicecatalog',
                                                             region_name=region_name) as service_catalog:
                     hub_portfolio = aws.get_portfolio_for(launch_details.get('portfolio'), puppet_account_id,
@@ -526,6 +528,23 @@ def deploy_spoke_local_portfolios(manifest):
                                 f'Looking for {target_product_id} in {products_ids} for {hub_portfolio.get("Id")}')
                             if target_product_id in products_ids:
                                 break
+                        product_name_to_id_dict[hub_product_name] = target_product_id
+
+                    with betterboto_client.CrossAccountClientContextManager(
+                            'cloudformation', role, f'cfn-{account_id}-{region_name}', region_name=region_name
+                    ) as cloudformation:
+                        template = env.get_template('launch_role_constraints.template.yaml.j2').render(
+                            portfolio={
+                                'DisplayName': hub_portfolio_display_name,
+                            },
+                            portfolio_id=spoke_portfolio_id,
+                            launch_constraints=launch_details.get('constraints', {}).get('launch', []),
+                            product_name_to_id_dict=product_name_to_id_dict,
+                        )
+                        cloudformation.create_or_update(
+                            StackName=f"associations-for-portfolio-{spoke_portfolio_id}",
+                            TemplateBody=template,
+                        )
 
                 launch_details_value = {
                     'portfolio': 'demo-central-it-team-portfolio',
@@ -538,7 +557,7 @@ def deploy_spoke_local_portfolios(manifest):
                     'constraints': {
                         'launch': [
                             {
-                                'product': 'rds-services', 'version': 'v1',
+                                'product': 'rds-services',
                                 'roles': [
                                     'arn:aws:iam::${AWS::AccountId}:role/Admin',
                                     'arn:aws:iam::${AWS::AccountId}:role/DevOps',
