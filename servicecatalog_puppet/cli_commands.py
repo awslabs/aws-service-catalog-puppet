@@ -20,9 +20,8 @@ from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
 
-from servicecatalog_puppet import luigi_tasks_and_targets
 from servicecatalog_puppet import cli_command_helpers
-from servicecatalog_puppet import aws
+from servicecatalog_puppet import luigi_tasks_and_targets
 from servicecatalog_puppet import manifest_utils
 
 
@@ -32,15 +31,8 @@ from servicecatalog_puppet import constants
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES = [
-    'depends_on',
-    'outputs',
-    'parameters',
-]
-
 
 def cli(info, info_line_numbers):
-    """cli for pipeline tools"""
     if info:
         logging.basicConfig(
             format='%(levelname)s %(threadName)s %(message)s', level=logging.INFO
@@ -57,92 +49,23 @@ def generate_shares(f):
     logger.info('Starting to generate shares for: {}'.format(f.name))
 
     manifest = manifest_utils.load(f)
-    deployment_map = manifest_utils.build_deployment_map(manifest)
+    deployment_map = manifest_utils.build_deployment_map(manifest, constants.LAUNCHES)
     cli_command_helpers.create_share_template(deployment_map, cli_command_helpers.get_puppet_account_id())
 
 
 def deploy(f, single_account):
     manifest = manifest_utils.load(f)
-    deployment_map = manifest_utils.build_deployment_map(manifest)
-    deployment_map = cli_command_helpers.set_regions_for_deployment_map(deployment_map)
 
     all_tasks = {}
     tasks_to_run = []
-    puppet_account_id = cli_command_helpers.get_puppet_account_id()
 
-    for account_id, deployments_for_account in deployment_map.items():
-        for launch_name, launch_details in deployments_for_account.get('launches').items():
-            for region_name, regional_details in launch_details.get('regional_details').items():
-                product_id = regional_details.get('product_id')
-                required_parameters = {}
+    all_launch_tasks, launch_tasks_to_run = cli_command_helpers.deploy_launches(manifest)
+    all_tasks.update(all_launch_tasks)
+    tasks_to_run += launch_tasks_to_run
 
-                role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
-                with betterboto_client.CrossAccountClientContextManager(
-                        'servicecatalog', role, f'sc-{account_id}-{region_name}', region_name=region_name
-                ) as service_catalog:
-                    response = service_catalog.describe_provisioning_parameters(
-                        ProductId=product_id,
-                        ProvisioningArtifactId=regional_details.get('version_id'),
-                        PathId=aws.get_path_for_product(service_catalog, product_id),
-                    )
-                    for provisioning_artifact_parameters in response.get('ProvisioningArtifactParameters', []):
-                        parameter_key = provisioning_artifact_parameters.get('ParameterKey')
-                        required_parameters[parameter_key] = True
-
-                    regular_parameters, ssm_parameters = cli_command_helpers.get_parameters_for_launch(
-                        required_parameters,
-                        deployment_map,
-                        manifest,
-                        launch_details,
-                        account_id,
-                        launch_details.get('status', constants.PROVISIONED),
-                    )
-
-                logger.info(f"Found a new launch: {launch_name}")
-
-                task = {
-                    'launch_name': launch_name,
-                    'portfolio': launch_details.get('portfolio'),
-                    'product': launch_details.get('product'),
-                    'version': launch_details.get('version'),
-
-                    'product_id': regional_details.get('product_id'),
-                    'version_id': regional_details.get('version_id'),
-
-                    'account_id': account_id,
-                    'region': region_name,
-                    'puppet_account_id': puppet_account_id,
-
-                    'parameters': regular_parameters,
-                    'ssm_param_inputs': ssm_parameters,
-
-                    'depends_on': launch_details.get('depends_on', []),
-
-                    "status": launch_details.get('status', constants.PROVISIONED),
-
-                    "worker_timeout": launch_details.get('timeoutInSeconds', constants.DEFAULT_TIMEOUT),
-
-                    'dependencies': [],
-                }
-
-                if manifest.get('configuration'):
-                    if manifest.get('configuration').get('retry_count'):
-                        task['retry_count'] = manifest.get('configuration').get('retry_count')
-
-                if launch_details.get('configuration'):
-                    if launch_details.get('configuration').get('retry_count'):
-                        task['retry_count'] = launch_details.get('configuration').get('retry_count')
-
-                for output in launch_details.get('outputs', {}).get('ssm', []):
-                    t = copy.deepcopy(task)
-                    del t['depends_on']
-                    tasks_to_run.append(
-                        luigi_tasks_and_targets.SetSSMParamFromProvisionProductTask(**output, dependency=t)
-                    )
-
-                all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
-
-    logger.info(f"Deployment plan: {json.dumps(all_tasks)}")
+    # all_spoke_local_portfolio_tasks, spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(manifest)
+    # all_tasks.update(all_spoke_local_portfolio_tasks)
+    # tasks_to_run += spoke_local_portfolio_tasks_to_run
 
     for task in cli_command_helpers.wire_dependencies(all_tasks):
         task_status = task.get('status')
@@ -150,8 +73,8 @@ def deploy(f, single_account):
         if task_status == constants.PROVISIONED:
             tasks_to_run.append(luigi_tasks_and_targets.ProvisionProductTask(**task))
         elif task_status == constants.TERMINATED:
-            for attribute in DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES:
-                logger.info(f"checking {launch_name} for disallowed attributes")
+            for attribute in constants.DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES:
+                logger.info(f"checking {task.get('launch_name')} for disallowed attributes")
                 attribute_value = task.get(attribute)
                 if attribute_value is not None:
                     if isinstance(attribute_value, list):
@@ -222,7 +145,7 @@ def list_launches(f):
     manifest = manifest_utils.load(f)
     click.echo("Getting details from your account...")
     ALL_REGIONS = cli_command_helpers.get_regions(os.environ.get("AWS_DEFAULT_REGION"))
-    deployment_map = manifest_utils.build_deployment_map(manifest)
+    deployment_map = manifest_utils.build_deployment_map(manifest, constants.LAUNCHES)
     account_ids = [a.get('account_id') for a in manifest.get('accounts')]
     deployments = {}
     for account_id in account_ids:
@@ -257,22 +180,22 @@ def list_launches(f):
                             ).get('ProvisioningArtifactDetail')
 
                             if deployments.get(account_id) is None:
-                                deployments[account_id] = {'account_id': account_id, 'launches': {}}
+                                deployments[account_id] = {'account_id': account_id, constants.LAUNCHES: {}}
 
-                            if deployments[account_id]['launches'].get(launch_name) is None:
-                                deployments[account_id]['launches'][launch_name] = {}
+                            if deployments[account_id][constants.LAUNCHES].get(launch_name) is None:
+                                deployments[account_id][constants.LAUNCHES][launch_name] = {}
 
-                            deployments[account_id]['launches'][launch_name][region_name] = {
+                            deployments[account_id][constants.LAUNCHES][launch_name][region_name] = {
                                 'launch_name': launch_name,
                                 'portfolio': portfolio.get('DisplayName'),
-                                'product': manifest.get('launches', {}).get(launch_name, {}).get('product'),
+                                'product': manifest.get(constants.LAUNCHES, {}).get(launch_name, {}).get('product'),
                                 'version': provisioning_artifact_response.get('Name'),
                                 'active': provisioning_artifact_response.get('Active'),
                                 'region': region_name,
                                 'status': status,
                             }
                             output_path = os.path.sep.join([
-                                constants.LAUNCHES,
+                                constants.LAUNCHES_PATH,
                                 account_id,
                                 region_name,
                             ])
@@ -291,11 +214,11 @@ def list_launches(f):
          'status']
     ]
     for account_id, details in deployment_map.items():
-        for launch_name, launch in details.get('launches', {}).items():
-            if deployments.get(account_id, {}).get('launches', {}).get(launch_name) is None:
+        for launch_name, launch in details.get(constants.LAUNCHES, {}).items():
+            if deployments.get(account_id, {}).get(constants.LAUNCHES, {}).get(launch_name) is None:
                 pass
             else:
-                for region, regional_details in deployments[account_id]['launches'][launch_name].items():
+                for region, regional_details in deployments[account_id][constants.LAUNCHES][launch_name].items():
                     if regional_details.get('status') == "AVAILABLE":
                         status = Color("{green}" + regional_details.get('status') + "{/green}")
                     else:

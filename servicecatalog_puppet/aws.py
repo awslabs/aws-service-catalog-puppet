@@ -3,6 +3,7 @@ import time
 import yaml
 
 from servicecatalog_puppet import constants
+from betterboto import client as betterboto_client
 
 logger = logging.getLogger(__file__)
 
@@ -242,3 +243,114 @@ def ensure_is_terminated(
 
     logger.info(f"Finished ensuring {provisioned_product_name} is terminated")
     return provisioned_product_id, provisioning_artifact_id
+
+
+def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name, account_id, region):
+    logger.info("Getting provisioning artifact id for: {} {} {} in the region: {} of account: {}".format(
+        portfolio_name, product_name, version_name, region, account_id
+    ))
+    role = "arn:aws:iam::{}:role/{}".format(account_id, 'servicecatalog-puppet/PuppetRole')
+    with betterboto_client.CrossAccountClientContextManager(
+            'servicecatalog', role, "-".join([account_id, region]), region_name=region
+    ) as cross_account_servicecatalog:
+        product_id = None
+        version_id = None
+        portfolio_id = None
+        args = {}
+        while True:
+            response = cross_account_servicecatalog.list_accepted_portfolio_shares()
+            assert response.get('NextPageToken') is None, "Pagination not supported"
+            for portfolio_detail in response.get('PortfolioDetails'):
+                if portfolio_detail.get('DisplayName') == portfolio_name:
+                    portfolio_id = portfolio_detail.get('Id')
+                    break
+
+            if portfolio_id is None:
+                response = cross_account_servicecatalog.list_portfolios()
+                for portfolio_detail in response.get('PortfolioDetails', []):
+                    if portfolio_detail.get('DisplayName') == portfolio_name:
+                        portfolio_id = portfolio_detail.get('Id')
+                        break
+
+            assert portfolio_id is not None, "Could not find portfolio"
+            logger.info("Found portfolio: {}".format(portfolio_id))
+
+            args['PortfolioId'] = portfolio_id
+            response = cross_account_servicecatalog.search_products_as_admin(
+                **args
+            )
+            for product_view_details in response.get('ProductViewDetails'):
+                product_view = product_view_details.get('ProductViewSummary')
+                if product_view.get('Name') == product_name:
+                    logger.info('Found product: {}'.format(product_view))
+                    product_id = product_view.get('ProductId')
+            if response.get('NextPageToken', None) is not None:
+                args['PageToken'] = response.get('NextPageToken')
+            else:
+                break
+        assert product_id is not None, "Did not find product looking for"
+
+        response = cross_account_servicecatalog.list_provisioning_artifacts(
+            ProductId=product_id
+        )
+        assert response.get('NextPageToken') is None, "Pagination not support"
+        for provisioning_artifact_detail in response.get('ProvisioningArtifactDetails'):
+            if provisioning_artifact_detail.get('Name') == version_name:
+                version_id = provisioning_artifact_detail.get('Id')
+        assert version_id is not None, "Did not find version looking for"
+        return product_id, version_id
+
+
+def get_portfolio_for(portfolio_name, account_id, region):
+    logger.info(f"Getting portfolio id for: {portfolio_name}")
+    role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
+    with betterboto_client.CrossAccountClientContextManager(
+            'servicecatalog', role, "-".join([account_id, region]), region_name=region
+    ) as cross_account_servicecatalog:
+        portfolio = None
+        while True:
+            response = cross_account_servicecatalog.list_accepted_portfolio_shares()
+            assert response.get('NextPageToken') is None, "Pagination not supported"
+            for portfolio_detail in response.get('PortfolioDetails'):
+                if portfolio_detail.get('DisplayName') == portfolio_name:
+                    portfolio = portfolio_detail
+                    break
+
+            if portfolio is None:
+                response = cross_account_servicecatalog.list_portfolios()
+                for portfolio_detail in response.get('PortfolioDetails', []):
+                    if portfolio_detail.get('DisplayName') == portfolio_name:
+                        portfolio = portfolio_detail
+                        break
+
+            assert portfolio is not None, "Could not find portfolio"
+            logger.info(f"Found portfolio: {portfolio}")
+            return portfolio
+
+
+def ensure_portfolio(service_catalog, portfolio_name, provider_name, description=None):
+    return find_portfolio(service_catalog, portfolio_name) \
+           or create_portfolio(service_catalog, portfolio_name, provider_name, description)
+
+
+def find_portfolio(service_catalog, portfolio_searching_for):
+    logger.info('Searching for portfolio for: {}'.format(portfolio_searching_for))
+    response = service_catalog.list_portfolios_single_page()
+    for detail in response.get('PortfolioDetails'):
+        if detail.get('DisplayName') == portfolio_searching_for:
+            logger.info('Found portfolio: {}'.format(portfolio_searching_for))
+            return detail.get('Id')
+    return False
+
+
+def create_portfolio(service_catalog, portfolio_name, provider_name, description=None):
+    logger.info(f'Creating portfolio: {portfolio_name}')
+    args = {
+        'DisplayName': portfolio_name,
+        'ProviderName': provider_name,
+    }
+    if description is not None:
+        args['Description'] = description
+    return service_catalog.create_portfolio(
+        **args
+    ).get('PortfolioDetail').get('Id')
