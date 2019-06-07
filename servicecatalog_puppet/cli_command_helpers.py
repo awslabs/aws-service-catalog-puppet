@@ -448,6 +448,21 @@ def deploy_spoke_local_portfolios(manifest):
                             hub_portfolio.get('Description'),
                         )
 
+                    with betterboto_client.CrossAccountClientContextManager(
+                            'cloudformation', role, f'cfn-{account_id}-{region_name}', region_name=region_name
+                    ) as cloudformation:
+                        template = env.get_template('associations.template.yaml.j2').render(
+                            portfolio={
+                                'DisplayName': hub_portfolio_display_name,
+                                'Associations': launch_details.get('associations')
+                            },
+                            portfolio_id=spoke_portfolio_id,
+                        )
+                        cloudformation.create_or_update(
+                            StackName=f"associations-for-portfolio-{spoke_portfolio_id}",
+                            TemplateBody=template,
+                        )
+
                     response = service_catalog.search_products_as_admin_single_page(PortfolioId=hub_portfolio.get('Id'))
                     for product_view_detail in response.get('ProductViewDetails', []):
                         product_view_summary = product_view_detail.get('ProductViewSummary')
@@ -458,7 +473,8 @@ def deploy_spoke_local_portfolios(manifest):
                         hub_product_arn = product_view_detail.get('ProductARN')
                         copy_args = {'SourceProductArn': hub_product_arn}
 
-                        logger.info(f"[{hub_portfolio_display_name}] {account_id}:{region_name} searching spoke for product")
+                        logger.info(
+                            f"[{hub_portfolio_display_name}] {account_id}:{region_name} searching spoke for product")
                         p = spoke_service_catalog.search_products_as_admin_single_page(
                             PortfolioId=spoke_portfolio_id,
                             Filters={'FullTextSearch': [hub_product_name]}
@@ -470,7 +486,8 @@ def deploy_spoke_local_portfolios(manifest):
                                 logger.info(f'Found product: {product_view}')
                                 copy_args['TargetProductId'] = product_view.get('Id')
 
-                        logger.info(f"[{hub_portfolio_display_name}] {account_id}:{region_name} About to copy product: {copy_args}")
+                        logger.info(
+                            f"[{hub_portfolio_display_name}] {account_id}:{region_name} About to copy product: {copy_args}")
                         copy_product_token = spoke_service_catalog.copy_product(
                             **copy_args
                         ).get('CopyProductToken')
@@ -502,12 +519,13 @@ def deploy_spoke_local_portfolios(manifest):
                                 PortfolioId=spoke_portfolio_id,
                             )
                             products_ids = [
-                                product_view_detail.get('ProductViewSummary').get('ProductId') for product_view_detail in response.get('ProductViewDetails')
+                                product_view_detail.get('ProductViewSummary').get('ProductId') for product_view_detail
+                                in response.get('ProductViewDetails')
                             ]
-                            logger.info(f'Looking for {target_product_id} in {products_ids} for {hub_portfolio.get("Id")}')
+                            logger.info(
+                                f'Looking for {target_product_id} in {products_ids} for {hub_portfolio.get("Id")}')
                             if target_product_id in products_ids:
                                 break
-
 
                 launch_details_value = {
                     'portfolio': 'demo-central-it-team-portfolio',
