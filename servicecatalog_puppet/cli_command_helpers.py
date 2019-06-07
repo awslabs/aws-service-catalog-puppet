@@ -431,17 +431,11 @@ def deploy_spoke_local_portfolios(manifest):
         for launch_name, launch_details in deployments_for_account.get(section).items():
             for region_name in launch_details.get('regions'):
 
-                # get source portfolio
-                # get or create target portfolio
-                # get source portfolio
-                # get the source products
-                # for each source product
-                ## copy the product then associate with the portfolio
-
                 with betterboto_client.ClientContextManager('servicecatalog',
                                                             region_name=region_name) as service_catalog:
                     hub_portfolio = aws.get_portfolio_for(launch_details.get('portfolio'), puppet_account_id,
                                                           region_name)
+                    hub_portfolio_display_name = hub_portfolio.get('DisplayName')
 
                     role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
                     with betterboto_client.CrossAccountClientContextManager(
@@ -449,7 +443,7 @@ def deploy_spoke_local_portfolios(manifest):
                     ) as spoke_service_catalog:
                         spoke_portfolio_id = aws.ensure_portfolio(
                             spoke_service_catalog,
-                            hub_portfolio.get('DisplayName'),
+                            hub_portfolio_display_name,
                             hub_portfolio.get('ProviderName'),
                             hub_portfolio.get('Description'),
                         )
@@ -458,22 +452,25 @@ def deploy_spoke_local_portfolios(manifest):
                     for product_view_detail in response.get('ProductViewDetails', []):
                         product_view_summary = product_view_detail.get('ProductViewSummary')
                         hub_product_name = product_view_summary.get('Name')
-                        logger.info(f"Copying {hub_portfolio.get('DisplayName')}-{hub_product_name} to "
+                        logger.info(f"Copying {hub_portfolio_display_name}-{hub_product_name} to "
                                     f"{account_id} {region_name}")
 
                         hub_product_arn = product_view_detail.get('ProductARN')
                         copy_args = {'SourceProductArn': hub_product_arn}
 
+                        logger.info(f"[{hub_portfolio_display_name}] {account_id}:{region_name} searching spoke for product")
                         p = spoke_service_catalog.search_products_as_admin_single_page(
-                            PortfolioId=hub_portfolio.get('Id'),
+                            PortfolioId=spoke_portfolio_id,
                             Filters={'FullTextSearch': [hub_product_name]}
                         )
+                        logger.info(p)
                         for product_view_details in p.get('ProductViewDetails'):
                             product_view = product_view_details.get('ProductViewSummary')
                             if product_view.get('Name') == hub_product_name:
                                 logger.info(f'Found product: {product_view}')
                                 copy_args['TargetProductId'] = product_view.get('Id')
 
+                        logger.info(f"[{hub_portfolio_display_name}] {account_id}:{region_name} About to copy product: {copy_args}")
                         copy_product_token = spoke_service_catalog.copy_product(
                             **copy_args
                         ).get('CopyProductToken')
@@ -486,25 +483,24 @@ def deploy_spoke_local_portfolios(manifest):
                             target_product_id = r.get('TargetProductId')
                             logger.info(f"{hub_product_name} status: {r.get('CopyProductStatus')}")
                             if r.get('CopyProductStatus') == 'FAILED':
-                                raise Exception(f"Copying {hub_product_name} from {hub_portfolio.get('DisplayName')} "
+                                raise Exception(f"Copying {hub_product_name} from {hub_portfolio_display_name} "
                                                 f"into {account_id} {region_name} failed: {r.get('StatusDetail')}")
                             elif r.get('CopyProductStatus') == 'SUCCEEDED':
                                 break
 
-                        logger.info(f"adding to portfolio {hub_portfolio.get('DisplayName')}-{hub_product_name} to "
-                                    f"{account_id} {region_name}")
-                        service_catalog.associate_product_with_portfolio(
+                        logger.info(f"adding {target_product_id} to portfolio {spoke_portfolio_id}")
+                        spoke_service_catalog.associate_product_with_portfolio(
                             ProductId=target_product_id,
-                            PortfolioId=hub_portfolio.get('Id')
+                            PortfolioId=spoke_portfolio_id,
                         )
 
                         # associate_product_with_portfolio is not a synchronous request
-                        logger.info(f"waiting for add to portfolio {hub_portfolio.get('DisplayName')}-{hub_product_name} "
-                                    f"to {account_id} {region_name}")
-
+                        logger.info(f"waiting for {target_product_id} to be added to portfolio {spoke_portfolio_id}")
                         while True:
                             time.sleep(2)
-                            response = service_catalog.search_products_as_admin_single_page(PortfolioId=hub_portfolio.get('Id'))
+                            response = spoke_service_catalog.search_products_as_admin_single_page(
+                                PortfolioId=spoke_portfolio_id,
+                            )
                             products_ids = [
                                 product_view_detail.get('ProductViewSummary').get('ProductId') for product_view_detail in response.get('ProductViewDetails')
                             ]
