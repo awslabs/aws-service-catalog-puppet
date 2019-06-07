@@ -66,6 +66,7 @@ def get_stack_output_for(cloudformation, stack_name):
 def get_default_parameters_for_stack(cloudformation, stack_name):
     logger.info(f"Getting default parameters for for {stack_name}")
     existing_stack_params_dict = {}
+    #errored
     summary_response = cloudformation.get_template_summary(
         StackName=stack_name,
     )

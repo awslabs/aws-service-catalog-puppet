@@ -120,6 +120,8 @@ def deploy(f, single_account):
 
                     "status": launch_details.get('status', constants.PROVISIONED),
 
+                    "worker_timeout": launch_details.get('timeoutInSeconds', constants.DEFAULT_TIMEOUT),
+
                     'dependencies': [],
                 }
 
