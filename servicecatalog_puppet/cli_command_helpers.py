@@ -541,8 +541,9 @@ def deploy_spoke_local_portfolios(manifest):
                             launch_constraints=launch_details.get('constraints', {}).get('launch', []),
                             product_name_to_id_dict=product_name_to_id_dict,
                         )
+                        logger.info(template)
                         cloudformation.create_or_update(
-                            StackName=f"associations-for-portfolio-{spoke_portfolio_id}",
+                            StackName=f"launch-constraints-for-portfolio-{spoke_portfolio_id}",
                             TemplateBody=template,
                         )
 
