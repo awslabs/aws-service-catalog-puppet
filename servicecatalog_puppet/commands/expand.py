@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 from servicecatalog_puppet.macros import macros
+import json
 
 import logging
 
@@ -21,13 +22,16 @@ def expand_ou(original_account, client):
         response = client.describe_account(AccountId=new_account_id)
         new_account = deepcopy(original_account)
         del new_account['ou']
-        if response.get('Account').get('Name') is not None:
-            new_account['name'] = response.get('Account').get('Name')
-        new_account['email'] = response.get('Account').get('Email')
-        new_account['account_id'] = new_account_id
-        new_account['expanded_from'] = original_account.get('ou')
-        new_account['organization'] = response.get('Account').get('Arn').split(":")[5].split("/")[1]
-        expanded.append(new_account)
+        if response.get('Account').get('Status') == "ACTIVE":
+            if response.get('Account').get('Name') is not None:
+                new_account['name'] = response.get('Account').get('Name')
+            new_account['email'] = response.get('Account').get('Email')
+            new_account['account_id'] = new_account_id
+            new_account['expanded_from'] = original_account.get('ou')
+            new_account['organization'] = response.get('Account').get('Arn').split(":")[5].split("/")[1]
+            expanded.append(new_account)
+        else:
+            logger.info(f"Skipping account as it is not ACTIVE: {json.dump(response.get('Account'), default=str)}")
     return expanded
 
 
