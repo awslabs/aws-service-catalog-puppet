@@ -339,7 +339,7 @@ def find_portfolio(service_catalog, portfolio_searching_for):
     for detail in response.get('PortfolioDetails'):
         if detail.get('DisplayName') == portfolio_searching_for:
             logger.info('Found portfolio: {}'.format(portfolio_searching_for))
-            return detail.get('Id')
+            return detail
     return False
 
 
@@ -353,4 +353,4 @@ def create_portfolio(service_catalog, portfolio_name, provider_name, description
         args['Description'] = description
     return service_catalog.create_portfolio(
         **args
-    ).get('PortfolioDetail').get('Id')
+    ).get('PortfolioDetail')
