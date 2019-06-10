@@ -331,13 +331,17 @@ class CreateAssociationsForPortfolioTask(luigi.Task):
     portfolio = luigi.Parameter()
 
     associations = luigi.ListParameter(default=[])
+    dependencies = luigi.ListParameter(default=[])
 
     def requires(self):
-        return CreateSpokeLocalPortfolioTask(
-            account_id=self.account_id,
-            region=self.region,
-            portfolio=self.portfolio,
-        )
+        return {
+            'create_spoke_local_portfolio_task': CreateSpokeLocalPortfolioTask(
+                account_id=self.account_id,
+                region=self.region,
+                portfolio=self.portfolio,
+            ),
+            'deps': [ProvisionProductTask(**dependency) for dependency in self.dependencies]
+        }
 
     def output(self):
         return luigi.LocalTarget(
@@ -349,7 +353,7 @@ class CreateAssociationsForPortfolioTask(luigi.Task):
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: starting creating associations")
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
 
-        portfolio_id = json.loads(self.input().open('r').read()).get('Id')
+        portfolio_id = json.loads(self.input().get('create_spoke_local_portfolio_task').open('r').read()).get('Id')
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: using portfolio_id: {portfolio_id}")
 
         with betterboto_client.CrossAccountClientContextManager(
@@ -548,19 +552,24 @@ class CreateLaunchRoleConstraintsForPortfolio(luigi.Task):
 
     launch_constraints = luigi.DictParameter()
 
+    dependencies = luigi.ListParameter(default=[])
+
     def requires(self):
-        return ImportIntoSpokeLocalPortfolioTask(
-            account_id=self.account_id,
-            region=self.region,
-            portfolio=self.portfolio,
-            hub_portfolio_id=self.hub_portfolio_id,
-        )
+        return {
+            'create_spoke_local_portfolio_task': ImportIntoSpokeLocalPortfolioTask(
+                account_id=self.account_id,
+                region=self.region,
+                portfolio=self.portfolio,
+                hub_portfolio_id=self.hub_portfolio_id,
+            ),
+            'deps': [ProvisionProductTask(**dependency) for dependency in self.dependencies]
+        }
 
     def run(self):
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Creating launch role constraints for "
                     f"{self.hub_portfolio_id}")
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
-        dependency_output = json.loads(self.input().open('r').read())
+        dependency_output = json.loads(self.input().get('create_spoke_local_portfolio_task').open('r').read())
         spoke_portfolio = dependency_output.get('portfolio')
         portfolio_id = spoke_portfolio.get('Id')
         product_name_to_id_dict = dependency_output.get('products')

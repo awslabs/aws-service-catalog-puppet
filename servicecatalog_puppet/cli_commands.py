@@ -56,18 +56,14 @@ def generate_shares(f):
 def deploy(f, single_account):
     manifest = manifest_utils.load(f)
 
-    all_tasks = {}
+    launch_tasks = {}
     tasks_to_run = []
 
-    # all_launch_tasks, launch_tasks_to_run = cli_command_helpers.deploy_launches(manifest)
-    # all_tasks.update(all_launch_tasks)
-    # tasks_to_run += launch_tasks_to_run
+    all_launch_tasks, launch_tasks_to_run = cli_command_helpers.deploy_launches(manifest)
+    launch_tasks.update(all_launch_tasks)
+    tasks_to_run += launch_tasks_to_run
 
-    all_spoke_local_portfolio_tasks, spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(manifest)
-    all_tasks.update(all_spoke_local_portfolio_tasks)
-    tasks_to_run += spoke_local_portfolio_tasks_to_run
-
-    for task in cli_command_helpers.wire_dependencies(all_tasks):
+    for task in cli_command_helpers.wire_dependencies(launch_tasks):
         task_status = task.get('status')
         del task['status']
         if task_status == constants.PROVISIONED:
@@ -92,6 +88,9 @@ def deploy(f, single_account):
             tasks_to_run.append(luigi_tasks_and_targets.TerminateProductTask(**task))
         else:
             raise Exception(f"Unsupported status of {task_status}")
+
+    spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(manifest, launch_tasks)
+    tasks_to_run += spoke_local_portfolio_tasks_to_run
 
     luigi.build(
         tasks_to_run,

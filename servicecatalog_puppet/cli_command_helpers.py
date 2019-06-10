@@ -418,78 +418,78 @@ def _do_bootstrap(puppet_version):
         )
 
 
-def deploy_spoke_local_portfolios(manifest):
+def deploy_spoke_local_portfolios(manifest, launch_tasks):
     section = constants.SPOKE_LOCAL_PORTFOLIOS
     deployment_map = manifest_utils.build_deployment_map(manifest, section)
     deployment_map = set_regions_for_deployment_map(deployment_map, section)
 
-    all_tasks = {}
     tasks_to_run = []
     puppet_account_id = get_puppet_account_id()
 
     for account_id, deployments_for_account in deployment_map.items():
-        role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
         for launch_name, launch_details in deployments_for_account.get(section).items():
             for region_name in launch_details.get('regions'):
 
-                product_name_to_id_dict = {}
+                depends_on = launch_details.get('depends_on')
+                dependencies = []
+                for dependency in depends_on:
+                    for task_uid, task in launch_tasks.items():
+                        if task.get('launch_name') == dependency:
+                            dependencies.append(task)
 
-                with betterboto_client.ClientContextManager(
-                        'servicecatalog', region_name=region_name
-                ) as service_catalog:
-                    hub_portfolio = aws.get_portfolio_for(
-                        launch_details.get('portfolio'), puppet_account_id, region_name
-                    )
-                    hub_portfolio_display_name = hub_portfolio.get('DisplayName')
+                hub_portfolio = aws.get_portfolio_for(
+                    launch_details.get('portfolio'), puppet_account_id, region_name
+                )
 
-                    create_spoke_local_portfolio_task_params = {
-                        'account_id': account_id,
-                        'region': region_name,
-                        'portfolio': launch_details.get('portfolio'),
-                        'provider_name': hub_portfolio.get('ProviderName'),
-                        'description': hub_portfolio.get('Description'),
-                    }
-                    create_spoke_local_portfolio_task = luigi_tasks_and_targets.CreateSpokeLocalPortfolioTask(
-                        **create_spoke_local_portfolio_task_params
-                    )
-                    tasks_to_run.append(create_spoke_local_portfolio_task)
+                create_spoke_local_portfolio_task_params = {
+                    'account_id': account_id,
+                    'region': region_name,
+                    'portfolio': launch_details.get('portfolio'),
+                    'provider_name': hub_portfolio.get('ProviderName'),
+                    'description': hub_portfolio.get('Description'),
+                }
+                create_spoke_local_portfolio_task = luigi_tasks_and_targets.CreateSpokeLocalPortfolioTask(
+                    **create_spoke_local_portfolio_task_params
+                )
+                tasks_to_run.append(create_spoke_local_portfolio_task)
 
-                    create_spoke_local_portfolio_task_as_dependency_params = {
-                        'account_id': account_id,
-                        'region': region_name,
-                        'portfolio': launch_details.get('portfolio'),
-                    }
+                create_spoke_local_portfolio_task_as_dependency_params = {
+                    'account_id': account_id,
+                    'region': region_name,
+                    'portfolio': launch_details.get('portfolio'),
+                }
 
-                    create_associations_task_params = {
-                        'associations': launch_details.get('associations'),
-                    }
-                    create_associations_for_portfolio_task = luigi_tasks_and_targets.CreateAssociationsForPortfolioTask(
-                        **create_spoke_local_portfolio_task_as_dependency_params,
-                        **create_associations_task_params,
-                    )
-                    tasks_to_run.append(create_associations_for_portfolio_task)
+                create_associations_task_params = {
+                    'associations': launch_details.get('associations'),
+                }
+                create_associations_for_portfolio_task = luigi_tasks_and_targets.CreateAssociationsForPortfolioTask(
+                    **create_spoke_local_portfolio_task_as_dependency_params,
+                    **create_associations_task_params,
+                    dependencies=dependencies,
+                )
+                tasks_to_run.append(create_associations_for_portfolio_task)
 
-                    import_into_spoke_local_portfolio_task_params = {
-                        'hub_portfolio_id': hub_portfolio.get('Id')
-                    }
-                    import_into_spoke_local_portfolio_task = luigi_tasks_and_targets.ImportIntoSpokeLocalPortfolioTask(
-                        **create_spoke_local_portfolio_task_as_dependency_params,
-                        **import_into_spoke_local_portfolio_task_params,
-                    )
-                    tasks_to_run.append(import_into_spoke_local_portfolio_task)
+                import_into_spoke_local_portfolio_task_params = {
+                    'hub_portfolio_id': hub_portfolio.get('Id')
+                }
+                import_into_spoke_local_portfolio_task = luigi_tasks_and_targets.ImportIntoSpokeLocalPortfolioTask(
+                    **create_spoke_local_portfolio_task_as_dependency_params,
+                    **import_into_spoke_local_portfolio_task_params,
+                )
+                tasks_to_run.append(import_into_spoke_local_portfolio_task)
 
-                    create_launch_role_constraints_for_portfolio_task_params = {
-                        'launch_constraints': launch_details.get('constraints', {}).get('launch', []),
-                    }
-                    create_launch_role_constraints_for_portfolio = luigi_tasks_and_targets.CreateLaunchRoleConstraintsForPortfolio(
-                        **create_spoke_local_portfolio_task_as_dependency_params,
-                        **import_into_spoke_local_portfolio_task_params,
-                        **create_launch_role_constraints_for_portfolio_task_params,
-                    )
-                    tasks_to_run.append(create_launch_role_constraints_for_portfolio)
+                create_launch_role_constraints_for_portfolio_task_params = {
+                    'launch_constraints': launch_details.get('constraints', {}).get('launch', []),
+                }
+                create_launch_role_constraints_for_portfolio = luigi_tasks_and_targets.CreateLaunchRoleConstraintsForPortfolio(
+                    **create_spoke_local_portfolio_task_as_dependency_params,
+                    **import_into_spoke_local_portfolio_task_params,
+                    **create_launch_role_constraints_for_portfolio_task_params,
+                    dependencies=dependencies,
+                )
+                tasks_to_run.append(create_launch_role_constraints_for_portfolio)
 
-    logger.info(f"Deployment plan: {json.dumps(all_tasks)}")
-    return all_tasks, tasks_to_run
+    return tasks_to_run
 
 
 def deploy_launches(manifest):
