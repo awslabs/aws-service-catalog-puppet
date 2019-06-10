@@ -449,7 +449,6 @@ def deploy_spoke_local_portfolios(manifest):
                         'provider_name': hub_portfolio.get('ProviderName'),
                         'description': hub_portfolio.get('Description'),
                     }
-
                     create_spoke_local_portfolio_task = luigi_tasks_and_targets.CreateSpokeLocalPortfolioTask(
                         **create_spoke_local_portfolio_task_params
                     )
@@ -464,7 +463,6 @@ def deploy_spoke_local_portfolios(manifest):
                     create_associations_task_params = {
                         'associations': launch_details.get('associations'),
                     }
-
                     create_associations_for_portfolio_task = luigi_tasks_and_targets.CreateAssociationsForPortfolioTask(
                         **create_spoke_local_portfolio_task_as_dependency_params,
                         **create_associations_task_params,
@@ -474,22 +472,21 @@ def deploy_spoke_local_portfolios(manifest):
                     import_into_spoke_local_portfolio_task_params = {
                         'hub_portfolio_id': hub_portfolio.get('Id')
                     }
-
                     import_into_spoke_local_portfolio_task = luigi_tasks_and_targets.ImportIntoSpokeLocalPortfolioTask(
                         **create_spoke_local_portfolio_task_as_dependency_params,
                         **import_into_spoke_local_portfolio_task_params,
                     )
-
                     tasks_to_run.append(import_into_spoke_local_portfolio_task)
 
-                    # create_launch_role_constraints_for_portfolio_task_params = {
-                    #     'launch_constraints': launch_details.get('constraints', {}).get('launch', []),
-                    # }
-
-                    # luigi_tasks_and_targets.CreateLaunchRoleConstraintsForPortfolio(
-                    #     **import_into_spoke_local_portfolio_task_params,
-                    #     **create_launch_role_constraints_for_portfolio_task_params,
-                    # )
+                    create_launch_role_constraints_for_portfolio_task_params = {
+                        'launch_constraints': launch_details.get('constraints', {}).get('launch', []),
+                    }
+                    create_launch_role_constraints_for_portfolio = luigi_tasks_and_targets.CreateLaunchRoleConstraintsForPortfolio(
+                        **create_spoke_local_portfolio_task_as_dependency_params,
+                        **import_into_spoke_local_portfolio_task_params,
+                        **create_launch_role_constraints_for_portfolio_task_params,
+                    )
+                    tasks_to_run.append(create_launch_role_constraints_for_portfolio)
 
     logger.info(f"Deployment plan: {json.dumps(all_tasks)}")
     return all_tasks, tasks_to_run
