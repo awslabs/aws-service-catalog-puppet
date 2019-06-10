@@ -428,152 +428,68 @@ def deploy_spoke_local_portfolios(manifest):
     puppet_account_id = get_puppet_account_id()
 
     for account_id, deployments_for_account in deployment_map.items():
+        role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
         for launch_name, launch_details in deployments_for_account.get(section).items():
             for region_name in launch_details.get('regions'):
 
                 product_name_to_id_dict = {}
 
-                with betterboto_client.ClientContextManager('servicecatalog',
-                                                            region_name=region_name) as service_catalog:
-                    hub_portfolio = aws.get_portfolio_for(launch_details.get('portfolio'), puppet_account_id,
-                                                          region_name)
+                with betterboto_client.ClientContextManager(
+                        'servicecatalog', region_name=region_name
+                ) as service_catalog:
+                    hub_portfolio = aws.get_portfolio_for(
+                        launch_details.get('portfolio'), puppet_account_id, region_name
+                    )
                     hub_portfolio_display_name = hub_portfolio.get('DisplayName')
 
-                    role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
-                    with betterboto_client.CrossAccountClientContextManager(
-                            'servicecatalog', role, f'sc-{account_id}-{region_name}', region_name=region_name
-                    ) as spoke_service_catalog:
-                        spoke_portfolio_id = aws.ensure_portfolio(
-                            spoke_service_catalog,
-                            hub_portfolio_display_name,
-                            hub_portfolio.get('ProviderName'),
-                            hub_portfolio.get('Description'),
-                        )
+                    create_spoke_local_portfolio_task_params = {
+                        'account_id': account_id,
+                        'region': region_name,
+                        'portfolio': launch_details.get('portfolio'),
+                        'provider_name': hub_portfolio.get('ProviderName'),
+                        'description': hub_portfolio.get('Description'),
+                    }
 
-                    with betterboto_client.CrossAccountClientContextManager(
-                            'cloudformation', role, f'cfn-{account_id}-{region_name}', region_name=region_name
-                    ) as cloudformation:
-                        template = env.get_template('associations.template.yaml.j2').render(
-                            portfolio={
-                                'DisplayName': hub_portfolio_display_name,
-                                'Associations': launch_details.get('associations')
-                            },
-                            portfolio_id=spoke_portfolio_id,
-                        )
-                        cloudformation.create_or_update(
-                            StackName=f"associations-for-portfolio-{spoke_portfolio_id}",
-                            TemplateBody=template,
-                        )
+                    create_spoke_local_portfolio_task = luigi_tasks_and_targets.CreateSpokeLocalPortfolioTask(
+                        **create_spoke_local_portfolio_task_params
+                    )
+                    tasks_to_run.append(create_spoke_local_portfolio_task)
 
-                    response = service_catalog.search_products_as_admin_single_page(PortfolioId=hub_portfolio.get('Id'))
-                    for product_view_detail in response.get('ProductViewDetails', []):
-                        product_view_summary = product_view_detail.get('ProductViewSummary')
-                        hub_product_name = product_view_summary.get('Name')
-                        logger.info(f"Copying {hub_portfolio_display_name}-{hub_product_name} to "
-                                    f"{account_id} {region_name}")
+                    create_spoke_local_portfolio_task_as_dependency_params = {
+                        'account_id': account_id,
+                        'region': region_name,
+                        'portfolio': launch_details.get('portfolio'),
+                    }
 
-                        hub_product_arn = product_view_detail.get('ProductARN')
-                        copy_args = {'SourceProductArn': hub_product_arn}
+                    create_associations_task_params = {
+                        'associations': launch_details.get('associations'),
+                    }
 
-                        logger.info(
-                            f"[{hub_portfolio_display_name}] {account_id}:{region_name} searching spoke for product")
-                        p = spoke_service_catalog.search_products_as_admin_single_page(
-                            PortfolioId=spoke_portfolio_id,
-                            Filters={'FullTextSearch': [hub_product_name]}
-                        )
-                        logger.info(p)
-                        for product_view_details in p.get('ProductViewDetails'):
-                            product_view = product_view_details.get('ProductViewSummary')
-                            if product_view.get('Name') == hub_product_name:
-                                logger.info(f'Found product: {product_view}')
-                                copy_args['TargetProductId'] = product_view.get('Id')
+                    create_associations_for_portfolio_task = luigi_tasks_and_targets.CreateAssociationsForPortfolioTask(
+                        **create_spoke_local_portfolio_task_as_dependency_params,
+                        **create_associations_task_params,
+                    )
+                    tasks_to_run.append(create_associations_for_portfolio_task)
 
-                        logger.info(
-                            f"[{hub_portfolio_display_name}] {account_id}:{region_name} About to copy product: {copy_args}")
-                        copy_product_token = spoke_service_catalog.copy_product(
-                            **copy_args
-                        ).get('CopyProductToken')
-                        target_product_id = None
-                        while True:
-                            time.sleep(5)
-                            r = spoke_service_catalog.describe_copy_product_status(
-                                CopyProductToken=copy_product_token
-                            )
-                            target_product_id = r.get('TargetProductId')
-                            logger.info(f"{hub_product_name} status: {r.get('CopyProductStatus')}")
-                            if r.get('CopyProductStatus') == 'FAILED':
-                                raise Exception(f"Copying {hub_product_name} from {hub_portfolio_display_name} "
-                                                f"into {account_id} {region_name} failed: {r.get('StatusDetail')}")
-                            elif r.get('CopyProductStatus') == 'SUCCEEDED':
-                                break
+                    import_into_spoke_local_portfolio_task_params = {
+                        'hub_portfolio_id': hub_portfolio.get('Id')
+                    }
 
-                        logger.info(f"adding {target_product_id} to portfolio {spoke_portfolio_id}")
-                        spoke_service_catalog.associate_product_with_portfolio(
-                            ProductId=target_product_id,
-                            PortfolioId=spoke_portfolio_id,
-                        )
+                    import_into_spoke_local_portfolio_task = luigi_tasks_and_targets.ImportIntoSpokeLocalPortfolioTask(
+                        **create_spoke_local_portfolio_task_as_dependency_params,
+                        **import_into_spoke_local_portfolio_task_params,
+                    )
 
-                        # associate_product_with_portfolio is not a synchronous request
-                        logger.info(f"waiting for {target_product_id} to be added to portfolio {spoke_portfolio_id}")
-                        while True:
-                            time.sleep(2)
-                            response = spoke_service_catalog.search_products_as_admin_single_page(
-                                PortfolioId=spoke_portfolio_id,
-                            )
-                            products_ids = [
-                                product_view_detail.get('ProductViewSummary').get('ProductId') for product_view_detail
-                                in response.get('ProductViewDetails')
-                            ]
-                            logger.info(
-                                f'Looking for {target_product_id} in {products_ids} for {hub_portfolio.get("Id")}')
-                            if target_product_id in products_ids:
-                                break
-                        product_name_to_id_dict[hub_product_name] = target_product_id
+                    tasks_to_run.append(import_into_spoke_local_portfolio_task)
 
-                    with betterboto_client.CrossAccountClientContextManager(
-                            'cloudformation', role, f'cfn-{account_id}-{region_name}', region_name=region_name
-                    ) as cloudformation:
-                        template = env.get_template('launch_role_constraints.template.yaml.j2').render(
-                            portfolio={
-                                'DisplayName': hub_portfolio_display_name,
-                            },
-                            portfolio_id=spoke_portfolio_id,
-                            launch_constraints=launch_details.get('constraints', {}).get('launch', []),
-                            product_name_to_id_dict=product_name_to_id_dict,
-                        )
-                        logger.info(template)
-                        time.sleep(60)
-                        cloudformation.create_or_update(
-                            StackName=f"launch-constraints-for-portfolio-{spoke_portfolio_id}",
-                            TemplateBody=template,
-                        )
+                    # create_launch_role_constraints_for_portfolio_task_params = {
+                    #     'launch_constraints': launch_details.get('constraints', {}).get('launch', []),
+                    # }
 
-                launch_details_value = {
-                    'portfolio': 'demo-central-it-team-portfolio',
-                    'depends_on': [
-                        'product-that-deploys-iam-needed-for-associations-and-launch-constraints'
-                    ],
-                    'associations': [
-                        'arn:aws:iam::${AWS::AccountId}:role/Admin'
-                    ],
-                    'constraints': {
-                        'launch': [
-                            {
-                                'product': 'rds-services',
-                                'roles': [
-                                    'arn:aws:iam::${AWS::AccountId}:role/Admin',
-                                    'arn:aws:iam::${AWS::AccountId}:role/DevOps',
-                                    'arn:aws:iam::${AWS::AccountId}:role/SysOps'
-                                ]
-                            }
-                        ]
-                    },
-                    'deploy_to': {'tags': [{'tag': 'scope:sc-hub', 'regions': 'default_region'}]},
-                    'launch_name': 'account-vending-account-creation-shared',
-                    'match': 'tag_match',
-                    'matching_tag': 'scope:sc-hub',
-                    'regions': ['eu-west-1'], 'regional_details': {}
-                }
+                    # luigi_tasks_and_targets.CreateLaunchRoleConstraintsForPortfolio(
+                    #     **import_into_spoke_local_portfolio_task_params,
+                    #     **create_launch_role_constraints_for_portfolio_task_params,
+                    # )
 
     logger.info(f"Deployment plan: {json.dumps(all_tasks)}")
     return all_tasks, tasks_to_run

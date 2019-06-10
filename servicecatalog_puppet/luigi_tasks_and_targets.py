@@ -1,6 +1,8 @@
+import time
+
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import aws
+from servicecatalog_puppet import aws, cli_command_helpers
 
 import luigi
 import json
@@ -154,7 +156,8 @@ class ProvisionProductTask(luigi.Task):
             ) as cloudformation:
                 need_to_provision = True
                 if provisioned_product_id:
-                    default_cfn_params = aws.get_default_parameters_for_stack(cloudformation, f"SC-{self.account_id}-{provisioned_product_id}")
+                    default_cfn_params = aws.get_default_parameters_for_stack(cloudformation,
+                                                                              f"SC-{self.account_id}-{provisioned_product_id}")
                 else:
                     default_cfn_params = {}
 
@@ -162,9 +165,11 @@ class ProvisionProductTask(luigi.Task):
                     if all_params.get(default_cfn_param_name) is None:
                         all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
                 if provisioning_artifact_id == self.version_id:
-                    logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: found previous good provision")
+                    logger.info(
+                        f"[{self.launch_name}] {self.account_id}:{self.region} :: found previous good provision")
                     if provisioned_product_id:
-                        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: checking params for diffs")
+                        logger.info(
+                            f"[{self.launch_name}] {self.account_id}:{self.region} :: checking params for diffs")
                         provisioned_parameters = aws.get_parameters_for_stack(
                             cloudformation,
                             f"SC-{self.account_id}-{provisioned_product_id}"
@@ -280,3 +285,251 @@ class TerminateProductTask(luigi.Task):
             )
             f.close()
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished terminating")
+
+
+class CreateSpokeLocalPortfolioTask(luigi.Task):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    portfolio = luigi.Parameter()
+
+    provider_name = luigi.Parameter(significant=False, default='')
+    description = luigi.Parameter(significant=False, default='')
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/CreateSpokeLocalPortfolioTask/"
+            f"{self.account_id}-{self.region}-{self.portfolio}.json"
+        )
+
+    def run(self):
+        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: starting creating portfolio")
+        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        with betterboto_client.CrossAccountClientContextManager(
+                'servicecatalog', role, f'sc-{self.account_id}-{self.region}', region_name=self.region
+        ) as spoke_service_catalog:
+            spoke_portfolio = aws.ensure_portfolio(
+                spoke_service_catalog,
+                self.portfolio,
+                self.provider_name,
+                self.description,
+            )
+        f = self.output().open('w')
+        f.write(
+            json.dumps(
+                spoke_portfolio,
+                indent=4,
+                default=str,
+            )
+        )
+        f.close()
+        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: finished creating portfolio")
+
+
+class CreateAssociationsForPortfolioTask(luigi.Task):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    portfolio = luigi.Parameter()
+
+    associations = luigi.ListParameter(default=[])
+
+    def requires(self):
+        return CreateSpokeLocalPortfolioTask(
+            account_id=self.account_id,
+            region=self.region,
+            portfolio=self.portfolio,
+        )
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/CreateAssociationsForPortfolioTask/"
+            f"{self.account_id}-{self.region}-{self.portfolio}.json"
+        )
+
+    def run(self):
+        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: starting creating associations")
+        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+
+        portfolio_id = json.loads(self.input().open('r').read()).get('Id')
+        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: using portfolio_id: {portfolio_id}")
+
+        with betterboto_client.CrossAccountClientContextManager(
+                'cloudformation', role, f'cfn-{self.account_id}-{self.region}', region_name=self.region
+        ) as cloudformation:
+            template = cli_command_helpers.env.get_template('associations.template.yaml.j2').render(
+                portfolio={
+                    'DisplayName': self.portfolio,
+                    'Associations': self.associations
+                },
+                portfolio_id=portfolio_id,
+            )
+            stack_name = f"associations-for-portfolio-{portfolio_id}"
+            cloudformation.create_or_update(
+                StackName=stack_name,
+                TemplateBody=template,
+            )
+            result = cloudformation.describe_stacks(
+                StackName=stack_name,
+            ).get('Stacks')[0]
+            f = self.output().open('w')
+            f.write(
+                json.dumps(
+                    result,
+                    indent=4,
+                    default=str,
+                )
+            )
+            f.close()
+            logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Finished importing")
+
+
+class ImportIntoSpokeLocalPortfolioTask(luigi.Task):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    portfolio = luigi.Parameter()
+
+    hub_portfolio_id = luigi.Parameter()
+
+    def requires(self):
+        return CreateSpokeLocalPortfolioTask(
+            account_id=self.account_id,
+            region=self.region,
+            portfolio=self.portfolio,
+        )
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/ImportIntoSpokeLocalPortfolioTask/"
+            f"{self.account_id}-{self.region}-{self.portfolio}-{self.hub_portfolio_id}.json"
+        )
+
+    def run(self):
+        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: starting to import into spoke")
+
+        product_name_to_id_dict = {}
+
+        with betterboto_client.ClientContextManager(
+                'servicecatalog', region_name=self.region
+        ) as service_catalog:
+            response = service_catalog.search_products_as_admin_single_page(PortfolioId=self.hub_portfolio_id)
+            for product_view_detail in response.get('ProductViewDetails', []):
+                product_view_summary = product_view_detail.get('ProductViewSummary')
+                hub_product_name = product_view_summary.get('Name')
+
+                logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Copying {hub_product_name}")
+                hub_product_arn = product_view_detail.get('ProductARN')
+                copy_args = {'SourceProductArn': hub_product_arn}
+                portfolio_id = json.loads(self.input().open('r').read()).get('Id')
+
+                logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: searching in spoke for product")
+                role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+                with betterboto_client.CrossAccountClientContextManager(
+                        'servicecatalog', role, f"sc-{self.account_id}-{self.region}", region_name=self.region
+                ) as spoke_service_catalog:
+                    p = spoke_service_catalog.search_products_as_admin_single_page(
+                        PortfolioId=portfolio_id,
+                        Filters={'FullTextSearch': [hub_product_name]}
+                    )
+                    logger.info(p)
+                    for product_view_details in p.get('ProductViewDetails'):
+                        product_view = product_view_details.get('ProductViewSummary')
+                        if product_view.get('Name') == hub_product_name:
+                            logger.info(f'Found product: {product_view}')
+                            copy_args['TargetProductId'] = product_view.get('Id')
+
+                    logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: about to copy product")
+                    copy_product_token = spoke_service_catalog.copy_product(
+                        **copy_args
+                    ).get('CopyProductToken')
+                    target_product_id = None
+                    while True:
+                        time.sleep(5)
+                        r = spoke_service_catalog.describe_copy_product_status(
+                            CopyProductToken=copy_product_token
+                        )
+                        target_product_id = r.get('TargetProductId')
+                        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: "
+                                    f"{hub_product_name} status: {r.get('CopyProductStatus')}")
+                        if r.get('CopyProductStatus') == 'FAILED':
+                            raise Exception(f"[{self.portfolio}] {self.account_id}:{self.region} :: Copying "
+                                            f"{hub_product_name} failed: {r.get('StatusDetail')}")
+                        elif r.get('CopyProductStatus') == 'SUCCEEDED':
+                            break
+
+                    logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: adding {target_product_id} to "
+                                f"portfolio {portfolio_id}")
+                    spoke_service_catalog.associate_product_with_portfolio(
+                        ProductId=target_product_id,
+                        PortfolioId=portfolio_id,
+                    )
+
+                    # associate_product_with_portfolio is not a synchronous request
+                    logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: waiting for adding of "
+                                f"{target_product_id} to portfolio {portfolio_id}")
+                    while True:
+                        time.sleep(2)
+                        response = spoke_service_catalog.search_products_as_admin_single_page(
+                            PortfolioId=portfolio_id,
+                        )
+                        products_ids = [
+                            product_view_detail.get('ProductViewSummary').get('ProductId') for product_view_detail
+                            in response.get('ProductViewDetails')
+                        ]
+                        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Looking for "
+                                    f"{target_product_id} in {products_ids}")
+
+                        if target_product_id in products_ids:
+                            break
+                    product_name_to_id_dict[hub_product_name] = target_product_id
+
+        f = self.output().open('w')
+        f.write(
+            json.dumps(
+                product_name_to_id_dict,
+                indent=4,
+                default=str,
+            )
+        )
+        f.close()
+        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Finished importing")
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/ImportIntoSpokeLocalPortfolioTask/"
+            f"{self.account_id}-{self.region}-{self.portfolio}.json"
+        )
+
+
+class CreateLaunchRoleConstraintsForPortfolio(luigi.Task):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    hub_portfolio_id = luigi.Parameter()
+
+    launch_constraints = luigi.DictParameter()
+
+    def requires(self):
+        return ImportIntoSpokeLocalPortfolioTask(
+            account_id=self.account_id,
+            region=self.region,
+            portfolio=self.portfolio,
+            hub_portfolio_id=self.hub_portfolio_id,
+        )
+
+    def run(self):
+        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        with betterboto_client.CrossAccountClientContextManager(
+                'cloudformation', role, f'cfn-{self.account_id}-{self.region}', region_name=self.region
+        ) as cloudformation:
+            template = cli_command_helpers.env.get_template('launch_role_constraints.template.yaml.j2').render(
+                portfolio={
+                    'DisplayName': self.portfolio,
+                },
+                portfolio_id=spoke_portfolio_id,
+                launch_constraints=self.launch_constraints,
+                product_name_to_id_dict=product_name_to_id_dict,
+            )
+            time.sleep(60)
+            cloudformation.create_or_update(
+                StackName=f"launch-constraints-for-portfolio-{spoke_portfolio_id}",
+                TemplateBody=template,
+            )
