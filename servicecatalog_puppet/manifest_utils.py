@@ -63,7 +63,7 @@ def generate_launch_map(accounts, launches_by_account, launches_by_tag, section)
 
 def build_deployment_map(manifest, section):
     accounts = manifest.get('accounts')
-    launches = manifest.get(section)
+    launches = manifest.get(section, {})
 
     verify_no_ous_in_manifest(accounts)
 
@@ -135,7 +135,7 @@ def expand_manifest(manifest, client):
                         )
                     raise Exception(message)
 
-    for launch_name, launch_details in new_manifest.get(constants.LAUNCHES).items():
+    for launch_name, launch_details in new_manifest.get(constants.LAUNCHES, {}).items():
         for parameter_name, parameter_details in launch_details.get('parameters', {}).items():
             if parameter_details.get('macro'):
                 macro_to_run = macros.get(parameter_details.get('macro').get('method'))
