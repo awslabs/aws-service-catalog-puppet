@@ -49,36 +49,6 @@ class GetSSMParamTask(luigi.Task):
         pass
 
 
-class SetSSMParamFromProvisionProductTask(luigi.Task):
-    param_name = luigi.Parameter()
-    param_type = luigi.Parameter(default='String')
-    stack_output = luigi.Parameter()
-
-    dependency = luigi.DictParameter()
-
-    def requires(self):
-        return ProvisionProductTask(**self.dependency)
-
-    def output(self):
-        return SSMParamTarget(self.param_name, False)
-
-    def run(self):
-        with betterboto_client.ClientContextManager('ssm') as ssm:
-            outputs = json.loads(self.input().open('r').read()).get('Outputs')
-            written = False
-            for output in outputs:
-                if output.get('OutputKey') == self.stack_output:
-                    written = True
-                    ssm.put_parameter(
-                        Name=self.param_name,
-                        Value=output.get('OutputValue'),
-                        Type=self.param_type,
-                        Overwrite=True,
-                    )
-            if not written:
-                raise Exception("Could not write SSM Param from Provisioned Product. Wrong stack_output?")
-
-
 class ProvisionProductTask(luigi.Task):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -101,6 +71,8 @@ class ProvisionProductTask(luigi.Task):
     status = luigi.Parameter(default='', significant=False)
 
     worker_timeout = luigi.IntParameter(default=0, significant=False)
+
+    ssm_param_outputs = luigi.ListParameter(default=[])
 
     try_count = 1
 
@@ -156,8 +128,9 @@ class ProvisionProductTask(luigi.Task):
             ) as cloudformation:
                 need_to_provision = True
                 if provisioned_product_id:
-                    default_cfn_params = aws.get_default_parameters_for_stack(cloudformation,
-                                                                              f"SC-{self.account_id}-{provisioned_product_id}")
+                    default_cfn_params = aws.get_default_parameters_for_stack(
+                        cloudformation, f"SC-{self.account_id}-{provisioned_product_id}"
+                    )
                 else:
                     default_cfn_params = {}
 
@@ -221,17 +194,40 @@ class ProvisionProductTask(luigi.Task):
                         self.version,
                     )
 
-                f = self.output().open('w')
                 with betterboto_client.CrossAccountClientContextManager(
                         'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
-                ) as cloudformation:
-                    f.write(
-                        json.dumps(
-                            aws.get_stack_output_for(cloudformation, f"SC-{self.account_id}-{provisioned_product_id}"),
-                            indent=4,
-                            default=str,
-                        )
+                ) as spoke_cloudformation:
+                    stack_details = aws.get_stack_output_for(
+                        spoke_cloudformation, f"SC-{self.account_id}-{provisioned_product_id}"
                     )
+
+                for ssm_param_output in self.ssm_param_outputs:
+                    logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
+                                f"writing SSM Param: {ssm_param_output.get('stack_output')}")
+                    with betterboto_client.ClientContextManager('ssm') as ssm:
+                        found_match = False
+                        for output in stack_details.get('Outputs', []):
+                            if output.get('OutputKey') == ssm_param_output.get('stack_output'):
+                                found_match = True
+                                logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: found value")
+                                ssm.put_parameter(
+                                    Name=ssm_param_output.get('param_name'),
+                                    Value=output.get('OutputValue'),
+                                    Type=ssm_param_output.get('param_type', 'String'),
+                                    Overwrite=True,
+                                )
+                        if not found_match:
+                            raise Exception(f"[{self.launch_name}] {self.account_id}:{self.region} :: Could not find "
+                                            f"match for {ssm_param_output.get('stack_output')}")
+
+                f = self.output().open('w')
+                f.write(
+                    json.dumps(
+                        stack_details,
+                        indent=4,
+                        default=str,
+                    )
+                )
                 f.close()
                 logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished provisioning")
 

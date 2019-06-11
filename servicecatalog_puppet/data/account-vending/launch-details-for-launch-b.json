@@ -1,0 +1,38 @@
+{
+  "portfolio": "demo-central-it-team-portfolio",
+  "product": "account-vending-account-creation-shared",
+  "version": "v1",
+  "parameters": {
+    "AssumableRoleInRootAccountArn": {
+      "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+    }
+  },
+  "outputs": {
+    "ssm": [
+      {
+        "param_name": "/account-vending/account-custom-resource-arn",
+        "stack_output": "AccountCustomResourceArn"
+      }
+    ]
+  },
+  "deploy_to": {
+    "tags": [
+      {
+        "tag": "scope:puppet-hub",
+        "regions": "default_region"
+      }
+    ]
+  },
+  "launch_name": "account-vending-account-creation-shared",
+  "match": "tag_match",
+  "matching_tag": "scope:puppet-hub",
+  "regions": [
+    "eu-west-1"
+  ],
+  "regional_details": {
+    "eu-west-1": {
+      "product_id": "prod-ahhdj3q5puvhw",
+      "version_id": "pa-plsqbdtrqt4h2"
+    }
+  }
+}

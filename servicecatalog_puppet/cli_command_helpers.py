@@ -496,82 +496,102 @@ def deploy_launches(manifest):
     section = constants.LAUNCHES
     deployment_map = manifest_utils.build_deployment_map(manifest, section)
     deployment_map = set_regions_for_deployment_map(deployment_map, section)
-
-    all_tasks = {}
-    tasks_to_run = []
     puppet_account_id = get_puppet_account_id()
 
+    all_tasks = deploy_launches_task_builder(deployment_map, manifest, puppet_account_id, section)
+
+    logger.info(f"Deployment plan: {json.dumps(all_tasks)}")
+    return all_tasks
+
+
+def deploy_launches_task_builder(deployment_map, manifest, puppet_account_id, section):
+    all_tasks = {}
     for account_id, deployments_for_account in deployment_map.items():
         for launch_name, launch_details in deployments_for_account.get(section).items():
             for region_name, regional_details in launch_details.get('regional_details').items():
-                product_id = regional_details.get('product_id')
-                required_parameters = {}
+                these_all_tasks = deploy_launches_task_builder_for_account_launch_region(
+                    account_id,
+                    deployment_map,
+                    launch_details,
+                    launch_name,
+                    manifest,
+                    puppet_account_id,
+                    region_name,
+                    regional_details,
+                )
+                all_tasks.update(these_all_tasks)
 
-                role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
-                with betterboto_client.CrossAccountClientContextManager(
-                        'servicecatalog', role, f'sc-{account_id}-{region_name}', region_name=region_name
-                ) as service_catalog:
-                    response = service_catalog.describe_provisioning_parameters(
-                        ProductId=product_id,
-                        ProvisioningArtifactId=regional_details.get('version_id'),
-                        PathId=aws.get_path_for_product(service_catalog, product_id),
-                    )
-                    for provisioning_artifact_parameters in response.get('ProvisioningArtifactParameters', []):
-                        parameter_key = provisioning_artifact_parameters.get('ParameterKey')
-                        required_parameters[parameter_key] = True
+    return all_tasks
 
-                    regular_parameters, ssm_parameters = get_parameters_for_launch(
-                        required_parameters,
-                        deployment_map,
-                        manifest,
-                        launch_details,
-                        account_id,
-                        launch_details.get('status', constants.PROVISIONED),
-                    )
 
-                logger.info(f"Found a new launch: {launch_name}")
+def deploy_launches_task_builder_for_account_launch_region(
+        account_id, deployment_map, launch_details, launch_name, manifest,
+        puppet_account_id, region_name, regional_details
+):
+    # if launch_details.get('product') == 'account-vending-account-creation-shared':
+    #     logger.info(launch_details.get('product'))
+    #     logger.info(json.dumps(deployment_map))
+    #     logger.info(json.dumps(launch_details))
+    #     logger.info(json.dumps(manifest))
+    #     logger.info(json.dumps(regional_details))
+    #     raise Exception('doo')
+    all_tasks = {}
+    product_id = regional_details.get('product_id')
+    required_parameters = {}
+    role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
+    with betterboto_client.CrossAccountClientContextManager(
+            'servicecatalog', role, f'sc-{account_id}-{region_name}', region_name=region_name
+    ) as service_catalog:
+        response = service_catalog.describe_provisioning_parameters(
+            ProductId=product_id,
+            ProvisioningArtifactId=regional_details.get('version_id'),
+            PathId=aws.get_path_for_product(service_catalog, product_id),
+        )
+        for provisioning_artifact_parameters in response.get('ProvisioningArtifactParameters', []):
+            parameter_key = provisioning_artifact_parameters.get('ParameterKey')
+            required_parameters[parameter_key] = True
 
-                task = {
-                    'launch_name': launch_name,
-                    'portfolio': launch_details.get('portfolio'),
-                    'product': launch_details.get('product'),
-                    'version': launch_details.get('version'),
+        regular_parameters, ssm_parameters = get_parameters_for_launch(
+            required_parameters,
+            deployment_map,
+            manifest,
+            launch_details,
+            account_id,
+            launch_details.get('status', constants.PROVISIONED),
+        )
+    logger.info(f"Found a new launch: {launch_name}")
+    task = {
+        'launch_name': launch_name,
+        'portfolio': launch_details.get('portfolio'),
+        'product': launch_details.get('product'),
+        'version': launch_details.get('version'),
 
-                    'product_id': regional_details.get('product_id'),
-                    'version_id': regional_details.get('version_id'),
+        'product_id': regional_details.get('product_id'),
+        'version_id': regional_details.get('version_id'),
 
-                    'account_id': account_id,
-                    'region': region_name,
-                    'puppet_account_id': puppet_account_id,
+        'account_id': account_id,
+        'region': region_name,
+        'puppet_account_id': puppet_account_id,
 
-                    'parameters': regular_parameters,
-                    'ssm_param_inputs': ssm_parameters,
+        'parameters': regular_parameters,
+        'ssm_param_inputs': ssm_parameters,
 
-                    'depends_on': launch_details.get('depends_on', []),
+        'depends_on': launch_details.get('depends_on', []),
 
-                    "status": launch_details.get('status', constants.PROVISIONED),
+        "status": launch_details.get('status', constants.PROVISIONED),
 
-                    "worker_timeout": launch_details.get('timeoutInSeconds', constants.DEFAULT_TIMEOUT),
+        "worker_timeout": launch_details.get('timeoutInSeconds', constants.DEFAULT_TIMEOUT),
 
-                    'dependencies': [],
-                }
+        "ssm_param_outputs": launch_details.get('outputs', {}).get('ssm', []),
 
-                if manifest.get('configuration'):
-                    if manifest.get('configuration').get('retry_count'):
-                        task['retry_count'] = manifest.get('configuration').get('retry_count')
+        'dependencies': [],
+    }
+    if manifest.get('configuration'):
+        if manifest.get('configuration').get('retry_count'):
+            task['retry_count'] = manifest.get('configuration').get('retry_count')
+    if launch_details.get('configuration'):
+        if launch_details.get('configuration').get('retry_count'):
+            task['retry_count'] = launch_details.get('configuration').get('retry_count')
 
-                if launch_details.get('configuration'):
-                    if launch_details.get('configuration').get('retry_count'):
-                        task['retry_count'] = launch_details.get('configuration').get('retry_count')
-
-                for output in launch_details.get('outputs', {}).get('ssm', []):
-                    t = copy.deepcopy(task)
-                    del t['depends_on']
-                    tasks_to_run.append(
-                        luigi_tasks_and_targets.SetSSMParamFromProvisionProductTask(**output, dependency=t)
-                    )
-
-                all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
-
-    logger.info(f"Deployment plan: {json.dumps(all_tasks)}")
-    return all_tasks, tasks_to_run
+    all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
+    return all_tasks
