@@ -178,8 +178,10 @@ def provision_product(
                     f"waiting for change to complete: {response.get('ProvisionedProductDetail').get('Status')}"
                 )
                 execute_status = response.get('ProvisionedProductDetail').get('Status')
-                if execute_status in ['AVAILABLE', 'TAINTED', 'ERROR']:
+                if execute_status in ['AVAILABLE', 'TAINTED']:
                     break
+                elif execute_status ==  'ERROR':
+                    raise Exception(f"[{launch_name}] {account_id}:{region} :: Execute failed: {execute_status}")
                 else:
                     time.sleep(5)
 
@@ -187,13 +189,11 @@ def provision_product(
             return provisioned_product_id
 
         else:
-            logger.error(f"[{launch_name}] {account_id}:{region} :: Execute failed: {execute_status}")
-            return False
+            raise Exception(f"[{launch_name}] {account_id}:{region} :: Execute failed: {execute_status}")
 
     else:
-        logger.error(f"[{launch_name}] {account_id}:{region} :: "
+        raise Exception(f"[{launch_name}] {account_id}:{region} :: "
                      f"Plan failed: {response.get('ProvisionedProductPlanDetails').get('StatusMessage')}")
-        return False
 
 
 def get_path_for_product(service_catalog, product_id):
