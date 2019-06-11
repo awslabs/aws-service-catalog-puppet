@@ -1,14 +1,9 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-import time
-
-import copy
-
 import click
 
 import pkg_resources
 import json
-import luigi
 from jinja2 import Template
 
 from servicecatalog_puppet import asset_helpers, manifest_utils, aws, luigi_tasks_and_targets
@@ -461,6 +456,7 @@ def deploy_spoke_local_portfolios(manifest, launch_tasks):
 
                 create_associations_task_params = {
                     'associations': launch_details.get('associations'),
+                    'puppet_account_id': puppet_account_id,
                 }
                 create_associations_for_portfolio_task = luigi_tasks_and_targets.CreateAssociationsForPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
@@ -480,6 +476,7 @@ def deploy_spoke_local_portfolios(manifest, launch_tasks):
 
                 create_launch_role_constraints_for_portfolio_task_params = {
                     'launch_constraints': launch_details.get('constraints', {}).get('launch', []),
+                    'puppet_account_id': puppet_account_id,
                 }
                 create_launch_role_constraints_for_portfolio = luigi_tasks_and_targets.CreateLaunchRoleConstraintsForPortfolio(
                     **create_spoke_local_portfolio_task_as_dependency_params,

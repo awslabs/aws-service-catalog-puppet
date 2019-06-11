@@ -1,6 +1,10 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
+import sys
+
 from colorclass import Color
+from luigi import LuigiStatusCode
+from luigi.execution_summary import LuigiRunResult
 from terminaltables import AsciiTable
 
 import copy
@@ -91,13 +95,25 @@ def deploy(f, single_account):
     spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(manifest, launch_tasks)
     tasks_to_run += spoke_local_portfolio_tasks_to_run
 
-    luigi.build(
+    result = luigi.build(
         tasks_to_run,
         local_scheduler=True,
         detailed_summary=True,
         workers=10,
         log_level='INFO',
     )
+
+    # click.echo(f"Workflow complete {result} - {result.status.value[1]}")
+    exit_status_codes = {
+        LuigiStatusCode.SUCCESS: 0,
+        LuigiStatusCode.SUCCESS_WITH_RETRY: 0,
+        LuigiStatusCode.FAILED: 1,
+        LuigiStatusCode.FAILED_AND_SCHEDULING_FAILED: 2,
+        LuigiStatusCode.SCHEDULING_FAILED:3,
+        LuigiStatusCode.NOT_RUN:4,
+        LuigiStatusCode.MISSING_EXT:5,
+    }
+    sys.exit(exit_status_codes.get(result.status))
 
 
 def bootstrap_spoke_as(puppet_account_id, iam_role_arns):

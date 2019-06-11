@@ -325,6 +325,7 @@ class CreateAssociationsForPortfolioTask(luigi.Task):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
 
     associations = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
@@ -366,6 +367,9 @@ class CreateAssociationsForPortfolioTask(luigi.Task):
             cloudformation.create_or_update(
                 StackName=stack_name,
                 TemplateBody=template,
+                NotificationARNs=[
+                    f"arn:aws:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                ],
             )
             result = cloudformation.describe_stacks(
                 StackName=stack_name,
@@ -545,6 +549,7 @@ class CreateLaunchRoleConstraintsForPortfolio(luigi.Task):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     hub_portfolio_id = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
 
     launch_constraints = luigi.DictParameter()
 
@@ -585,6 +590,9 @@ class CreateLaunchRoleConstraintsForPortfolio(luigi.Task):
             cloudformation.create_or_update(
                 StackName=stack_name,
                 TemplateBody=template,
+                NotificationARNs=[
+                    f"arn:aws:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                ],
             )
             result = cloudformation.describe_stacks(
                 StackName=stack_name,
