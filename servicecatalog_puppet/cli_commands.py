@@ -59,9 +59,8 @@ def deploy(f, single_account):
     launch_tasks = {}
     tasks_to_run = []
 
-    all_launch_tasks, launch_tasks_to_run = cli_command_helpers.deploy_launches(manifest)
+    all_launch_tasks = cli_command_helpers.deploy_launches(manifest)
     launch_tasks.update(all_launch_tasks)
-    tasks_to_run += launch_tasks_to_run
 
     for task in cli_command_helpers.wire_dependencies(launch_tasks):
         task_status = task.get('status')

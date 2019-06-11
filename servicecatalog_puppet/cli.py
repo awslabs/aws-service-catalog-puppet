@@ -5,6 +5,7 @@ import click
 
 from servicecatalog_puppet import cli_commands
 
+
 @click.group()
 @click.option('--info/--no-info', default=False)
 @click.option('--info-line-numbers/--no-info-line-numbers', default=False)
