@@ -247,6 +247,8 @@ class TerminateProductTask(luigi.Task):
 
     retry_count = luigi.IntParameter(default=1)
 
+    worker_timeout = luigi.IntParameter(default=0, significant=False)
+
     try_count = 1
 
     def output(self):

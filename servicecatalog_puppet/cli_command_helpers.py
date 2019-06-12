@@ -525,13 +525,6 @@ def deploy_launches_task_builder_for_account_launch_region(
         account_id, deployment_map, launch_details, launch_name, manifest,
         puppet_account_id, region_name, regional_details
 ):
-    # if launch_details.get('product') == 'account-vending-account-creation-shared':
-    #     logger.info(launch_details.get('product'))
-    #     logger.info(json.dumps(deployment_map))
-    #     logger.info(json.dumps(launch_details))
-    #     logger.info(json.dumps(manifest))
-    #     logger.info(json.dumps(regional_details))
-    #     raise Exception('doo')
     all_tasks = {}
     product_id = regional_details.get('product_id')
     required_parameters = {}
