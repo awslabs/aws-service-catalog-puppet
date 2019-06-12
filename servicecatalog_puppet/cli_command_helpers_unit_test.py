@@ -3,6 +3,8 @@
 
 from pytest import fixture
 import json
+from servicecatalog_puppet import constants
+
 
 @fixture
 def sut():
@@ -40,9 +42,7 @@ def test_deploy_launches_task_builder_for_account_launch_region(sut, mocker, sha
     puppet_account_id = "098765432101"
     region_name = 'eu-west-1'
     regional_details = {"product_id": "prod-lv3isrxiingdo", "version_id": "pa-yprmofsvvyih4"}
-
-    expected_all_tasks = {}
-    # need to mock 541 and 550
+    expected_all_tasks = json.loads((shared_datadir / 'account-vending' / 'all-tasks-for-launch-b.json').read_text())
     mocked_betterboto_client = mocker.patch.object(sut.betterboto_client, 'CrossAccountClientContextManager')
     mocked_describe_provisioning_parameters_response = {
         'ProvisioningArtifactParameters': [
@@ -55,6 +55,15 @@ def test_deploy_launches_task_builder_for_account_launch_region(sut, mocker, sha
             {'ParameterKey': 'AccountVendingBootstrapperLambdaArn'},
         ]
     }
+    required_parameters = {
+        'IamUserAccessToBilling': True,
+        'Email': True,
+        'TargetOU': True,
+        'OrganizationAccountAccessRole': True,
+        'AccountName': True,
+        'AccountVendingCreationLambdaArn': True,
+        'AccountVendingBootstrapperLambdaArn': True,
+    }
     mocked_betterboto_client().__enter__().describe_provisioning_parameters.return_value = mocked_describe_provisioning_parameters_response
     mocked_get_path_for_product = mocker.patch.object(sut.aws, 'get_path_for_product')
     mocked_get_path_for_product.return_value = 1
@@ -62,7 +71,6 @@ def test_deploy_launches_task_builder_for_account_launch_region(sut, mocker, sha
     mocked_regular_parameters = []
     mocked_ssm_parameters = []
     mocked_get_parameters_for_launch.return_value = (mocked_regular_parameters, mocked_ssm_parameters)
-
 
     # exercise
     actual_all_tasks = sut.deploy_launches_task_builder_for_account_launch_region(
@@ -72,3 +80,15 @@ def test_deploy_launches_task_builder_for_account_launch_region(sut, mocker, sha
 
     # verify
     assert len(actual_all_tasks.keys()) == 1
+    assert actual_all_tasks == expected_all_tasks
+    mocked_get_path_for_product.assert_called_once_with(
+        mocked_betterboto_client().__enter__(), regional_details.get('product_id')
+    )
+    mocked_get_parameters_for_launch.assert_called_once_with(
+        required_parameters,
+        deployment_map,
+        manifest,
+        launch_details,
+        account_id,
+        launch_details.get('status', constants.PROVISIONED),
+    )
