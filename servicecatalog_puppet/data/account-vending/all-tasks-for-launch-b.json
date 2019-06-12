@@ -1,0 +1,25 @@
+{
+  "0123456789010-eu-west-1-account-vending-account-creation-shared": {
+    "launch_name": "account-vending-account-creation-shared",
+    "portfolio": "demo-central-it-team-portfolio",
+    "product": "account-vending-account-creation-shared",
+    "version": "v1",
+    "product_id": "prod-lv3isrxiingdo",
+    "version_id": "pa-yprmofsvvyih4",
+    "account_id": "0123456789010",
+    "region": "eu-west-1",
+    "puppet_account_id": "098765432101",
+    "parameters": [],
+    "ssm_param_inputs": [],
+    "depends_on": [],
+    "status": "provisioned",
+    "worker_timeout": 0,
+    "ssm_param_outputs": [
+      {
+        "param_name": "/account-vending/account-custom-resource-arn",
+        "stack_output": "AccountCustomResourceArn"
+      }
+    ],
+    "dependencies": []
+  }
+}
