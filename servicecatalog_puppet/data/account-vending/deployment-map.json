@@ -1,0 +1,150 @@
+{
+  "923822062182": {
+    "account_id": "923822062182",
+    "name": "923822062182",
+    "default_region": "eu-west-1",
+    "regions_enabled": [
+      "eu-west-1",
+      "eu-west-2"
+    ],
+    "tags": [
+      "type:prod",
+      "partition:eu",
+      "scope:puppet-hub"
+    ],
+    "launches": {
+      "account-vending-account-creation-shared": {
+        "portfolio": "demo-central-it-team-portfolio",
+        "product": "account-vending-account-creation-shared",
+        "version": "v1",
+        "parameters": {
+          "AssumableRoleInRootAccountArn": {
+            "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+          }
+        },
+        "outputs": {
+          "ssm": [
+            {
+              "param_name": "/account-vending/account-custom-resource-arn",
+              "stack_output": "AccountCustomResourceArn"
+            }
+          ]
+        },
+        "deploy_to": {
+          "tags": [
+            {
+              "tag": "scope:puppet-hub",
+              "regions": "default_region"
+            }
+          ]
+        },
+        "launch_name": "account-vending-account-creation-shared",
+        "match": "tag_match",
+        "matching_tag": "scope:puppet-hub",
+        "regions": [
+          "eu-west-1"
+        ],
+        "regional_details": {
+          "eu-west-1": {
+            "product_id": "prod-ahhdj3q5puvhw",
+            "version_id": "pa-plsqbdtrqt4h2"
+          }
+        }
+      },
+      "account-vending-account-bootstrap-shared": {
+        "portfolio": "demo-central-it-team-portfolio",
+        "product": "account-vending-account-bootstrap-shared",
+        "version": "v1",
+        "parameters": {
+          "AssumableRoleInRootAccountArn": {
+            "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+          }
+        },
+        "outputs": {
+          "ssm": [
+            {
+              "param_name": "/account-vending/bootstrapper-project-custom-resource-arn",
+              "stack_output": "BootstrapperProjectCustomResourceArn"
+            }
+          ]
+        },
+        "deploy_to": {
+          "tags": [
+            {
+              "tag": "scope:puppet-hub",
+              "regions": "default_region"
+            }
+          ]
+        },
+        "launch_name": "account-vending-account-bootstrap-shared",
+        "match": "tag_match",
+        "matching_tag": "scope:puppet-hub",
+        "regions": [
+          "eu-west-1"
+        ],
+        "regional_details": {
+          "eu-west-1": {
+            "product_id": "prod-itqvegxgl4wvw",
+            "version_id": "pa-th64llsxcn46o"
+          }
+        }
+      },
+      "account-vending-account-002": {
+        "portfolio": "demo-central-it-team-portfolio",
+        "product": "account-vending-account-creation",
+        "version": "v1",
+        "depends_on": [
+          "account-vending-account-creation-shared",
+          "account-vending-account-bootstrap-shared"
+        ],
+        "parameters": {
+          "Email": {
+            "default": "eamonnf+account-002@amazon.com"
+          },
+          "AccountName": {
+            "default": "account-002"
+          },
+          "OrganizationAccountAccessRole": {
+            "default": "OrganizationAccountAccessRole"
+          },
+          "IamUserAccessToBilling": {
+            "default": "ALLOW"
+          },
+          "TargetOU": {
+            "default": "/"
+          },
+          "AccountVendingCreationLambdaArn": {
+            "ssm": {
+              "name": "/account-vending/account-custom-resource-arn"
+            }
+          },
+          "AccountVendingBootstrapperLambdaArn": {
+            "ssm": {
+              "name": "/account-vending/bootstrapper-project-custom-resource-arn"
+            }
+          }
+        },
+        "deploy_to": {
+          "tags": [
+            {
+              "tag": "scope:puppet-hub",
+              "regions": "default_region"
+            }
+          ]
+        },
+        "launch_name": "account-vending-account-002",
+        "match": "tag_match",
+        "matching_tag": "scope:puppet-hub",
+        "regions": [
+          "eu-west-1"
+        ],
+        "regional_details": {
+          "eu-west-1": {
+            "product_id": "prod-lv3isrxiingdo",
+            "version_id": "pa-yprmofsvvyih4"
+          }
+        }
+      }
+    }
+  }
+}

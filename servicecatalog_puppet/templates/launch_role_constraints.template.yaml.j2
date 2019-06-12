@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Launch role contraints for {{portfolio.DisplayName}}
+
+Resources:
+{% for launch_constraint in launch_constraints %}
+  {% set parentloop = loop %}
+  {% for roleArn in launch_constraint.roles %}
+  LaunchRoleConstraintA{{parentloop.index}}B{{loop.index}}:
+    Type: AWS::ServiceCatalog::LaunchRoleConstraint
+    Properties:
+      PortfolioId: {{ portfolio_id }}
+      ProductId: {{ product_name_to_id_dict.get(launch_constraint.product) }}
+      RoleArn: !Sub "{{ roleArn }}"{% endfor %}
+{% endfor %}

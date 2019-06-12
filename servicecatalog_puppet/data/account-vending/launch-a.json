@@ -1,0 +1,21 @@
+{
+  "launch_name": "account-vending-account-creation-shared",
+  "portfolio": "demo-central-it-team-portfolio",
+  "product": "account-vending-account-creation-shared",
+  "version": "v1",
+  "product_id": "prod-ahhdj3q5puvhw",
+  "version_id": "pa-plsqbdtrqt4h2",
+  "account_id": "923822062182",
+  "region": "eu-west-1",
+  "puppet_account_id": "923822062182",
+  "parameters": [
+    {
+      "name": "AssumableRoleInRootAccountArn",
+      "value": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+    }
+  ],
+  "ssm_param_inputs": [],
+  "status": "provisioned",
+  "worker_timeout": 0,
+  "dependencies": []
+}

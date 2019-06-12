@@ -1,0 +1,96 @@
+{
+  "923822062182-eu-west-1-account-vending-account-creation-shared": {
+    "launch_name": "account-vending-account-creation-shared",
+    "portfolio": "demo-central-it-team-portfolio",
+    "product": "account-vending-account-creation-shared",
+    "version": "v1",
+    "product_id": "prod-ahhdj3q5puvhw",
+    "version_id": "pa-plsqbdtrqt4h2",
+    "account_id": "923822062182",
+    "region": "eu-west-1",
+    "puppet_account_id": "923822062182",
+    "parameters": [
+      {
+        "name": "AssumableRoleInRootAccountArn",
+        "value": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+      }
+    ],
+    "ssm_param_inputs": [],
+    "depends_on": [],
+    "status": "provisioned",
+    "worker_timeout": 0,
+    "dependencies": []
+  },
+  "923822062182-eu-west-1-account-vending-account-bootstrap-shared": {
+    "launch_name": "account-vending-account-bootstrap-shared",
+    "portfolio": "demo-central-it-team-portfolio",
+    "product": "account-vending-account-bootstrap-shared",
+    "version": "v1",
+    "product_id": "prod-itqvegxgl4wvw",
+    "version_id": "pa-th64llsxcn46o",
+    "account_id": "923822062182",
+    "region": "eu-west-1",
+    "puppet_account_id": "923822062182",
+    "parameters": [
+      {
+        "name": "AssumableRoleInRootAccountArn",
+        "value": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+      }
+    ],
+    "ssm_param_inputs": [],
+    "depends_on": [],
+    "status": "provisioned",
+    "worker_timeout": 0,
+    "dependencies": []
+  },
+  "923822062182-eu-west-1-account-vending-account-002": {
+    "launch_name": "account-vending-account-002",
+    "portfolio": "demo-central-it-team-portfolio",
+    "product": "account-vending-account-creation",
+    "version": "v1",
+    "product_id": "prod-lv3isrxiingdo",
+    "version_id": "pa-yprmofsvvyih4",
+    "account_id": "923822062182",
+    "region": "eu-west-1",
+    "puppet_account_id": "923822062182",
+    "parameters": [
+      {
+        "name": "IamUserAccessToBilling",
+        "value": "ALLOW"
+      },
+      {
+        "name": "Email",
+        "value": "eamonnf+account-002@amazon.com"
+      },
+      {
+        "name": "TargetOU",
+        "value": "/"
+      },
+      {
+        "name": "OrganizationAccountAccessRole",
+        "value": "OrganizationAccountAccessRole"
+      },
+      {
+        "name": "AccountName",
+        "value": "account-002"
+      }
+    ],
+    "ssm_param_inputs": [
+      {
+        "name": "/account-vending/bootstrapper-project-custom-resource-arn",
+        "parameter_name": "AccountVendingBootstrapperLambdaArn"
+      },
+      {
+        "name": "/account-vending/account-custom-resource-arn",
+        "parameter_name": "AccountVendingCreationLambdaArn"
+      }
+    ],
+    "depends_on": [
+      "account-vending-account-creation-shared",
+      "account-vending-account-bootstrap-shared"
+    ],
+    "status": "provisioned",
+    "worker_timeout": 0,
+    "dependencies": []
+  }
+}
