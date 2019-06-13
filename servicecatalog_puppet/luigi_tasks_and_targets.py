@@ -249,6 +249,9 @@ class TerminateProductTask(luigi.Task):
 
     worker_timeout = luigi.IntParameter(default=0, significant=False)
 
+    ssm_param_inputs = luigi.ListParameter(default=[])
+    ssm_param_outputs = luigi.ListParameter(default=[])
+
     try_count = 1
 
     def output(self):
