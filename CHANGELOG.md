@@ -1,7 +1,7 @@
 # This is a list of noteworthy changes made to the project
 
 
-# 2019-06-12 - 0.1.15
+# 2019-06-12 - 0.2.0
 - Now deleting SSM outputs when a product is terminated
 
 # 2019-06-12 - 0.1.14
