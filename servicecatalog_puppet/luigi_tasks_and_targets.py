@@ -247,10 +247,9 @@ class TerminateProductTask(luigi.Task):
 
     retry_count = luigi.IntParameter(default=1)
 
-    worker_timeout = luigi.IntParameter(default=0, significant=False)
-
-    ssm_param_inputs = luigi.ListParameter(default=[])
     ssm_param_outputs = luigi.ListParameter(default=[])
+
+    worker_timeout = luigi.IntParameter(default=0, significant=False)
 
     try_count = 1
 
@@ -276,6 +275,26 @@ class TerminateProductTask(luigi.Task):
             log_output.update({
                 "provisioned_product_id": provisioned_product_id,
             })
+
+            for ssm_param_output in self.ssm_param_outputs:
+                param_name = ssm_param_output.get('param_name')
+                logger.info(
+                    f"[{self.launch_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
+                )
+                with betterboto_client.ClientContextManager('ssm') as ssm:
+                    try:
+                        ssm.delete_parameter(
+                            Name=param_name,
+                        )
+                        logger.info(
+                            f"[{self.launch_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
+                        )
+                    except ssm.exceptions.ParameterNotFound:
+                        logger.info(
+                            f"[{self.launch_name}] {self.account_id}:{self.region} :: SSM Param: {param_name} not found"
+                        )
+
+
             f = self.output().open('w')
             f.write(
                 json.dumps(

@@ -516,3 +516,11 @@ longer than it needs to be.
 
 Please note, when mark your launch as ``terminated`` it cannot have dependencies, parameters or outputs.  Leaving
 these in will cause the termination action to fail.
+
+.. note::
+
+    When you set status to terminated you must remove your depends_on and parameters for it to work.
+
+.. warning::
+
+    Since 0.1.16, terminating a product will also remove any SSM Parameters you created for it via the manifest.yaml
