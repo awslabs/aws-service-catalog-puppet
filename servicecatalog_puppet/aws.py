@@ -1,5 +1,8 @@
 import logging
 import time
+import os
+
+import click
 import yaml
 
 from servicecatalog_puppet import constants
@@ -354,3 +357,24 @@ def create_portfolio(service_catalog, portfolio_name, provider_name, description
     return service_catalog.create_portfolio(
         **args
     ).get('PortfolioDetail')
+
+
+def run_pipeline(pipeline_name, tail):
+    with betterboto_client.ClientContextManager('codepipeline') as codepipeline:
+        pipeline_execution_id = codepipeline.start_pipeline_execution(name=pipeline_name).get('pipelineExecutionId')
+        click.echo(
+            f"https://{os.environ.get('AWS_DEFAULT_REGION')}.console.aws.amazon.com/codesuite/codepipeline/pipelines/{pipeline_name}/executions/{pipeline_execution_id}/timeline"
+        )
+        if tail:
+            while True:
+                pipeline_execution = codepipeline.get_pipeline_execution(
+                    pipelineName=pipeline_name,
+                    pipelineExecutionId=pipeline_execution_id
+                ).get('pipelineExecution')
+                status = pipeline_execution.get('status')
+                click.echo(f"status: {status}")
+                if status != 'InProgress':
+                    break
+                else:
+                    time.sleep(5)
+        return pipeline_execution_id

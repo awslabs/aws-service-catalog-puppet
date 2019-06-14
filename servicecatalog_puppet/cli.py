@@ -104,5 +104,12 @@ def quick_start():
     cli_commands.quick_start()
 
 
+@cli.command()
+@click.argument('what', default='puppet')
+@click.option('--tail/--no-tail', default=False)
+def run(what, tail):
+    cli_commands.run(what, tail)
+
+
 if __name__ == "__main__":
     cli()
