@@ -82,6 +82,59 @@ so they can launch the product ``account-vending-account-creation-shared`` in th
     Using ``${AWS::AccountId}`` will evaluate in the spoke account.
 
 
+.. note::
+
+    Support for using ``products`` was added in version 0.3.0.
+
+You can use ``products`` instead of ``product`` to specify either a list of products or use a regular expression. The
+regular expression is matched using Python3 ``re.match``.
+
+Using a list:
+
+.. code-block:: yaml
+
+    spoke-local-portfolios:
+      account-vending-for-spokes:
+        portfolio: demo-central-it-team-portfolio
+        depends_on:
+          - account-iam-for-spokes
+        associations:
+          - arn:aws:iam::${AWS::AccountId}:role/MyServiceCatalogAdminRole
+        constraints:
+          launch:
+            - products:
+                - account-vending-account-bootstrap-shared
+                - account-vending-account-creation-shared
+              roles:
+                - arn:aws:iam::${AWS::AccountId}:role/MyServiceCatalogAdminRole
+        deploy_to:
+          tags:
+            - tag: scope:spoke
+              regions: default_region
+
+
+Using a regular expression:
+
+.. code-block:: yaml
+
+    spoke-local-portfolios:
+      account-vending-for-spokes:
+        portfolio: demo-central-it-team-portfolio
+        depends_on:
+          - account-iam-for-spokes
+        associations:
+          - arn:aws:iam::${AWS::AccountId}:role/MyServiceCatalogAdminRole
+        constraints:
+          launch:
+            - products: "account-vending-account-*"
+              roles:
+                - arn:aws:iam::${AWS::AccountId}:role/MyServiceCatalogAdminRole
+        deploy_to:
+          tags:
+            - tag: scope:spoke
+              regions: default_region
+
+
 -----------------------------------------------
 What is the recommended implementation pattern?
 -----------------------------------------------

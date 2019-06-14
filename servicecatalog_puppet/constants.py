@@ -2,6 +2,7 @@ import os
 
 PREFIX = 'SC-P--'
 BOOTSTRAP_STACK_NAME = "servicecatalog-puppet"
+PIPELINE_NAME = "servicecatalog-puppet-pipeline"
 SERVICE_CATALOG_PUPPET_REPO_NAME = "ServiceCatalogPuppet"
 OUTPUT = "output"
 TEMPLATES = os.path.sep.join([OUTPUT, "templates"])

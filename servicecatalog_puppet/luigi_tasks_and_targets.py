@@ -1,3 +1,5 @@
+import copy
+import re
 import time
 
 from betterboto import client as betterboto_client
@@ -601,15 +603,40 @@ class CreateLaunchRoleConstraintsForPortfolio(luigi.Task):
         with betterboto_client.CrossAccountClientContextManager(
                 'cloudformation', role, f'cfn-{self.account_id}-{self.region}', region_name=self.region
         ) as cloudformation:
+            new_launch_constraints = []
+            for launch_constraint in self.launch_constraints:
+                new_launch_constraint = {
+                    'products': [],
+                    'roles': launch_constraint.get('roles')
+                }
+                if launch_constraint.get('products', None) is not None:
+                    if isinstance(launch_constraint.get('products'), tuple):
+                        new_launch_constraint['products'] += launch_constraint.get('products')
+                    elif isinstance(launch_constraint.get('products'), str):
+                        with betterboto_client.CrossAccountClientContextManager(
+                            'servicecatalog', role, f'sc-{self.account_id}-{self.region}', region_name=self.region
+                        ) as service_catalog:
+                            response = service_catalog.search_products_as_admin_single_page(PortfolioId=portfolio_id)
+                            for product_view_details in response.get('ProductViewDetails', []):
+                                product_view_summary = product_view_details.get('ProductViewSummary')
+                                product_name_to_id_dict[product_view_summary.get('Name')] = product_view_summary.get('ProductId')
+                                if re.match(launch_constraint.get('products'), product_view_summary.get('Name')):
+                                    new_launch_constraint['products'].append(product_view_summary.get('Name'))
+
+                if launch_constraint.get('product', None) is not None:
+                    new_launch_constraint['products'].append(launch_constraint.get('product'))
+
+                new_launch_constraints.append(new_launch_constraint)
+
             template = cli_command_helpers.env.get_template('launch_role_constraints.template.yaml.j2').render(
                 portfolio={
                     'DisplayName': self.portfolio,
                 },
                 portfolio_id=portfolio_id,
-                launch_constraints=self.launch_constraints,
+                launch_constraints=new_launch_constraints,
                 product_name_to_id_dict=product_name_to_id_dict,
             )
-            time.sleep(60)
+            time.sleep(30)
             stack_name = f"launch-constraints-for-portfolio-{portfolio_id}"
             cloudformation.create_or_update(
                 StackName=stack_name,

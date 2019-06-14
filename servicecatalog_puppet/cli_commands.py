@@ -4,10 +4,7 @@ import sys
 
 from colorclass import Color
 from luigi import LuigiStatusCode
-from luigi.execution_summary import LuigiRunResult
 from terminaltables import AsciiTable
-
-import copy
 
 import shutil
 import json
@@ -27,6 +24,7 @@ from betterboto import client as betterboto_client
 from servicecatalog_puppet import cli_command_helpers
 from servicecatalog_puppet import luigi_tasks_and_targets
 from servicecatalog_puppet import manifest_utils
+from servicecatalog_puppet import aws
 
 
 from servicecatalog_puppet import asset_helpers
@@ -411,3 +409,12 @@ def quick_start():
     click.echo("All done!")
 
 
+def run(what, tail):
+    pipelines = {
+        'puppet': constants.PIPELINE_NAME
+    }
+    pipeline_name = pipelines.get(what)
+    pipeline_execution_id = aws.run_pipeline(pipeline_name, tail)
+    click.echo(
+        f"https://{os.environ.get('AWS_DEFAULT_REGION')}.console.aws.amazon.com/codesuite/codepipeline/pipelines/{pipeline_name}/executions/{pipeline_execution_id}/timeline"
+    )
