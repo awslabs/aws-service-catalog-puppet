@@ -4,7 +4,7 @@ Utils
 The following utils will help you manage your AWS Accounts when using ServiceCatalog-Puppet:
 
 run
-===
+---
 
 .. note::
 
@@ -25,7 +25,7 @@ You can also tail the command to watch the progress of the pipeline.  It is a li
 
 
 list-launches
-=============
+-------------
 
 The list-launches command can currently only be invoked on an expanded manifest.yaml file.  To
 expand your manifest you must run the following:
