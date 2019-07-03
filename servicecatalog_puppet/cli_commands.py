@@ -52,7 +52,8 @@ def generate_shares(f):
 
     manifest = manifest_utils.load(f)
     deployment_map = manifest_utils.build_deployment_map(manifest, constants.LAUNCHES)
-    cli_command_helpers.create_share_template(deployment_map, cli_command_helpers.get_puppet_account_id())
+    import_map = manifest_utils.build_deployment_map(manifest, constants.SPOKE_LOCAL_PORTFOLIOS)
+    cli_command_helpers.create_share_template(deployment_map, import_map, cli_command_helpers.get_puppet_account_id())
 
 
 def deploy(f, single_account):
