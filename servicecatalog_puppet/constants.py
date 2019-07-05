@@ -24,3 +24,5 @@ DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES = [
     'outputs',
     'parameters',
 ]
+
+RESULTS_DIRECTORY = "results"
