@@ -334,7 +334,7 @@ Resources:
               - output/*/*
             name: DeployProject
 
-      TimeoutInMinutes: 30
+      TimeoutInMinutes: 60
 
 
   SingleAccountRunProject:
