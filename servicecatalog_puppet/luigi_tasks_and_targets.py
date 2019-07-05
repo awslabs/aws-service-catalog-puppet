@@ -1,10 +1,12 @@
 import copy
 import re
 import time
+import traceback
+from pathlib import Path
 
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import aws, cli_command_helpers
+from servicecatalog_puppet import aws, cli_command_helpers, constants
 
 import luigi
 import json
@@ -39,10 +41,32 @@ class SSMParamTarget(luigi.Target):
             ).get('Parameter').get('Value')
 
 
-class GetSSMParamTask(luigi.Task):
+class PuppetTask(luigi.Task):
+
+    @property
+    def resources(self):
+        resources_for_this_task = {}
+
+        if hasattr(self, 'region'):
+            resources_for_this_task[self.region] = 1
+
+        return resources_for_this_task
+
+    def params_for_results_display(self):
+        return "Omitted"
+
+
+class GetSSMParamTask(PuppetTask):
     parameter_name = luigi.Parameter()
     name = luigi.Parameter()
     region = luigi.Parameter(default=None)
+
+    def params_for_results_display(self):
+        return {
+            "parameter_name": self.parameter_name,
+            "name": self.name,
+            "region": self.region,
+        }
 
     def output(self):
         return SSMParamTarget(self.name, True)
@@ -51,7 +75,7 @@ class GetSSMParamTask(luigi.Task):
         pass
 
 
-class ProvisionProductTask(luigi.Task):
+class ProvisionProductTask(PuppetTask):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
     product = luigi.Parameter()
@@ -91,6 +115,15 @@ class ProvisionProductTask(luigi.Task):
                 self.__class__(**r) for r in self.dependencies
             ],
             'ssm_params': ssm_params
+        }
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "product": self.product,
+            "version": self.version,
         }
 
     def output(self):
@@ -234,7 +267,7 @@ class ProvisionProductTask(luigi.Task):
                 logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished provisioning")
 
 
-class TerminateProductTask(luigi.Task):
+class TerminateProductTask(PuppetTask):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
     product = luigi.Parameter()
@@ -254,6 +287,15 @@ class TerminateProductTask(luigi.Task):
     worker_timeout = luigi.IntParameter(default=0, significant=False)
 
     try_count = 1
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "product": self.product,
+            "version": self.version,
+        }
 
     def output(self):
         return luigi.LocalTarget(
@@ -296,7 +338,6 @@ class TerminateProductTask(luigi.Task):
                             f"[{self.launch_name}] {self.account_id}:{self.region} :: SSM Param: {param_name} not found"
                         )
 
-
             f = self.output().open('w')
             f.write(
                 json.dumps(
@@ -309,13 +350,20 @@ class TerminateProductTask(luigi.Task):
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished terminating")
 
 
-class CreateSpokeLocalPortfolioTask(luigi.Task):
+class CreateSpokeLocalPortfolioTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
 
     provider_name = luigi.Parameter(significant=False, default='not set')
     description = luigi.Parameter(significant=False, default='not set')
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+        }
 
     def output(self):
         return luigi.LocalTarget(
@@ -347,7 +395,7 @@ class CreateSpokeLocalPortfolioTask(luigi.Task):
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: finished creating portfolio")
 
 
-class CreateAssociationsForPortfolioTask(luigi.Task):
+class CreateAssociationsForPortfolioTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -364,6 +412,13 @@ class CreateAssociationsForPortfolioTask(luigi.Task):
                 portfolio=self.portfolio,
             ),
             'deps': [ProvisionProductTask(**dependency) for dependency in self.dependencies]
+        }
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
         }
 
     def output(self):
@@ -412,7 +467,7 @@ class CreateAssociationsForPortfolioTask(luigi.Task):
             logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Finished importing")
 
 
-class ImportIntoSpokeLocalPortfolioTask(luigi.Task):
+class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -425,6 +480,14 @@ class ImportIntoSpokeLocalPortfolioTask(luigi.Task):
             region=self.region,
             portfolio=self.portfolio,
         )
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "hub_portfolio_id": self.hub_portfolio_id,
+        }
 
     def output(self):
         return luigi.LocalTarget(
@@ -570,7 +633,7 @@ class ImportIntoSpokeLocalPortfolioTask(luigi.Task):
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Finished importing")
 
 
-class CreateLaunchRoleConstraintsForPortfolio(luigi.Task):
+class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -614,12 +677,13 @@ class CreateLaunchRoleConstraintsForPortfolio(luigi.Task):
                         new_launch_constraint['products'] += launch_constraint.get('products')
                     elif isinstance(launch_constraint.get('products'), str):
                         with betterboto_client.CrossAccountClientContextManager(
-                            'servicecatalog', role, f'sc-{self.account_id}-{self.region}', region_name=self.region
+                                'servicecatalog', role, f'sc-{self.account_id}-{self.region}', region_name=self.region
                         ) as service_catalog:
                             response = service_catalog.search_products_as_admin_single_page(PortfolioId=portfolio_id)
                             for product_view_details in response.get('ProductViewDetails', []):
                                 product_view_summary = product_view_details.get('ProductViewSummary')
-                                product_name_to_id_dict[product_view_summary.get('Name')] = product_view_summary.get('ProductId')
+                                product_name_to_id_dict[product_view_summary.get('Name')] = product_view_summary.get(
+                                    'ProductId')
                                 if re.match(launch_constraint.get('products'), product_view_summary.get('Name')):
                                     new_launch_constraint['products'].append(product_view_summary.get('Name'))
 
@@ -658,8 +722,79 @@ class CreateLaunchRoleConstraintsForPortfolio(luigi.Task):
             )
             f.close()
 
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "hub_portfolio_id": self.hub_portfolio_id,
+        }
+
     def output(self):
         return luigi.LocalTarget(
             f"output/CreateLaunchRoleConstraintsForPortfolio/"
             f"{self.account_id}-{self.region}-{self.portfolio}-{self.hub_portfolio_id}.json"
         )
+
+
+def record_event(event_type, task, extra_event_data=None):
+    task_type = task.__class__.__name__
+    task_params = task.param_kwargs
+
+    event = {
+        "event_type": event_type,
+        "task_type": task_type,
+        "task_params": task_params,
+        "params_for_results": task.params_for_results_display(),
+    }
+    if extra_event_data is not None:
+        event.update(extra_event_data)
+
+    with open(
+            Path(constants.RESULTS_DIRECTORY) / event_type / f"{task_type}-{task.task_id}.json", 'w'
+    ) as f:
+        f.write(
+            json.dumps(
+                event,
+                default=str,
+                indent=4,
+            )
+        )
+
+
+@luigi.Task.event_handler(luigi.Event.FAILURE)
+def on_task_failure(task, exception):
+    exception_details = {
+        "exception_type": type(exception),
+        "exception_stack_trace": traceback.format_exception(
+            etype=type(exception),
+            value=exception,
+            tb=exception.__traceback__,
+        )
+    }
+    record_event('failure', task, exception_details)
+
+
+@luigi.Task.event_handler(luigi.Event.SUCCESS)
+def on_task_success(task):
+    record_event('success', task)
+
+
+@luigi.Task.event_handler(luigi.Event.TIMEOUT)
+def on_task_timeout(task):
+    record_event('timeout', task)
+
+
+@luigi.Task.event_handler(luigi.Event.PROCESS_FAILURE)
+def on_task_process_failure(task):
+    record_event('process_failure', task)
+
+
+@luigi.Task.event_handler(luigi.Event.PROCESSING_TIME)
+def on_task_processing_time(task, duration):
+    record_event('processing_time', task, {"duration": duration})
+
+
+@luigi.Task.event_handler(luigi.Event.BROKEN_TASK)
+def on_task_broken_task(task):
+    record_event('broken_task', task)

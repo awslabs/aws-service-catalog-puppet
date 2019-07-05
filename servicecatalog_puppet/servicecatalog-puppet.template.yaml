@@ -217,7 +217,7 @@ Resources:
               InputArtifacts:
                 - Name: GenerateShares
               OutputArtifacts:
-                - Name: Deploy
+                - Name: DeployProject
 
   GenerateRole:
     Type: AWS::IAM::Role
@@ -328,6 +328,11 @@ Resources:
             build:
               commands:
                 - servicecatalog-puppet --info deploy manifest-expanded.yaml
+          artifacts:
+            files:
+              - results/*/*
+              - output/*/*
+            name: DeployProject
 
       TimeoutInMinutes: 30
 

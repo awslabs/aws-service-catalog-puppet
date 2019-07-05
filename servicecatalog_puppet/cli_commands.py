@@ -1,10 +1,13 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 import sys
+from glob import glob
+from pathlib import Path
 
+import colorclass
 from colorclass import Color
 from luigi import LuigiStatusCode
-from terminaltables import AsciiTable
+import terminaltables
 
 import shutil
 import json
@@ -94,7 +97,10 @@ def deploy(f, single_account):
     spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(manifest, launch_tasks)
     tasks_to_run += spoke_local_portfolio_tasks_to_run
 
-    result = luigi.build(
+    for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
+        os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
+
+    run_result = luigi.build(
         tasks_to_run,
         local_scheduler=True,
         detailed_summary=True,
@@ -102,7 +108,29 @@ def deploy(f, single_account):
         log_level='INFO',
     )
 
-    # click.echo(f"Workflow complete {result} - {result.status.value[1]}")
+    table_data = [
+        ['Result', 'Task', 'Significant Parameters', 'Duration'],
+
+    ]
+    table = terminaltables.AsciiTable(table_data)
+    for filename in glob('results/processing_time/*.json'):
+        result = json.loads(open(filename, 'r').read())
+        table_data.append([
+            colorclass.Color("{green}Success{/green}"),
+            result.get('task_type'),
+            json.dumps(result.get('params_for_results')),
+            result.get('duration'),
+        ])
+    click.echo(table.table)
+
+    for filename in glob('results/failure/*.json'):
+        result = json.loads(open(filename, 'r').read())
+        click.echo(colorclass.Color("{red}"+result.get('task_type')+" failed{/red}"))
+        click.echo(f"Parameters: {json.dumps(result.get('task_params'), indent=4, default=str)}")
+        click.echo("\n".join(result.get('exception_stack_trace')))
+        click.echo('')
+
+
     exit_status_codes = {
         LuigiStatusCode.SUCCESS: 0,
         LuigiStatusCode.SUCCESS_WITH_RETRY: 0,
@@ -112,7 +140,7 @@ def deploy(f, single_account):
         LuigiStatusCode.NOT_RUN:4,
         LuigiStatusCode.MISSING_EXT:5,
     }
-    sys.exit(exit_status_codes.get(result.status))
+    sys.exit(exit_status_codes.get(run_result.status))
 
 
 def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
@@ -258,7 +286,7 @@ def list_launches(f):
                         active,
                         status,
                     ])
-    click.echo(AsciiTable(table).table)
+    click.echo(terminaltables.SingleTable(table).table)
 
 
 def expand(f):
