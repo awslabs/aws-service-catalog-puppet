@@ -3,6 +3,32 @@ Utils
 
 The following utils will help you manage your AWS Accounts when using ServiceCatalog-Puppet:
 
+
+show-resources
+--------------
+
+.. note::
+
+    This was added in version 0.7.0
+
+You can use the ``servicecatalog-puppet`` cli to list all the resources that will be created to bootstrap the framework
+
+.. code-block:: bash
+
+    servicecatalog-puppet show-resources
+
+
+Will return the following markdown:
+
+.. code-block:: bash
+
+
+
+
+
+    n.b. AWS::StackName evaluates to servicecatalog-puppet
+
+
 run
 ---
 

@@ -17,6 +17,8 @@ Resources:
       Name: /servicecatalog-puppet/home-region
       Type: String
       Value: !Ref DefaultRegionValue
+      Tags:
+        "ServiceCatalogFactory:Actor": "Framework"
 
   Param:
     Type: AWS::SSM::Parameter
@@ -24,6 +26,8 @@ Resources:
       Name: service-catalog-puppet-regional-version
       Type: String
       Value: !Ref Version
+      Tags:
+        "ServiceCatalogFactory:Actor": "Framework"
 
   PipelineArtifactBucket:
     Type: AWS::S3::Bucket
@@ -35,6 +39,9 @@ Resources:
             Status: Enabled
       VersioningConfiguration:
         Status: Enabled
+      Tags:
+        - Key: "ServiceCatalogFactory:Actor"
+          Value: "Framework"
 
   RegionalProductTopic:
     Type: AWS::SNS::Topic

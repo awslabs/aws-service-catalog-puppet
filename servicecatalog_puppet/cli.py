@@ -110,6 +110,10 @@ def quick_start():
 def run(what, tail):
     cli_commands.run(what, tail)
 
+@cli.command()
+def list_resources():
+    cli_commands.list_resources()
+
 
 if __name__ == "__main__":
     cli()

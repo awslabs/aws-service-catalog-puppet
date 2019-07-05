@@ -303,6 +303,12 @@ def _do_bootstrap_org_master(puppet_account_id, cloudformation, puppet_version):
                 'UsePreviousValue': False,
             },
         ],
+        'Tags':[
+            {
+                "Key": "ServiceCatalogFactory:Actor",
+                "Value": "Framework",
+            }
+        ]
     }
     cloudformation.create_or_update(**args)
     response = cloudformation.describe_stacks(StackName=stack_name)
@@ -337,6 +343,12 @@ def _do_bootstrap_spoke(puppet_account_id, cloudformation, puppet_version):
                 'UsePreviousValue': False,
             },
         ],
+        'Tags':[
+            {
+                "Key": "ServiceCatalogFactory:Actor",
+                "Value": "Framework",
+            }
+        ]
     }
     cloudformation.create_or_update(**args)
     logger.info('Finished bootstrap of spoke')
@@ -367,6 +379,12 @@ def _do_bootstrap(puppet_version):
                     'UsePreviousValue': False,
                 },
             ],
+            'Tags': [
+                {
+                    "Key": "ServiceCatalogFactory:Actor",
+                    "Value": "Framework",
+                }
+            ]
         }
         for client_region, client in clients.items():
             process = Thread(name=client_region, target=client.create_or_update, kwargs=args)

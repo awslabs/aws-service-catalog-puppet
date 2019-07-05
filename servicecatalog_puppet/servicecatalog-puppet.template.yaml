@@ -22,6 +22,8 @@ Resources:
       Name: service-catalog-puppet-version
       Type: String
       Value: !Ref Version
+      Tags:
+        "ServiceCatalogFactory:Actor": "Framework"
 
   ShareAcceptFunctionRole:
     Type: AWS::IAM::Role
@@ -300,6 +302,9 @@ Resources:
               - output/*/*/*/*.template.yaml
             name: GenerateShares
       TimeoutInMinutes: 30
+      Tags:
+        - Key: "ServiceCatalogFactory:Actor"
+          Value: "Framework"
 
   DeployProject:
     Type: AWS::CodeBuild::Project
@@ -335,6 +340,9 @@ Resources:
             name: DeployProject
 
       TimeoutInMinutes: 60
+      Tags:
+        - Key: "ServiceCatalogFactory:Actor"
+          Value: "Framework"
 
 
   SingleAccountRunProject:
@@ -372,11 +380,17 @@ Resources:
               commands:
                 - aws codepipeline start-pipeline-execution  --name servicecatalog-puppet-pipeline
       TimeoutInMinutes: 30
+      Tags:
+        - Key: "ServiceCatalogFactory:Actor"
+          Value: "Framework"
 
   CloudFormationEventsQueue:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: servicecatalog-puppet-cloudformation-events
+      Tags:
+        - Key: "ServiceCatalogFactory:Actor"
+          Value: "Framework"
 
   CloudFormationEventsQueuePolicy:
     Type: AWS::SQS::QueuePolicy
