@@ -18,7 +18,7 @@ Resources:
       Type: String
       Value: !Ref DefaultRegionValue
       Tags:
-        "ServiceCatalogFactory:Actor": "Framework"
+        "ServiceCatalogPuppet:Actor": "Framework"
 
   Param:
     Type: AWS::SSM::Parameter
@@ -27,7 +27,7 @@ Resources:
       Type: String
       Value: !Ref Version
       Tags:
-        "ServiceCatalogFactory:Actor": "Framework"
+        "ServiceCatalogPuppet:Actor": "Framework"
 
   PipelineArtifactBucket:
     Type: AWS::S3::Bucket
@@ -40,7 +40,7 @@ Resources:
       VersioningConfiguration:
         Status: Enabled
       Tags:
-        - Key: "ServiceCatalogFactory:Actor"
+        - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
 
   RegionalProductTopic:

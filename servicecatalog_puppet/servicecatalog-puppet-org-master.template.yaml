@@ -19,7 +19,7 @@ Resources:
       Type: String
       Value: !Ref Version
       Tags:
-        "ServiceCatalogFactory:Actor": "Framework"
+        "ServiceCatalogPuppet:Actor": "Framework"
 
   PuppetOrgRoleForExpands:
     Type: AWS::IAM::Role
