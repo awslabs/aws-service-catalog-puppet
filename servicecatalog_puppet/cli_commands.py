@@ -100,7 +100,7 @@ def deploy(f, single_account):
     for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
 
-    result = luigi.build(
+    run_result = luigi.build(
         tasks_to_run,
         local_scheduler=True,
         detailed_summary=True,
@@ -140,7 +140,7 @@ def deploy(f, single_account):
         LuigiStatusCode.NOT_RUN:4,
         LuigiStatusCode.MISSING_EXT:5,
     }
-    sys.exit(exit_status_codes.get(result.status))
+    sys.exit(exit_status_codes.get(run_result.status))
 
 
 def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
