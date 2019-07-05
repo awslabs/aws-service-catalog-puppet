@@ -43,6 +43,15 @@ class SSMParamTarget(luigi.Target):
 
 class PuppetTask(luigi.Task):
 
+    @property
+    def resources(self):
+        resources_for_this_task = {}
+
+        if hasattr(self, 'region'):
+            resources_for_this_task[self.region] = 1
+
+        return resources_for_this_task
+
     def params_for_results_display(self):
         return "Omitted"
 

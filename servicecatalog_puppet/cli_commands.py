@@ -126,7 +126,7 @@ def deploy(f, single_account):
         click.echo(f"Parameters: {json.dumps(result.get('task_params'), indent=4, default=str)}")
         click.echo("\n".join(result.get('exception_stack_trace')))
         click.echo('')
-    
+
 
     exit_status_codes = {
         LuigiStatusCode.SUCCESS: 0,
