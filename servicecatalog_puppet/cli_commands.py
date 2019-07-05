@@ -112,7 +112,7 @@ def deploy(f, single_account):
         ['Result', 'Task', 'Significant Parameters', 'Duration'],
 
     ]
-    table = terminaltables.SingleTable(table_data)
+    table = terminaltables.AsciiTable(table_data)
     for filename in glob('results/processing_time/*.json'):
         result = json.loads(open(filename, 'r').read())
         table_data.append([
