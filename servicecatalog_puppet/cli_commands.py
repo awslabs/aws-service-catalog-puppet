@@ -118,7 +118,7 @@ def deploy(f, single_account):
         table_data.append([
             colorclass.Color("{green}Success{/green}"),
             result.get('task_type'),
-            json.dumps(result.get('params_for_results')),
+            yaml.safe_dump(result.get('params_for_results')),
             result.get('duration'),
         ])
     click.echo(table.table)
@@ -126,10 +126,9 @@ def deploy(f, single_account):
     for filename in glob('results/failure/*.json'):
         result = json.loads(open(filename, 'r').read())
         click.echo(colorclass.Color("{red}"+result.get('task_type')+" failed{/red}"))
-        click.echo(f"Parameters: {json.dumps(result.get('task_params'), indent=4, default=str)}")
+        click.echo(f"{yaml.safe_dump({'parameters':result.get('task_params')})}")
         click.echo("\n".join(result.get('exception_stack_trace')))
         click.echo('')
-
 
     exit_status_codes = {
         LuigiStatusCode.SUCCESS: 0,

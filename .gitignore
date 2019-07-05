@@ -10,3 +10,4 @@ output
 ignored
 .coverage
 venv
+results
