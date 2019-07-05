@@ -18,6 +18,8 @@ Resources:
       Name: service-catalog-puppet-org-master-version
       Type: String
       Value: !Ref Version
+      Tags:
+        "ServiceCatalogFactory:Actor": "Framework"
 
   PuppetOrgRoleForExpands:
     Type: AWS::IAM::Role
