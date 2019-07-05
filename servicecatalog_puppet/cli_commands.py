@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import sys
 from glob import glob
+from pathlib import Path
 
 import colorclass
 from colorclass import Color
@@ -96,6 +97,9 @@ def deploy(f, single_account):
     spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(manifest, launch_tasks)
     tasks_to_run += spoke_local_portfolio_tasks_to_run
 
+    for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
+        os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
+
     result = luigi.build(
         tasks_to_run,
         local_scheduler=True,
@@ -103,7 +107,6 @@ def deploy(f, single_account):
         workers=10,
         log_level='INFO',
     )
-
 
     table_data = [
         ['Result', 'Task', 'Significant Parameters', 'Duration'],
