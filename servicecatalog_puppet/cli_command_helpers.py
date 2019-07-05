@@ -305,7 +305,7 @@ def _do_bootstrap_org_master(puppet_account_id, cloudformation, puppet_version):
         ],
         'Tags':[
             {
-                "Key": "ServiceCatalogFactory:Actor",
+                "Key": "ServiceCatalogPuppet:Actor",
                 "Value": "Framework",
             }
         ]
@@ -345,7 +345,7 @@ def _do_bootstrap_spoke(puppet_account_id, cloudformation, puppet_version):
         ],
         'Tags':[
             {
-                "Key": "ServiceCatalogFactory:Actor",
+                "Key": "ServiceCatalogPuppet:Actor",
                 "Value": "Framework",
             }
         ]
@@ -381,7 +381,7 @@ def _do_bootstrap(puppet_version):
             ],
             'Tags': [
                 {
-                    "Key": "ServiceCatalogFactory:Actor",
+                    "Key": "ServiceCatalogPuppet:Actor",
                     "Value": "Framework",
                 }
             ]
