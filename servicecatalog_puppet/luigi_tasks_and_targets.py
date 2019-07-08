@@ -88,8 +88,6 @@ class ProvisionProductDryRunTask(PuppetTask):
     region = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
-    status = luigi.Parameter(default='', significant=False)
-
     parameters = luigi.ListParameter(default=[])
     ssm_param_inputs = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
@@ -311,6 +309,7 @@ class ProvisionProductTask(PuppetTask):
 
     def params_for_results_display(self):
         return {
+            "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
@@ -321,7 +320,7 @@ class ProvisionProductTask(PuppetTask):
     def output(self):
         return luigi.LocalTarget(
             f"output/ProvisionProductTask/"
-            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+            f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
         )
 
     def run(self):
