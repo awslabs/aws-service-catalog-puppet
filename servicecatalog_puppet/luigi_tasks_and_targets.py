@@ -94,16 +94,11 @@ class ProvisionProductTask(PuppetTask):
 
     retry_count = luigi.IntParameter(default=1)
 
-    status = luigi.Parameter(default='', significant=False)
-
     worker_timeout = luigi.IntParameter(default=0, significant=False)
 
     ssm_param_outputs = luigi.ListParameter(default=[])
 
     try_count = 1
-
-    def add_requires(self, task):
-        self.reqs.append(task)
 
     def requires(self):
         ssm_params = {}
@@ -119,6 +114,7 @@ class ProvisionProductTask(PuppetTask):
 
     def params_for_results_display(self):
         return {
+            "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
@@ -129,7 +125,7 @@ class ProvisionProductTask(PuppetTask):
     def output(self):
         return luigi.LocalTarget(
             f"output/ProvisionProductTask/"
-            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+            f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
         )
 
     def run(self):
@@ -267,6 +263,202 @@ class ProvisionProductTask(PuppetTask):
                 logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished provisioning")
 
 
+class ProvisionProductDryRunTask(PuppetTask):
+    launch_name = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+
+    product_id = luigi.Parameter()
+    version_id = luigi.Parameter()
+
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+
+    parameters = luigi.ListParameter(default=[])
+    ssm_param_inputs = luigi.ListParameter(default=[])
+    dependencies = luigi.ListParameter(default=[])
+
+    retry_count = luigi.IntParameter(default=1)
+
+    worker_timeout = luigi.IntParameter(default=0, significant=False)
+
+    ssm_param_outputs = luigi.ListParameter(default=[])
+
+    try_count = 1
+
+    def requires(self):
+        dependencies = []
+        for r in self.dependencies:
+            # if hasattr(r, 'status'):
+            #     del r['status']
+            dependencies.append(
+                self.__class__(**r)
+            )
+
+        return {
+            'dependencies': dependencies,
+        }
+
+    def params_for_results_display(self):
+        return {
+            "launch_name": self.launch_name,
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "product": self.product,
+            "version": self.version,
+        }
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/ProvisionProductDryRunTask/"
+            f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+        )
+
+    def run(self):
+        logger_prefix = f"[{self.launch_name}] {self.account_id}:{self.region}"
+        logger.info(
+            f"{logger_prefix} :: starting dryrun of {self.retry_count}"
+        )
+
+        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        with betterboto_client.CrossAccountClientContextManager(
+                'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
+        ) as service_catalog:
+            logger.info(f"{logger_prefix} :: looking for previous failures")
+
+            response = service_catalog.search_provisioned_products(
+                Filters={'SearchQuery': [
+                    "productId:{}".format(self.product_id)
+                ]}
+            )
+            provisioning_artifact_id = False
+            for r in response.get('ProvisionedProducts', []):
+                if r.get('Name') == self.launch_name:
+                    current_status = r.get('Status')
+                    if current_status in ["AVAILABLE", "TAINTED"]:
+                        provisioned_product_id = r.get('Id')
+                        provisioning_artifact_id = r.get('ProvisioningArtifactId')
+
+                        if provisioning_artifact_id != self.version_id:
+                            self.write_result(
+                                current_version=self.get_current_version(provisioning_artifact_id),
+                                new_version=self.version,
+                                effect=constants.CHANGE,
+                                notes='Version change',
+                            )
+                            return
+                        else:
+                            all_params = {}
+                            logger.info(f"{logger_prefix} :: collecting ssm params")
+                            for ssm_param_name, ssm_param in self.input().get('ssm_params', {}).items():
+                                all_params[ssm_param_name] = ssm_param.read()
+                            logger.info(f"{logger_prefix} :: collecting manifest params")
+                            for parameter in self.parameters:
+                                all_params[parameter.get('name')] = parameter.get('value')
+
+                            with betterboto_client.CrossAccountClientContextManager(
+                                'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
+                            ) as cloudformation:
+                                default_cfn_params = aws.get_default_parameters_for_stack(
+                                  cloudformation, f"SC-{self.account_id}-{provisioned_product_id}"
+                              )
+
+                            for default_cfn_param_name in default_cfn_params.keys():
+                                if all_params.get(default_cfn_param_name) is None:
+                                    all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
+
+                            logger.info(
+                                f"{logger_prefix} :: found previous good provision"
+                            )
+                            if provisioned_product_id:
+                                logger.info(
+                                    f"{logger_prefix} :: checking params for diffs"
+                                )
+                                provisioned_parameters = aws.get_parameters_for_stack(
+                                    cloudformation,
+                                    f"SC-{self.account_id}-{provisioned_product_id}"
+                                )
+                                logger.info(f"{logger_prefix} :: "
+                                            f"current params: {provisioned_parameters}")
+
+                                logger.info(f"{logger_prefix} :: "
+                                            f"new params: {all_params}")
+
+                                if provisioned_parameters == all_params:
+                                    logger.info(f"{logger_prefix} :: params unchanged")
+                                    self.write_result(
+                                        current_version=self.version,
+                                        new_version=self.version,
+                                        effect=constants.NO_CHANGE,
+                                        notes="Versions and params are the same",
+                                    )
+                                    return
+                                else:
+                                    logger.info(f"{logger_prefix} :: params changed")
+                                    self.write_result(
+                                        current_version=self.version,
+                                        new_version=self.version,
+                                        effect=constants.CHANGE,
+                                        notes="Versions are the same but the params are different",
+                                    )
+                                    return
+
+                    else:
+                        current_version = self.get_current_version(provisioning_artifact_id, service_catalog)
+
+                        if current_status in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
+                            self.write_result(
+                                current_version=current_version,
+                                new_version=current_version,
+                                effect=constants.NO_CHANGE,
+                                notes=f"provisioned product status was {current_status}"
+                            )
+                            return
+
+                        elif current_status == 'ERROR':
+                            self.write_result(
+                                current_version=current_version,
+                                new_version=self.version,
+                                effect=constants.CHANGE,
+                                notes=f"provisioned product status was {current_status}"
+                            )
+                            return
+
+            logger.info(f"{logger_prefix} no version of product has not been provisioned")
+            self.write_result(
+                current_version=None,
+                effect=constants.CHANGE,
+                new_version=self.version,
+                notes="Fresh install",
+            )
+
+    def get_current_version(self, provisioning_artifact_id, service_catalog):
+        return service_catalog.describe_provisioning_artifact(
+            ProvisioningArtifactId=provisioning_artifact_id,
+            ProductId=self.product_id,
+        ).get('ProvisioningArtifactDetail').get('Name')
+
+    def write_result(self, current_version, new_version, effect, notes=''):
+        f = self.output().open('w')
+        f.write(
+            json.dumps(
+                {
+                    "current_version": current_version,
+                    "new_version": new_version,
+                    "effect": effect,
+                    "notes": notes,
+                    "params": self.param_kwargs
+                },
+                indent=4,
+                default=str,
+            )
+        )
+        f.close()
+
+
 class TerminateProductTask(PuppetTask):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -287,6 +479,11 @@ class TerminateProductTask(PuppetTask):
     worker_timeout = luigi.IntParameter(default=0, significant=False)
 
     try_count = 1
+
+    parameters = luigi.ListParameter(default=[])
+    ssm_param_inputs = luigi.ListParameter(default=[])
+    dependencies = luigi.ListParameter(default=[])
+
 
     def params_for_results_display(self):
         return {
@@ -348,6 +545,96 @@ class TerminateProductTask(PuppetTask):
             )
             f.close()
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished terminating")
+
+
+class TerminateProductDryRunTask(PuppetTask):
+    launch_name = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+
+    product_id = luigi.Parameter()
+    version_id = luigi.Parameter()
+
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+
+    retry_count = luigi.IntParameter(default=1)
+
+    ssm_param_outputs = luigi.ListParameter(default=[])
+
+    worker_timeout = luigi.IntParameter(default=0, significant=False)
+
+    try_count = 1
+
+    parameters = luigi.ListParameter(default=[])
+    ssm_param_inputs = luigi.ListParameter(default=[])
+    dependencies = luigi.ListParameter(default=[])
+
+
+    def params_for_results_display(self):
+        return {
+            "launch_name": self.launch_name,
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "product": self.product,
+            "version": self.version,
+        }
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/TerminateProductDryRunTask/"
+            f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+        )
+
+    def write_result(self, current_version, new_version, effect, notes=''):
+        f = self.output().open('w')
+        f.write(
+            json.dumps(
+                {
+                    "current_version": current_version,
+                    "new_version": new_version,
+                    "effect": effect,
+                    "notes": notes,
+                    "params": self.param_kwargs
+                },
+                indent=4,
+                default=str,
+            )
+        )
+        f.close()
+
+    def run(self):
+        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
+                    f"starting dry run terminate try {self.try_count} of {self.retry_count}")
+
+        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        with betterboto_client.CrossAccountClientContextManager(
+                'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
+        ) as service_catalog:
+            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
+            r = aws.get_provisioned_product_details(self.product_id, self.launch_name, service_catalog)
+
+            if r is None:
+                self.write_result(
+                    '-', '-', constants.NO_CHANGE, notes='There is nothing to terminate'
+                )
+            else:
+                provisioned_product_name = service_catalog.describe_provisioning_artifact(
+                    ProvisioningArtifactId=r.get('ProvisioningArtifactId'),
+                    ProductId=self.product_id,
+                ).get('ProvisioningArtifactDetail').get('Name')
+
+                if r.get('Status') != "TERMINATED":
+                    self.write_result(
+                        provisioned_product_name, '-', constants.CHANGE, notes='The product would be terminated'
+                    )
+                else:
+                    self.write_result(
+                        '-', '-', constants.CHANGE, notes='The product is already terminated'
+                    )
 
 
 class CreateSpokeLocalPortfolioTask(PuppetTask):

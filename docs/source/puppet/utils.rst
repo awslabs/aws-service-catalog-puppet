@@ -3,6 +3,41 @@ Utils
 
 The following utils will help you manage your AWS Accounts when using ServiceCatalog-Puppet:
 
+dry-run
+-------
+
+.. note::
+
+    This was added in version 0.8.0
+
+You can use the ``servicecatalog-puppet`` cli to see the effect of your next pipeline run before it happens
+
+
+.. code-block:: bash
+
+    servicecatalog-puppet dry-run ServiceCatalogPuppet/manifest.yaml
+
+You must specify the path to the manifest file you want to add execute a dry run on.
+
+
+import-product-set
+------------------
+
+.. note::
+
+    This was added in version 0.8.0
+
+You can use the ``servicecatalog-puppet`` cli to import products from the aws-service-catalog-products shared repo.
+
+This will update your manifest file.
+
+.. code-block:: bash
+
+    servicecatalog-puppet import-product-set ServiceCatalogPuppet/manifest.yaml aws-iam central-it-team-portfolio
+
+You must specify the path to the manifest file you want to add the product set to, the name of the product set and the name
+of the portfolio where was added.
+
 
 list-resources
 --------------

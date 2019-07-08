@@ -1,10 +1,19 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
+import sys
+from glob import glob
+from pathlib import Path
+
 import click
+import colorclass
+import luigi
 
 import pkg_resources
 import json
+
+import terminaltables
 from jinja2 import Template
+from luigi import LuigiStatusCode
 
 from servicecatalog_puppet import asset_helpers, manifest_utils, aws, luigi_tasks_and_targets
 from servicecatalog_puppet import constants
@@ -604,3 +613,112 @@ def deploy_launches_task_builder_for_account_launch_region(
 
     all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
     return all_tasks
+
+
+def run_tasks(tasks_to_run):
+    for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
+        os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
+
+    run_result = luigi.build(
+        tasks_to_run,
+        local_scheduler=True,
+        detailed_summary=True,
+        workers=10,
+        log_level='INFO',
+    )
+    table_data = [
+        ['Action','Launch', 'Account', 'Region', 'Portfolio', 'Product', 'Version', 'Duration'],
+
+    ]
+    table = terminaltables.AsciiTable(table_data)
+    for filename in glob('results/processing_time/*.json'):
+        result = json.loads(open(filename, 'r').read())
+        params = result.get('params_for_results')
+        table_data.append([
+            result.get('task_type'),
+            params.get('launch_name'),
+            params.get('account_id'),
+            params.get('region'),
+            params.get('portfolio'),
+            params.get('product'),
+            params.get('version'),
+            result.get('duration'),
+        ])
+    click.echo(table.table)
+    for filename in glob('results/failure/*.json'):
+        result = json.loads(open(filename, 'r').read())
+        click.echo(colorclass.Color("{red}" + result.get('task_type') + " failed{/red}"))
+        click.echo(f"{yaml.safe_dump({'parameters':result.get('task_params')})}")
+        click.echo("\n".join(result.get('exception_stack_trace')))
+        click.echo('')
+    exit_status_codes = {
+        LuigiStatusCode.SUCCESS: 0,
+        LuigiStatusCode.SUCCESS_WITH_RETRY: 0,
+        LuigiStatusCode.FAILED: 1,
+        LuigiStatusCode.FAILED_AND_SCHEDULING_FAILED: 2,
+        LuigiStatusCode.SCHEDULING_FAILED: 3,
+        LuigiStatusCode.NOT_RUN: 4,
+        LuigiStatusCode.MISSING_EXT: 5,
+    }
+    sys.exit(exit_status_codes.get(run_result.status))
+
+
+def run_tasks_for_dry_run(tasks_to_run):
+    for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
+        os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
+
+    run_result = luigi.build(
+        tasks_to_run,
+        local_scheduler=True,
+        detailed_summary=True,
+        workers=10,
+        log_level='INFO',
+    )
+    for filename in glob('results/failure/*.json'):
+        result = json.loads(open(filename, 'r').read())
+        click.echo(colorclass.Color("{red}" + result.get('task_type') + " failed{/red}"))
+        click.echo(f"{yaml.safe_dump({'parameters':result.get('task_params')})}")
+        click.echo("\n".join(result.get('exception_stack_trace')))
+        click.echo('')
+    exit_status_codes = {
+        LuigiStatusCode.SUCCESS: 0,
+        LuigiStatusCode.SUCCESS_WITH_RETRY: 0,
+        LuigiStatusCode.FAILED: 1,
+        LuigiStatusCode.FAILED_AND_SCHEDULING_FAILED: 2,
+        LuigiStatusCode.SCHEDULING_FAILED: 3,
+        LuigiStatusCode.NOT_RUN: 4,
+        LuigiStatusCode.MISSING_EXT: 5,
+    }
+
+    click.echo("Dry run results")
+    table_data = [
+        ['Result','Launch', 'Account', 'Region', 'Current Version', 'New Version', 'Notes'],
+
+    ]
+    table = terminaltables.AsciiTable(table_data)
+    for filename in glob('output/TerminateProductDryRunTask/*.json'):
+        result = json.loads(open(filename, 'r').read())
+        table_data.append([
+            result.get('effect'),
+            result.get('params').get('launch_name'),
+            result.get('params').get('account_id'),
+            result.get('params').get('region'),
+            result.get('current_version'),
+            result.get('new_version'),
+            result.get('notes'),
+        ])
+    for filename in glob('output/ProvisionProductDryRunTask/*.json'):
+        result = json.loads(open(filename, 'r').read())
+        table_data.append([
+            result.get('effect'),
+            result.get('params').get('launch_name'),
+            result.get('params').get('account_id'),
+            result.get('params').get('region'),
+            result.get('current_version'),
+            result.get('new_version'),
+            result.get('notes'),
+        ])
+    click.echo(table.table)
+
+
+    sys.exit(exit_status_codes.get(run_result.status))

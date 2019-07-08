@@ -28,6 +28,12 @@ def deploy(f, single_account):
 
 
 @cli.command()
+@click.argument('f', type=click.File())
+def dry_run(f):
+    cli_commands.dry_run(f)
+
+
+@cli.command()
 @click.argument('puppet_account_id')
 @click.argument('iam_role_arns', nargs=-1)
 def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
@@ -110,9 +116,18 @@ def quick_start():
 def run(what, tail):
     cli_commands.run(what, tail)
 
+
 @cli.command()
 def list_resources():
     cli_commands.list_resources()
+
+
+@cli.command()
+@click.argument('f', type=click.File())
+@click.argument('name')
+@click.argument('portfolio_name')
+def import_product_set(f, name, portfolio_name):
+    cli_commands.import_product_set(f, name, portfolio_name)
 
 
 if __name__ == "__main__":

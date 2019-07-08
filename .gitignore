@@ -11,3 +11,4 @@ ignored
 .coverage
 venv
 results
+venv-testing
