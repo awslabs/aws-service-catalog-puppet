@@ -303,6 +303,7 @@ class ProvisionProductDryRunTask(PuppetTask):
 
     def params_for_results_display(self):
         return {
+            "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
@@ -312,8 +313,8 @@ class ProvisionProductDryRunTask(PuppetTask):
 
     def output(self):
         return luigi.LocalTarget(
-            f"output/ProvisionProductDryRunTask/{self.launch_name}/"
-            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+            f"output/ProvisionProductDryRunTask/"
+            f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
         )
 
     def run(self):
@@ -479,6 +480,11 @@ class TerminateProductTask(PuppetTask):
 
     try_count = 1
 
+    parameters = luigi.ListParameter(default=[])
+    ssm_param_inputs = luigi.ListParameter(default=[])
+    dependencies = luigi.ListParameter(default=[])
+
+
     def params_for_results_display(self):
         return {
             "account_id": self.account_id,
@@ -539,6 +545,96 @@ class TerminateProductTask(PuppetTask):
             )
             f.close()
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished terminating")
+
+
+class TerminateProductDryRunTask(PuppetTask):
+    launch_name = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+
+    product_id = luigi.Parameter()
+    version_id = luigi.Parameter()
+
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+
+    retry_count = luigi.IntParameter(default=1)
+
+    ssm_param_outputs = luigi.ListParameter(default=[])
+
+    worker_timeout = luigi.IntParameter(default=0, significant=False)
+
+    try_count = 1
+
+    parameters = luigi.ListParameter(default=[])
+    ssm_param_inputs = luigi.ListParameter(default=[])
+    dependencies = luigi.ListParameter(default=[])
+
+
+    def params_for_results_display(self):
+        return {
+            "launch_name": self.launch_name,
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "product": self.product,
+            "version": self.version,
+        }
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/TerminateProductDryRunTask/"
+            f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+        )
+
+    def write_result(self, current_version, new_version, effect, notes=''):
+        f = self.output().open('w')
+        f.write(
+            json.dumps(
+                {
+                    "current_version": current_version,
+                    "new_version": new_version,
+                    "effect": effect,
+                    "notes": notes,
+                    "params": self.param_kwargs
+                },
+                indent=4,
+                default=str,
+            )
+        )
+        f.close()
+
+    def run(self):
+        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
+                    f"starting dry run terminate try {self.try_count} of {self.retry_count}")
+
+        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        with betterboto_client.CrossAccountClientContextManager(
+                'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
+        ) as service_catalog:
+            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
+            r = aws.get_provisioned_product_details(self.product_id, self.launch_name, service_catalog)
+
+            if r is None:
+                self.write_result(
+                    '-', '-', constants.NO_CHANGE, notes='There is nothing to terminate'
+                )
+            else:
+                provisioned_product_name = service_catalog.describe_provisioning_artifact(
+                    ProvisioningArtifactId=r.get('ProvisioningArtifactId'),
+                    ProductId=self.product_id,
+                ).get('ProvisioningArtifactDetail').get('Name')
+
+                if r.get('Status') != "TERMINATED":
+                    self.write_result(
+                        provisioned_product_name, '-', constants.CHANGE, notes='The product would be terminated'
+                    )
+                else:
+                    self.write_result(
+                        '-', '-', constants.CHANGE, notes='The product is already terminated'
+                    )
 
 
 class CreateSpokeLocalPortfolioTask(PuppetTask):

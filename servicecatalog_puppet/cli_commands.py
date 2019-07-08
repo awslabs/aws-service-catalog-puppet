@@ -70,14 +70,14 @@ def dry_run(f):
         if task_status == constants.PROVISIONED:
             tasks_to_run.append(luigi_tasks_and_targets.ProvisionProductDryRunTask(**task))
         elif task_status == constants.TERMINATED:
-            tasks_to_run.append(luigi_tasks_and_targets.TerminateProductTask(**task))
+            tasks_to_run.append(luigi_tasks_and_targets.TerminateProductDryRunTask(**task))
         else:
             raise Exception(f"Unsupported status of {task_status}")
 
     # spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(manifest, launch_tasks)
     # tasks_to_run += spoke_local_portfolio_tasks_to_run
 
-    cli_command_helpers.run_tasks(tasks_to_run)
+    cli_command_helpers.run_tasks_for_dry_run(tasks_to_run)
 
 
 def deploy(f, single_account):
@@ -108,9 +108,6 @@ def deploy(f, single_account):
                     else:
                         raise Exception(f"Launch {task.get('launch_name')} has disallowed attribute: {attribute}")
 
-            for a in ['parameters', 'ssm_param_inputs', 'outputs', 'dependencies']:
-                if task.get(a, None) is not None:
-                    del task[a]
             tasks_to_run.append(luigi_tasks_and_targets.TerminateProductTask(**task))
         else:
             raise Exception(f"Unsupported status of {task_status}")

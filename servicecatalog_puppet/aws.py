@@ -213,39 +213,49 @@ def ensure_is_terminated(
         service_catalog, provisioned_product_name, product_id
 ):
     logger.info(f"Ensuring {provisioned_product_name} is terminated")
+    r = get_provisioned_product_details(
+        product_id,
+        provisioned_product_name,
+        service_catalog
+    )
+
+    provisioned_product_id = r.get('Id')
+    provisioning_artifact_id = r.get('ProvisioningArtifactId')
+
+    if r.get('Status') != "TERMINATED":
+        logger.info(f"Terminating {provisioned_product_name}, its status is: {r.get('Status')}")
+        service_catalog.terminate_provisioned_product(
+            ProvisionedProductId=r.get('Id')
+        )
+        logger.info(f"Waiting for termination of {provisioned_product_name}")
+        while True:
+            response = service_catalog.search_provisioned_products(
+                Filters={
+                    'SearchQuery': [f'name:{provisioned_product_name}']
+                }
+            )
+            if len(response.get('ProvisionedProducts')) > 0:
+                time.sleep(5)
+            else:
+                break
+    else:
+        logger.info(f"Skipping terminated launch: {provisioned_product_name}")
+
+    logger.info(f"Finished ensuring {provisioned_product_name} is terminated")
+    return provisioned_product_id, provisioning_artifact_id
+
+
+def get_provisioned_product_details(product_id, provisioned_product_name, service_catalog):
     response = service_catalog.search_provisioned_products(
         Filters={'SearchQuery': [
             "productId:{}".format(product_id)
         ]}
     )
-    provisioned_product_id = False
-    provisioning_artifact_id = False
     for r in response.get('ProvisionedProducts', []):
         if r.get('Name') == provisioned_product_name:
-            provisioned_product_id = r.get('Id')
-            provisioning_artifact_id = r.get('ProvisioningArtifactId')
+            return r
+    return None
 
-            if r.get('Status') != "TERMINATED":
-                logger.info(f"Terminating {provisioned_product_name}, its status is: {r.get('Status')}")
-                service_catalog.terminate_provisioned_product(
-                    ProvisionedProductId=r.get('Id')
-                )
-                logger.info(f"Waiting for termination of {provisioned_product_name}")
-                while True:
-                    response = service_catalog.search_provisioned_products(
-                        Filters={
-                            'SearchQuery': [f'name:{provisioned_product_name}']
-                        }
-                    )
-                    if len(response.get('ProvisionedProducts')) > 0:
-                        time.sleep(5)
-                    else:
-                        break
-            else:
-                logger.info(f"Skipping terminated launch: {provisioned_product_name}")
-
-    logger.info(f"Finished ensuring {provisioned_product_name} is terminated")
-    return provisioned_product_id, provisioning_artifact_id
 
 
 def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name, account_id, region):
