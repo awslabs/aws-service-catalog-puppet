@@ -88,6 +88,8 @@ class ProvisionProductDryRunTask(PuppetTask):
     region = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
+    status = luigi.Parameter(default='', significant=False)
+
     parameters = luigi.ListParameter(default=[])
     ssm_param_inputs = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
