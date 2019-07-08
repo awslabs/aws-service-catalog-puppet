@@ -68,8 +68,8 @@ def test_dry_run(sut, mocker):
     mocked_manifest_utils.load.assert_called_once_with(f)
     mocked_cli_command_helpers.deploy_launches.assert_called_with(mocked_manifest)
     mocked_cli_command_helpers.wire_dependencies.assert_called_with(all_launch_tasks)
-    assert mocked_cli_command_helpers.run_tasks.call_count == 1
-    args, kwargs = mocked_cli_command_helpers.run_tasks.call_args
+    assert mocked_cli_command_helpers.run_tasks_for_dry_run.call_count == 1
+    args, kwargs = mocked_cli_command_helpers.run_tasks_for_dry_run.call_args
     assert len(args[0]) == 2
     assert isinstance(args[0][0], luigi_tasks_and_targets.ProvisionProductDryRunTask)
-    assert isinstance(args[0][1], luigi_tasks_and_targets.TerminateProductTask)
+    assert isinstance(args[0][1], luigi_tasks_and_targets.TerminateProductDryRunTask)
