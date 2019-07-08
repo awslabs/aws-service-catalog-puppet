@@ -291,16 +291,11 @@ class ProvisionProductTask(PuppetTask):
 
     retry_count = luigi.IntParameter(default=1)
 
-    status = luigi.Parameter(default='', significant=False)
-
     worker_timeout = luigi.IntParameter(default=0, significant=False)
 
     ssm_param_outputs = luigi.ListParameter(default=[])
 
     try_count = 1
-
-    # def add_requires(self, task):
-    #     self.reqs.append(task)
 
     def requires(self):
         ssm_params = {}

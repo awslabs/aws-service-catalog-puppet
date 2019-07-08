@@ -264,7 +264,7 @@ def list_launches(f):
                         active,
                         status,
                     ])
-    click.echo(terminaltables.SingleTable(table).table)
+    click.echo(terminaltables.AsciiTable(table).table)
 
 
 def expand(f):
@@ -443,7 +443,7 @@ def list_resources():
         table_data = [
             ['Logical Name', 'Resource Type', 'Name', ],
         ]
-        table = terminaltables.SingleTable(table_data)
+        table = terminaltables.AsciiTable(table_data)
         for logical_name, resource in template.get('Resources').items():
             resource_type = resource.get('Type')
             name = '-'
