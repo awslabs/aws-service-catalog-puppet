@@ -635,7 +635,7 @@ def run_tasks(tasks_to_run):
         result = json.loads(open(filename, 'r').read())
         params = result.get('params_for_results')
         table_data.append([
-            params.get('task_type'),
+            result.get('task_type'),
             params.get('launch_name'),
             params.get('account_id'),
             params.get('region'),
