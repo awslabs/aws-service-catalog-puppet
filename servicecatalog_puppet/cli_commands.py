@@ -1,19 +1,15 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-import sys
-from glob import glob
 from pathlib import Path
 
 import cfn_tools
-import colorclass
+import requests
 from colorclass import Color
-from luigi import LuigiStatusCode
 import terminaltables
 
 import shutil
 import json
 
-import luigi
 import pkg_resources
 import yaml
 import logging
@@ -23,7 +19,6 @@ import click
 from jinja2 import Template
 from pykwalify.core import Core
 from betterboto import client as betterboto_client
-
 
 from servicecatalog_puppet import cli_command_helpers
 from servicecatalog_puppet import luigi_tasks_and_targets
@@ -58,6 +53,31 @@ def generate_shares(f):
     deployment_map = manifest_utils.build_deployment_map(manifest, constants.LAUNCHES)
     import_map = manifest_utils.build_deployment_map(manifest, constants.SPOKE_LOCAL_PORTFOLIOS)
     cli_command_helpers.create_share_template(deployment_map, import_map, cli_command_helpers.get_puppet_account_id())
+
+
+def dry_run(f):
+    manifest = manifest_utils.load(f)
+
+    launch_tasks = {}
+    tasks_to_run = []
+
+    all_launch_tasks = cli_command_helpers.deploy_launches(manifest)
+    launch_tasks.update(all_launch_tasks)
+
+    for task in cli_command_helpers.wire_dependencies(launch_tasks):
+        task_status = task.get('status')
+        del task['status']
+        if task_status == constants.PROVISIONED:
+            tasks_to_run.append(luigi_tasks_and_targets.ProvisionProductDryRunTask(**task))
+        elif task_status == constants.TERMINATED:
+            tasks_to_run.append(luigi_tasks_and_targets.TerminateProductTask(**task))
+        else:
+            raise Exception(f"Unsupported status of {task_status}")
+
+    # spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(manifest, launch_tasks)
+    # tasks_to_run += spoke_local_portfolio_tasks_to_run
+
+    cli_command_helpers.run_tasks(tasks_to_run)
 
 
 def deploy(f, single_account):
@@ -98,49 +118,7 @@ def deploy(f, single_account):
     spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(manifest, launch_tasks)
     tasks_to_run += spoke_local_portfolio_tasks_to_run
 
-    for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
-        os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
-
-    run_result = luigi.build(
-        tasks_to_run,
-        local_scheduler=True,
-        detailed_summary=True,
-        workers=10,
-        log_level='INFO',
-    )
-
-    table_data = [
-        ['Result', 'Task', 'Significant Parameters', 'Duration'],
-
-    ]
-    table = terminaltables.AsciiTable(table_data)
-    for filename in glob('results/processing_time/*.json'):
-        result = json.loads(open(filename, 'r').read())
-        table_data.append([
-            colorclass.Color("{green}Success{/green}"),
-            result.get('task_type'),
-            yaml.safe_dump(result.get('params_for_results')),
-            result.get('duration'),
-        ])
-    click.echo(table.table)
-
-    for filename in glob('results/failure/*.json'):
-        result = json.loads(open(filename, 'r').read())
-        click.echo(colorclass.Color("{red}"+result.get('task_type')+" failed{/red}"))
-        click.echo(f"{yaml.safe_dump({'parameters':result.get('task_params')})}")
-        click.echo("\n".join(result.get('exception_stack_trace')))
-        click.echo('')
-
-    exit_status_codes = {
-        LuigiStatusCode.SUCCESS: 0,
-        LuigiStatusCode.SUCCESS_WITH_RETRY: 0,
-        LuigiStatusCode.FAILED: 1,
-        LuigiStatusCode.FAILED_AND_SCHEDULING_FAILED: 2,
-        LuigiStatusCode.SCHEDULING_FAILED:3,
-        LuigiStatusCode.NOT_RUN:4,
-        LuigiStatusCode.MISSING_EXT:5,
-    }
-    sys.exit(exit_status_codes.get(run_result.status))
+    cli_command_helpers.run_tasks(tasks_to_run)
 
 
 def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
@@ -489,3 +467,22 @@ def list_resources():
 
         click.echo(table.table)
     click.echo(f"n.b. AWS::StackName evaluates to {constants.BOOTSTRAP_STACK_NAME}")
+
+
+def import_product_set(f, name, portfolio_name):
+    url = f"https://raw.githubusercontent.com/awslabs/aws-service-catalog-products/master/{name}/manifest.yaml"
+    response = requests.get(url)
+    logger.info(
+        f"Getting {url}"
+    )
+    manifest = yaml.safe_load(f.read())
+    if manifest.get('launches') is None:
+        manifest['launches'] = {}
+    manifest_segment = yaml.safe_load(response.text)
+    for launch_name, details in manifest_segment.get('launches').items():
+        details['portfolio'] = portfolio_name
+        manifest['launches'][launch_name] = details
+    with open(f.name, 'w') as f:
+        f.write(
+            yaml.safe_dump(manifest)
+        )
