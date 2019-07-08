@@ -94,22 +94,23 @@ class ProvisionProductDryRunTask(PuppetTask):
 
     retry_count = luigi.IntParameter(default=1)
 
-    status = luigi.Parameter(default='', significant=False)
-
     worker_timeout = luigi.IntParameter(default=0, significant=False)
 
     ssm_param_outputs = luigi.ListParameter(default=[])
 
     try_count = 1
 
-    # def add_requires(self, task):
-    #     self.reqs.append(task)
-
     def requires(self):
+        dependencies = []
+        for r in self.dependencies:
+            # if hasattr(r, 'status'):
+            #     del r['status']
+            dependencies.append(
+                self.__class__(**r)
+            )
+
         return {
-            'dependencies': [
-                self.__class__(**r) for r in self.dependencies
-            ],
+            'dependencies': dependencies,
         }
 
     def params_for_results_display(self):
