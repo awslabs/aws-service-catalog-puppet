@@ -107,14 +107,20 @@ class ProvisionProductTask(PuppetTask):
 
         dependencies = []
         for r in self.dependencies:
-            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking at dep {r}")
-            if hasattr(r, 'status'):
+            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking at status {r.get('status')} of dep {r}")
+            if r.get('status') is not None:
                 if r.get('status') == constants.TERMINATED:
                     raise Exception("Unsupported")
-                del r['status']
-            dependencies.append(
-                self.__class__(**r)
-            )
+                logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: removing status")
+                new_r = r.get_wrapped()
+                del new_r['status']
+                dependencies.append(
+                    self.__class__(**new_r)
+                )
+            else:
+                dependencies.append(
+                    self.__class__(**r)
+                )
         return {
             'dependencies': dependencies,
             'ssm_params': ssm_params
