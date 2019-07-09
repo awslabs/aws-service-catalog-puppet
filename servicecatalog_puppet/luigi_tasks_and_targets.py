@@ -107,6 +107,7 @@ class ProvisionProductTask(PuppetTask):
 
         dependencies = []
         for r in self.dependencies:
+            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking at dep {r}")
             if hasattr(r, 'status'):
                 if r.get('status') == constants.TERMINATED:
                     raise Exception("Unsupported")
