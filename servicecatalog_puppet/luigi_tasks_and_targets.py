@@ -90,7 +90,7 @@ class ProvisionProductTask(PuppetTask):
 
     parameters = luigi.ListParameter(default=[])
     ssm_param_inputs = luigi.ListParameter(default=[])
-    dependencies = luigi.ListParameter(default=[])
+    dependencies = luigi.ListParameter(default=[], significant=False)
 
     retry_count = luigi.IntParameter(default=1)
 
