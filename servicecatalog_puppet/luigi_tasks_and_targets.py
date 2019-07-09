@@ -105,10 +105,17 @@ class ProvisionProductTask(PuppetTask):
         for param_input in self.ssm_param_inputs:
             ssm_params[param_input.get('parameter_name')] = GetSSMParamTask(**param_input)
 
+        dependencies = []
+        for r in self.dependencies:
+            if hasattr(r, 'status'):
+                if r.get('status') == constants.TERMINATED:
+                    raise Exception("Unsupported")
+                del r['status']
+            dependencies.append(
+                self.__class__(**r)
+            )
         return {
-            'dependencies': [
-                self.__class__(**r) for r in self.dependencies
-            ],
+            'dependencies': dependencies,
             'ssm_params': ssm_params
         }
 
