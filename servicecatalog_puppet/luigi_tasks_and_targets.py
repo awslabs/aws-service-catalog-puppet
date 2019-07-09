@@ -104,14 +104,11 @@ class ProvisionProductTask(PuppetTask):
         ssm_params = {}
         for param_input in self.ssm_param_inputs:
             ssm_params[param_input.get('parameter_name')] = GetSSMParamTask(**param_input)
-
         dependencies = []
         for r in self.dependencies:
-            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking at status {r.get('status')} of dep {r}")
             if r.get('status') is not None:
                 if r.get('status') == constants.TERMINATED:
                     raise Exception("Unsupported")
-                logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: removing status")
                 new_r = r.get_wrapped()
                 del new_r['status']
                 dependencies.append(
