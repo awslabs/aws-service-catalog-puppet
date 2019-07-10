@@ -101,7 +101,18 @@ def provision_product(
         params,
         version,
 ):
+    uid = f"[{launch_name}] {account_id}:{region}]"
     stack_name = "-".join([constants.PREFIX, account_id, region, launch_name])
+    logger.info(f"[{launch_name}] {account_id}:{region} :: Checking for an existing plan")
+    provisioned_product_plans = service_catalog.list_provisioned_product_plans_single_page().get('ProvisionedProductPlans', [])
+    for provisioned_product_plan in provisioned_product_plans:
+        logger.info(
+            f"{uid} :: Found plan for {provisioned_product_plan.get('ProvisionProductName')}"
+        )
+        if provisioned_product_plan.get('ProvisionProductName') == launch_name:
+            f"{uid} :: Found existing plan, going to terminate it"
+            service_catalog.delete_provisioned_product_plan(PlanId=provisioned_product_plan.get('PlanId'))
+
     logger.info(f"[{launch_name}] {account_id}:{region} :: Creating a plan")
     regional_sns_topic = f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
     provisioning_parameters = []
