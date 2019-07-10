@@ -104,7 +104,10 @@ def provision_product(
     uid = f"[{launch_name}] {account_id}:{region}]"
     stack_name = "-".join([constants.PREFIX, account_id, region, launch_name])
     logger.info(f"[{launch_name}] {account_id}:{region} :: Checking for an existing plan")
-    provisioned_product_plans = service_catalog.list_provisioned_product_plans_single_page(AccessLevelFilter={'Key': 'Account', 'Value': 'self'}).get('ProvisionedProductPlans', [])
+    if puppet_account_id == account_id:
+        provisioned_product_plans = service_catalog.list_provisioned_product_plans_single_page().get('ProvisionedProductPlans', [])
+    else:
+        provisioned_product_plans = service_catalog.list_provisioned_product_plans_single_page(AccessLevelFilter={'Key': 'Account', 'Value': 'self'}).get('ProvisionedProductPlans', [])
     for provisioned_product_plan in provisioned_product_plans:
         logger.info(
             f"{uid} :: Found plan for {provisioned_product_plan.get('ProvisionProductName')}"
