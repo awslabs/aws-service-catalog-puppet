@@ -103,6 +103,25 @@ def provision_product(
 ):
     uid = f"[{launch_name}] {account_id}:{region}]"
     stack_name = "-".join([constants.PREFIX, account_id, region, launch_name])
+    logger.info(f"[{launch_name}] {account_id}:{region} :: Checking if existing provisioned product exists")
+    provisioned_product_search_result = service_catalog.search_provisioned_products(
+        AccessLevelFilter={
+            'Key': 'Account',
+            'Value': 'self'
+        },
+        Filters={
+            'SearchQuery': [
+                'name:' + launch_name,
+            ]
+        }
+    ).get('ProvisionedProducts', [])
+    if provisioned_product_search_result:
+        provisioned_product_id = provisioned_product_search_result[0].get('Id')
+        logger.info(f"[{launch_name}] {account_id}:{region} :: Ensuring current provisioned product owner is correct")
+        service_catalog.update_provisioned_product_properties(
+            ProvisionedProductId=provisioned_product_id,
+            ProvisionedProductProperties={'OWNER': "arn:aws:iam::{}:role/{}".format(account_id, 'servicecatalog-puppet/PuppetRole')}
+        )
     logger.info(f"[{launch_name}] {account_id}:{region} :: Checking for an existing plan")
     if puppet_account_id == account_id:
         provisioned_product_plans = service_catalog.list_provisioned_product_plans_single_page().get('ProvisionedProductPlans', [])
@@ -269,7 +288,6 @@ def get_provisioned_product_details(product_id, provisioned_product_name, servic
         if r.get('Name') == provisioned_product_name:
             return r
     return None
-
 
 
 def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name, account_id, region):
