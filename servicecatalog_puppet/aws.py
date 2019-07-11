@@ -100,28 +100,34 @@ def provision_product(
         path_id,
         params,
         version,
+        ensure_owner,
 ):
     uid = f"[{launch_name}] {account_id}:{region}]"
     stack_name = "-".join([constants.PREFIX, account_id, region, launch_name])
-    logger.info(f"[{launch_name}] {account_id}:{region} :: Checking if existing provisioned product exists")
-    provisioned_product_search_result = service_catalog.search_provisioned_products(
-        AccessLevelFilter={
-            'Key': 'Account',
-            'Value': 'self'
-        },
-        Filters={
-            'SearchQuery': [
-                'name:' + launch_name,
-            ]
-        }
-    ).get('ProvisionedProducts', [])
-    if provisioned_product_search_result:
-        provisioned_product_id = provisioned_product_search_result[0].get('Id')
-        logger.info(f"[{launch_name}] {account_id}:{region} :: Ensuring current provisioned product owner is correct")
-        service_catalog.update_provisioned_product_properties(
-            ProvisionedProductId=provisioned_product_id,
-            ProvisionedProductProperties={'OWNER': "arn:aws:iam::{}:role/{}".format(account_id, 'servicecatalog-puppet/PuppetRole')}
-        )
+    logger.info(f"{uid} :: Checking if existing provisioned product exists")
+    if ensure_owner:
+        logger.info(f"{uid} :: Ensuring the current PuppetRole (unique id) is the owner")
+        provisioned_product_search_results = service_catalog.search_provisioned_products_single_page(
+            AccessLevelFilter={
+                'Key': 'Account',
+                'Value': 'self'
+            },
+            Filters={
+                'SearchQuery': [
+                    'productId:' + product_id,
+                ]
+            }
+        ).get('ProvisionedProducts', [])
+        for provisioned_product_search_result in provisioned_product_search_results:
+            logger.info(f"{uid} :: Checking product: {provisioned_product_search_result}")
+            if provisioned_product_search_result.get('Name') == launch_name:
+                logger.info(f"{uid} :: found provisioned product for this launch / account / region, going to update")
+                service_catalog.update_provisioned_product_properties(
+                    ProvisionedProductId=provisioned_product_search_result.get('Id'),
+                    ProvisionedProductProperties={'OWNER': f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"}
+                )
+                time.sleep(20)
+                logger.info(f"{uid} :: finished the update")
     logger.info(f"[{launch_name}] {account_id}:{region} :: Checking for an existing plan")
     if puppet_account_id == account_id:
         provisioned_product_plans = service_catalog.list_provisioned_product_plans_single_page().get('ProvisionedProductPlans', [])

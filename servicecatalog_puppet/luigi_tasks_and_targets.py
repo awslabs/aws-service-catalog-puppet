@@ -98,6 +98,8 @@ class ProvisionProductTask(PuppetTask):
 
     ssm_param_outputs = luigi.ListParameter(default=[])
 
+    ensure_owner = luigi.Parameter(default="false", significant=False)
+
     try_count = 1
 
     def requires(self):
@@ -234,6 +236,7 @@ class ProvisionProductTask(PuppetTask):
                         aws.get_path_for_product(service_catalog, self.product_id),
                         all_params,
                         self.version,
+                        self.ensure_owner=="true",
                     )
 
                 with betterboto_client.CrossAccountClientContextManager(
