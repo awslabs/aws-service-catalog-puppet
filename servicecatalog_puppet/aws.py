@@ -122,11 +122,12 @@ def provision_product(
             logger.info(f"{uid} :: Checking product: {provisioned_product_search_result}")
             if provisioned_product_search_result.get('Name') == launch_name:
                 logger.info(f"{uid} :: found provisioned product for this launch / account / region, going to update")
-                service_catalog.update_provisioned_product_properties(
+                result = service_catalog.update_provisioned_product_properties(
                     ProvisionedProductId=provisioned_product_search_result.get('Id'),
                     ProvisionedProductProperties={'OWNER': f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"}
-                )
-                time.sleep(20)
+                ).get('Status')
+                if result != "SUCCEEDED":
+                    raise Exception("Could not update OWNER")
                 logger.info(f"{uid} :: finished the update")
     logger.info(f"[{launch_name}] {account_id}:{region} :: Checking for an existing plan")
     if puppet_account_id == account_id:
