@@ -46,9 +46,14 @@ class PuppetTask(luigi.Task):
     @property
     def resources(self):
         resources_for_this_task = {}
-
+        resource_parts = []
         if hasattr(self, 'region'):
-            resources_for_this_task[self.region] = 1
+            resource_parts.append(self.region)
+        if hasattr(self, 'account_id'):
+            resource_parts.append(self.account_id)
+
+        if len(resource_parts) > 0:
+            resources_for_this_task["_".join(resource_parts)] = 1
 
         return resources_for_this_task
 
