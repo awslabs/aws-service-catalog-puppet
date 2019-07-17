@@ -48,13 +48,15 @@ def bootstrap_spoke(puppet_account_id):
 
 @cli.command()
 @click.argument('branch-name')
-def bootstrap_branch(branch_name):
-    cli_commands.bootstrap_branch(branch_name)
+@click.option('--with-manual-approvals/--with-no-manual-approvals', default=False)
+def bootstrap_branch(branch_name, with_manual_approvals):
+    cli_commands.bootstrap_branch(branch_name, with_manual_approvals)
 
 
 @cli.command()
-def bootstrap():
-    cli_commands.bootstrap()
+@click.option('--with-manual-approvals/--with-no-manual-approvals', default=False)
+def bootstrap(with_manual_approvals):
+    cli_commands.bootstrap(with_manual_approvals)
 
 
 @cli.command()
@@ -128,16 +130,6 @@ def list_resources():
 @click.argument('portfolio_name')
 def import_product_set(f, name, portfolio_name):
     cli_commands.import_product_set(f, name, portfolio_name)
-
-
-@cli.command()
-def turn_on_manual_approvals():
-    cli_commands.turn_on_manual_approvals()
-
-
-@cli.command()
-def turn_off_manual_approvals():
-    cli_commands.turn_off_manual_approvals()
 
 
 if __name__ == "__main__":

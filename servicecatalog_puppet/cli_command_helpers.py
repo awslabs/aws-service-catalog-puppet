@@ -363,7 +363,7 @@ def _do_bootstrap_spoke(puppet_account_id, cloudformation, puppet_version):
     logger.info('Finished bootstrap of spoke')
 
 
-def _do_bootstrap(puppet_version):
+def _do_bootstrap(puppet_version, with_manual_approvals):
     click.echo('Starting bootstrap')
     ALL_REGIONS = get_regions(os.environ.get("AWS_DEFAULT_REGION"))
     with betterboto_client.MultiRegionClientContextManager('cloudformation', ALL_REGIONS) as clients:
@@ -420,6 +420,11 @@ def _do_bootstrap(puppet_version):
                 {
                     'ParameterKey': 'OrgIamRoleArn',
                     'ParameterValue': str(get_org_iam_role_arn()),
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'WithManualApprovals',
+                    'ParameterValue': "Yes" if with_manual_approvals else "No",
                     'UsePreviousValue': False,
                 },
             ],

@@ -139,12 +139,18 @@ def bootstrap_spoke(puppet_account_id):
         cli_command_helpers._do_bootstrap_spoke(puppet_account_id, cloudformation, cli_command_helpers.get_puppet_version())
 
 
-def bootstrap_branch(branch_name):
-    cli_command_helpers._do_bootstrap("https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(branch_name))
+def bootstrap_branch(branch_name, with_manual_approvals):
+    cli_command_helpers._do_bootstrap(
+        "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(branch_name),
+        with_manual_approvals,
+    )
 
 
-def bootstrap():
-    cli_command_helpers._do_bootstrap(cli_command_helpers.get_puppet_version())
+def bootstrap(with_manual_approvals):
+    cli_command_helpers._do_bootstrap(
+        cli_command_helpers.get_puppet_version(),
+        with_manual_approvals,
+    )
 
 
 def seed(complexity, p):
@@ -483,11 +489,3 @@ def import_product_set(f, name, portfolio_name):
         f.write(
             yaml.safe_dump(manifest)
         )
-
-
-def turn_on_manual_approvals():
-    aws.set_ssm_parameter(constants.MANUAL_APPROVALS_PARAM_NAME, constants.MANUAL_APPROVALS_ON)
-
-
-def turn_off_manual_approvals():
-    aws.set_ssm_parameter(constants.MANUAL_APPROVALS_PARAM_NAME, constants.MANUAL_APPROVALS_OFF)
