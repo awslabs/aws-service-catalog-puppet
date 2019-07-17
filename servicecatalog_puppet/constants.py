@@ -30,8 +30,3 @@ RESULTS_DIRECTORY = "results"
 
 NO_CHANGE = 'NO_CHANGE'
 CHANGE = 'CHANGE'
-
-
-MANUAL_APPROVALS_PARAM_NAME = "/servicecatalog-puppet/manual-approvals"
-MANUAL_APPROVALS_ON = 'on'
-MANUAL_APPROVALS_OFF = 'off'
