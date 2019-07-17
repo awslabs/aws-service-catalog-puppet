@@ -130,5 +130,15 @@ def import_product_set(f, name, portfolio_name):
     cli_commands.import_product_set(f, name, portfolio_name)
 
 
+@cli.command()
+def turn_on_manual_approvals():
+    cli_commands.turn_on_manual_approvals()
+
+
+@cli.command()
+def turn_off_manual_approvals():
+    cli_commands.turn_off_manual_approvals()
+
+
 if __name__ == "__main__":
     cli()

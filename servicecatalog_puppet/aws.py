@@ -420,3 +420,13 @@ def run_pipeline(pipeline_name, tail):
                 else:
                     time.sleep(5)
         return pipeline_execution_id
+
+
+def set_ssm_parameter(param_name, param_value):
+    with betterboto_client.ClientContextManager('ssm') as ssm:
+        ssm.put_parameter(
+            Name=param_name,
+            Type="String",
+            Value=param_value,
+            Overwrite=True,
+        )

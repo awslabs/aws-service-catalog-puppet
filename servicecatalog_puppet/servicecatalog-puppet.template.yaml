@@ -16,6 +16,15 @@ Conditions:
   ShouldUseOrgs: !Not [!Equals [!Ref OrgIamRoleArn, None]]
 
 Resources:
+  ManualApprovalsParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /servicecatalog-puppet/manual-approvals
+      Type: String
+      Value: 'off'
+      Tags:
+        "ServiceCatalogPuppet:Actor": "Framework"
+
   Param:
     Type: AWS::SSM::Parameter
     Properties:

@@ -483,3 +483,11 @@ def import_product_set(f, name, portfolio_name):
         f.write(
             yaml.safe_dump(manifest)
         )
+
+
+def turn_on_manual_approvals():
+    aws.set_ssm_parameter(constants.MANUAL_APPROVALS_PARAM_NAME, constants.MANUAL_APPROVALS_ON)
+
+
+def turn_off_manual_approvals():
+    aws.set_ssm_parameter(constants.MANUAL_APPROVALS_PARAM_NAME, constants.MANUAL_APPROVALS_OFF)
