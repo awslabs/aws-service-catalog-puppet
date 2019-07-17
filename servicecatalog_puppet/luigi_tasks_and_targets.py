@@ -824,7 +824,12 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
 
                 logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Copying {hub_product_name}")
                 hub_product_arn = product_view_detail.get('ProductARN')
-                copy_args = {'SourceProductArn': hub_product_arn}
+                copy_args = {
+                    'SourceProductArn': hub_product_arn,
+                    'CopyOptions': [
+                        'CopyTags',
+                    ],
+                }
                 spoke_portfolio = json.loads(self.input().open('r').read())
                 portfolio_id = spoke_portfolio.get("Id")
 
