@@ -20,7 +20,7 @@ Parameters:
 
 Conditions:
   ShouldUseOrgs: !Not [!Equals [!Ref OrgIamRoleArn, None]]
-  HasManualApprovals: !Equals [!Ref WithManualApprovals, Yes]
+  HasManualApprovals: !Equals [!Ref WithManualApprovals, 'Yes']
 
 Resources:
   ManualApprovalsParam:
@@ -156,6 +156,13 @@ Resources:
       RepositoryDescription: Repo to store the servicecatalog puppet solution
       RepositoryName: ServiceCatalogPuppet
 
+  DryRunNotificationTopic:
+    Type: AWS::SNS::Topic
+    Condition: HasManualApprovals
+    Properties:
+      DisplayName: service-catalog-puppet-dry-run-approvals
+      TopicName: service-catalog-puppet-dry-run-approvals
+
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
@@ -220,34 +227,48 @@ Resources:
               InputArtifacts:
                 - Name: GenerateShares
             {% endfor %}
-#        - Name: DryRun
-#          Actions:
-#            - Name: DryRun
-#              ActionTypeId:
-#                Category: Build
-#                Owner: AWS
-#                Version: 1
-#                Provider: CodeBuild
-#              Configuration:
-#                ProjectName: !Ref DryRunProject
-#                PrimarySource: GenerateShares
-#              RunOrder: 1
-#              InputArtifacts:
-#                - Name: GenerateShares
-#              OutputArtifacts:
-#                - Name: DryRunProject
         - Name: Deploy
           Actions:
+            - !If
+              - HasManualApprovals
+              - Name: DryRun
+                ActionTypeId:
+                  Category: Build
+                  Owner: AWS
+                  Version: 1
+                  Provider: CodeBuild
+                Configuration:
+                  ProjectName: !Ref DryRunProject
+                  PrimarySource: GenerateShares
+                RunOrder: 1
+                InputArtifacts:
+                  - Name: GenerateShares
+                OutputArtifacts:
+                  - Name: DryRunProject
+              - !Ref AWS::NoValue
+            - !If
+              - HasManualApprovals
+              - Name: DryRunApproval
+                ActionTypeId:
+                  Category: Approval
+                  Owner: AWS
+                  Version: 1
+                  Provider: Manual
+                Configuration:
+                  NotificationArn: !Ref DryRunNotificationTopic
+                  CustomData: Approve when you are happy with the dry run.
+                RunOrder: 2
+              - !Ref AWS::NoValue
             - Name: Deploy
               ActionTypeId:
                 Category: Build
                 Owner: AWS
-                Version: 2
+                Version: 1
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !Ref DeployProject
                 PrimarySource: GenerateShares
-              RunOrder: 2
+              RunOrder: !If [HasManualApprovals, 3, 1]
               InputArtifacts:
                 - Name: GenerateShares
               OutputArtifacts:
