@@ -67,9 +67,10 @@ def seed(complexity, p):
 
 
 @cli.command()
-@click.argument('f', type=click.File())
-def list_launches(f):
-    cli_commands.list_launches(f)
+@click.argument('expanded_manifest', type=click.File())
+@click.option('--format','-f', type=click.Choice(['table', 'json']),default='table')
+def list_launches(expanded_manifest, format):
+    cli_commands.list_launches(expanded_manifest, format)
 
 
 @cli.command()
