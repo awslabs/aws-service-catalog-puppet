@@ -25,7 +25,6 @@ from servicecatalog_puppet import luigi_tasks_and_targets
 from servicecatalog_puppet import manifest_utils
 from servicecatalog_puppet import aws
 
-
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import constants
 
@@ -131,16 +130,19 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
             'cloudformation',
             cross_accounts
     ) as cloudformation:
-        cli_command_helpers._do_bootstrap_spoke(puppet_account_id, cloudformation, cli_command_helpers.get_puppet_version())
+        cli_command_helpers._do_bootstrap_spoke(puppet_account_id, cloudformation,
+                                                cli_command_helpers.get_puppet_version())
 
 
 def bootstrap_spoke(puppet_account_id):
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
-        cli_command_helpers._do_bootstrap_spoke(puppet_account_id, cloudformation, cli_command_helpers.get_puppet_version())
+        cli_command_helpers._do_bootstrap_spoke(puppet_account_id, cloudformation,
+                                                cli_command_helpers.get_puppet_version())
 
 
 def bootstrap_branch(branch_name):
-    cli_command_helpers._do_bootstrap("https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(branch_name))
+    cli_command_helpers._do_bootstrap(
+        "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(branch_name))
 
 
 def bootstrap():
@@ -157,9 +159,10 @@ def seed(complexity, p):
     )
 
 
-def list_launches(f):
+def list_launches(f, format):
     manifest = manifest_utils.load(f)
-    click.echo("Getting details from your account...")
+    if format == "table":
+        click.echo("Getting details from your account...")
     ALL_REGIONS = cli_command_helpers.get_regions(os.environ.get("AWS_DEFAULT_REGION"))
     deployment_map = manifest_utils.build_deployment_map(manifest, constants.LAUNCHES)
     account_ids = [a.get('account_id') for a in manifest.get('accounts')]
@@ -225,43 +228,65 @@ def list_launches(f):
                                     indent=4, default=str
                                 ))
 
-    table = [
-        ['account_id', 'region', 'launch', 'portfolio', 'product', 'expected_version', 'actual_version', 'active',
-         'status']
-    ]
+    results = {}
     for account_id, details in deployment_map.items():
         for launch_name, launch in details.get(constants.LAUNCHES, {}).items():
             if deployments.get(account_id, {}).get(constants.LAUNCHES, {}).get(launch_name) is None:
                 pass
             else:
                 for region, regional_details in deployments[account_id][constants.LAUNCHES][launch_name].items():
-                    if regional_details.get('status') == "AVAILABLE":
-                        status = Color("{green}" + regional_details.get('status') + "{/green}")
-                    else:
-                        status = Color("{red}" + regional_details.get('status') + "{/red}")
-                    expected_version = launch.get('version')
-                    actual_version = regional_details.get('version')
-                    if expected_version == actual_version:
-                        actual_version = Color("{green}" + actual_version + "{/green}")
-                    else:
-                        actual_version = Color("{red}" + actual_version + "{/red}")
-                    active = regional_details.get('active')
-                    if active:
-                        active = Color("{green}" + str(active) + "{/green}")
-                    else:
-                        active = Color("{orange}" + str(active) + "{/orange}")
-                    table.append([
-                        account_id,
-                        region,
-                        launch_name,
-                        regional_details.get('portfolio'),
-                        regional_details.get('product'),
-                        expected_version,
-                        actual_version,
-                        active,
-                        status,
-                    ])
-    click.echo(terminaltables.AsciiTable(table).table)
+                    results[f"{account_id}_{region}_{launch_name}"] = {
+                        'account_id': account_id,
+                        'region': region,
+                        'launch': launch_name,
+                        'portfolio': regional_details.get('portfolio'),
+                        'product': regional_details.get('product'),
+                        'expected_version': launch.get('version'),
+                        'actual_version': regional_details.get('version'),
+                        'active': regional_details.get('active'),
+                        'status': regional_details.get('status'),
+                    }
+
+    if format == "table":
+        table = [
+            [
+                'account_id',
+                'region',
+                'launch',
+                'portfolio',
+                'product',
+                'expected_version',
+                'actual_version',
+                'active',
+                'status',
+            ]
+        ]
+
+        for result in results.values():
+            table.append([
+                result.get('account_id'),
+                result.get('region'),
+                result.get('launch'),
+                result.get('portfolio'),
+                result.get('product'),
+                result.get('expected_version'),
+                Color("{green}" + result.get('actual_version') + "{/green}") if result.get('actual_version') == result.get('expected_version') else Color("{red}" + result.get('actual_version') + "{/red}"),
+                Color("{green}" + str(result.get('active')) + "{/green}") if result.get('active') else Color("{red}" + str(result.get('active')) + "{/red}"),
+                Color("{green}" + result.get('status') + "{/green}") if result.get('status') == "AVAILABLE" else Color("{red}" + result.get('status') + "{/red}")
+            ])
+        click.echo(terminaltables.AsciiTable(table).table)
+
+    elif format == "json":
+        click.echo(
+            json.dumps(
+                results,
+                indent=4,
+                default=str,
+            )
+        )
+
+    else:
+        raise Exception(f"Unsupported format: {format}")
 
 
 def expand(f):
