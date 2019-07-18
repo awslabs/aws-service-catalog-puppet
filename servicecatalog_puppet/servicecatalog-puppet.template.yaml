@@ -11,11 +11,27 @@ Parameters:
   OrgIamRoleArn:
     Type: String
     Default: "None"
+  WithManualApprovals:
+    Type: String
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+    Default: 'No'
 
 Conditions:
   ShouldUseOrgs: !Not [!Equals [!Ref OrgIamRoleArn, None]]
+  HasManualApprovals: !Equals [!Ref WithManualApprovals, 'Yes']
 
 Resources:
+  ManualApprovalsParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /servicecatalog-puppet/manual-approvals
+      Type: String
+      Value: !Ref WithManualApprovals
+      Tags:
+        "ServiceCatalogPuppet:Actor": "Framework"
+
   Param:
     Type: AWS::SSM::Parameter
     Properties:
@@ -140,6 +156,13 @@ Resources:
       RepositoryDescription: Repo to store the servicecatalog puppet solution
       RepositoryName: ServiceCatalogPuppet
 
+  DryRunNotificationTopic:
+    Type: AWS::SNS::Topic
+    Condition: HasManualApprovals
+    Properties:
+      DisplayName: service-catalog-puppet-dry-run-approvals
+      TopicName: service-catalog-puppet-dry-run-approvals
+
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
@@ -206,6 +229,36 @@ Resources:
             {% endfor %}
         - Name: Deploy
           Actions:
+            - !If
+              - HasManualApprovals
+              - Name: DryRun
+                ActionTypeId:
+                  Category: Build
+                  Owner: AWS
+                  Version: 1
+                  Provider: CodeBuild
+                Configuration:
+                  ProjectName: !Ref DryRunProject
+                  PrimarySource: GenerateShares
+                RunOrder: 1
+                InputArtifacts:
+                  - Name: GenerateShares
+                OutputArtifacts:
+                  - Name: DryRunProject
+              - !Ref AWS::NoValue
+            - !If
+              - HasManualApprovals
+              - Name: DryRunApproval
+                ActionTypeId:
+                  Category: Approval
+                  Owner: AWS
+                  Version: 1
+                  Provider: Manual
+                Configuration:
+                  NotificationArn: !Ref DryRunNotificationTopic
+                  CustomData: Approve when you are happy with the dry run.
+                RunOrder: 2
+              - !Ref AWS::NoValue
             - Name: Deploy
               ActionTypeId:
                 Category: Build
@@ -215,7 +268,7 @@ Resources:
               Configuration:
                 ProjectName: !Ref DeployProject
                 PrimarySource: GenerateShares
-              RunOrder: 1
+              RunOrder: !If [HasManualApprovals, 3, 1]
               InputArtifacts:
                 - Name: GenerateShares
               OutputArtifacts:
@@ -344,6 +397,44 @@ Resources:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
 
+  DryRunProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: servicecatalog-puppet-dryrun
+      Description: "dry run of the puppet run"
+      ServiceRole: !GetAtt DeployRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: linuxContainer
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/python:3.7.1
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              commands:
+          {% if 'http' in VERSION %}
+                - pip install {{ VERSION }}
+          {% else %}
+                - pip install aws-service-catalog-puppet=={{ VERSION }}
+          {% endif %}
+            build:
+              commands:
+                - servicecatalog-puppet --info dry-run manifest-expanded.yaml
+          artifacts:
+            files:
+              - results/*/*
+              - output/*/*
+            name: DryRunProject
+
+      TimeoutInMinutes: 60
+      Tags:
+        - Key: "ServiceCatalogPuppet:Actor"
+          Value: "Framework"
+
 
   SingleAccountRunProject:
     Type: AWS::CodeBuild::Project
@@ -417,3 +508,5 @@ Outputs:
     Value: !GetAtt CloudFormationEventsQueue.Arn
   Version:
     Value: !GetAtt Param.Value
+  ManualApprovalsParam:
+    Value: !GetAtt ManualApprovalsParam.Value

@@ -140,13 +140,18 @@ def bootstrap_spoke(puppet_account_id):
                                                 cli_command_helpers.get_puppet_version())
 
 
-def bootstrap_branch(branch_name):
+def bootstrap_branch(branch_name, with_manual_approvals):
     cli_command_helpers._do_bootstrap(
-        "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(branch_name))
+        "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(branch_name),
+        with_manual_approvals,
+    )
 
 
-def bootstrap():
-    cli_command_helpers._do_bootstrap(cli_command_helpers.get_puppet_version())
+def bootstrap(with_manual_approvals):
+    cli_command_helpers._do_bootstrap(
+        cli_command_helpers.get_puppet_version(),
+        with_manual_approvals,
+    )
 
 
 def seed(complexity, p):
