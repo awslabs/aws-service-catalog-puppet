@@ -148,3 +148,26 @@ You can then run ``list-launches``:
 .. code-block:: bash
 
     servicecatalog-puppet list-launches manifest-expanded.yaml
+
+
+Here is an example table produced by running the command:
+
+.. code-block:: bash
+
+    +--------------+-----------+------------------------------+------------------------------------------+---------------------------------+------------------+----------------+--------+-----------+
+    | account_id   | region    | launch                       | portfolio                                | product                         | expected_version | actual_version | active | status    |
+    +--------------+-----------+------------------------------+------------------------------------------+---------------------------------+------------------+----------------+--------+-----------+
+    | 012345678901 | eu-west-1 | iam-assume-roles-spoke       | example-simple-central-it-team-portfolio | aws-iam-assume-roles-spoke      | v1               | v1             | True   | AVAILABLE |
+    | 012345678901 | eu-west-1 | iam-groups-security-account  | example-simple-central-it-team-portfolio | aws-iam-groups-security-account | v1               | v1             | True   | AVAILABLE |
+    +--------------+-----------+------------------------------+------------------------------------------+---------------------------------+------------------+----------------+--------+-----------+
+
+.. note::
+
+    This was added in version 0.15.0
+
+You can specify the format of the output.  Currently you can choose between ``json`` and ``table``.  The default is
+table.
+
+.. code-block:: bash
+
+    servicecatalog-puppet list-launches manifest-expanded.yaml --format json
