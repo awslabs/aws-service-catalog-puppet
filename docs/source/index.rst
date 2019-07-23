@@ -12,3 +12,5 @@ Welcome to aws-service-catalog-puppets's documentation!
    puppet/notifications
    puppet/utils
    puppet/upgrading
+
+   puppet/using_the_sdk
