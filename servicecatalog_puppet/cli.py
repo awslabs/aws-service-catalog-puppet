@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import click
+import yaml
 
 from servicecatalog_puppet import cli_commands
 
@@ -131,6 +132,34 @@ def list_resources():
 @click.argument('portfolio_name')
 def import_product_set(f, name, portfolio_name):
     cli_commands.import_product_set(f, name, portfolio_name)
+
+
+@cli.command()
+@click.argument('account_or_ou_file_path', type=click.File())
+def add_to_accounts(account_or_ou_file_path):
+    cli_commands.add_to_accounts(
+        yaml.safe_load(account_or_ou_file_path)
+    )
+
+
+@cli.command()
+@click.argument('account_id_or_ou_id_or_ou_path')
+def remove_from_accounts(account_id_or_ou_id_or_ou_path):
+    cli_commands.remove_from_accounts(account_id_or_ou_id_or_ou_path)
+
+
+@cli.command()
+@click.argument('launch_file_path', type=click.File())
+def add_to_launches(launch_name, launch_file_path):
+    cli_commands.add_to_launches(
+        launch_name, yaml.safe_load(launch_file_path)
+    )
+
+
+@cli.command()
+@click.argument('launch_name')
+def remove_from_launches(launch_name):
+    cli_commands.remove_from_launches(launch_name)
 
 
 if __name__ == "__main__":
