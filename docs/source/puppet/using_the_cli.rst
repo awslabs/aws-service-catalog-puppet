@@ -3,6 +3,96 @@ Utils
 
 The following utils will help you manage your AWS Accounts when using ServiceCatalog-Puppet:
 
+
+add-to-accounts
+---------------
+
+.. note::
+
+    This was added in version 0.18.0
+
+You can use the ``servicecatalog-puppet`` cli to see add an account or ou to your accounts list:
+
+.. code-block:: bash
+
+    servicecatalog-puppet add-to-accounts <path_to_file_containing_account_or_ou>
+
+The file containing the account or ou should be structured like this:
+
+.. code-block:: yaml
+
+    account_id: '753572411233'
+    default_region: eu-west-1
+    name: '753572411233'
+    regions_enabled:
+      - eu-west-1
+      - eu-west-2
+    tags:
+      - type:prod
+      - partition:eu
+      - scope:pci
+
+
+remove-from-accounts
+--------------------
+
+.. note::
+
+    This was added in version 0.18.0
+
+You can use the ``servicecatalog-puppet`` cli to remove an account or ou to your accounts list:
+
+.. code-block:: bash
+
+    servicecatalog-puppet remove-from-accounts <account_id_or_ou_id_or_ou_path>
+
+The library will look for the given account id, ou id or ou path and remove it, if found.  If it is missing an exception
+will be raised.
+
+
+add-to-launches
+---------------
+
+.. note::
+
+    This was added in version 0.18.0
+
+You can use the ``servicecatalog-puppet`` cli to see add a launch to your launches list:
+
+.. code-block:: bash
+
+    servicecatalog-puppet add-to-launches <launch-name-to-add> <path_to_file_containing_launch>
+
+The file containing the launch should be structured like this:
+
+.. code-block:: yaml
+
+    portfolio: example-simple-central-it-team-portfolio
+    product: aws-iam-assume-roles-spoke
+    version: v1
+    parameters:
+      SecurityAccountId:
+        default: '753572411233'
+    deploy_to:
+      tags:
+        - regions: default_region
+          tag: type:prod
+
+
+remove-from-launches
+--------------------
+
+.. note::
+
+    This was added in version 0.18.0
+
+You can use the ``servicecatalog-puppet`` cli to see remove a launch from your launches list:
+
+.. code-block:: bash
+
+    servicecatalog-puppet remove-from-launches <launch-name-to-remove>
+
+
 dry-run
 -------
 
@@ -11,7 +101,6 @@ dry-run
     This was added in version 0.8.0
 
 You can use the ``servicecatalog-puppet`` cli to see the effect of your next pipeline run before it happens
-
 
 .. code-block:: bash
 

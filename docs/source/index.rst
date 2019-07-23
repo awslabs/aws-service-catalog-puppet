@@ -10,5 +10,7 @@ Welcome to aws-service-catalog-puppets's documentation!
    puppet/designing_your_manifest
    puppet/sharing_a_portfolio
    puppet/notifications
-   puppet/utils
    puppet/upgrading
+
+   puppet/using_the_cli
+   puppet/using_the_sdk

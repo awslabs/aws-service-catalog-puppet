@@ -513,3 +513,60 @@ def import_product_set(f, name, portfolio_name):
         f.write(
             yaml.safe_dump(manifest)
         )
+
+
+def get_manifest():
+    with betterboto_client.ClientContextManager('codecommit') as codecommit:
+        content = codecommit.get_file(
+            repositoryName=constants.SERVICE_CATALOG_PUPPET_REPO_NAME,
+            filePath="manifest.yaml",
+        ).get('fileContent')
+        return yaml.safe_load(content)
+
+
+def save_manifest(manifest):
+    with betterboto_client.ClientContextManager('codecommit') as codecommit:
+        parent_commit_id = codecommit.get_branch(
+            repositoryName=constants.SERVICE_CATALOG_PUPPET_REPO_NAME,
+            branchName='master',
+        ).get('branch').get('commitId')
+        codecommit.put_file(
+            repositoryName=constants.SERVICE_CATALOG_PUPPET_REPO_NAME,
+            branchName='master',
+            fileContent=yaml.safe_dump(manifest),
+            parentCommitId=parent_commit_id,
+            commitMessage="Auto generated commit",
+            filePath=f"manifest.yaml",
+        )
+
+
+def add_to_accounts(account_or_ou):
+    manifest = get_manifest()
+    manifest.get('accounts').append(account_or_ou)
+    save_manifest(manifest)
+
+
+def remove_from_accounts(account_id_or_ou_id_or_ou_path):
+    manifest = get_manifest()
+    for account in manifest.get('accounts', []):
+        if account.get('account_id', '') == account_id_or_ou_id_or_ou_path:
+            manifest.get('accounts').remove(account)
+            return save_manifest(manifest)
+        elif account.get('ou', '') == account_id_or_ou_id_or_ou_path:
+            manifest.get('accounts').remove(account)
+            return save_manifest(manifest)
+    raise Exception(f"Did not remove {account_id_or_ou_id_or_ou_path}")
+
+
+def add_to_launches(launch_name, launch):
+    manifest = get_manifest()
+    launches = manifest.get('launches', {})
+    launches[launch_name] = launch
+    manifest['launches'] = launches
+    save_manifest(manifest)
+
+
+def remove_from_launches(launch_name):
+    manifest = get_manifest()
+    del manifest.get('launches')[launch_name]
+    save_manifest(manifest)
