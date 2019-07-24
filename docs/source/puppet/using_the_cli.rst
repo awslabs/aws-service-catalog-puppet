@@ -4,6 +4,21 @@ Utils
 The following utils will help you manage your AWS Accounts when using ServiceCatalog-Puppet:
 
 
+reset-provisioned-product-owner
+-------------------------------
+
+.. note::
+
+    This was added in version 0.19.0
+
+You can use the ``servicecatalog-puppet`` cli to update each Service Catalog Puppet managed provisioned product across
+your accounts:
+
+.. code-block:: bash
+
+    servicecatalog-puppet reset-provisioned-product-owner <path_to_expanded_manifest>
+
+
 add-to-accounts
 ---------------
 

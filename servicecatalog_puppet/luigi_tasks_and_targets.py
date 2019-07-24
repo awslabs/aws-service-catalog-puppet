@@ -1045,6 +1045,82 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
         )
 
 
+class ResetProvisionedProductOwnerTask(PuppetTask):
+    launch_name = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+
+    product_id = luigi.Parameter()
+    version_id = luigi.Parameter()
+
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+
+    parameters = luigi.ListParameter(default=[])
+    ssm_param_inputs = luigi.ListParameter(default=[])
+    dependencies = luigi.ListParameter(default=[])
+
+    retry_count = luigi.IntParameter(default=1)
+
+    worker_timeout = luigi.IntParameter(default=0, significant=False)
+
+    ssm_param_outputs = luigi.ListParameter(default=[])
+
+    try_count = 1
+
+    def params_for_results_display(self):
+        return {
+            "launch_name": self.launch_name,
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "product": self.product,
+            "version": self.version,
+        }
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/ResetProvisionedProductOwnerTask/"
+            f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+        )
+
+    def run(self):
+        logger_prefix = f"[{self.launch_name}] {self.account_id}:{self.region}"
+        logger.info(
+            f"{logger_prefix} :: starting ResetProvisionedProductOwnerTask of {self.retry_count}"
+        )
+
+        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        with betterboto_client.CrossAccountClientContextManager(
+                'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
+        ) as service_catalog:
+            logger.info(
+                f"[{logger_prefix} :: Checking if existing provisioned product exists"
+            )
+            provisioned_product_search_result = service_catalog.search_provisioned_products(
+                AccessLevelFilter={
+                    'Key': 'Account',
+                    'Value': 'self'
+                },
+                Filters={
+                    'SearchQuery': [
+                        f'name:{self.launch_name}',
+                    ]
+                }
+            ).get('ProvisionedProducts', [])
+            if provisioned_product_search_result:
+                provisioned_product_id = provisioned_product_search_result[0].get('Id')
+                logger.info(f"[{logger_prefix} :: Ensuring current provisioned product owner is correct")
+                service_catalog.update_provisioned_product_properties(
+                    ProvisionedProductId=provisioned_product_id,
+                    ProvisionedProductProperties={
+                        'OWNER': f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+                    }
+                )
+
+
 def record_event(event_type, task, extra_event_data=None):
     task_type = task.__class__.__name__
     task_params = task.param_kwargs

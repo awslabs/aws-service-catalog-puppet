@@ -162,5 +162,11 @@ def remove_from_launches(launch_name):
     cli_commands.remove_from_launches(launch_name)
 
 
+@cli.command()
+@click.argument('f', type=click.File())
+def reset_provisioned_product_owner(f):
+    cli_commands.reset_provisioned_product_owner(f)
+
+
 if __name__ == "__main__":
     cli()

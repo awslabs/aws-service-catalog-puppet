@@ -79,6 +79,24 @@ def dry_run(f):
     cli_command_helpers.run_tasks_for_dry_run(tasks_to_run)
 
 
+def reset_provisioned_product_owner(f):
+    manifest = manifest_utils.load(f)
+
+    launch_tasks = {}
+    tasks_to_run = []
+
+    all_launch_tasks = cli_command_helpers.deploy_launches(manifest)
+    launch_tasks.update(all_launch_tasks)
+
+    for task in cli_command_helpers.wire_dependencies(launch_tasks):
+        task_status = task.get('status')
+        del task['status']
+        if task_status == constants.PROVISIONED:
+            tasks_to_run.append(luigi_tasks_and_targets.ResetProvisionedProductOwnerTask(**task))
+
+    cli_command_helpers.run_tasks(tasks_to_run)
+
+
 def deploy(f, single_account):
     manifest = manifest_utils.load(f)
 
