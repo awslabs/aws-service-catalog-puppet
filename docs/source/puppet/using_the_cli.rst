@@ -1,5 +1,5 @@
-Utils
-=====
+Using the CLI
+=============
 
 The following utils will help you manage your AWS Accounts when using ServiceCatalog-Puppet:
 
