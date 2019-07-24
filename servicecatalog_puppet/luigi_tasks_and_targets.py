@@ -307,12 +307,18 @@ class ProvisionProductDryRunTask(PuppetTask):
     def requires(self):
         dependencies = []
         for r in self.dependencies:
-            # if hasattr(r, 'status'):
-            #     del r['status']
-            dependencies.append(
-                self.__class__(**r)
-            )
-
+            if r.get('status') is not None:
+                if r.get('status') == constants.TERMINATED:
+                    raise Exception("Unsupported")
+                new_r = r.get_wrapped()
+                del new_r['status']
+                dependencies.append(
+                    self.__class__(**new_r)
+                )
+            else:
+                dependencies.append(
+                    self.__class__(**r)
+                )
         return {
             'dependencies': dependencies,
         }
