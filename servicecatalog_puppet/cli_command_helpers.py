@@ -724,6 +724,4 @@ def run_tasks_for_dry_run(tasks_to_run):
             result.get('notes'),
         ])
     click.echo(table.table)
-
-
     sys.exit(exit_status_codes.get(run_result.status))
