@@ -11,12 +11,23 @@ reset-provisioned-product-owner
 
     This was added in version 0.19.0
 
-You can use the ``servicecatalog-puppet`` cli to update each Service Catalog Puppet managed provisioned product across
-your accounts:
+You can use the ``servicecatalog-puppet`` cli to update the Service Catalog Puppet managed provisioned product owner
+for each provisioned product across all of your accounts:
 
 .. code-block:: bash
 
     servicecatalog-puppet reset-provisioned-product-owner <path_to_expanded_manifest>
+
+Will call the following function for each provisioned product you have:
+
+.. code-block:: python
+
+    service_catalog.update_provisioned_product_properties(
+        ProvisionedProductId=provisioned_product_id,
+        ProvisionedProductProperties={
+            'OWNER': f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        }
+    )
 
 
 add-to-accounts
