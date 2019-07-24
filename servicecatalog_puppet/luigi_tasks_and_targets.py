@@ -1186,5 +1186,5 @@ def on_task_processing_time(task, duration):
 
 
 @luigi.Task.event_handler(luigi.Event.BROKEN_TASK)
-def on_task_broken_task(task):
-    record_event('broken_task', task)
+def on_task_broken_task(task, exception):
+    record_event('broken_task', task, {"exception": exception})
