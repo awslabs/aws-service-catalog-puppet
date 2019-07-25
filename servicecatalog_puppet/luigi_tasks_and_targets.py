@@ -366,7 +366,7 @@ class ProvisionProductDryRunTask(PuppetTask):
 
                         if provisioning_artifact_id != self.version_id:
                             self.write_result(
-                                current_version=self.get_current_version(provisioning_artifact_id),
+                                current_version=self.get_current_version(provisioning_artifact_id, service_catalog),
                                 new_version=self.version,
                                 effect=constants.CHANGE,
                                 notes='Version change',

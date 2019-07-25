@@ -1,6 +1,9 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 AWSTemplateFormatVersion: "2010-09-09"
+Description: |
+  Bootstrap template used to bootstrap the org master for ServiceCatalog-Puppet use
+  {"version": "{{ VERSION }}", "framework": "servicecatalog-puppet", "role": "bootstrap-org-master"}
 
 Parameters:
   PuppetAccountId:
