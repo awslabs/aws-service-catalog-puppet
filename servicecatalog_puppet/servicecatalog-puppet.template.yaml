@@ -3,6 +3,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Bootstrap template used to bring up the main ServiceCatalog-Puppet AWS CodePipeline with dependencies
+  {"version": "{{ VERSION }}", "framework": "servicecatalog-puppet", "role": "bootstrap-master"}
 
 Parameters:
   Version:
