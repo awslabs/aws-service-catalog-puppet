@@ -154,9 +154,13 @@ class ProvisionProductTask(PuppetTask):
         for ssm_param_name, ssm_param in self.input().get('ssm_params', {}).items():
             all_params[ssm_param_name] = ssm_param.read()
 
+        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: #1 {all_params}")
+
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: collecting manifest params")
         for parameter in self.parameters:
             all_params[parameter.get('name')] = parameter.get('value')
+
+        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: #2 {all_params}")
 
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
@@ -183,7 +187,11 @@ class ProvisionProductTask(PuppetTask):
 
                 for default_cfn_param_name in default_cfn_params.keys():
                     if all_params.get(default_cfn_param_name) is None:
-                        all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
+                        if default_cfn_params.get(default_cfn_param_name) is not None:
+                            all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
+
+                logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: #3 {all_params}")
+
                 if provisioning_artifact_id == self.version_id:
                     logger.info(
                         f"[{self.launch_name}] {self.account_id}:{self.region} :: found previous good provision")
