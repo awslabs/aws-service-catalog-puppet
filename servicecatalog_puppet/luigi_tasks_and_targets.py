@@ -183,7 +183,9 @@ class ProvisionProductTask(PuppetTask):
 
                 for default_cfn_param_name in default_cfn_params.keys():
                     if all_params.get(default_cfn_param_name) is None:
-                        all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
+                        if default_cfn_params.get(default_cfn_param_name) is not None:
+                            all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
+
                 if provisioning_artifact_id == self.version_id:
                     logger.info(
                         f"[{self.launch_name}] {self.account_id}:{self.region} :: found previous good provision")
