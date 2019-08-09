@@ -163,6 +163,8 @@ class ProvisionProductTask(PuppetTask):
                 'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
         ) as service_catalog:
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
+            path_id = aws.get_path_for_product(service_catalog, self.product_id)
+
             provisioned_product_id, provisioning_artifact_id = aws.terminate_if_status_is_not_available(
                 service_catalog, self.launch_name, self.product_id, self.account_id, self.region
             )
@@ -181,10 +183,16 @@ class ProvisionProductTask(PuppetTask):
                 else:
                     default_cfn_params = {}
 
+                provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
+                    ProductId=self.product_id, ProvisioningArtifactId=self.version_id, PathId=path_id,
+                ).get('ProvisioningArtifactParameters', [])
+                new_version_param_names = [p.get('ParameterKey') for p in provisioning_artifact_parameters]
+
                 for default_cfn_param_name in default_cfn_params.keys():
                     if all_params.get(default_cfn_param_name) is None:
                         if default_cfn_params.get(default_cfn_param_name) is not None:
-                            all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
+                            if default_cfn_param_name in new_version_param_names:
+                                all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
 
                 if provisioning_artifact_id == self.version_id:
                     logger.info(
@@ -238,7 +246,7 @@ class ProvisionProductTask(PuppetTask):
                         self.product_id,
                         self.version_id,
                         self.puppet_account_id,
-                        aws.get_path_for_product(service_catalog, self.product_id),
+                        path_id,
                         all_params,
                         self.version,
                     )
