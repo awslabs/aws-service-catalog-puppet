@@ -295,9 +295,9 @@ def get_puppet_version():
 
 def _do_bootstrap_org_master(puppet_account_id, cloudformation, puppet_version):
     logger.info('Starting bootstrap of org master')
-    stack_name = "{}-org-master".format(constants.BOOTSTRAP_STACK_NAME)
-    template = asset_helpers.read_from_site_packages('{}.template.yaml'.format(stack_name))
-    template = Template(template).render(VERSION=puppet_version)
+    stack_name = f"{constants.BOOTSTRAP_STACK_NAME}-org-master-{puppet_account_id}"
+    template = asset_helpers.read_from_site_packages(f'{constants.BOOTSTRAP_STACK_NAME}-org-master.template.yaml')
+    template = Template(template).render(VERSION=puppet_version, puppet_account_id=puppet_account_id)
     args = {
         'StackName': stack_name,
         'TemplateBody': template,
