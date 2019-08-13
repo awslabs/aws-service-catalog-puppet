@@ -18,7 +18,7 @@ Resources:
   Param:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: service-catalog-puppet-org-master-version
+      Name: !Sub "service-catalog-puppet-org-master-version-${PuppetAccountId}"
       Type: String
       Value: !Ref Version
       Tags:
@@ -27,7 +27,7 @@ Resources:
   PuppetOrgRoleForExpands:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: PuppetOrgRoleForExpands
+      RoleName: !Sub "PuppetOrgRoleForExpands${PuppetAccountId}"
       Path: /servicecatalog-puppet/
       Policies:
         - PolicyName: "allowExpands"
