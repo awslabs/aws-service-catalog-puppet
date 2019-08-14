@@ -953,9 +953,12 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                         logging.info(f"{version_name} is active: {version_details.get('Active')} in hub")
                         for spoke_provisioning_artifact_detail in spoke_provisioning_artifact_details:
                             if spoke_provisioning_artifact_detail.get('Name') == version_name:
-                                logging.info(f"Updating {version_name}/{spoke_provisioning_artifact_detail.get('Id')} in the spoke")
+                                logging.info(
+                                    f"Updating active of {version_name}/{spoke_provisioning_artifact_detail.get('Id')} "
+                                    f"in the spoke to {version_details.get('Active')}"
+                                )
                                 spoke_service_catalog.update_provisioning_artifact(
-                                    ProductId=target_product_id,
+                                    ProductId=spoke_product_id,
                                     ProvisioningArtifactId=spoke_provisioning_artifact_detail.get('Id'),
                                     Active=version_details.get('Active'),
                                 )
