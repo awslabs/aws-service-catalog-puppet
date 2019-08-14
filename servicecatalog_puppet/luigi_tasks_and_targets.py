@@ -833,10 +833,10 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                     ProductId=hub_product_id
                 ).get('ProvisioningArtifactDetails', [])
                 for hub_provisioning_artifact_detail in hub_provisioning_artifact_details:
-                    if hub_provisioning_artifact_detail.get('Active') and hub_provisioning_artifact_detail.get(
-                            'Type') == 'CLOUD_FORMATION_TEMPLATE':
+                    if hub_provisioning_artifact_detail.get('Type') == 'CLOUD_FORMATION_TEMPLATE':
                         product_versions_that_should_be_copied[
-                            f"{hub_provisioning_artifact_detail.get('Name')}"] = hub_provisioning_artifact_detail
+                            f"{hub_provisioning_artifact_detail.get('Name')}"
+                        ] = hub_provisioning_artifact_detail
 
                 logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Copying {hub_product_name}")
                 hub_product_arn = product_view_detail.get('ProductARN')
@@ -920,6 +920,9 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                             ProductId=target_product_id,
                             PortfolioId=portfolio_id,
                         )
+
+                        for version_name, version_details in product_versions_that_should_be_copied.items():
+                            logging.info(f"{version_name} is active: {version_details.get('Active')}")
 
                         # associate_product_with_portfolio is not a synchronous request
                         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: waiting for adding of "
