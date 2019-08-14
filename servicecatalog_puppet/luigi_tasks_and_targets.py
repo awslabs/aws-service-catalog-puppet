@@ -829,12 +829,16 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                 hub_product_id = product_view_summary.get('ProductId')
 
                 product_versions_that_should_be_copied = {}
+                product_versions_that_should_be_updated = {}
                 hub_provisioning_artifact_details = service_catalog.list_provisioning_artifacts(
                     ProductId=hub_product_id
                 ).get('ProvisioningArtifactDetails', [])
                 for hub_provisioning_artifact_detail in hub_provisioning_artifact_details:
                     if hub_provisioning_artifact_detail.get('Type') == 'CLOUD_FORMATION_TEMPLATE':
                         product_versions_that_should_be_copied[
+                            f"{hub_provisioning_artifact_detail.get('Name')}"
+                        ] = hub_provisioning_artifact_detail
+                        product_versions_that_should_be_updated[
                             f"{hub_provisioning_artifact_detail.get('Name')}"
                         ] = hub_provisioning_artifact_detail
 
@@ -921,20 +925,6 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                             PortfolioId=portfolio_id,
                         )
 
-                        spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
-                            ProductId=target_product_id
-                        ).get('ProvisioningArtifactDetails', [])
-                        for version_name, version_details in product_versions_that_should_be_copied.items():
-                            logging.info(f"{version_name} is active: {version_details.get('Active')} in hub")
-                            for spoke_provisioning_artifact_detail in spoke_provisioning_artifact_details:
-                                if spoke_provisioning_artifact_detail.get('Name') == version_name:
-                                    logging.info(f"Updating {version_name}/{spoke_provisioning_artifact_detail.get('Id')} in the spoke")
-                                    spoke_service_catalog.update_provisioning_artifact(
-                                        ProductId=target_product_id,
-                                        ProvisioningArtifactId=spoke_provisioning_artifact_detail.get('Id'),
-                                        Active=version_details.get('Active'),
-                                    )
-
                         # associate_product_with_portfolio is not a synchronous request
                         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: waiting for adding of "
                                     f"{target_product_id} to portfolio {portfolio_id}")
@@ -954,6 +944,20 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                                 break
 
                         product_name_to_id_dict[hub_product_name] = target_product_id
+
+                    spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
+                        ProductId=target_product_id
+                    ).get('ProvisioningArtifactDetails', [])
+                    for version_name, version_details in product_versions_that_should_be_updated.items():
+                        logging.info(f"{version_name} is active: {version_details.get('Active')} in hub")
+                        for spoke_provisioning_artifact_detail in spoke_provisioning_artifact_details:
+                            if spoke_provisioning_artifact_detail.get('Name') == version_name:
+                                logging.info(f"Updating {version_name}/{spoke_provisioning_artifact_detail.get('Id')} in the spoke")
+                                spoke_service_catalog.update_provisioning_artifact(
+                                    ProductId=target_product_id,
+                                    ProvisioningArtifactId=spoke_provisioning_artifact_detail.get('Id'),
+                                    Active=version_details.get('Active'),
+                                )
 
         f = self.output().open('w')
         f.write(
