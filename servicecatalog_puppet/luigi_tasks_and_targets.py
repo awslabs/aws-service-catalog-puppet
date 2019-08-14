@@ -925,9 +925,10 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                             ProductId=target_product_id
                         ).get('ProvisioningArtifactDetails', [])
                         for version_name, version_details in product_versions_that_should_be_copied.items():
-                            logging.info(f"{version_name} is active: {version_details.get('Active')}")
+                            logging.info(f"{version_name} is active: {version_details.get('Active')} in hub")
                             for spoke_provisioning_artifact_detail in spoke_provisioning_artifact_details:
                                 if spoke_provisioning_artifact_detail.get('Name') == version_name:
+                                    logging.info(f"Updating {version_name}/{spoke_provisioning_artifact_detail.get('Id')} in the spoke")
                                     spoke_service_catalog.update_provisioning_artifact(
                                         ProductId=target_product_id,
                                         ProvisioningArtifactId=spoke_provisioning_artifact_detail.get('Id'),
