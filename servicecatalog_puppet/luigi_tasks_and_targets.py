@@ -873,16 +873,17 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                         for spoke_product_view_details in p.get('ProductViewDetails'):
                             spoke_product_view = spoke_product_view_details.get('ProductViewSummary')
                             if spoke_product_view.get('Name') == hub_product_name:
-                                copy_args['TargetProductId'] = spoke_product_view.get('ProductId')
+                                spoke_product_id = spoke_product_view.get('ProductId')
+                                copy_args['TargetProductId'] = spoke_product_id
                                 spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
-                                    ProductId=spoke_product_view.get('ProductId')
+                                    ProductId=spoke_product_id
                                 ).get('ProvisioningArtifactDetails')
                                 for provisioning_artifact_detail in spoke_provisioning_artifact_details:
                                     id_to_delete = f"{provisioning_artifact_detail.get('Name')}"
                                     if product_versions_that_should_be_copied.get(id_to_delete, None) is not None:
                                         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} "
                                                     f"{hub_product_name} :: Going to skip "
-                                                    f"{spoke_product_view.get('ProductId')} "
+                                                    f"{spoke_product_id} "
                                                     f"{provisioning_artifact_detail.get('Name')}"
                                                     )
                                         del product_versions_that_should_be_copied[id_to_delete]
@@ -946,7 +947,7 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                         product_name_to_id_dict[hub_product_name] = target_product_id
 
                     spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
-                        ProductId=target_product_id
+                        ProductId=spoke_product_id
                     ).get('ProvisioningArtifactDetails', [])
                     for version_name, version_details in product_versions_that_should_be_updated.items():
                         logging.info(f"{version_name} is active: {version_details.get('Active')} in hub")
