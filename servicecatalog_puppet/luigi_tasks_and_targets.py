@@ -824,6 +824,8 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
         ) as service_catalog:
             response = service_catalog.search_products_as_admin_single_page(PortfolioId=self.hub_portfolio_id)
             for product_view_detail in response.get('ProductViewDetails', []):
+                spoke_product_id = False
+                target_product_id = False
                 product_view_summary = product_view_detail.get('ProductViewSummary')
                 hub_product_name = product_view_summary.get('Name')
                 hub_product_id = product_view_summary.get('ProductId')
