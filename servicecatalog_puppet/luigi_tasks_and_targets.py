@@ -921,8 +921,18 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                             PortfolioId=portfolio_id,
                         )
 
+                        spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
+                            ProductId=target_product_id
+                        ).get('ProvisioningArtifactDetails', [])
                         for version_name, version_details in product_versions_that_should_be_copied.items():
                             logging.info(f"{version_name} is active: {version_details.get('Active')}")
+                            for spoke_provisioning_artifact_detail in spoke_provisioning_artifact_details:
+                                if spoke_provisioning_artifact_detail.get('Name') == version_name:
+                                    spoke_service_catalog.update_provisioning_artifact(
+                                        ProductId=target_product_id,
+                                        ProvisioningArtifactId=spoke_provisioning_artifact_detail.get('Id'),
+                                        Active=version_details.get('Active'),
+                                    )
 
                         # associate_product_with_portfolio is not a synchronous request
                         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: waiting for adding of "
