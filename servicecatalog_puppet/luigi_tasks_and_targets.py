@@ -946,8 +946,9 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
 
                         product_name_to_id_dict[hub_product_name] = target_product_id
 
+                    product_id_in_spoke = spoke_product_id or target_product_id
                     spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
-                        ProductId=spoke_product_id
+                        ProductId=product_id_in_spoke
                     ).get('ProvisioningArtifactDetails', [])
                     for version_name, version_details in product_versions_that_should_be_updated.items():
                         logging.info(f"{version_name} is active: {version_details.get('Active')} in hub")
@@ -958,7 +959,7 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                                     f"in the spoke to {version_details.get('Active')}"
                                 )
                                 spoke_service_catalog.update_provisioning_artifact(
-                                    ProductId=spoke_product_id,
+                                    ProductId=product_id_in_spoke,
                                     ProvisioningArtifactId=spoke_provisioning_artifact_detail.get('Id'),
                                     Active=version_details.get('Active'),
                                 )
