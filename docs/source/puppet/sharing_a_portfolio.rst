@@ -24,14 +24,14 @@ In addition to this, you can specify associations for the created portfolio and 
 How can I set it up?
 --------------------
 
-The following is an example of how to add the portfolio ``demo-central-it-team-portfolio`` to all spokes tagged
+The following is an example of how to add the portfolio ``example-simple-central-it-team-portfolio`` to all spokes tagged
 ``scope:spoke``:
 
 .. code-block:: yaml
 
     spoke-local-portfolios:
       account-vending-for-spokes:
-        portfolio: demo-central-it-team-portfolio
+        portfolio: example-simple-central-it-team-portfolio
         depends_on:
           - account-iam-for-spokes
         associations:
@@ -95,7 +95,7 @@ Using a list:
 
     spoke-local-portfolios:
       account-vending-for-spokes:
-        portfolio: demo-central-it-team-portfolio
+        portfolio: example-simple-central-it-team-portfolio
         depends_on:
           - account-iam-for-spokes
         associations:
@@ -119,7 +119,7 @@ Using a regular expression:
 
     spoke-local-portfolios:
       account-vending-for-spokes:
-        portfolio: demo-central-it-team-portfolio
+        portfolio: example-simple-central-it-team-portfolio
         depends_on:
           - account-iam-for-spokes
         associations:

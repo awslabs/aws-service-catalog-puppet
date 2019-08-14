@@ -16,7 +16,7 @@ accounts:
 
 launches:
   account-iam-for-prod:
-    portfolio: demo-central-it-team-portfolio
+    portfolio: example-simple-central-it-team-portfolio
     product: account-iam
     version: v1
     parameters:

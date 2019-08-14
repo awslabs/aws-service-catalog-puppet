@@ -456,7 +456,7 @@ def deploy_spoke_local_portfolios(manifest, launch_tasks):
         for launch_name, launch_details in deployments_for_account.get(section).items():
             for region_name in launch_details.get('regions'):
 
-                depends_on = launch_details.get('depends_on')
+                depends_on = launch_details.get('depends_on', [])
                 dependencies = []
                 for dependency in depends_on:
                     for task_uid, task in launch_tasks.items():
