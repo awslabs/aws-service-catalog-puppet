@@ -53,7 +53,7 @@ def generate_launch_map(accounts, launches_by_account, launches_by_tag, section)
         for launch in launches_by_account.get(account_id, []):
             launch['match'] = "account_match"
             launches[launch.get('launch_name')] = launch
-        for tag in account.get('tags'):
+        for tag in account.get('tags', []):
             for launch in launches_by_tag.get(tag, []):
                 launch['match'] = "tag_match"
                 launch['matching_tag'] = tag
