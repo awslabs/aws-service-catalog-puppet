@@ -440,6 +440,19 @@ Here is an example, it deploys a ``v1`` of a product named ``account-iam`` from 
               regions: default_region
 
 
+Choosing which regions to provision into
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When writing your launches you can choose which regions you provision into.
+
+The valid values for regions are:
+- enabled - this will deploy to each enabled region for the account
+- regions_enabled - this will deploy to each enabled region for the account
+- default_region - this will deploy to the default region specified for the account
+- all - this will deploy to all regions enabled in your config (whilst setting up Puppet)
+- list of AWS regions - you can type in a list of AWS regions (each region selected should be present in your config)
+
+
 Dependencies between launches
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

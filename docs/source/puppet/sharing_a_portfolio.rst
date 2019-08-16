@@ -48,6 +48,13 @@ The following is an example of how to add the portfolio ``example-simple-central
 
 The example above will create the portfolio once the ``depends_on`` launches have completed successfully.
 
+The valid values for regions are:
+- enabled - this will deploy to each enabled region for the account
+- regions_enabled - this will deploy to each enabled region for the account
+- default_region - this will deploy to the default region specified for the account
+- all - this will deploy to all regions enabled in your config (whilst setting up Puppet)
+- list of AWS regions - you can type in a list of AWS regions (each region selected should be present in your config)
+
 
 How can I add an association?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
