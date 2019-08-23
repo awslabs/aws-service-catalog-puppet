@@ -50,3 +50,27 @@ def remove_from_launches(launch_name):
     :param launch_name: The name of the launch to be removed from the launches section of the manifest file
     """
     cli_commands.remove_from_launches(launch_name)
+
+
+def upload_config(config):
+    """
+    This function allows you to upload your configuration for puppet.  At the moment this should be a dict with an
+    attribute named regions:
+    regions: [
+      'eu-west-3',
+      'sa-east-1',
+    ]
+
+    :param config: The dict containing the configuration used for puppet
+    """
+    cli_commands.upload_config(config)
+
+
+def bootstrap(with_manual_approvals):
+    """
+    Bootstrap the puppet account.  This will create the AWS CodeCommit repo containing the config and it will also
+    create the AWS CodePipeline that will run the solution.
+
+    :param with_manual_approvals: Boolean to specify whether there should be manual approvals before provisioning occurs
+    """
+    cli_commands.bootstrap(with_manual_approvals)

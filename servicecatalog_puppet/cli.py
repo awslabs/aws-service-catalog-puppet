@@ -94,7 +94,9 @@ def version():
 @cli.command()
 @click.argument('p', type=click.Path(exists=True))
 def upload_config(p):
-    cli_commands.upload_config(p)
+    content = open(p, 'r').read()
+    config = yaml.safe_load(content)
+    cli_commands.upload_config(config)
 
 
 @cli.command()
