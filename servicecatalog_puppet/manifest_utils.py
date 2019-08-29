@@ -170,5 +170,5 @@ def expand_ou(original_account, client):
             new_account['organization'] = response.get('Account').get('Arn').split(":")[5].split("/")[1]
             expanded.append(new_account)
         else:
-            logger.info(f"Skipping account as it is not ACTIVE: {json.dump(response.get('Account'), default=str)}")
+            logger.info(f"Skipping account as it is not ACTIVE: {json.dumps(response.get('Account'), default=str)}")
     return expanded
