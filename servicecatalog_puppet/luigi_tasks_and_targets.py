@@ -1049,7 +1049,6 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
                 launch_constraints=new_launch_constraints,
                 product_name_to_id_dict=product_name_to_id_dict,
             )
-            raise Exception(template)
             time.sleep(30)
             stack_name = f"launch-constraints-for-portfolio-{portfolio_id}"
             cloudformation.create_or_update(
