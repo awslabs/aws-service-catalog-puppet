@@ -35,6 +35,8 @@ def group_by_account(launches):
         launch_details['launch_name'] = launch_name
         launch_accounts = launch_details.get('deploy_to').get('accounts', [])
         for account_detail in launch_accounts:
+            if not isinstance(account_detail.get('account_id'), str):
+                account_detail['account_id'] = str(account_detail.get('account_id'))
             account_id = account_detail.get('account_id')
             if launches_by_account.get(account_id) is None:
                 launches_by_account[account_id] = []
@@ -64,6 +66,9 @@ def generate_launch_map(accounts, launches_by_account, launches_by_tag, section)
 
 def build_deployment_map(manifest, section):
     accounts = manifest.get('accounts')
+    for account_detail in accounts:
+        if not isinstance(account_detail.get('account_id'), str):
+            account_detail['account_id'] = str(account_detail.get('account_id'))
     launches = manifest.get(section, {})
 
     verify_no_ous_in_manifest(accounts)
