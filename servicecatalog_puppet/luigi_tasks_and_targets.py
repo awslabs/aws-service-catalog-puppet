@@ -1050,16 +1050,20 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
                 product_name_to_id_dict=product_name_to_id_dict,
             )
             time.sleep(30)
-            stack_name = f"launch-constraints-for-portfolio-{portfolio_id}"
+            stack_name_v1 = f"launch-constraints-for-portfolio-{portfolio_id}"
+            cloudformation.ensure_deleted(
+                StackName=stack_name_v1,
+            )
+            stack_name_v2 = f"launch-constraints-v2-for-portfolio-{portfolio_id}"
             cloudformation.create_or_update(
-                StackName=stack_name,
+                StackName=stack_name_v2,
                 TemplateBody=template,
                 NotificationARNs=[
                     f"arn:aws:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
                 ],
             )
             result = cloudformation.describe_stacks(
-                StackName=stack_name,
+                StackName=stack_name_v2,
             ).get('Stacks')[0]
             f = self.output().open('w')
             f.write(
