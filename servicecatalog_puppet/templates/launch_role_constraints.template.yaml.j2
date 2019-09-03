@@ -2,10 +2,12 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Launch role contraints for {{portfolio.DisplayName}}
 
 Resources:
-{% for launch_constraint in launch_constraints %}{% set launch_loop = loop %}{% for role_arn in launch_constraint.roles %}{% set role_loop = loop %}{% for product in launch_constraint.products %}
-  LaunchRoleConstraintA{{launch_loop.index}}B{{role_loop.index}}C{{loop.index}}:
+{% for launch_constraint in launch_constraints %}{% for role_arn in launch_constraint.roles %}{% for product in launch_constraint.products %}
+  LRC{{ portfolio_id|replace("-", "") }}B{{ product_name_to_id_dict.get(product)|replace("-", "") }}C{{ role_arn.split(":")[-1].replace('/','').replace("-", "") }}:
     Type: AWS::ServiceCatalog::LaunchRoleConstraint
     Properties:
       PortfolioId: {{ portfolio_id }}
       ProductId: {{ product_name_to_id_dict.get(product) }}
       RoleArn: !Sub "{{ role_arn }}"{% endfor %}{% endfor %}{% endfor %}
+
+

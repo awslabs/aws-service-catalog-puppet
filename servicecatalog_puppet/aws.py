@@ -213,14 +213,22 @@ def provision_product(
                      f"Plan failed: {response.get('ProvisionedProductPlanDetails').get('StatusMessage')}")
 
 
-def get_path_for_product(service_catalog, product_id):
+def get_path_for_product(service_catalog, product_id, portfolio_name):
     logger.info(f'Getting path for product {product_id}')
     response = service_catalog.list_launch_paths(ProductId=product_id)
-    if len(response.get('LaunchPathSummaries')) != 1:
-        raise Exception("Found unexpected amount of LaunchPathSummaries")
-    path_id = response.get('LaunchPathSummaries')[0].get('Id')
-    logger.info(f'Got path: {path_id} for product: {product_id}')
-    return path_id
+    if len(response.get('LaunchPathSummaries')) == 1:
+        path_id = response.get('LaunchPathSummaries')[0].get('Id')
+        logger.info(f'There is only one path: {path_id} for product: {product_id}')
+        return path_id
+    else:
+        for launch_path_summary in response.get('LaunchPathSummaries', []):
+            name = launch_path_summary.get('Name')
+            if name == portfolio_name:
+                path_id = launch_path_summary.get('Id')
+                logger.info(f'Got path: {path_id} for product: {product_id}')
+                return path_id
+
+    raise Exception("Failed to find a LaunchPath")
 
 
 def ensure_is_terminated(

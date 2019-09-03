@@ -562,13 +562,14 @@ def deploy_launches_task_builder_for_account_launch_region(
     product_id = regional_details.get('product_id')
     required_parameters = {}
     role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
+    portfolio_name = launch_details.get('portfolio')
     with betterboto_client.CrossAccountClientContextManager(
             'servicecatalog', role, f'sc-{account_id}-{region_name}', region_name=region_name
     ) as service_catalog:
         response = service_catalog.describe_provisioning_parameters(
             ProductId=product_id,
             ProvisioningArtifactId=regional_details.get('version_id'),
-            PathId=aws.get_path_for_product(service_catalog, product_id),
+            PathId=aws.get_path_for_product(service_catalog, product_id, portfolio_name),
         )
         for provisioning_artifact_parameters in response.get('ProvisioningArtifactParameters', []):
             parameter_key = provisioning_artifact_parameters.get('ParameterKey')
@@ -585,7 +586,7 @@ def deploy_launches_task_builder_for_account_launch_region(
     logger.info(f"Found a new launch: {launch_name}")
     task = {
         'launch_name': launch_name,
-        'portfolio': launch_details.get('portfolio'),
+        'portfolio': portfolio_name,
         'product': launch_details.get('product'),
         'version': launch_details.get('version'),
 

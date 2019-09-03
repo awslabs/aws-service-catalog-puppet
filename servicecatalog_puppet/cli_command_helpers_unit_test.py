@@ -39,6 +39,7 @@ def test_deploy_launches_task_builder_for_account_launch_region(sut, mocker, sha
     launch_details = json.loads((shared_datadir / 'account-vending' / 'launch-details-for-launch-b.json').read_text())
     launch_name = launch_details.get('launch_name')
     manifest = json.loads((shared_datadir / 'account-vending' / 'manifest.json').read_text())
+    portfolio_name = 'demo-central-it-team-portfolio'
     puppet_account_id = "098765432101"
     region_name = 'eu-west-1'
     regional_details = {"product_id": "prod-lv3isrxiingdo", "version_id": "pa-yprmofsvvyih4"}
@@ -82,7 +83,7 @@ def test_deploy_launches_task_builder_for_account_launch_region(sut, mocker, sha
     assert len(actual_all_tasks.keys()) == 1
     assert actual_all_tasks == expected_all_tasks
     mocked_get_path_for_product.assert_called_once_with(
-        mocked_betterboto_client().__enter__(), regional_details.get('product_id')
+        mocked_betterboto_client().__enter__(), regional_details.get('product_id'), portfolio_name
     )
     mocked_get_parameters_for_launch.assert_called_once_with(
         required_parameters,
