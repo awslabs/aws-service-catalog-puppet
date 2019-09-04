@@ -1,5 +1,6 @@
 import logging
 import time
+import json
 import os
 
 import click
@@ -11,10 +12,34 @@ from betterboto import client as betterboto_client
 logger = logging.getLogger(__file__)
 
 
+def terminate_provisioned_product(prefix, service_catalog, provisioned_product_id):
+    logger.info(f"{prefix} :: about to terminate {provisioned_product_id}")
+    record_detail = service_catalog.terminate_provisioned_product(
+        ProvisionedProductId=provisioned_product_id
+    ).get('RecordDetail')
+    record_id = record_detail.get('RecordId')
+
+    logger.info(f"{prefix} :: waiting for termination of {provisioned_product_id} to complete")
+    status = "IN_PROGRESS"
+    while status == "IN_PROGRESS":
+        record_detail = service_catalog.describe_record(Id=record_id).get('RecordDetail')
+        status = record_detail.get('Status')
+        logger.info(f"{prefix} :: termination of {provisioned_product_id} current status: {status}")
+        if status != "IN_PROGRESS":
+            break
+        else:
+            time.sleep(3)
+
+    if status not in ['CREATED', 'SUCCEEDED']:
+        logger.info(yaml.safe_dump(record_detail.get('RecordErrors')))
+        raise Exception(f"Failed to terminate provisioned product: Status = {status}")
+
+
 def terminate_if_status_is_not_available(
         service_catalog, provisioned_product_name, product_id, account_id, region
 ):
-    logger.info(f"[{provisioned_product_name}] {account_id}:{region} :: checking if should be terminated")
+    prefix = f"[{provisioned_product_name}] {account_id}:{region}"
+    logger.info(f"{prefix} :: checking if should be terminated")
     # TODO - change to name query?
     response = service_catalog.search_provisioned_products(
         Filters={'SearchQuery': [
@@ -30,12 +55,12 @@ def terminate_if_status_is_not_available(
                 provisioned_product_id = r.get('Id')
                 provisioning_artifact_id = r.get('ProvisioningArtifactId')
             elif current_status in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
-                logger.info(f"[{provisioned_product_name}] {account_id}:{region} :: current status is {current_status}")
+                logger.info(f"{prefix} :: current status is {current_status}")
                 while True:
                     status = service_catalog.describe_provisioned_product(
                         Id=r.get('Id')
                     ).get('ProvisionedProductDetail').get('Status')
-                    logger.info(f"[{provisioned_product_name}] {account_id}:{region} :: waiting to complete: {status}")
+                    logger.info(f"{prefix} :: waiting to complete: {status}")
                     time.sleep(5)
                     if status not in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
                         return terminate_if_status_is_not_available(
@@ -43,22 +68,9 @@ def terminate_if_status_is_not_available(
                         )
 
             elif current_status == 'ERROR':
-                logger.info(f"[{provisioned_product_name}] {account_id}:{region} :: terminating as its status is {r.get('Status')}")
-                service_catalog.terminate_provisioned_product(
-                    ProvisionedProductId=r.get('Id')
-                )
-                logger.info(f"[{provisioned_product_name}] {account_id}:{region} :: waiting for termination")
-                while True:
-                    response = service_catalog.search_provisioned_products(
-                        Filters={
-                            'SearchQuery': [f'name:{provisioned_product_name}']
-                        }
-                    )
-                    if len(response.get('ProvisionedProducts')) > 0:
-                        time.sleep(5)
-                    else:
-                        break
-    logger.info(f"[{provisioned_product_name}] {account_id}:{region} :: Finished waiting for termination")
+                logger.info(f"{prefix} :: terminating as its status is {r.get('Status')}")
+                terminate_provisioned_product(prefix, service_catalog, r.get('Id'))
+    logger.info(f"{prefix} :: Finished waiting for termination")
     return provisioned_product_id, provisioning_artifact_id
 
 
@@ -194,11 +206,12 @@ def provision_product(
                     f"[{launch_name}] {account_id}:{region} :: "
                     f"waiting for change to complete: {response.get('ProvisionedProductDetail').get('Status')}"
                 )
-                execute_status = response.get('ProvisionedProductDetail').get('Status')
+                provisioned_product_detail = response.get('ProvisionedProductDetail')
+                execute_status = provisioned_product_detail.get('Status')
                 if execute_status in ['AVAILABLE', 'TAINTED']:
                     break
                 elif execute_status ==  'ERROR':
-                    raise Exception(f"[{launch_name}] {account_id}:{region} :: Execute failed: {execute_status}")
+                    raise Exception(f"[{launch_name}] {account_id}:{region} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
                 else:
                     time.sleep(5)
 
@@ -246,20 +259,7 @@ def ensure_is_terminated(
 
     if r.get('Status') != "TERMINATED":
         logger.info(f"Terminating {provisioned_product_name}, its status is: {r.get('Status')}")
-        service_catalog.terminate_provisioned_product(
-            ProvisionedProductId=r.get('Id')
-        )
-        logger.info(f"Waiting for termination of {provisioned_product_name}")
-        while True:
-            response = service_catalog.search_provisioned_products(
-                Filters={
-                    'SearchQuery': [f'name:{provisioned_product_name}']
-                }
-            )
-            if len(response.get('ProvisionedProducts')) > 0:
-                time.sleep(5)
-            else:
-                break
+        terminate_provisioned_product(f"{provisioned_product_name}:{product_id}", service_catalog, r.get('Id'))
     else:
         logger.info(f"Skipping terminated launch: {provisioned_product_name}")
 
