@@ -208,7 +208,7 @@ def provision_product(
                 )
                 provisioned_product_detail = response.get('ProvisionedProductDetail')
                 execute_status = provisioned_product_detail.get('Status')
-                if execute_status in ['AVAILABLE', 'TAINTED']:
+                if execute_status in ['AVAILABLE', 'TAINTED', 'EXECUTE_SUCCESS']:
                     break
                 elif execute_status ==  'ERROR':
                     raise Exception(f"[{launch_name}] {account_id}:{region} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
