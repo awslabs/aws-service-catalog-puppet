@@ -290,44 +290,37 @@ def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name,
         product_id = None
         version_id = None
         portfolio_id = None
-        args = {}
-        while True:
-            response = cross_account_servicecatalog.list_accepted_portfolio_shares()
-            assert response.get('NextPageToken') is None, "Pagination not supported"
-            for portfolio_detail in response.get('PortfolioDetails'):
+
+
+        response = cross_account_servicecatalog.list_accepted_portfolio_shares()
+        assert response.get('NextPageToken') is None, "Pagination not supported"
+        for portfolio_detail in response.get('PortfolioDetails'):
+            if portfolio_detail.get('DisplayName') == portfolio_name:
+                portfolio_id = portfolio_detail.get('Id')
+                break
+
+        if portfolio_id is None:
+            response = cross_account_servicecatalog.list_portfolios()
+            for portfolio_detail in response.get('PortfolioDetails', []):
                 if portfolio_detail.get('DisplayName') == portfolio_name:
                     portfolio_id = portfolio_detail.get('Id')
                     break
 
-            if portfolio_id is None:
-                response = cross_account_servicecatalog.list_portfolios()
-                for portfolio_detail in response.get('PortfolioDetails', []):
-                    if portfolio_detail.get('DisplayName') == portfolio_name:
-                        portfolio_id = portfolio_detail.get('Id')
-                        break
+        assert portfolio_id is not None, "Could not find portfolio"
+        logger.info("Found portfolio: {}".format(portfolio_id))
 
-            assert portfolio_id is not None, "Could not find portfolio"
-            logger.info("Found portfolio: {}".format(portfolio_id))
+        response = cross_account_servicecatalog.search_products_as_admin_single_page(PortfolioId=portfolio_id)
+        for product_view_details in response.get('ProductViewDetails'):
+            product_view = product_view_details.get('ProductViewSummary')
+            if product_view.get('Name') == product_name:
+                logger.info('Found product: {}'.format(product_view))
+                product_id = product_view.get('ProductId')
 
-            args['PortfolioId'] = portfolio_id
-            response = cross_account_servicecatalog.search_products_as_admin(
-                **args
-            )
-            for product_view_details in response.get('ProductViewDetails'):
-                product_view = product_view_details.get('ProductViewSummary')
-                if product_view.get('Name') == product_name:
-                    logger.info('Found product: {}'.format(product_view))
-                    product_id = product_view.get('ProductId')
-            if response.get('NextPageToken', None) is not None:
-                args['PageToken'] = response.get('NextPageToken')
-            else:
-                break
         assert product_id is not None, "Did not find product looking for"
 
-        response = cross_account_servicecatalog.list_provisioning_artifacts(
+        response = cross_account_servicecatalog.list_provisioning_artifacts_single_page(
             ProductId=product_id
         )
-        assert response.get('NextPageToken') is None, "Pagination not support"
         for provisioning_artifact_detail in response.get('ProvisioningArtifactDetails'):
             if provisioning_artifact_detail.get('Name') == version_name:
                 version_id = provisioning_artifact_detail.get('Id')
