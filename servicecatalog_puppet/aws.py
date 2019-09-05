@@ -1,6 +1,5 @@
 import logging
 import time
-import json
 import os
 
 import click
@@ -309,7 +308,6 @@ def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name,
         logger.info(f"Found portfolio: {portfolio_id}, looking for product: {product_name}")
 
         response = cross_account_servicecatalog.search_products_as_admin_single_page(PortfolioId=portfolio_id)
-        # logging.info(json.dumps(response, default=str))
         for product_view_details in response.get('ProductViewDetails'):
             product_view = product_view_details.get('ProductViewSummary')
             logging.info(f"looking at {product_view.get('Name')}")
