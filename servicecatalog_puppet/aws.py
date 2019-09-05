@@ -171,7 +171,7 @@ def provision_product(
         logger.info(f"[{launch_name}] {account_id}:{region} :: Waiting for product plan: {plan_status}")
         time.sleep(5)
 
-    if plan_status == 'CREATE_SUCCESS':
+    if plan_status in ['CREATE_SUCCESS', 'EXECUTE_SUCCESS']:
         logger.info(
             f"[{launch_name}] {account_id}:{region} :: Plan created, "
             f"changes: {yaml.safe_dump(response.get('ResourceChanges'))}"
@@ -184,17 +184,17 @@ def provision_product(
 
         logger.info(f"[{launch_name}] {account_id}:{region} :: executing changes")
         service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
-        execute_status = 'EXECUTE_IN_PROGRESS'
-        while execute_status == 'EXECUTE_IN_PROGRESS':
+        plan_execute_status = 'EXECUTE_IN_PROGRESS'
+        while plan_execute_status == 'EXECUTE_IN_PROGRESS':
             response = service_catalog.describe_provisioned_product_plan(
                 PlanId=plan_id
             )
             logger.info(f"[{launch_name}] {account_id}:{region} :: executing changes for plan: {plan_id}")
-            execute_status = response.get('ProvisionedProductPlanDetails').get('Status')
-            logger.info(f"[{launch_name}] {account_id}:{region} :: waiting for execution to complete: {execute_status}")
+            plan_execute_status = response.get('ProvisionedProductPlanDetails').get('Status')
+            logger.info(f"[{launch_name}] {account_id}:{region} :: waiting for execution to complete: {plan_execute_status}")
             time.sleep(5)
 
-        if execute_status == 'CREATE_SUCCESS':
+        if plan_execute_status == 'CREATE_SUCCESS':
             provisioned_product_id = response.get('ProvisionedProductPlanDetails').get('ProvisionProductId')
 
             logger.info(f"[{launch_name}] {account_id}:{region} :: waiting for change to complete")
@@ -219,7 +219,7 @@ def provision_product(
             return provisioned_product_id
 
         else:
-            raise Exception(f"[{launch_name}] {account_id}:{region} :: Execute failed: {execute_status}")
+            raise Exception(f"[{launch_name}] {account_id}:{region} :: Plan execute failed: {plan_execute_status}")
 
     else:
         raise Exception(f"[{launch_name}] {account_id}:{region} :: "
@@ -307,11 +307,13 @@ def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name,
                     break
 
         assert portfolio_id is not None, "Could not find portfolio"
-        logger.info("Found portfolio: {}".format(portfolio_id))
+        logger.info(f"Found portfolio: {portfolio_id}, looking for product: {product_name}")
 
         response = cross_account_servicecatalog.search_products_as_admin_single_page(PortfolioId=portfolio_id)
+        # logging.info(json.dumps(response, default=str))
         for product_view_details in response.get('ProductViewDetails'):
             product_view = product_view_details.get('ProductViewSummary')
+            logging.info(f"looking at {product_view.get('Name')}")
             if product_view.get('Name') == product_name:
                 logger.info('Found product: {}'.format(product_view))
                 product_id = product_view.get('ProductId')
