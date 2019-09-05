@@ -194,7 +194,7 @@ def provision_product(
             logger.info(f"{uid} :: waiting for execution to complete: {plan_execute_status}")
             time.sleep(5)
 
-        if plan_execute_status == 'CREATE_SUCCESS':
+        if plan_execute_status in ['CREATE_SUCCESS', 'EXECUTE_SUCCESS']:
             provisioned_product_id = response.get('ProvisionedProductPlanDetails').get('ProvisionProductId')
 
             logger.info(f"{uid} :: waiting for change to complete")
