@@ -115,7 +115,7 @@ def provision_product(
 ):
     uid = f"[{launch_name}] {account_id}:{region}]"
     stack_name = "-".join([constants.PREFIX, account_id, region, launch_name])
-    logger.info(f"[{launch_name}] {account_id}:{region} :: Checking for an existing plan")
+    logger.info(f"{uid} :: Checking for an existing plan")
     if puppet_account_id == account_id:
         provisioned_product_plans = service_catalog.list_provisioned_product_plans_single_page().get('ProvisionedProductPlans', [])
     else:
@@ -128,7 +128,7 @@ def provision_product(
             f"{uid} :: Found existing plan, going to terminate it"
             service_catalog.delete_provisioned_product_plan(PlanId=provisioned_product_plan.get('PlanId'))
 
-    logger.info(f"[{launch_name}] {account_id}:{region} :: Creating a plan")
+    logger.info(f"{uid} :: Creating a plan")
     regional_sns_topic = f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
     provisioning_parameters = []
     for p in params.keys():
@@ -158,7 +158,7 @@ def provision_product(
             regional_sns_topic,
         ],
     )
-    logger.info(f"[{launch_name}] {account_id}:{region} :: Plan created, waiting for completion")
+    logger.info(f"{uid} :: Plan created, waiting for completion")
 
     plan_id = response.get('PlanId')
     plan_status = 'CREATE_IN_PROGRESS'
@@ -168,42 +168,42 @@ def provision_product(
             PlanId=plan_id
         )
         plan_status = response.get('ProvisionedProductPlanDetails').get('Status')
-        logger.info(f"[{launch_name}] {account_id}:{region} :: Waiting for product plan: {plan_status}")
+        logger.info(f"{uid} :: Waiting for product plan: {plan_status}")
         time.sleep(5)
 
     if plan_status in ['CREATE_SUCCESS', 'EXECUTE_SUCCESS']:
         logger.info(
-            f"[{launch_name}] {account_id}:{region} :: Plan created, "
+            f"{uid} :: Plan created, "
             f"changes: {yaml.safe_dump(response.get('ResourceChanges'))}"
         )
         if len(response.get('ResourceChanges')) == 0:
-            logger.warning(f"[{launch_name}] {account_id}:{region} :: There are no resource changes in this plan, "
+            logger.warning(f"{uid} :: There are no resource changes in this plan, "
                         f"running this anyway - your product will be marked as tainted as your CloudFormation changeset"
                         f"will fail but your product will be the correct version and in tact.")
 
 
-        logger.info(f"[{launch_name}] {account_id}:{region} :: executing changes")
+        logger.info(f"{uid} :: executing changes")
         service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
         plan_execute_status = 'EXECUTE_IN_PROGRESS'
         while plan_execute_status == 'EXECUTE_IN_PROGRESS':
             response = service_catalog.describe_provisioned_product_plan(
                 PlanId=plan_id
             )
-            logger.info(f"[{launch_name}] {account_id}:{region} :: executing changes for plan: {plan_id}")
+            logger.info(f"{uid} :: executing changes for plan: {plan_id}")
             plan_execute_status = response.get('ProvisionedProductPlanDetails').get('Status')
-            logger.info(f"[{launch_name}] {account_id}:{region} :: waiting for execution to complete: {plan_execute_status}")
+            logger.info(f"{uid} :: waiting for execution to complete: {plan_execute_status}")
             time.sleep(5)
 
         if plan_execute_status == 'CREATE_SUCCESS':
             provisioned_product_id = response.get('ProvisionedProductPlanDetails').get('ProvisionProductId')
 
-            logger.info(f"[{launch_name}] {account_id}:{region} :: waiting for change to complete")
+            logger.info(f"{uid} :: waiting for change to complete")
             while True:
                 response = service_catalog.describe_provisioned_product(
                     Id=provisioned_product_id
                 )
                 logger.info(
-                    f"[{launch_name}] {account_id}:{region} :: "
+                    f"{uid} :: "
                     f"waiting for change to complete: {response.get('ProvisionedProductDetail').get('Status')}"
                 )
                 provisioned_product_detail = response.get('ProvisionedProductDetail')
@@ -211,7 +211,7 @@ def provision_product(
                 if execute_status in ['AVAILABLE', 'TAINTED', 'EXECUTE_SUCCESS']:
                     break
                 elif execute_status ==  'ERROR':
-                    raise Exception(f"[{launch_name}] {account_id}:{region} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
+                    raise Exception(f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
                 else:
                     time.sleep(5)
 
@@ -219,11 +219,10 @@ def provision_product(
             return provisioned_product_id
 
         else:
-            raise Exception(f"[{launch_name}] {account_id}:{region} :: Plan execute failed: {plan_execute_status}")
+            raise Exception(f"{uid} :: Plan execute failed: {plan_execute_status}")
 
     else:
-        raise Exception(f"[{launch_name}] {account_id}:{region} :: "
-                     f"Plan failed: {response.get('ProvisionedProductPlanDetails').get('StatusMessage')}")
+        raise Exception(f"{uid} :: Plan failed: {response.get('ProvisionedProductPlanDetails').get('StatusMessage')}")
 
 
 def get_path_for_product(service_catalog, product_id, portfolio_name):
