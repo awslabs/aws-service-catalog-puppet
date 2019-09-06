@@ -28,7 +28,7 @@ Resources:
       RoleName: PuppetRole
       Path: /servicecatalog-puppet/
       Policies:
-        - PolicyName: "acceptShares"
+        - PolicyName: "ownAccount"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -43,9 +43,6 @@ Resources:
                 Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/servicecatalog-puppet/PuppetRole"
               - Effect: "Allow"
                 Action: servicecatalog:SearchProductsAsAdmin
-                Resource: !Sub "arn:aws:servicecatalog:*:${AWS::AccountId}:*/*"
-              - Effect: "Allow"
-                Action: servicecatalog:SearchProductsAsAdmin
                 Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:portfolio/*"
               - Effect: "Allow"
                 Action: servicecatalog:ListAcceptedPortfolioShares
@@ -55,10 +52,55 @@ Resources:
                 Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:product/*"
               - Effect: "Allow"
                 Action: servicecatalog:ListPortfolios
-                Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:product/*"
+                Resource: !Sub "arn:aws:servicecatalog:*:${AWS::AccountId}:*/*"
+        - PolicyName: "puppetAccount"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
               - Effect: "Allow"
-                Action: sns:Publish
-                Resource: !Sub "arn:aws:sns:*:${PuppetAccountId}:servicecatalog-puppet-cloudformation-regional-events"
+                Action: servicecatalog:AcceptPortfolioShare
+                Resource: !Sub "arn:aws:catalog:*:${PuppetAccountId}:portfolio/*"
+              - Effect: "Allow"
+                Action: servicecatalog:AssociatePrincipalWithPortfolio
+                Resource: !Sub "arn:aws:catalog:*:${PuppetAccountId}:portfolio/*"
+              - Effect: "Allow"
+                Action: iam:GetRole
+                Resource: !Sub "arn:aws:iam::${PuppetAccountId}:role/servicecatalog-puppet/PuppetRole"
+              - Effect: "Allow"
+                Action: servicecatalog:SearchProductsAsAdmin
+                Resource: !Sub "arn:aws:catalog:*:${PuppetAccountId}:portfolio/*"
+              - Effect: "Allow"
+                Action: servicecatalog:ListAcceptedPortfolioShares
+                Resource: !Sub "arn:aws:servicecatalog:*:${PuppetAccountId}:*/*"
+              - Effect: "Allow"
+                Action: servicecatalog:ListProvisioningArtifacts
+                Resource: !Sub "arn:aws:catalog:*:${PuppetAccountId}:product/*"
+              - Effect: "Allow"
+                Action: servicecatalog:ListPortfolios
+                Resource: !Sub "arn:aws:servicecatalog:*:${PuppetAccountId}:*/*"
+        - PolicyName: "others"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - "Effect": "Allow"
+                "Action":
+                  - "servicecatalog:DescribeProvisionedProduct"
+                  - "servicecatalog:DescribeRecord"
+                  - "servicecatalog:ListRecordHistory"
+                  - "servicecatalog:ListStackInstancesForProvisionedProduct"
+                  - "servicecatalog:ScanProvisionedProducts"
+                  - "servicecatalog:TerminateProvisionedProduct"
+                  - "servicecatalog:UpdateProvisionedProduct"
+                  - "servicecatalog:SearchProvisionedProducts"
+                  - "servicecatalog:CreateProvisionedProductPlan"
+                  - "servicecatalog:DescribeProvisionedProductPlan"
+                  - "servicecatalog:ExecuteProvisionedProductPlan"
+                  - "servicecatalog:DeleteProvisionedProductPlan"
+                  - "servicecatalog:ListProvisionedProductPlans"
+                  - "servicecatalog:ListServiceActionsForProvisioningArtifact"
+                  - "servicecatalog:ExecuteProvisionedProductServiceAction"
+                  - "servicecatalog:DescribeServiceActionExecutionParameters"
+                "Resource": "*"
 
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -75,7 +117,7 @@ Resources:
               - "sts:AssumeRole"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSServiceCatalogEndUserFullAccess
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
 Outputs:
   Version:
