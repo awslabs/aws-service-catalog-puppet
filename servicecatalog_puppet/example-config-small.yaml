@@ -3,3 +3,4 @@ regions: [
   'eu-west-2',
   'eu-west-3'
 ]
+should_collect_cloudformation_events: true

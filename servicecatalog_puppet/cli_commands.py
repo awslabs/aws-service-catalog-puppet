@@ -103,6 +103,8 @@ def deploy(f, single_account):
     launch_tasks = {}
     tasks_to_run = []
 
+    should_use_sns = cli_command_helpers.get_should_use_sns(os.environ.get("AWS_DEFAULT_REGION"))
+
     all_launch_tasks = cli_command_helpers.deploy_launches(manifest)
     launch_tasks.update(all_launch_tasks)
 
@@ -110,6 +112,7 @@ def deploy(f, single_account):
         task_status = task.get('status')
         del task['status']
         if task_status == constants.PROVISIONED:
+            task['should_use_sns'] = should_use_sns
             tasks_to_run.append(luigi_tasks_and_targets.ProvisionProductTask(**task))
         elif task_status == constants.TERMINATED:
             for attribute in constants.DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES:
@@ -129,7 +132,9 @@ def deploy(f, single_account):
         else:
             raise Exception(f"Unsupported status of {task_status}")
 
-    spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(manifest, launch_tasks)
+    spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(
+        manifest, launch_tasks, should_use_sns
+    )
     tasks_to_run += spoke_local_portfolio_tasks_to_run
 
     cli_command_helpers.run_tasks(tasks_to_run)

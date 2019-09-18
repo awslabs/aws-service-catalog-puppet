@@ -111,6 +111,7 @@ def provision_product(
         path_id,
         params,
         version,
+        should_use_sns,
 ):
     uid = f"[{launch_name}] {account_id}:{region}]"
     stack_name = "-".join([constants.PREFIX, account_id, region, launch_name])
@@ -155,7 +156,7 @@ def provision_product(
         ],
         NotificationArns=[
             regional_sns_topic,
-        ],
+        ] if should_use_sns else [],
     )
     logger.info(f"{uid} :: Plan created, waiting for completion")
 

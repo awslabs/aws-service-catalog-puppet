@@ -103,6 +103,8 @@ class ProvisionProductTask(PuppetTask):
 
     ssm_param_outputs = luigi.ListParameter(default=[])
 
+    should_use_sns = luigi.Parameter(significant=False, default=False)
+
     try_count = 1
 
     def requires(self):
@@ -249,6 +251,7 @@ class ProvisionProductTask(PuppetTask):
                         path_id,
                         all_params,
                         self.version,
+                        self.should_use_sns,
                     )
 
                 with betterboto_client.CrossAccountClientContextManager(
@@ -723,6 +726,8 @@ class CreateAssociationsForPortfolioTask(PuppetTask):
     associations = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
 
+    should_use_sns = luigi.Parameter(significant=False, default=False)
+
     def requires(self):
         return {
             'create_spoke_local_portfolio_task': CreateSpokeLocalPortfolioTask(
@@ -769,7 +774,7 @@ class CreateAssociationsForPortfolioTask(PuppetTask):
                 TemplateBody=template,
                 NotificationARNs=[
                     f"arn:aws:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-                ],
+                ] if self.should_use_sns else [],
             )
             result = cloudformation.describe_stacks(
                 StackName=stack_name,
@@ -993,6 +998,8 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
 
     dependencies = luigi.ListParameter(default=[])
 
+    should_use_sns = luigi.Parameter(default=False, significant=False)
+
     def requires(self):
         return {
             'create_spoke_local_portfolio_task': ImportIntoSpokeLocalPortfolioTask(
@@ -1060,7 +1067,7 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
                 TemplateBody=template,
                 NotificationARNs=[
                     f"arn:aws:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-                ],
+                ] if self.should_use_sns else [],
             )
             result = cloudformation.describe_stacks(
                 StackName=stack_name_v2,
