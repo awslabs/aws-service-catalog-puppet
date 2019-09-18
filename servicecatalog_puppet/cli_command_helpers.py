@@ -51,7 +51,7 @@ def get_regions(default_region=None):
 @functools.lru_cache(maxsize=32)
 def get_should_use_sns(default_region=None):
     logger.info("getting should_use_sns,  default_region: {}".format(default_region))
-    return get_config(default_region).get('should_use_sns', True)
+    return get_config(default_region).get('should_collect_cloudformation_events', True)
 
 
 @functools.lru_cache()
