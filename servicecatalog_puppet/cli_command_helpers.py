@@ -1,5 +1,6 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
+import functools
 import sys
 from glob import glob
 from pathlib import Path
@@ -30,17 +31,30 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def get_regions(default_region=None):
-    logger.info("getting regions,  default_region: {}".format(default_region))
+@functools.lru_cache(maxsize=32)
+def get_config(default_region=None):
+    logger.info("getting config,  default_region: {}".format(default_region))
     with betterboto_client.ClientContextManager(
             'ssm',
             region_name=default_region if default_region else get_home_region()
     ) as ssm:
         response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME)
-        config = yaml.safe_load(response.get('Parameter').get('Value'))
-        return config.get('regions')
+        return yaml.safe_load(response.get('Parameter').get('Value'))
 
 
+@functools.lru_cache(maxsize=32)
+def get_regions(default_region=None):
+    logger.info("getting regions,  default_region: {}".format(default_region))
+    return get_config(default_region).get('regions')
+
+
+@functools.lru_cache(maxsize=32)
+def get_should_use_sns(default_region=None):
+    logger.info("getting should_use_sns,  default_region: {}".format(default_region))
+    return get_config(default_region).get('should_use_sns', True)
+
+
+@functools.lru_cache()
 def get_home_region():
     with betterboto_client.ClientContextManager('ssm') as ssm:
         response = ssm.get_parameter(Name=constants.HOME_REGION_PARAM_NAME)
@@ -444,7 +458,7 @@ def _do_bootstrap(puppet_version, with_manual_approvals):
         )
 
 
-def deploy_spoke_local_portfolios(manifest, launch_tasks):
+def deploy_spoke_local_portfolios(manifest, launch_tasks, should_use_sns):
     section = constants.SPOKE_LOCAL_PORTFOLIOS
     deployment_map = manifest_utils.build_deployment_map(manifest, section)
     deployment_map = set_regions_for_deployment_map(deployment_map, section)
@@ -488,6 +502,7 @@ def deploy_spoke_local_portfolios(manifest, launch_tasks):
                 create_associations_task_params = {
                     'associations': launch_details.get('associations'),
                     'puppet_account_id': puppet_account_id,
+                    'should_use_sns': should_use_sns,
                 }
                 create_associations_for_portfolio_task = luigi_tasks_and_targets.CreateAssociationsForPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
@@ -510,6 +525,7 @@ def deploy_spoke_local_portfolios(manifest, launch_tasks):
                     create_launch_role_constraints_for_portfolio_task_params = {
                         'launch_constraints': launch_constraints,
                         'puppet_account_id': puppet_account_id,
+                        'should_use_sns': should_use_sns,
                     }
                     create_launch_role_constraints_for_portfolio = luigi_tasks_and_targets.CreateLaunchRoleConstraintsForPortfolio(
                         **create_spoke_local_portfolio_task_as_dependency_params,

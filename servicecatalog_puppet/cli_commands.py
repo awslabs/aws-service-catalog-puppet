@@ -103,6 +103,8 @@ def deploy(f, single_account):
     launch_tasks = {}
     tasks_to_run = []
 
+    should_use_sns = aws.pmpdfdsmfd
+
     all_launch_tasks = cli_command_helpers.deploy_launches(manifest)
     launch_tasks.update(all_launch_tasks)
 
@@ -110,6 +112,7 @@ def deploy(f, single_account):
         task_status = task.get('status')
         del task['status']
         if task_status == constants.PROVISIONED:
+            task['should_use_sns'] = should_use_sns
             tasks_to_run.append(luigi_tasks_and_targets.ProvisionProductTask(**task))
         elif task_status == constants.TERMINATED:
             for attribute in constants.DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES:
