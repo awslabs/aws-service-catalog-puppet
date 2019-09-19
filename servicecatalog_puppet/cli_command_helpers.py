@@ -717,8 +717,10 @@ def run_tasks(tasks_to_run):
         result = json.loads(open(filename, 'r').read())
         params = result.get('params_for_results')
         if should_forward_failures_to_opscenter:
+            title = f"{result.get('task_type')} failed: {params.get('launch_name')} - {params.get('account_id')} - {params.get('region')}"
+            logging.info(f"Sending failure to opscenter: {title}")
             ssm_client.create_ops_item(
-                Title=f"{result.get('task_type')} failed: {params.get('launch_name')} - {params.get('account_id')} - {params.get('region')}",
+                Title=title,
                 Description="\n".join(result.get('exception_stack_trace')),
                 OperationalData={
                     'launch_name': {
