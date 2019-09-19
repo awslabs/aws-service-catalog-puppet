@@ -30,3 +30,6 @@ RESULTS_DIRECTORY = "results"
 
 NO_CHANGE = 'NO_CHANGE'
 CHANGE = 'CHANGE'
+
+EVENT_BUS_NAME = "servicecatalog-puppet-event-bus"
+SERVICE_CATALOG_PUPPET_EVENT_SOURCE = "servicecatalog-puppet"

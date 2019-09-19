@@ -4,3 +4,4 @@ regions: [
   'eu-west-3'
 ]
 should_collect_cloudformation_events: true
+should_forward_events_to_eventbridge: true
