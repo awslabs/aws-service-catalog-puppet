@@ -736,7 +736,7 @@ def run_tasks(tasks_to_run):
                         'Type': 'SearchableString'
                     },
                     'task_type': {
-                        'Value': params.get('task_type'),
+                        'Value': result.get('task_type'),
                         'Type': 'SearchableString'
                     },
                 },
