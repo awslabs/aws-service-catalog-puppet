@@ -662,6 +662,13 @@ def deploy_launches_task_builder_for_account_launch_region(
 
 def run_tasks(tasks_to_run):
     should_use_eventbridge = get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION"))
+    should_forward_failures_to_opscenter = get_should_forward_failures_to_opscenter(os.environ.get("AWS_DEFAULT_REGION"))
+
+    ssm_client = None
+    if should_forward_failures_to_opscenter:
+        with betterboto_client.ClientContextManager('ssm') as ssm:
+            ssm_client = ssm
+
     entries = []
 
     for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
@@ -694,6 +701,7 @@ def run_tasks(tasks_to_run):
                 'Detail': result_contents,
                 'EventBusName': constants.EVENT_BUS_NAME
             })
+
         table_data.append([
             result.get('task_type'),
             params.get('launch_name'),
@@ -707,6 +715,35 @@ def run_tasks(tasks_to_run):
     click.echo(table.table)
     for filename in glob('results/failure/*.json'):
         result = json.loads(open(filename, 'r').read())
+        params = result.get('params_for_results')
+        if should_forward_failures_to_opscenter:
+            title = f"{result.get('task_type')} failed: {params.get('launch_name')} - {params.get('account_id')} - {params.get('region')}"
+            logging.info(f"Sending failure to opscenter: {title}")
+            ssm_client.create_ops_item(
+                Title=title,
+                Description="\n".join(result.get('exception_stack_trace')),
+                OperationalData={
+                    'launch_name': {
+                        'Value': params.get('launch_name'),
+                        'Type': 'SearchableString'
+                    },
+                    'account_id': {
+                        'Value': params.get('account_id'),
+                        'Type': 'SearchableString'
+                    },
+                    'region': {
+                        'Value': params.get('region'),
+                        'Type': 'SearchableString'
+                    },
+                    'task_type': {
+                        'Value': result.get('task_type'),
+                        'Type': 'SearchableString'
+                    },
+                },
+                Priority=1,
+                Source=constants.SERVICE_CATALOG_PUPPET_OPS_CENTER_SOURCE,
+            )
+
         click.echo(colorclass.Color("{red}" + result.get('task_type') + " failed{/red}"))
         click.echo(f"{yaml.safe_dump({'parameters':result.get('task_params')})}")
         click.echo("\n".join(result.get('exception_stack_trace')))
