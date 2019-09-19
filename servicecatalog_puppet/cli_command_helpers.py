@@ -722,8 +722,10 @@ def run_tasks(tasks_to_run):
     }
 
     if should_use_eventbridge:
+        logging.info(f"Sending {len(entries)} events to eventbridge")
         with betterboto_client.ClientContextManager('events') as events:
             events.put_events(Entries=entries)
+        logging.info(f"Finished sending {len(entries)} events to eventbridge")
     sys.exit(exit_status_codes.get(run_result.status))
 
 
