@@ -54,6 +54,18 @@ def get_should_use_sns(default_region=None):
     return get_config(default_region).get('should_collect_cloudformation_events', True)
 
 
+@functools.lru_cache(maxsize=32)
+def get_should_use_eventbridge(default_region=None):
+    logger.info("getting should_use_eventbridge,  default_region: {}".format(default_region))
+    return get_config(default_region).get('should_forward_events_to_eventbridge', False)
+
+
+@functools.lru_cache(maxsize=32)
+def get_should_forward_failures_to_opscenter(default_region=None):
+    logger.info("getting should_forward_failures_to_opscenter,  default_region: {}".format(default_region))
+    return get_config(default_region).get('should_forward_failures_to_opscenter', False)
+
+
 @functools.lru_cache()
 def get_home_region():
     with betterboto_client.ClientContextManager('ssm') as ssm:
@@ -379,6 +391,17 @@ def _do_bootstrap_spoke(puppet_account_id, cloudformation, puppet_version):
 
 def _do_bootstrap(puppet_version, with_manual_approvals):
     click.echo('Starting bootstrap')
+
+    should_use_eventbridge = get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION"))
+    if should_use_eventbridge:
+        with betterboto_client.ClientContextManager('events') as events:
+            try:
+                events.describe_event_bus(Name=constants.EVENT_BUS_NAME)
+            except events.exceptions.ResourceNotFoundException:
+                events.create_event_bus(
+                    Name=constants.EVENT_BUS_NAME,
+                )
+
     ALL_REGIONS = get_regions(os.environ.get("AWS_DEFAULT_REGION"))
     with betterboto_client.MultiRegionClientContextManager('cloudformation', ALL_REGIONS) as clients:
         click.echo('Creating {}-regional'.format(constants.BOOTSTRAP_STACK_NAME))
@@ -638,6 +661,9 @@ def deploy_launches_task_builder_for_account_launch_region(
 
 
 def run_tasks(tasks_to_run):
+    should_use_eventbridge = get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION"))
+    entries = []
+
     for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
 
@@ -654,8 +680,20 @@ def run_tasks(tasks_to_run):
     ]
     table = terminaltables.AsciiTable(table_data)
     for filename in glob('results/processing_time/*.json'):
-        result = json.loads(open(filename, 'r').read())
+        result_contents = open(filename, 'r').read()
+        result = json.loads(result_contents)
         params = result.get('params_for_results')
+        if should_use_eventbridge:
+            entries.append({
+                # 'Time': ,
+                'Source': constants.SERVICE_CATALOG_PUPPET_EVENT_SOURCE,
+                'Resources': [
+                    # 'string',
+                ],
+                'DetailType': result.get('task_type'),
+                'Detail': result_contents,
+                'EventBusName': constants.EVENT_BUS_NAME
+            })
         table_data.append([
             result.get('task_type'),
             params.get('launch_name'),
@@ -682,6 +720,12 @@ def run_tasks(tasks_to_run):
         LuigiStatusCode.NOT_RUN: 4,
         LuigiStatusCode.MISSING_EXT: 5,
     }
+
+    if should_use_eventbridge:
+        logging.info(f"Sending {len(entries)} events to eventbridge")
+        with betterboto_client.ClientContextManager('events') as events:
+            events.put_events(Entries=entries)
+        logging.info(f"Finished sending {len(entries)} events to eventbridge")
     sys.exit(exit_status_codes.get(run_result.status))
 
 

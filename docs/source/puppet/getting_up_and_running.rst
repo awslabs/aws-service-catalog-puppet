@@ -102,6 +102,8 @@ Here is an example config.yaml:
       'sa-east-1',
     ]
     should_collect_cloudformation_events: false
+    should_forward_events_to_eventbridge: true
+    should_forward_failures_to_opscenter: true
 
 Once you have this file you need to upload the config:
 
