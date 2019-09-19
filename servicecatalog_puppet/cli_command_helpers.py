@@ -662,7 +662,7 @@ def deploy_launches_task_builder_for_account_launch_region(
 
 def run_tasks(tasks_to_run):
     should_use_eventbridge = get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION"))
-    events = []
+    entries = []
 
     for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
@@ -684,7 +684,7 @@ def run_tasks(tasks_to_run):
         result = json.loads(result_contents)
         params = result.get('params_for_results')
         if should_use_eventbridge:
-            events.append({
+            entries.append({
                 # 'Time': ,
                 'Source': constants.SERVICE_CATALOG_PUPPET_EVENT_SOURCE,
                 'Resources': [
@@ -720,6 +720,10 @@ def run_tasks(tasks_to_run):
         LuigiStatusCode.NOT_RUN: 4,
         LuigiStatusCode.MISSING_EXT: 5,
     }
+
+    if should_use_eventbridge:
+        with betterboto_client.ClientContextManager('events') as events:
+            events.put_events(Entries=entries)
     sys.exit(exit_status_codes.get(run_result.status))
 
 
