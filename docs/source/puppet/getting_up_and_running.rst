@@ -105,6 +105,17 @@ Here is an example config.yaml:
     should_forward_events_to_eventbridge: true
     should_forward_failures_to_opscenter: true
 
+
+.. note::
+
+    should_collect_cloudformation_events was added in version 0.33.0
+
+.. note::
+
+    should_forward_events_to_eventbridge was added in version 0.35.0
+    should_forward_failures_to_opscenter was added in version 0.35.0
+
+
 Once you have this file you need to upload the config:
 
 .. code-block:: bash
