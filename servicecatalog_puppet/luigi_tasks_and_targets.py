@@ -80,6 +80,40 @@ class GetSSMParamTask(PuppetTask):
         pass
 
 
+class GetVersionIdByVersionName(PuppetTask):
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "product": self.product,
+            "version": self.version,
+        }
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/GetVersionIdByVersionName/"
+            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+        )
+
+    def run(self):
+        f = self.output().open('w')
+        f.write(
+            json.dumps(
+                {},
+                indent=4,
+                default=str,
+            )
+        )
+        f.close()
+
+
 class GetProductIdByProductName(PuppetTask):
     portfolio = luigi.Parameter()
     product = luigi.Parameter()
@@ -146,7 +180,14 @@ class ProvisionProductTask(PuppetTask):
         for param_input in self.ssm_param_inputs:
             ssm_params[param_input.get('parameter_name')] = GetSSMParamTask(**param_input)
         dependencies = []
-        id_task = GetProductIdByProductName(
+        version_id = GetVersionIdByVersionName(
+            self.portfolio,
+            self.product,
+            self.version,
+            self.account_id,
+            self.region,
+        )
+        product_id = GetProductIdByProductName(
             self.portfolio,
             self.product,
             self.version,
@@ -169,7 +210,8 @@ class ProvisionProductTask(PuppetTask):
         return {
             'dependencies': dependencies,
             'ssm_params': ssm_params,
-            'ids': id_task,
+            'version_id': version_id,
+            'product_id': product_id,
         }
 
     def params_for_results_display(self):
