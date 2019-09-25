@@ -595,11 +595,7 @@ def deploy_launches_task_builder(deployment_map, manifest, puppet_account_id, se
     return all_tasks
 
 
-def deploy_launches_task_builder_for_account_launch_region(
-        account_id, deployment_map, launch_details, launch_name, manifest,
-        puppet_account_id, region_name, regional_details
-):
-    all_tasks = {}
+def get_required_params(account_id, region_name, regional_details, launch_details):
     product_id = regional_details.get('product_id')
     required_parameters = {}
     role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
@@ -616,7 +612,18 @@ def deploy_launches_task_builder_for_account_launch_region(
             parameter_key = provisioning_artifact_parameters.get('ParameterKey')
             required_parameters[parameter_key] = True
 
-        regular_parameters, ssm_parameters = get_parameters_for_launch(
+    return required_parameters
+
+
+def deploy_launches_task_builder_for_account_launch_region(
+        account_id, deployment_map, launch_details, launch_name, manifest,
+        puppet_account_id, region_name, regional_details
+):
+    all_tasks = {}
+
+    required_parameters = get_required_params(account_id, region_name, regional_details, launch_details)
+
+    regular_parameters, ssm_parameters = get_parameters_for_launch(
             required_parameters,
             deployment_map,
             manifest,
@@ -627,7 +634,7 @@ def deploy_launches_task_builder_for_account_launch_region(
     logger.info(f"Found a new launch: {launch_name}")
     task = {
         'launch_name': launch_name,
-        'portfolio': portfolio_name,
+        'portfolio': launch_details.get('portfolio'),
         'product': launch_details.get('product'),
         'version': launch_details.get('version'),
 

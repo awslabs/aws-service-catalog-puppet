@@ -114,7 +114,7 @@ class GetVersionIdByVersionName(PuppetTask):
         }
 
     def run(self):
-        product_details = self.input().get('product')
+        product_details = json.loads(self.input().get('product').open('r').read())
         version_id = None
         with betterboto_client.CrossAccountClientContextManager(
             'servicecatalog',
@@ -175,7 +175,7 @@ class GetProductIdByProductName(PuppetTask):
         )
 
     def run(self):
-        portfolio_details = self.input().get('portfolio')
+        portfolio_details = json.loads(self.input().get('portfolio').open('r').read())
         with betterboto_client.CrossAccountClientContextManager(
             'servicecatalog',
             f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
