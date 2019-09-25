@@ -102,6 +102,17 @@ class GetVersionIdByVersionName(PuppetTask):
             f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
         )
 
+    def requires(self):
+        product_id = GetProductIdByProductName(
+            self.portfolio,
+            self.product,
+            self.account_id,
+            self.region,
+        )
+        return {
+            'product_id': product_id,
+        }
+
     def run(self):
         f = self.output().open('w')
         f.write(
@@ -117,7 +128,6 @@ class GetVersionIdByVersionName(PuppetTask):
 class GetProductIdByProductName(PuppetTask):
     portfolio = luigi.Parameter()
     product = luigi.Parameter()
-    version = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
 
@@ -127,13 +137,12 @@ class GetProductIdByProductName(PuppetTask):
             "region": self.region,
             "portfolio": self.portfolio,
             "product": self.product,
-            "version": self.version,
         }
 
     def output(self):
         return luigi.LocalTarget(
             f"output/GetProductIdByProductName/"
-            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}.json"
         )
 
     def run(self):
@@ -190,7 +199,6 @@ class ProvisionProductTask(PuppetTask):
         product_id = GetProductIdByProductName(
             self.portfolio,
             self.product,
-            self.version,
             self.account_id,
             self.region,
         )
