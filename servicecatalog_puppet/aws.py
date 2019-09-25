@@ -290,7 +290,6 @@ def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name,
         version_id = None
         portfolio_id = None
 
-
         response = cross_account_servicecatalog.list_accepted_portfolio_shares()
         assert response.get('NextPageToken') is None, "Pagination not supported"
         for portfolio_detail in response.get('PortfolioDetails'):

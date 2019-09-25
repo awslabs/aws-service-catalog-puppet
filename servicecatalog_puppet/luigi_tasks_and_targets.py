@@ -351,8 +351,8 @@ class ProvisionProductTask(PuppetTask):
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
                     f"starting deploy try {self.try_count} of {self.retry_count}")
         
-        version_id = self.input().get('version').get('version_id')
-        product_id = self.input().get('product').get('product_id')
+        version_id = json.loads(self.input().get('version').open('r').read()).get('version_id')
+        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
 
         all_params = {}
 
