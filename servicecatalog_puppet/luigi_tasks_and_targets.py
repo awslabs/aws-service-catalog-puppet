@@ -110,19 +110,38 @@ class GetVersionIdByVersionName(PuppetTask):
             self.region,
         )
         return {
-            'product_id': product_id,
+            'product': product_id,
         }
 
     def run(self):
-        f = self.output().open('w')
-        f.write(
-            json.dumps(
-                {},
-                indent=4,
-                default=str,
+        product_details = self.input().get('product')
+        version_id = None
+        with betterboto_client.CrossAccountClientContextManager(
+            'servicecatalog',
+            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"{self.account_id}-{self.region}", 
+            region_name=self.region
+        ) as cross_account_servicecatalog:
+            response = cross_account_servicecatalog.list_provisioning_artifacts_single_page(
+                ProductId=product_details.get('product_id')
             )
-        )
-        f.close()
+            for provisioning_artifact_detail in response.get('ProvisioningArtifactDetails'):
+                if provisioning_artifact_detail.get('Name') == self.version:
+                    version_id = provisioning_artifact_detail.get('Id')
+            assert version_id is not None, "Did not find version looking for"
+            
+            f = self.output().open('w')
+            f.write(
+                json.dumps(
+                    {
+                        'version_name': self.version,
+                        'version_id': version_id,
+                    },
+                    indent=4,
+                    default=str,
+                )
+            )
+            f.close()
 
 
 class GetProductIdByProductName(PuppetTask):
@@ -146,7 +165,7 @@ class GetProductIdByProductName(PuppetTask):
             self.region,
         )
         return {
-            'portfolio_id': portfolio_id,
+            'portfolio': portfolio_id,
         }
 
     def output(self):
@@ -156,15 +175,38 @@ class GetProductIdByProductName(PuppetTask):
         )
 
     def run(self):
-        f = self.output().open('w')
-        f.write(
-            json.dumps(
-                {},
-                indent=4,
-                default=str,
+        portfolio_details = self.input().get('portfolio')
+        with betterboto_client.CrossAccountClientContextManager(
+            'servicecatalog',
+            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"{self.account_id}-{self.region}", 
+            region_name=self.region
+        ) as cross_account_servicecatalog:
+            product_id = None
+            response = cross_account_servicecatalog.search_products_as_admin_single_page(
+                PortfolioId=portfolio_details.get('portfolio_id')
             )
-        )
-        f.close()
+            for product_view_details in response.get('ProductViewDetails'):
+                product_view = product_view_details.get('ProductViewSummary')
+                logging.info(f"looking at {product_view.get('Name')}")
+                if product_view.get('Name') == self.product:
+                    logger.info('Found product: {}'.format(product_view))
+                    product_id = product_view.get('ProductId')
+    
+            assert product_id is not None, "Did not find product looking for"
+            
+            f = self.output().open('w')
+            f.write(
+                json.dumps(
+                    {
+                        'product_name': self.product,
+                        'product_id': product_id,
+                    },
+                    indent=4,
+                    default=str,
+                )
+            )
+            f.close()
 
 
 class GetPortfolioIdByPortfolioName(PuppetTask):
@@ -186,15 +228,42 @@ class GetPortfolioIdByPortfolioName(PuppetTask):
         )
 
     def run(self):
-        f = self.output().open('w')
-        f.write(
-            json.dumps(
-                {},
-                indent=4,
-                default=str,
+        with betterboto_client.CrossAccountClientContextManager(
+            'servicecatalog',
+            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"{self.account_id}-{self.region}", 
+            region_name=self.region
+        ) as cross_account_servicecatalog:
+            portfolio_id = None
+    
+            response = cross_account_servicecatalog.list_accepted_portfolio_shares()
+            assert response.get('NextPageToken') is None, "Pagination not supported"
+            for portfolio_detail in response.get('PortfolioDetails'):
+                if portfolio_detail.get('DisplayName') == self.portfolio:
+                    portfolio_id = portfolio_detail.get('Id')
+                    break
+    
+            if portfolio_id is None:
+                response = cross_account_servicecatalog.list_portfolios()
+                for portfolio_detail in response.get('PortfolioDetails', []):
+                    if portfolio_detail.get('DisplayName') == self.portfolio:
+                        portfolio_id = portfolio_detail.get('Id')
+                        break
+    
+            assert portfolio_id is not None, "Could not find portfolio"
+        
+            f = self.output().open('w')
+            f.write(
+                json.dumps(
+                    {
+                        "portfolio_name": self.portfolio, 
+                        "portfolio_id": portfolio_id, 
+                    },
+                    indent=4,
+                    default=str,
+                )
             )
-        )
-        f.close()
+            f.close()
 
 
 class ProvisionProductTask(PuppetTask):
@@ -258,8 +327,8 @@ class ProvisionProductTask(PuppetTask):
         return {
             'dependencies': dependencies,
             'ssm_params': ssm_params,
-            'version_id': version_id,
-            'product_id': product_id,
+            'version': version_id,
+            'product': product_id,
         }
 
     def params_for_results_display(self):
@@ -281,6 +350,9 @@ class ProvisionProductTask(PuppetTask):
     def run(self):
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
                     f"starting deploy try {self.try_count} of {self.retry_count}")
+        
+        version_id = self.input().get('version').get('version_id')
+        product_id = self.input().get('product').get('product_id')
 
         all_params = {}
 
@@ -297,10 +369,10 @@ class ProvisionProductTask(PuppetTask):
                 'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
         ) as service_catalog:
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
-            path_id = aws.get_path_for_product(service_catalog, self.product_id, self.portfolio)
+            path_id = aws.get_path_for_product(service_catalog, product_id, self.portfolio)
 
             provisioned_product_id, provisioning_artifact_id = aws.terminate_if_status_is_not_available(
-                service_catalog, self.launch_name, self.product_id, self.account_id, self.region
+                service_catalog, self.launch_name, product_id, self.account_id, self.region
             )
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
                         f"provisioned_product_id: {provisioned_product_id}, "
@@ -318,7 +390,7 @@ class ProvisionProductTask(PuppetTask):
                     default_cfn_params = {}
 
                 provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
-                    ProductId=self.product_id, ProvisioningArtifactId=self.version_id, PathId=path_id,
+                    ProductId=product_id, ProvisioningArtifactId=version_id, PathId=path_id,
                 ).get('ProvisioningArtifactParameters', [])
                 new_version_param_names = [p.get('ParameterKey') for p in provisioning_artifact_parameters]
 
@@ -328,7 +400,7 @@ class ProvisionProductTask(PuppetTask):
                             if default_cfn_param_name in new_version_param_names:
                                 all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
 
-                if provisioning_artifact_id == self.version_id:
+                if provisioning_artifact_id == version_id:
                     logger.info(
                         f"[{self.launch_name}] {self.account_id}:{self.region} :: found previous good provision")
                     if provisioned_product_id:
@@ -377,8 +449,8 @@ class ProvisionProductTask(PuppetTask):
                         self.launch_name,
                         self.account_id,
                         self.region,
-                        self.product_id,
-                        self.version_id,
+                        product_id,
+                        version_id,
                         self.puppet_account_id,
                         path_id,
                         all_params,
