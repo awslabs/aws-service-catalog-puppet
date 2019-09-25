@@ -232,10 +232,10 @@ def set_regions_for_deployment_map(deployment_map, section):
                         region
                     )
                     launch_details['regional_details'][region] = {
-                        'product_id': None,
-                        'version_id': None,
-                        # 'product_id': product_id,
-                        # 'version_id': version_id,
+                        # 'product_id': None,
+                        # 'version_id': None,
+                        'product_id': product_id,
+                        'version_id': version_id,
                     }
     return deployment_map
 
