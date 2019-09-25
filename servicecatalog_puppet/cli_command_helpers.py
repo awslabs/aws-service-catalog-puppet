@@ -221,7 +221,7 @@ def set_regions_for_deployment_map(deployment_map, section):
             launch_details['regional_details'] = {}
 
             if section == constants.LAUNCHES:
-                # TODO move this to provision product task so this if statement is no longer needed
+                # TODO move this to provision product task so this if statement is no longer needed #EPF
                 for region in launch_details.get('regions'):
                     logger.info('Starting region: {}'.format(region))
                     product_id, version_id = aws.get_provisioning_artifact_id_for(

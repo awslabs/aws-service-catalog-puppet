@@ -139,10 +139,50 @@ class GetProductIdByProductName(PuppetTask):
             "product": self.product,
         }
 
+    def requires(self):
+        portfolio_id = GetPortfolioIdByPortfolioName(
+            self.portfolio,
+            self.account_id,
+            self.region,
+        )
+        return {
+            'portfolio_id': portfolio_id,
+        }
+
     def output(self):
         return luigi.LocalTarget(
             f"output/GetProductIdByProductName/"
             f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}.json"
+        )
+
+    def run(self):
+        f = self.output().open('w')
+        f.write(
+            json.dumps(
+                {},
+                indent=4,
+                default=str,
+            )
+        )
+        f.close()
+
+
+class GetPortfolioIdByPortfolioName(PuppetTask):
+    portfolio = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+        }
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/GetPortfolioIdByPortfolioName/"
+            f"{self.account_id}-{self.region}-{self.portfolio}.json"
         )
 
     def run(self):
