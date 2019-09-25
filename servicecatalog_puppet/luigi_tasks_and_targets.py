@@ -87,6 +87,15 @@ class GetProductIdByProductName(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
 
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "product": self.product,
+            "version": self.version,
+        }
+
     def output(self):
         return luigi.LocalTarget(
             f"output/GetProductIdByProductName/"
