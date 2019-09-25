@@ -80,6 +80,31 @@ class GetSSMParamTask(PuppetTask):
         pass
 
 
+class GetProductIdByProductName(PuppetTask):
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/GetProductIdByProductName/"
+            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+        )
+
+    def run(self):
+        f = self.output().open('w')
+        f.write(
+            json.dumps(
+                {},
+                indent=4,
+                default=str,
+            )
+        )
+        f.close()
+
+
 class ProvisionProductTask(PuppetTask):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -112,6 +137,13 @@ class ProvisionProductTask(PuppetTask):
         for param_input in self.ssm_param_inputs:
             ssm_params[param_input.get('parameter_name')] = GetSSMParamTask(**param_input)
         dependencies = []
+        id_task = GetProductIdByProductName(
+            self.portfolio,
+            self.product,
+            self.version,
+            self.account_id,
+            self.region,
+        )
         for r in self.dependencies:
             if r.get('status') is not None:
                 if r.get('status') == constants.TERMINATED:
@@ -127,7 +159,8 @@ class ProvisionProductTask(PuppetTask):
                 )
         return {
             'dependencies': dependencies,
-            'ssm_params': ssm_params
+            'ssm_params': ssm_params,
+            'ids': id_task,
         }
 
     def params_for_results_display(self):
