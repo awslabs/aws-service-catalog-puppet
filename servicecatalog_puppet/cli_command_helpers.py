@@ -595,12 +595,13 @@ def deploy_launches_task_builder(deployment_map, manifest, puppet_account_id, se
     return all_tasks
 
 
-def get_required_params(region_name, regional_details, launch_details):
+def get_required_params(account_id, region_name, regional_details, launch_details):
     product_id = regional_details.get('product_id')
     required_parameters = {}
+    role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
     portfolio_name = launch_details.get('portfolio')
-    with betterboto_client.ClientContextManager(
-            'servicecatalog', region_name=region_name
+    with betterboto_client.CrossAccountClientContextManager(
+            'servicecatalog', role, f'sc-{account_id}-{region_name}', region_name=region_name
     ) as service_catalog:
         response = service_catalog.describe_provisioning_parameters(
             ProductId=product_id,
@@ -620,7 +621,7 @@ def deploy_launches_task_builder_for_account_launch_region(
 ):
     all_tasks = {}
 
-    required_parameters = get_required_params(region_name, regional_details, launch_details)
+    required_parameters = get_required_params(account_id, region_name, regional_details, launch_details)
 
     regular_parameters, ssm_parameters = get_parameters_for_launch(
             required_parameters,

@@ -401,3 +401,52 @@ def run_pipeline(pipeline_name, tail):
                 else:
                     time.sleep(5)
         return pipeline_execution_id
+
+
+def get_version_id_for(servicecatalog, product_id, version_name):
+    version_id = None
+    response = servicecatalog.list_provisioning_artifacts_single_page(
+                ProductId=product_id
+            )
+    for provisioning_artifact_detail in response.get('ProvisioningArtifactDetails'):
+        if provisioning_artifact_detail.get('Name') == version_name:
+            version_id = provisioning_artifact_detail.get('Id')
+    assert version_id is not None, "Did not find version looking for"
+    return version_id
+
+
+def get_product_id_for(servicecatalog, portfolio_id, product_name):
+    product_id = None
+    response = servicecatalog.search_products_as_admin_single_page(
+                PortfolioId=portfolio_id
+            )
+
+    for product_view_details in response.get('ProductViewDetails'):
+        product_view = product_view_details.get('ProductViewSummary')
+        logging.info(f"looking at {product_view.get('Name')}")
+        if product_view.get('Name') == product_name:
+            logger.info('Found product: {}'.format(product_view))
+            product_id = product_view.get('ProductId')
+        assert product_id is not None, "Did not find product looking for"
+        return product_id
+
+
+def get_portfolio_id_for(servicecatalog, portfolio_name):
+    portfolio_id = None
+
+    response = servicecatalog.list_accepted_portfolio_shares()
+    assert response.get('NextPageToken') is None, "Pagination not supported"
+    for portfolio_detail in response.get('PortfolioDetails'):
+        if portfolio_detail.get('DisplayName') == portfolio_name:
+            portfolio_id = portfolio_detail.get('Id')
+            break
+
+    if portfolio_id is None:
+        response = servicecatalog.list_portfolios()
+        for portfolio_detail in response.get('PortfolioDetails', []):
+            if portfolio_detail.get('DisplayName') == portfolio_name:
+                portfolio_id = portfolio_detail.get('Id')
+                break
+
+    assert portfolio_id is not None, "Could not find portfolio"
+    return portfolio_id
