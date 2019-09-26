@@ -244,9 +244,6 @@ class ProvisionProductTask(PuppetTask):
     product = luigi.Parameter()
     version = luigi.Parameter()
 
-    # product_id = luigi.Parameter()
-    # version_id = luigi.Parameter()
-
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -361,6 +358,7 @@ class ProvisionProductTask(PuppetTask):
                 else:
                     default_cfn_params = {}
 
+                logging.info(f" running as {role}, checking {product_id} {version_id} {path_id} in {self.account_id} {self.region}")
                 provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
                     ProductId=product_id, ProvisioningArtifactId=version_id, PathId=path_id,
                 ).get('ProvisioningArtifactParameters', [])
@@ -474,9 +472,6 @@ class ProvisionProductDryRunTask(PuppetTask):
     product = luigi.Parameter()
     version = luigi.Parameter()
 
-    product_id = luigi.Parameter()
-    version_id = luigi.Parameter()
-
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -494,6 +489,19 @@ class ProvisionProductDryRunTask(PuppetTask):
     try_count = 1
 
     def requires(self):
+        version_id = GetVersionIdByVersionName(
+            self.portfolio,
+            self.product,
+            self.version,
+            self.account_id,
+            self.region,
+        )
+        product_id = GetProductIdByProductName(
+            self.portfolio,
+            self.product,
+            self.account_id,
+            self.region,
+        )
         dependencies = []
         for r in self.dependencies:
             if r.get('status') is not None:
@@ -510,6 +518,8 @@ class ProvisionProductDryRunTask(PuppetTask):
                 )
         return {
             'dependencies': dependencies,
+            'version': version_id,
+            'product': product_id,
         }
 
     def params_for_results_display(self):
@@ -534,6 +544,9 @@ class ProvisionProductDryRunTask(PuppetTask):
             f"{logger_prefix} :: starting dryrun of {self.retry_count}"
         )
 
+        version_id = json.loads(self.input().get('version').open('r').read()).get('version_id')
+        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
+
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
                 'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
@@ -542,7 +555,7 @@ class ProvisionProductDryRunTask(PuppetTask):
 
             response = service_catalog.search_provisioned_products(
                 Filters={'SearchQuery': [
-                    "productId:{}".format(self.product_id)
+                    "productId:{}".format(product_id)
                 ]}
             )
             provisioning_artifact_id = False
@@ -553,7 +566,7 @@ class ProvisionProductDryRunTask(PuppetTask):
                         provisioned_product_id = r.get('Id')
                         provisioning_artifact_id = r.get('ProvisioningArtifactId')
 
-                        if provisioning_artifact_id != self.version_id:
+                        if provisioning_artifact_id != version_id:
                             self.write_result(
                                 current_version=self.get_current_version(provisioning_artifact_id, service_catalog),
                                 new_version=self.version,
@@ -647,9 +660,11 @@ class ProvisionProductDryRunTask(PuppetTask):
             )
 
     def get_current_version(self, provisioning_artifact_id, service_catalog):
+        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
+
         return service_catalog.describe_provisioning_artifact(
             ProvisioningArtifactId=provisioning_artifact_id,
-            ProductId=self.product_id,
+            ProductId=product_id,
         ).get('ProvisioningArtifactDetail').get('Name')
 
     def write_result(self, current_version, new_version, effect, notes=''):
@@ -772,9 +787,6 @@ class TerminateProductDryRunTask(PuppetTask):
     product = luigi.Parameter()
     version = luigi.Parameter()
 
-    product_id = luigi.Parameter()
-    version_id = luigi.Parameter()
-
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -791,6 +803,16 @@ class TerminateProductDryRunTask(PuppetTask):
     ssm_param_inputs = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
 
+    def requires(self):
+        product_id = GetProductIdByProductName(
+            self.portfolio,
+            self.product,
+            self.account_id,
+            self.region,
+        )
+        return {
+            'product': product_id,
+        }
 
     def params_for_results_display(self):
         return {
@@ -829,12 +851,14 @@ class TerminateProductDryRunTask(PuppetTask):
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
                     f"starting dry run terminate try {self.try_count} of {self.retry_count}")
 
+        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
+
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
                 'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
         ) as service_catalog:
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
-            r = aws.get_provisioned_product_details(self.product_id, self.launch_name, service_catalog)
+            r = aws.get_provisioned_product_details(product_id, self.launch_name, service_catalog)
 
             if r is None:
                 self.write_result(
@@ -843,7 +867,7 @@ class TerminateProductDryRunTask(PuppetTask):
             else:
                 provisioned_product_name = service_catalog.describe_provisioning_artifact(
                     ProvisioningArtifactId=r.get('ProvisioningArtifactId'),
-                    ProductId=self.product_id,
+                    ProductId=product_id,
                 ).get('ProvisioningArtifactDetail').get('Name')
 
                 if r.get('Status') != "TERMINATED":
