@@ -622,7 +622,7 @@ def deploy_launches_task_builder_for_account_launch_region(
 ):
     all_tasks = {}
 
-    required_parameters = get_required_params(account_id, region_name, regional_details, launch_details)
+    required_parameters = get_required_params(region_name, regional_details, launch_details)
 
     regular_parameters, ssm_parameters = get_parameters_for_launch(
             required_parameters,
