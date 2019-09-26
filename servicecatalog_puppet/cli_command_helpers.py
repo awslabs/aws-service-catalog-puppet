@@ -218,25 +218,25 @@ def set_regions_for_deployment_map(deployment_map, section, puppet_account_id):
                         launch_details['regions'] = regions
 
             assert launch_details.get('regions') is not None, "Launch {} has no regions set".format(launch_name)
-            launch_details['regional_details'] = {}
+            # launch_details['regional_details'] = {}
 
-            if section == constants.LAUNCHES:
+            # if section == constants.LAUNCHES:
                 # TODO move this to provision product task so this if statement is no longer needed #EPF
-                for region in launch_details.get('regions'):
-                    logger.info('Starting region: {}'.format(region))
-                    product_id, version_id = aws.get_provisioning_artifact_id_for(
-                        launch_details.get('portfolio'),
-                        launch_details.get('product'),
-                        launch_details.get('version'),
-                        puppet_account_id,
-                        region
-                    )
-                    launch_details['regional_details'][region] = {
-                        # 'product_id': None,
-                        # 'version_id': None,
-                        'product_id': product_id,
-                        'version_id': version_id,
-                    }
+                # for region in launch_details.get('regions'):
+                #     logger.info('Starting region: {}'.format(region))
+                #     product_id, version_id = aws.get_provisioning_artifact_id_for(
+            #             launch_details.get('portfolio'),
+            #             launch_details.get('product'),
+            #             launch_details.get('version'),
+            #             puppet_account_id,
+            #             region
+            #         )
+            #         launch_details['regional_details'][region] = {
+            #             # 'product_id': None,
+            #             # 'version_id': None,
+            #             'product_id': product_id,
+            #             'version_id': version_id,
+            #         }
     return deployment_map
 
 
@@ -579,7 +579,7 @@ def deploy_launches_task_builder(deployment_map, manifest, puppet_account_id, se
     all_tasks = {}
     for account_id, deployments_for_account in deployment_map.items():
         for launch_name, launch_details in deployments_for_account.get(section).items():
-            for region_name, regional_details in launch_details.get('regional_details').items():
+            for region_name in launch_details.get('regions'):
                 these_all_tasks = deploy_launches_task_builder_for_account_launch_region(
                     account_id,
                     deployment_map,
@@ -588,26 +588,40 @@ def deploy_launches_task_builder(deployment_map, manifest, puppet_account_id, se
                     manifest,
                     puppet_account_id,
                     region_name,
-                    regional_details,
                 )
                 all_tasks.update(these_all_tasks)
+
+            # for region_name, regional_details in launch_details.get('regional_details').items():
+            #     these_all_tasks = deploy_launches_task_builder_for_account_launch_region(
+            #         account_id,
+            #         deployment_map,
+            #         launch_details,ProvisionProductTask
+            #         launch_name,
+            #         manifest,
+            #         puppet_account_id,
+            #         region_name,
+            #         regional_details,
+            #     )
+            #     all_tasks.update(these_all_tasks)
 
     return all_tasks
 
 
-def get_required_params(region_name, regional_details, launch_details):
-    product_id = regional_details.get('product_id')
-    version_id = regional_details.get('version_id')
-    required_parameters = {}
-
-    portfolio_name = launch_details.get('portfolio')
+@functools.lru_cache(512)
+def get_required_params(region_name, portfolio, product, version):
     with betterboto_client.ClientContextManager(
             'servicecatalog', region_name=region_name
     ) as service_catalog:
+        portfolio_id = aws.get_portfolio_id_for(service_catalog, portfolio)
+        product_id = aws.get_product_id_for(service_catalog, portfolio_id, product)
+        version_id = aws.get_version_id_for(service_catalog, product_id, version)
+
+        required_parameters = {}
+
         response = service_catalog.describe_provisioning_parameters(
             ProductId=product_id,
             ProvisioningArtifactId=version_id,
-            PathId=aws.get_path_for_product(service_catalog, product_id, portfolio_name),
+            PathId=aws.get_path_for_product(service_catalog, product_id, portfolio),
         )
         for provisioning_artifact_parameters in response.get('ProvisioningArtifactParameters', []):
             parameter_key = provisioning_artifact_parameters.get('ParameterKey')
@@ -618,11 +632,16 @@ def get_required_params(region_name, regional_details, launch_details):
 
 def deploy_launches_task_builder_for_account_launch_region(
         account_id, deployment_map, launch_details, launch_name, manifest,
-        puppet_account_id, region_name, regional_details
+        puppet_account_id, region_name
 ):
     all_tasks = {}
 
-    required_parameters = get_required_params(region_name, regional_details, launch_details)
+    required_parameters = get_required_params(
+        region_name,
+        launch_details.get('portfolio'),
+        launch_details.get('product'),
+        launch_details.get('version'),
+    )
 
     regular_parameters, ssm_parameters = get_parameters_for_launch(
             required_parameters,
@@ -639,8 +658,8 @@ def deploy_launches_task_builder_for_account_launch_region(
         'product': launch_details.get('product'),
         'version': launch_details.get('version'),
 
-        'product_id': regional_details.get('product_id'),
-        'version_id': regional_details.get('version_id'),
+        # 'product_id': regional_details.get('product_id'),
+        # 'version_id': regional_details.get('version_id'),
 
         'account_id': account_id,
         'region': region_name,

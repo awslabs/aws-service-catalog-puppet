@@ -253,17 +253,20 @@ def ensure_is_terminated(
         service_catalog
     )
 
-    provisioned_product_id = r.get('Id')
-    provisioning_artifact_id = r.get('ProvisioningArtifactId')
+    if r is not None:
+        provisioned_product_id = r.get('Id')
+        provisioning_artifact_id = r.get('ProvisioningArtifactId')
 
-    if r.get('Status') != "TERMINATED":
-        logger.info(f"Terminating {provisioned_product_name}, its status is: {r.get('Status')}")
-        terminate_provisioned_product(f"{provisioned_product_name}:{product_id}", service_catalog, r.get('Id'))
+        if r.get('Status') != "TERMINATED":
+            logger.info(f"Terminating {provisioned_product_name}, its status is: {r.get('Status')}")
+            terminate_provisioned_product(f"{provisioned_product_name}:{product_id}", service_catalog, r.get('Id'))
+        else:
+            logger.info(f"Skipping terminated launch: {provisioned_product_name}")
+
+        logger.info(f"Finished ensuring {provisioned_product_name} is terminated")
+        return provisioned_product_id, provisioning_artifact_id
     else:
-        logger.info(f"Skipping terminated launch: {provisioned_product_name}")
-
-    logger.info(f"Finished ensuring {provisioned_product_name} is terminated")
-    return provisioned_product_id, provisioning_artifact_id
+        return None, None
 
 
 def get_provisioned_product_details(product_id, provisioned_product_name, service_catalog):
