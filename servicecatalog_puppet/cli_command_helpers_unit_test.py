@@ -69,6 +69,8 @@ def test_deploy_launches_task_builder_for_account_launch_region(sut, mocker, sha
     mocked_get_path_for_product = mocker.patch.object(sut.aws, 'get_path_for_product')
     mocked_get_path_for_product.return_value = 1
     mocked_get_parameters_for_launch = mocker.patch.object(sut, 'get_parameters_for_launch')
+    mocked_get_required_params = mocker.patch.object(sut, 'get_required_params')
+    mocked_get_required_params.return_value = required_parameters
     mocked_regular_parameters = []
     mocked_ssm_parameters = []
     mocked_get_parameters_for_launch.return_value = (mocked_regular_parameters, mocked_ssm_parameters)
@@ -76,14 +78,14 @@ def test_deploy_launches_task_builder_for_account_launch_region(sut, mocker, sha
     # exercise
     actual_all_tasks = sut.deploy_launches_task_builder_for_account_launch_region(
         account_id, deployment_map, launch_details, launch_name, manifest,
-        puppet_account_id, region_name, regional_details
+        puppet_account_id, region_name
     )
 
     # verify
     assert len(actual_all_tasks.keys()) == 1
     assert actual_all_tasks == expected_all_tasks
-    mocked_get_path_for_product.assert_called_once_with(
-        mocked_betterboto_client().__enter__(), regional_details.get('product_id'), portfolio_name
+    mocked_get_required_params.assert_called_once_with(
+        region_name, launch_details.get('portfolio'), launch_details.get('product'), launch_details.get('version')
     )
     mocked_get_parameters_for_launch.assert_called_once_with(
         required_parameters,

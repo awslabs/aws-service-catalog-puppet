@@ -22,6 +22,8 @@ def test_dry_run(sut, mocker):
     mocked_manifest_utils.load.return_value = mocked_manifest
     mocked_cli_command_helpers = mocker.patch.object(sut, 'cli_command_helpers')
     all_launch_tasks = {}
+    puppet_account_id = 9
+    mocked_cli_command_helpers.get_puppet_account_id.return_value = puppet_account_id
     mocked_cli_command_helpers.deploy_launches.return_value = all_launch_tasks
     provision_task_args = {
         "status": constants.PROVISIONED,
@@ -29,8 +31,8 @@ def test_dry_run(sut, mocker):
         "portfolio": "",
         "product": "",
         "version": "",
-        "product_id": "",
-        "version_id": "",
+        # "product_id": "",
+        # "version_id": "",
         "account_id": "",
         "region": "",
         "puppet_account_id": "",
@@ -47,8 +49,8 @@ def test_dry_run(sut, mocker):
         "portfolio": "",
         "product": "",
         "version": "",
-        "product_id": "",
-        "version_id": "",
+        # "product_id": "",
+        # "version_id": "",
         "account_id": "",
         "region": "",
         "puppet_account_id": "",
@@ -66,7 +68,7 @@ def test_dry_run(sut, mocker):
 
     # assert
     mocked_manifest_utils.load.assert_called_once_with(f)
-    mocked_cli_command_helpers.deploy_launches.assert_called_with(mocked_manifest)
+    mocked_cli_command_helpers.deploy_launches.assert_called_with(mocked_manifest, puppet_account_id)
     mocked_cli_command_helpers.wire_dependencies.assert_called_with(all_launch_tasks)
     assert mocked_cli_command_helpers.run_tasks_for_dry_run.call_count == 1
     args, kwargs = mocked_cli_command_helpers.run_tasks_for_dry_run.call_args

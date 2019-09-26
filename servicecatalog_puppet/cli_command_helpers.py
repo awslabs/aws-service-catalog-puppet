@@ -590,20 +590,6 @@ def deploy_launches_task_builder(deployment_map, manifest, puppet_account_id, se
                     region_name,
                 )
                 all_tasks.update(these_all_tasks)
-
-            # for region_name, regional_details in launch_details.get('regional_details').items():
-            #     these_all_tasks = deploy_launches_task_builder_for_account_launch_region(
-            #         account_id,
-            #         deployment_map,
-            #         launch_details,ProvisionProductTask
-            #         launch_name,
-            #         manifest,
-            #         puppet_account_id,
-            #         region_name,
-            #         regional_details,
-            #     )
-            #     all_tasks.update(these_all_tasks)
-
     return all_tasks
 
 
