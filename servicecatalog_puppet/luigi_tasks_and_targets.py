@@ -80,14 +80,169 @@ class GetSSMParamTask(PuppetTask):
         pass
 
 
+class GetVersionIdByVersionName(PuppetTask):
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "product": self.product,
+            "version": self.version,
+        }
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/GetVersionIdByVersionName/"
+            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+        )
+
+    def requires(self):
+        product_id = GetProductIdByProductName(
+            self.portfolio,
+            self.product,
+            self.account_id,
+            self.region,
+        )
+        return {
+            'product': product_id,
+        }
+
+    def run(self):
+        product_details = json.loads(self.input().get('product').open('r').read())
+        version_id = None
+        with betterboto_client.CrossAccountClientContextManager(
+            'servicecatalog',
+            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"{self.account_id}-{self.region}", 
+            region_name=self.region
+        ) as cross_account_servicecatalog:
+            version_id = aws.get_version_id_for(
+                cross_account_servicecatalog,
+                product_details.get('product_id'),
+                self.version
+            )
+            f = self.output().open('w')
+            f.write(
+                json.dumps(
+                    {
+                        'version_name': self.version,
+                        'version_id': version_id,
+                    },
+                    indent=4,
+                    default=str,
+                )
+            )
+            f.close()
+
+
+class GetProductIdByProductName(PuppetTask):
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "product": self.product,
+        }
+
+    def requires(self):
+        portfolio_id = GetPortfolioIdByPortfolioName(
+            self.portfolio,
+            self.account_id,
+            self.region,
+        )
+        return {
+            'portfolio': portfolio_id,
+        }
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/GetProductIdByProductName/"
+            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}.json"
+        )
+
+    def run(self):
+        portfolio_details = json.loads(self.input().get('portfolio').open('r').read())
+        with betterboto_client.CrossAccountClientContextManager(
+            'servicecatalog',
+            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"{self.account_id}-{self.region}", 
+            region_name=self.region
+        ) as cross_account_servicecatalog:
+            product_id = aws.get_product_id_for(
+                cross_account_servicecatalog,
+                portfolio_details.get('portfolio_id'),
+                self.product
+            )
+            f = self.output().open('w')
+            f.write(
+                json.dumps(
+                    {
+                        'product_name': self.product,
+                        'product_id': product_id,
+                    },
+                    indent=4,
+                    default=str,
+                )
+            )
+            f.close()
+
+
+class GetPortfolioIdByPortfolioName(PuppetTask):
+    portfolio = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+        }
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/GetPortfolioIdByPortfolioName/"
+            f"{self.account_id}-{self.region}-{self.portfolio}.json"
+        )
+
+    def run(self):
+        with betterboto_client.CrossAccountClientContextManager(
+            'servicecatalog',
+            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"{self.account_id}-{self.region}",
+            region_name=self.region
+        ) as cross_account_servicecatalog:
+            portfolio_id = aws.get_portfolio_id_for(cross_account_servicecatalog, self.portfolio)
+            f = self.output().open('w')
+            f.write(
+                json.dumps(
+                    {
+                        "portfolio_name": self.portfolio, 
+                        "portfolio_id": portfolio_id, 
+                    },
+                    indent=4,
+                    default=str,
+                )
+            )
+            f.close()
+
+
 class ProvisionProductTask(PuppetTask):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
     product = luigi.Parameter()
     version = luigi.Parameter()
-
-    product_id = luigi.Parameter()
-    version_id = luigi.Parameter()
 
     account_id = luigi.Parameter()
     region = luigi.Parameter()
@@ -112,6 +267,19 @@ class ProvisionProductTask(PuppetTask):
         for param_input in self.ssm_param_inputs:
             ssm_params[param_input.get('parameter_name')] = GetSSMParamTask(**param_input)
         dependencies = []
+        version_id = GetVersionIdByVersionName(
+            self.portfolio,
+            self.product,
+            self.version,
+            self.account_id,
+            self.region,
+        )
+        product_id = GetProductIdByProductName(
+            self.portfolio,
+            self.product,
+            self.account_id,
+            self.region,
+        )
         for r in self.dependencies:
             if r.get('status') is not None:
                 if r.get('status') == constants.TERMINATED:
@@ -127,7 +295,9 @@ class ProvisionProductTask(PuppetTask):
                 )
         return {
             'dependencies': dependencies,
-            'ssm_params': ssm_params
+            'ssm_params': ssm_params,
+            'version': version_id,
+            'product': product_id,
         }
 
     def params_for_results_display(self):
@@ -149,6 +319,9 @@ class ProvisionProductTask(PuppetTask):
     def run(self):
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
                     f"starting deploy try {self.try_count} of {self.retry_count}")
+        
+        version_id = json.loads(self.input().get('version').open('r').read()).get('version_id')
+        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
 
         all_params = {}
 
@@ -165,10 +338,10 @@ class ProvisionProductTask(PuppetTask):
                 'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
         ) as service_catalog:
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
-            path_id = aws.get_path_for_product(service_catalog, self.product_id, self.portfolio)
+            path_id = aws.get_path_for_product(service_catalog, product_id, self.portfolio)
 
             provisioned_product_id, provisioning_artifact_id = aws.terminate_if_status_is_not_available(
-                service_catalog, self.launch_name, self.product_id, self.account_id, self.region
+                service_catalog, self.launch_name, product_id, self.account_id, self.region
             )
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
                         f"provisioned_product_id: {provisioned_product_id}, "
@@ -185,8 +358,9 @@ class ProvisionProductTask(PuppetTask):
                 else:
                     default_cfn_params = {}
 
+                logging.info(f" running as {role}, checking {product_id} {version_id} {path_id} in {self.account_id} {self.region}")
                 provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
-                    ProductId=self.product_id, ProvisioningArtifactId=self.version_id, PathId=path_id,
+                    ProductId=product_id, ProvisioningArtifactId=version_id, PathId=path_id,
                 ).get('ProvisioningArtifactParameters', [])
                 new_version_param_names = [p.get('ParameterKey') for p in provisioning_artifact_parameters]
 
@@ -196,7 +370,7 @@ class ProvisionProductTask(PuppetTask):
                             if default_cfn_param_name in new_version_param_names:
                                 all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
 
-                if provisioning_artifact_id == self.version_id:
+                if provisioning_artifact_id == version_id:
                     logger.info(
                         f"[{self.launch_name}] {self.account_id}:{self.region} :: found previous good provision")
                     if provisioned_product_id:
@@ -245,8 +419,8 @@ class ProvisionProductTask(PuppetTask):
                         self.launch_name,
                         self.account_id,
                         self.region,
-                        self.product_id,
-                        self.version_id,
+                        product_id,
+                        version_id,
                         self.puppet_account_id,
                         path_id,
                         all_params,
@@ -298,9 +472,6 @@ class ProvisionProductDryRunTask(PuppetTask):
     product = luigi.Parameter()
     version = luigi.Parameter()
 
-    product_id = luigi.Parameter()
-    version_id = luigi.Parameter()
-
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -318,6 +489,19 @@ class ProvisionProductDryRunTask(PuppetTask):
     try_count = 1
 
     def requires(self):
+        version_id = GetVersionIdByVersionName(
+            self.portfolio,
+            self.product,
+            self.version,
+            self.account_id,
+            self.region,
+        )
+        product_id = GetProductIdByProductName(
+            self.portfolio,
+            self.product,
+            self.account_id,
+            self.region,
+        )
         dependencies = []
         for r in self.dependencies:
             if r.get('status') is not None:
@@ -334,6 +518,8 @@ class ProvisionProductDryRunTask(PuppetTask):
                 )
         return {
             'dependencies': dependencies,
+            'version': version_id,
+            'product': product_id,
         }
 
     def params_for_results_display(self):
@@ -358,6 +544,9 @@ class ProvisionProductDryRunTask(PuppetTask):
             f"{logger_prefix} :: starting dryrun of {self.retry_count}"
         )
 
+        version_id = json.loads(self.input().get('version').open('r').read()).get('version_id')
+        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
+
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
                 'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
@@ -366,7 +555,7 @@ class ProvisionProductDryRunTask(PuppetTask):
 
             response = service_catalog.search_provisioned_products(
                 Filters={'SearchQuery': [
-                    "productId:{}".format(self.product_id)
+                    "productId:{}".format(product_id)
                 ]}
             )
             provisioning_artifact_id = False
@@ -377,7 +566,7 @@ class ProvisionProductDryRunTask(PuppetTask):
                         provisioned_product_id = r.get('Id')
                         provisioning_artifact_id = r.get('ProvisioningArtifactId')
 
-                        if provisioning_artifact_id != self.version_id:
+                        if provisioning_artifact_id != version_id:
                             self.write_result(
                                 current_version=self.get_current_version(provisioning_artifact_id, service_catalog),
                                 new_version=self.version,
@@ -471,9 +660,11 @@ class ProvisionProductDryRunTask(PuppetTask):
             )
 
     def get_current_version(self, provisioning_artifact_id, service_catalog):
+        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
+
         return service_catalog.describe_provisioning_artifact(
             ProvisioningArtifactId=provisioning_artifact_id,
-            ProductId=self.product_id,
+            ProductId=product_id,
         ).get('ProvisioningArtifactDetail').get('Name')
 
     def write_result(self, current_version, new_version, effect, notes=''):
@@ -500,9 +691,6 @@ class TerminateProductTask(PuppetTask):
     product = luigi.Parameter()
     version = luigi.Parameter()
 
-    product_id = luigi.Parameter()
-    version_id = luigi.Parameter()
-
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -519,6 +707,16 @@ class TerminateProductTask(PuppetTask):
     ssm_param_inputs = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
 
+    def requires(self):
+        product_id = GetProductIdByProductName(
+            self.portfolio,
+            self.product,
+            self.account_id,
+            self.region,
+        )
+        return {
+            'product': product_id,
+        }
 
     def params_for_results_display(self):
         return {
@@ -539,13 +737,14 @@ class TerminateProductTask(PuppetTask):
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
                     f"starting terminate try {self.try_count} of {self.retry_count}")
 
+        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
                 'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
         ) as service_catalog:
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
             provisioned_product_id, provisioning_artifact_id = aws.ensure_is_terminated(
-                service_catalog, self.launch_name, self.product_id
+                service_catalog, self.launch_name, product_id
             )
             log_output = self.to_str_params()
             log_output.update({
@@ -588,9 +787,6 @@ class TerminateProductDryRunTask(PuppetTask):
     product = luigi.Parameter()
     version = luigi.Parameter()
 
-    product_id = luigi.Parameter()
-    version_id = luigi.Parameter()
-
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -607,6 +803,16 @@ class TerminateProductDryRunTask(PuppetTask):
     ssm_param_inputs = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
 
+    def requires(self):
+        product_id = GetProductIdByProductName(
+            self.portfolio,
+            self.product,
+            self.account_id,
+            self.region,
+        )
+        return {
+            'product': product_id,
+        }
 
     def params_for_results_display(self):
         return {
@@ -645,12 +851,14 @@ class TerminateProductDryRunTask(PuppetTask):
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
                     f"starting dry run terminate try {self.try_count} of {self.retry_count}")
 
+        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
+
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
                 'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
         ) as service_catalog:
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
-            r = aws.get_provisioned_product_details(self.product_id, self.launch_name, service_catalog)
+            r = aws.get_provisioned_product_details(product_id, self.launch_name, service_catalog)
 
             if r is None:
                 self.write_result(
@@ -659,7 +867,7 @@ class TerminateProductDryRunTask(PuppetTask):
             else:
                 provisioned_product_name = service_catalog.describe_provisioning_artifact(
                     ProvisioningArtifactId=r.get('ProvisioningArtifactId'),
-                    ProductId=self.product_id,
+                    ProductId=product_id,
                 ).get('ProvisioningArtifactDetail').get('Name')
 
                 if r.get('Status') != "TERMINATED":

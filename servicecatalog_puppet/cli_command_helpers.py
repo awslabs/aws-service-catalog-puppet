@@ -165,7 +165,7 @@ def get_puppet_account_id():
         return sts.get_caller_identity().get('Account')
 
 
-def set_regions_for_deployment_map(deployment_map, section):
+def set_regions_for_deployment_map(deployment_map, section, puppet_account_id):
     logger.info('Starting to write the templates')
     ALL_REGIONS = get_regions()
     for account_id, account_details in deployment_map.items():
@@ -218,23 +218,6 @@ def set_regions_for_deployment_map(deployment_map, section):
                         launch_details['regions'] = regions
 
             assert launch_details.get('regions') is not None, "Launch {} has no regions set".format(launch_name)
-            launch_details['regional_details'] = {}
-
-            if section == constants.LAUNCHES:
-                # TODO move this to provision product task so this if statement is no longer needed
-                for region in launch_details.get('regions'):
-                    logger.info('Starting region: {}'.format(region))
-                    product_id, version_id = aws.get_provisioning_artifact_id_for(
-                        launch_details.get('portfolio'),
-                        launch_details.get('product'),
-                        launch_details.get('version'),
-                        account_id,
-                        region
-                    )
-                    launch_details['regional_details'][region] = {
-                        'product_id': product_id,
-                        'version_id': version_id,
-                    }
     return deployment_map
 
 
@@ -481,10 +464,10 @@ def _do_bootstrap(puppet_version, with_manual_approvals):
         )
 
 
-def deploy_spoke_local_portfolios(manifest, launch_tasks, should_use_sns):
+def deploy_spoke_local_portfolios(manifest, launch_tasks, should_use_sns, puppet_account_id):
     section = constants.SPOKE_LOCAL_PORTFOLIOS
     deployment_map = manifest_utils.build_deployment_map(manifest, section)
-    deployment_map = set_regions_for_deployment_map(deployment_map, section)
+    deployment_map = set_regions_for_deployment_map(deployment_map, section, puppet_account_id)
 
     tasks_to_run = []
     puppet_account_id = get_puppet_account_id()
@@ -561,10 +544,10 @@ def deploy_spoke_local_portfolios(manifest, launch_tasks, should_use_sns):
     return tasks_to_run
 
 
-def deploy_launches(manifest):
+def deploy_launches(manifest, puppet_account_id):
     section = constants.LAUNCHES
     deployment_map = manifest_utils.build_deployment_map(manifest, section)
-    deployment_map = set_regions_for_deployment_map(deployment_map, section)
+    deployment_map = set_regions_for_deployment_map(deployment_map, section, puppet_account_id)
     puppet_account_id = get_puppet_account_id()
 
     all_tasks = deploy_launches_task_builder(deployment_map, manifest, puppet_account_id, section)
@@ -577,7 +560,7 @@ def deploy_launches_task_builder(deployment_map, manifest, puppet_account_id, se
     all_tasks = {}
     for account_id, deployments_for_account in deployment_map.items():
         for launch_name, launch_details in deployments_for_account.get(section).items():
-            for region_name, regional_details in launch_details.get('regional_details').items():
+            for region_name in launch_details.get('regions'):
                 these_all_tasks = deploy_launches_task_builder_for_account_launch_region(
                     account_id,
                     deployment_map,
@@ -586,35 +569,48 @@ def deploy_launches_task_builder(deployment_map, manifest, puppet_account_id, se
                     manifest,
                     puppet_account_id,
                     region_name,
-                    regional_details,
                 )
                 all_tasks.update(these_all_tasks)
-
     return all_tasks
 
 
-def deploy_launches_task_builder_for_account_launch_region(
-        account_id, deployment_map, launch_details, launch_name, manifest,
-        puppet_account_id, region_name, regional_details
-):
-    all_tasks = {}
-    product_id = regional_details.get('product_id')
-    required_parameters = {}
-    role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
-    portfolio_name = launch_details.get('portfolio')
-    with betterboto_client.CrossAccountClientContextManager(
-            'servicecatalog', role, f'sc-{account_id}-{region_name}', region_name=region_name
+@functools.lru_cache(512)
+def get_required_params(region_name, portfolio, product, version):
+    with betterboto_client.ClientContextManager(
+            'servicecatalog', region_name=region_name
     ) as service_catalog:
+        portfolio_id = aws.get_portfolio_id_for(service_catalog, portfolio)
+        product_id = aws.get_product_id_for(service_catalog, portfolio_id, product)
+        version_id = aws.get_version_id_for(service_catalog, product_id, version)
+
+        required_parameters = {}
+
         response = service_catalog.describe_provisioning_parameters(
             ProductId=product_id,
-            ProvisioningArtifactId=regional_details.get('version_id'),
-            PathId=aws.get_path_for_product(service_catalog, product_id, portfolio_name),
+            ProvisioningArtifactId=version_id,
+            PathId=aws.get_path_for_product(service_catalog, product_id, portfolio),
         )
         for provisioning_artifact_parameters in response.get('ProvisioningArtifactParameters', []):
             parameter_key = provisioning_artifact_parameters.get('ParameterKey')
             required_parameters[parameter_key] = True
 
-        regular_parameters, ssm_parameters = get_parameters_for_launch(
+    return required_parameters
+
+
+def deploy_launches_task_builder_for_account_launch_region(
+        account_id, deployment_map, launch_details, launch_name, manifest,
+        puppet_account_id, region_name
+):
+    all_tasks = {}
+
+    required_parameters = get_required_params(
+        region_name,
+        launch_details.get('portfolio'),
+        launch_details.get('product'),
+        launch_details.get('version'),
+    )
+
+    regular_parameters, ssm_parameters = get_parameters_for_launch(
             required_parameters,
             deployment_map,
             manifest,
@@ -625,12 +621,9 @@ def deploy_launches_task_builder_for_account_launch_region(
     logger.info(f"Found a new launch: {launch_name}")
     task = {
         'launch_name': launch_name,
-        'portfolio': portfolio_name,
+        'portfolio': launch_details.get('portfolio'),
         'product': launch_details.get('product'),
         'version': launch_details.get('version'),
-
-        'product_id': regional_details.get('product_id'),
-        'version_id': regional_details.get('version_id'),
 
         'account_id': account_id,
         'region': region_name,

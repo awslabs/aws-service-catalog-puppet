@@ -55,12 +55,13 @@ def generate_shares(f):
 
 
 def dry_run(f):
+    puppet_account_id = cli_command_helpers.get_puppet_account_id()
     manifest = manifest_utils.load(f)
 
     launch_tasks = {}
     tasks_to_run = []
 
-    all_launch_tasks = cli_command_helpers.deploy_launches(manifest)
+    all_launch_tasks = cli_command_helpers.deploy_launches(manifest, puppet_account_id)
     launch_tasks.update(all_launch_tasks)
 
     for task in cli_command_helpers.wire_dependencies(launch_tasks):
@@ -80,12 +81,13 @@ def dry_run(f):
 
 
 def reset_provisioned_product_owner(f):
+    puppet_account_id = cli_command_helpers.get_puppet_account_id()
     manifest = manifest_utils.load(f)
 
     launch_tasks = {}
     tasks_to_run = []
 
-    all_launch_tasks = cli_command_helpers.deploy_launches(manifest)
+    all_launch_tasks = cli_command_helpers.deploy_launches(manifest, puppet_account_id)
     launch_tasks.update(all_launch_tasks)
 
     for task in cli_command_helpers.wire_dependencies(launch_tasks):
@@ -98,6 +100,8 @@ def reset_provisioned_product_owner(f):
 
 
 def deploy(f, single_account):
+    puppet_account_id = cli_command_helpers.get_puppet_account_id()
+
     manifest = manifest_utils.load(f)
 
     launch_tasks = {}
@@ -105,8 +109,9 @@ def deploy(f, single_account):
 
     should_use_sns = cli_command_helpers.get_should_use_sns(os.environ.get("AWS_DEFAULT_REGION"))
 
-    all_launch_tasks = cli_command_helpers.deploy_launches(manifest)
+    all_launch_tasks = cli_command_helpers.deploy_launches(manifest, puppet_account_id)
     launch_tasks.update(all_launch_tasks)
+
 
     for task in cli_command_helpers.wire_dependencies(launch_tasks):
         task_status = task.get('status')
@@ -133,7 +138,7 @@ def deploy(f, single_account):
             raise Exception(f"Unsupported status of {task_status}")
 
     spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(
-        manifest, launch_tasks, should_use_sns
+        manifest, launch_tasks, should_use_sns, puppet_account_id
     )
     tasks_to_run += spoke_local_portfolio_tasks_to_run
 
