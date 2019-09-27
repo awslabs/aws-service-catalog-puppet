@@ -218,25 +218,6 @@ def set_regions_for_deployment_map(deployment_map, section, puppet_account_id):
                         launch_details['regions'] = regions
 
             assert launch_details.get('regions') is not None, "Launch {} has no regions set".format(launch_name)
-            # launch_details['regional_details'] = {}
-
-            # if section == constants.LAUNCHES:
-                # TODO move this to provision product task so this if statement is no longer needed #EPF
-                # for region in launch_details.get('regions'):
-                #     logger.info('Starting region: {}'.format(region))
-                #     product_id, version_id = aws.get_provisioning_artifact_id_for(
-            #             launch_details.get('portfolio'),
-            #             launch_details.get('product'),
-            #             launch_details.get('version'),
-            #             puppet_account_id,
-            #             region
-            #         )
-            #         launch_details['regional_details'][region] = {
-            #             # 'product_id': None,
-            #             # 'version_id': None,
-            #             'product_id': product_id,
-            #             'version_id': version_id,
-            #         }
     return deployment_map
 
 
@@ -643,9 +624,6 @@ def deploy_launches_task_builder_for_account_launch_region(
         'portfolio': launch_details.get('portfolio'),
         'product': launch_details.get('product'),
         'version': launch_details.get('version'),
-
-        # 'product_id': regional_details.get('product_id'),
-        # 'version_id': regional_details.get('version_id'),
 
         'account_id': account_id,
         'region': region_name,
