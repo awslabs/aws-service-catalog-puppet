@@ -1381,6 +1381,69 @@ class ResetProvisionedProductOwnerTask(PuppetTask):
                 )
 
 
+class CreateShareForAccountLaunchRegion(PuppetTask):
+    account_id = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+    deployment_map_for_account = luigi.DictParameter()
+    launch_name = luigi.Parameter()
+    launch_details = luigi.DictParameter()
+    region = luigi.Parameter()
+
+
+class CreateShareForAccountLaunch(PuppetTask):
+    account_id = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+    deployment_map_for_account = luigi.DictParameter()
+    launch_name = luigi.Parameter()
+    launch_details = luigi.DictParameter()
+
+    def requires(self):
+        deps = {}
+        match = self.launch_details.get('match')
+        if match == "tag_match":
+            matching_tag = self.launch_details.get('matching_tag')
+            target_regions = None
+            for tag_details in self.launch_details.get('deploy_to').get('tags'):
+                if tag_details.tag == matching_tag:
+                    target_regions = tag_details.get('regions', 'default_region')
+            assert target_regions is not None, "Could not find the tag for this provisioning"
+            if target_regions == "default_region":
+                target_regions = [self.deployment_map_for_account.get('default_region')]
+            elif target_regions in ["regions_enabled", "enabled_regions"]:
+                target_regions = self.deployment_map_for_account.get('regions_enabled')
+            for region in target_regions:
+                deps[f"sdsdsddsd-{region}"] = CreateShareForAccountLaunchRegion(
+                    self.account_id,
+                    self.puppet_account_id,
+                    self.deployment_map_for_account,
+                    self.launch_name,
+                    self.launch_details,
+                    self.region,
+                )
+
+
+class CreateSharesForAccountImportMapTask(PuppetTask):
+    account_id = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+    deployment_map_for_account = luigi.DictParameter()
+
+    @property
+    def resources(self):
+        return {}
+
+    def requires(self):
+        launches = {}
+        for launch_name, launch_details in self.deployment_map_for_account.get('launches').items():
+            launches[launch_name] = CreateShareForAccountLaunch(
+                self.account_id, self.puppet_account_id, self.deployment_map_for_account, launch_name, launch_details
+            )
+
+        return {
+            'launches': launches
+        }
+
+
+
 def record_event(event_type, task, extra_event_data=None):
     task_type = task.__class__.__name__
     task_params = task.param_kwargs
