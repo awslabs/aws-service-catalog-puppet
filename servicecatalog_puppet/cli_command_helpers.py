@@ -576,6 +576,7 @@ def deploy_launches_task_builder(deployment_map, manifest, puppet_account_id, se
 
 @functools.lru_cache(512)
 def get_required_params(region_name, portfolio, product, version):
+    logging.info(f"Looking at {region_name} {portfolio} {product} {version}")
     with betterboto_client.ClientContextManager(
             'servicecatalog', region_name=region_name
     ) as service_catalog:
