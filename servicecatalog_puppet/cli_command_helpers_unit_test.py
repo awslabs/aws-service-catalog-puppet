@@ -85,7 +85,7 @@ def test_deploy_launches_task_builder_for_account_launch_region(sut, mocker, sha
     assert len(actual_all_tasks.keys()) == 1
     assert actual_all_tasks == expected_all_tasks
     mocked_get_required_params.assert_called_once_with(
-        region_name, launch_details.get('portfolio'), launch_details.get('product'), launch_details.get('version')
+        region_name, launch_details.get('portfolio'), launch_details.get('product'), launch_details.get('version'), puppet_account_id
     )
     mocked_get_parameters_for_launch.assert_called_once_with(
         required_parameters,
