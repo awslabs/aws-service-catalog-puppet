@@ -605,7 +605,6 @@ def deploy_launches_task_builder_for_account_launch_region(
         account_id, deployment_map, launch_details, launch_name, manifest,
         puppet_account_id, region_name
 ):
-    logger.info(f"deploy_launches_task_builder_for_account_launch_region:: {account_id}, {deployment_map}, {launch_details}, {launch_name}, {manifest}, {puppet_account_id}, {region_name}")
     all_tasks = {}
 
     required_parameters = get_required_params(
