@@ -613,6 +613,7 @@ def deploy_launches_task_builder_for_account_launch_region(
         launch_details.get('portfolio'),
         launch_details.get('product'),
         launch_details.get('version'),
+        puppet_account_id,
     )
 
     regular_parameters, ssm_parameters = get_parameters_for_launch(
