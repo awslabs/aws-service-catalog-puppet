@@ -574,13 +574,12 @@ def deploy_launches_task_builder(deployment_map, manifest, puppet_account_id, se
     return all_tasks
 
 
-@functools.lru_cache(512)
-def get_required_params(region_name, portfolio, product, version, puppet_account_id):
+def get_required_params(region_name, portfolio, product, version, account_id):
     logging.info(f"get_required_params for {region_name} {portfolio} {product} {version}")
     with betterboto_client.CrossAccountClientContextManager(
             'servicecatalog',
-            f"arn:aws:iam::{puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{puppet_account_id}-{region_name}",
+            f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"{account_id}-{region_name}",
             region_name=region_name
     ) as service_catalog:
         portfolio_id = aws.get_portfolio_id_for(service_catalog, portfolio)
@@ -612,7 +611,7 @@ def deploy_launches_task_builder_for_account_launch_region(
         launch_details.get('portfolio'),
         launch_details.get('product'),
         launch_details.get('version'),
-        puppet_account_id,
+        account_id,
     )
 
     regular_parameters, ssm_parameters = get_parameters_for_launch(
