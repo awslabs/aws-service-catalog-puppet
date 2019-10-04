@@ -70,7 +70,6 @@ def get_should_forward_failures_to_opscenter(default_region=None):
 def get_home_region():
     with betterboto_client.ClientContextManager('ssm') as ssm:
         response = ssm.get_parameter(Name=constants.HOME_REGION_PARAM_NAME)
-        logging.info(f"Home region is {response.get('Parameter').get('Value')}")
         return response.get('Parameter').get('Value')
 
 
