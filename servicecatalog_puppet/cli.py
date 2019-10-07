@@ -170,5 +170,18 @@ def reset_provisioned_product_owner(f):
     cli_commands.reset_provisioned_product_owner(f)
 
 
+@cli.command()
+@click.argument('regions', nargs=-1)
+def set_regions(regions):
+    cli_commands.set_config_value('regions', regions)
+
+
+@cli.command()
+@click.argument('name')
+@click.argument('value')
+def set_config_value(name, value, type=bool):
+    cli_commands.set_config_value(name, value)
+
+
 if __name__ == "__main__":
     cli()
