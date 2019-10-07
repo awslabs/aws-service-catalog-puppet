@@ -43,7 +43,7 @@ Resources:
   InitialiserRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: Initialiser
+      RoleName: PuppetInitialiser
       Path: /servicecatalog-product-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
