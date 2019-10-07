@@ -21,16 +21,19 @@ Parameters:
     AllowedValues:
       - True
       - False
+    Default: False
   ShouldForwardEventsToEventbridge:
     Type: String
     AllowedValues:
       - True
       - False
+    Default: False
   ShouldForwardFailuresToOpscenter:
     Type: String
     AllowedValues:
       - True
       - False
+    Default: True
 
 Resources:
   Param:
