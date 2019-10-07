@@ -4,12 +4,12 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.37.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.37.1", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Parameters:
   Version:
     Type: String
-    Default: "0.37.0"
+    Default: "0.37.1"
     Description: |
       Which version of aws-service-catalog-puppet to install
   EnabledRegions:
@@ -21,16 +21,19 @@ Parameters:
     AllowedValues:
       - True
       - False
+    Default: False
   ShouldForwardEventsToEventbridge:
     Type: String
     AllowedValues:
       - True
       - False
+    Default: False
   ShouldForwardFailuresToOpscenter:
     Type: String
     AllowedValues:
       - True
       - False
+    Default: True
 
 Resources:
   Param:
@@ -43,7 +46,7 @@ Resources:
   InitialiserRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: Initialiser
+      RoleName: PuppetInitialiser
       Path: /servicecatalog-product-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -89,19 +92,23 @@ Resources:
           - Name: SHOULD_FORWARD_FAILURES_TO_OPSCENTER
             Type: PLAINTEXT
             Value: !Ref ShouldForwardFailuresToOpscenter
+
+          - Name: PUPPET_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: !Ref AWS::AccountId
       Source:
         Type: NO_SOURCE
-        BuildSpec: !Sub |
+        BuildSpec: |
           version: 0.2
           phases:
             install:
               commands:
-                - pip install aws-service-catalog-puppet==$${VERSION}
-                - servicecatalog-puppet --info set-regions $${ENABLED_REGIONS}
-                - servicecatalog-puppet set-config-value should_collect_cloudformation_events $${SHOULD_COLLECT_CLOUDFORMATION_EVENTS}
-                - servicecatalog-puppet set-config-value should_forward_events_to_eventbridge $${SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE}
-                - servicecatalog-puppet set-config-value should_forward_failures_to_opscenter $${SHOULD_FORWARD_FAILURES_TO_OPSCENTER}
-                - servicecatalog-puppet bootstrap-spoke ${AWS::AccountId}
+                - pip install aws-service-catalog-puppet==${VERSION}
+                - servicecatalog-puppet --info set-regions ${ENABLED_REGIONS}
+                - servicecatalog-puppet set-config-value should_collect_cloudformation_events ${SHOULD_COLLECT_CLOUDFORMATION_EVENTS}
+                - servicecatalog-puppet set-config-value should_forward_events_to_eventbridge ${SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE}
+                - servicecatalog-puppet set-config-value should_forward_failures_to_opscenter ${SHOULD_FORWARD_FAILURES_TO_OPSCENTER}
+                - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID}
             build:
               commands:
                 - servicecatalog-puppet --info bootstrap
