@@ -1,0 +1,113 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: |
+  Initialiser template used to bring up the install ServiceCatalog-Puppet
+  {"version": "0.37.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+
+Parameters:
+  Version:
+    Type: String
+    Default: "0.37.0"
+    Description: |
+      Which version of aws-service-catalog-puppet to install
+  EnabledRegions:
+    Type: String
+    Description: |
+      Space or comma seperated list of AWS Regions for which your puppet should operate in
+  ShouldCollectCloudformationEvents:
+    Type: String
+    AllowedValues:
+      - True
+      - False
+  ShouldForwardEventsToEventbridge:
+    Type: String
+    AllowedValues:
+      - True
+      - False
+  ShouldForwardFailuresToOpscenter:
+    Type: String
+    AllowedValues:
+      - True
+      - False
+
+Resources:
+  Param:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: service-catalog-puppet-initialiser-version
+      Type: String
+      Value: !Ref Version
+
+  InitialiserRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: Initialiser
+      Path: /servicecatalog-product-puppet/
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+  InitialiserProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: servicecatalog-product-puppet-initialiser
+      Description: "Initialiser for the framework"
+      ServiceRole: !GetAtt InitialiserRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: linuxContainer
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/python:3.7.1
+        EnvironmentVariables:
+          - Name: VERSION
+            Type: PLAINTEXT
+            Value: !Ref Version
+
+          - Name: ENABLED_REGIONS
+            Type: PLAINTEXT
+            Value: !Join [ ',', !Split [ ', ', !Ref EnabledRegions]]
+
+          - Name: SHOULD_COLLECT_CLOUDFORMATION_EVENTS
+            Type: PLAINTEXT
+            Value: !Ref ShouldCollectCloudformationEvents
+
+          - Name: SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE
+            Type: PLAINTEXT
+            Value: !Ref ShouldForwardEventsToEventbridge
+
+          - Name: SHOULD_FORWARD_FAILURES_TO_OPSCENTER
+            Type: PLAINTEXT
+            Value: !Ref ShouldForwardFailuresToOpscenter
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            install:
+              commands:
+                - pip install aws-service-catalog-puppet==$${VERSION}
+                - servicecatalog-puppet --info set-regions $${ENABLED_REGIONS}
+                - servicecatalog-puppet set-config-value should_collect_cloudformation_events $${SHOULD_COLLECT_CLOUDFORMATION_EVENTS}
+                - servicecatalog-puppet set-config-value should_forward_events_to_eventbridge $${SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE}
+                - servicecatalog-puppet set-config-value should_forward_failures_to_opscenter $${SHOULD_FORWARD_FAILURES_TO_OPSCENTER}
+                - servicecatalog-puppet bootstrap-spoke ${AWS::AccountId}
+            build:
+              commands:
+                - servicecatalog-puppet --info bootstrap
+
+      TimeoutInMinutes: 60
+
+Outputs:
+  Version:
+    Value: !GetAtt Param.Value

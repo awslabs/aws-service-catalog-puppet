@@ -597,3 +597,19 @@ def remove_from_launches(launch_name):
     manifest = get_manifest()
     del manifest.get('launches')[launch_name]
     save_manifest(manifest)
+
+
+def set_config_value(name, value):
+    with betterboto_client.ClientContextManager('ssm', region_name=constants.HOME_REGION) as ssm:
+        try:
+            response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME)
+            config = yaml.safe_load(response.get('Parameter').get('Value'))
+        except ssm.exceptions.ParameterNotFound:
+            config = {}
+
+        if name == "regions":
+            config['regions'] = value if len(value) > 1 else value[0].split(",")
+        else:
+            config[name] = value.upper() == 'TRUE'
+
+        upload_config(config)
