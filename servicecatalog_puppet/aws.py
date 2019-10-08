@@ -441,6 +441,11 @@ def get_product_id_for(servicecatalog_, portfolio_id, product_name, region, acco
             SortBy='CreationDate',
         )
 
+        logging.info('uber 1 start')
+        import json
+        logging.info(json.dumps(response, indent=4, default=str))
+        logging.info('uber 1 stop')
+
         for product_view_details in response.get('ProductViewDetails'):
             logging.info('222')
             logging.info(product_view_details )
