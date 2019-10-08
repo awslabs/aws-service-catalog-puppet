@@ -438,7 +438,6 @@ def get_product_id_for(servicecatalog_, portfolio_id, product_name, region, acco
     ) as servicecatalog:
         response = servicecatalog.search_products_as_admin_single_page(
             PortfolioId=portfolio_id,
-            SortBy='CreationDate',
         )
 
         logging.info('uber 1 start')
@@ -455,8 +454,8 @@ def get_product_id_for(servicecatalog_, portfolio_id, product_name, region, acco
             if product_view.get('Name') == product_name:
                 logger.info('Found product: {}'.format(product_view))
                 product_id = product_view.get('ProductId')
-            assert product_id is not None, "Did not find product looking for"
-            return product_id
+        assert product_id is not None, "Did not find product looking for"
+        return product_id
 
 
 def get_portfolio_id_for(servicecatalog, portfolio_name):
