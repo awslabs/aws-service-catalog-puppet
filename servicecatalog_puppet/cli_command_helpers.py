@@ -575,7 +575,7 @@ def deploy_launches_task_builder(deployment_map, manifest, puppet_account_id, se
 
 
 def get_required_params(region_name, portfolio, product, version, account_id):
-    logging.info(f"111 get_required_params for {region_name} {portfolio} {product} {version} {account_id}")
+    logging.info(f"get_required_params for {region_name} {portfolio} {product} {version} {account_id}")
     with betterboto_client.CrossAccountClientContextManager(
             'servicecatalog',
             f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole",
