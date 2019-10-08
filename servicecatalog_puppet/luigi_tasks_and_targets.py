@@ -183,8 +183,6 @@ class GetProductIdByProductName(PuppetTask):
                 cross_account_servicecatalog,
                 portfolio_details.get('portfolio_id'),
                 self.product,
-                self.region,
-                self.account_id,
             )
             f = self.output().open('w')
             f.write(
