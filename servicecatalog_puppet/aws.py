@@ -424,10 +424,13 @@ def get_product_id_for(servicecatalog_, portfolio_id, product_name, region, acco
 
 
 
+    role_to_use = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
+
+    logging.info(f"ABout to use role: {role_to_use}")
 
     with betterboto_client.CrossAccountClientContextManager(
             'servicecatalog',
-            f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole",
+            role_to_use,
             "-".join([account_id, region]),
             region_name=region
     ) as servicecatalog:
