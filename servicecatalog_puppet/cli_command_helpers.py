@@ -579,7 +579,7 @@ def get_required_params(region_name, portfolio, product, version, account_id):
     with betterboto_client.CrossAccountClientContextManager(
             'servicecatalog',
             f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{account_id}-{region_name}-2",
+            f"{account_id}-{region_name}",
             region_name=region_name
     ) as service_catalog:
         portfolio_id = aws.get_portfolio_id_for(service_catalog, portfolio)
