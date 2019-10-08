@@ -428,6 +428,8 @@ def get_product_id_for(servicecatalog_, portfolio_id, product_name, region, acco
 
     logging.info(f"ABout to use role: {role_to_use}")
 
+    logger.setLevel(logging.DEBUG)
+
     with betterboto_client.CrossAccountClientContextManager(
             'servicecatalog',
             role_to_use,
