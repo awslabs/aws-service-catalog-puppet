@@ -182,7 +182,9 @@ class GetProductIdByProductName(PuppetTask):
             product_id = aws.get_product_id_for(
                 cross_account_servicecatalog,
                 portfolio_details.get('portfolio_id'),
-                self.product
+                self.product,
+                self.region,
+                self.account_id,
             )
             f = self.output().open('w')
             f.write(

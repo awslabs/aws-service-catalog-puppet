@@ -418,8 +418,8 @@ def get_version_id_for(servicecatalog, product_id, version_name):
     return version_id
 
 
-def get_product_id_for(servicecatalog, portfolio_id, product_name):
-    logging.info(f"get_product_id_for {portfolio_id} {product_name}")
+def get_product_id_for(servicecatalog, portfolio_id, product_name, region, account_id):
+    logging.info(f"get_product_id_for {portfolio_id} {product_name} in {region} {account_id}")
     product_id = None
     response = servicecatalog.search_products_as_admin_single_page(
         PortfolioId=portfolio_id

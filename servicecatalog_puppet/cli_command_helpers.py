@@ -583,7 +583,7 @@ def get_required_params(region_name, portfolio, product, version, account_id):
             region_name=region_name
     ) as service_catalog:
         portfolio_id = aws.get_portfolio_id_for(service_catalog, portfolio)
-        product_id = aws.get_product_id_for(service_catalog, portfolio_id, product)
+        product_id = aws.get_product_id_for(service_catalog, portfolio_id, product, region_name, account_id)
         version_id = aws.get_version_id_for(service_catalog, product_id, version)
 
         required_parameters = {}
