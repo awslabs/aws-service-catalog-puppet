@@ -418,24 +418,34 @@ def get_version_id_for(servicecatalog, product_id, version_name):
     return version_id
 
 
-def get_product_id_for(servicecatalog, portfolio_id, product_name, region, account_id):
+def get_product_id_for(servicecatalog_, portfolio_id, product_name, region, account_id):
     logging.info(f"get_product_id_for {portfolio_id} {product_name} in {region} {account_id}")
     product_id = None
-    response = servicecatalog.search_products_as_admin_single_page(
-        PortfolioId=portfolio_id
-    )
 
-    for product_view_details in response.get('ProductViewDetails'):
-        logging.info('222')
-        logging.info(product_view_details )
-        logging.info('333')
-        product_view = product_view_details.get('ProductViewSummary')
-        logging.info(f"looking at product: {product_view.get('Name')}")
-        if product_view.get('Name') == product_name:
-            logger.info('Found product: {}'.format(product_view))
-            product_id = product_view.get('ProductId')
-        assert product_id is not None, "Did not find product looking for"
-        return product_id
+
+
+
+    with betterboto_client.CrossAccountClientContextManager(
+            'servicecatalog',
+            f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole",
+            "-".join([account_id, region]),
+            region_name=region
+    ) as servicecatalog:
+        response = servicecatalog.search_products_as_admin_single_page(
+            PortfolioId=portfolio_id
+        )
+
+        for product_view_details in response.get('ProductViewDetails'):
+            logging.info('222')
+            logging.info(product_view_details )
+            logging.info('333')
+            product_view = product_view_details.get('ProductViewSummary')
+            logging.info(f"looking at product: {product_view.get('Name')}")
+            if product_view.get('Name') == product_name:
+                logger.info('Found product: {}'.format(product_view))
+                product_id = product_view.get('ProductId')
+            assert product_id is not None, "Did not find product looking for"
+            return product_id
 
 
 def get_portfolio_id_for(servicecatalog, portfolio_name):
