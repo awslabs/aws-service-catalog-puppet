@@ -426,6 +426,9 @@ def get_product_id_for(servicecatalog, portfolio_id, product_name, region, accou
     )
 
     for product_view_details in response.get('ProductViewDetails'):
+        logging.info('222')
+        logging.info(product_view_details )
+        logging.info('333')
         product_view = product_view_details.get('ProductViewSummary')
         logging.info(f"looking at product: {product_view.get('Name')}")
         if product_view.get('Name') == product_name:
