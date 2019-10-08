@@ -437,7 +437,8 @@ def get_product_id_for(servicecatalog_, portfolio_id, product_name, region, acco
             region_name=region
     ) as servicecatalog:
         response = servicecatalog.search_products_as_admin_single_page(
-            PortfolioId=portfolio_id
+            PortfolioId=portfolio_id,
+            SortBy='CreationDate',
         )
 
         for product_view_details in response.get('ProductViewDetails'):
