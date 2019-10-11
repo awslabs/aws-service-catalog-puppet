@@ -36,3 +36,6 @@ SERVICE_CATALOG_PUPPET_EVENT_SOURCE = "servicecatalog-puppet"
 SERVICE_CATALOG_PUPPET_OPS_CENTER_SOURCE = "servicecatalog-puppet"
 
 HOME_REGION = os.environ.get('AWS_REGION', os.environ.get('AWS_DEFAULT_REGION', 'eu-west-1'))
+
+
+EVENTBRIDGE_MAX_EVENTS_PER_CALL = 10

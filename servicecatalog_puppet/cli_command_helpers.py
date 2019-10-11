@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import functools
 import sys
+import time
 from glob import glob
 from pathlib import Path
 
@@ -758,7 +759,11 @@ def run_tasks(tasks_to_run):
     if should_use_eventbridge:
         logging.info(f"Sending {len(entries)} events to eventbridge")
         with betterboto_client.ClientContextManager('events') as events:
-            events.put_events(Entries=entries)
+            for i in range(0, len(entries), constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL):
+                events.put_events(
+                    Entries=entries[i:i+constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL]
+                )
+                time.sleep(1)
         logging.info(f"Finished sending {len(entries)} events to eventbridge")
     sys.exit(exit_status_codes.get(run_result.status))
 
