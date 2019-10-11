@@ -27,8 +27,8 @@ def remove_from_accounts(account_id_or_ou_id_or_ou_path):
     """
     remove the given ``account_id_or_ou_id_or_ou_path`` from the account list
 
-    :param account_id_or_ou_id_or_ou_path: the value can be an account_id, ou_id or an ou_path.  It should be present in the
-    accounts list within the manifest file or an error is generated
+    :param account_id_or_ou_id_or_ou_path: the value can be an account_id, ou_id or an ou_path.  It should be present \
+    in the accounts list within the manifest file or an error is generated
     """
     cli_commands.remove_from_accounts(account_id_or_ou_id_or_ou_path)
 
@@ -74,3 +74,25 @@ def bootstrap(with_manual_approvals):
     :param with_manual_approvals: Boolean to specify whether there should be manual approvals before provisioning occurs
     """
     cli_commands.bootstrap(with_manual_approvals)
+
+
+def bootstrap_spoke(puppet_account_id):
+    """
+    Bootstrap a spoke so that is can be used by the puppet account to share portfolios and provision products.  This
+    must be run in the spoke account.
+
+    :param puppet_account_id: this is the account id where you have installed aws-service-catalog-puppet
+    """
+    cli_commands.bootstrap_spoke(puppet_account_id)
+
+
+def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
+    """
+    Bootstrap a spoke so that it can be used by the puppet account to share portfolios and provision products.  This
+    must be run in an account where you can assume the first ARN in the iam_role_arns list.
+
+    :param puppet_account_id: this is the account id where you have installed aws-service-catalog-puppet
+    :param iam_role_arns: this is a list of ARNs the function will assume (in order) before bootstrapping.  The final \
+    ARN in the list should be the ARN of the spoke you want to bootstrap.
+    """
+    cli_commands.bootstrap_spoke_as(puppet_account_id, iam_role_arns)
