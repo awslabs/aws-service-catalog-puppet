@@ -823,3 +823,53 @@ def run_tasks_for_dry_run(tasks_to_run):
         ])
     click.echo(table.table)
     sys.exit(exit_status_codes.get(run_result.status))
+
+
+def run_tasks_generic(tasks_to_run):
+    for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
+        os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
+
+    run_result = luigi.build(
+        tasks_to_run,
+        local_scheduler=True,
+        detailed_summary=True,
+        workers=10,
+        log_level='INFO',
+    )
+    # for filename in glob('results/failure/*.json'):
+    #     result = json.loads(open(filename, 'r').read())
+    #     click.echo(colorclass.Color("{red}" + result.get('task_type') + " failed{/red}"))
+    #     click.echo(f"{yaml.safe_dump({'parameters':result.get('task_params')})}")
+    #     click.echo("\n".join(result.get('exception_stack_trace')))
+    #     click.echo('')
+    exit_status_codes = {
+        LuigiStatusCode.SUCCESS: 0,
+        LuigiStatusCode.SUCCESS_WITH_RETRY: 0,
+        LuigiStatusCode.FAILED: 1,
+        LuigiStatusCode.FAILED_AND_SCHEDULING_FAILED: 2,
+        LuigiStatusCode.SCHEDULING_FAILED: 3,
+        LuigiStatusCode.NOT_RUN: 4,
+        LuigiStatusCode.MISSING_EXT: 5,
+    }
+    #
+    # click.echo("Results")
+    # table_data = [
+    #     ['Result','Launch', 'Account', 'Region', 'Current Version', 'New Version', 'Notes'],
+    #
+    # ]
+    # table = terminaltables.AsciiTable(table_data)
+    # for dir in glob('output/*'):
+    #
+    #     for filename in glob(f'{dir}/*.json'):
+    #         result = json.loads(open(filename, 'r').read())
+    #         table_data.append([
+    #             result.get('effect'),
+    #             result.get('params').get('launch_name'),
+    #             result.get('params').get('account_id'),
+    #             result.get('params').get('region'),
+    #             result.get('current_version'),
+    #             result.get('new_version'),
+    #             result.get('notes'),
+    #         ])
+    # click.echo(table.table)
+    sys.exit(exit_status_codes.get(run_result.status))

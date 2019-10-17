@@ -47,12 +47,24 @@ def cli(info, info_line_numbers):
 
 def generate_shares(f):
     logger.info('Starting to generate shares for: {}'.format(f.name))
-
+    tasks_to_run = []
+    puppet_account_id = cli_command_helpers.get_puppet_account_id()
     manifest = manifest_utils.load(f)
+
     deployment_map = manifest_utils.build_deployment_map(manifest, constants.LAUNCHES)
-    import_map = manifest_utils.build_deployment_map(manifest, constants.SPOKE_LOCAL_PORTFOLIOS)
-    raise Exception(json.dumps(deployment_map))
-    cli_command_helpers.create_share_template(deployment_map, import_map, cli_command_helpers.get_puppet_account_id())
+    for account_id, deployment_map_for_account in deployment_map.items():
+        logger.info(account_id)
+        tasks_to_run.append(
+            luigi_tasks_and_targets.CreateSharesForAccountImportMapTask(
+                account_id=account_id,
+                puppet_account_id=puppet_account_id,
+                deployment_map_for_account=deployment_map_for_account,
+            )
+        )
+
+    # import_map = manifest_utils.build_deployment_map(manifest, constants.SPOKE_LOCAL_PORTFOLIOS)
+    cli_command_helpers.run_tasks_generic(tasks_to_run)
+    # cli_command_helpers.create_share_template(deployment_map, import_map, cli_command_helpers.get_puppet_account_id())
 
 
 def dry_run(f):
