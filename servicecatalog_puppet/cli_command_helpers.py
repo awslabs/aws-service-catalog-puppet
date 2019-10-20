@@ -836,12 +836,49 @@ def run_tasks_generic(tasks_to_run):
         workers=10,
         log_level='INFO',
     )
-    # for filename in glob('results/failure/*.json'):
-    #     result = json.loads(open(filename, 'r').read())
-    #     click.echo(colorclass.Color("{red}" + result.get('task_type') + " failed{/red}"))
-    #     click.echo(f"{yaml.safe_dump({'parameters':result.get('task_params')})}")
-    #     click.echo("\n".join(result.get('exception_stack_trace')))
-    #     click.echo('')
+
+    should_use_sns = get_should_use_sns()
+    puppet_account_id = get_puppet_account_id()
+    version = get_puppet_version()
+
+    for region in os.listdir(os.path.sep.join(['data','bucket'])):
+        logger.info(f"Creating shares for the region: {region}")
+        sharing_policies = {
+            'accounts': [],
+            'organizations': [],
+        }
+        path = os.path.sep.join(['data','bucket', region, 'accounts'])
+        if os.path.exists(path):
+            for account_file in os.listdir(path):
+                account = account_file.split(".")[0]
+                sharing_policies['accounts'].append(account)
+
+        path = os.path.sep.join(['data','bucket', region, 'ou'])
+        if os.path.exists(path):
+            for ou_file in os.listdir(path):
+                ou = ou_file.split(".")[0]
+                sharing_policies['organizations'].append(ou)
+        template = env.get_template('shares.template.yaml.j2').render(
+            sharing_policies=sharing_policies,
+            VERSION=version,
+        )
+        stack_name = f"servicecatalog-puppet-shares"
+        with betterboto_client.ClientContextManager('cloudformation', region_name=region) as cloudformation:
+            cloudformation.create_or_update(
+                StackName=stack_name,
+                TemplateBody=template,
+                NotificationARNs=[
+                    f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                ] if should_use_sns else [],
+            )
+
+
+    for filename in glob('results/failure/*.json'):
+        result = json.loads(open(filename, 'r').read())
+        click.echo(colorclass.Color("{red}" + result.get('task_type') + " failed{/red}"))
+        click.echo(f"{yaml.safe_dump({'parameters':result.get('task_params')})}")
+        click.echo("\n".join(result.get('exception_stack_trace')))
+        click.echo('')
     exit_status_codes = {
         LuigiStatusCode.SUCCESS: 0,
         LuigiStatusCode.SUCCESS_WITH_RETRY: 0,
@@ -851,25 +888,25 @@ def run_tasks_generic(tasks_to_run):
         LuigiStatusCode.NOT_RUN: 4,
         LuigiStatusCode.MISSING_EXT: 5,
     }
-    #
-    # click.echo("Results")
-    # table_data = [
-    #     ['Result','Launch', 'Account', 'Region', 'Current Version', 'New Version', 'Notes'],
-    #
-    # ]
-    # table = terminaltables.AsciiTable(table_data)
-    # for dir in glob('output/*'):
-    #
-    #     for filename in glob(f'{dir}/*.json'):
-    #         result = json.loads(open(filename, 'r').read())
-    #         table_data.append([
-    #             result.get('effect'),
-    #             result.get('params').get('launch_name'),
-    #             result.get('params').get('account_id'),
-    #             result.get('params').get('region'),
-    #             result.get('current_version'),
-    #             result.get('new_version'),
-    #             result.get('notes'),
-    #         ])
-    # click.echo(table.table)
+
+    click.echo("Results")
+    table_data = [
+        ['Result','Launch', 'Account', 'Region', 'Current Version', 'New Version', 'Notes'],
+
+    ]
+    table = terminaltables.AsciiTable(table_data)
+    for dir in glob('output/*'):
+
+        for filename in glob(f'{dir}/*.json'):
+            result = json.loads(open(filename, 'r').read())
+            table_data.append([
+                result.get('effect'),
+                result.get('params').get('launch_name'),
+                result.get('params').get('account_id'),
+                result.get('params').get('region'),
+                result.get('current_version'),
+                result.get('new_version'),
+                result.get('notes'),
+            ])
+    click.echo(table.table)
     sys.exit(exit_status_codes.get(run_result.status))

@@ -53,7 +53,6 @@ def generate_shares(f):
 
     deployment_map = manifest_utils.build_deployment_map(manifest, constants.LAUNCHES)
     for account_id, deployment_map_for_account in deployment_map.items():
-        logger.info(account_id)
         tasks_to_run.append(
             luigi_tasks_and_targets.CreateSharesForAccountImportMapTask(
                 account_id=account_id,
