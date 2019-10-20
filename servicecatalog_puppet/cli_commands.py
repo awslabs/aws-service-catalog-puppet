@@ -62,7 +62,7 @@ def generate_shares(f):
         )
 
     # import_map = manifest_utils.build_deployment_map(manifest, constants.SPOKE_LOCAL_PORTFOLIOS)
-    cli_command_helpers.run_tasks_generic(tasks_to_run)
+    cli_command_helpers.run_tasks_for_generate_shares(tasks_to_run)
     # cli_command_helpers.create_share_template(deployment_map, import_map, cli_command_helpers.get_puppet_account_id())
 
 
