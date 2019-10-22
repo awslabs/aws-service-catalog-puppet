@@ -829,6 +829,10 @@ def run_tasks_for_generate_shares(tasks_to_run):
     for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
 
+    for region in get_regions():
+        with betterboto_client.ClientContextManager('cloudformation', region_name=region) as cloudformation:
+            cloudformation.ensure_deleted(StackName="servicecatalog-puppet-shares")
+
     run_result = luigi.build(
         tasks_to_run,
         local_scheduler=True,
@@ -866,10 +870,9 @@ def run_tasks_for_generate_shares(tasks_to_run):
         sharing_policies=sharing_policies,
         VERSION=version,
     )
-    stack_name = f"servicecatalog-puppet-shares"
     with betterboto_client.ClientContextManager('cloudformation', region_name=region) as cloudformation:
         cloudformation.create_or_update(
-            StackName=stack_name,
+            StackName="servicecatalog-puppet-policies",
             TemplateBody=template,
             NotificationARNs=[
                 f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
