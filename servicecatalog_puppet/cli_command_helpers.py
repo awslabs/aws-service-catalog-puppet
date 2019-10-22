@@ -116,42 +116,42 @@ def write_share_template(portfolio_use_by_account, region, host_account_id, shar
             )
         )
 
-
-def create_share_template(deployment_map, import_map, puppet_account_id):
-    logger.info("deployment_map: {}".format(deployment_map))
-    ALL_REGIONS = get_regions()
-    for region in ALL_REGIONS:
-        logger.info("starting to build shares for region: {}".format(region))
-        with betterboto_client.ClientContextManager('servicecatalog', region_name=region) as servicecatalog:
-            portfolio_ids = {}
-
-            response = servicecatalog.list_portfolios_single_page()
-
-            for portfolio_detail in response.get('PortfolioDetails'):
-                portfolio_ids[portfolio_detail.get('DisplayName')] = portfolio_detail.get('Id')
-
-            logger.info("Portfolios in use in region: {}".format(portfolio_ids))
-
-            portfolio_use_by_account = {}
-            for account_id, launch_details in deployment_map.items():
-                if portfolio_use_by_account.get(account_id) is None:
-                    portfolio_use_by_account[account_id] = []
-                for launch_id, launch in launch_details.get('launches').items():
-                    p = portfolio_ids[launch.get('portfolio')]
-                    if p not in portfolio_use_by_account[account_id]:
-                        portfolio_use_by_account[account_id].append(p)
-
-            for account_id, import_details in import_map.items():
-                if portfolio_use_by_account.get(account_id) is None:
-                    portfolio_use_by_account[account_id] = []
-                for spoke_local_portfolio_id, spoke_local_portfolio in import_details.get('spoke-local-portfolios').items():
-                    p = portfolio_ids[spoke_local_portfolio.get('portfolio')]
-                    if p not in portfolio_use_by_account[account_id]:
-                        portfolio_use_by_account[account_id].append(p)
-
-            host_account_id = response.get('PortfolioDetails')[0].get('ARN').split(":")[4]
-            sharing_policies = generate_bucket_policies_for_shares(deployment_map, puppet_account_id)
-            write_share_template(portfolio_use_by_account, region, host_account_id, sharing_policies)
+#
+# def create_share_template(deployment_map, import_map, puppet_account_id):
+#     logger.info("deployment_map: {}".format(deployment_map))
+#     ALL_REGIONS = get_regions()
+#     for region in ALL_REGIONS:
+#         logger.info("starting to build shares for region: {}".format(region))
+#         with betterboto_client.ClientContextManager('servicecatalog', region_name=region) as servicecatalog:
+#             portfolio_ids = {}
+#
+#             response = servicecatalog.list_portfolios_single_page()
+#
+#             for portfolio_detail in response.get('PortfolioDetails'):
+#                 portfolio_ids[portfolio_detail.get('DisplayName')] = portfolio_detail.get('Id')
+#
+#             logger.info("Portfolios in use in region: {}".format(portfolio_ids))
+#
+#             portfolio_use_by_account = {}
+#             for account_id, launch_details in deployment_map.items():
+#                 if portfolio_use_by_account.get(account_id) is None:
+#                     portfolio_use_by_account[account_id] = []
+#                 for launch_id, launch in launch_details.get('launches').items():
+#                     p = portfolio_ids[launch.get('portfolio')]
+#                     if p not in portfolio_use_by_account[account_id]:
+#                         portfolio_use_by_account[account_id].append(p)
+#
+#             for account_id, import_details in import_map.items():
+#                 if portfolio_use_by_account.get(account_id) is None:
+#                     portfolio_use_by_account[account_id] = []
+#                 for spoke_local_portfolio_id, spoke_local_portfolio in import_details.get('spoke-local-portfolios').items():
+#                     p = portfolio_ids[spoke_local_portfolio.get('portfolio')]
+#                     if p not in portfolio_use_by_account[account_id]:
+#                         portfolio_use_by_account[account_id].append(p)
+#
+#             host_account_id = response.get('PortfolioDetails')[0].get('ARN').split(":")[4]
+#             sharing_policies = generate_bucket_policies_for_shares(deployment_map, puppet_account_id)
+#             write_share_template(portfolio_use_by_account, region, host_account_id, sharing_policies)
 
 
 template_dir = asset_helpers.resolve_from_site_packages('templates')

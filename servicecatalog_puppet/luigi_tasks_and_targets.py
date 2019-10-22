@@ -1450,6 +1450,7 @@ class ShareAndAcceptPortfolioTask(PuppetTask):
         )
 
     def run(self):
+        logger.info(f"{self.uid} starting ShareAndAcceptPortfolioTask")
         portfolio_id = aws.get_portfolio_for(self.portfolio, self.puppet_account_id, self.region).get('Id')
         p = f'data/shares/{self.region}/{self.portfolio}/'
         if not os.path.exists(p):
@@ -1655,11 +1656,16 @@ class CreateSharesForAccountImportMapTask(PuppetTask):
     account_id = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     deployment_map_for_account = luigi.DictParameter()
+    sharing_type = luigi.Parameter()
+
+    @property
+    def uid(self):
+        return f"{self.account_id}-{self.sharing_type}"
 
     def output(self):
         return luigi.LocalTarget(
             f"output/{self.__class__.__name__}/"
-            f"{self.account_id}.json"
+            f"{self.uid}.json"
         )
 
     @property
@@ -1678,7 +1684,7 @@ class CreateSharesForAccountImportMapTask(PuppetTask):
 
     def requires(self):
         launches = {}
-        for launch_name, launch_details in self.deployment_map_for_account.get('launches').items():
+        for launch_name, launch_details in self.deployment_map_for_account.get(self.sharing_type).items():
             launches[launch_name] = CreateShareForAccountLaunch(
                 self.account_id, self.puppet_account_id, self.deployment_map_for_account, launch_name, launch_details
             )
