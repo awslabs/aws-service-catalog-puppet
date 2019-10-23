@@ -58,7 +58,7 @@ def generate_shares(f):
                 account_id=account_id,
                 puppet_account_id=puppet_account_id,
                 deployment_map_for_account=deployment_map_for_account,
-                'launches',
+                sharing_type='launches',
             )
         )
 
@@ -69,7 +69,7 @@ def generate_shares(f):
                 account_id=account_id,
                 puppet_account_id=puppet_account_id,
                 deployment_map_for_account=import_map_for_account,
-                'spoke-local-portfolios',
+                sharing_type='spoke-local-portfolios',
             )
         )
 
