@@ -1399,7 +1399,7 @@ class RequestPolicyTask(PuppetTask):
     type = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
-    ou = luigi.Parameter(default=None)
+    organization = luigi.Parameter(default=None)
 
     @property
     def uid(self):
@@ -1411,15 +1411,15 @@ class RequestPolicyTask(PuppetTask):
         )
 
     def run(self):
-        if self.ou is not None:
-            p = f'data/{self.type}/{self.region}/ou/'
+        if self.organization is not None:
+            p = f'data/{self.type}/{self.region}/organizations/'
             if not os.path.exists(p):
-                os.makedirs(p)
-            path = f'{p}/{self.ou}.json'
+                os.makedirs(p, exist_ok=True)
+            path = f'{p}/{self.organization}.json'
         else:
             p = f'data/{self.type}/{self.region}/accounts/'
             if not os.path.exists(p):
-                os.makedirs(p)
+                os.makedirs(p, exist_ok=True)
             path = f'{p}/{self.account_id}.json'
 
         f = open(path, 'w')
@@ -1454,7 +1454,7 @@ class ShareAndAcceptPortfolioTask(PuppetTask):
         portfolio_id = aws.get_portfolio_for(self.portfolio, self.puppet_account_id, self.region).get('Id')
         p = f'data/shares/{self.region}/{self.portfolio}/'
         if not os.path.exists(p):
-            os.makedirs(p)
+            os.makedirs(p, exist_ok=True)
         path = f'{p}/{self.account_id}.json'
         with open(path, 'w') as f:
             f.write("{}")
@@ -1517,7 +1517,7 @@ class CreateAssociationsInPythonForPortfolioTask(PuppetTask):
     def run(self):
         p = f'data/associations/{self.region}/{self.portfolio}/'
         if not os.path.exists(p):
-            os.makedirs(p)
+            os.makedirs(p, exist_ok=True)
         path = f'{p}/{self.account_id}.json'
         with open(path, 'w') as f:
             f.write("{}")
@@ -1557,13 +1557,13 @@ class CreateShareForAccountLaunchRegion(PuppetTask):
             'topic': RequestPolicyTask(
                 type="topic",
                 region=self.region,
-                ou=self.deployment_map_for_account.get('expanded_from'),
+                organization=self.deployment_map_for_account.get('organization'),
                 account_id=self.account_id,
             ),
             'bucket': RequestPolicyTask(
                 type="bucket",
                 region=self.region,
-                ou=self.deployment_map_for_account.get('expanded_from'),
+                organization=self.deployment_map_for_account.get('organization'),
                 account_id=self.account_id,
             ),
         }

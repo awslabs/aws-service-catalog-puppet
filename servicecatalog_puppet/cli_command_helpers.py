@@ -848,7 +848,6 @@ def run_tasks_for_generate_shares(tasks_to_run):
     sharing_policies = {
         'accounts': [],
         'organizations': [],
-        'organization_id': ''
     }
     version = get_puppet_version()
 
@@ -862,18 +861,13 @@ def run_tasks_for_generate_shares(tasks_to_run):
                     account = account_file.split(".")[0]
                     sharing_policies['accounts'].append(account)
 
-            path = os.path.sep.join(['data','bucket', region, 'ou'])
+            path = os.path.sep.join(['data','bucket', region, 'organizations'])
             if os.path.exists(path):
-                for ou_file in os.listdir(path):
-                    ou = ou_file.split(".")[0]
-                    sharing_policies['organizations'].append(ou)
-    logger.info(f"Finished updating policies")
+                for organization_file in os.listdir(path):
+                    organization = organization_file.split(".")[0]
+                    sharing_policies['organizations'].append(organization)
 
-    logger.info(f"Getting organization id")
-    organizations_client = boto3.client('organizations')
-    organization_id = organizations_client.describe_organization().get('Organization').get('Id')
-    sharing_policies['organization_id'] = organization_id
-    logger.info(f"Finished getting organization id")
+    logger.info(f"Finished updating policies")
 
     template = env.get_template('policies.template.yaml.j2').render(
         sharing_policies=sharing_policies,

@@ -31,7 +31,8 @@ Resources:
               AWS: !Sub "arn:aws:iam::{{ account_id }}:root"
             Action: sns:Publish
             Resource: "*"{% endfor %}
-          - Sid: OrganizationalShareFor{{ sharing_policies.get('organization_id') }}
+        {% for organization in sharing_policies.get('organizations') %}
+          - Sid: OrganizationalShareFor{{ organization }}
             Action:
               - sns:Publish
             Effect: "Allow"
@@ -39,7 +40,7 @@ Resources:
             Principal: "*"
             Condition:
               StringEquals:
-                aws:PrincipalOrgID: {{ sharing_policies.get('organization_id') }}
+                aws:PrincipalOrgID: {{ organization }}{% endfor %}
   {% endif %}
 
   {% if sharing_policies.get('accounts')|length > 0 or sharing_policies.get('organizations')|length > 0 %}
@@ -56,6 +57,7 @@ Resources:
             Resource: !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
             Principal:
               AWS: "arn:aws:iam::{{ account_id }}:root"{% endfor %}
+        {% for organization in sharing_policies.get('organizations') %}
           - Sid: OrganizationalShareFor{{ sharing_policies.get('organization_id') }}
             Action:
               - "s3:GetObject"
@@ -64,5 +66,5 @@ Resources:
             Principal: "*"
             Condition:
               StringEquals:
-                aws:PrincipalOrgID: {{ sharing_policies.get('organization_id') }}
+                aws:PrincipalOrgID: {{ organization }}{% endfor %}
   {% endif %}
