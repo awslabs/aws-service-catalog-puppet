@@ -1614,9 +1614,9 @@ class CreateShareForAccountLaunch(PuppetTask):
                     target_regions = tag_details.get('regions', 'default_region')
             assert target_regions is not None, "Could not find the tag for this provisioning"
             if target_regions == "default_region":
-                target_regions = [self.mutable_deployment_map.get('default_region')]
+                target_regions = [mutable_deployment_map.get('default_region')]
             elif target_regions in ["regions_enabled", "enabled_regions"]:
-                target_regions = self.mutable_deployment_map.get('regions_enabled')
+                target_regions = mutable_deployment_map.get('regions_enabled')
         elif match == "account_match":
             target_regions = None
             for accounts_details in self.launch_details.get('deploy_to').get('accounts'):
@@ -1624,9 +1624,9 @@ class CreateShareForAccountLaunch(PuppetTask):
                     target_regions = accounts_details.get('regions', 'default_region')
             assert target_regions is not None, "Could not find the account_id for this provisioning"
             if target_regions == "default_region":
-                target_regions = [self.mutable_deployment_map.get('default_region')]
+                target_regions = [mutable_deployment_map.get('default_region')]
             elif target_regions in ["regions_enabled", "enabled_regions"]:
-                target_regions = self.mutable_deployment_map.get('regions_enabled')
+                target_regions = mutable_deployment_map.get('regions_enabled')
 
         else:
             raise Exception(f"{self.uid}: Unknown match: {match}")
@@ -1635,7 +1635,7 @@ class CreateShareForAccountLaunch(PuppetTask):
             deps[f"{self.account_id}-{self.launch_name}-{region}"] = CreateShareForAccountLaunchRegion(
                 self.account_id,
                 self.puppet_account_id,
-                self.mutable_deployment_map,
+                self.deployment_map_for_account,
                 self.launch_name,
                 self.launch_details,
                 region,
