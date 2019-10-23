@@ -25,6 +25,8 @@ import os
 from threading import Thread
 
 import yaml
+
+import boto3
 from betterboto import client as betterboto_client
 from jinja2 import Environment, FileSystemLoader
 
@@ -846,6 +848,7 @@ def run_tasks_for_generate_shares(tasks_to_run):
     sharing_policies = {
         'accounts': [],
         'organizations': [],
+        'organization_id': ''
     }
     version = get_puppet_version()
 
@@ -865,6 +868,12 @@ def run_tasks_for_generate_shares(tasks_to_run):
                     ou = ou_file.split(".")[0]
                     sharing_policies['organizations'].append(ou)
     logger.info(f"Finished updating policies")
+
+    logger.info(f"Getting organization id")
+    organizations_client = boto3.client('organizations')
+    organization_id = organizations_client.describe_organization().get('Organization').get('Id')
+    sharing_policies['organization_id'] = organization_id
+    logger.info(f"Finished getting organization id")
 
     template = env.get_template('policies.template.yaml.j2').render(
         sharing_policies=sharing_policies,
