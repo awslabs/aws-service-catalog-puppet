@@ -25,6 +25,8 @@ import os
 from threading import Thread
 
 import yaml
+
+import boto3
 from betterboto import client as betterboto_client
 from jinja2 import Environment, FileSystemLoader
 
@@ -116,42 +118,42 @@ def write_share_template(portfolio_use_by_account, region, host_account_id, shar
             )
         )
 
-
-def create_share_template(deployment_map, import_map, puppet_account_id):
-    logger.info("deployment_map: {}".format(deployment_map))
-    ALL_REGIONS = get_regions()
-    for region in ALL_REGIONS:
-        logger.info("starting to build shares for region: {}".format(region))
-        with betterboto_client.ClientContextManager('servicecatalog', region_name=region) as servicecatalog:
-            portfolio_ids = {}
-
-            response = servicecatalog.list_portfolios_single_page()
-
-            for portfolio_detail in response.get('PortfolioDetails'):
-                portfolio_ids[portfolio_detail.get('DisplayName')] = portfolio_detail.get('Id')
-
-            logger.info("Portfolios in use in region: {}".format(portfolio_ids))
-
-            portfolio_use_by_account = {}
-            for account_id, launch_details in deployment_map.items():
-                if portfolio_use_by_account.get(account_id) is None:
-                    portfolio_use_by_account[account_id] = []
-                for launch_id, launch in launch_details.get('launches').items():
-                    p = portfolio_ids[launch.get('portfolio')]
-                    if p not in portfolio_use_by_account[account_id]:
-                        portfolio_use_by_account[account_id].append(p)
-
-            for account_id, import_details in import_map.items():
-                if portfolio_use_by_account.get(account_id) is None:
-                    portfolio_use_by_account[account_id] = []
-                for spoke_local_portfolio_id, spoke_local_portfolio in import_details.get('spoke-local-portfolios').items():
-                    p = portfolio_ids[spoke_local_portfolio.get('portfolio')]
-                    if p not in portfolio_use_by_account[account_id]:
-                        portfolio_use_by_account[account_id].append(p)
-
-            host_account_id = response.get('PortfolioDetails')[0].get('ARN').split(":")[4]
-            sharing_policies = generate_bucket_policies_for_shares(deployment_map, puppet_account_id)
-            write_share_template(portfolio_use_by_account, region, host_account_id, sharing_policies)
+#
+# def create_share_template(deployment_map, import_map, puppet_account_id):
+#     logger.info("deployment_map: {}".format(deployment_map))
+#     ALL_REGIONS = get_regions()
+#     for region in ALL_REGIONS:
+#         logger.info("starting to build shares for region: {}".format(region))
+#         with betterboto_client.ClientContextManager('servicecatalog', region_name=region) as servicecatalog:
+#             portfolio_ids = {}
+#
+#             response = servicecatalog.list_portfolios_single_page()
+#
+#             for portfolio_detail in response.get('PortfolioDetails'):
+#                 portfolio_ids[portfolio_detail.get('DisplayName')] = portfolio_detail.get('Id')
+#
+#             logger.info("Portfolios in use in region: {}".format(portfolio_ids))
+#
+#             portfolio_use_by_account = {}
+#             for account_id, launch_details in deployment_map.items():
+#                 if portfolio_use_by_account.get(account_id) is None:
+#                     portfolio_use_by_account[account_id] = []
+#                 for launch_id, launch in launch_details.get('launches').items():
+#                     p = portfolio_ids[launch.get('portfolio')]
+#                     if p not in portfolio_use_by_account[account_id]:
+#                         portfolio_use_by_account[account_id].append(p)
+#
+#             for account_id, import_details in import_map.items():
+#                 if portfolio_use_by_account.get(account_id) is None:
+#                     portfolio_use_by_account[account_id] = []
+#                 for spoke_local_portfolio_id, spoke_local_portfolio in import_details.get('spoke-local-portfolios').items():
+#                     p = portfolio_ids[spoke_local_portfolio.get('portfolio')]
+#                     if p not in portfolio_use_by_account[account_id]:
+#                         portfolio_use_by_account[account_id].append(p)
+#
+#             host_account_id = response.get('PortfolioDetails')[0].get('ARN').split(":")[4]
+#             sharing_policies = generate_bucket_policies_for_shares(deployment_map, puppet_account_id)
+#             write_share_template(portfolio_use_by_account, region, host_account_id, sharing_policies)
 
 
 template_dir = asset_helpers.resolve_from_site_packages('templates')
@@ -606,7 +608,6 @@ def deploy_launches_task_builder_for_account_launch_region(
         puppet_account_id, region_name
 ):
     all_tasks = {}
-
     required_parameters = get_required_params(
         region_name,
         launch_details.get('portfolio'),
@@ -614,7 +615,6 @@ def deploy_launches_task_builder_for_account_launch_region(
         launch_details.get('version'),
         account_id,
     )
-
     regular_parameters, ssm_parameters = get_parameters_for_launch(
             required_parameters,
             deployment_map,
@@ -824,4 +824,76 @@ def run_tasks_for_dry_run(tasks_to_run):
             result.get('notes'),
         ])
     click.echo(table.table)
+    sys.exit(exit_status_codes.get(run_result.status))
+
+
+def run_tasks_for_generate_shares(tasks_to_run):
+    for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
+        os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
+
+    run_result = luigi.build(
+        tasks_to_run,
+        local_scheduler=True,
+        detailed_summary=True,
+        workers=10,
+        log_level='INFO',
+    )
+
+    should_use_sns = get_should_use_sns()
+    puppet_account_id = get_puppet_account_id()
+    version = get_puppet_version()
+
+    for region in get_regions():
+        sharing_policies = {
+            'accounts': [],
+            'organizations': [],
+        }
+        with betterboto_client.ClientContextManager('cloudformation', region_name=region) as cloudformation:
+            cloudformation.ensure_deleted(StackName="servicecatalog-puppet-shares")
+
+            logger.info(f"generating policies collection for region {region}")
+            if os.path.exists(os.path.sep.join(['data','bucket'])):
+                logger.info(f"Updating policies for the region: {region}")
+                path = os.path.sep.join(['data','bucket', region, 'accounts'])
+                if os.path.exists(path):
+                    for account_file in os.listdir(path):
+                        account = account_file.split(".")[0]
+                        sharing_policies['accounts'].append(account)
+
+                path = os.path.sep.join(['data','bucket', region, 'organizations'])
+                if os.path.exists(path):
+                    for organization_file in os.listdir(path):
+                        organization = organization_file.split(".")[0]
+                        sharing_policies['organizations'].append(organization)
+
+            logger.info(f"Finished generating policies collection")
+
+            template = env.get_template('policies.template.yaml.j2').render(
+                sharing_policies=sharing_policies,
+                VERSION=version,
+            )
+            with betterboto_client.ClientContextManager('cloudformation', region_name=region) as cloudformation:
+                cloudformation.create_or_update(
+                    StackName="servicecatalog-puppet-policies",
+                    TemplateBody=template,
+                    NotificationARNs=[
+                        f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                    ] if should_use_sns else [],
+                )
+
+    for filename in glob('results/failure/*.json'):
+        result = json.loads(open(filename, 'r').read())
+        click.echo(colorclass.Color("{red}" + result.get('task_type') + " failed{/red}"))
+        click.echo(f"{yaml.safe_dump({'parameters':result.get('task_params')})}")
+        click.echo("\n".join(result.get('exception_stack_trace')))
+        click.echo('')
+    exit_status_codes = {
+        LuigiStatusCode.SUCCESS: 0,
+        LuigiStatusCode.SUCCESS_WITH_RETRY: 0,
+        LuigiStatusCode.FAILED: 1,
+        LuigiStatusCode.FAILED_AND_SCHEDULING_FAILED: 2,
+        LuigiStatusCode.SCHEDULING_FAILED: 3,
+        LuigiStatusCode.NOT_RUN: 4,
+        LuigiStatusCode.MISSING_EXT: 5,
+    }
     sys.exit(exit_status_codes.get(run_result.status))

@@ -1,0 +1,70 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Shares for puppet
+  {"version": "{{ VERSION }}", "framework": "servicecatalog-puppet", "role": "policies"}
+
+Conditions:
+  NoOpCondition: !Equals [ true, false]
+
+Resources:
+  NoOpResource:
+    Type: AWS::S3::Bucket
+    Description: Resource to ensure that template contains a resource even when there are no shares
+    Condition: NoOpCondition
+
+
+  {% if sharing_policies.get('accounts')|length > 0 or sharing_policies.get('organizations')|length > 0 %}
+  TopicPolicies:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:servicecatalog-puppet-cloudformation-regional-events"
+      PolicyDocument:
+        Id: MyTopicPolicy
+        Version: '2012-10-17'
+        Statement: {% for account_id in sharing_policies.get('accounts') %}
+          - Sid: "ShareFor{{ account_id }}"
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::{{ account_id }}:root"
+            Action: sns:Publish
+            Resource: "*"{% endfor %}
+        {% for organization in sharing_policies.get('organizations') %}
+          - Sid: OrganizationalShareFor{{ organization }}
+            Action:
+              - sns:Publish
+            Effect: "Allow"
+            Resource: "*"
+            Principal: "*"
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: {{ organization }}{% endfor %}
+  {% endif %}
+
+  {% if sharing_policies.get('accounts')|length > 0 or sharing_policies.get('organizations')|length > 0 %}
+  BucketPolicies:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Sub "sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}"
+      PolicyDocument:
+        Statement:{% for account_id in sharing_policies.get('accounts') %}
+          - Sid: ShareFor{{ account_id }}
+            Action:
+              - "s3:GetObject"
+            Effect: "Allow"
+            Resource: !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
+            Principal:
+              AWS: "arn:aws:iam::{{ account_id }}:root"{% endfor %}
+        {% for organization in sharing_policies.get('organizations') %}
+          - Sid: OrganizationalShareFor{{ organization }}
+            Action:
+              - "s3:GetObject"
+            Effect: "Allow"
+            Resource: !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
+            Principal: "*"
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: {{ organization }}{% endfor %}
+  {% endif %}

@@ -352,7 +352,9 @@ def get_portfolio_for(portfolio_name, account_id, region):
                         portfolio = portfolio_detail
                         break
 
-            assert portfolio is not None, "Could not find portfolio"
+            if portfolio is None:
+                raise Exception(f"Could not find portfolio {portfolio_name} in {region} of account {account_id}")
+
             logger.info(f"Found portfolio: {portfolio}")
             return portfolio
 

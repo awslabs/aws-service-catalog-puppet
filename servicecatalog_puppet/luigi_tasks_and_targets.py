@@ -1,4 +1,5 @@
 import copy
+import os
 import re
 import time
 import traceback
@@ -60,6 +61,17 @@ class PuppetTask(luigi.Task):
     def params_for_results_display(self):
         return "Omitted"
 
+    def write_output(self, content):
+        f = self.output().open('w')
+        f.write(
+            json.dumps(
+                content,
+                indent=4,
+                default=str,
+            )
+        )
+        f.close()
+
 
 class GetSSMParamTask(PuppetTask):
     parameter_name = luigi.Parameter()
@@ -117,10 +129,10 @@ class GetVersionIdByVersionName(PuppetTask):
         product_details = json.loads(self.input().get('product').open('r').read())
         version_id = None
         with betterboto_client.CrossAccountClientContextManager(
-            'servicecatalog',
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.account_id}-{self.region}", 
-            region_name=self.region
+                'servicecatalog',
+                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                f"{self.account_id}-{self.region}",
+                region_name=self.region
         ) as cross_account_servicecatalog:
             version_id = aws.get_version_id_for(
                 cross_account_servicecatalog,
@@ -174,10 +186,10 @@ class GetProductIdByProductName(PuppetTask):
     def run(self):
         portfolio_details = json.loads(self.input().get('portfolio').open('r').read())
         with betterboto_client.CrossAccountClientContextManager(
-            'servicecatalog',
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.account_id}-{self.region}", 
-            region_name=self.region
+                'servicecatalog',
+                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                f"{self.account_id}-{self.region}",
+                region_name=self.region
         ) as cross_account_servicecatalog:
             product_id = aws.get_product_id_for(
                 cross_account_servicecatalog,
@@ -218,18 +230,18 @@ class GetPortfolioIdByPortfolioName(PuppetTask):
 
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
-            'servicecatalog',
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.account_id}-{self.region}",
-            region_name=self.region
+                'servicecatalog',
+                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                f"{self.account_id}-{self.region}",
+                region_name=self.region
         ) as cross_account_servicecatalog:
             portfolio_id = aws.get_portfolio_id_for(cross_account_servicecatalog, self.portfolio)
             f = self.output().open('w')
             f.write(
                 json.dumps(
                     {
-                        "portfolio_name": self.portfolio, 
-                        "portfolio_id": portfolio_id, 
+                        "portfolio_name": self.portfolio,
+                        "portfolio_id": portfolio_id,
                     },
                     indent=4,
                     default=str,
@@ -319,7 +331,7 @@ class ProvisionProductTask(PuppetTask):
     def run(self):
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
                     f"starting deploy try {self.try_count} of {self.retry_count}")
-        
+
         version_id = json.loads(self.input().get('version').open('r').read()).get('version_id')
         product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
 
@@ -358,7 +370,8 @@ class ProvisionProductTask(PuppetTask):
                 else:
                     default_cfn_params = {}
 
-                logging.info(f" running as {role}, checking {product_id} {version_id} {path_id} in {self.account_id} {self.region}")
+                logging.info(
+                    f" running as {role}, checking {product_id} {version_id} {path_id} in {self.account_id} {self.region}")
                 provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
                     ProductId=product_id, ProvisioningArtifactId=version_id, PathId=path_id,
                 ).get('ProvisioningArtifactParameters', [])
@@ -584,11 +597,12 @@ class ProvisionProductDryRunTask(PuppetTask):
                                 all_params[parameter.get('name')] = parameter.get('value')
 
                             with betterboto_client.CrossAccountClientContextManager(
-                                'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
+                                    'cloudformation', role, f'cfn-{self.region}-{self.account_id}',
+                                    region_name=self.region
                             ) as cloudformation:
                                 default_cfn_params = aws.get_default_parameters_for_stack(
-                                  cloudformation, f"SC-{self.account_id}-{provisioned_product_id}"
-                              )
+                                    cloudformation, f"SC-{self.account_id}-{provisioned_product_id}"
+                                )
 
                             for default_cfn_param_name in default_cfn_params.keys():
                                 if all_params.get(default_cfn_param_name) is None:
@@ -1379,6 +1393,309 @@ class ResetProvisionedProductOwnerTask(PuppetTask):
                         'OWNER': f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
                     }
                 )
+
+
+class RequestPolicyTask(PuppetTask):
+    type = luigi.Parameter()
+    region = luigi.Parameter()
+    account_id = luigi.Parameter()
+    organization = luigi.Parameter(default=None)
+
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/{self.account_id}--{self.region}"
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.uid}.json"
+        )
+
+    def run(self):
+        if self.organization is not None:
+            p = f'data/{self.type}/{self.region}/organizations/'
+            if not os.path.exists(p):
+                os.makedirs(p, exist_ok=True)
+            path = f'{p}/{self.organization}.json'
+        else:
+            p = f'data/{self.type}/{self.region}/accounts/'
+            if not os.path.exists(p):
+                os.makedirs(p, exist_ok=True)
+            path = f'{p}/{self.account_id}.json'
+
+        f = open(path, 'w')
+        f.write(
+            json.dumps(
+                self.param_kwargs,
+                indent=4,
+                default=str,
+            )
+        )
+        f.close()
+        self.write_output(self.param_kwargs)
+
+
+class ShareAndAcceptPortfolioTask(PuppetTask):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/{self.account_id}--{self.region}--{self.portfolio}"
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.uid}.json"
+        )
+
+    def run(self):
+        logger.info(f"{self.uid} starting ShareAndAcceptPortfolioTask")
+        portfolio_id = aws.get_portfolio_for(self.portfolio, self.puppet_account_id, self.region).get('Id')
+        p = f'data/shares/{self.region}/{self.portfolio}/'
+        if not os.path.exists(p):
+            os.makedirs(p, exist_ok=True)
+        path = f'{p}/{self.account_id}.json'
+        with open(path, 'w') as f:
+            f.write("{}")
+
+        with betterboto_client.ClientContextManager('servicecatalog', region_name=self.region) as servicecatalog:
+            logging.info(f"{self.uid}: sharing {portfolio_id} with {self.account_id}")
+            r = servicecatalog.create_portfolio_share(
+                PortfolioId=portfolio_id,
+                AccountId=self.account_id,
+            )
+            portfolio_share_token = r.get('PortfolioShareToken')
+
+            logging.info(f"{self.uid}: pmd {r}")
+            logging.info(f"{self.uid}: received {portfolio_share_token}")
+
+            status = "IN_PROGRESS"
+            # while status not in ['COMPLETED', 'COMPLETED_WITH_ERRORS', 'ERROR']:
+            #     status = servicecatalog.describe_portfolio_share_status(
+            #         PortfolioShareToken=portfolio_share_token
+            #     ).get('Status')
+            #     logging.info(f"{self.uid}: status is {status}")
+
+            status = "COMPLETED"
+            if status == 'COMPLETED':
+                logging.info(f"{self.uid}: status is {status}")
+                with betterboto_client.CrossAccountClientContextManager(
+                    'servicecatalog',
+                    f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                    f"{self.account_id}-{self.region}-PuppetRole",
+                    region_name=self.region,
+                ) as cross_account_servicecatalog:
+                    logging.info(f"{self.uid}: accepting {portfolio_id}")
+                    cross_account_servicecatalog.accept_portfolio_share(
+                        PortfolioId=portfolio_id,
+                    )
+                    cross_account_servicecatalog.associate_principal_with_portfolio(
+                        PortfolioId=portfolio_id,
+                        PrincipalARN=f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                        PrincipalType='IAM',
+                    )
+            else:
+                raise Exception(f"{self.uid}: Sharing not completed: {status}")
+        self.write_output(self.param_kwargs)
+
+
+class CreateAssociationsInPythonForPortfolioTask(PuppetTask):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    portfolio = luigi.Parameter()
+
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/{self.account_id}--{self.region}--{self.portfolio}"
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.uid}.json"
+        )
+
+    def run(self):
+        p = f'data/associations/{self.region}/{self.portfolio}/'
+        if not os.path.exists(p):
+            os.makedirs(p, exist_ok=True)
+        path = f'{p}/{self.account_id}.json'
+        with open(path, 'w') as f:
+            f.write("{}")
+
+        portfolio_id = aws.get_portfolio_for(self.portfolio, self.account_id, self.region).get('Id')
+        logging.info(f"{self.uid}: Creating the association for portfolio {portfolio_id}")
+        with betterboto_client.ClientContextManager('servicecatalog', region_name=self.region) as servicecatalog:
+            servicecatalog.associate_principal_with_portfolio(
+                PortfolioId=portfolio_id,
+                PrincipalARN=f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                PrincipalType='IAM'
+            )
+        self.write_output(self.param_kwargs)
+
+
+class CreateShareForAccountLaunchRegion(PuppetTask):
+    """for the given account_id and launch and region create the shares"""
+    account_id = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+    deployment_map_for_account = luigi.DictParameter()
+    launch_name = luigi.Parameter()
+    launch_details = luigi.DictParameter()
+    region = luigi.Parameter()
+
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/{self.account_id}--{self.launch_name}--{self.region}"
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.uid}.json"
+        )
+
+    def requires(self):
+        logging.info(f"{self.uid}: expanded_from = {self.deployment_map_for_account.get('expanded_from')}")
+        deps = {
+            'topic': RequestPolicyTask(
+                type="topic",
+                region=self.region,
+                organization=self.deployment_map_for_account.get('organization'),
+                account_id=self.account_id,
+            ),
+            'bucket': RequestPolicyTask(
+                type="bucket",
+                region=self.region,
+                organization=self.deployment_map_for_account.get('organization'),
+                account_id=self.account_id,
+            ),
+        }
+        portfolio = self.launch_details.get('portfolio')
+
+        if self.account_id == self.puppet_account_id:
+            # create an association
+            deps['share'] = CreateAssociationsInPythonForPortfolioTask(
+                self.account_id,
+                self.region,
+                portfolio,
+            )
+        else:
+            deps['share'] = ShareAndAcceptPortfolioTask(
+                self.account_id,
+                self.region,
+                portfolio,
+                self.puppet_account_id,
+            )
+        return deps
+
+    def run(self):
+        self.write_output(self.param_kwargs)
+
+
+class CreateShareForAccountLaunch(PuppetTask):
+    """for the given account_id and launch create the shares"""
+    account_id = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+    deployment_map_for_account = luigi.DictParameter()
+    launch_name = luigi.Parameter()
+    launch_details = luigi.DictParameter()
+
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/{self.account_id}--{self.launch_name}"
+
+    def requires(self):
+        deps = {}
+        mutable_deployment_map = dict(self.deployment_map_for_account)
+        match = self.launch_details.get('match')
+        logging.info(f"{self.uid}: Starting match was {match}")
+        if match == "tag_match":
+            matching_tag = self.launch_details.get('matching_tag')
+            target_regions = None
+            for tag_details in self.launch_details.get('deploy_to').get('tags'):
+                if tag_details.get('tag') == matching_tag:
+                    target_regions = tag_details.get('regions', 'default_region')
+            assert target_regions is not None, "Could not find the tag for this provisioning"
+            if target_regions == "default_region":
+                target_regions = [mutable_deployment_map.get('default_region')]
+            elif target_regions in ["regions_enabled", "enabled_regions"]:
+                target_regions = mutable_deployment_map.get('regions_enabled')
+        elif match == "account_match":
+            target_regions = None
+            for accounts_details in self.launch_details.get('deploy_to').get('accounts'):
+                if accounts_details.get('account_id') == self.account_id:
+                    target_regions = accounts_details.get('regions', 'default_region')
+            assert target_regions is not None, "Could not find the account_id for this provisioning"
+            if target_regions == "default_region":
+                target_regions = [mutable_deployment_map.get('default_region')]
+            elif target_regions in ["regions_enabled", "enabled_regions"]:
+                target_regions = mutable_deployment_map.get('regions_enabled')
+
+        else:
+            raise Exception(f"{self.uid}: Unknown match: {match}")
+
+        for region in target_regions:
+            deps[f"{self.account_id}-{self.launch_name}-{region}"] = CreateShareForAccountLaunchRegion(
+                self.account_id,
+                self.puppet_account_id,
+                self.deployment_map_for_account,
+                self.launch_name,
+                self.launch_details,
+                region,
+            )
+
+        return deps
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.uid}.json"
+        )
+
+    def run(self):
+        self.write_output(self.launch_details)
+
+
+class CreateSharesForAccountImportMapTask(PuppetTask):
+    """For the given account_id and deployment_map create the shares"""
+    account_id = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+    deployment_map_for_account = luigi.DictParameter()
+    sharing_type = luigi.Parameter()
+
+    @property
+    def uid(self):
+        return f"{self.account_id}-{self.sharing_type}"
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.__class__.__name__}/"
+            f"{self.uid}.json"
+        )
+
+    @property
+    def resources(self):
+        return {}
+
+    def params_for_results_display(self):
+        return {
+            "launch_name": 'na',
+            "account_id": self.account_id,
+            # "region": self.region,
+            # "portfolio": self.portfolio,
+            # "product": self.product,
+            # "version": self.version,
+        }
+
+    def requires(self):
+        launches = {}
+        for launch_name, launch_details in self.deployment_map_for_account.get(self.sharing_type).items():
+            launches[launch_name] = CreateShareForAccountLaunch(
+                self.account_id, self.puppet_account_id, self.deployment_map_for_account, launch_name, launch_details
+            )
+
+        return {
+            'launches': launches
+        }
+
+    def run(self):
+        self.write_output(self.deployment_map_for_account)
 
 
 def record_event(event_type, task, extra_event_data=None):
