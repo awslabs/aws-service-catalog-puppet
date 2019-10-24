@@ -841,13 +841,13 @@ def run_tasks_for_generate_shares(tasks_to_run):
 
     should_use_sns = get_should_use_sns()
     puppet_account_id = get_puppet_account_id()
-    sharing_policies = {
-        'accounts': [],
-        'organizations': [],
-    }
     version = get_puppet_version()
 
     for region in get_regions():
+        sharing_policies = {
+            'accounts': [],
+            'organizations': [],
+        }
         with betterboto_client.ClientContextManager('cloudformation', region_name=region) as cloudformation:
             cloudformation.ensure_deleted(StackName="servicecatalog-puppet-shares")
 
