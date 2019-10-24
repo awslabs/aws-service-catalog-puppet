@@ -58,7 +58,7 @@ Resources:
             Principal:
               AWS: "arn:aws:iam::{{ account_id }}:root"{% endfor %}
         {% for organization in sharing_policies.get('organizations') %}
-          - Sid: OrganizationalShareFor{{ sharing_policies.get('organization_id') }}
+          - Sid: OrganizationalShareFor{{ organization }}
             Action:
               - "s3:GetObject"
             Effect: "Allow"
