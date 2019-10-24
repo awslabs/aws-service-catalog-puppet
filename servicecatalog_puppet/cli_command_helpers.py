@@ -831,10 +831,6 @@ def run_tasks_for_generate_shares(tasks_to_run):
     for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
 
-    for region in get_regions():
-        with betterboto_client.ClientContextManager('cloudformation', region_name=region) as cloudformation:
-            cloudformation.ensure_deleted(StackName="servicecatalog-puppet-shares")
-
     run_result = luigi.build(
         tasks_to_run,
         local_scheduler=True,
@@ -851,36 +847,39 @@ def run_tasks_for_generate_shares(tasks_to_run):
     }
     version = get_puppet_version()
 
-    logger.info(f"Updating policies")
-    if os.path.exists(os.path.sep.join(['data','bucket'])):
-        for region in os.listdir(os.path.sep.join(['data','bucket'])):
-            logger.info(f"Updating policies for the region: {region}")
-            path = os.path.sep.join(['data','bucket', region, 'accounts'])
-            if os.path.exists(path):
-                for account_file in os.listdir(path):
-                    account = account_file.split(".")[0]
-                    sharing_policies['accounts'].append(account)
+    for region in get_regions():
+        with betterboto_client.ClientContextManager('cloudformation', region_name=region) as cloudformation:
+            cloudformation.ensure_deleted(StackName="servicecatalog-puppet-shares")
 
-            path = os.path.sep.join(['data','bucket', region, 'organizations'])
-            if os.path.exists(path):
-                for organization_file in os.listdir(path):
-                    organization = organization_file.split(".")[0]
-                    sharing_policies['organizations'].append(organization)
+            logger.info(f"generating policies collection for region {region}")
+            if os.path.exists(os.path.sep.join(['data','bucket'])):
+                logger.info(f"Updating policies for the region: {region}")
+                path = os.path.sep.join(['data','bucket', region, 'accounts'])
+                if os.path.exists(path):
+                    for account_file in os.listdir(path):
+                        account = account_file.split(".")[0]
+                        sharing_policies['accounts'].append(account)
 
-    logger.info(f"Finished updating policies")
+                path = os.path.sep.join(['data','bucket', region, 'organizations'])
+                if os.path.exists(path):
+                    for organization_file in os.listdir(path):
+                        organization = organization_file.split(".")[0]
+                        sharing_policies['organizations'].append(organization)
 
-    template = env.get_template('policies.template.yaml.j2').render(
-        sharing_policies=sharing_policies,
-        VERSION=version,
-    )
-    with betterboto_client.ClientContextManager('cloudformation', region_name=region) as cloudformation:
-        cloudformation.create_or_update(
-            StackName="servicecatalog-puppet-policies",
-            TemplateBody=template,
-            NotificationARNs=[
-                f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-            ] if should_use_sns else [],
-        )
+            logger.info(f"Finished generating policies collection")
+
+            template = env.get_template('policies.template.yaml.j2').render(
+                sharing_policies=sharing_policies,
+                VERSION=version,
+            )
+            with betterboto_client.ClientContextManager('cloudformation', region_name=region) as cloudformation:
+                cloudformation.create_or_update(
+                    StackName="servicecatalog-puppet-policies",
+                    TemplateBody=template,
+                    NotificationARNs=[
+                        f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                    ] if should_use_sns else [],
+                )
 
     for filename in glob('results/failure/*.json'):
         result = json.loads(open(filename, 'r').read())
