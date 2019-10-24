@@ -333,8 +333,9 @@ Resources:
           artifacts:
             files:
               - manifest-expanded.yaml
-              - output/*/*/*/*.template.yaml
-              - results/*/*/*/*.template.yaml
+              - data/*/*/*/*.json
+              - shares/*/*/*.json
+              - topic/*/*/*.json
             name: GenerateShares
       TimeoutInMinutes: 30
       Tags:
