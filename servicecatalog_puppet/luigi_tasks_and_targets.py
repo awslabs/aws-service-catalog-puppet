@@ -1615,7 +1615,7 @@ class CreateShareForAccountLaunch(PuppetTask):
             assert target_regions is not None, "Could not find the tag for this provisioning"
             if target_regions == "default_region":
                 target_regions = [mutable_deployment_map.get('default_region')]
-            elif target_regions in ["regions_enabled", "enabled_regions"]:
+            elif target_regions in ["enabled", "regions_enabled", "enabled_regions"]:
                 target_regions = mutable_deployment_map.get('regions_enabled')
         elif match == "account_match":
             target_regions = None
@@ -1625,7 +1625,7 @@ class CreateShareForAccountLaunch(PuppetTask):
             assert target_regions is not None, "Could not find the account_id for this provisioning"
             if target_regions == "default_region":
                 target_regions = [mutable_deployment_map.get('default_region')]
-            elif target_regions in ["regions_enabled", "enabled_regions"]:
+            elif target_regions in ["enabled", "regions_enabled", "enabled_regions"]:
                 target_regions = mutable_deployment_map.get('regions_enabled')
 
         else:
