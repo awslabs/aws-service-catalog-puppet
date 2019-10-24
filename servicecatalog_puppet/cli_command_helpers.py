@@ -179,7 +179,7 @@ def set_regions_for_deployment_map(deployment_map, section, puppet_account_id):
                 for a in launch_details.get('deploy_to').get('accounts'):
                     if a.get('account_id') == account_id:
                         regions = a.get('regions')
-                        if regions in ["enabled", "regions_enabled"]:
+                        if regions in ["enabled", "regions_enabled", "enabled_regions"]:
                             regions = account_details.get('regions_enabled')
                         elif regions == "default_region" or regions is None:
                             regions = account_details.get('default_region')
@@ -202,7 +202,7 @@ def set_regions_for_deployment_map(deployment_map, section, puppet_account_id):
                 for t in launch_details.get('deploy_to').get('tags'):
                     if t.get('tag') in account_details.get('tags'):
                         regions = t.get('regions')
-                        if regions in ["enabled", "regions_enabled"]:
+                        if regions in ["enabled", "regions_enabled", "enabled_regions"]:
                             regions = account_details.get('regions_enabled')
                         elif regions == "default_region" or regions is None:
                             regions = account_details.get('default_region')
