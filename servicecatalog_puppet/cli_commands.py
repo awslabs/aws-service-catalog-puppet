@@ -118,10 +118,10 @@ def reset_provisioned_product_owner(f):
         if task_status == constants.PROVISIONED:
             tasks_to_run.append(luigi_tasks_and_targets.ResetProvisionedProductOwnerTask(**task))
 
-    cli_command_helpers.run_tasks(tasks_to_run)
+    cli_command_helpers.run_tasks(tasks_to_run, 10)
 
 
-def deploy(f, single_account):
+def deploy(f, num_workers):
     puppet_account_id = cli_command_helpers.get_puppet_account_id()
 
     manifest = manifest_utils.load(f)
@@ -164,7 +164,7 @@ def deploy(f, single_account):
     )
     tasks_to_run += spoke_local_portfolio_tasks_to_run
 
-    cli_command_helpers.run_tasks(tasks_to_run)
+    cli_command_helpers.run_tasks(tasks_to_run, num_workers)
 
 
 def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
