@@ -658,7 +658,7 @@ def deploy_launches_task_builder_for_account_launch_region(
     return all_tasks
 
 
-def run_tasks(tasks_to_run):
+def run_tasks(tasks_to_run, num_workers):
     should_use_eventbridge = get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION"))
     should_forward_failures_to_opscenter = get_should_forward_failures_to_opscenter(os.environ.get("AWS_DEFAULT_REGION"))
 
@@ -672,11 +672,12 @@ def run_tasks(tasks_to_run):
     for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
 
+    logger.info(f"About to run workflow with {num_workers} workers")
     run_result = luigi.build(
         tasks_to_run,
         local_scheduler=True,
         detailed_summary=True,
-        workers=10,
+        workers=num_workers,
         log_level='INFO',
     )
     table_data = [
