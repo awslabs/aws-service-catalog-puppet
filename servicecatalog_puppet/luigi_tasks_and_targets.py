@@ -282,7 +282,11 @@ class ProvisionProductTask(PuppetTask):
 
     @property
     def priority(self):
-        return self.requested_priority
+        if len(self.dependencies) > 0:
+            return 1000
+        else:
+            return 0
+        # return self.requested_priority
 
     def requires(self):
         ssm_params = {}
