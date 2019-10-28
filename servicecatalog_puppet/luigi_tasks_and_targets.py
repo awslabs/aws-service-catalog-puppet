@@ -72,12 +72,13 @@ class GetSSMParamTask(PuppetTask):
     def run(self):
         with betterboto_client.ClientContextManager('ssm', region_name=self.region) as ssm:
             try:
+                p = ssm.get_parameter(
+                    Name=self.name,
+                )
                 self.write_output({
                     'Name': self.name,
                     'Region': self.region,
-                    'Value': ssm.get_parameter(
-                        Name=self.param_name,
-                    ).get('Parameter').get('Value')
+                    'Value': p.get('Parameter').get('Value')
                 })
             except ssm.exceptions.ParameterNotFound as e:
                 raise e
