@@ -477,6 +477,11 @@ class ProvisionProductTask(PuppetTask):
                 )
                 f.close()
                 logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished provisioning")
+        import psutil
+        logger.info("Memory usage:")
+        logger.info(psutil.virtual_memory())
+        logger.info(psutil.swap_memory())
+        logger.info(psutil.disk_usage('/'))
 
 
 class ProvisionProductDryRunTask(PuppetTask):
