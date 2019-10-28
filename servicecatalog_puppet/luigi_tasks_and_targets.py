@@ -1761,8 +1761,16 @@ def on_task_timeout(task):
 
 
 @luigi.Task.event_handler(luigi.Event.PROCESS_FAILURE)
-def on_task_process_failure(task):
-    record_event('process_failure', task)
+def on_task_process_failure(task, exception):
+    exception_details = {
+        "exception_type": type(exception),
+        "exception_stack_trace": traceback.format_exception(
+            etype=type(exception),
+            value=exception,
+            tb=exception.__traceback__,
+        )
+    }
+    record_event('process_failure', task, exception_details)
 
 
 @luigi.Task.event_handler(luigi.Event.PROCESSING_TIME)
