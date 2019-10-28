@@ -282,11 +282,7 @@ class ProvisionProductTask(PuppetTask):
 
     @property
     def priority(self):
-        if len(self.dependencies) > 0:
-            return 1000
-        else:
-            return 0
-        # return self.requested_priority
+        return self.requested_priority
 
     def requires(self):
         ssm_params = {}
@@ -487,8 +483,14 @@ class ProvisionProductTask(PuppetTask):
         import psutil
         logger.info("Memory usage:")
         logger.info(psutil.virtual_memory())
-        logger.info(psutil.swap_memory())
         logger.info(psutil.disk_usage('/'))
+        import tracemalloc
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
+        logger.info('TOP10')
+        for stat in top_stats[:10]:
+            logger.info(stat)
+
 
 
 class ProvisionProductDryRunTask(PuppetTask):

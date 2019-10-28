@@ -11,3 +11,4 @@ luigi==2.8.6
 cfn_flip==1.2.1
 requests==2.22.0
 psutil
+pympler

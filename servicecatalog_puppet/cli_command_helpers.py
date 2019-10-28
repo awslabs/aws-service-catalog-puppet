@@ -675,6 +675,11 @@ def run_tasks(tasks_to_run, num_workers):
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
 
     logger.info(f"About to run workflow with {num_workers} workers")
+
+    import tracemalloc
+
+    tracemalloc.start()
+
     run_result = luigi.build(
         tasks_to_run,
         local_scheduler=True,
@@ -682,6 +687,7 @@ def run_tasks(tasks_to_run, num_workers):
         workers=num_workers,
         log_level='INFO',
     )
+
     table_data = [
         ['Action','Launch', 'Account', 'Region', 'Portfolio', 'Product', 'Version', 'Duration'],
 
