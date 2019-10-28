@@ -121,9 +121,6 @@ def reset_provisioned_product_owner(f):
     cli_command_helpers.run_tasks(tasks_to_run, 10)
 
 
-from memory_profiler import profile
-
-@profile
 def deploy(f, num_workers):
     puppet_account_id = cli_command_helpers.get_puppet_account_id()
 
