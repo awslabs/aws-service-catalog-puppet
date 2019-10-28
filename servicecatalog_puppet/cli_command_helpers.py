@@ -296,9 +296,10 @@ def wire_dependencies(all_tasks):
         for dependency in task.get('depends_on', []):
             for task_uid_2, task_2 in all_tasks.items():
                 if task_2.get('launch_name') == dependency:
-                    if task_2.get('depends_on') is not None:
-                        del task_2['depends_on']
-                    task.get('dependencies').append(copy.deepcopy(task_2))
+                    new_task = copy.deepcopy(task_2)
+                    if new_task.get('depends_on') is not None:
+                        del new_task['depends_on']
+                    task.get('dependencies').append(new_task)
         del task['depends_on']
         tasks_to_run.append(task)
 
