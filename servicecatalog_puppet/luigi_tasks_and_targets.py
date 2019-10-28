@@ -290,7 +290,6 @@ class ProvisionProductTask(PuppetTask):
             self.region,
         )
         for r in self.dependencies:
-            ddd = r.get('dependencies')
             if r.get('status') is not None:
                 if r.get('status') == constants.TERMINATED:
                     raise Exception("Unsupported")
@@ -338,7 +337,8 @@ class ProvisionProductTask(PuppetTask):
 
         logger.info(f"[{self.uid}] :: collecting ssm params")
         for ssm_param_name, ssm_param in self.input().get('ssm_params', {}).items():
-            all_params[ssm_param_name] = ssm_param.read()
+            with ssm_param.open('r') as f:
+                all_params[ssm_param_name] = f.read()
 
         logger.info(f"[{self.uid}] collecting manifest params")
         for parameter in self.parameters:
