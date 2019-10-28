@@ -1,5 +1,6 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
+import copy
 import functools
 import sys
 import time
@@ -295,9 +296,15 @@ def wire_dependencies(all_tasks):
         for dependency in task.get('depends_on', []):
             for task_uid_2, task_2 in all_tasks.items():
                 if task_2.get('launch_name') == dependency:
-                    task.get('dependencies').append(task_2)
+                    task.get('dependencies').append(copy.deepcopy(task_2))
         del task['depends_on']
         tasks_to_run.append(task)
+
+        for task_to_run in tasks_to_run:
+            for task in task_to_run.get('dependencies', []):
+                for sub_task in task_to_run.get('dependencies', []):
+                    sub_task['dependencies'] = []
+
     return tasks_to_run
 
 

@@ -17,31 +17,6 @@ import logging
 logger = logging.getLogger("tasks")
 
 
-class SSMParamTarget(luigi.Target):
-    def __init__(self, param_name, error_when_not_found):
-        super().__init__()
-        self.param_name = param_name
-        self.error_when_not_found = error_when_not_found
-
-    def exists(self):
-        with betterboto_client.ClientContextManager('ssm') as ssm:
-            try:
-                ssm.get_parameter(
-                    Name=self.param_name,
-                ).get('Parameter')
-                return True
-            except ssm.exceptions.ParameterNotFound as e:
-                if self.error_when_not_found:
-                    raise e
-                return False
-
-    def read(self):
-        with betterboto_client.ClientContextManager('ssm') as ssm:
-            return ssm.get_parameter(
-                Name=self.param_name,
-            ).get('Parameter').get('Value')
-
-
 class PuppetTask(luigi.Task):
 
     @property
@@ -62,15 +37,14 @@ class PuppetTask(luigi.Task):
         return "Omitted"
 
     def write_output(self, content):
-        f = self.output().open('w')
-        f.write(
-            json.dumps(
-                content,
-                indent=4,
-                default=str,
+        with self.output().open('w') as f:
+            f.write(
+                json.dumps(
+                    content,
+                    indent=4,
+                    default=str,
+                )
             )
-        )
-        f.close()
 
 
 class GetSSMParamTask(PuppetTask):
@@ -85,11 +59,28 @@ class GetSSMParamTask(PuppetTask):
             "region": self.region,
         }
 
+    @property
+    def uid(self):
+        return f"{self.region}-{self.parameter_name}-{self.name}"
+
     def output(self):
-        return SSMParamTarget(self.name, True)
+        return luigi.LocalTarget(
+            f"output/{self.__class__.__name__}/"
+            f"{self.uid}.json"
+        )
 
     def run(self):
-        pass
+        with betterboto_client.ClientContextManager('ssm', region_name=self.region) as ssm:
+            try:
+                self.write_output({
+                    'Name': self.name,
+                    'Region': self.region,
+                    'Value': ssm.get_parameter(
+                        Name=self.param_name,
+                    ).get('Parameter').get('Value')
+                })
+            except ssm.exceptions.ParameterNotFound as e:
+                raise e
 
 
 class GetVersionIdByVersionName(PuppetTask):
@@ -126,7 +117,8 @@ class GetVersionIdByVersionName(PuppetTask):
         }
 
     def run(self):
-        product_details = json.loads(self.input().get('product').open('r').read())
+        with self.input().get('product').open('r') as f:
+            product_details = json.loads(f.read())
         version_id = None
         with betterboto_client.CrossAccountClientContextManager(
                 'servicecatalog',
@@ -139,18 +131,17 @@ class GetVersionIdByVersionName(PuppetTask):
                 product_details.get('product_id'),
                 self.version
             )
-            f = self.output().open('w')
-            f.write(
-                json.dumps(
-                    {
-                        'version_name': self.version,
-                        'version_id': version_id,
-                    },
-                    indent=4,
-                    default=str,
+            with self.output().open('w') as f:
+                f.write(
+                    json.dumps(
+                        {
+                            'version_name': self.version,
+                            'version_id': version_id,
+                        },
+                        indent=4,
+                        default=str,
+                    )
                 )
-            )
-            f.close()
 
 
 class GetProductIdByProductName(PuppetTask):
@@ -184,7 +175,8 @@ class GetProductIdByProductName(PuppetTask):
         )
 
     def run(self):
-        portfolio_details = json.loads(self.input().get('portfolio').open('r').read())
+        with self.input().get('portfolio').open('r') as f:
+            portfolio_details = json.loads(f.read())
         with betterboto_client.CrossAccountClientContextManager(
                 'servicecatalog',
                 f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
@@ -196,18 +188,17 @@ class GetProductIdByProductName(PuppetTask):
                 portfolio_details.get('portfolio_id'),
                 self.product,
             )
-            f = self.output().open('w')
-            f.write(
-                json.dumps(
-                    {
-                        'product_name': self.product,
-                        'product_id': product_id,
-                    },
-                    indent=4,
-                    default=str,
+            with self.output().open('w') as f:
+                f.write(
+                    json.dumps(
+                        {
+                            'product_name': self.product,
+                            'product_id': product_id,
+                        },
+                        indent=4,
+                        default=str,
+                    )
                 )
-            )
-            f.close()
 
 
 class GetPortfolioIdByPortfolioName(PuppetTask):
@@ -236,18 +227,17 @@ class GetPortfolioIdByPortfolioName(PuppetTask):
                 region_name=self.region
         ) as cross_account_servicecatalog:
             portfolio_id = aws.get_portfolio_id_for(cross_account_servicecatalog, self.portfolio)
-            f = self.output().open('w')
-            f.write(
-                json.dumps(
-                    {
-                        "portfolio_name": self.portfolio,
-                        "portfolio_id": portfolio_id,
-                    },
-                    indent=4,
-                    default=str,
+            with self.output().open('w') as f:
+                f.write(
+                    json.dumps(
+                        {
+                            "portfolio_name": self.portfolio,
+                            "portfolio_id": portfolio_id,
+                        },
+                        indent=4,
+                        default=str,
+                    )
                 )
-            )
-            f.close()
 
 
 class ProvisionProductTask(PuppetTask):
@@ -255,23 +245,20 @@ class ProvisionProductTask(PuppetTask):
     portfolio = luigi.Parameter()
     product = luigi.Parameter()
     version = luigi.Parameter()
-
-    account_id = luigi.Parameter()
     region = luigi.Parameter()
+    account_id = luigi.Parameter()
+
     puppet_account_id = luigi.Parameter()
 
-    parameters = luigi.ListParameter(default=[])
-    ssm_param_inputs = luigi.ListParameter(default=[])
+    parameters = luigi.ListParameter(default=[], significant=False)
+    ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
+
     dependencies = luigi.ListParameter(default=[], significant=False)
 
-    retry_count = luigi.IntParameter(default=1)
-
+    retry_count = luigi.IntParameter(default=1, significant=False)
     worker_timeout = luigi.IntParameter(default=0, significant=False)
-
-    ssm_param_outputs = luigi.ListParameter(default=[])
-
+    ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
     should_use_sns = luigi.Parameter(significant=False, default=False)
-
     requested_priority = luigi.Parameter(significant=False, default=0)
 
     try_count = 1
@@ -280,9 +267,9 @@ class ProvisionProductTask(PuppetTask):
     def uid(self):
         return f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}"
 
-    @property
-    def priority(self):
-        return self.requested_priority
+    # @property
+    # def priority(self):
+    #     return self.requested_priority
 
     def requires(self):
         ssm_params = {}
@@ -303,6 +290,7 @@ class ProvisionProductTask(PuppetTask):
             self.region,
         )
         for r in self.dependencies:
+            ddd = r.get('dependencies')
             if r.get('status') is not None:
                 if r.get('status') == constants.TERMINATED:
                     raise Exception("Unsupported")
@@ -341,8 +329,10 @@ class ProvisionProductTask(PuppetTask):
     def run(self):
         logger.info(f"[{self.uid}] starting deploy try {self.try_count} of {self.retry_count}")
 
-        version_id = json.loads(self.input().get('version').open('r').read()).get('version_id')
-        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
+        with self.input().get('version').open('r') as f:
+            version_id = json.loads(f.read()).get('version_id')
+        with self.input().get('product').open('r') as f:
+            product_id = json.loads(f.read()).get('product_id')
 
         all_params = {}
 
@@ -470,26 +460,19 @@ class ProvisionProductTask(PuppetTask):
                                 f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
                             )
 
-                f = self.output().open('w')
-                f.write(
-                    json.dumps(
-                        stack_details,
-                        indent=4,
-                        default=str,
+                with self.output().open('w') as f:
+                    f.write(
+                        json.dumps(
+                            stack_details,
+                            indent=4,
+                            default=str,
+                        )
                     )
-                )
-                f.close()
                 logger.info(f"[{self.uid}] finished provisioning")
+
         import psutil
         logger.info("Memory usage:")
         logger.info(psutil.virtual_memory())
-        logger.info(psutil.disk_usage('/'))
-        import tracemalloc
-        snapshot = tracemalloc.take_snapshot()
-        top_stats = snapshot.statistics('lineno')
-        logger.info('TOP10')
-        for stat in top_stats[:10]:
-            logger.info(stat)
 
 
 class ProvisionProductDryRunTask(PuppetTask):
@@ -570,8 +553,11 @@ class ProvisionProductDryRunTask(PuppetTask):
             f"{logger_prefix} :: starting dryrun of {self.retry_count}"
         )
 
-        version_id = json.loads(self.input().get('version').open('r').read()).get('version_id')
-        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
+        with self.input().get('version').open('r') as f:
+            version_id = json.loads(f.read()).get('version_id')
+
+        with self.input().get('product').open('r') as f:
+            product_id = json.loads(f.read()).get('product_id')
 
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
@@ -687,7 +673,8 @@ class ProvisionProductDryRunTask(PuppetTask):
             )
 
     def get_current_version(self, provisioning_artifact_id, service_catalog):
-        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
+        with self.input().get('product').open('r') as f:
+            product_id = json.loads(f.read()).get('product_id')
 
         return service_catalog.describe_provisioning_artifact(
             ProvisioningArtifactId=provisioning_artifact_id,
@@ -695,21 +682,20 @@ class ProvisionProductDryRunTask(PuppetTask):
         ).get('ProvisioningArtifactDetail').get('Name')
 
     def write_result(self, current_version, new_version, effect, notes=''):
-        f = self.output().open('w')
-        f.write(
-            json.dumps(
-                {
-                    "current_version": current_version,
-                    "new_version": new_version,
-                    "effect": effect,
-                    "notes": notes,
-                    "params": self.param_kwargs
-                },
-                indent=4,
-                default=str,
+        with self.output().open('w') as f:
+            f.write(
+                json.dumps(
+                    {
+                        "current_version": current_version,
+                        "new_version": new_version,
+                        "effect": effect,
+                        "notes": notes,
+                        "params": self.param_kwargs
+                    },
+                    indent=4,
+                    default=str,
+                )
             )
-        )
-        f.close()
 
 
 class TerminateProductTask(PuppetTask):
@@ -764,7 +750,8 @@ class TerminateProductTask(PuppetTask):
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
                     f"starting terminate try {self.try_count} of {self.retry_count}")
 
-        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
+        with self.input().get('product').open('r') as f:
+            product_id = json.loads(f.read()).get('product_id')
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
                 'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
@@ -796,15 +783,15 @@ class TerminateProductTask(PuppetTask):
                             f"[{self.launch_name}] {self.account_id}:{self.region} :: SSM Param: {param_name} not found"
                         )
 
-            f = self.output().open('w')
-            f.write(
-                json.dumps(
-                    log_output,
-                    indent=4,
-                    default=str,
+            with self.output().open('w') as f:
+                f.write(
+                    json.dumps(
+                        log_output,
+                        indent=4,
+                        default=str,
+                    )
                 )
-            )
-            f.close()
+
             logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished terminating")
 
 
@@ -858,27 +845,27 @@ class TerminateProductDryRunTask(PuppetTask):
         )
 
     def write_result(self, current_version, new_version, effect, notes=''):
-        f = self.output().open('w')
-        f.write(
-            json.dumps(
-                {
-                    "current_version": current_version,
-                    "new_version": new_version,
-                    "effect": effect,
-                    "notes": notes,
-                    "params": self.param_kwargs
-                },
-                indent=4,
-                default=str,
+        with self.output().open('w') as f:
+            f.write(
+                json.dumps(
+                    {
+                        "current_version": current_version,
+                        "new_version": new_version,
+                        "effect": effect,
+                        "notes": notes,
+                        "params": self.param_kwargs
+                    },
+                    indent=4,
+                    default=str,
+                )
             )
-        )
-        f.close()
 
     def run(self):
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
                     f"starting dry run terminate try {self.try_count} of {self.retry_count}")
 
-        product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
+        with self.input().get('product').open('r') as f:
+            product_id = json.loads(f.read()).get('product_id')
 
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
@@ -940,15 +927,14 @@ class CreateSpokeLocalPortfolioTask(PuppetTask):
                 self.provider_name,
                 self.description,
             )
-        f = self.output().open('w')
-        f.write(
-            json.dumps(
-                spoke_portfolio,
-                indent=4,
-                default=str,
+        with self.output().open('w') as f:
+            f.write(
+                json.dumps(
+                    spoke_portfolio,
+                    indent=4,
+                    default=str,
+                )
             )
-        )
-        f.close()
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: finished creating portfolio")
 
 
@@ -990,7 +976,8 @@ class CreateAssociationsForPortfolioTask(PuppetTask):
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: starting creating associations")
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
 
-        portfolio_id = json.loads(self.input().get('create_spoke_local_portfolio_task').open('r').read()).get('Id')
+        with self.input().get('create_spoke_local_portfolio_task').open('r') as f:
+            portfolio_id = json.loads(f.read()).get('Id')
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: using portfolio_id: {portfolio_id}")
 
         with betterboto_client.CrossAccountClientContextManager(
@@ -1014,15 +1001,14 @@ class CreateAssociationsForPortfolioTask(PuppetTask):
             result = cloudformation.describe_stacks(
                 StackName=stack_name,
             ).get('Stacks')[0]
-            f = self.output().open('w')
-            f.write(
-                json.dumps(
-                    result,
-                    indent=4,
-                    default=str,
+            with self.output().open('w') as f:
+                f.write(
+                    json.dumps(
+                        result,
+                        indent=4,
+                        default=str,
+                    )
                 )
-            )
-            f.close()
             logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Finished importing")
 
 
@@ -1092,7 +1078,8 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                         'CopyTags',
                     ],
                 }
-                spoke_portfolio = json.loads(self.input().open('r').read())
+                with self.input().open('r') as f:
+                    spoke_portfolio = json.loads(f.read())
                 portfolio_id = spoke_portfolio.get("Id")
 
                 logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: searching in "
@@ -1206,19 +1193,18 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                                     Active=version_details.get('Active'),
                                 )
 
-        f = self.output().open('w')
-        f.write(
-            json.dumps(
-                {
-                    'portfolio': spoke_portfolio,
-                    'product_versions_that_should_be_copied': product_versions_that_should_be_copied,
-                    'products': product_name_to_id_dict,
-                },
-                indent=4,
-                default=str,
+        with self.output().open('w') as f:
+            f.write(
+                json.dumps(
+                    {
+                        'portfolio': spoke_portfolio,
+                        'product_versions_that_should_be_copied': product_versions_that_should_be_copied,
+                        'products': product_name_to_id_dict,
+                    },
+                    indent=4,
+                    default=str,
+                )
             )
-        )
-        f.close()
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Finished importing")
 
 
@@ -1250,7 +1236,8 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Creating launch role constraints for "
                     f"{self.hub_portfolio_id}")
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
-        dependency_output = json.loads(self.input().get('create_spoke_local_portfolio_task').open('r').read())
+        with self.input().get('create_spoke_local_portfolio_task').open('r') as f:
+            dependency_output = json.loads(f.read())
         spoke_portfolio = dependency_output.get('portfolio')
         portfolio_id = spoke_portfolio.get('Id')
         product_name_to_id_dict = dependency_output.get('products')
@@ -1307,15 +1294,14 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
             result = cloudformation.describe_stacks(
                 StackName=stack_name_v2,
             ).get('Stacks')[0]
-            f = self.output().open('w')
-            f.write(
-                json.dumps(
-                    result,
-                    indent=4,
-                    default=str,
+            with self.output().open('w') as f:
+                f.write(
+                    json.dumps(
+                        result,
+                        indent=4,
+                        default=str,
+                    )
                 )
-            )
-            f.close()
 
     def params_for_results_display(self):
         return {
@@ -1494,10 +1480,10 @@ class ShareAndAcceptPortfolioTask(PuppetTask):
             if status == 'COMPLETED':
                 logging.info(f"{self.uid}: status is {status}")
                 with betterboto_client.CrossAccountClientContextManager(
-                    'servicecatalog',
-                    f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-                    f"{self.account_id}-{self.region}-PuppetRole",
-                    region_name=self.region,
+                        'servicecatalog',
+                        f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                        f"{self.account_id}-{self.region}-PuppetRole",
+                        region_name=self.region,
                 ) as cross_account_servicecatalog:
                     logging.info(f"{self.uid}: accepting {portfolio_id}")
                     cross_account_servicecatalog.accept_portfolio_share(
