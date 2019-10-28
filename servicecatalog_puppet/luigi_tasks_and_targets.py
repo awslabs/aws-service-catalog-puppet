@@ -272,7 +272,17 @@ class ProvisionProductTask(PuppetTask):
 
     should_use_sns = luigi.Parameter(significant=False, default=False)
 
+    requested_priority = luigi.Parameter(significant=False, default=0)
+
     try_count = 1
+
+    @property
+    def uid(self):
+        return f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}"
+
+    @property
+    def priority(self):
+        return self.requested_priority
 
     def requires(self):
         ssm_params = {}
@@ -325,23 +335,22 @@ class ProvisionProductTask(PuppetTask):
     def output(self):
         return luigi.LocalTarget(
             f"output/ProvisionProductTask/"
-            f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+            f"{self.uid}.json"
         )
 
     def run(self):
-        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
-                    f"starting deploy try {self.try_count} of {self.retry_count}")
+        logger.info(f"[{self.uid}] starting deploy try {self.try_count} of {self.retry_count}")
 
         version_id = json.loads(self.input().get('version').open('r').read()).get('version_id')
         product_id = json.loads(self.input().get('product').open('r').read()).get('product_id')
 
         all_params = {}
 
-        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: collecting ssm params")
+        logger.info(f"[{self.uid}] :: collecting ssm params")
         for ssm_param_name, ssm_param in self.input().get('ssm_params', {}).items():
             all_params[ssm_param_name] = ssm_param.read()
 
-        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: collecting manifest params")
+        logger.info(f"[{self.uid}] collecting manifest params")
         for parameter in self.parameters:
             all_params[parameter.get('name')] = parameter.get('value')
 
@@ -349,15 +358,13 @@ class ProvisionProductTask(PuppetTask):
         with betterboto_client.CrossAccountClientContextManager(
                 'servicecatalog', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
         ) as service_catalog:
-            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures")
+            logger.info(f"[{self.uid}] looking for previous failures")
             path_id = aws.get_path_for_product(service_catalog, product_id, self.portfolio)
 
             provisioned_product_id, provisioning_artifact_id = aws.terminate_if_status_is_not_available(
                 service_catalog, self.launch_name, product_id, self.account_id, self.region
             )
-            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
-                        f"provisioned_product_id: {provisioned_product_id}, "
-                        f"provisioning_artifact_id : {provisioning_artifact_id}")
+            logger.info(f"[{self.uid}] pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}")
 
             with betterboto_client.CrossAccountClientContextManager(
                     'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
@@ -371,7 +378,8 @@ class ProvisionProductTask(PuppetTask):
                     default_cfn_params = {}
 
                 logging.info(
-                    f" running as {role}, checking {product_id} {version_id} {path_id} in {self.account_id} {self.region}")
+                    f"running as {role},checking {product_id} {version_id} {path_id} in {self.account_id} {self.region}"
+                )
                 provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
                     ProductId=product_id, ProvisioningArtifactId=version_id, PathId=path_id,
                 ).get('ProvisioningArtifactParameters', [])
@@ -385,29 +393,26 @@ class ProvisionProductTask(PuppetTask):
 
                 if provisioning_artifact_id == version_id:
                     logger.info(
-                        f"[{self.launch_name}] {self.account_id}:{self.region} :: found previous good provision")
+                        f"[{self.uid}] found previous good provision")
                     if provisioned_product_id:
                         logger.info(
-                            f"[{self.launch_name}] {self.account_id}:{self.region} :: checking params for diffs")
+                            f"[{self.uid}] checking params for diffs")
                         provisioned_parameters = aws.get_parameters_for_stack(
                             cloudformation,
                             f"SC-{self.account_id}-{provisioned_product_id}"
                         )
-                        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
-                                    f"current params: {provisioned_parameters}")
+                        logger.info(f"[{self.uid}] current params: {provisioned_parameters}")
 
-                        logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
-                                    f"new params: {all_params}")
+                        logger.info(f"[{self.uid}] new params: {all_params}")
 
                         if provisioned_parameters == all_params:
-                            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: params unchanged")
+                            logger.info(f"[{self.uid}] params unchanged")
                             need_to_provision = False
                         else:
-                            logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: params changed")
+                            logger.info(f"[{self.uid}] params changed")
 
                 if need_to_provision:
-                    logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: about to provision with "
-                                f"params: {json.dumps(all_params)}")
+                    logger.info(f"[{self.uid}] about to provision with params: {json.dumps(all_params)}")
 
                     if provisioned_product_id:
                         with betterboto_client.CrossAccountClientContextManager(
@@ -419,12 +424,10 @@ class ProvisionProductTask(PuppetTask):
                             )
                             stack_status = stack.get('StackStatus')
                             logger.info(
-                                f"[{self.launch_name}] {self.account_id}:{self.region} :: current cfn stack_status is "
-                                f"{stack_status}")
+                                f"[{self.uid}] current cfn stack_status is {stack_status}")
                             if stack_status not in ["UPDATE_COMPLETE", "CREATE_COMPLETE"]:
                                 raise Exception(
-                                    f"[{self.launch_name}] {self.account_id}:{self.region} :: current cfn stack_status is "
-                                    f"{stack_status}"
+                                    f"[{self.uid}] current cfn stack_status is {stack_status}"
                                 )
 
                     provisioned_product_id = aws.provision_product(
@@ -449,14 +452,13 @@ class ProvisionProductTask(PuppetTask):
                     )
 
                 for ssm_param_output in self.ssm_param_outputs:
-                    logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
-                                f"writing SSM Param: {ssm_param_output.get('stack_output')}")
+                    logger.info(f"[{self.uid}] writing SSM Param: {ssm_param_output.get('stack_output')}")
                     with betterboto_client.ClientContextManager('ssm') as ssm:
                         found_match = False
                         for output in stack_details.get('Outputs', []):
                             if output.get('OutputKey') == ssm_param_output.get('stack_output'):
                                 found_match = True
-                                logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: found value")
+                                logger.info(f"[{self.uid}] found value")
                                 ssm.put_parameter(
                                     Name=ssm_param_output.get('param_name'),
                                     Value=output.get('OutputValue'),
@@ -464,8 +466,9 @@ class ProvisionProductTask(PuppetTask):
                                     Overwrite=True,
                                 )
                         if not found_match:
-                            raise Exception(f"[{self.launch_name}] {self.account_id}:{self.region} :: Could not find "
-                                            f"match for {ssm_param_output.get('stack_output')}")
+                            raise Exception(
+                                f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
+                            )
 
                 f = self.output().open('w')
                 f.write(
@@ -476,7 +479,7 @@ class ProvisionProductTask(PuppetTask):
                     )
                 )
                 f.close()
-                logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: finished provisioning")
+                logger.info(f"[{self.uid}] finished provisioning")
         import psutil
         logger.info("Memory usage:")
         logger.info(psutil.virtual_memory())
