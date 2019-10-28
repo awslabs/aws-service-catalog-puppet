@@ -492,7 +492,6 @@ class ProvisionProductTask(PuppetTask):
             logger.info(stat)
 
 
-
 class ProvisionProductDryRunTask(PuppetTask):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -1761,14 +1760,10 @@ def on_task_timeout(task):
 
 
 @luigi.Task.event_handler(luigi.Event.PROCESS_FAILURE)
-def on_task_process_failure(task, exception):
+def on_task_process_failure(task, error_msg):
     exception_details = {
-        "exception_type": type(exception),
-        "exception_stack_trace": traceback.format_exception(
-            etype=type(exception),
-            value=exception,
-            tb=exception.__traceback__,
-        )
+        "exception_type": 'PROCESS_FAILURE',
+        "exception_stack_trace": error_msg,
     }
     record_event('process_failure', task, exception_details)
 
