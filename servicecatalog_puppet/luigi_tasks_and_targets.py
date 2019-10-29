@@ -1456,23 +1456,11 @@ class ShareAndAcceptPortfolioTask(PuppetTask):
             f.write("{}")
 
         logging.info(f"{self.uid}: checking {portfolio_id} with {self.account_id}")
-        needs_to_share = True
-        with betterboto_client.CrossAccountClientContextManager(
-                        'servicecatalog',
-                        f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-                        f"{self.account_id}-{self.region}-PuppetRole",
-                        region_name=self.region,
-        ) as cross_account_servicecatalog:
-            portfolio_details = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page().get(
-                'PortfolioDetails', []
-            )
-            for portfolio_detail in portfolio_details:
-                if portfolio_detail.get('Id') == self.account_id:
-                    needs_to_share = False
-                    break
 
-        if needs_to_share:
-            with betterboto_client.ClientContextManager('servicecatalog', region_name=self.region) as servicecatalog:
+        with betterboto_client.ClientContextManager('servicecatalog', region_name=self.region) as servicecatalog:
+            account_ids = servicecatalog.list_portfolio_access(PortfolioId=portfolio_id).get('AccountIds')
+
+            if self.account_id in account_ids:
                 logging.info(f"{self.uid}: sharing {portfolio_id} with {self.account_id}")
                 r = servicecatalog.create_portfolio_share(
                     PortfolioId=portfolio_id,
