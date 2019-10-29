@@ -268,9 +268,9 @@ class ProvisionProductTask(PuppetTask):
     def uid(self):
         return f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}"
 
-    # @property
-    # def priority(self):
-    #     return self.requested_priority
+    @property
+    def priority(self):
+        return self.requested_priority
 
     def requires(self):
         ssm_params = {}
