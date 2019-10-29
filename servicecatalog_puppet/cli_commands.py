@@ -134,7 +134,6 @@ def deploy(f, num_workers):
     all_launch_tasks = cli_command_helpers.deploy_launches(manifest, puppet_account_id)
     launch_tasks.update(all_launch_tasks)
 
-
     for task in cli_command_helpers.wire_dependencies(launch_tasks):
         task_status = task.get('status')
         del task['status']

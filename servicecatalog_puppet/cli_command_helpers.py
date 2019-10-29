@@ -1,5 +1,6 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
+import copy
 import functools
 import sys
 import time
@@ -295,9 +296,17 @@ def wire_dependencies(all_tasks):
         for dependency in task.get('depends_on', []):
             for task_uid_2, task_2 in all_tasks.items():
                 if task_2.get('launch_name') == dependency:
-                    task.get('dependencies').append(task_2)
+                    new_task = copy.deepcopy(task_2)
+                    if new_task.get('depends_on') is not None:
+                        del new_task['depends_on']
+                    task.get('dependencies').append(new_task)
         del task['depends_on']
         tasks_to_run.append(task)
+
+        for task_to_run in tasks_to_run:
+            for dependency in task_to_run.get('dependencies', []):
+                dependency['dependencies'] = []
+
     return tasks_to_run
 
 
@@ -653,6 +662,8 @@ def deploy_launches_task_builder_for_account_launch_region(
     if launch_details.get('configuration'):
         if launch_details.get('configuration').get('retry_count'):
             task['retry_count'] = launch_details.get('configuration').get('retry_count')
+        if launch_details.get('configuration').get('requested_priority'):
+            task['requested_priority'] = launch_details.get('configuration').get('requested_priority')
 
     all_tasks[f"{task.get('account_id')}-{task.get('region')}-{task.get('launch_name')}"] = task
     return all_tasks
@@ -673,6 +684,7 @@ def run_tasks(tasks_to_run, num_workers):
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
 
     logger.info(f"About to run workflow with {num_workers} workers")
+
     run_result = luigi.build(
         tasks_to_run,
         local_scheduler=True,
@@ -680,6 +692,7 @@ def run_tasks(tasks_to_run, num_workers):
         workers=num_workers,
         log_level='INFO',
     )
+
     table_data = [
         ['Action','Launch', 'Account', 'Region', 'Portfolio', 'Product', 'Version', 'Duration'],
 
