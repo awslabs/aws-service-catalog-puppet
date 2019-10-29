@@ -37,7 +37,7 @@ def cli(info, info_line_numbers):
         logging.basicConfig(
             format='%(levelname)s %(threadName)s %(message)s', level=logging.INFO
         )
-    if True:
+    if info_line_numbers:
         logging.basicConfig(
             format='%(levelname)s %(threadName)s [%(filename)s:%(lineno)d] %(message)s',
             datefmt='%Y-%m-%d:%H:%M:%S',
