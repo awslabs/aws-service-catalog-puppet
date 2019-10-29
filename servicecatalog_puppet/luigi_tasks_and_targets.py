@@ -1462,7 +1462,7 @@ class ShareAndAcceptPortfolioTask(PuppetTask):
 
             if self.account_id in account_ids:
                 logging.info(f"{self.uid}: not sharing {portfolio_id} with {self.account_id} as was previously shared")
-                time.sleep(3)
+                time.sleep(61)
             else:
                 logging.info(f"{self.uid}: sharing {portfolio_id} with {self.account_id}")
                 r = servicecatalog.create_portfolio_share(
