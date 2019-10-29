@@ -471,10 +471,6 @@ class ProvisionProductTask(PuppetTask):
                     )
                 logger.info(f"[{self.uid}] finished provisioning")
 
-        import psutil
-        logger.info("Memory usage:")
-        logger.info(psutil.virtual_memory())
-
 
 class ProvisionProductDryRunTask(PuppetTask):
     launch_name = luigi.Parameter()
