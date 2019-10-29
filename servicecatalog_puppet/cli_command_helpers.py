@@ -685,10 +685,6 @@ def run_tasks(tasks_to_run, num_workers):
 
     logger.info(f"About to run workflow with {num_workers} workers")
 
-    import tracemalloc
-
-    tracemalloc.start()
-
     run_result = luigi.build(
         tasks_to_run,
         local_scheduler=True,
