@@ -1461,6 +1461,9 @@ class ShareAndAcceptPortfolioTask(PuppetTask):
             account_ids = servicecatalog.list_portfolio_access(PortfolioId=portfolio_id).get('AccountIds')
 
             if self.account_id in account_ids:
+                logging.info(f"{self.uid}: not sharing {portfolio_id} with {self.account_id} as was previously shared")
+                time.sleep(3)
+            else:
                 logging.info(f"{self.uid}: sharing {portfolio_id} with {self.account_id}")
                 r = servicecatalog.create_portfolio_share(
                     PortfolioId=portfolio_id,
@@ -1481,9 +1484,6 @@ class ShareAndAcceptPortfolioTask(PuppetTask):
                         PrincipalARN=f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
                         PrincipalType='IAM',
                     )
-        else:
-            logging.info(f"{self.uid}: not sharing {portfolio_id} with {self.account_id} as was previously shared")
-            time.sleep(3)
 
         self.write_output(self.param_kwargs)
 
