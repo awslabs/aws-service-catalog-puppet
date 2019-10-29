@@ -1437,6 +1437,12 @@ class ShareAndAcceptPortfolioTask(PuppetTask):
     puppet_account_id = luigi.Parameter()
 
     @property
+    def resources(self):
+        return {
+            f"{self.puppet_account_id}-{self.region}-{self.portfolio}": 1
+        }
+
+    @property
     def uid(self):
         return f"{self.__class__.__name__}/{self.account_id}--{self.region}--{self.portfolio}"
 
@@ -1492,6 +1498,12 @@ class CreateAssociationsInPythonForPortfolioTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
+
+    @property
+    def resources(self):
+        return {
+            f"{self.region}-{self.portfolio}": 1
+        }
 
     @property
     def uid(self):
@@ -1665,10 +1677,6 @@ class CreateSharesForAccountImportMapTask(PuppetTask):
         return {
             "launch_name": 'na',
             "account_id": self.account_id,
-            # "region": self.region,
-            # "portfolio": self.portfolio,
-            # "product": self.product,
-            # "version": self.version,
         }
 
     def requires(self):
