@@ -1437,6 +1437,12 @@ class ShareAndAcceptPortfolioTask(PuppetTask):
     puppet_account_id = luigi.Parameter()
 
     @property
+    def resources(self):
+        return {
+            f"{self.puppet_account_id}-{self.region}-{self.portfolio}": 1
+        }
+
+    @property
     def uid(self):
         return f"{self.__class__.__name__}/{self.account_id}--{self.region}--{self.portfolio}"
 
@@ -1455,27 +1461,19 @@ class ShareAndAcceptPortfolioTask(PuppetTask):
         with open(path, 'w') as f:
             f.write("{}")
 
+        logging.info(f"{self.uid}: checking {portfolio_id} with {self.account_id}")
+
         with betterboto_client.ClientContextManager('servicecatalog', region_name=self.region) as servicecatalog:
-            logging.info(f"{self.uid}: sharing {portfolio_id} with {self.account_id}")
-            r = servicecatalog.create_portfolio_share(
-                PortfolioId=portfolio_id,
-                AccountId=self.account_id,
-            )
-            portfolio_share_token = r.get('PortfolioShareToken')
+            account_ids = servicecatalog.list_portfolio_access(PortfolioId=portfolio_id).get('AccountIds')
 
-            logging.info(f"{self.uid}: pmd {r}")
-            logging.info(f"{self.uid}: received {portfolio_share_token}")
-
-            status = "IN_PROGRESS"
-            # while status not in ['COMPLETED', 'COMPLETED_WITH_ERRORS', 'ERROR']:
-            #     status = servicecatalog.describe_portfolio_share_status(
-            #         PortfolioShareToken=portfolio_share_token
-            #     ).get('Status')
-            #     logging.info(f"{self.uid}: status is {status}")
-
-            status = "COMPLETED"
-            if status == 'COMPLETED':
-                logging.info(f"{self.uid}: status is {status}")
+            if self.account_id in account_ids:
+                logging.info(f"{self.uid}: not sharing {portfolio_id} with {self.account_id} as was previously shared")
+            else:
+                logging.info(f"{self.uid}: sharing {portfolio_id} with {self.account_id}")
+                r = servicecatalog.create_portfolio_share(
+                    PortfolioId=portfolio_id,
+                    AccountId=self.account_id,
+                )
                 with betterboto_client.CrossAccountClientContextManager(
                         'servicecatalog',
                         f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
@@ -1491,8 +1489,7 @@ class ShareAndAcceptPortfolioTask(PuppetTask):
                         PrincipalARN=f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
                         PrincipalType='IAM',
                     )
-            else:
-                raise Exception(f"{self.uid}: Sharing not completed: {status}")
+
         self.write_output(self.param_kwargs)
 
 
@@ -1500,6 +1497,12 @@ class CreateAssociationsInPythonForPortfolioTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
+
+    @property
+    def resources(self):
+        return {
+            f"{self.region}-{self.portfolio}": 1
+        }
 
     @property
     def uid(self):
@@ -1673,10 +1676,6 @@ class CreateSharesForAccountImportMapTask(PuppetTask):
         return {
             "launch_name": 'na',
             "account_id": self.account_id,
-            # "region": self.region,
-            # "portfolio": self.portfolio,
-            # "product": self.product,
-            # "version": self.version,
         }
 
     def requires(self):
