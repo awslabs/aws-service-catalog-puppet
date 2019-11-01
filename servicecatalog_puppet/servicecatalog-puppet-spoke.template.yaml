@@ -59,7 +59,15 @@ Resources:
               - Effect: "Allow"
                 Action: sns:Publish
                 Resource: !Sub "arn:aws:sns:*:${PuppetAccountId}:servicecatalog-puppet-cloudformation-regional-events"
-
+        - PolicyName: "AllowAccessToSCTemplates"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: s3:GetObject
+                Resource:
+                  - "arn:aws:s3:::cf-templates-*"
+                  - "arn:aws:s3:::cf-templates-*/*"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:

@@ -7,11 +7,6 @@ Description: |
   {"version": "0.37.2", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Parameters:
-  Version:
-    Type: String
-    Default: "0.37.2"
-    Description: |
-      Which version of aws-service-catalog-puppet to install
   EnabledRegions:
     Type: String
     Description: |
@@ -36,18 +31,11 @@ Parameters:
     Default: True
 
 Resources:
-  Param:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: service-catalog-puppet-initialiser-version
-      Type: String
-      Value: !Ref Version
-
   InitialiserRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: PuppetInitialiser
-      Path: /servicecatalog-product-puppet/
+      Path: /servicecatalog-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -73,10 +61,6 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/python:3.7.1
         EnvironmentVariables:
-          - Name: VERSION
-            Type: PLAINTEXT
-            Value: !Ref Version
-
           - Name: ENABLED_REGIONS
             Type: PLAINTEXT
             Value: !Join [ ',', !Split [ ', ', !Ref EnabledRegions]]
@@ -103,7 +87,7 @@ Resources:
           phases:
             install:
               commands:
-                - pip install aws-service-catalog-puppet==${VERSION}
+                - pip install aws-service-catalog-puppet --upgrade
                 - servicecatalog-puppet --info set-regions ${ENABLED_REGIONS}
                 - servicecatalog-puppet set-config-value should_collect_cloudformation_events ${SHOULD_COLLECT_CLOUDFORMATION_EVENTS}
                 - servicecatalog-puppet set-config-value should_forward_events_to_eventbridge ${SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE}
@@ -115,6 +99,109 @@ Resources:
 
       TimeoutInMinutes: 60
 
+  StartInstallRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: StartPuppetInstallRole
+      Path: /servicecatalog-puppet/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+
+  StartInstallLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Role: !GetAtt StartInstallRole.Arn
+      Handler: "index.handler"
+      Description: Lambda for starting Puppet CodeBuild Job
+      Runtime: python3.7
+      Timeout: 900
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import logging
+          import time
+          from urllib.request import Request, urlopen
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          def handler(event, context):
+              request_type = event['RequestType']
+              codebuild_projectname = event.get('ResourceProperties').get('ProjectName')
+
+              try:
+                  logger.info(request_type)
+                  if request_type in ['Create', 'Update']:
+                      codebuild_client = boto3.client('codebuild')
+                      logger.info("Starting CodeBuild Job: {}".format(codebuild_projectname))
+                      codebuild_response = codebuild_client.start_build(
+                          projectName = codebuild_projectname
+                      )
+                      build_id = codebuild_response.get('build').get('id')
+                      build_status = 'IN_PROGRESS'
+                      while build_status == 'IN_PROGRESS':
+                          time.sleep(5)
+                          build = codebuild_client.batch_get_builds(ids=[build_id]).get('builds')[0]
+                          build_status = build.get('buildStatus')
+                      if build_status != 'SUCCEEDED':
+                          raise Exception(f"Build did not SUCCEED. Status: {build_status}")
+                      send_response(event, context, "SUCCESS",
+                                    {"Message": "Updated"})
+
+                  elif request_type == 'Delete':
+                      send_response(event, context, "SUCCESS",
+                                    {"Message": "Deleted"})
+
+                  else:
+                      send_response(event, context, "FAILED",
+                                    {"Message": "Unexpected"})
+
+              except Exception as ex:
+                  logger.error(ex)
+                  send_response(event, context,"FAILED",
+                                    {"Message": "Exception"})
+
+          def send_response(e, c, rs, rd):
+              r = json.dumps({
+                  "Status": rs,
+                  "Reason": "CloudWatch Log Stream: " + c.log_stream_name,
+                  "PhysicalResourceId": c.log_stream_name,
+                  "StackId": e['StackId'],
+                  "RequestId": e['RequestId'],
+                  "LogicalResourceId": e['LogicalResourceId'],
+                  "Data": rd
+              })
+              d = str.encode(r)
+              h = {
+                  'content-type': '',
+                  'content-length': str(len(d))
+              }
+              req = Request(e['ResponseURL'], data=d, method='PUT', headers=h)
+              r = urlopen(req)
+              logger.info("Status message: {} {}".format(r.msg, r.getcode()))
+
+  StartInstall:
+    Type: Custom::CustomResource
+    DependsOn: InitialiserProject
+    Properties:
+      ServiceToken: !GetAtt StartInstallLambda.Arn
+      ProjectName: !Ref InitialiserProject
+
 Outputs:
-  Version:
-    Value: !GetAtt Param.Value
+  ServiceCatalogPuppetRepoConsoleURL:
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codecommit/repositories/ServiceCatalogPuppet/browse"
+  ServiceCatalogPuppetRepoCloneURLSSH:
+    Value: !Sub "ssh://git-codecommit.${AWS::Region}.amazonaws.com/v1/repos/ServiceCatalogPuppet"
+  ServiceCatalogPuppetRepoCloneURLHTTPS:
+    Value: !Sub "https://git-codecommit.${AWS::Region}.amazonaws.com/v1/repos/ServiceCatalogPuppet"
