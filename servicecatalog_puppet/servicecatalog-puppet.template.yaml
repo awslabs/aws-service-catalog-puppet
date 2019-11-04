@@ -421,7 +421,7 @@ Resources:
   BootstrapProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: servicecatalog-puppet-bootstrap-an-ou
+      Name: servicecatalog-puppet-bootstrap-spokes-in-ou
       Description: "Bootstrap all the accounts in an OU"
       ServiceRole: !GetAtt DeployRole.Arn
       Artifacts:
