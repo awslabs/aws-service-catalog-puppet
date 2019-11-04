@@ -634,3 +634,33 @@ def set_config_value(name, value):
             config[name] = value.upper() == 'TRUE'
 
         upload_config(config)
+
+
+def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns):
+    org_iam_role_arn = cli_command_helpers.get_org_iam_role_arn()
+    puppet_account_id = cli_command_helpers.get_puppet_account_id()
+    if org_iam_role_arn is None:
+        click.echo('No org role set - not expanding')
+    else:
+        click.echo('Expanding using role: {}'.format(org_iam_role_arn))
+        with betterboto_client.CrossAccountClientContextManager(
+                'organizations', org_iam_role_arn, 'org-iam-role'
+        ) as client:
+            tasks = []
+            if ou_path_or_id.startswith('/'):
+                ou_id = client.convert_path_to_ou(ou_path_or_id)
+            else:
+                ou_id = ou_path_or_id
+            logging.info(f"ou_id is {ou_id}")
+            response = client.list_children_nested(ParentId=ou_id, ChildType='ACCOUNT')
+            for spoke in response:
+                tasks.append(
+                    luigi_tasks_and_targets.BootstrapSpokeAsTask(
+                        puppet_account_id=puppet_account_id,
+                        account_id=spoke.get('Id'),
+                        iam_role_arns=iam_role_arns,
+                        role_name=role_name,
+                    )
+                )
+
+        cli_command_helpers.run_tasks_for_bootstrap_spokes_in_ou(tasks)

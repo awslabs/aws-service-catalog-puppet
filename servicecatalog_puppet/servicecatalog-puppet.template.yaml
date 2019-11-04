@@ -418,6 +418,53 @@ Resources:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
 
+  BootstrapProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: servicecatalog-puppet-bootstrap-spokes-in-ou
+      Description: "Bootstrap all the accounts in an OU"
+      ServiceRole: !GetAtt DeployRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: linuxContainer
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/python:3.7.1
+        EnvironmentVariables:
+          - Name: OU_OR_PATH
+            Type: PLAINTEXT
+            Value: CHANGE_ME
+          - Name: IAM_ROLE_NAME
+            Type: PLAINTEXT
+            Value: OrganizationAccountAccessRole
+          - Name: IAM_ROLE_ARNS
+            Type: PLAINTEXT
+            Value: ''
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              commands:
+          {% if 'http' in VERSION %}
+                - pip install {{ VERSION }}
+          {% else %}
+                - pip install aws-service-catalog-puppet=={{ VERSION }}
+          {% endif %}
+            build:
+              commands:
+                - servicecatalog-puppet bootstrap-spokes-in-ou $OU_OR_PATH $IAM_ROLE_NAME $IAM_ROLE_ARNS
+          artifacts:
+            files:
+              - results/*/*
+              - output/*/*
+            name: BootstrapProject
+
+      TimeoutInMinutes: 60
+      Tags:
+        - Key: "ServiceCatalogPuppet:Actor"
+          Value: "Framework"
 
   SingleAccountRunProject:
     Type: AWS::CodeBuild::Project

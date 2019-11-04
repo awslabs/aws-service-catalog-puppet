@@ -119,43 +119,6 @@ def write_share_template(portfolio_use_by_account, region, host_account_id, shar
             )
         )
 
-#
-# def create_share_template(deployment_map, import_map, puppet_account_id):
-#     logger.info("deployment_map: {}".format(deployment_map))
-#     ALL_REGIONS = get_regions()
-#     for region in ALL_REGIONS:
-#         logger.info("starting to build shares for region: {}".format(region))
-#         with betterboto_client.ClientContextManager('servicecatalog', region_name=region) as servicecatalog:
-#             portfolio_ids = {}
-#
-#             response = servicecatalog.list_portfolios_single_page()
-#
-#             for portfolio_detail in response.get('PortfolioDetails'):
-#                 portfolio_ids[portfolio_detail.get('DisplayName')] = portfolio_detail.get('Id')
-#
-#             logger.info("Portfolios in use in region: {}".format(portfolio_ids))
-#
-#             portfolio_use_by_account = {}
-#             for account_id, launch_details in deployment_map.items():
-#                 if portfolio_use_by_account.get(account_id) is None:
-#                     portfolio_use_by_account[account_id] = []
-#                 for launch_id, launch in launch_details.get('launches').items():
-#                     p = portfolio_ids[launch.get('portfolio')]
-#                     if p not in portfolio_use_by_account[account_id]:
-#                         portfolio_use_by_account[account_id].append(p)
-#
-#             for account_id, import_details in import_map.items():
-#                 if portfolio_use_by_account.get(account_id) is None:
-#                     portfolio_use_by_account[account_id] = []
-#                 for spoke_local_portfolio_id, spoke_local_portfolio in import_details.get('spoke-local-portfolios').items():
-#                     p = portfolio_ids[spoke_local_portfolio.get('portfolio')]
-#                     if p not in portfolio_use_by_account[account_id]:
-#                         portfolio_use_by_account[account_id].append(p)
-#
-#             host_account_id = response.get('PortfolioDetails')[0].get('ARN').split(":")[4]
-#             sharing_policies = generate_bucket_policies_for_shares(deployment_map, puppet_account_id)
-#             write_share_template(portfolio_use_by_account, region, host_account_id, sharing_policies)
-
 
 template_dir = asset_helpers.resolve_from_site_packages('templates')
 env = Environment(
@@ -164,6 +127,7 @@ env = Environment(
 )
 
 
+@functools.lru_cache(maxsize=32)
 def get_puppet_account_id():
     with betterboto_client.ClientContextManager('sts') as sts:
         return sts.get_caller_identity().get('Account')
@@ -894,6 +858,36 @@ def run_tasks_for_generate_shares(tasks_to_run):
                         f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
                     ] if should_use_sns else [],
                 )
+
+    for filename in glob('results/failure/*.json'):
+        result = json.loads(open(filename, 'r').read())
+        click.echo(colorclass.Color("{red}" + result.get('task_type') + " failed{/red}"))
+        click.echo(f"{yaml.safe_dump({'parameters':result.get('task_params')})}")
+        click.echo("\n".join(result.get('exception_stack_trace')))
+        click.echo('')
+    exit_status_codes = {
+        LuigiStatusCode.SUCCESS: 0,
+        LuigiStatusCode.SUCCESS_WITH_RETRY: 0,
+        LuigiStatusCode.FAILED: 1,
+        LuigiStatusCode.FAILED_AND_SCHEDULING_FAILED: 2,
+        LuigiStatusCode.SCHEDULING_FAILED: 3,
+        LuigiStatusCode.NOT_RUN: 4,
+        LuigiStatusCode.MISSING_EXT: 5,
+    }
+    sys.exit(exit_status_codes.get(run_result.status))
+
+
+def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run):
+    for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
+        os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
+
+    run_result = luigi.build(
+        tasks_to_run,
+        local_scheduler=True,
+        detailed_summary=True,
+        workers=10,
+        log_level='INFO',
+    )
 
     for filename in glob('results/failure/*.json'):
         result = json.loads(open(filename, 'r').read())
