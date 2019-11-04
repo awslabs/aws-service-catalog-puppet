@@ -49,6 +49,14 @@ def bootstrap_spoke(puppet_account_id):
 
 
 @cli.command()
+@click.argument('ou_path_or_id')
+@click.argument('role_name')
+@click.argument('iam_role_arns', nargs=-1)
+def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns):
+    cli_commands.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns)
+
+
+@cli.command()
 @click.argument('branch-name')
 @click.option('--with-manual-approvals/--with-no-manual-approvals', default=False)
 def bootstrap_branch(branch_name, with_manual_approvals):
