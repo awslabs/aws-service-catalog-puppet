@@ -96,3 +96,15 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
     ARN in the list should be the ARN of the spoke you want to bootstrap.
     """
     cli_commands.bootstrap_spoke_as(puppet_account_id, iam_role_arns)
+
+
+def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns):
+    """
+    Bootstrap each spoke in the given path or id
+
+    :param ou_path_or_id: This is the ou path /example or the ou id for which you want each account bootstrapped
+    :param role_name: This is the name (not ARN) of the IAM role to assume in each account when bootstrapping
+    :param iam_role_arns: this is a list of ARNs the function will assume (in order) before bootstrapping.  The final \
+    ARN in the list should be the ARN of account that can assume the role_name in the accounts to bootstrap.
+    """
+    cli_commands.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns)
