@@ -10,7 +10,6 @@ output
 ignored
 .coverage
 venv
-foo
 results
 venv-testing
 data

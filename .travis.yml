@@ -9,7 +9,7 @@ install:
 - pipenv install
 script:
 - pipenv check
-- pipenv run pytest --cov=./ servicecatalog_puppet --cov-branch
+- pipenv run pytest --cov=./servicecatalog_puppet --cov-branch
 before_deploy:
 - pipenv run pipenv-setup sync
 - python setup.py sdist
