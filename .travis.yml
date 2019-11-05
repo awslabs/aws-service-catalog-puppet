@@ -6,7 +6,7 @@ env:
 python:
 - '3.7'
 install:
-- pipenv install
+- pipenv install .
 script:
 - pipenv check
 - pipenv run pytest 
