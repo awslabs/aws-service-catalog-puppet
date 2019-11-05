@@ -1,0 +1,30 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pipenv-setup = "*"
+pytest = "==4.4.0"
+pytest-cov = "==2.6.1"
+codecov = "==2.0.15"
+pylint = "==2.3.1"
+pytest-mock = "==1.10.4"
+pytest-datadir = "==1.3.0"
+
+[packages]
+requests = "==2.22.0"
+docutils = "==0.14"
+pyyaml = "==5.1"
+jinja2 = "==2.10.1"
+click = "==7.0"
+boto3 = "*"
+pykwalify = "==1.7.0"
+better-boto = "==0.18.0"
+terminaltables = "==3.1.0"
+colorclass = "==2.2.0"
+luigi = "==2.8.9"
+cfn-flip = "==1.2.1"
+
+[requires]
+python_version = "3.7"

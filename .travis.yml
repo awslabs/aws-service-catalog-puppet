@@ -4,13 +4,12 @@ language: python
 python:
 - '3.6'
 install:
-- pip install -r servicecatalog_puppet/requirements.txt
-- pip install .
+- pipenv install
 script:
-- pip install -r servicecatalog_puppet/requirements-test.txt
-- safety check --full-report -r servicecatalog_puppet/requirements.txt
-- pytest --cov=./ servicecatalog_puppet --cov-branch
+- pipenv check
+- pipenv run pytest --cov=./ servicecatalog_puppet --cov-branch
 before_deploy:
+- pipenv run pipenv-setup sync
 - python setup.py sdist
 deploy:
   - provider: pypi

@@ -13,3 +13,4 @@ venv
 results
 venv-testing
 data
+.venv
