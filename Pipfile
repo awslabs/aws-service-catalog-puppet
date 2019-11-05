@@ -5,12 +5,12 @@ verify_ssl = true
 
 [dev-packages]
 pipenv-setup = "*"
-pytest = "==4.4.0"
-pytest-cov = "==2.6.1"
-codecov = "==2.0.15"
-pylint = "==2.3.1"
-pytest-mock = "==1.10.4"
-pytest-datadir = "==1.3.0"
+pytest = "*"
+pytest-cov = "*"
+codecov = "*"
+pylint = "*"
+pytest-mock = "*"
+pytest-datadir = "*"
 
 [packages]
 requests = "==2.22.0"
