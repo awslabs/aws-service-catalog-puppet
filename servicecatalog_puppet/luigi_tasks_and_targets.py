@@ -339,7 +339,7 @@ class ProvisionProductTask(PuppetTask):
         logger.info(f"[{self.uid}] :: collecting ssm params")
         for ssm_param_name, ssm_param in self.input().get('ssm_params', {}).items():
             with ssm_param.open('r') as f:
-                all_params[ssm_param_name] = f.read()
+                all_params[ssm_param_name] = json.loads(f.read()).get('Value')
 
         logger.info(f"[{self.uid}] collecting manifest params")
         for parameter in self.parameters:
