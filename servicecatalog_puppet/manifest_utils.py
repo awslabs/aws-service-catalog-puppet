@@ -4,7 +4,7 @@ import json
 from copy import deepcopy
 
 from servicecatalog_puppet.macros import macros
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, cli_command_helpers
 
 logger = logging.getLogger(__file__)
 
@@ -242,6 +242,12 @@ def convert_manifest_into_task_defs(manifest, puppet_account_id, should_use_sns)
                                 region_tag_account_def = deepcopy(tag_account_def)
                                 region_tag_account_def['region'] = account.get('default_region')
                                 task_defs.append(region_tag_account_def)
+                            elif regions == "all":
+                                all_regions = cli_command_helpers.get_regions()
+                                for region_enabled in all_regions:
+                                    region_tag_account_def = deepcopy(tag_account_def)
+                                    region_tag_account_def['region'] = region_enabled
+                                    task_defs.append(region_tag_account_def)
                             else:
                                 raise Exception(f"Unsupported regions {region} setting for launch: {launch_name}")
                         elif isinstance(regions, list):
@@ -270,6 +276,12 @@ def convert_manifest_into_task_defs(manifest, puppet_account_id, should_use_sns)
                             region_account_account_def = deepcopy(account_account_def)
                             region_account_account_def['region'] = account.get('default_region')
                             task_defs.append(region_account_account_def)
+                        if regions == "all":
+                            all_regions = cli_command_helpers.get_regions()
+                            for region_enabled in all_regions:
+                                region_account_account_def = deepcopy(account_account_def)
+                                region_account_account_def['region'] = region_enabled
+                                task_defs.append(region_account_account_def)
                         else:
                             raise Exception(f"Unsupported regions {region} setting for launch: {launch_name}")
 
