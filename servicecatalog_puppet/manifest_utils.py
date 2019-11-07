@@ -204,7 +204,7 @@ def convert_manifest_into_task_defs(manifest, puppet_account_id, should_use_sns)
             'worker_timeout': launch_details.get('timeoutInSeconds', constants.DEFAULT_TIMEOUT),
             'ssm_param_outputs': launch_details.get('outputs', {}).get('ssm', []),
             'should_use_sns': should_use_sns,
-            'requested_priority': [],
+            'requested_priority': 0,
 
             'status': launch_details.get('status', constants.PROVISIONED),
         }
@@ -216,7 +216,7 @@ def convert_manifest_into_task_defs(manifest, puppet_account_id, should_use_sns)
             if launch_details.get('configuration').get('retry_count'):
                 task_def['retry_count'] = launch_details.get('configuration').get('retry_count')
             if launch_details.get('configuration').get('requested_priority'):
-                task_def['requested_priority'] = launch_details.get('configuration').get('requested_priority')
+                task_def['requested_priority'] = int(launch_details.get('configuration').get('requested_priority'))
 
         deploy_to = launch_details .get('deploy_to')
         for tag_list_item in deploy_to.get('tags', []):
