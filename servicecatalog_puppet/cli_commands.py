@@ -124,18 +124,12 @@ def reset_provisioned_product_owner(f):
 
 def deploy(f, num_workers):
     puppet_account_id = cli_command_helpers.get_puppet_account_id()
-
     manifest = manifest_utils.load(f)
 
     launch_tasks = {}
     tasks_to_run = []
 
     should_use_sns = cli_command_helpers.get_should_use_sns(os.environ.get("AWS_DEFAULT_REGION"))
-
-    # all_launch_tasks = cli_command_helpers.deploy_launches(manifest, puppet_account_id)
-    # launch_tasks.update(all_launch_tasks)
-
-    # for task in cli_command_helpers.wire_dependencies(launch_tasks):
 
     task_defs = manifest_utils.convert_manifest_into_task_defs(manifest, puppet_account_id, should_use_sns)
 

@@ -84,6 +84,56 @@ class GetSSMParamTask(PuppetTask):
                 raise e
 
 
+class ProvisioningArtifactParametersTask(PuppetTask):
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "portfolio": self.portfolio,
+            "product": self.product,
+            "version": self.version,
+            "account_id": self.account_id,
+            "region": self.region,
+        }
+
+    def requires(self):
+        return {
+            'details': GetVersionIdByVersionName(
+                self.portfolio,
+                self.product,
+                self.version,
+                self.account_id,
+                self.region,
+            ),
+        }
+
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/" \
+               f"{self.portfolio}--{self.product}--{self.version}--{self.account_id}--{self.region}"
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.uid}.json"
+        )
+
+    def run(self):
+        with self.input().get('details').open('r') as f:
+            details = json.loads(f.read())
+            with betterboto_client.ClientContextManager('servicecatalog', region_name=self.region) as service_catalog:
+                path_id = aws.get_path_for_product(service_catalog, details.get('product_id'), self.portfolio)
+                provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
+                    ProductId=details.get('product_id'),
+                    ProvisioningArtifactId=details.get('version_id'),
+                    PathId=path_id,
+                ).get('ProvisioningArtifactParameters', [])
+                self.write_output(provisioning_artifact_parameters)
+
+
 class GetVersionIdByVersionName(PuppetTask):
     portfolio = luigi.Parameter()
     product = luigi.Parameter()
@@ -138,6 +188,8 @@ class GetVersionIdByVersionName(PuppetTask):
                         {
                             'version_name': self.version,
                             'version_id': version_id,
+                            'product_name': product_details.get('product_name'),
+                            'product_id': product_details.get('product_id'),
                         },
                         indent=4,
                         default=str,
@@ -195,6 +247,8 @@ class GetProductIdByProductName(PuppetTask):
                         {
                             'product_name': self.product,
                             'product_id': product_id,
+                            'portfolio_name': portfolio_details.get('portfolio_name'),
+                            'portfolio_id': portfolio_details.get('portfolio_id'),
                         },
                         indent=4,
                         default=str,
@@ -328,6 +382,13 @@ class ProvisionProductTask(PuppetTask):
             'ssm_params': ssm_params,
             'version': version_id,
             'product': product_id,
+            'provisioning_artifact_parameters': ProvisioningArtifactParametersTask(
+                self.portfolio,
+                self.product,
+                self.version,
+                self.puppet_account_id,
+                cli_command_helpers.get_home_region(),
+            )
         }
 
     def params_for_results_display(self):
@@ -354,8 +415,7 @@ class ProvisionProductTask(PuppetTask):
         with self.input().get('product').open('r') as f:
             product_id = json.loads(f.read()).get('product_id')
 
-
-        params_to_use = []
+        params_to_use = {}
         logger.info(f"[{self.uid}] :: collecting params")
         for param_name, param_details in self.all_params.items():
             if param_details.get('ssm'):
@@ -364,14 +424,6 @@ class ProvisionProductTask(PuppetTask):
             if param_details.get('default'):
                 params_to_use[param_name] = param_details.get('default')
         logger.info(f"[{self.uid}] :: finished collecting params {params_to_use}")
-
-        # for ssm_param_name, ssm_param in self.input().get('ssm_params', {}).items():
-        #     with ssm_param.open('r') as f:
-        #         params_to_use[ssm_param_name] = json.loads(f.read()).get('Value')
-
-        # logger.info(f"[{self.uid}] collecting manifest params")
-        # for parameter in self.parameters:
-        #     params_to_use[parameter.get('name')] = parameter.get('value')
 
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
@@ -399,9 +451,11 @@ class ProvisionProductTask(PuppetTask):
                 logging.info(
                     f"running as {role},checking {product_id} {version_id} {path_id} in {self.account_id} {self.region}"
                 )
-                provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
-                    ProductId=product_id, ProvisioningArtifactId=version_id, PathId=path_id,
-                ).get('ProvisioningArtifactParameters', [])
+                #EPF
+
+                with self.input().get('provisioning_artifact_parameters').open('r') as f:
+                    provisioning_artifact_parameters = json.loads(f.read())
+
                 new_version_param_names = [p.get('ParameterKey') for p in provisioning_artifact_parameters]
 
                 for default_cfn_param_name in default_cfn_params.keys():
@@ -454,19 +508,34 @@ class ProvisionProductTask(PuppetTask):
                                     f"{stack_status}.  This may need manual resolution."
                                 )
 
-                    provisioned_product_id = aws.provision_product(
-                        service_catalog,
-                        self.launch_name,
-                        self.account_id,
-                        self.region,
-                        product_id,
-                        version_id,
-                        self.puppet_account_id,
-                        path_id,
-                        params_to_use,
-                        self.version,
-                        self.should_use_sns,
-                    )
+                    if provisioned_product_id:
+                        provisioned_product_id = aws.provision_product_with_plan(
+                            service_catalog,
+                            self.launch_name,
+                            self.account_id,
+                            self.region,
+                            product_id,
+                            version_id,
+                            self.puppet_account_id,
+                            path_id,
+                            params_to_use,
+                            self.version,
+                            self.should_use_sns,
+                        )
+                    else:
+                        provisioned_product_id = aws.provision_product(
+                            service_catalog,
+                            self.launch_name,
+                            self.account_id,
+                            self.region,
+                            product_id,
+                            version_id,
+                            self.puppet_account_id,
+                            path_id,
+                            params_to_use,
+                            self.version,
+                            self.should_use_sns,
+                        )
 
                 with betterboto_client.CrossAccountClientContextManager(
                         'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
