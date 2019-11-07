@@ -267,7 +267,7 @@ class ProvisionProductTask(PuppetTask):
     requested_priority = luigi.Parameter(significant=False, default=0)
 
     try_count = 1
-    all_params = 1
+    all_params = []
 
     @property
     def uid(self):
