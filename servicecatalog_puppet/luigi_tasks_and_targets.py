@@ -416,9 +416,14 @@ class ProvisionProductTask(PuppetTask):
                             stack_status = stack.get('StackStatus')
                             logger.info(
                                 f"[{self.uid}] current cfn stack_status is {stack_status}")
-                            if stack_status not in ["UPDATE_COMPLETE", "CREATE_COMPLETE"]:
+                            if stack_status not in ["UPDATE_COMPLETE", "CREATE_COMPLETE", "UPDATE_ROLLBACK_COMPLETE"]:
                                 raise Exception(
                                     f"[{self.uid}] current cfn stack_status is {stack_status}"
+                                )
+                            if stack_status == "UPDATE_ROLLBACK_COMPLETE":
+                                logger.warning(
+                                    f"[{self.uid}] SC-{self.account_id}-{provisioned_product_id} has a status of "
+                                    f"{stack_status}.  This may need manual resolution."
                                 )
 
                     provisioned_product_id = aws.provision_product(
