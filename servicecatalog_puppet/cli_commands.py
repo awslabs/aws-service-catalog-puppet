@@ -15,6 +15,7 @@ import yaml
 import logging
 import os
 import click
+from datetime import datetime
 
 from jinja2 import Template
 from pykwalify.core import Core
@@ -664,3 +665,60 @@ def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns):
                 )
 
         cli_command_helpers.run_tasks_for_bootstrap_spokes_in_ou(tasks)
+
+
+def handle_action_execution_detail(action_execution_detail):
+    action_type_id = action_execution_detail.get('input').get('actionTypeId')
+    if action_type_id.get('category') == "Build" and action_type_id.get('owner') == "AWS" and action_type_id.get(
+            'provider') == "CodeBuild":
+        external_execution_id = action_execution_detail.get('output').get('executionResult').get('externalExecutionId')
+
+        with betterboto_client.ClientContextManager(
+            "codebuild",
+            region_name=cli_command_helpers.get_home_region()
+        ) as codebuild:
+            builds = codebuild.batch_get_builds(ids=[external_execution_id]).get('builds')
+            build = builds[0]
+            log_details = build.get('logs')
+            with betterboto_client.ClientContextManager(
+                "logs",
+                region_name=cli_command_helpers.get_home_region()
+            ) as logs:
+                with open(
+                        f"log-{action_execution_detail.get('input').get('configuration').get('ProjectName')}.log", 'w'
+                ) as f:
+                    params = {
+                        'logGroupName':log_details.get('groupName'),
+                        'logStreamName':log_details.get('streamName'),
+                        'startFromHead':True,
+                    }
+                    has_more_logs = True
+                    while has_more_logs:
+                        get_log_events_response = logs.get_log_events(**params)
+                        if (len(get_log_events_response.get('events'))) > 0:
+                            params['nextToken'] = get_log_events_response.get('nextForwardToken')
+                        else:
+                            has_more_logs = False
+                            if params.get('nextToken'):
+                                del params['nextToken']
+                        for e in get_log_events_response.get('events'):
+                            d = datetime.utcfromtimestamp(e.get('timestamp')/1000).strftime('%Y-%m-%d %H:%M:%S')
+                            f.write(
+                                f"{d} : {e.get('message')}"
+                            )
+
+
+def export_puppet_pipeline_logs(execution_id):
+    with betterboto_client.ClientContextManager(
+            "codepipeline",
+            region_name=cli_command_helpers.get_home_region()
+    ) as codepipeline:
+        action_execution_details = codepipeline.list_action_executions(
+            pipelineName=constants.PIPELINE_NAME,
+            filter={
+                'pipelineExecutionId': execution_id
+            },
+        ).get('actionExecutionDetails')
+
+        for action_execution_detail in action_execution_details:
+            handle_action_execution_detail(action_execution_detail)

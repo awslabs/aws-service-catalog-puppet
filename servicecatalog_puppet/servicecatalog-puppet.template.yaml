@@ -337,7 +337,7 @@ Resources:
               - shares/*/*/*.json
               - topic/*/*/*.json
             name: GenerateShares
-      TimeoutInMinutes: 30
+      TimeoutInMinutes: 120
       Tags:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
