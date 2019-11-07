@@ -254,9 +254,9 @@ class ProvisionProductTask(PuppetTask):
     parameters = luigi.ListParameter(default=[], significant=False)
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
-    launch_parameters = luigi.Parameter(default={}, significant=False)
-    manifest_parameters = luigi.Parameter(default={}, significant=False)
-    account_parameters = luigi.Parameter(default={}, significant=False)
+    launch_parameters = luigi.DictParameter(default={}, significant=False)
+    manifest_parameters = luigi.DictParameter(default={}, significant=False)
+    account_parameters = luigi.DictParameter(default={}, significant=False)
 
     dependencies = luigi.ListParameter(default=[], significant=False)
 
@@ -267,6 +267,7 @@ class ProvisionProductTask(PuppetTask):
     requested_priority = luigi.Parameter(significant=False, default=0)
 
     try_count = 1
+    all_params = 1
 
     @property
     def uid(self):
@@ -277,9 +278,24 @@ class ProvisionProductTask(PuppetTask):
         return self.requested_priority
 
     def requires(self):
+        all_params = {}
+        all_params.update(self.manifest_parameters)
+        all_params.update(self.launch_parameters)
+        all_params.update(self.account_parameters)
+
         ssm_params = {}
-        for param_input in self.ssm_param_inputs:
-            ssm_params[param_input.get('parameter_name')] = GetSSMParamTask(**param_input)
+
+        for param_name, param_details in all_params.items():
+            if param_details.get('ssm'):
+                if param_details.get('default'):
+                    del param_details['default']
+                ssm_params[param_name] = GetSSMParamTask(
+                    parameter_name=param_name,
+                    name=param_details.get('ssm').get('name'),
+                    region=param_details.get('ssm').get('region', cli_command_helpers.get_home_region())
+                )
+        self.all_params = all_params
+
         dependencies = []
         version_id = GetVersionIdByVersionName(
             self.portfolio,
@@ -338,16 +354,24 @@ class ProvisionProductTask(PuppetTask):
         with self.input().get('product').open('r') as f:
             product_id = json.loads(f.read()).get('product_id')
 
-        all_params = {}
 
-        logger.info(f"[{self.uid}] :: collecting ssm params")
-        for ssm_param_name, ssm_param in self.input().get('ssm_params', {}).items():
-            with ssm_param.open('r') as f:
-                all_params[ssm_param_name] = json.loads(f.read()).get('Value')
+        params_to_use = []
+        logger.info(f"[{self.uid}] :: collecting params")
+        for param_name, param_details in self.all_params.items():
+            if param_details.get('ssm'):
+                with self.input().get('ssm_params').get(param_name).open as f:
+                    params_to_use[param_name] = json.loads(f.read()).get('Value')
+            if param_details.get('default'):
+                params_to_use[param_name] = param_details.get('default')
+        logger.info(f"[{self.uid}] :: finished collecting params {params_to_use}")
 
-        logger.info(f"[{self.uid}] collecting manifest params")
-        for parameter in self.parameters:
-            all_params[parameter.get('name')] = parameter.get('value')
+        # for ssm_param_name, ssm_param in self.input().get('ssm_params', {}).items():
+        #     with ssm_param.open('r') as f:
+        #         params_to_use[ssm_param_name] = json.loads(f.read()).get('Value')
+
+        # logger.info(f"[{self.uid}] collecting manifest params")
+        # for parameter in self.parameters:
+        #     params_to_use[parameter.get('name')] = parameter.get('value')
 
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
@@ -381,10 +405,10 @@ class ProvisionProductTask(PuppetTask):
                 new_version_param_names = [p.get('ParameterKey') for p in provisioning_artifact_parameters]
 
                 for default_cfn_param_name in default_cfn_params.keys():
-                    if all_params.get(default_cfn_param_name) is None:
+                    if params_to_use.get(default_cfn_param_name) is None:
                         if default_cfn_params.get(default_cfn_param_name) is not None:
                             if default_cfn_param_name in new_version_param_names:
-                                all_params[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
+                                params_to_use[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
 
                 if provisioning_artifact_id == version_id:
                     logger.info(
@@ -398,16 +422,16 @@ class ProvisionProductTask(PuppetTask):
                         )
                         logger.info(f"[{self.uid}] current params: {provisioned_parameters}")
 
-                        logger.info(f"[{self.uid}] new params: {all_params}")
+                        logger.info(f"[{self.uid}] new params: {params_to_use}")
 
-                        if provisioned_parameters == all_params:
+                        if provisioned_parameters == params_to_use:
                             logger.info(f"[{self.uid}] params unchanged")
                             need_to_provision = False
                         else:
                             logger.info(f"[{self.uid}] params changed")
 
                 if need_to_provision:
-                    logger.info(f"[{self.uid}] about to provision with params: {json.dumps(all_params)}")
+                    logger.info(f"[{self.uid}] about to provision with params: {json.dumps(params_to_use)}")
 
                     if provisioned_product_id:
                         with betterboto_client.CrossAccountClientContextManager(
@@ -439,7 +463,7 @@ class ProvisionProductTask(PuppetTask):
                         version_id,
                         self.puppet_account_id,
                         path_id,
-                        all_params,
+                        params_to_use,
                         self.version,
                         self.should_use_sns,
                     )
