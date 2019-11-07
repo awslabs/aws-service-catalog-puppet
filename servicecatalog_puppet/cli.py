@@ -192,5 +192,11 @@ def set_config_value(name, value, type=bool):
     cli_commands.set_config_value(name, value)
 
 
+@cli.command()
+@click.argument('execution_id')
+def export_puppet_pipeline_logs(execution_id):
+    cli_commands.export_puppet_pipeline_logs(execution_id)
+
+
 if __name__ == "__main__":
     cli()

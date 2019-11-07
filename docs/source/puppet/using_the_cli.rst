@@ -286,3 +286,18 @@ table.
 .. code-block:: bash
 
     servicecatalog-puppet list-launches manifest-expanded.yaml --format json
+
+
+
+export-puppet-pipeline-logs
+---------------------------
+The export-puppet-pipeline-logs takes a pipeline execution id and outputs a log file containing the AWS CloudWatch logs
+for each AWS CodeBuild step within the pipeline.  This is useful for sharing these outputs when debugging:
+
+.. code-block:: bash
+
+    servicecatalog-puppet export-puppet-pipeline-logs qwertyui-qwer-qwer-qwer-qwertyuiopqw
+
+.. note::
+
+    This was added in version 0.47.0
