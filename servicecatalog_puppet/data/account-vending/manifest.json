@@ -36,7 +36,7 @@
             "tags": [
               {
                 "tag": "scope:puppet-hub",
-                "regions": "default_region"
+                "regions": "enabled_regions"
               }
             ]
           },
@@ -74,7 +74,7 @@
             "tags": [
               {
                 "tag": "scope:puppet-hub",
-                "regions": "default_region"
+                "regions": "enabled_regions"
               }
             ]
           },
@@ -130,7 +130,7 @@
             "tags": [
               {
                 "tag": "scope:puppet-hub",
-                "regions": "default_region"
+                "regions": "enabled_regions"
               }
             ]
           },
@@ -172,7 +172,7 @@
         "tags": [
           {
             "tag": "scope:puppet-hub",
-            "regions": "default_region"
+            "regions": "enabled_regions"
           }
         ]
       },
@@ -210,7 +210,7 @@
         "tags": [
           {
             "tag": "scope:puppet-hub",
-            "regions": "default_region"
+            "regions": "enabled_regions"
           }
         ]
       },
@@ -235,6 +235,9 @@
         "account-vending-account-creation-shared",
         "account-vending-account-bootstrap-shared"
       ],
+      "configuration": {
+        "retry_count": 3
+      },
       "parameters": {
         "Email": {
           "default": "eamonnf+account-002@amazon.com"

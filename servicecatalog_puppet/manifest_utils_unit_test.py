@@ -229,3 +229,18 @@ def test_build_deployment_map_converts_number_account_ids_into_strings(sut, shar
 
     # verify
     assert expected_result == actual_result
+
+
+def test_convert_manifest_into_task_defs(sut, shared_datadir):
+    # setup
+    manifest = json.loads((shared_datadir / 'account-vending' / 'manifest.json').read_text())
+    puppet_account_id = 9
+    expected_result = json.loads((shared_datadir / 'account-vending' / 'manifest-tasks.json').read_text())
+    should_use_sns = True
+
+    # execute
+    actual_result = sut.convert_manifest_into_task_defs(manifest, puppet_account_id, should_use_sns)
+
+    # verify
+    assert actual_result == expected_result
+    assert len(actual_result) == len(expected_result)
