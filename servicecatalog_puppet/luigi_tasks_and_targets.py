@@ -359,7 +359,7 @@ class ProvisionProductTask(PuppetTask):
         logger.info(f"[{self.uid}] :: collecting params")
         for param_name, param_details in self.all_params.items():
             if param_details.get('ssm'):
-                with self.input().get('ssm_params').get(param_name).open as f:
+                with self.input().get('ssm_params').get(param_name).open() as f:
                     params_to_use[param_name] = json.loads(f.read()).get('Value')
             if param_details.get('default'):
                 params_to_use[param_name] = param_details.get('default')
