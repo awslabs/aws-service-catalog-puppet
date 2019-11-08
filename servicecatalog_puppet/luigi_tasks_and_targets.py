@@ -124,7 +124,13 @@ class ProvisioningArtifactParametersTask(PuppetTask):
     def run(self):
         with self.input().get('details').open('r') as f:
             details = json.loads(f.read())
-            with betterboto_client.ClientContextManager('servicecatalog', region_name=self.region) as service_catalog:
+            with betterboto_client.CrossAccountClientContextManager(
+                'servicecatalog',
+                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                f"{self.account_id}-{self.region}-sc",
+                region_name=self.region,
+            ) as service_catalog:
+                logger.info(f"{self.uid}: getting path for {details.get('product_id')} of portfolio: {self.portfolio}")
                 path_id = aws.get_path_for_product(service_catalog, details.get('product_id'), self.portfolio)
                 provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
                     ProductId=details.get('product_id'),
@@ -387,7 +393,7 @@ class ProvisionProductTask(PuppetTask):
                 self.product,
                 self.version,
                 self.puppet_account_id,
-                cli_command_helpers.get_home_region(),
+                self.region,
             )
         }
 
