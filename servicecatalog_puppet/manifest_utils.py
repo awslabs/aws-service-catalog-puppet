@@ -183,7 +183,7 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
     task_defs = []
     accounts = manifest.get('accounts', [])
     for launch_name, launch_details in manifest.get('launches', {}).items():
-        print(f"looking at {launch_name}")
+        logger.info(f"looking at {launch_name}")
         task_def = {
             'launch_name': launch_name,
             'portfolio': launch_details.get('portfolio'),
@@ -221,17 +221,13 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
         deploy_to = launch_details .get('deploy_to')
         for tag_list_item in deploy_to.get('tags', []):
             for account in accounts:
-                print(f"looking at account {account.get('account_id')} for tag {tag_list_item.get('tag')}")
                 for tag in account.get('tags', []):
-                    print(f"looking at tag {tag}")
                     if tag == tag_list_item.get('tag'):
-                        print(f"match")
                         tag_account_def = deepcopy(task_def)
                         tag_account_def['account_id'] = account.get('account_id')
                         tag_account_def['account_parameters'] = account.get('parameters', {})
 
                         regions = tag_list_item.get('regions')
-                        print(f"looking at regions {regions}")
                         if isinstance(regions, str):
                             if regions in ["enabled", "regions_enabled", "enabled_regions"]:
                                 for region_enabled in account.get('regions_enabled'):
@@ -383,8 +379,6 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
     tasks = []
     accounts = manifest.get('accounts', [])
     for launch_name, launch_details in manifest.get('spoke-local-portfolios', {}).items():
-        print(f"looking at {launch_name}")
-
         task_def = {
             'launch_tasks': launch_tasks,
             'launch_details': launch_details,
@@ -404,16 +398,12 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
         deploy_to = launch_details .get('deploy_to')
         for tag_list_item in deploy_to.get('tags', []):
             for account in accounts:
-                print(f"looking at account {account.get('account_id')} for tag {tag_list_item.get('tag')}")
                 for tag in account.get('tags', []):
-                    print(f"looking at tag {tag}")
                     if tag == tag_list_item.get('tag'):
-                        print(f"match")
                         tag_account_def = deepcopy(task_def)
                         tag_account_def['account_id'] = account.get('account_id')
 
                         regions = tag_list_item.get('regions')
-                        print(f"looking at regions {regions}")
                         if isinstance(regions, str):
                             if regions in ["enabled", "regions_enabled", "enabled_regions"]:
                                 for region_enabled in account.get('regions_enabled'):
