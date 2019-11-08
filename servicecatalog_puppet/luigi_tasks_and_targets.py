@@ -1155,7 +1155,6 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                 hub_product_name = product_view_summary.get('Name')
                 hub_product_id = product_view_summary.get('ProductId')
 
-                product_versions_that_should_be_have_associations = {}
                 product_versions_that_should_be_copied = {}
                 product_versions_that_should_be_updated = {}
                 hub_provisioning_artifact_details = service_catalog.list_provisioning_artifacts(
@@ -1167,9 +1166,6 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                             f"{hub_provisioning_artifact_detail.get('Name')}"
                         ] = hub_provisioning_artifact_detail
                         product_versions_that_should_be_updated[
-                            f"{hub_provisioning_artifact_detail.get('Name')}"
-                        ] = hub_provisioning_artifact_detail
-                        product_versions_that_should_be_have_associations[
                             f"{hub_provisioning_artifact_detail.get('Name')}"
                         ] = hub_provisioning_artifact_detail
 
