@@ -309,9 +309,23 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
 
 def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         account_id, region, launch_details,
-        puppet_account_id, should_use_sns
+        puppet_account_id, should_use_sns, launch_tasks
 ):
     dependencies = []
+    for depend in launch_details.get('depends_on', []):
+        for launch_task in launch_tasks:
+            if isinstance(launch_task, luigi_tasks_and_targets.ProvisionProductTask):
+                l_params = launch_task.to_str_params()
+                if l_params.get('launch_name') == depend:
+                    dependencies.append({
+                        'launch_name':l_params.get('launch_name'),
+                        'portfolio':l_params.get('portfolio'),
+                        'product':l_params.get('product'),
+                        'version':l_params.get('version'),
+                        'region':l_params.get('region'),
+                        'account_id':l_params.get('account_id'),
+                        'puppet_account_id':l_params.get('puppet_account_id'),
+                    })
     hub_portfolio = aws.get_portfolio_for(
         launch_details.get('portfolio'), puppet_account_id, region
     )
@@ -372,13 +386,14 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
     return tasks_to_run
 
 
-def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_account_id, should_use_sns):
+def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_account_id, should_use_sns, launch_tasks):
     tasks = []
     accounts = manifest.get('accounts', [])
     for launch_name, launch_details in manifest.get('spoke-local-portfolios', {}).items():
         print(f"looking at {launch_name}")
 
         task_def = {
+            'launch_tasks': launch_tasks,
             'launch_details': launch_details,
             'puppet_account_id': puppet_account_id,
             'should_use_sns': should_use_sns,
@@ -482,16 +497,5 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                             )
                     else:
                         raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
-
-    # for task_def in task_defs:
-    #     for dependency_launch_name in task_def.get('depends_on', []):
-    #         for task_def_2 in task_defs:
-    #             if task_def_2.get('launch_name') == dependency_launch_name:
-    #                 task_def_2_copy = deepcopy(task_def_2)
-    #                 del task_def_2_copy['depends_on']
-    #                 task_def['dependencies'].append(task_def_2_copy)
-
-    # for task_def in task_defs:
-    #     del task_def['depends_on']
 
     return tasks

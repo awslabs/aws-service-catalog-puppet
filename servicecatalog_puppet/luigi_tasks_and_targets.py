@@ -1155,6 +1155,7 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                 hub_product_name = product_view_summary.get('Name')
                 hub_product_id = product_view_summary.get('ProductId')
 
+                product_versions_that_should_be_have_associations = {}
                 product_versions_that_should_be_copied = {}
                 product_versions_that_should_be_updated = {}
                 hub_provisioning_artifact_details = service_catalog.list_provisioning_artifacts(
@@ -1166,6 +1167,9 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                             f"{hub_provisioning_artifact_detail.get('Name')}"
                         ] = hub_provisioning_artifact_detail
                         product_versions_that_should_be_updated[
+                            f"{hub_provisioning_artifact_detail.get('Name')}"
+                        ] = hub_provisioning_artifact_detail
+                        product_versions_that_should_be_have_associations[
                             f"{hub_provisioning_artifact_detail.get('Name')}"
                         ] = hub_provisioning_artifact_detail
 
@@ -1202,6 +1206,7 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                             spoke_product_view = spoke_product_view_details.get('ProductViewSummary')
                             if spoke_product_view.get('Name') == hub_product_name:
                                 spoke_product_id = spoke_product_view.get('ProductId')
+                                product_name_to_id_dict[hub_product_name] = spoke_product_id
                                 copy_args['TargetProductId'] = spoke_product_id
                                 spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
                                     ProductId=spoke_product_id
@@ -1357,6 +1362,7 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
                                 'servicecatalog', role, f'sc-{self.account_id}-{self.region}', region_name=self.region
                         ) as service_catalog:
                             response = service_catalog.search_products_as_admin_single_page(PortfolioId=portfolio_id)
+                            logger.info(f"response is {response}")
                             for product_view_details in response.get('ProductViewDetails', []):
                                 product_view_summary = product_view_details.get('ProductViewSummary')
                                 product_name_to_id_dict[product_view_summary.get('Name')] = product_view_summary.get(
@@ -1377,7 +1383,7 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
                 launch_constraints=new_launch_constraints,
                 product_name_to_id_dict=product_name_to_id_dict,
             )
-            time.sleep(30)
+            # time.sleep(30)
             stack_name_v1 = f"launch-constraints-for-portfolio-{portfolio_id}"
             cloudformation.ensure_deleted(
                 StackName=stack_name_v1,

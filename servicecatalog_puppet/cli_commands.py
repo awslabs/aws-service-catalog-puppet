@@ -165,7 +165,7 @@ def deploy(f, num_workers):
 
 
     tasks_to_run += manifest_utils.convert_manifest_into_task_defs_for_spoke_local_portfolios(
-        manifest, puppet_account_id, should_use_sns
+        manifest, puppet_account_id, should_use_sns, tasks_to_run
     )
 
     # spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(
