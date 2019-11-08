@@ -317,15 +317,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
             if isinstance(launch_task, luigi_tasks_and_targets.ProvisionProductTask):
                 l_params = launch_task.to_str_params()
                 if l_params.get('launch_name') == depend:
-                    dependencies.append({
-                        'launch_name':l_params.get('launch_name'),
-                        'portfolio':l_params.get('portfolio'),
-                        'product':l_params.get('product'),
-                        'version':l_params.get('version'),
-                        'region':l_params.get('region'),
-                        'account_id':l_params.get('account_id'),
-                        'puppet_account_id':l_params.get('puppet_account_id'),
-                    })
+                    dependencies.append(launch_task.to_str_params(only_significant=True, only_public=True))
     hub_portfolio = aws.get_portfolio_for(
         launch_details.get('portfolio'), puppet_account_id, region
     )
