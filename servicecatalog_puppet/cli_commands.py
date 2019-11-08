@@ -131,7 +131,7 @@ def deploy(f, num_workers):
 
     should_use_sns = cli_command_helpers.get_should_use_sns(os.environ.get("AWS_DEFAULT_REGION"))
 
-    task_defs = manifest_utils.convert_manifest_into_task_defs(manifest, puppet_account_id, should_use_sns)
+    task_defs = manifest_utils.convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns)
 
     for task in task_defs:
         task_status = task.get('status')
@@ -153,14 +153,25 @@ def deploy(f, num_workers):
                     else:
                         raise Exception(f"Launch {task.get('launch_name')} has disallowed attribute: {attribute}")
 
+            del task['launch_parameters']
+            del task['manifest_parameters']
+            del task['account_parameters']
+            del task['should_use_sns']
+            del task['requested_priority']
+
             tasks_to_run.append(luigi_tasks_and_targets.TerminateProductTask(**task))
         else:
             raise Exception(f"Unsupported status of {task_status}")
 
-    spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(
-        manifest, launch_tasks, should_use_sns, puppet_account_id
+
+    tasks_to_run += manifest_utils.convert_manifest_into_task_defs_for_spoke_local_portfolios(
+        manifest, puppet_account_id, should_use_sns
     )
-    tasks_to_run += spoke_local_portfolio_tasks_to_run
+
+    # spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(
+    #     manifest, launch_tasks, should_use_sns, puppet_account_id
+    # )
+    # tasks_to_run += spoke_local_portfolio_tasks_to_run
 
     cli_command_helpers.run_tasks(tasks_to_run, num_workers)
 
