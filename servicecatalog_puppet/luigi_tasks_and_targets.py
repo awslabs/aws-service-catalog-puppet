@@ -397,6 +397,27 @@ class ProvisionProductTask(PuppetTask):
             )
         }
 
+    @property
+    def node_id(self):
+        return "_".join([
+            self.launch_name,
+            self.portfolio,
+            self.product,
+            self.version,
+            self.account_id,
+            self.region,
+        ])
+
+    def graph_node(self):
+        label = f"<b>ProvisionProduct</b><br/>Launch: {self.launch_name}<br/>Portfolio: {self.portfolio}<br/>Product: {self.product}<br/>Version: {self.version}<br/>AccountId: {self.account_id}<br/>Region: {self.region}"
+        return f"\"{self.__class__.__name__}_{self.node_id}\" [fillcolor=lawngreen style=filled label= < {label} >]"
+
+    def get_graph_lines(self):
+        return [
+            f"\"{ProvisionProductTask.__name__}_{self.node_id}\" -> \"{ProvisionProductTask.__name__}_{'_'.join([dep.get('launch_name'), dep.get('portfolio'), dep.get('product'), dep.get('version'), dep.get('account_id'), dep.get('region')])}\""
+            for dep in self.dependencies
+        ]
+
     def params_for_results_display(self):
         return {
             "launch_name": self.launch_name,
@@ -1014,6 +1035,17 @@ class CreateSpokeLocalPortfolioTask(PuppetTask):
             "portfolio": self.portfolio,
         }
 
+    @property
+    def node_id(self):
+        return f"{self.portfolio}_{self.account_id}_{self.region}"
+
+    def graph_node(self):
+        label = f"<b>CreatePortfolioInSpoke</b><br/>Portfolio: {self.portfolio}<br/>AccountId: {self.account_id}<br/>Region: {self.region}"
+        return f"\"{self.__class__.__name__}_{self.node_id}\" [fillcolor=greenyellow style=filled label= < {label} >]"
+
+    def get_graph_lines(self):
+        return []
+
     def output(self):
         return luigi.LocalTarget(
             f"output/CreateSpokeLocalPortfolioTask/"
@@ -1063,6 +1095,22 @@ class CreateAssociationsForPortfolioTask(PuppetTask):
             ),
             'deps': [ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
+
+    @property
+    def node_id(self):
+        return f"{self.portfolio}_{self.account_id}_{self.region}"
+
+    def graph_node(self):
+        label = f"<b>CreateAssociationsForPortfolio</b><br/>Portfolio: {self.portfolio}<br/>AccountId: {self.account_id}<br/>Region: {self.region}"
+        return f"\"{self.__class__.__name__}_{self.node_id}\" [fillcolor=turquoise style=filled label= < {label} >]"
+
+    def get_graph_lines(self):
+        return [
+            f"\"{CreateAssociationsForPortfolioTask.__name__}_{self.node_id}\" -> \"{ProvisionProductTask.__name__}_{'_'.join([dep.get('launch_name'), dep.get('portfolio'), dep.get('product'), dep.get('version'), dep.get('account_id'), dep.get('region')])}\""
+            for dep in self.dependencies
+        ] + [
+            f"\"{CreateAssociationsForPortfolioTask.__name__}_{self.node_id}\" -> \"{CreateSpokeLocalPortfolioTask.__name__}_{'_'.join([self.portfolio, self.account_id, self.region])}\""
+        ]
 
     def params_for_results_display(self):
         return {
@@ -1130,6 +1178,19 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
             region=self.region,
             portfolio=self.portfolio,
         )
+
+    @property
+    def node_id(self):
+        return f"{self.portfolio}_{self.account_id}_{self.region}"
+
+    def graph_node(self):
+        label = f"<b>ImportProductsIntoPortfolio</b><br/>Portfolio: {self.portfolio}<br/>AccountId: {self.account_id}<br/>Region: {self.region}"
+        return f"\"{self.__class__.__name__}_{self.node_id}\" [fillcolor=dimgray style=filled label= < {label} >]"
+
+    def get_graph_lines(self):
+        return [
+            f"\"{ImportIntoSpokeLocalPortfolioTask.__name__}_{self.node_id}\" -> \"{CreateSpokeLocalPortfolioTask.__name__}_{self.node_id}\""
+        ]
 
     def params_for_results_display(self):
         return {
@@ -1337,6 +1398,23 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
             ),
             'deps': [ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
+
+    @property
+    def node_id(self):
+        return f"{self.portfolio}_{self.account_id}_{self.region}"
+
+    def graph_node(self):
+        label = f"<b>CreateLaunchRoleConstraintsForPortfolio</b><br/>Portfolio: {self.portfolio}<br/>AccountId: {self.account_id}<br/>Region: {self.region}"
+        return f"\"{self.__class__.__name__}_{self.node_id}\" [fillcolor=orange style=filled label= < {label} >]"
+
+    def get_graph_lines(self):
+        return [
+            f"\"{CreateLaunchRoleConstraintsForPortfolio.__name__}_{self.node_id}\" -> \"{ProvisionProductTask.__name__}_{'_'.join([dep.get('launch_name'), dep.get('portfolio'), dep.get('product'), dep.get('version'), dep.get('account_id'), dep.get('region')])}\""
+            for dep in self.dependencies
+        ] + [
+            f"\"{CreateLaunchRoleConstraintsForPortfolio.__name__}_{self.node_id}\" -> \"{ImportIntoSpokeLocalPortfolioTask.__name__}_{self.node_id}\""
+        ]
+
 
     def run(self):
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Creating launch role constraints for "
