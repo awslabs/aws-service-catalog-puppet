@@ -1041,7 +1041,7 @@ class CreateSpokeLocalPortfolioTask(PuppetTask):
 
     def graph_node(self):
         label = f"<b>CreatePortfolioInSpoke</b><br/>Portfolio: {self.portfolio}<br/>AccountId: {self.account_id}<br/>Region: {self.region}"
-        return f"\"{self.__class__.__name__}_{self.node_id}\" [fillcolor=greenyellow style=filled label= < {label} >]"
+        return f"\"{self.__class__.__name__}_{self.node_id}\" [fillcolor=aqua style=filled label= < {label} >]"
 
     def get_graph_lines(self):
         return []
