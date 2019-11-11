@@ -443,7 +443,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                 if account.get('account_id') == account_list_item.get('account_id'):
                     account_account_def = deepcopy(task_def)
                     account_account_def['account_id'] = account.get('account_id')
-                    account_account_def['account_parameters'] = account.get('parameters', {})
+                    # account_account_def['account_parameters'] = account.get('parameters', {})
 
                     regions = account_list_item.get('regions')
                     if isinstance(regions, str):
