@@ -279,7 +279,7 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
                                 region_account_account_def['region'] = region_enabled
                                 task_defs.append(region_account_account_def)
                         else:
-                            raise Exception(f"Unsupported regions {region} setting for launch: {launch_name}")
+                            raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
 
                     elif isinstance(regions, list):
                         for region in regions:
