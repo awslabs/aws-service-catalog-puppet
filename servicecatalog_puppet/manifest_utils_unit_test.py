@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 from unittest import mock
 
+import pytest
+import yaml
 from pytest import fixture
 import json
 
@@ -140,7 +142,7 @@ def test_build_deployment_map_converts_number_account_ids_into_strings(sut, shar
                     },
                     'parameters': {
                         'AssumableRoleInRootAccountArn': {
-                            'default':'arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount'
+                            'default': 'arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount'
                         }
                     },
                     'portfolio': 'demo-central-it-team-portfolio',
@@ -244,3 +246,81 @@ def test_convert_manifest_into_task_defs(sut, shared_datadir):
     # verify
     assert actual_result == expected_result
     assert len(actual_result) == len(expected_result)
+
+
+@pytest.mark.parametrize(
+    "manifest_file",
+    [
+        'test_convert_manifest_into_task_defs_handles_default_region',
+        'test_convert_manifest_into_task_defs_handles_enabled',
+        'test_convert_manifest_into_task_defs_handles_regions_enabled',
+        'test_convert_manifest_into_task_defs_handles_enabled_regions',
+        'test_convert_manifest_into_task_defs_handles_lists',
+    ]
+)
+def test_convert_manifest_into_task_defs_handles_default_region(sut, shared_datadir, manifest_file):
+    # setup
+    manifest = yaml.safe_load(
+        (shared_datadir / 'manifest_utils' / f"{manifest_file}.yaml" ).read_text()
+    )
+    puppet_account_id = 9
+    should_use_sns = True
+    expected_result = yaml.safe_load(
+        (shared_datadir / 'manifest_utils' / f"{manifest_file}_expected.yaml" ).read_text()
+    )
+
+    # exercise
+    actual_result = sut.convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns)
+
+    # verify
+    assert expected_result == actual_result
+
+
+@pytest.mark.parametrize(
+    "manifest_file",
+    [
+        'test_convert_manifest_into_task_defs_handles_all',
+    ]
+)
+def test_convert_manifest_into_task_defs_handles_default_region_for_all(sut, mocker, shared_datadir, manifest_file):
+    # setup
+    manifest = yaml.safe_load(
+        (shared_datadir / 'manifest_utils' / f"{manifest_file}.yaml" ).read_text()
+    )
+    puppet_account_id = 9
+    should_use_sns = True
+    expected_result = yaml.safe_load(
+        (shared_datadir / 'manifest_utils' / f"{manifest_file}_expected.yaml" ).read_text()
+    )
+    mocked_get_regions = mocker.patch.object(sut.cli_command_helpers, 'get_regions')
+    mocked_get_regions.return_value = [
+        'eu-west-3',
+    ]
+
+    # exercise
+    actual_result = sut.convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns)
+
+    # verify
+    assert expected_result == actual_result
+
+
+@pytest.mark.parametrize(
+    "manifest_file",
+    [
+        'test_convert_manifest_into_task_defs_handles_unsupported_string',
+    ]
+)
+def test_convert_manifest_into_task_defs_handles_for_unsupported_string(sut, shared_datadir, manifest_file):
+    # setup
+    manifest = yaml.safe_load(
+        (shared_datadir / 'manifest_utils' / f"{manifest_file}.yaml" ).read_text()
+    )
+    puppet_account_id = 9
+    should_use_sns = True
+
+    # exercise
+    with pytest.raises(Exception) as e:
+        actual_result = sut.convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns)
+
+    # verify
+    assert str(e.exconly()) == "Exception: Unsupported regions foo setting for launch: assumable-role-account"

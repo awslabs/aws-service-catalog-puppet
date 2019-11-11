@@ -3,8 +3,8 @@ import logging
 import json
 from copy import deepcopy
 
-from servicecatalog_puppet.macros import macros
-from servicecatalog_puppet import constants, cli_command_helpers, luigi_tasks_and_targets, aws
+from .macros import macros
+from . import constants, cli_command_helpers, luigi_tasks_and_targets, aws
 
 logger = logging.getLogger(__file__)
 
@@ -245,7 +245,7 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
                                     region_tag_account_def['region'] = region_enabled
                                     task_defs.append(region_tag_account_def)
                             else:
-                                raise Exception(f"Unsupported regions {region} setting for launch: {launch_name}")
+                                raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
                         elif isinstance(regions, list):
                             for region in regions:
                                 region_tag_account_def = deepcopy(tag_account_def)
@@ -427,7 +427,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                                         **region_tag_account_def
                                     )
                             else:
-                                raise Exception(f"Unsupported regions {region} setting for launch: {launch_name}")
+                                raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
                         elif isinstance(regions, list):
                             for region in regions:
                                 region_tag_account_def = deepcopy(tag_account_def)
@@ -469,7 +469,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                                     **region_account_account_def
                                 )
                         else:
-                            raise Exception(f"Unsupported regions {region} setting for launch: {launch_name}")
+                            raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
 
                     elif isinstance(regions, list):
                         for region in regions:
