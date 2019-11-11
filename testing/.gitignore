@@ -1,2 +1,5 @@
 venv
 ServiceCatalogPuppet
+/data
+/results
+/output

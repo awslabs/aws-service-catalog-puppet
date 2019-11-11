@@ -268,11 +268,11 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
                                 region_account_account_def = deepcopy(account_account_def)
                                 region_account_account_def['region'] = region_enabled
                                 task_defs.append(region_account_account_def)
-                        elif regions == 'default_region':
+                        elif regions in ["default_region"]:
                             region_account_account_def = deepcopy(account_account_def)
                             region_account_account_def['region'] = account.get('default_region')
                             task_defs.append(region_account_account_def)
-                        if regions == "all":
+                        if regions in ["all"]:
                             all_regions = cli_command_helpers.get_regions()
                             for region_enabled in all_regions:
                                 region_account_account_def = deepcopy(account_account_def)
