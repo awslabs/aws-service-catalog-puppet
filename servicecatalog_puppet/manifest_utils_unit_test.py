@@ -251,11 +251,11 @@ def test_convert_manifest_into_task_defs(sut, shared_datadir):
 @pytest.mark.parametrize(
     "manifest_file",
     [
-        'test_convert_manifest_into_task_defs_handles_default_region',
-        'test_convert_manifest_into_task_defs_handles_enabled',
-        'test_convert_manifest_into_task_defs_handles_regions_enabled',
-        'test_convert_manifest_into_task_defs_handles_enabled_regions',
-        'test_convert_manifest_into_task_defs_handles_lists',
+        'tags/test_convert_manifest_into_task_defs_handles_default_region',
+        'tags/test_convert_manifest_into_task_defs_handles_enabled',
+        'tags/test_convert_manifest_into_task_defs_handles_regions_enabled',
+        'tags/test_convert_manifest_into_task_defs_handles_enabled_regions',
+        'tags/test_convert_manifest_into_task_defs_handles_lists',
     ]
 )
 def test_convert_manifest_into_task_defs_handles_default_region(sut, shared_datadir, manifest_file):
@@ -279,7 +279,7 @@ def test_convert_manifest_into_task_defs_handles_default_region(sut, shared_data
 @pytest.mark.parametrize(
     "manifest_file",
     [
-        'test_convert_manifest_into_task_defs_handles_all',
+        'tags/test_convert_manifest_into_task_defs_handles_all',
     ]
 )
 def test_convert_manifest_into_task_defs_handles_default_region_for_all(sut, mocker, shared_datadir, manifest_file):
@@ -307,7 +307,7 @@ def test_convert_manifest_into_task_defs_handles_default_region_for_all(sut, moc
 @pytest.mark.parametrize(
     "manifest_file",
     [
-        'test_convert_manifest_into_task_defs_handles_unsupported_string',
+        ('tags/test_convert_manifest_into_task_defs_handles_unsupported_string'),
     ]
 )
 def test_convert_manifest_into_task_defs_handles_for_unsupported_string(sut, shared_datadir, manifest_file):
