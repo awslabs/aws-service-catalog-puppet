@@ -467,12 +467,6 @@ class ProvisionProductTask(PuppetTask):
                     'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
             ) as cloudformation:
                 need_to_provision = True
-                if provisioned_product_id:
-                    default_cfn_params = aws.get_default_parameters_for_stack(
-                        cloudformation, f"SC-{self.account_id}-{provisioned_product_id}"
-                    )
-                else:
-                    default_cfn_params = {}
 
                 logging.info(
                     f"running as {role},checking {product_id} {version_id} {path_id} in {self.account_id} {self.region}"
@@ -485,19 +479,6 @@ class ProvisionProductTask(PuppetTask):
                 for p in provisioning_artifact_parameters:
                     param_name = p.get('ParameterKey')
                     params_to_use[param_name] = all_params.get(param_name, p.get('DefaultValue'))
-                #
-                #
-                # 
-                #
-                # #for each param in the existing stack
-                # for default_cfn_param_name in default_cfn_params.keys():
-                #     #if it isnt present
-                #     if params_to_use.get(default_cfn_param_name) is None:
-                #         #if there isnt a default in the deployed stack
-                #         if default_cfn_params.get(default_cfn_param_name) is not None:
-                #             #if the param is present in the new stack
-                #             if default_cfn_param_name in new_version_param_names:
-                #                 params_to_use[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
 
                 if provisioning_artifact_id == version_id:
                     logger.info(
