@@ -460,7 +460,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                             tasks += convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
                                 **region_account_account_def
                             )
-                        if regions == "all":
+                        elif regions == "all":
                             all_regions = cli_command_helpers.get_regions()
                             for region_enabled in all_regions:
                                 region_account_account_def = deepcopy(account_account_def)
