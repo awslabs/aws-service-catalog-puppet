@@ -249,24 +249,30 @@ def test_convert_manifest_into_task_defs(sut, shared_datadir):
 
 
 @pytest.mark.parametrize(
-    "manifest_file",
+    "dir,manifest_file",
     [
-        'tags/test_convert_manifest_into_task_defs_handles_default_region',
-        'tags/test_convert_manifest_into_task_defs_handles_enabled',
-        'tags/test_convert_manifest_into_task_defs_handles_regions_enabled',
-        'tags/test_convert_manifest_into_task_defs_handles_enabled_regions',
-        'tags/test_convert_manifest_into_task_defs_handles_lists',
+        ('tags', 'test_convert_manifest_into_task_defs_handles_default_region'),
+        ('tags', 'test_convert_manifest_into_task_defs_handles_enabled'),
+        ('tags', 'test_convert_manifest_into_task_defs_handles_regions_enabled'),
+        ('tags', 'test_convert_manifest_into_task_defs_handles_enabled_regions'),
+        ('tags', 'test_convert_manifest_into_task_defs_handles_lists'),
+
+        ('accounts', 'test_convert_manifest_into_task_defs_handles_default_region'),
+        ('accounts', 'test_convert_manifest_into_task_defs_handles_enabled'),
+        ('accounts', 'test_convert_manifest_into_task_defs_handles_regions_enabled'),
+        ('accounts', 'test_convert_manifest_into_task_defs_handles_enabled_regions'),
+        ('accounts', 'test_convert_manifest_into_task_defs_handles_lists'),
     ]
 )
-def test_convert_manifest_into_task_defs_handles_default_region(sut, shared_datadir, manifest_file):
+def test_convert_manifest_into_task_defs_handles_default_region(sut, shared_datadir, dir, manifest_file):
     # setup
     manifest = yaml.safe_load(
-        (shared_datadir / 'manifest_utils' / f"{manifest_file}.yaml" ).read_text()
+        (shared_datadir / 'manifest_utils' / dir / f"{manifest_file}.yaml").read_text()
     )
     puppet_account_id = 9
     should_use_sns = True
     expected_result = yaml.safe_load(
-        (shared_datadir / 'manifest_utils' / f"{manifest_file}_expected.yaml" ).read_text()
+        (shared_datadir / 'manifest_utils' / dir / f"{manifest_file}_expected.yaml").read_text()
     )
 
     # exercise
@@ -277,20 +283,23 @@ def test_convert_manifest_into_task_defs_handles_default_region(sut, shared_data
 
 
 @pytest.mark.parametrize(
-    "manifest_file",
+    "dir,manifest_file",
     [
-        'tags/test_convert_manifest_into_task_defs_handles_all',
+        ('tags', 'test_convert_manifest_into_task_defs_handles_all'),
+
+        ('accounts', 'test_convert_manifest_into_task_defs_handles_all'),
     ]
 )
-def test_convert_manifest_into_task_defs_handles_default_region_for_all(sut, mocker, shared_datadir, manifest_file):
+def test_convert_manifest_into_task_defs_handles_default_region_for_all(sut, mocker, shared_datadir, dir,
+                                                                        manifest_file):
     # setup
     manifest = yaml.safe_load(
-        (shared_datadir / 'manifest_utils' / f"{manifest_file}.yaml" ).read_text()
+        (shared_datadir / 'manifest_utils' / dir / f"{manifest_file}.yaml").read_text()
     )
     puppet_account_id = 9
     should_use_sns = True
     expected_result = yaml.safe_load(
-        (shared_datadir / 'manifest_utils' / f"{manifest_file}_expected.yaml" ).read_text()
+        (shared_datadir / 'manifest_utils' / dir / f"{manifest_file}_expected.yaml").read_text()
     )
     mocked_get_regions = mocker.patch.object(sut.cli_command_helpers, 'get_regions')
     mocked_get_regions.return_value = [
@@ -305,15 +314,17 @@ def test_convert_manifest_into_task_defs_handles_default_region_for_all(sut, moc
 
 
 @pytest.mark.parametrize(
-    "manifest_file",
+    "dir,manifest_file",
     [
-        ('tags/test_convert_manifest_into_task_defs_handles_unsupported_string'),
+        ('tags', 'test_convert_manifest_into_task_defs_handles_unsupported_string'),
+
+        ('accounts', 'test_convert_manifest_into_task_defs_handles_unsupported_string'),
     ]
 )
-def test_convert_manifest_into_task_defs_handles_for_unsupported_string(sut, shared_datadir, manifest_file):
+def test_convert_manifest_into_task_defs_handles_for_unsupported_string(sut, shared_datadir, dir, manifest_file):
     # setup
     manifest = yaml.safe_load(
-        (shared_datadir / 'manifest_utils' / f"{manifest_file}.yaml" ).read_text()
+        (shared_datadir / 'manifest_utils' / dir / f"{manifest_file}.yaml").read_text()
     )
     puppet_account_id = 9
     should_use_sns = True
