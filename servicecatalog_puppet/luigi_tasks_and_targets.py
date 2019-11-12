@@ -391,7 +391,7 @@ class ProvisionProductTask(PuppetTask):
                 self.portfolio,
                 self.product,
                 self.version,
-                self.puppet_account_id,
+                self.account_id,
                 self.region,
             )
         }
