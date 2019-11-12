@@ -1,4 +1,3 @@
-import copy
 import os
 import re
 import time
@@ -7,7 +6,7 @@ from pathlib import Path
 
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import aws, cli_command_helpers, constants, sdk
+from . import aws, cli_command_helpers, constants, sdk
 
 import luigi
 import json

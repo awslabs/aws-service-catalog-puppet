@@ -21,13 +21,13 @@ from jinja2 import Template
 from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import cli_command_helpers
-from servicecatalog_puppet import luigi_tasks_and_targets
-from servicecatalog_puppet import manifest_utils
-from servicecatalog_puppet import aws
+from . import cli_command_helpers
+from . import luigi_tasks_and_targets
+from . import manifest_utils
+from . import aws
 
-from servicecatalog_puppet import asset_helpers
-from servicecatalog_puppet import constants
+from . import asset_helpers
+from . import constants
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

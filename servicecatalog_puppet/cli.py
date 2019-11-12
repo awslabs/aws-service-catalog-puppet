@@ -4,7 +4,7 @@
 import click
 import yaml
 
-from servicecatalog_puppet import cli_commands
+from . import cli_commands
 
 
 @click.group()

@@ -18,8 +18,8 @@ import terminaltables
 from jinja2 import Template
 from luigi import LuigiStatusCode
 
-from servicecatalog_puppet import asset_helpers, manifest_utils, aws, luigi_tasks_and_targets
-from servicecatalog_puppet import constants
+from . import asset_helpers, manifest_utils, aws, luigi_tasks_and_targets
+from . import constants
 import logging
 
 import os
@@ -27,7 +27,6 @@ from threading import Thread
 
 import yaml
 
-import boto3
 from betterboto import client as betterboto_client
 from jinja2 import Environment, FileSystemLoader
 
