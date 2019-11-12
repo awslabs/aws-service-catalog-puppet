@@ -441,15 +441,15 @@ class ProvisionProductTask(PuppetTask):
         with self.input().get('product').open('r') as f:
             product_id = json.loads(f.read()).get('product_id')
 
-        params_to_use = {}
-        logger.info(f"[{self.uid}] :: collecting params")
+        all_params = {}
+        logger.info(f"[{self.uid}] :: collecting all_params")
         for param_name, param_details in self.all_params.items():
             if param_details.get('ssm'):
                 with self.input().get('ssm_params').get(param_name).open() as f:
-                    params_to_use[param_name] = json.loads(f.read()).get('Value')
+                    all_params[param_name] = json.loads(f.read()).get('Value')
             if param_details.get('default'):
-                params_to_use[param_name] = param_details.get('default')
-        logger.info(f"[{self.uid}] :: finished collecting params {params_to_use}")
+                all_params[param_name] = param_details.get('default')
+        logger.info(f"[{self.uid}] :: finished collecting all_params: {all_params}")
 
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
@@ -477,18 +477,27 @@ class ProvisionProductTask(PuppetTask):
                 logging.info(
                     f"running as {role},checking {product_id} {version_id} {path_id} in {self.account_id} {self.region}"
                 )
-                #EPF
 
                 with self.input().get('provisioning_artifact_parameters').open('r') as f:
                     provisioning_artifact_parameters = json.loads(f.read())
 
-                new_version_param_names = [p.get('ParameterKey') for p in provisioning_artifact_parameters]
-
-                for default_cfn_param_name in default_cfn_params.keys():
-                    if params_to_use.get(default_cfn_param_name) is None:
-                        if default_cfn_params.get(default_cfn_param_name) is not None:
-                            if default_cfn_param_name in new_version_param_names:
-                                params_to_use[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
+                params_to_use = {}
+                for p in provisioning_artifact_parameters:
+                    param_name = p.get('ParameterKey')
+                    params_to_use[param_name] = all_params.get(param_name, p.get('DefaultValue'))
+                #
+                #
+                # 
+                #
+                # #for each param in the existing stack
+                # for default_cfn_param_name in default_cfn_params.keys():
+                #     #if it isnt present
+                #     if params_to_use.get(default_cfn_param_name) is None:
+                #         #if there isnt a default in the deployed stack
+                #         if default_cfn_params.get(default_cfn_param_name) is not None:
+                #             #if the param is present in the new stack
+                #             if default_cfn_param_name in new_version_param_names:
+                #                 params_to_use[default_cfn_param_name] = default_cfn_params[default_cfn_param_name]
 
                 if provisioning_artifact_id == version_id:
                     logger.info(
