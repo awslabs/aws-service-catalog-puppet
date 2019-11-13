@@ -18,8 +18,8 @@ import terminaltables
 from jinja2 import Template
 from luigi import LuigiStatusCode
 
-from servicecatalog_puppet import asset_helpers, manifest_utils, aws, luigi_tasks_and_targets
-from servicecatalog_puppet import constants
+from . import asset_helpers, manifest_utils, aws, luigi_tasks_and_targets
+from . import constants
 import logging
 
 import os
@@ -27,7 +27,6 @@ from threading import Thread
 
 import yaml
 
-import boto3
 from betterboto import client as betterboto_client
 from jinja2 import Environment, FileSystemLoader
 
@@ -695,27 +694,17 @@ def run_tasks(tasks_to_run, num_workers):
         if should_forward_failures_to_opscenter:
             title = f"{result.get('task_type')} failed: {params.get('launch_name')} - {params.get('account_id')} - {params.get('region')}"
             logging.info(f"Sending failure to opscenter: {title}")
+            operational_data = {}
+            for param_name, param in params.items():
+                operational_data[param_name] = {
+                    "Value": param,
+                    'Type': 'SearchableString',
+                }
+            description = "\n".join(result.get('exception_stack_trace'))[:1024]
             ssm_client.create_ops_item(
                 Title=title,
-                Description="\n".join(result.get('exception_stack_trace')),
-                OperationalData={
-                    'launch_name': {
-                        'Value': params.get('launch_name'),
-                        'Type': 'SearchableString'
-                    },
-                    'account_id': {
-                        'Value': params.get('account_id'),
-                        'Type': 'SearchableString'
-                    },
-                    'region': {
-                        'Value': params.get('region'),
-                        'Type': 'SearchableString'
-                    },
-                    'task_type': {
-                        'Value': result.get('task_type'),
-                        'Type': 'SearchableString'
-                    },
-                },
+                Description=description,
+                OperationalData=operational_data,
                 Priority=1,
                 Source=constants.SERVICE_CATALOG_PUPPET_OPS_CENTER_SOURCE,
             )

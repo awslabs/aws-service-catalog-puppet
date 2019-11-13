@@ -1,0 +1,32 @@
+schema: puppet-2019-04-01
+accounts:
+  - account_id: '246919575282'
+    default_region: eu-west-1
+    name: '246919575282'
+    regions_enabled:
+      - eu-west-1
+      - eu-west-2
+    tags:
+      - type:prod
+      - partition:eu
+      - scope:pci
+launches:
+  assumable-role-account:
+    portfolio: example-simple-central-it-team-portfolio
+    product: assumable-role-account
+    version: v1
+    parameters:
+      RoleName:
+        default: AccountAssumeRole
+      Path:
+        default: /
+      AccountToTrust:
+        default: '246919575282'
+    deploy_to:
+      tags:
+        - regions: default_region
+          tag: type:prod
+    outputs:
+      ssm:
+        - param_name: ServiceCatalogAccountRoleArn
+          stack_output: RoleArn

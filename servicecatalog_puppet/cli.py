@@ -4,7 +4,7 @@
 import click
 import yaml
 
-from servicecatalog_puppet import cli_commands
+from . import cli_commands
 
 
 @click.group()
@@ -27,6 +27,13 @@ def generate_shares(f):
 @click.option('--num-workers', default=10)
 def deploy(f, single_account, num_workers):
     cli_commands.deploy(f, num_workers)
+
+
+@cli.command()
+@click.argument('f', type=click.File())
+@click.option('--single-account', default=None)
+def graph(f, single_account):
+    cli_commands.graph(f)
 
 
 @cli.command()
