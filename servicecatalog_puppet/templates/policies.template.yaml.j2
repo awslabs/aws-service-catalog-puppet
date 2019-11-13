@@ -14,7 +14,7 @@ Resources:
     Description: Resource to ensure that template contains a resource even when there are no shares
     Condition: NoOpCondition
 
-RequestPolicyTask
+
   {% if sharing_policies.get('accounts')|length > 0 or sharing_policies.get('organizations')|length > 0 %}
   TopicPolicies:
     Type: AWS::SNS::TopicPolicy
