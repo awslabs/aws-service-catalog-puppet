@@ -52,17 +52,23 @@ Resources:
         Statement:{% for account_id in sharing_policies.get('accounts') %}
           - Sid: ShareFor{{ account_id }}
             Action:
-              - "s3:GetObject"
+              - "s3:Get*"
+              - "s3:List*"
             Effect: "Allow"
-            Resource: !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
+            Resource:
+              - !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
+              - !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}"
             Principal:
               AWS: "arn:aws:iam::{{ account_id }}:root"{% endfor %}
         {% for organization in sharing_policies.get('organizations') %}
           - Sid: OrganizationalShareFor{{ organization }}
             Action:
-              - "s3:GetObject"
+              - "s3:Get*"
+              - "s3:List*"
             Effect: "Allow"
-            Resource: !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
+            Resource:
+              - !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
+              - !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}"
             Principal: "*"
             Condition:
               StringEquals:
