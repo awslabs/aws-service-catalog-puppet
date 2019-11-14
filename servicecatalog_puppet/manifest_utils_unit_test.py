@@ -352,7 +352,7 @@ def test_convert_manifest_into_task_defs_handles_for_unsupported_string(sut, sha
         'test_convert_manifest_into_task_defs_handles_depends_on_without-leaks',
     ]
 )
-def test_convert_manifest_into_task_defs_handles_for_unsupported_string(sut, shared_datadir, manifest_file, mocker):
+def test_convert_manifest_into_task_defs_handles_transient_dependencies(sut, shared_datadir, manifest_file, mocker):
     # setup
     manifest = yaml.safe_load(
         (shared_datadir / 'manifest_utils' / f"{manifest_file}.yaml").read_text()
