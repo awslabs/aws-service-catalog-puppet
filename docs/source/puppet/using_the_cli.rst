@@ -301,3 +301,17 @@ for each AWS CodeBuild step within the pipeline.  This is useful for sharing the
 .. note::
 
     This was added in version 0.47.0
+
+
+graph
+-----
+The graph command takes an expanded manifest as a parameter and generates a graphviz formated graph representing the
+actions the framework will perform
+
+.. code-block:: bash
+
+    servicecatalog-puppet graph <path_to_expanded_manifest>
+
+.. note::
+
+    This was added in version 0.49.0

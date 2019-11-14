@@ -323,6 +323,7 @@ class ProvisionProductTask(PuppetTask):
     worker_timeout = luigi.IntParameter(default=0, significant=False)
     ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
     should_use_sns = luigi.Parameter(significant=False, default=False)
+    should_use_product_plans = luigi.Parameter(significant=False, default=False)
     requested_priority = luigi.Parameter(significant=False, default=0)
 
     try_count = 1
@@ -524,7 +525,7 @@ class ProvisionProductTask(PuppetTask):
                                     f"{stack_status}.  This may need manual resolution."
                                 )
 
-                    if provisioned_product_id:
+                    if provisioned_product_id and self.should_use_product_plans:
                         provisioned_product_id = aws.provision_product_with_plan(
                             service_catalog,
                             self.launch_name,
