@@ -69,6 +69,12 @@ def get_should_forward_failures_to_opscenter(default_region=None):
     return get_config(default_region).get('should_forward_failures_to_opscenter', False)
 
 
+@functools.lru_cache(maxsize=32)
+def get_should_use_product_plans(default_region=None):
+    logger.info("getting should_use_product_plans,  default_region: {}".format(default_region))
+    return get_config(default_region).get('should_use_product_plans', True)
+
+
 @functools.lru_cache()
 def get_home_region():
     with betterboto_client.ClientContextManager('ssm') as ssm:

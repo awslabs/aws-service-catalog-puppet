@@ -23,6 +23,7 @@
       }
     ],
     "should_use_sns": true,
+    "should_use_product_plans": true,
     "requested_priority": 0,
     "status": "provisioned",
     "account_id": "923822062182",
@@ -53,6 +54,7 @@
       }
     ],
     "should_use_sns": true,
+    "should_use_product_plans": true,
     "requested_priority": 0,
     "status": "provisioned",
     "account_id": "923822062182",
@@ -83,6 +85,7 @@
       }
     ],
     "should_use_sns": true,
+    "should_use_product_plans": true,
     "requested_priority": 0,
     "status": "provisioned",
     "account_id": "923822062182",
@@ -113,6 +116,7 @@
       }
     ],
     "should_use_sns": true,
+    "should_use_product_plans": true,
     "requested_priority": 0,
     "status": "provisioned",
     "account_id": "923822062182",
@@ -180,6 +184,7 @@
           }
         ],
         "should_use_sns": true,
+        "should_use_product_plans": true,
         "requested_priority": 0,
         "status": "provisioned",
         "account_id": "923822062182",
@@ -210,6 +215,7 @@
           }
         ],
         "should_use_sns": true,
+        "should_use_product_plans": true,
         "requested_priority": 0,
         "status": "provisioned",
         "account_id": "923822062182",
@@ -240,6 +246,7 @@
           }
         ],
         "should_use_sns": true,
+        "should_use_product_plans": true,
         "requested_priority": 0,
         "status": "provisioned",
         "account_id": "923822062182",
@@ -270,6 +277,7 @@
           }
         ],
         "should_use_sns": true,
+        "should_use_product_plans": true,
         "requested_priority": 0,
         "status": "provisioned",
         "account_id": "923822062182",
@@ -281,6 +289,7 @@
     "worker_timeout": 0,
     "ssm_param_outputs": [],
     "should_use_sns": true,
+    "should_use_product_plans": true,
     "requested_priority": 0,
     "status": "provisioned",
     "account_id": "923822062182",

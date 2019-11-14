@@ -239,9 +239,12 @@ def test_convert_manifest_into_task_defs(sut, shared_datadir):
     puppet_account_id = 9
     expected_result = json.loads((shared_datadir / 'account-vending' / 'manifest-tasks.json').read_text())
     should_use_sns = True
+    should_use_product_plans = True
 
     # execute
-    actual_result = sut.convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns)
+    actual_result = sut.convert_manifest_into_task_defs_for_launches(
+        manifest, puppet_account_id, should_use_sns, should_use_product_plans
+    )
 
     # verify
     assert actual_result == expected_result
@@ -271,12 +274,15 @@ def test_convert_manifest_into_task_defs_handles_default_region(sut, shared_data
     )
     puppet_account_id = 9
     should_use_sns = True
+    should_use_product_plans = True
     expected_result = yaml.safe_load(
         (shared_datadir / 'manifest_utils' / dir / f"{manifest_file}_expected.yaml").read_text()
     )
 
     # exercise
-    actual_result = sut.convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns)
+    actual_result = sut.convert_manifest_into_task_defs_for_launches(
+        manifest, puppet_account_id, should_use_sns, should_use_product_plans
+    )
 
     # verify
     assert expected_result == actual_result
@@ -298,6 +304,7 @@ def test_convert_manifest_into_task_defs_handles_default_region_for_all(sut, moc
     )
     puppet_account_id = 9
     should_use_sns = True
+    should_use_product_plans = True
     expected_result = yaml.safe_load(
         (shared_datadir / 'manifest_utils' / dir / f"{manifest_file}_expected.yaml").read_text()
     )
@@ -307,7 +314,9 @@ def test_convert_manifest_into_task_defs_handles_default_region_for_all(sut, moc
     ]
 
     # exercise
-    actual_result = sut.convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns)
+    actual_result = sut.convert_manifest_into_task_defs_for_launches(
+        manifest, puppet_account_id, should_use_sns, should_use_product_plans
+    )
 
     # verify
     assert expected_result == actual_result
@@ -335,3 +344,45 @@ def test_convert_manifest_into_task_defs_handles_for_unsupported_string(sut, sha
 
     # verify
     assert str(e.exconly()) == "Exception: Unsupported regions foo setting for launch: assumable-role-account"
+
+
+@pytest.mark.parametrize(
+    "manifest_file",
+    [
+        'test_convert_manifest_into_task_defs_handles_depends_on_without-leaks',
+    ]
+)
+def test_convert_manifest_into_task_defs_handles_for_unsupported_string(sut, shared_datadir, manifest_file, mocker):
+    # setup
+    manifest = yaml.safe_load(
+        (shared_datadir / 'manifest_utils' / f"{manifest_file}.yaml").read_text()
+    )
+    puppet_account_id = 9
+    should_use_sns = True
+    should_use_product_plans = True
+    mocked_get_regions = mocker.patch.object(sut.cli_command_helpers, 'get_regions')
+    mocked_get_regions.return_value = [
+        'eu-west-3',
+    ]
+    verified = False
+    expected_result = yaml.safe_load(
+        (shared_datadir / 'manifest_utils' / f"{manifest_file}_expected.yaml").read_text()
+    )
+
+    # exercise
+    actual_result = sut.convert_manifest_into_task_defs_for_launches(
+        manifest, puppet_account_id, should_use_sns, should_use_product_plans
+    )
+
+    # verify
+    for task_def in actual_result:
+        launch_name = task_def.get('launch_name')
+        if launch_name == 'assumable-role-account-child':
+            dependencies = task_def.get('dependencies')
+            assert len(dependencies) == 1
+            transient_dependencies = dependencies[0].get('dependencies')
+            assert len(transient_dependencies) == 0
+            verified = True
+
+    assert verified
+    assert actual_result == expected_result

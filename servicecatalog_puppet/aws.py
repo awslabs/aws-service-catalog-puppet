@@ -204,7 +204,7 @@ def provision_product_with_plan(
                 )
                 logger.info(
                     f"{uid} :: "
-                    f"waiting for change to complete: {response.get('ProvisionedProductDetail').get('Status')}"
+                    f"waiting for provision to complete: {response.get('ProvisionedProductDetail').get('Status')}"
                 )
                 provisioned_product_detail = response.get('ProvisionedProductDetail')
                 execute_status = provisioned_product_detail.get('Status')
@@ -273,7 +273,7 @@ def provision_product(
         )
         logger.info(
             f"{uid} :: "
-            f"waiting for change to complete: {response.get('ProvisionedProductDetail').get('Status')}"
+            f"waiting for provision to complete: {response.get('ProvisionedProductDetail').get('Status')}"
         )
         provisioned_product_detail = response.get('ProvisionedProductDetail')
         execute_status = provisioned_product_detail.get('Status')

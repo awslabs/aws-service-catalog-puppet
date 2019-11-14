@@ -18,6 +18,7 @@
   requested_priority: 0
   retry_count: 0
   should_use_sns: true
+  should_use_product_plans: true
   ssm_param_inputs: []
   ssm_param_outputs:
   - param_name: ServiceCatalogAccountRoleArn

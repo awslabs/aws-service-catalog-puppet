@@ -179,7 +179,7 @@ def expand_ou(original_account, client):
     return expanded
 
 
-def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns):
+def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns, should_use_product_plans):
     task_defs = []
     accounts = manifest.get('accounts', [])
     for launch_name, launch_details in manifest.get('launches', {}).items():
@@ -204,6 +204,7 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
             'worker_timeout': launch_details.get('timeoutInSeconds', constants.DEFAULT_TIMEOUT),
             'ssm_param_outputs': launch_details.get('outputs', {}).get('ssm', []),
             'should_use_sns': should_use_sns,
+            'should_use_product_plans': should_use_product_plans,
             'requested_priority': 0,
 
             'status': launch_details.get('status', constants.PROVISIONED),
@@ -290,11 +291,12 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
                         raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
 
     for task_def in task_defs:
-        for dependency_launch_name in task_def.get('depends_on', []):
+        for depends_on_launch_name in task_def.get('depends_on', []):
             for task_def_2 in task_defs:
-                if task_def_2.get('launch_name') == dependency_launch_name:
+                if task_def_2.get('launch_name') == depends_on_launch_name:
                     task_def_2_copy = deepcopy(task_def_2)
                     del task_def_2_copy['depends_on']
+                    task_def_2_copy['dependencies'] = []
                     task_def['dependencies'].append(task_def_2_copy)
 
     for task_def in task_defs:

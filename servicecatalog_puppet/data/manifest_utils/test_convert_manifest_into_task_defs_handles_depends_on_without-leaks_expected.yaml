@@ -1,0 +1,140 @@
+- account_id: '246919575282'
+  account_parameters: {}
+  dependencies: []
+  launch_name: assumable-role-account-grand-parent
+  launch_parameters:
+    AccountToTrust:
+      default: '246919575282'
+    Path:
+      default: /
+    RoleName:
+      default: AccountAssumeRole
+  manifest_parameters: {}
+  parameters: []
+  portfolio: example-simple-central-it-team-portfolio
+  product: assumable-role-account
+  puppet_account_id: 9
+  region: eu-west-3
+  requested_priority: 0
+  retry_count: 0
+  should_use_sns: true
+  should_use_product_plans: true
+  ssm_param_inputs: []
+  ssm_param_outputs:
+  - param_name: ServiceCatalogAccountRoleArn
+    stack_output: RoleArn
+  status: provisioned
+  version: v1
+  worker_timeout: 0
+- account_id: '246919575282'
+  account_parameters: {}
+  dependencies:
+  - account_id: '246919575282'
+    account_parameters: {}
+    dependencies: []
+    launch_name: assumable-role-account-grand-parent
+    launch_parameters:
+      AccountToTrust:
+        default: '246919575282'
+      Path:
+        default: /
+      RoleName:
+        default: AccountAssumeRole
+    manifest_parameters: {}
+    parameters: []
+    portfolio: example-simple-central-it-team-portfolio
+    product: assumable-role-account
+    puppet_account_id: 9
+    region: eu-west-3
+    requested_priority: 0
+    retry_count: 0
+    should_use_sns: true
+    should_use_product_plans: true
+    ssm_param_inputs: []
+    ssm_param_outputs:
+    - param_name: ServiceCatalogAccountRoleArn
+      stack_output: RoleArn
+    status: provisioned
+    version: v1
+    worker_timeout: 0
+  launch_name: assumable-role-account-parent
+  launch_parameters:
+    AccountToTrust:
+      default: '246919575282'
+    Path:
+      default: /
+    RoleName:
+      default: AccountAssumeRole
+  manifest_parameters: {}
+  parameters: []
+  portfolio: example-simple-central-it-team-portfolio
+  product: assumable-role-account
+  puppet_account_id: 9
+  region: eu-west-3
+  requested_priority: 0
+  retry_count: 0
+  should_use_sns: true
+  should_use_product_plans: true
+  ssm_param_inputs: []
+  ssm_param_outputs:
+  - param_name: ServiceCatalogAccountRoleArn
+    stack_output: RoleArn
+  status: provisioned
+  version: v1
+  worker_timeout: 0
+- account_id: '246919575282'
+  account_parameters: {}
+  dependencies:
+  - account_id: '246919575282'
+    account_parameters: {}
+    dependencies: []
+    launch_name: assumable-role-account-parent
+    launch_parameters:
+      AccountToTrust:
+        default: '246919575282'
+      Path:
+        default: /
+      RoleName:
+        default: AccountAssumeRole
+    manifest_parameters: {}
+    parameters: []
+    portfolio: example-simple-central-it-team-portfolio
+    product: assumable-role-account
+    puppet_account_id: 9
+    region: eu-west-3
+    requested_priority: 0
+    retry_count: 0
+    should_use_sns: true
+    should_use_product_plans: true
+    ssm_param_inputs: []
+    ssm_param_outputs:
+    - param_name: ServiceCatalogAccountRoleArn
+      stack_output: RoleArn
+    status: provisioned
+    version: v1
+    worker_timeout: 0
+  launch_name: assumable-role-account-child
+  launch_parameters:
+    AccountToTrust:
+      default: '246919575282'
+    Path:
+      default: /
+    RoleName:
+      default: AccountAssumeRole
+  manifest_parameters: {}
+  parameters: []
+  portfolio: example-simple-central-it-team-portfolio
+  product: assumable-role-account
+  puppet_account_id: 9
+  region: eu-west-3
+  requested_priority: 0
+  retry_count: 0
+  should_use_sns: true
+  should_use_product_plans: true
+  ssm_param_inputs: []
+  ssm_param_outputs:
+  - param_name: ServiceCatalogAccountRoleArn
+    stack_output: RoleArn
+  status: provisioned
+  version: v1
+  worker_timeout: 0
