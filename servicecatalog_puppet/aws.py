@@ -311,16 +311,6 @@ def update_provisioned_product(
         PathId=path_id,
         ProvisionedProductName=launch_name,
         ProvisioningParameters=provisioning_parameters,
-        Tags=[
-            {
-                'Key': 'launch_name',
-                'Value': launch_name,
-            },
-            {
-                'Key': 'version',
-                'Value': version,
-            },
-        ],
     ).get('RecordDetail').get('ProvisionedProductId')
     logger.info(f"{uid}: provisioning started: {provisioned_product_id}")
 
