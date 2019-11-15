@@ -122,7 +122,7 @@ def reset_provisioned_product_owner(f):
     cli_command_helpers.run_tasks(tasks_to_run, 10)
 
 
-def generate_tasks(f):
+def generate_tasks(f, single_account):
     puppet_account_id = cli_command_helpers.get_puppet_account_id()
     manifest = manifest_utils.load(f)
     tasks_to_run = []
@@ -135,6 +135,9 @@ def generate_tasks(f):
     )
 
     for task in task_defs:
+        if single_account is not None:
+            if task.get('account_id') != single_account:
+                continue
         task_status = task.get('status')
         del task['status']
         if task_status == constants.PROVISIONED:
@@ -164,14 +167,21 @@ def generate_tasks(f):
         else:
             raise Exception(f"Unsupported status of {task_status}")
 
-    tasks_to_run += manifest_utils.convert_manifest_into_task_defs_for_spoke_local_portfolios(
+    spoke_local_portfolios_tasks = manifest_utils.convert_manifest_into_task_defs_for_spoke_local_portfolios(
         manifest, puppet_account_id, should_use_sns, tasks_to_run
     )
+    for spoke_local_portfolios_task in spoke_local_portfolios_tasks:
+        if single_account is not None:
+            param_kwargs = spoke_local_portfolios_task.param_kwargs
+            logger.info(f"EPF:: {param_kwargs}")
+            if param_kwargs.get('account_id', 'not_an_account_id') != single_account:
+                continue
+        tasks_to_run.append(spoke_local_portfolios_task)
     return tasks_to_run
 
 
-def deploy(f, num_workers):
-    tasks_to_run = generate_tasks(f)
+def deploy(f, single_account, num_workers):
+    tasks_to_run = generate_tasks(f, single_account)
     cli_command_helpers.run_tasks(tasks_to_run, num_workers)
 
 
