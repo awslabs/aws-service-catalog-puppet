@@ -337,10 +337,13 @@ def test_convert_manifest_into_task_defs_handles_for_unsupported_string(sut, sha
     )
     puppet_account_id = 9
     should_use_sns = True
+    should_use_product_plans = True
 
     # exercise
     with pytest.raises(Exception) as e:
-        actual_result = sut.convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns)
+        actual_result = sut.convert_manifest_into_task_defs_for_launches(
+            manifest, puppet_account_id, should_use_sns, should_use_product_plans
+    )
 
     # verify
     assert str(e.exconly()) == "Exception: Unsupported regions foo setting for launch: assumable-role-account"
