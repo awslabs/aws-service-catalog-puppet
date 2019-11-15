@@ -286,6 +286,63 @@ def provision_product(
     return provisioned_product_id
 
 
+def update_provisioned_product(
+        service_catalog,
+        launch_name,
+        account_id,
+        region,
+        product_id,
+        provisioning_artifact_id,
+        puppet_account_id,
+        path_id,
+        params,
+        version,
+):
+    uid = f"[{launch_name}] {account_id}:{region}]"
+    provisioning_parameters = []
+    for p in params.keys():
+        provisioning_parameters.append({
+            'Key': p,
+            'Value': params.get(p),
+        })
+    provisioned_product_id = service_catalog.update_provisioned_product(
+        ProductId=product_id,
+        ProvisioningArtifactId=provisioning_artifact_id,
+        PathId=path_id,
+        ProvisionedProductName=launch_name,
+        ProvisioningParameters=provisioning_parameters,
+        Tags=[
+            {
+                'Key': 'launch_name',
+                'Value': launch_name,
+            },
+            {
+                'Key': 'version',
+                'Value': version,
+            },
+        ],
+    ).get('RecordDetail').get('ProvisionedProductId')
+    logger.info(f"{uid}: provisioning started: {provisioned_product_id}")
+
+    while True:
+        response = service_catalog.describe_provisioned_product(
+            Id=provisioned_product_id
+        )
+        logger.info(
+            f"{uid} :: "
+            f"waiting for provision to complete: {response.get('ProvisionedProductDetail').get('Status')}"
+        )
+        provisioned_product_detail = response.get('ProvisionedProductDetail')
+        execute_status = provisioned_product_detail.get('Status')
+        if execute_status in ['AVAILABLE', 'TAINTED', 'EXECUTE_SUCCESS']:
+            break
+        elif execute_status ==  'ERROR':
+            raise Exception(f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
+        else:
+            time.sleep(5)
+    return provisioned_product_id
+
+
 def get_path_for_product(service_catalog, product_id, portfolio_name):
     logger.info(f'Getting path for product {product_id}')
     response = service_catalog.list_launch_paths(ProductId=product_id)

@@ -525,20 +525,35 @@ class ProvisionProductTask(PuppetTask):
                                     f"{stack_status}.  This may need manual resolution."
                                 )
 
-                    if provisioned_product_id and self.should_use_product_plans:
-                        provisioned_product_id = aws.provision_product_with_plan(
-                            service_catalog,
-                            self.launch_name,
-                            self.account_id,
-                            self.region,
-                            product_id,
-                            version_id,
-                            self.puppet_account_id,
-                            path_id,
-                            params_to_use,
-                            self.version,
-                            self.should_use_sns,
-                        )
+                    if provisioned_product_id:
+                        if self.should_use_product_plans:
+                            provisioned_product_id = aws.provision_product_with_plan(
+                                service_catalog,
+                                self.launch_name,
+                                self.account_id,
+                                self.region,
+                                product_id,
+                                version_id,
+                                self.puppet_account_id,
+                                path_id,
+                                params_to_use,
+                                self.version,
+                                self.should_use_sns,
+                            )
+                        else:
+                            provisioned_product_id = aws.update_provisioned_product(
+                                service_catalog,
+                                self.launch_name,
+                                self.account_id,
+                                self.region,
+                                product_id,
+                                version_id,
+                                self.puppet_account_id,
+                                path_id,
+                                params_to_use,
+                                self.version,
+                            )
+
                     else:
                         provisioned_product_id = aws.provision_product(
                             service_catalog,
