@@ -26,7 +26,7 @@ def generate_shares(f):
 @click.option('--single-account', default=None)
 @click.option('--num-workers', default=10)
 def deploy(f, single_account, num_workers):
-    cli_commands.deploy(f, num_workers)
+    cli_commands.deploy(f, single_account, num_workers)
 
 
 @cli.command()

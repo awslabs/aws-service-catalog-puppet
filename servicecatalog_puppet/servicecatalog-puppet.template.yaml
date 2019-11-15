@@ -487,7 +487,7 @@ Resources:
             Value: !GetAtt CodeRepo.CloneUrlHttp
       Source:
         Type: NO_SOURCE
-        BuildSpec: |
+        BuildSpec: !Sub |
           version: 0.2
           phases:
             install:
@@ -499,7 +499,16 @@ Resources:
           {% endif %}
             build:
               commands:
-                - aws codepipeline start-pipeline-execution  --name servicecatalog-puppet-pipeline
+                - git clone ${CodeRepo.CloneUrlHttp}
+                - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml
+                - servicecatalog-puppet --info generate-shares ServiceCatalogPuppet/manifest-expanded.yaml
+                - servicecatalog-puppet --info deploy ServiceCatalogPuppet/manifest-expanded.yaml --single-account $$SINGLE_ACCOUNT_ID
+          artifacts:
+            files:
+              - manifest-expanded.yaml
+              - data/*/*/*/*.json
+              - shares/*/*/*.json
+              - topic/*/*/*.json
       TimeoutInMinutes: 30
       Tags:
         - Key: "ServiceCatalogPuppet:Actor"
