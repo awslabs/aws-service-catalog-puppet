@@ -499,10 +499,11 @@ Resources:
           {% endif %}
             build:
               commands:
-                - git clone ${CodeRepo.CloneUrlHttp}
+                - git clone --config 'credential.helper=!aws codecommit credential-helper $@' --config 'credential.UseHttpPath=true' ${CodeRepo.CloneUrlHttp}
                 - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml
                 - servicecatalog-puppet --info generate-shares ServiceCatalogPuppet/manifest-expanded.yaml
-                - servicecatalog-puppet --info deploy ServiceCatalogPuppet/manifest-expanded.yaml --single-account $$SINGLE_ACCOUNT_ID
+                - rm -rf results output data
+                - servicecatalog-puppet --info deploy ServiceCatalogPuppet/manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID
           artifacts:
             files:
               - manifest-expanded.yaml
