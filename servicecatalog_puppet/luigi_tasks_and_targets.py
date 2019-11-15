@@ -1667,19 +1667,40 @@ class ShareAndAcceptPortfolioTask(PuppetTask):
                     PortfolioId=portfolio_id,
                     AccountId=self.account_id,
                 )
-                with betterboto_client.CrossAccountClientContextManager(
-                        'servicecatalog',
-                        f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-                        f"{self.account_id}-{self.region}-PuppetRole",
-                        region_name=self.region,
-                ) as cross_account_servicecatalog:
+
+            with betterboto_client.CrossAccountClientContextManager(
+                    'servicecatalog',
+                    f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                    f"{self.account_id}-{self.region}-PuppetRole",
+                    region_name=self.region,
+            ) as cross_account_servicecatalog:
+                was_accepted = False
+                accepted_portfolio_shares = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page().get(
+                    'PortfolioDetails'
+                )
+                for accepted_portfolio_share in accepted_portfolio_shares:
+                    if accepted_portfolio_share.get('Id') == portfolio_id:
+                        was_accepted = True
+                        break
+                if not was_accepted:
                     logging.info(f"{self.uid}: accepting {portfolio_id}")
                     cross_account_servicecatalog.accept_portfolio_share(
                         PortfolioId=portfolio_id,
                     )
+
+                principals_for_portfolio = cross_account_servicecatalog.list_principals_for_portfolio_single_page(
+                    PortfolioId=portfolio_id
+                ).get('Principals')
+                principal_was_associated = False
+                principal_to_associate = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+                for principal_for_portfolio in principals_for_portfolio:
+                    if principal_for_portfolio.get('PrincipalARN') == principal_to_associate:
+                        principal_was_associated = True
+
+                if not principal_was_associated:
                     cross_account_servicecatalog.associate_principal_with_portfolio(
                         PortfolioId=portfolio_id,
-                        PrincipalARN=f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                        PrincipalARN=principal_to_associate,
                         PrincipalType='IAM',
                     )
 
