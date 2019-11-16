@@ -182,8 +182,15 @@ def expand_ou(original_account, client):
 def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns, should_use_product_plans):
     task_defs = []
     accounts = manifest.get('accounts', [])
+    actions = manifest.get('actions', {})
     for launch_name, launch_details in manifest.get('launches', {}).items():
         logger.info(f"looking at {launch_name}")
+        pre_provision_actions = []
+        for pre_provision_action in launch_details.get('pre_provision_actions', []):
+            action = deepcopy(actions.get(pre_provision_action.get('name')))
+            action.update(pre_provision_action)
+            pre_provision_actions.append(action)
+
         task_def = {
             'launch_name': launch_name,
             'portfolio': launch_details.get('portfolio'),
@@ -208,6 +215,8 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
             'requested_priority': 0,
 
             'status': launch_details.get('status', constants.PROVISIONED),
+            
+            'pre_provision_actions': pre_provision_actions,
         }
 
         if manifest.get('configuration'):
@@ -315,7 +324,6 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
             if isinstance(launch_task, luigi_tasks_and_targets.ProvisionProductTask):
                 l_params = launch_task.to_str_params()
                 if l_params.get('launch_name') == depend:
-                    # dependencies.append(launch_task.param_args)
                     dependencies.append(launch_task.param_kwargs)
     hub_portfolio = aws.get_portfolio_for(
         launch_details.get('portfolio'), puppet_account_id, region

@@ -300,6 +300,40 @@ class GetPortfolioIdByPortfolioName(PuppetTask):
                 )
 
 
+class PreProvisionActionTask(PuppetTask):
+    type = luigi.Parameter()
+    name = luigi.Parameter()
+    project_name = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    parameters = luigi.ListParameter()
+
+    def params_for_results_display(self):
+        return self.param_kwargs
+
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/{self.type}--{self.name}--{self.project_name}" \
+               f"--{self.account_id}--{self.region}"
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.uid}.json"
+        )
+
+    def run(self):
+        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        with betterboto_client.CrossAccountClientContextManager(
+                'codebuild', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
+        ) as codebuild:
+            build = codebuild.start_build_and_wait_for_completion(
+                projectName=self.project_name,
+            )
+            if build.get('buildStatus') != 'SUCCEEDED':
+                raise Exception(f"Build failed")
+        self.write_output(self.param_kwargs)
+
+
 class ProvisionProductTask(PuppetTask):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -322,9 +356,11 @@ class ProvisionProductTask(PuppetTask):
     retry_count = luigi.IntParameter(default=1, significant=False)
     worker_timeout = luigi.IntParameter(default=0, significant=False)
     ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
-    should_use_sns = luigi.Parameter(significant=False, default=False)
-    should_use_product_plans = luigi.Parameter(significant=False, default=False)
-    requested_priority = luigi.Parameter(significant=False, default=0)
+    should_use_sns = luigi.BoolParameter(significant=False, default=False)
+    should_use_product_plans = luigi.BoolParameter(significant=False, default=False)
+    requested_priority = luigi.IntParameter(significant=False, default=0)
+
+    pre_provision_actions = luigi.ListParameter(default=[], significant=False)
 
     try_count = 1
     all_params = []
@@ -383,6 +419,7 @@ class ProvisionProductTask(PuppetTask):
                 dependencies.append(
                     self.__class__(**r)
                 )
+
         return {
             'dependencies': dependencies,
             'ssm_params': ssm_params,
@@ -394,7 +431,8 @@ class ProvisionProductTask(PuppetTask):
                 self.version,
                 self.account_id,
                 self.region,
-            )
+            ),
+            'pre_provision_actions': [PreProvisionActionTask(**p) for p in self.pre_provision_actions],
         }
 
     @property
@@ -1419,7 +1457,6 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
         ] + [
             f"\"{CreateLaunchRoleConstraintsForPortfolio.__name__}_{self.node_id}\" -> \"{ImportIntoSpokeLocalPortfolioTask.__name__}_{self.node_id}\""
         ]
-
 
     def run(self):
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Creating launch role constraints for "
