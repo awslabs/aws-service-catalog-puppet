@@ -445,8 +445,6 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
             action['source_type'] = 'spoke-local-portfolios'
             post_actions.append(action)
 
-        logger.info(f"Looking at {launch_name}")
-
         task_def = {
             'launch_tasks': launch_tasks,
             'launch_details': launch_details,
