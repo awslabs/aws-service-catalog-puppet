@@ -45,3 +45,36 @@ Once you have made the change you will need to upload your config again:
 .. code-block:: bash
 
     servicecatalog-puppet upload-config config.yaml
+
+
+How can I exclude an account or a sub Organizational unit from an expand
+------------------------------------------------------------------------
+Q. How can I exclude an account or a sub Organizational unit from an expand?
+
+A. You can use an exclude attribute within your ou block:
+
+.. code-block:: yaml
+
+      - ou: /
+        default_region: eu-west-1
+        name: '665532578041'
+        regions_enabled:
+          - eu-west-1
+          - eu-west-2
+        tags:
+          - type:spoke
+          - partition:eu
+          - scope:pci
+        exclude:
+          accounts:
+            - 0123456789010
+          ous:
+            - '/hub'
+
+Excludes can include accounts or ous.  Please note the ous work recursively so the example above to create a list of
+accounts that is all accounts in the organization excluding account ``0123456789010`` and excluding all accounts from
+``/hub`` and all of ``/hub`` sub organizations
+
+.. note::
+
+    exclude was added in version 0.53.0

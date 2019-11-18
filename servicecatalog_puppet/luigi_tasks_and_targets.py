@@ -307,9 +307,15 @@ class PreProvisionActionTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     parameters = luigi.ListParameter()
+    dependencies = luigi.ListParameter(default=[])
 
     def params_for_results_display(self):
         return self.param_kwargs
+
+    def requires(self):
+        return {
+            'provision_product_tasks': [ProvisionProductTask(**p) for p in self.dependencies]
+        }
 
     @property
     def uid(self):
@@ -1073,7 +1079,6 @@ class CreateSpokeLocalPortfolioTask(PuppetTask):
     description = luigi.Parameter(significant=False, default='not set')
 
     def requires(self):
-        raise Exception(json.dumps(self.pre_provision_actions))
         return {
             'pre_provision_actions': [PreProvisionActionTask(**p) for p in self.pre_provision_actions]
         }

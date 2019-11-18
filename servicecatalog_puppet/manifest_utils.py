@@ -195,16 +195,24 @@ def expand_ou(original_account, client):
 
 
 def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns, should_use_product_plans):
-    task_defs = []
+    launch_task_defs = []
+    launch_tasks = []
     accounts = manifest.get('accounts', [])
     actions = manifest.get('actions', {})
     for launch_name, launch_details in manifest.get('launches', {}).items():
         logger.info(f"looking at {launch_name}")
+        task_defs = []
         pre_provision_actions = []
-        for pre_provision_action in launch_details.get('pre_provision_actions', []):
-            action = deepcopy(actions.get(pre_provision_action.get('name')))
-            action.update(pre_provision_action)
+        for provision_action in launch_details.get('pre_provision_actions', []):
+            action = deepcopy(actions.get(provision_action.get('name')))
+            action.update(provision_action)
             pre_provision_actions.append(action)
+
+        post_provision_actions = []
+        for provision_action in launch_details.get('post_provision_actions', []):
+            action = deepcopy(actions.get(provision_action.get('name')))
+            action.update(provision_action)
+            post_provision_actions.append(action)
 
         task_def = {
             'launch_name': launch_name,
@@ -314,24 +322,41 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
                     else:
                         raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
 
-    for task_def in task_defs:
+        for provision_action in post_provision_actions:
+            task_defs_copy = []
+            for task_def in task_defs:
+                task_def_copy = deepcopy(task_def)
+                if task_def_copy.get('status') == constants.TERMINATED:
+                    raise Exception("You cannot depend on a termination")
+                del task_def_copy['status']
+                del task_def_copy['depends_on']
+                task_def_copy['dependencies'] = []
+                task_defs_copy.append(task_def_copy)
+            launch_tasks.append(
+                luigi_tasks_and_targets.PreProvisionActionTask(
+                    **provision_action,
+                    dependencies=task_defs_copy
+                )
+            )
+
+    for task_def in launch_task_defs:
         for depends_on_launch_name in task_def.get('depends_on', []):
-            for task_def_2 in task_defs:
+            for task_def_2 in launch_task_defs:
                 if task_def_2.get('launch_name') == depends_on_launch_name:
                     task_def_2_copy = deepcopy(task_def_2)
                     del task_def_2_copy['depends_on']
                     task_def_2_copy['dependencies'] = []
                     task_def['dependencies'].append(task_def_2_copy)
 
-    for task_def in task_defs:
+    for task_def in launch_task_defs:
         del task_def['depends_on']
 
-    return task_defs
+    return launch_task_defs, launch_tasks
 
 
 def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         account_id, region, launch_details,
-        puppet_account_id, should_use_sns, launch_tasks, pre_provision_actions
+        puppet_account_id, should_use_sns, launch_tasks, pre_provision_actions, post_provision_actions
 ):
     dependencies = []
     for depend in launch_details.get('depends_on', []):
@@ -411,11 +436,18 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
     for launch_name, launch_details in manifest.get('spoke-local-portfolios', {}).items():
         logger.info(f"Looking at {launch_name}")
         pre_provision_actions = []
-        for pre_provision_action in launch_details.get('pre_provision_actions', []):
-            action = deepcopy(actions.get(pre_provision_action.get('name')))
-            action.update(pre_provision_action)
+        for provision_action in launch_details.get('pre_provision_actions', []):
+            action = deepcopy(actions.get(provision_action.get('name')))
+            action.update(provision_action)
             pre_provision_actions.append(action)
-        logger.info(f"Looking at {launch_name}, {pre_provision_actions}")
+
+        post_provision_actions = []
+        for provision_action in launch_details.get('post_provision_actions', []):
+            action = deepcopy(actions.get(provision_action.get('name')))
+            action.update(provision_action)
+            post_provision_actions.append(action)
+
+        logger.info(f"Looking at {launch_name}")
 
         task_def = {
             'launch_tasks': launch_tasks,
@@ -423,6 +455,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
             'puppet_account_id': puppet_account_id,
             'should_use_sns': should_use_sns,
             'pre_provision_actions': pre_provision_actions,
+            'post_provision_actions': post_provision_actions,
         }
 
         if manifest.get('configuration'):
