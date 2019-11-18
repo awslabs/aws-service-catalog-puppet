@@ -130,10 +130,9 @@ def generate_tasks(f, single_account):
     should_use_sns = cli_command_helpers.get_should_use_sns(os.environ.get("AWS_DEFAULT_REGION"))
     should_use_product_plans = cli_command_helpers.get_should_use_product_plans(os.environ.get("AWS_DEFAULT_REGION"))
 
-    task_defs, launch_tasks = manifest_utils.convert_manifest_into_task_defs_for_launches(
+    task_defs = manifest_utils.convert_manifest_into_task_defs_for_launches(
         manifest, puppet_account_id, should_use_sns, should_use_product_plans
     )
-    tasks_to_run += launch_tasks
 
     for task in task_defs:
         if single_account is not None:

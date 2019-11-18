@@ -7,7 +7,8 @@
     "puppet_account_id": 9,
     "parameters": [],
     "ssm_param_inputs": [],
-    "pre_provision_actions": [],
+    "pre_actions": [],
+    "post_actions": [],
     "launch_parameters": {
       "AssumableRoleInRootAccountArn": {
         "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
@@ -39,7 +40,8 @@
     "puppet_account_id": 9,
     "parameters": [],
     "ssm_param_inputs": [],
-    "pre_provision_actions": [],
+    "pre_actions": [],
+    "post_actions": [],
     "launch_parameters": {
       "AssumableRoleInRootAccountArn": {
         "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
@@ -71,7 +73,8 @@
     "puppet_account_id": 9,
     "parameters": [],
     "ssm_param_inputs": [],
-    "pre_provision_actions": [],
+    "pre_actions": [],
+    "post_actions": [],
     "launch_parameters": {
       "AssumableRoleInRootAccountArn": {
         "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
@@ -103,7 +106,8 @@
     "puppet_account_id": 9,
     "parameters": [],
     "ssm_param_inputs": [],
-    "pre_provision_actions": [],
+    "pre_actions": [],
+    "post_actions": [],
     "launch_parameters": {
       "AssumableRoleInRootAccountArn": {
         "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
@@ -135,7 +139,8 @@
     "puppet_account_id": 9,
     "parameters": [],
     "ssm_param_inputs": [],
-    "pre_provision_actions": [],
+    "pre_actions": [],
+    "post_actions": [],
     "launch_parameters": {
       "Email": {
         "default": "eamonnf+account-002@amazon.com"
@@ -173,7 +178,8 @@
         "puppet_account_id": 9,
         "parameters": [],
         "ssm_param_inputs": [],
-        "pre_provision_actions": [],
+        "pre_actions": [],
+        "post_actions": [],
         "launch_parameters": {
           "AssumableRoleInRootAccountArn": {
             "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
@@ -205,7 +211,8 @@
         "puppet_account_id": 9,
         "parameters": [],
         "ssm_param_inputs": [],
-        "pre_provision_actions": [],
+        "pre_actions": [],
+        "post_actions": [],
         "launch_parameters": {
           "AssumableRoleInRootAccountArn": {
             "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
@@ -237,7 +244,8 @@
         "puppet_account_id": 9,
         "parameters": [],
         "ssm_param_inputs": [],
-        "pre_provision_actions": [],
+        "pre_actions": [],
+        "post_actions": [],
         "launch_parameters": {
           "AssumableRoleInRootAccountArn": {
             "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
@@ -269,7 +277,8 @@
         "puppet_account_id": 9,
         "parameters": [],
         "ssm_param_inputs": [],
-        "pre_provision_actions": [],
+        "pre_actions": [],
+        "post_actions": [],
         "launch_parameters": {
           "AssumableRoleInRootAccountArn": {
             "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"

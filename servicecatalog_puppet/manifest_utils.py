@@ -195,24 +195,28 @@ def expand_ou(original_account, client):
 
 
 def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns, should_use_product_plans):
-    launch_task_defs = []
-    launch_tasks = []
+    task_defs = []
     accounts = manifest.get('accounts', [])
     actions = manifest.get('actions', {})
     for launch_name, launch_details in manifest.get('launches', {}).items():
         logger.info(f"looking at {launch_name}")
-        task_defs = []
-        pre_provision_actions = []
-        for provision_action in launch_details.get('pre_provision_actions', []):
+        pre_actions = []
+        for provision_action in launch_details.get('pre_actions', []):
             action = deepcopy(actions.get(provision_action.get('name')))
             action.update(provision_action)
-            pre_provision_actions.append(action)
+            action['source'] = launch_name
+            action['phase'] = 'pre'
+            action['source_type'] = 'launch'
+            pre_actions.append(action)
 
-        post_provision_actions = []
-        for provision_action in launch_details.get('post_provision_actions', []):
+        post_actions = []
+        for provision_action in launch_details.get('post_actions', []):
             action = deepcopy(actions.get(provision_action.get('name')))
             action.update(provision_action)
-            post_provision_actions.append(action)
+            action['source'] = launch_name
+            action['phase'] = 'post'
+            action['source_type'] = 'launch'
+            post_actions.append(action)
 
         task_def = {
             'launch_name': launch_name,
@@ -239,7 +243,8 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
 
             'status': launch_details.get('status', constants.PROVISIONED),
 
-            'pre_provision_actions': pre_provision_actions,
+            'pre_actions': pre_actions,
+            'post_actions': post_actions,
         }
 
         if manifest.get('configuration'):
@@ -322,42 +327,24 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
                     else:
                         raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
 
-        for provision_action in post_provision_actions:
-            task_defs_copy = []
-            for task_def in task_defs:
-                task_def_copy = deepcopy(task_def)
-                if task_def_copy.get('status') == constants.TERMINATED:
-                    raise Exception("You cannot depend on a termination")
-                del task_def_copy['status']
-                del task_def_copy['depends_on']
-                task_def_copy['dependencies'] = []
-                task_defs_copy.append(task_def_copy)
-            launch_tasks.append(
-                luigi_tasks_and_targets.PreProvisionActionTask(
-                    **provision_action,
-                    dependencies=task_defs_copy
-                )
-            )
-        launch_task_defs += task_defs
-
-    for task_def in launch_task_defs:
+    for task_def in task_defs:
         for depends_on_launch_name in task_def.get('depends_on', []):
-            for task_def_2 in launch_task_defs:
+            for task_def_2 in task_defs:
                 if task_def_2.get('launch_name') == depends_on_launch_name:
                     task_def_2_copy = deepcopy(task_def_2)
                     del task_def_2_copy['depends_on']
                     task_def_2_copy['dependencies'] = []
                     task_def['dependencies'].append(task_def_2_copy)
 
-    for task_def in launch_task_defs:
+    for task_def in task_defs:
         del task_def['depends_on']
 
-    return launch_task_defs, launch_tasks
+    return task_defs
 
 
 def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         account_id, region, launch_details,
-        puppet_account_id, should_use_sns, launch_tasks, pre_provision_actions, post_provision_actions
+        puppet_account_id, should_use_sns, launch_tasks, pre_actions, post_actions
 ):
     dependencies = []
     for depend in launch_details.get('depends_on', []):
@@ -376,7 +363,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         'portfolio': launch_details.get('portfolio'),
         'provider_name': hub_portfolio.get('ProviderName'),
         'description': hub_portfolio.get('Description'),
-        'pre_provision_actions': pre_provision_actions,
+        'pre_actions': pre_actions,
     }
     create_spoke_local_portfolio_task = luigi_tasks_and_targets.CreateSpokeLocalPortfolioTask(
         **create_spoke_local_portfolio_task_params,
@@ -398,21 +385,24 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         **create_spoke_local_portfolio_task_as_dependency_params,
         **create_associations_task_params,
         dependencies=dependencies,
-        pre_provision_actions=pre_provision_actions,
+        pre_actions=pre_actions,
     )
     tasks_to_run.append(create_associations_for_portfolio_task)
 
     import_into_spoke_local_portfolio_task_params = {
         'hub_portfolio_id': hub_portfolio.get('Id')
     }
+
+    launch_constraints = launch_details.get('constraints', {}).get('launch', [])
+
     import_into_spoke_local_portfolio_task = luigi_tasks_and_targets.ImportIntoSpokeLocalPortfolioTask(
         **create_spoke_local_portfolio_task_as_dependency_params,
         **import_into_spoke_local_portfolio_task_params,
-        pre_provision_actions=pre_provision_actions,
+        pre_actions=pre_actions,
+        post_actions=post_actions if len(launch_constraints) == 0 else []
     )
     tasks_to_run.append(import_into_spoke_local_portfolio_task)
 
-    launch_constraints = launch_details.get('constraints', {}).get('launch', [])
     if len(launch_constraints) > 0:
         create_launch_role_constraints_for_portfolio_task_params = {
             'launch_constraints': launch_constraints,
@@ -424,6 +414,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
             **import_into_spoke_local_portfolio_task_params,
             **create_launch_role_constraints_for_portfolio_task_params,
             dependencies=dependencies,
+            post_actions=post_actions
         )
         tasks_to_run.append(create_launch_role_constraints_for_portfolio)
     return tasks_to_run
@@ -436,17 +427,23 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
 
     for launch_name, launch_details in manifest.get('spoke-local-portfolios', {}).items():
         logger.info(f"Looking at {launch_name}")
-        pre_provision_actions = []
-        for provision_action in launch_details.get('pre_provision_actions', []):
+        pre_actions = []
+        for provision_action in launch_details.get('pre_actions', []):
             action = deepcopy(actions.get(provision_action.get('name')))
             action.update(provision_action)
-            pre_provision_actions.append(action)
+            action['source'] = launch_name
+            action['phase'] = 'pre'
+            action['source_type'] = 'spoke-local-portfolios'
+            pre_actions.append(action)
 
-        post_provision_actions = []
-        for provision_action in launch_details.get('post_provision_actions', []):
+        post_actions = []
+        for provision_action in launch_details.get('post_actions', []):
             action = deepcopy(actions.get(provision_action.get('name')))
             action.update(provision_action)
-            post_provision_actions.append(action)
+            action['source'] = launch_name
+            action['phase'] = 'post'
+            action['source_type'] = 'spoke-local-portfolios'
+            post_actions.append(action)
 
         logger.info(f"Looking at {launch_name}")
 
@@ -455,8 +452,8 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
             'launch_details': launch_details,
             'puppet_account_id': puppet_account_id,
             'should_use_sns': should_use_sns,
-            'pre_provision_actions': pre_provision_actions,
-            'post_provision_actions': post_provision_actions,
+            'pre_actions': pre_actions,
+            'post_actions': post_actions,
         }
 
         if manifest.get('configuration'):

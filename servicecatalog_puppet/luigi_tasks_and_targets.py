@@ -300,26 +300,23 @@ class GetPortfolioIdByPortfolioName(PuppetTask):
                 )
 
 
-class PreProvisionActionTask(PuppetTask):
+class ProvisionActionTask(PuppetTask):
+    source = luigi.Parameter()
+    phase = luigi.Parameter()
+    source_type = luigi.Parameter()
     type = luigi.Parameter()
     name = luigi.Parameter()
     project_name = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     parameters = luigi.ListParameter()
-    dependencies = luigi.ListParameter(default=[])
 
     def params_for_results_display(self):
         return self.param_kwargs
 
-    def requires(self):
-        return {
-            'provision_product_tasks': [ProvisionProductTask(**p) for p in self.dependencies]
-        }
-
     @property
     def uid(self):
-        return f"{self.__class__.__name__}/{self.type}--{self.name}--{self.project_name}" \
+        return f"{self.__class__.__name__}/{self.type}--{self.source}--{self.phase}--{self.source_type}--{self.name}--{self.project_name}" \
                f"--{self.account_id}--{self.region}"
 
     def output(self):
@@ -336,7 +333,7 @@ class PreProvisionActionTask(PuppetTask):
                 projectName=self.project_name,
             )
             if build.get('buildStatus') != 'SUCCEEDED':
-                raise Exception(f"Build failed")
+                raise Exception(f"{self.uid}: Build failed: {build.get('buildStatus')}")
         self.write_output(self.param_kwargs)
 
 
@@ -366,7 +363,8 @@ class ProvisionProductTask(PuppetTask):
     should_use_product_plans = luigi.BoolParameter(significant=False, default=False)
     requested_priority = luigi.IntParameter(significant=False, default=0)
 
-    pre_provision_actions = luigi.ListParameter(default=[], significant=False)
+    pre_actions = luigi.ListParameter(default=[], significant=False)
+    post_actions = luigi.ListParameter(default=[], significant=False)
 
     try_count = 1
     all_params = []
@@ -438,7 +436,7 @@ class ProvisionProductTask(PuppetTask):
                 self.account_id,
                 self.region,
             ),
-            'pre_provision_actions': [PreProvisionActionTask(**p) for p in self.pre_provision_actions],
+            'pre_actions': [ProvisionActionTask(**p) for p in self.pre_actions],
         }
 
     @property
@@ -638,6 +636,9 @@ class ProvisionProductTask(PuppetTask):
                             raise Exception(
                                 f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
                             )
+
+                for p in self.post_actions:
+                    yield ProvisionActionTask(**p)
 
                 with self.output().open('w') as f:
                     f.write(
@@ -1073,14 +1074,14 @@ class CreateSpokeLocalPortfolioTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    pre_provision_actions = luigi.ListParameter(default=[])
+    pre_actions = luigi.ListParameter(default=[])
 
     provider_name = luigi.Parameter(significant=False, default='not set')
     description = luigi.Parameter(significant=False, default='not set')
 
     def requires(self):
         return {
-            'pre_provision_actions': [PreProvisionActionTask(**p) for p in self.pre_provision_actions]
+            'pre_actions': [ProvisionActionTask(**p) for p in self.pre_actions]
         }
 
     def params_for_results_display(self):
@@ -1136,7 +1137,7 @@ class CreateAssociationsForPortfolioTask(PuppetTask):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
-    pre_provision_actions = luigi.ListParameter(default=[])
+    pre_actions = luigi.ListParameter(default=[])
 
     associations = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
@@ -1149,7 +1150,7 @@ class CreateAssociationsForPortfolioTask(PuppetTask):
                 account_id=self.account_id,
                 region=self.region,
                 portfolio=self.portfolio,
-                pre_provision_actions = self.pre_provision_actions,
+                pre_actions = self.pre_actions,
             ),
             'deps': [ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
@@ -1227,16 +1228,16 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    pre_provision_actions = luigi.ListParameter()
-
+    pre_actions = luigi.ListParameter()
     hub_portfolio_id = luigi.Parameter()
+    post_actions = luigi.ListParameter()
 
     def requires(self):
         return CreateSpokeLocalPortfolioTask(
             account_id=self.account_id,
             region=self.region,
             portfolio=self.portfolio,
-            pre_provision_actions=self.pre_provision_actions,
+            pre_actions=self.pre_actions,
         )
 
     @property
@@ -1420,6 +1421,9 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                                     Active=version_details.get('Active'),
                                 )
 
+        for p in self.post_actions:
+            yield ProvisionActionTask(**p)
+
         with self.output().open('w') as f:
             f.write(
                 json.dumps(
@@ -1445,6 +1449,8 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
     launch_constraints = luigi.DictParameter()
 
     dependencies = luigi.ListParameter(default=[])
+
+    post_actions = luigi.ListParameter()
 
     should_use_sns = luigi.Parameter(default=False, significant=False)
 
@@ -1546,6 +1552,9 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
                         default=str,
                     )
                 )
+
+            for p in self.post_actions:
+                yield ProvisionActionTask(**p)
 
     def params_for_results_display(self):
         return {

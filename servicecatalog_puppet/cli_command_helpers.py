@@ -663,7 +663,7 @@ def run_tasks(tasks_to_run, num_workers):
     )
 
     table_data = [
-        ['Action','Launch', 'Account', 'Region', 'Portfolio', 'Product', 'Version', 'Duration'],
+        ['Action','Params', 'Duration'],
 
     ]
     table = terminaltables.AsciiTable(table_data)
@@ -683,14 +683,11 @@ def run_tasks(tasks_to_run, num_workers):
                 'EventBusName': constants.EVENT_BUS_NAME
             })
 
+        params = yaml.safe_dump(params)
+
         table_data.append([
             result.get('task_type'),
-            params.get('launch_name'),
-            params.get('account_id'),
-            params.get('region'),
-            params.get('portfolio'),
-            params.get('product'),
-            params.get('version'),
+            params,
             result.get('duration'),
         ])
     click.echo(table.table)
@@ -703,7 +700,7 @@ def run_tasks(tasks_to_run, num_workers):
             operational_data = {}
             for param_name, param in params.items():
                 operational_data[param_name] = {
-                    "Value": param,
+                    "Value": json.dumps(param, default=str),
                     'Type': 'SearchableString',
                 }
             description = "\n".join(result.get('exception_stack_trace'))[:1024]
