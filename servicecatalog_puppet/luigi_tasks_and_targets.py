@@ -1067,9 +1067,16 @@ class CreateSpokeLocalPortfolioTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
+    pre_provision_actions = luigi.ListParameter(default=[])
 
     provider_name = luigi.Parameter(significant=False, default='not set')
     description = luigi.Parameter(significant=False, default='not set')
+
+    def requires(self):
+        raise Exception(json.dumps(self.pre_provision_actions))
+        return {
+            'pre_provision_actions': [PreProvisionActionTask(**p) for p in self.pre_provision_actions]
+        }
 
     def params_for_results_display(self):
         return {
@@ -1096,6 +1103,7 @@ class CreateSpokeLocalPortfolioTask(PuppetTask):
         )
 
     def run(self):
+        input = self.input()
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: starting creating portfolio")
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
@@ -1123,6 +1131,7 @@ class CreateAssociationsForPortfolioTask(PuppetTask):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
+    pre_provision_actions = luigi.ListParameter(default=[])
 
     associations = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
@@ -1135,6 +1144,7 @@ class CreateAssociationsForPortfolioTask(PuppetTask):
                 account_id=self.account_id,
                 region=self.region,
                 portfolio=self.portfolio,
+                pre_provision_actions = self.pre_provision_actions,
             ),
             'deps': [ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
@@ -1212,6 +1222,7 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
+    pre_provision_actions = luigi.ListParameter()
 
     hub_portfolio_id = luigi.Parameter()
 
@@ -1220,6 +1231,7 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
             account_id=self.account_id,
             region=self.region,
             portfolio=self.portfolio,
+            pre_provision_actions=self.pre_provision_actions,
         )
 
     @property
