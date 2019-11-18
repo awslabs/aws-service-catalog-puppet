@@ -309,28 +309,59 @@ class ProvisionActionTask(PuppetTask):
     project_name = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
-    parameters = luigi.ListParameter()
+    parameters = luigi.DictParameter()
 
     def params_for_results_display(self):
         return self.param_kwargs
 
     @property
     def uid(self):
-        return f"{self.__class__.__name__}/{self.type}--{self.source}--{self.phase}--{self.source_type}--{self.name}--{self.project_name}" \
-               f"--{self.account_id}--{self.region}"
+        return f"{self.__class__.__name__}/{self.type}--{self.source}--{self.phase}--{self.source_type}--{self.name}-" \
+               f"-{self.project_name}--{self.account_id}--{self.region}"
 
     def output(self):
         return luigi.LocalTarget(
             f"output/{self.uid}.json"
         )
 
+    def requires(self):
+        ssm_params = {}
+        for param_name, param_details in self.parameters.items():
+            if param_details.get('ssm'):
+                if param_details.get('default'):
+                    del param_details['default']
+                ssm_params[param_name] = GetSSMParamTask(
+                    parameter_name=param_name,
+                    name=param_details.get('ssm').get('name'),
+                    region=param_details.get('ssm').get('region', cli_command_helpers.get_home_region())
+                )
+        return {
+            'ssm_params': ssm_params,
+        }
+
     def run(self):
+        all_params = {}
+        for param_name, param_details in self.parameters.items():
+            if param_details.get('ssm'):
+                with self.input().get('ssm_params').get(param_name).open() as f:
+                    all_params[param_name] = json.loads(f.read()).get('Value')
+            if param_details.get('default'):
+                all_params[param_name] = param_details.get('default')
+        logger.info(f"[{self.uid}] :: finished collecting all_params: {all_params}")
+
+        environmentVariablesOverride = [
+            {
+                'name': param_name, 'value': param_details, 'type': 'PLAINTEXT'
+            } for param_name, param_details in all_params.items()
+        ]
+
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
                 'codebuild', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
         ) as codebuild:
             build = codebuild.start_build_and_wait_for_completion(
                 projectName=self.project_name,
+                environmentVariablesOverride=environmentVariablesOverride,
             )
             if build.get('buildStatus') != 'SUCCEEDED':
                 raise Exception(f"{self.uid}: Build failed: {build.get('buildStatus')}")
