@@ -338,6 +338,7 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
                     dependencies=task_defs_copy
                 )
             )
+        launch_task_defs += task_defs
 
     for task_def in launch_task_defs:
         for depends_on_launch_name in task_def.get('depends_on', []):
