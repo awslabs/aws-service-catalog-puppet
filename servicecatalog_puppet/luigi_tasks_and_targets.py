@@ -1109,7 +1109,6 @@ class CreateSpokeLocalPortfolioTask(PuppetTask):
         )
 
     def run(self):
-        input = self.input()
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: starting creating portfolio")
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
