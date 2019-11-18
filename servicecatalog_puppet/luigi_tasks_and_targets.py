@@ -300,6 +300,74 @@ class GetPortfolioIdByPortfolioName(PuppetTask):
                 )
 
 
+class ProvisionActionTask(PuppetTask):
+    source = luigi.Parameter()
+    phase = luigi.Parameter()
+    source_type = luigi.Parameter()
+    type = luigi.Parameter()
+    name = luigi.Parameter()
+    project_name = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    parameters = luigi.DictParameter()
+
+    def params_for_results_display(self):
+        return self.param_kwargs
+
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/{self.type}--{self.source}--{self.phase}--{self.source_type}--{self.name}-" \
+               f"-{self.project_name}--{self.account_id}--{self.region}"
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.uid}.json"
+        )
+
+    def requires(self):
+        ssm_params = {}
+        for param_name, param_details in self.parameters.items():
+            if param_details.get('ssm'):
+                if param_details.get('default'):
+                    del param_details['default']
+                ssm_params[param_name] = GetSSMParamTask(
+                    parameter_name=param_name,
+                    name=param_details.get('ssm').get('name'),
+                    region=param_details.get('ssm').get('region', cli_command_helpers.get_home_region())
+                )
+        return {
+            'ssm_params': ssm_params,
+        }
+
+    def run(self):
+        all_params = {}
+        for param_name, param_details in self.parameters.items():
+            if param_details.get('ssm'):
+                with self.input().get('ssm_params').get(param_name).open() as f:
+                    all_params[param_name] = json.loads(f.read()).get('Value')
+            if param_details.get('default'):
+                all_params[param_name] = param_details.get('default')
+        logger.info(f"[{self.uid}] :: finished collecting all_params: {all_params}")
+
+        environmentVariablesOverride = [
+            {
+                'name': param_name, 'value': param_details, 'type': 'PLAINTEXT'
+            } for param_name, param_details in all_params.items()
+        ]
+
+        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        with betterboto_client.CrossAccountClientContextManager(
+                'codebuild', role, f'sc-{self.region}-{self.account_id}', region_name=self.region
+        ) as codebuild:
+            build = codebuild.start_build_and_wait_for_completion(
+                projectName=self.project_name,
+                environmentVariablesOverride=environmentVariablesOverride,
+            )
+            if build.get('buildStatus') != 'SUCCEEDED':
+                raise Exception(f"{self.uid}: Build failed: {build.get('buildStatus')}")
+        self.write_output(self.param_kwargs)
+
+
 class ProvisionProductTask(PuppetTask):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -322,9 +390,12 @@ class ProvisionProductTask(PuppetTask):
     retry_count = luigi.IntParameter(default=1, significant=False)
     worker_timeout = luigi.IntParameter(default=0, significant=False)
     ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
-    should_use_sns = luigi.Parameter(significant=False, default=False)
-    should_use_product_plans = luigi.Parameter(significant=False, default=False)
-    requested_priority = luigi.Parameter(significant=False, default=0)
+    should_use_sns = luigi.BoolParameter(significant=False, default=False)
+    should_use_product_plans = luigi.BoolParameter(significant=False, default=False)
+    requested_priority = luigi.IntParameter(significant=False, default=0)
+
+    pre_actions = luigi.ListParameter(default=[], significant=False)
+    post_actions = luigi.ListParameter(default=[], significant=False)
 
     try_count = 1
     all_params = []
@@ -383,6 +454,7 @@ class ProvisionProductTask(PuppetTask):
                 dependencies.append(
                     self.__class__(**r)
                 )
+
         return {
             'dependencies': dependencies,
             'ssm_params': ssm_params,
@@ -394,7 +466,8 @@ class ProvisionProductTask(PuppetTask):
                 self.version,
                 self.account_id,
                 self.region,
-            )
+            ),
+            'pre_actions': [ProvisionActionTask(**p) for p in self.pre_actions],
         }
 
     @property
@@ -594,6 +667,9 @@ class ProvisionProductTask(PuppetTask):
                             raise Exception(
                                 f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
                             )
+
+                for p in self.post_actions:
+                    yield ProvisionActionTask(**p)
 
                 with self.output().open('w') as f:
                     f.write(
@@ -1029,9 +1105,15 @@ class CreateSpokeLocalPortfolioTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
+    pre_actions = luigi.ListParameter(default=[])
 
     provider_name = luigi.Parameter(significant=False, default='not set')
     description = luigi.Parameter(significant=False, default='not set')
+
+    def requires(self):
+        return {
+            'pre_actions': [ProvisionActionTask(**p) for p in self.pre_actions]
+        }
 
     def params_for_results_display(self):
         return {
@@ -1085,6 +1167,7 @@ class CreateAssociationsForPortfolioTask(PuppetTask):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
+    pre_actions = luigi.ListParameter(default=[])
 
     associations = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
@@ -1097,6 +1180,7 @@ class CreateAssociationsForPortfolioTask(PuppetTask):
                 account_id=self.account_id,
                 region=self.region,
                 portfolio=self.portfolio,
+                pre_actions = self.pre_actions,
             ),
             'deps': [ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
@@ -1174,14 +1258,16 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-
+    pre_actions = luigi.ListParameter()
     hub_portfolio_id = luigi.Parameter()
+    post_actions = luigi.ListParameter()
 
     def requires(self):
         return CreateSpokeLocalPortfolioTask(
             account_id=self.account_id,
             region=self.region,
             portfolio=self.portfolio,
+            pre_actions=self.pre_actions,
         )
 
     @property
@@ -1365,6 +1451,9 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
                                     Active=version_details.get('Active'),
                                 )
 
+        for p in self.post_actions:
+            yield ProvisionActionTask(**p)
+
         with self.output().open('w') as f:
             f.write(
                 json.dumps(
@@ -1390,6 +1479,8 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
     launch_constraints = luigi.DictParameter()
 
     dependencies = luigi.ListParameter(default=[])
+
+    post_actions = luigi.ListParameter()
 
     should_use_sns = luigi.Parameter(default=False, significant=False)
 
@@ -1419,7 +1510,6 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
         ] + [
             f"\"{CreateLaunchRoleConstraintsForPortfolio.__name__}_{self.node_id}\" -> \"{ImportIntoSpokeLocalPortfolioTask.__name__}_{self.node_id}\""
         ]
-
 
     def run(self):
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Creating launch role constraints for "
@@ -1492,6 +1582,9 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
                         default=str,
                     )
                 )
+
+            for p in self.post_actions:
+                yield ProvisionActionTask(**p)
 
     def params_for_results_display(self):
         return {

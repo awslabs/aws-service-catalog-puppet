@@ -160,9 +160,24 @@ def expand_path(account, client):
 
 def expand_ou(original_account, client):
     expanded = []
+    exclusions = original_account.get('exclude', {}).get('accounts', [])
+    ou_exclusions = original_account.get('exclude', {}).get('ous', [])
+    for ou_exclusion in ou_exclusions:
+        if ou_exclusion.startswith('/'):
+            ou_id = client.convert_path_to_ou(ou_exclusion)
+        else:
+            ou_id = ou_exclusion
+        children = client.list_children_nested(ParentId=ou_id, ChildType='ACCOUNT')
+        for child in children:
+            logger.info(f"Adding {child.get('Id')} to the exclusion list as it was in the ou {ou_exclusion}")
+            exclusions.append(child.get('Id'))
+
     response = client.list_children_nested(ParentId=original_account.get('ou'), ChildType='ACCOUNT')
     for result in response:
         new_account_id = result.get('Id')
+        if new_account_id in exclusions:
+            logger.info(f"Skipping {new_account_id} as it is in the exclusion list")
+            continue
         response = client.describe_account(AccountId=new_account_id)
         new_account = deepcopy(original_account)
         del new_account['ou']
@@ -182,8 +197,27 @@ def expand_ou(original_account, client):
 def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns, should_use_product_plans):
     task_defs = []
     accounts = manifest.get('accounts', [])
+    actions = manifest.get('actions', {})
     for launch_name, launch_details in manifest.get('launches', {}).items():
         logger.info(f"looking at {launch_name}")
+        pre_actions = []
+        for provision_action in launch_details.get('pre_actions', []):
+            action = deepcopy(actions.get(provision_action.get('name')))
+            action.update(provision_action)
+            action['source'] = launch_name
+            action['phase'] = 'pre'
+            action['source_type'] = 'launch'
+            pre_actions.append(action)
+
+        post_actions = []
+        for provision_action in launch_details.get('post_actions', []):
+            action = deepcopy(actions.get(provision_action.get('name')))
+            action.update(provision_action)
+            action['source'] = launch_name
+            action['phase'] = 'post'
+            action['source_type'] = 'launch'
+            post_actions.append(action)
+
         task_def = {
             'launch_name': launch_name,
             'portfolio': launch_details.get('portfolio'),
@@ -208,6 +242,9 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
             'requested_priority': 0,
 
             'status': launch_details.get('status', constants.PROVISIONED),
+
+            'pre_actions': pre_actions,
+            'post_actions': post_actions,
         }
 
         if manifest.get('configuration'):
@@ -307,7 +344,7 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
 
 def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         account_id, region, launch_details,
-        puppet_account_id, should_use_sns, launch_tasks
+        puppet_account_id, should_use_sns, launch_tasks, pre_actions, post_actions
 ):
     dependencies = []
     for depend in launch_details.get('depends_on', []):
@@ -315,7 +352,6 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
             if isinstance(launch_task, luigi_tasks_and_targets.ProvisionProductTask):
                 l_params = launch_task.to_str_params()
                 if l_params.get('launch_name') == depend:
-                    # dependencies.append(launch_task.param_args)
                     dependencies.append(launch_task.param_kwargs)
     hub_portfolio = aws.get_portfolio_for(
         launch_details.get('portfolio'), puppet_account_id, region
@@ -327,9 +363,10 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         'portfolio': launch_details.get('portfolio'),
         'provider_name': hub_portfolio.get('ProviderName'),
         'description': hub_portfolio.get('Description'),
+        'pre_actions': pre_actions,
     }
     create_spoke_local_portfolio_task = luigi_tasks_and_targets.CreateSpokeLocalPortfolioTask(
-        **create_spoke_local_portfolio_task_params
+        **create_spoke_local_portfolio_task_params,
     )
     tasks_to_run.append(create_spoke_local_portfolio_task)
 
@@ -348,19 +385,24 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         **create_spoke_local_portfolio_task_as_dependency_params,
         **create_associations_task_params,
         dependencies=dependencies,
+        pre_actions=pre_actions,
     )
     tasks_to_run.append(create_associations_for_portfolio_task)
 
     import_into_spoke_local_portfolio_task_params = {
         'hub_portfolio_id': hub_portfolio.get('Id')
     }
+
+    launch_constraints = launch_details.get('constraints', {}).get('launch', [])
+
     import_into_spoke_local_portfolio_task = luigi_tasks_and_targets.ImportIntoSpokeLocalPortfolioTask(
         **create_spoke_local_portfolio_task_as_dependency_params,
         **import_into_spoke_local_portfolio_task_params,
+        pre_actions=pre_actions,
+        post_actions=post_actions if len(launch_constraints) == 0 else []
     )
     tasks_to_run.append(import_into_spoke_local_portfolio_task)
 
-    launch_constraints = launch_details.get('constraints', {}).get('launch', [])
     if len(launch_constraints) > 0:
         create_launch_role_constraints_for_portfolio_task_params = {
             'launch_constraints': launch_constraints,
@@ -372,6 +414,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
             **import_into_spoke_local_portfolio_task_params,
             **create_launch_role_constraints_for_portfolio_task_params,
             dependencies=dependencies,
+            post_actions=post_actions
         )
         tasks_to_run.append(create_launch_role_constraints_for_portfolio)
     return tasks_to_run
@@ -380,12 +423,35 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
 def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_account_id, should_use_sns, launch_tasks):
     tasks = []
     accounts = manifest.get('accounts', [])
+    actions = manifest.get('actions', {})
+
     for launch_name, launch_details in manifest.get('spoke-local-portfolios', {}).items():
+        logger.info(f"Looking at {launch_name}")
+        pre_actions = []
+        for provision_action in launch_details.get('pre_actions', []):
+            action = deepcopy(actions.get(provision_action.get('name')))
+            action.update(provision_action)
+            action['source'] = launch_name
+            action['phase'] = 'pre'
+            action['source_type'] = 'spoke-local-portfolios'
+            pre_actions.append(action)
+
+        post_actions = []
+        for provision_action in launch_details.get('post_actions', []):
+            action = deepcopy(actions.get(provision_action.get('name')))
+            action.update(provision_action)
+            action['source'] = launch_name
+            action['phase'] = 'post'
+            action['source_type'] = 'spoke-local-portfolios'
+            post_actions.append(action)
+
         task_def = {
             'launch_tasks': launch_tasks,
             'launch_details': launch_details,
             'puppet_account_id': puppet_account_id,
             'should_use_sns': should_use_sns,
+            'pre_actions': pre_actions,
+            'post_actions': post_actions,
         }
 
         if manifest.get('configuration'):
