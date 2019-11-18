@@ -21,13 +21,13 @@ from jinja2 import Template
 from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import cli_command_helpers
-from servicecatalog_puppet import luigi_tasks_and_targets
-from servicecatalog_puppet import manifest_utils
-from servicecatalog_puppet import aws
+from . import cli_command_helpers
+from . import luigi_tasks_and_targets
+from . import manifest_utils
+from . import aws
 
-from servicecatalog_puppet import asset_helpers
-from servicecatalog_puppet import constants
+from . import asset_helpers
+from . import constants
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -122,20 +122,22 @@ def reset_provisioned_product_owner(f):
     cli_command_helpers.run_tasks(tasks_to_run, 10)
 
 
-def deploy(f, num_workers):
+def generate_tasks(f, single_account):
     puppet_account_id = cli_command_helpers.get_puppet_account_id()
-
     manifest = manifest_utils.load(f)
-
-    launch_tasks = {}
     tasks_to_run = []
 
     should_use_sns = cli_command_helpers.get_should_use_sns(os.environ.get("AWS_DEFAULT_REGION"))
+    should_use_product_plans = cli_command_helpers.get_should_use_product_plans(os.environ.get("AWS_DEFAULT_REGION"))
 
-    all_launch_tasks = cli_command_helpers.deploy_launches(manifest, puppet_account_id)
-    launch_tasks.update(all_launch_tasks)
+    task_defs = manifest_utils.convert_manifest_into_task_defs_for_launches(
+        manifest, puppet_account_id, should_use_sns, should_use_product_plans
+    )
 
-    for task in cli_command_helpers.wire_dependencies(launch_tasks):
+    for task in task_defs:
+        if single_account is not None:
+            if task.get('account_id') != single_account:
+                continue
         task_status = task.get('status')
         del task['status']
         if task_status == constants.PROVISIONED:
@@ -155,16 +157,49 @@ def deploy(f, num_workers):
                     else:
                         raise Exception(f"Launch {task.get('launch_name')} has disallowed attribute: {attribute}")
 
+            del task['launch_parameters']
+            del task['manifest_parameters']
+            del task['account_parameters']
+            del task['should_use_sns']
+            del task['requested_priority']
+
             tasks_to_run.append(luigi_tasks_and_targets.TerminateProductTask(**task))
         else:
             raise Exception(f"Unsupported status of {task_status}")
 
-    spoke_local_portfolio_tasks_to_run = cli_command_helpers.deploy_spoke_local_portfolios(
-        manifest, launch_tasks, should_use_sns, puppet_account_id
+    spoke_local_portfolios_tasks = manifest_utils.convert_manifest_into_task_defs_for_spoke_local_portfolios(
+        manifest, puppet_account_id, should_use_sns, tasks_to_run
     )
-    tasks_to_run += spoke_local_portfolio_tasks_to_run
+    for spoke_local_portfolios_task in spoke_local_portfolios_tasks:
+        if single_account is not None:
+            param_kwargs = spoke_local_portfolios_task.param_kwargs
+            logger.info(f"EPF:: {param_kwargs}")
+            if param_kwargs.get('account_id', 'not_an_account_id') != single_account:
+                continue
+        tasks_to_run.append(spoke_local_portfolios_task)
+    return tasks_to_run
 
+
+def deploy(f, single_account, num_workers):
+    tasks_to_run = generate_tasks(f, single_account)
     cli_command_helpers.run_tasks(tasks_to_run, num_workers)
+
+
+def graph(f):
+    tasks_to_run = generate_tasks(f)
+    lines = []
+    nodes = []
+    for task in tasks_to_run:
+        lines += task.get_graph_lines()
+        nodes.append(task.graph_node())
+    print(json.dumps(lines))
+    click.echo("digraph G {\n")
+    click.echo("node [shape=record fontname=Arial];")
+    for node in nodes:
+        click.echo(f"{node};")
+    for line in lines:
+        click.echo(f"{line} [label=\"depends on\"];")
+    click.echo("}")
 
 
 def bootstrap_spoke_as(puppet_account_id, iam_role_arns):

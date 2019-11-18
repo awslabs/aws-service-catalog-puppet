@@ -1,2 +1,6 @@
 venv
 ServiceCatalogPuppet
+/data
+/results
+/output
+aws-iam-administrator-access-assumable-role-service

@@ -5,7 +5,7 @@ import os
 import click
 import yaml
 
-from servicecatalog_puppet import constants
+from . import constants
 from betterboto import client as betterboto_client
 
 logger = logging.getLogger(__file__)
@@ -100,7 +100,7 @@ def get_parameters_for_stack(cloudformation, stack_name):
     return existing_stack_params_dict
 
 
-def provision_product(
+def provision_product_with_plan(
         service_catalog,
         launch_name,
         account_id,
@@ -204,7 +204,7 @@ def provision_product(
                 )
                 logger.info(
                     f"{uid} :: "
-                    f"waiting for change to complete: {response.get('ProvisionedProductDetail').get('Status')}"
+                    f"waiting for provision to complete: {response.get('ProvisionedProductDetail').get('Status')}"
                 )
                 provisioned_product_detail = response.get('ProvisionedProductDetail')
                 execute_status = provisioned_product_detail.get('Status')
@@ -223,6 +223,114 @@ def provision_product(
 
     else:
         raise Exception(f"{uid} :: Plan failed: {response.get('ProvisionedProductPlanDetails').get('StatusMessage')}")
+
+
+def provision_product(
+        service_catalog,
+        launch_name,
+        account_id,
+        region,
+        product_id,
+        provisioning_artifact_id,
+        puppet_account_id,
+        path_id,
+        params,
+        version,
+        should_use_sns,
+):
+    uid = f"[{launch_name}] {account_id}:{region}]"
+    provisioning_parameters = []
+    for p in params.keys():
+        provisioning_parameters.append({
+            'Key': p,
+            'Value': params.get(p),
+        })
+    provisioned_product_id = service_catalog.provision_product(
+        ProductId=product_id,
+        ProvisioningArtifactId=provisioning_artifact_id,
+        PathId=path_id,
+        ProvisionedProductName=launch_name,
+        ProvisioningParameters=provisioning_parameters,
+        Tags=[
+            {
+                'Key': 'launch_name',
+                'Value': launch_name,
+            },
+            {
+                'Key': 'version',
+                'Value': version,
+            },
+        ],
+        NotificationArns=[
+            f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events",
+        ] if should_use_sns else [],
+    ).get('RecordDetail').get('ProvisionedProductId')
+    logger.info(f"{uid}: provisioning started: {provisioned_product_id}")
+
+    while True:
+        response = service_catalog.describe_provisioned_product(
+            Id=provisioned_product_id
+        )
+        logger.info(
+            f"{uid} :: "
+            f"waiting for provision to complete: {response.get('ProvisionedProductDetail').get('Status')}"
+        )
+        provisioned_product_detail = response.get('ProvisionedProductDetail')
+        execute_status = provisioned_product_detail.get('Status')
+        if execute_status in ['AVAILABLE', 'TAINTED', 'EXECUTE_SUCCESS']:
+            break
+        elif execute_status ==  'ERROR':
+            raise Exception(f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
+        else:
+            time.sleep(5)
+    return provisioned_product_id
+
+
+def update_provisioned_product(
+        service_catalog,
+        launch_name,
+        account_id,
+        region,
+        product_id,
+        provisioning_artifact_id,
+        puppet_account_id,
+        path_id,
+        params,
+        version,
+):
+    uid = f"[{launch_name}] {account_id}:{region}]"
+    provisioning_parameters = []
+    for p in params.keys():
+        provisioning_parameters.append({
+            'Key': p,
+            'Value': params.get(p),
+        })
+    provisioned_product_id = service_catalog.update_provisioned_product(
+        ProductId=product_id,
+        ProvisioningArtifactId=provisioning_artifact_id,
+        PathId=path_id,
+        ProvisionedProductName=launch_name,
+        ProvisioningParameters=provisioning_parameters,
+    ).get('RecordDetail').get('ProvisionedProductId')
+    logger.info(f"{uid}: provisioning started: {provisioned_product_id}")
+
+    while True:
+        response = service_catalog.describe_provisioned_product(
+            Id=provisioned_product_id
+        )
+        logger.info(
+            f"{uid} :: "
+            f"waiting for provision to complete: {response.get('ProvisionedProductDetail').get('Status')}"
+        )
+        provisioned_product_detail = response.get('ProvisionedProductDetail')
+        execute_status = provisioned_product_detail.get('Status')
+        if execute_status in ['AVAILABLE', 'TAINTED', 'EXECUTE_SUCCESS']:
+            break
+        elif execute_status ==  'ERROR':
+            raise Exception(f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
+        else:
+            time.sleep(5)
+    return provisioned_product_id
 
 
 def get_path_for_product(service_catalog, product_id, portfolio_name):

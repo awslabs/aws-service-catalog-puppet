@@ -1,0 +1,299 @@
+[
+  {
+    "launch_name": "account-vending-account-creation-shared",
+    "portfolio": "demo-central-it-team-portfolio",
+    "product": "account-vending-account-creation-shared",
+    "version": "v1",
+    "puppet_account_id": 9,
+    "parameters": [],
+    "ssm_param_inputs": [],
+    "launch_parameters": {
+      "AssumableRoleInRootAccountArn": {
+        "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+      }
+    },
+    "manifest_parameters": {},
+    "dependencies": [],
+    "retry_count": 0,
+    "worker_timeout": 0,
+    "ssm_param_outputs": [
+      {
+        "param_name": "/account-vending/account-custom-resource-arn",
+        "stack_output": "AccountCustomResourceArn"
+      }
+    ],
+    "should_use_sns": true,
+    "should_use_product_plans": true,
+    "requested_priority": 0,
+    "status": "provisioned",
+    "account_id": "923822062182",
+    "account_parameters": {},
+    "region": "eu-west-1"
+  },
+  {
+    "launch_name": "account-vending-account-creation-shared",
+    "portfolio": "demo-central-it-team-portfolio",
+    "product": "account-vending-account-creation-shared",
+    "version": "v1",
+    "puppet_account_id": 9,
+    "parameters": [],
+    "ssm_param_inputs": [],
+    "launch_parameters": {
+      "AssumableRoleInRootAccountArn": {
+        "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+      }
+    },
+    "manifest_parameters": {},
+    "dependencies": [],
+    "retry_count": 0,
+    "worker_timeout": 0,
+    "ssm_param_outputs": [
+      {
+        "param_name": "/account-vending/account-custom-resource-arn",
+        "stack_output": "AccountCustomResourceArn"
+      }
+    ],
+    "should_use_sns": true,
+    "should_use_product_plans": true,
+    "requested_priority": 0,
+    "status": "provisioned",
+    "account_id": "923822062182",
+    "account_parameters": {},
+    "region": "eu-west-2"
+  },
+  {
+    "launch_name": "account-vending-account-bootstrap-shared",
+    "portfolio": "demo-central-it-team-portfolio",
+    "product": "account-vending-account-bootstrap-shared",
+    "version": "v1",
+    "puppet_account_id": 9,
+    "parameters": [],
+    "ssm_param_inputs": [],
+    "launch_parameters": {
+      "AssumableRoleInRootAccountArn": {
+        "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+      }
+    },
+    "manifest_parameters": {},
+    "dependencies": [],
+    "retry_count": 0,
+    "worker_timeout": 0,
+    "ssm_param_outputs": [
+      {
+        "param_name": "/account-vending/bootstrapper-project-custom-resource-arn",
+        "stack_output": "BootstrapperProjectCustomResourceArn"
+      }
+    ],
+    "should_use_sns": true,
+    "should_use_product_plans": true,
+    "requested_priority": 0,
+    "status": "provisioned",
+    "account_id": "923822062182",
+    "account_parameters": {},
+    "region": "eu-west-1"
+  },
+  {
+    "launch_name": "account-vending-account-bootstrap-shared",
+    "portfolio": "demo-central-it-team-portfolio",
+    "product": "account-vending-account-bootstrap-shared",
+    "version": "v1",
+    "puppet_account_id": 9,
+    "parameters": [],
+    "ssm_param_inputs": [],
+    "launch_parameters": {
+      "AssumableRoleInRootAccountArn": {
+        "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+      }
+    },
+    "manifest_parameters": {},
+    "dependencies": [],
+    "retry_count": 0,
+    "worker_timeout": 0,
+    "ssm_param_outputs": [
+      {
+        "param_name": "/account-vending/bootstrapper-project-custom-resource-arn",
+        "stack_output": "BootstrapperProjectCustomResourceArn"
+      }
+    ],
+    "should_use_sns": true,
+    "should_use_product_plans": true,
+    "requested_priority": 0,
+    "status": "provisioned",
+    "account_id": "923822062182",
+    "account_parameters": {},
+    "region": "eu-west-2"
+  },
+  {
+    "launch_name": "account-vending-account-002",
+    "portfolio": "demo-central-it-team-portfolio",
+    "product": "account-vending-account-creation",
+    "version": "v1",
+    "puppet_account_id": 9,
+    "parameters": [],
+    "ssm_param_inputs": [],
+    "launch_parameters": {
+      "Email": {
+        "default": "eamonnf+account-002@amazon.com"
+      },
+      "AccountName": {
+        "default": "account-002"
+      },
+      "OrganizationAccountAccessRole": {
+        "default": "OrganizationAccountAccessRole"
+      },
+      "IamUserAccessToBilling": {
+        "default": "ALLOW"
+      },
+      "TargetOU": {
+        "default": "/"
+      },
+      "AccountVendingCreationLambdaArn": {
+        "ssm": {
+          "name": "/account-vending/account-custom-resource-arn"
+        }
+      },
+      "AccountVendingBootstrapperLambdaArn": {
+        "ssm": {
+          "name": "/account-vending/bootstrapper-project-custom-resource-arn"
+        }
+      }
+    },
+    "manifest_parameters": {},
+    "dependencies": [
+      {
+        "launch_name": "account-vending-account-creation-shared",
+        "portfolio": "demo-central-it-team-portfolio",
+        "product": "account-vending-account-creation-shared",
+        "version": "v1",
+        "puppet_account_id": 9,
+        "parameters": [],
+        "ssm_param_inputs": [],
+        "launch_parameters": {
+          "AssumableRoleInRootAccountArn": {
+            "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+          }
+        },
+        "manifest_parameters": {},
+        "dependencies": [],
+        "retry_count": 0,
+        "worker_timeout": 0,
+        "ssm_param_outputs": [
+          {
+            "param_name": "/account-vending/account-custom-resource-arn",
+            "stack_output": "AccountCustomResourceArn"
+          }
+        ],
+        "should_use_sns": true,
+        "should_use_product_plans": true,
+        "requested_priority": 0,
+        "status": "provisioned",
+        "account_id": "923822062182",
+        "account_parameters": {},
+        "region": "eu-west-1"
+      },
+      {
+        "launch_name": "account-vending-account-creation-shared",
+        "portfolio": "demo-central-it-team-portfolio",
+        "product": "account-vending-account-creation-shared",
+        "version": "v1",
+        "puppet_account_id": 9,
+        "parameters": [],
+        "ssm_param_inputs": [],
+        "launch_parameters": {
+          "AssumableRoleInRootAccountArn": {
+            "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+          }
+        },
+        "manifest_parameters": {},
+        "dependencies": [],
+        "retry_count": 0,
+        "worker_timeout": 0,
+        "ssm_param_outputs": [
+          {
+            "param_name": "/account-vending/account-custom-resource-arn",
+            "stack_output": "AccountCustomResourceArn"
+          }
+        ],
+        "should_use_sns": true,
+        "should_use_product_plans": true,
+        "requested_priority": 0,
+        "status": "provisioned",
+        "account_id": "923822062182",
+        "account_parameters": {},
+        "region": "eu-west-2"
+      },
+      {
+        "launch_name": "account-vending-account-bootstrap-shared",
+        "portfolio": "demo-central-it-team-portfolio",
+        "product": "account-vending-account-bootstrap-shared",
+        "version": "v1",
+        "puppet_account_id": 9,
+        "parameters": [],
+        "ssm_param_inputs": [],
+        "launch_parameters": {
+          "AssumableRoleInRootAccountArn": {
+            "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+          }
+        },
+        "manifest_parameters": {},
+        "dependencies": [],
+        "retry_count": 0,
+        "worker_timeout": 0,
+        "ssm_param_outputs": [
+          {
+            "param_name": "/account-vending/bootstrapper-project-custom-resource-arn",
+            "stack_output": "BootstrapperProjectCustomResourceArn"
+          }
+        ],
+        "should_use_sns": true,
+        "should_use_product_plans": true,
+        "requested_priority": 0,
+        "status": "provisioned",
+        "account_id": "923822062182",
+        "account_parameters": {},
+        "region": "eu-west-1"
+      },
+      {
+        "launch_name": "account-vending-account-bootstrap-shared",
+        "portfolio": "demo-central-it-team-portfolio",
+        "product": "account-vending-account-bootstrap-shared",
+        "version": "v1",
+        "puppet_account_id": 9,
+        "parameters": [],
+        "ssm_param_inputs": [],
+        "launch_parameters": {
+          "AssumableRoleInRootAccountArn": {
+            "default": "arn:aws:iam::923822062182:role/servicecatalog-puppet/AssumableRoleInRootAccount"
+          }
+        },
+        "manifest_parameters": {},
+        "dependencies": [],
+        "retry_count": 0,
+        "worker_timeout": 0,
+        "ssm_param_outputs": [
+          {
+            "param_name": "/account-vending/bootstrapper-project-custom-resource-arn",
+            "stack_output": "BootstrapperProjectCustomResourceArn"
+          }
+        ],
+        "should_use_sns": true,
+        "should_use_product_plans": true,
+        "requested_priority": 0,
+        "status": "provisioned",
+        "account_id": "923822062182",
+        "account_parameters": {},
+        "region": "eu-west-2"
+      }
+    ],
+    "retry_count": 3,
+    "worker_timeout": 0,
+    "ssm_param_outputs": [],
+    "should_use_sns": true,
+    "should_use_product_plans": true,
+    "requested_priority": 0,
+    "status": "provisioned",
+    "account_id": "923822062182",
+    "account_parameters": {},
+    "region": "eu-west-1"
+  }
+]
