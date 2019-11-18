@@ -333,10 +333,6 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         account_id, region, launch_details,
         puppet_account_id, should_use_sns, launch_tasks, pre_provision_actions
 ):
-
-    #CreateAssociationsForPortfolioTask
-    #ImportIntoSpokeLocalPortfolioTask
-    logger.info(f"innnn {pre_provision_actions}")
     dependencies = []
     for depend in launch_details.get('depends_on', []):
         for launch_task in launch_tasks:
