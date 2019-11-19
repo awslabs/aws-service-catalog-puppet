@@ -18,7 +18,7 @@ you need to add it to your manifest as an action so the framework can use it:
 .. code-block:: yaml
 
     actions:
-      ping-on-prem-host-pass:
+      ping-on-prem-host:
         type: codebuild
         project_name: ping-on-prem-host
         account_id: '0123456789010'
@@ -34,15 +34,16 @@ launches):
 .. code-block:: yaml
 
     actions:
-      ping-on-prem-host-pass:
+      ping-on-prem-host:
         type: codebuild
         project_name: ping-on-prem-host
         account_id: '0123456789010'
         region: 'eu-west-1'
         parameters:
-          ssm:
-            name: HOST_TO_PING
-            region: eu-west-1
+          HOST_TO_PING:
+            ssm:
+              name: HOST_TO_PING
+              region: eu-west-1
 
 
 Note, these parameters can only be set in the action and can be overridden in the pre/post actions.  You cannot set these
@@ -58,9 +59,10 @@ globally nor can you set them at account level.  Here is an example of overridin
         pre_actions:
           - name: check-cloudtrail-enabled
             parameters:
-              ssm:
-                name: HOST_TO_PING
-                region: eu-west-1
+              HOST_TO_PING:
+                ssm:
+                  name: HOST_TO_PING
+                  region: eu-west-1
         deploy_to:
           tags:
             - regions: default_region
@@ -213,5 +215,69 @@ launch would depend on the first and provision the given product into a group of
 the first product was provisioned into using :ref:`exclude <How can I exclude an account or a sub Organizational unit from an expand>`).
 The second product only provisions if the first does and if the post_action completes successfully.
 
+Here is an example of what your manifest file may look like using a canary:
 
+.. code-block:: yaml
 
+    schema: puppet-2019-04-01
+
+    accounts:
+      - account_id: &canary_account_id '0123456789010'
+        name: 'all-canary'
+        default_region: &canary_default_region 'eu-west-1'
+        regions_enabled:
+          - eu-west-1
+          - eu-west-2
+        tags:
+          - type:spoke
+          - partition:eu
+          - scope:pci
+          - group:all-canary
+      - ou: '/'
+        name: 'all'
+        default_region: eu-west-1
+        regions_enabled:
+          - eu-west-1
+          - eu-west-2
+        tags:
+          - type:spoke
+          - partition:eu
+          - scope:pci
+          - group:all
+        exclude:
+          accounts:
+            - *canary_account_id
+
+    launches:
+      vpc-for-all-canary:
+        portfolio: ccoe-networking
+        product: vpc
+        version: v1
+        deploy_to:
+          tags:
+            - regions: default_region
+              tag: group:all-canary
+        post_actions:
+          - name: ping-on-prem-host
+      vpc-for-all:
+        portfolio: ccoe-networking
+        product: vpc
+        version: v1
+        depends_on:
+          - vpc-for-all-canary
+        deploy_to:
+          tags:
+            - regions: default_region
+              tag: group:all
+
+    actions:
+      ping-on-prem-host:
+        type: codebuild
+        project_name: ping-on-prem-host
+        account_id: *canary_account_id
+        region: *canary_default_region
+        parameters:
+          HOST_TO_PING:
+            ssm:
+              name: HOST_TO_PING
+              region: eu-west-1
