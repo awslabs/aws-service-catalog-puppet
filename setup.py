@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="aws-service-catalog-puppet",
-    version="0.53.0",
+    version="0.54.0",
     author="Eamonn Faherty",
     author_email="aws-service-catalog-tools@amazon.com",
     description="Making it easier to deploy ServiceCatalog products",
