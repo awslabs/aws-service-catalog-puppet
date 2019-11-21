@@ -122,7 +122,7 @@ def reset_provisioned_product_owner(f):
     cli_command_helpers.run_tasks(tasks_to_run, 10)
 
 
-def generate_tasks(f, single_account):
+def generate_tasks(f, single_account=None, dry_run=False):
     puppet_account_id = cli_command_helpers.get_puppet_account_id()
     manifest = manifest_utils.load(f)
     tasks_to_run = []
@@ -142,7 +142,10 @@ def generate_tasks(f, single_account):
         del task['status']
         if task_status == constants.PROVISIONED:
             task['should_use_sns'] = should_use_sns
-            tasks_to_run.append(luigi_tasks_and_targets.ProvisionProductTask(**task))
+            if dry_run:
+                tasks_to_run.append(luigi_tasks_and_targets.ProvisionProductDryRunTask(**task))
+            else:
+                tasks_to_run.append(luigi_tasks_and_targets.ProvisionProductTask(**task))
         elif task_status == constants.TERMINATED:
             for attribute in constants.DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES:
                 logger.info(f"checking {task.get('launch_name')} for disallowed attributes")
@@ -166,26 +169,30 @@ def generate_tasks(f, single_account):
             del task['pre_actions']
             del task['post_actions']
 
-            tasks_to_run.append(luigi_tasks_and_targets.TerminateProductTask(**task))
+            if dry_run:
+                tasks_to_run.append(luigi_tasks_and_targets.TerminateProductDryRunTask(**task))
+            else:
+                tasks_to_run.append(luigi_tasks_and_targets.TerminateProductTask(**task))
         else:
             raise Exception(f"Unsupported status of {task_status}")
 
-    spoke_local_portfolios_tasks = manifest_utils.convert_manifest_into_task_defs_for_spoke_local_portfolios(
-        manifest, puppet_account_id, should_use_sns, tasks_to_run
-    )
-    for spoke_local_portfolios_task in spoke_local_portfolios_tasks:
-        if single_account is not None:
-            param_kwargs = spoke_local_portfolios_task.param_kwargs
-            logger.info(f"EPF:: {param_kwargs}")
-            if param_kwargs.get('account_id', 'not_an_account_id') != single_account:
-                continue
-        tasks_to_run.append(spoke_local_portfolios_task)
+    if not dry_run:
+        spoke_local_portfolios_tasks = manifest_utils.convert_manifest_into_task_defs_for_spoke_local_portfolios(
+            manifest, puppet_account_id, should_use_sns, tasks_to_run
+        )
+        for spoke_local_portfolios_task in spoke_local_portfolios_tasks:
+            if single_account is not None:
+                param_kwargs = spoke_local_portfolios_task.param_kwargs
+                logger.info(f"EPF:: {param_kwargs}")
+                if param_kwargs.get('account_id', 'not_an_account_id') != single_account:
+                    continue
+            tasks_to_run.append(spoke_local_portfolios_task)
     return tasks_to_run
 
 
-def deploy(f, single_account, num_workers):
-    tasks_to_run = generate_tasks(f, single_account)
-    cli_command_helpers.run_tasks(tasks_to_run, num_workers)
+def deploy(f, single_account, num_workers=10, dry_run=False):
+    tasks_to_run = generate_tasks(f, single_account, dry_run)
+    cli_command_helpers.run_tasks(tasks_to_run, num_workers, dry_run)
 
 
 def graph(f):
