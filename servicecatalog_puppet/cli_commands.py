@@ -163,6 +163,8 @@ def generate_tasks(f, single_account):
             del task['should_use_sns']
             del task['requested_priority']
             del task['should_use_product_plans']
+            del task['pre_actions']
+            del task['post_actions']
 
             tasks_to_run.append(luigi_tasks_and_targets.TerminateProductTask(**task))
         else:
