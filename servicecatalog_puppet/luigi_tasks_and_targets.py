@@ -90,6 +90,8 @@ class ProvisioningArtifactParametersTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
 
+    retry_count = 3
+
     def params_for_results_display(self):
         return {
             "portfolio": self.portfolio,
