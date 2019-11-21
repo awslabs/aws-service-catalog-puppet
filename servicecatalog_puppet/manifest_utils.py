@@ -12,83 +12,83 @@ logger = logging.getLogger(__file__)
 def load(f):
     return yaml.safe_load(f.read())
 
+#
+# def group_by_tag(launches):
+#     logger.info('Grouping launches by tag')
+#     launches_by_tag = {}
+#     for launch_name, launch_details in launches.items():
+#         launch_details['launch_name'] = launch_name
+#         launch_tags = launch_details.get('deploy_to').get('tags', [])
+#         for tag_detail in launch_tags:
+#             tag = tag_detail.get('tag')
+#             if launches_by_tag.get(tag) is None:
+#                 launches_by_tag[tag] = []
+#             launches_by_tag[tag].append(launch_details)
+#     logger.info('Finished grouping launches by tag')
+#     return launches_by_tag
 
-def group_by_tag(launches):
-    logger.info('Grouping launches by tag')
-    launches_by_tag = {}
-    for launch_name, launch_details in launches.items():
-        launch_details['launch_name'] = launch_name
-        launch_tags = launch_details.get('deploy_to').get('tags', [])
-        for tag_detail in launch_tags:
-            tag = tag_detail.get('tag')
-            if launches_by_tag.get(tag) is None:
-                launches_by_tag[tag] = []
-            launches_by_tag[tag].append(launch_details)
-    logger.info('Finished grouping launches by tag')
-    return launches_by_tag
+#
+# def group_by_account(launches):
+#     logger.info('Grouping launches by account')
+#     launches_by_account = {}
+#     for launch_name, launch_details in launches.items():
+#         launch_details['launch_name'] = launch_name
+#         launch_accounts = launch_details.get('deploy_to').get('accounts', [])
+#         for account_detail in launch_accounts:
+#             if not isinstance(account_detail.get('account_id'), str):
+#                 account_detail['account_id'] = str(account_detail.get('account_id'))
+#             account_id = account_detail.get('account_id')
+#             if launches_by_account.get(account_id) is None:
+#                 launches_by_account[account_id] = []
+#             launches_by_account[account_id].append(launch_details)
+#     logger.info('Finished grouping launches by account')
+#     return launches_by_account
 
+#
+# def generate_launch_map(accounts, launches_by_account, launches_by_tag, section):
+#     logger.info('Generating launch map')
+#     deployment_map = {}
+#     for account in accounts:
+#         account_id = account.get('account_id')
+#         deployment_map[account_id] = account
+#         launches = account[section] = {}
+#         for launch in launches_by_account.get(account_id, []):
+#             launch['match'] = "account_match"
+#             launches[launch.get('launch_name')] = launch
+#         for tag in account.get('tags', []):
+#             for launch in launches_by_tag.get(tag, []):
+#                 launch['match'] = "tag_match"
+#                 launch['matching_tag'] = tag
+#                 launches[launch.get('launch_name')] = launch
+#     logger.info('Finished generating launch map')
+#     return deployment_map
 
-def group_by_account(launches):
-    logger.info('Grouping launches by account')
-    launches_by_account = {}
-    for launch_name, launch_details in launches.items():
-        launch_details['launch_name'] = launch_name
-        launch_accounts = launch_details.get('deploy_to').get('accounts', [])
-        for account_detail in launch_accounts:
-            if not isinstance(account_detail.get('account_id'), str):
-                account_detail['account_id'] = str(account_detail.get('account_id'))
-            account_id = account_detail.get('account_id')
-            if launches_by_account.get(account_id) is None:
-                launches_by_account[account_id] = []
-            launches_by_account[account_id].append(launch_details)
-    logger.info('Finished grouping launches by account')
-    return launches_by_account
-
-
-def generate_launch_map(accounts, launches_by_account, launches_by_tag, section):
-    logger.info('Generating launch map')
-    deployment_map = {}
-    for account in accounts:
-        account_id = account.get('account_id')
-        deployment_map[account_id] = account
-        launches = account[section] = {}
-        for launch in launches_by_account.get(account_id, []):
-            launch['match'] = "account_match"
-            launches[launch.get('launch_name')] = launch
-        for tag in account.get('tags', []):
-            for launch in launches_by_tag.get(tag, []):
-                launch['match'] = "tag_match"
-                launch['matching_tag'] = tag
-                launches[launch.get('launch_name')] = launch
-    logger.info('Finished generating launch map')
-    return deployment_map
-
-
-def build_deployment_map(manifest, section):
-    accounts = manifest.get('accounts')
-    for account_detail in accounts:
-        if not isinstance(account_detail.get('account_id'), str):
-            account_detail['account_id'] = str(account_detail.get('account_id'))
-    launches = manifest.get(section, {})
-
-    verify_no_ous_in_manifest(accounts)
-
-    launches_by_tag = group_by_tag(launches)
-    launches_by_account = group_by_account(launches)
-
-    return generate_launch_map(
-        accounts,
-        launches_by_account,
-        launches_by_tag,
-        section
-    )
-
-
-def verify_no_ous_in_manifest(accounts):
-    for account in accounts:
-        if account.get('account_id') is None:
-            raise Exception("{} account object does not have an account_id".format(account.get('name')))
-
+#
+# def build_deployment_map(manifest, section):
+#     accounts = manifest.get('accounts')
+#     for account_detail in accounts:
+#         if not isinstance(account_detail.get('account_id'), str):
+#             account_detail['account_id'] = str(account_detail.get('account_id'))
+#     launches = manifest.get(section, {})
+#
+#     verify_no_ous_in_manifest(accounts)
+#
+#     launches_by_tag = group_by_tag(launches)
+#     launches_by_account = group_by_account(launches)
+#
+#     return generate_launch_map(
+#         accounts,
+#         launches_by_account,
+#         launches_by_tag,
+#         section
+#     )
+#
+#
+# def verify_no_ous_in_manifest(accounts):
+#     for account in accounts:
+#         if account.get('account_id') is None:
+#             raise Exception("{} account object does not have an account_id".format(account.get('name')))
+#
 
 def expand_manifest(manifest, client):
     new_manifest = deepcopy(manifest)

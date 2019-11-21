@@ -38,8 +38,9 @@ def graph(f, single_account):
 
 @cli.command()
 @click.argument('f', type=click.File())
-def dry_run(f):
-    cli_commands.dry_run(f)
+@click.option('--single-account', default=None)
+def dry_run(f, single_account):
+    cli_commands.deploy(f, single_account, dry_run=True)
 
 
 @cli.command()
