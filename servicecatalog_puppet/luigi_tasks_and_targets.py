@@ -1262,7 +1262,7 @@ class ImportIntoSpokeLocalPortfolioTask(PuppetTask):
     portfolio = luigi.Parameter()
     pre_actions = luigi.ListParameter()
     hub_portfolio_id = luigi.Parameter()
-    post_actions = luigi.ListParameter()
+    post_actions = luigi.ListParameter(default=[])
 
     def requires(self):
         return CreateSpokeLocalPortfolioTask(
@@ -1482,7 +1482,7 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
 
     dependencies = luigi.ListParameter(default=[])
 
-    post_actions = luigi.ListParameter()
+    post_actions = luigi.ListParameter(default=[])
 
     should_use_sns = luigi.Parameter(default=False, significant=False)
 
