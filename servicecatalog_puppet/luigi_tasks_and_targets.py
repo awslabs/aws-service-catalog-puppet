@@ -756,8 +756,12 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                                 notes="Versions are the same but the params are different",
                             )
                 else:
+                    if provisioning_artifact_id:
+                        current_version = self.get_current_version(provisioning_artifact_id, service_catalog)
+                    else:
+                        current_version = ""
                     self.write_result(
-                        current_version=self.get_current_version(provisioning_artifact_id, service_catalog),
+                        current_version=current_version,
                         new_version=self.version,
                         effect=constants.CHANGE,
                         notes='Version change',
