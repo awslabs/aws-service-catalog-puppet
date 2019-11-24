@@ -993,6 +993,7 @@ class CreateSpokeLocalPortfolioTask(PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
+    organization = luigi.Parameter(significant=False)
     pre_actions = luigi.ListParameter(default=[])
 
     provider_name = luigi.Parameter(significant=False, default='not set')
@@ -1068,7 +1069,7 @@ class CreateAssociationsForPortfolioTask(PuppetTask):
                 account_id=self.account_id,
                 region=self.region,
                 portfolio=self.portfolio,
-                pre_actions = self.pre_actions,
+                pre_actions=self.pre_actions,
             ),
             'deps': [ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
@@ -1491,49 +1492,22 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
 
 class ResetProvisionedProductOwnerTask(PuppetTask):
     launch_name = luigi.Parameter()
-    portfolio = luigi.Parameter()
-    product = luigi.Parameter()
-    version = luigi.Parameter()
-
-    product_id = luigi.Parameter()
-    version_id = luigi.Parameter()
-
     account_id = luigi.Parameter()
     region = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
-
-    parameters = luigi.ListParameter(default=[])
-    ssm_param_inputs = luigi.ListParameter(default=[])
-    dependencies = luigi.ListParameter(default=[])
-
-    retry_count = luigi.IntParameter(default=1)
-
-    worker_timeout = luigi.IntParameter(default=0, significant=False)
-
-    ssm_param_outputs = luigi.ListParameter(default=[])
-
-    try_count = 1
 
     def params_for_results_display(self):
-        return {
-            "launch_name": self.launch_name,
-            "account_id": self.account_id,
-            "region": self.region,
-            "portfolio": self.portfolio,
-            "product": self.product,
-            "version": self.version,
-        }
+        return self.param_kwargs
 
     def output(self):
         return luigi.LocalTarget(
             f"output/ResetProvisionedProductOwnerTask/"
-            f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
+            f"{self.launch_name}-{self.account_id}-{self.region}.json"
         )
 
     def run(self):
         logger_prefix = f"[{self.launch_name}] {self.account_id}:{self.region}"
         logger.info(
-            f"{logger_prefix} :: starting ResetProvisionedProductOwnerTask of {self.retry_count}"
+            f"{logger_prefix} :: starting ResetProvisionedProductOwnerTask"
         )
 
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
@@ -1729,16 +1703,15 @@ class CreateAssociationsInPythonForPortfolioTask(PuppetTask):
 
 class CreateShareForAccountLaunchRegion(PuppetTask):
     """for the given account_id and launch and region create the shares"""
-    account_id = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
-    deployment_map_for_account = luigi.DictParameter()
-    launch_name = luigi.Parameter()
-    launch_details = luigi.DictParameter()
+    account_id = luigi.Parameter()
     region = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    organization = luigi.Parameter()
 
     @property
     def uid(self):
-        return f"{self.__class__.__name__}/{self.account_id}--{self.launch_name}--{self.region}"
+        return f"{self.__class__.__name__}/{self.account_id}--{self.portfolio}--{self.region}"
 
     def output(self):
         return luigi.LocalTarget(
@@ -1746,35 +1719,34 @@ class CreateShareForAccountLaunchRegion(PuppetTask):
         )
 
     def requires(self):
-        logging.info(f"{self.uid}: expanded_from = {self.deployment_map_for_account.get('expanded_from')}")
+        logging.info(f"{self.uid}: expanded_from = {self.organization}")
         deps = {
             'topic': RequestPolicyTask(
                 type="topic",
                 region=self.region,
-                organization=self.deployment_map_for_account.get('organization'),
+                organization=self.organization,
                 account_id=self.account_id,
             ),
             'bucket': RequestPolicyTask(
                 type="bucket",
                 region=self.region,
-                organization=self.deployment_map_for_account.get('organization'),
+                organization=self.organization,
                 account_id=self.account_id,
             ),
         }
-        portfolio = self.launch_details.get('portfolio')
 
         if self.account_id == self.puppet_account_id:
             # create an association
             deps['share'] = CreateAssociationsInPythonForPortfolioTask(
                 self.account_id,
                 self.region,
-                portfolio,
+                self.portfolio,
             )
         else:
             deps['share'] = ShareAndAcceptPortfolioTask(
                 self.account_id,
                 self.region,
-                portfolio,
+                self.portfolio,
                 self.puppet_account_id,
             )
         return deps
@@ -1831,7 +1803,7 @@ class CreateShareForAccountLaunch(PuppetTask):
                 self.puppet_account_id,
                 self.deployment_map_for_account,
                 self.launch_name,
-                self.launch_details,
+                self.launch_details.get('portfolio'),
                 region,
             )
 

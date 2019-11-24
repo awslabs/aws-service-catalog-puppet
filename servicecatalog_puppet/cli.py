@@ -86,7 +86,7 @@ def seed(complexity, p):
 
 @cli.command()
 @click.argument('expanded_manifest', type=click.File())
-@click.option('--format','-f', type=click.Choice(['table', 'json']),default='table')
+@click.option('--format', '-f', type=click.Choice(['table', 'json']), default='table')
 def list_launches(expanded_manifest, format):
     cli_commands.list_launches(expanded_manifest, format)
 
@@ -126,11 +126,6 @@ def set_org_iam_role_arn(org_iam_role_arn):
 @click.argument('puppet_account_id')
 def bootstrap_org_master(puppet_account_id):
     cli_commands.bootstrap_org_master(puppet_account_id)
-
-
-@cli.command()
-def quick_start():
-    cli_commands.quick_start()
 
 
 @cli.command()
