@@ -7,8 +7,6 @@ import yaml
 from pytest import fixture
 import json
 
-from servicecatalog_puppet import constants, luigi_tasks_and_targets
-
 
 @fixture
 def sut():
@@ -124,9 +122,9 @@ def test_convert_manifest_into_task_defs_handles_for_unsupported_string(sut, sha
 
     # exercise
     with pytest.raises(Exception) as e:
-        actual_result = sut.convert_manifest_into_task_defs_for_launches(
+        sut.convert_manifest_into_task_defs_for_launches(
             manifest, puppet_account_id, should_use_sns, should_use_product_plans
-    )
+        )
 
     # verify
     assert str(e.exconly()) == "Exception: Unsupported regions foo setting for launch: assumable-role-account"

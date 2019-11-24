@@ -3,7 +3,6 @@
 
 from pytest import fixture
 import json
-from servicecatalog_puppet import constants
 
 
 @fixture

@@ -1,9 +1,6 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-from unittest.mock import call
-
 from pytest import fixture
-import os
 
 
 @fixture

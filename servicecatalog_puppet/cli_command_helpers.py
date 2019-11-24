@@ -246,7 +246,7 @@ def _do_bootstrap_org_master(puppet_account_id, cloudformation, puppet_version):
                 'UsePreviousValue': False,
             },
         ],
-        'Tags':[
+        'Tags': [
             {
                 "Key": "ServiceCatalogPuppet:Actor",
                 "Value": "Framework",
@@ -286,7 +286,7 @@ def _do_bootstrap_spoke(puppet_account_id, cloudformation, puppet_version):
                 'UsePreviousValue': False,
             },
         ],
-        'Tags':[
+        'Tags': [
             {
                 "Key": "ServiceCatalogPuppet:Actor",
                 "Value": "Framework",
@@ -426,7 +426,7 @@ def run_tasks(tasks_to_run, num_workers, dry_run=False):
     click.echo("Results")
     if dry_run:
         table_data = [
-            ['Result','Launch', 'Account', 'Region', 'Current Version', 'New Version', 'Notes'],
+            ['Result', 'Launch', 'Account', 'Region', 'Current Version', 'New Version', 'Notes'],
 
         ]
         table = terminaltables.AsciiTable(table_data)
@@ -455,7 +455,7 @@ def run_tasks(tasks_to_run, num_workers, dry_run=False):
         click.echo(table.table)
     else:
         table_data = [
-            ['Action','Params', 'Duration'],
+            ['Action', 'Params', 'Duration'],
 
         ]
         table = terminaltables.AsciiTable(table_data)
@@ -546,15 +546,15 @@ def run_tasks_for_generate_shares(tasks_to_run):
             cloudformation.ensure_deleted(StackName="servicecatalog-puppet-shares")
 
             logger.info(f"generating policies collection for region {region}")
-            if os.path.exists(os.path.sep.join(['data','bucket'])):
+            if os.path.exists(os.path.sep.join(['data', 'bucket'])):
                 logger.info(f"Updating policies for the region: {region}")
-                path = os.path.sep.join(['data','bucket', region, 'accounts'])
+                path = os.path.sep.join(['data', 'bucket', region, 'accounts'])
                 if os.path.exists(path):
                     for account_file in os.listdir(path):
                         account = account_file.split(".")[0]
                         sharing_policies['accounts'].append(account)
 
-                path = os.path.sep.join(['data','bucket', region, 'organizations'])
+                path = os.path.sep.join(['data', 'bucket', region, 'organizations'])
                 if os.path.exists(path):
                     for organization_file in os.listdir(path):
                         organization = organization_file.split(".")[0]
