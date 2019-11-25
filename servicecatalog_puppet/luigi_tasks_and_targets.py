@@ -6,6 +6,7 @@ from pathlib import Path
 
 from betterboto import client as betterboto_client
 
+from . import config
 from . import aws, cli_command_helpers, constants, sdk
 
 import luigi
@@ -335,7 +336,7 @@ class ProvisionActionTask(PuppetTask):
                 ssm_params[param_name] = GetSSMParamTask(
                     parameter_name=param_name,
                     name=param_details.get('ssm').get('name'),
-                    region=param_details.get('ssm').get('region', cli_command_helpers.get_home_region())
+                    region=param_details.get('ssm').get('region', config.get_home_region())
                 )
         return {
             'ssm_params': ssm_params,
@@ -425,7 +426,7 @@ class ProvisionProductTask(PuppetTask):
                 ssm_params[param_name] = GetSSMParamTask(
                     parameter_name=param_name,
                     name=param_details.get('ssm').get('name'),
-                    region=param_details.get('ssm').get('region', cli_command_helpers.get_home_region())
+                    region=param_details.get('ssm').get('region', config.get_home_region())
                 )
         self.all_params = all_params
 
@@ -1114,7 +1115,7 @@ class CreateAssociationsForPortfolioTask(PuppetTask):
         with betterboto_client.CrossAccountClientContextManager(
                 'cloudformation', role, f'cfn-{self.account_id}-{self.region}', region_name=self.region
         ) as cloudformation:
-            template = cli_command_helpers.env.get_template('associations.template.yaml.j2').render(
+            template = config.env.get_template('associations.template.yaml.j2').render(
                 portfolio={
                     'DisplayName': self.portfolio,
                     'Associations': self.associations
@@ -1439,7 +1440,7 @@ class CreateLaunchRoleConstraintsForPortfolio(PuppetTask):
 
                 new_launch_constraints.append(new_launch_constraint)
 
-            template = cli_command_helpers.env.get_template('launch_role_constraints.template.yaml.j2').render(
+            template = config.env.get_template('launch_role_constraints.template.yaml.j2').render(
                 portfolio={
                     'DisplayName': self.portfolio,
                 },

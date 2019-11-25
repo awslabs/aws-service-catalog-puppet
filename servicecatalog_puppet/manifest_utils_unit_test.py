@@ -89,7 +89,7 @@ def test_convert_manifest_into_task_defs_handles_default_region_for_all(sut, moc
     expected_result = yaml.safe_load(
         (shared_datadir / 'manifest_utils' / dir / f"{manifest_file}_expected.yaml").read_text()
     )
-    mocked_get_regions = mocker.patch.object(sut.cli_command_helpers, 'get_regions')
+    mocked_get_regions = mocker.patch.object(sut.config, 'get_regions')
     mocked_get_regions.return_value = [
         'eu-west-3',
     ]
@@ -144,7 +144,7 @@ def test_convert_manifest_into_task_defs_handles_transient_dependencies(sut, sha
     puppet_account_id = 9
     should_use_sns = True
     should_use_product_plans = True
-    mocked_get_regions = mocker.patch.object(sut.cli_command_helpers, 'get_regions')
+    mocked_get_regions = mocker.patch.object(sut.config, 'get_regions')
     mocked_get_regions.return_value = [
         'eu-west-3',
     ]

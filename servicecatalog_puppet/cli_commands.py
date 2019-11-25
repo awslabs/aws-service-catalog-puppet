@@ -21,6 +21,7 @@ from jinja2 import Template
 from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
+from . import config
 from . import cli_command_helpers
 from . import luigi_tasks_and_targets
 from . import manifest_utils
@@ -49,7 +50,7 @@ def cli(info, info_line_numbers):
 def generate_shares(f):
     logger.info('Starting to generate shares for: {}'.format(f.name))
     tasks_to_run = []
-    puppet_account_id = cli_command_helpers.get_puppet_account_id()
+    puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
 
     accounts = {}
@@ -95,7 +96,7 @@ def generate_shares(f):
 
 
 def reset_provisioned_product_owner(f):
-    puppet_account_id = cli_command_helpers.get_puppet_account_id()
+    puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
 
     task_defs = manifest_utils.convert_manifest_into_task_defs_for_launches(
@@ -118,12 +119,12 @@ def reset_provisioned_product_owner(f):
 
 
 def generate_tasks(f, single_account=None, dry_run=False):
-    puppet_account_id = cli_command_helpers.get_puppet_account_id()
+    puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
     tasks_to_run = []
 
-    should_use_sns = cli_command_helpers.get_should_use_sns(os.environ.get("AWS_DEFAULT_REGION"))
-    should_use_product_plans = cli_command_helpers.get_should_use_product_plans(os.environ.get("AWS_DEFAULT_REGION"))
+    should_use_sns = config.get_should_use_sns(os.environ.get("AWS_DEFAULT_REGION"))
+    should_use_product_plans = config.get_should_use_product_plans(os.environ.get("AWS_DEFAULT_REGION"))
 
     task_defs = manifest_utils.convert_manifest_into_task_defs_for_launches(
         manifest, puppet_account_id, should_use_sns, should_use_product_plans
@@ -221,13 +222,13 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
             cross_accounts
     ) as cloudformation:
         cli_command_helpers._do_bootstrap_spoke(puppet_account_id, cloudformation,
-                                                cli_command_helpers.get_puppet_version())
+                                                config.get_puppet_version())
 
 
 def bootstrap_spoke(puppet_account_id):
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
         cli_command_helpers._do_bootstrap_spoke(puppet_account_id, cloudformation,
-                                                cli_command_helpers.get_puppet_version())
+                                                config.get_puppet_version())
 
 
 def bootstrap_branch(branch_name, with_manual_approvals):
@@ -239,7 +240,7 @@ def bootstrap_branch(branch_name, with_manual_approvals):
 
 def bootstrap(with_manual_approvals):
     cli_command_helpers._do_bootstrap(
-        cli_command_helpers.get_puppet_version(),
+        config.get_puppet_version(),
         with_manual_approvals,
     )
 
@@ -258,7 +259,7 @@ def list_launches(f, format):
     manifest = manifest_utils.load(f)
     if format == "table":
         click.echo("Getting details from your account...")
-    all_regions = cli_command_helpers.get_regions(os.environ.get("AWS_DEFAULT_REGION"))
+    all_regions = config.get_regions(os.environ.get("AWS_DEFAULT_REGION"))
     account_ids = [a.get('account_id') for a in manifest.get('accounts')]
     deployments = {}
     for account_id in account_ids:
@@ -391,7 +392,7 @@ def list_launches(f, format):
 def expand(f):
     click.echo('Expanding')
     manifest = manifest_utils.load(f)
-    org_iam_role_arn = cli_command_helpers.get_org_iam_role_arn()
+    org_iam_role_arn = config.get_org_iam_role_arn()
     if org_iam_role_arn is None:
         click.echo('No org role set - not expanding')
         new_manifest = manifest
@@ -467,7 +468,7 @@ def bootstrap_org_master(puppet_account_id):
             'cloudformation',
     ) as cloudformation:
         org_iam_role_arn = cli_command_helpers._do_bootstrap_org_master(
-            puppet_account_id, cloudformation, cli_command_helpers.get_puppet_version()
+            puppet_account_id, cloudformation, config.get_puppet_version()
         )
     click.echo("Bootstrapped org master, org-iam-role-arn: {}".format(org_iam_role_arn))
 
@@ -618,8 +619,8 @@ def set_config_value(name, value):
 
 
 def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns):
-    org_iam_role_arn = cli_command_helpers.get_org_iam_role_arn()
-    puppet_account_id = cli_command_helpers.get_puppet_account_id()
+    org_iam_role_arn = config.get_org_iam_role_arn()
+    puppet_account_id = config.get_puppet_account_id()
     if org_iam_role_arn is None:
         click.echo('No org role set - not expanding')
     else:
@@ -655,14 +656,14 @@ def handle_action_execution_detail(action_execution_detail):
 
         with betterboto_client.ClientContextManager(
                 "codebuild",
-                region_name=cli_command_helpers.get_home_region()
+                region_name=config.get_home_region()
         ) as codebuild:
             builds = codebuild.batch_get_builds(ids=[external_execution_id]).get('builds')
             build = builds[0]
             log_details = build.get('logs')
             with betterboto_client.ClientContextManager(
                     "logs",
-                    region_name=cli_command_helpers.get_home_region()
+                    region_name=config.get_home_region()
             ) as logs:
                 with open(
                         f"log-{action_execution_detail.get('input').get('configuration').get('ProjectName')}.log", 'w'
@@ -691,7 +692,7 @@ def handle_action_execution_detail(action_execution_detail):
 def export_puppet_pipeline_logs(execution_id):
     with betterboto_client.ClientContextManager(
             "codepipeline",
-            region_name=cli_command_helpers.get_home_region()
+            region_name=config.get_home_region()
     ) as codepipeline:
         action_execution_details = codepipeline.list_action_executions(
             pipelineName=constants.PIPELINE_NAME,

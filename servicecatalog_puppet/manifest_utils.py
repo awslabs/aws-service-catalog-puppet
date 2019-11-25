@@ -3,8 +3,9 @@ import logging
 import json
 from copy import deepcopy
 
+from . import config
 from .macros import macros
-from . import constants, cli_command_helpers, luigi_tasks_and_targets, aws
+from . import constants, luigi_tasks_and_targets, aws
 
 logger = logging.getLogger(__file__)
 
@@ -204,7 +205,7 @@ def convert_manifest_into_task_defs_for_launches(
                                 region_tag_account_def['region'] = account.get('default_region')
                                 task_defs.append(region_tag_account_def)
                             elif regions == "all":
-                                all_regions = cli_command_helpers.get_regions()
+                                all_regions = config.get_regions()
                                 for region_enabled in all_regions:
                                     region_tag_account_def = deepcopy(tag_account_def)
                                     region_tag_account_def['region'] = region_enabled
@@ -240,7 +241,7 @@ def convert_manifest_into_task_defs_for_launches(
                             region_account_account_def['region'] = account.get('default_region')
                             task_defs.append(region_account_account_def)
                         elif regions in ["all"]:
-                            all_regions = cli_command_helpers.get_regions()
+                            all_regions = config.get_regions()
                             for region_enabled in all_regions:
                                 region_account_account_def = deepcopy(account_account_def)
                                 region_account_account_def['region'] = region_enabled
@@ -418,7 +419,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                                     **region_tag_account_def
                                 )
                             elif regions == "all":
-                                all_regions = cli_command_helpers.get_regions()
+                                all_regions = config.get_regions()
                                 for region_enabled in all_regions:
                                     region_tag_account_def = deepcopy(tag_account_def)
                                     region_tag_account_def['region'] = region_enabled
@@ -461,7 +462,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                                 **region_account_account_def
                             )
                         elif regions == "all":
-                            all_regions = cli_command_helpers.get_regions()
+                            all_regions = config.get_regions()
                             for region_enabled in all_regions:
                                 region_account_account_def = deepcopy(account_account_def)
                                 region_account_account_def['region'] = region_enabled
