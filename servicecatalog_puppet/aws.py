@@ -5,7 +5,7 @@ import os
 import click
 import yaml
 
-from . import constants
+import constants
 from betterboto import client as betterboto_client
 
 logger = logging.getLogger(__file__)

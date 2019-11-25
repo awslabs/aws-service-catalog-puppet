@@ -1,5 +1,5 @@
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+import json
+import os
 import sys
 import time
 from glob import glob
@@ -8,189 +8,17 @@ from pathlib import Path
 import click
 import colorclass
 import luigi
-
-import json
-
 import terminaltables
-from jinja2 import Template
+import yaml
+from betterboto import client as betterboto_client
 from luigi import LuigiStatusCode
 
-from . import config
-from . import asset_helpers
-from . import constants
+import config, constants
+
 import logging
-
-import os
-from threading import Thread
-
-import yaml
-
-from betterboto import client as betterboto_client
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-
-def _do_bootstrap_org_master(puppet_account_id, cloudformation, puppet_version):
-    logger.info('Starting bootstrap of org master')
-    stack_name = f"{constants.BOOTSTRAP_STACK_NAME}-org-master-{puppet_account_id}"
-    template = asset_helpers.read_from_site_packages(f'{constants.BOOTSTRAP_STACK_NAME}-org-master.template.yaml')
-    template = Template(template).render(VERSION=puppet_version, puppet_account_id=puppet_account_id)
-    args = {
-        'StackName': stack_name,
-        'TemplateBody': template,
-        'Capabilities': ['CAPABILITY_NAMED_IAM'],
-        'Parameters': [
-            {
-                'ParameterKey': 'PuppetAccountId',
-                'ParameterValue': str(puppet_account_id),
-            }, {
-                'ParameterKey': 'Version',
-                'ParameterValue': puppet_version,
-                'UsePreviousValue': False,
-            },
-        ],
-        'Tags': [
-            {
-                "Key": "ServiceCatalogPuppet:Actor",
-                "Value": "Framework",
-            }
-        ]
-    }
-    cloudformation.create_or_update(**args)
-    response = cloudformation.describe_stacks(StackName=stack_name)
-    if len(response.get('Stacks')) != 1:
-        raise Exception("Expected there to be only one {} stack".format(stack_name))
-    stack = response.get('Stacks')[0]
-
-    for output in stack.get('Outputs'):
-        if output.get('OutputKey') == constants.PUPPET_ORG_ROLE_FOR_EXPANDS_ARN:
-            logger.info('Finished bootstrap of org-master')
-            return output.get("OutputValue")
-
-    raise Exception(
-        "Could not find output: {} in stack: {}".format(constants.PUPPET_ORG_ROLE_FOR_EXPANDS_ARN, stack_name))
-
-
-def _do_bootstrap_spoke(puppet_account_id, cloudformation, puppet_version):
-    logger.info('Starting bootstrap of spoke')
-    template = asset_helpers.read_from_site_packages('{}-spoke.template.yaml'.format(constants.BOOTSTRAP_STACK_NAME))
-    template = Template(template).render(VERSION=puppet_version)
-    args = {
-        'StackName': "{}-spoke".format(constants.BOOTSTRAP_STACK_NAME),
-        'TemplateBody': template,
-        'Capabilities': ['CAPABILITY_NAMED_IAM'],
-        'Parameters': [
-            {
-                'ParameterKey': 'PuppetAccountId',
-                'ParameterValue': str(puppet_account_id),
-            }, {
-                'ParameterKey': 'Version',
-                'ParameterValue': puppet_version,
-                'UsePreviousValue': False,
-            },
-        ],
-        'Tags': [
-            {
-                "Key": "ServiceCatalogPuppet:Actor",
-                "Value": "Framework",
-            }
-        ]
-    }
-    cloudformation.create_or_update(**args)
-    logger.info('Finished bootstrap of spoke')
-
-
-def _do_bootstrap(puppet_version, with_manual_approvals):
-    click.echo('Starting bootstrap')
-
-    should_use_eventbridge = config.get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION"))
-    if should_use_eventbridge:
-        with betterboto_client.ClientContextManager('events') as events:
-            try:
-                events.describe_event_bus(Name=constants.EVENT_BUS_NAME)
-            except events.exceptions.ResourceNotFoundException:
-                events.create_event_bus(
-                    Name=constants.EVENT_BUS_NAME,
-                )
-
-    ALL_REGIONS = config.get_regions(os.environ.get("AWS_DEFAULT_REGION"))
-    with betterboto_client.MultiRegionClientContextManager('cloudformation', ALL_REGIONS) as clients:
-        click.echo('Creating {}-regional'.format(constants.BOOTSTRAP_STACK_NAME))
-        threads = []
-        template = asset_helpers.read_from_site_packages(
-            '{}.template.yaml'.format('{}-regional'.format(constants.BOOTSTRAP_STACK_NAME)))
-        template = Template(template).render(VERSION=puppet_version)
-        args = {
-            'StackName': '{}-regional'.format(constants.BOOTSTRAP_STACK_NAME),
-            'TemplateBody': template,
-            'Capabilities': ['CAPABILITY_IAM'],
-            'Parameters': [
-                {
-                    'ParameterKey': 'Version',
-                    'ParameterValue': puppet_version,
-                    'UsePreviousValue': False,
-                },
-                {
-                    'ParameterKey': 'DefaultRegionValue',
-                    'ParameterValue': os.environ.get('AWS_DEFAULT_REGION'),
-                    'UsePreviousValue': False,
-                },
-            ],
-            'Tags': [
-                {
-                    "Key": "ServiceCatalogPuppet:Actor",
-                    "Value": "Framework",
-                }
-            ]
-        }
-        for client_region, client in clients.items():
-            process = Thread(name=client_region, target=client.create_or_update, kwargs=args)
-            process.start()
-            threads.append(process)
-        for process in threads:
-            process.join()
-        click.echo('Finished creating {}-regional'.format(constants.BOOTSTRAP_STACK_NAME))
-
-    with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
-        click.echo('Creating {}'.format(constants.BOOTSTRAP_STACK_NAME))
-        template = asset_helpers.read_from_site_packages('{}.template.yaml'.format(constants.BOOTSTRAP_STACK_NAME))
-        template = Template(template).render(VERSION=puppet_version, ALL_REGIONS=ALL_REGIONS)
-        args = {
-            'StackName': constants.BOOTSTRAP_STACK_NAME,
-            'TemplateBody': template,
-            'Capabilities': ['CAPABILITY_NAMED_IAM'],
-            'Parameters': [
-                {
-                    'ParameterKey': 'Version',
-                    'ParameterValue': puppet_version,
-                    'UsePreviousValue': False,
-                },
-                {
-                    'ParameterKey': 'OrgIamRoleArn',
-                    'ParameterValue': str(config.get_org_iam_role_arn()),
-                    'UsePreviousValue': False,
-                },
-                {
-                    'ParameterKey': 'WithManualApprovals',
-                    'ParameterValue': "Yes" if with_manual_approvals else "No",
-                    'UsePreviousValue': False,
-                },
-            ],
-        }
-        cloudformation.create_or_update(**args)
-
-    click.echo('Finished creating {}.'.format(constants.BOOTSTRAP_STACK_NAME))
-    with betterboto_client.ClientContextManager('codecommit') as codecommit:
-        response = codecommit.get_repository(repositoryName=constants.SERVICE_CATALOG_PUPPET_REPO_NAME)
-        clone_url = response.get('repositoryMetadata').get('cloneUrlHttp')
-        clone_command = "git clone --config 'credential.helper=!aws codecommit credential-helper $@' " \
-                        "--config 'credential.UseHttpPath=true' {}".format(clone_url)
-        click.echo(
-            'You need to clone your newly created repo now and will then need to seed it: \n{}'.format(
-                clone_command
-            )
-        )
 
 
 def run_tasks(tasks_to_run, num_workers, dry_run=False):

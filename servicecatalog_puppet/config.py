@@ -5,8 +5,8 @@ import yaml
 from betterboto import client as betterboto_client
 from jinja2 import Environment, FileSystemLoader
 
-from . import asset_helpers
-from . import constants
+import asset_helpers
+import constants
 
 import logging
 
@@ -64,12 +64,7 @@ def get_home_region():
 
 def get_org_iam_role_arn():
     with betterboto_client.ClientContextManager('ssm', region_name=get_home_region()) as ssm:
-        try:
-            response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN)
-            return yaml.safe_load(response.get('Parameter').get('Value'))
-        except ssm.exceptions.ParameterNotFound as e:
-            logger.info("No parameter set for: {}".format(constants.CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN))
-            return None
+        pass
 
 
 template_dir = asset_helpers.resolve_from_site_packages('templates')
