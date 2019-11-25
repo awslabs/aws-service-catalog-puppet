@@ -84,8 +84,8 @@ def generate_shares(f):
                     account_id=param_kwargs.get('account_id'),
                     region=param_kwargs.get('region'),
                     portfolio=param_kwargs.get('portfolio'),
-                    expanded_from=task.get('expanded_from'),
-                    organization=task.get('organization'),
+                    expanded_from=param_kwargs.get('expanded_from'),
+                    organization=param_kwargs.get('organization'),
                 )
             )
 
