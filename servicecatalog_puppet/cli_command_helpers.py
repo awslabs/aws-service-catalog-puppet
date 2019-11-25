@@ -1,7 +1,5 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-import copy
-import functools
 import sys
 import time
 from glob import glob
@@ -11,13 +9,13 @@ import click
 import colorclass
 import luigi
 
-import pkg_resources
 import json
 
 import terminaltables
 from jinja2 import Template
 from luigi import LuigiStatusCode
 
+from . import config
 from . import asset_helpers
 from . import constants
 import logging
@@ -28,203 +26,9 @@ from threading import Thread
 import yaml
 
 from betterboto import client as betterboto_client
-from jinja2 import Environment, FileSystemLoader
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-
-@functools.lru_cache(maxsize=32)
-def get_config(default_region=None):
-    logger.info("getting config,  default_region: {}".format(default_region))
-    with betterboto_client.ClientContextManager(
-            'ssm',
-            region_name=default_region if default_region else get_home_region()
-    ) as ssm:
-        response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME)
-        return yaml.safe_load(response.get('Parameter').get('Value'))
-
-
-@functools.lru_cache(maxsize=32)
-def get_regions(default_region=None):
-    logger.info("getting regions,  default_region: {}".format(default_region))
-    return get_config(default_region).get('regions')
-
-
-@functools.lru_cache(maxsize=32)
-def get_should_use_sns(default_region=None):
-    logger.info("getting should_use_sns,  default_region: {}".format(default_region))
-    return get_config(default_region).get('should_collect_cloudformation_events', True)
-
-
-@functools.lru_cache(maxsize=32)
-def get_should_use_eventbridge(default_region=None):
-    logger.info("getting should_use_eventbridge,  default_region: {}".format(default_region))
-    return get_config(default_region).get('should_forward_events_to_eventbridge', False)
-
-
-@functools.lru_cache(maxsize=32)
-def get_should_forward_failures_to_opscenter(default_region=None):
-    logger.info("getting should_forward_failures_to_opscenter,  default_region: {}".format(default_region))
-    return get_config(default_region).get('should_forward_failures_to_opscenter', False)
-
-
-@functools.lru_cache(maxsize=32)
-def get_should_use_product_plans(default_region=None):
-    logger.info("getting should_use_product_plans,  default_region: {}".format(default_region))
-    return get_config(default_region).get('should_use_product_plans', True)
-
-
-@functools.lru_cache()
-def get_home_region():
-    with betterboto_client.ClientContextManager('ssm') as ssm:
-        response = ssm.get_parameter(Name=constants.HOME_REGION_PARAM_NAME)
-        return response.get('Parameter').get('Value')
-
-
-def get_org_iam_role_arn():
-    with betterboto_client.ClientContextManager('ssm', region_name=get_home_region()) as ssm:
-        try:
-            response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN)
-            return yaml.safe_load(response.get('Parameter').get('Value'))
-        except ssm.exceptions.ParameterNotFound as e:
-            logger.info("No parameter set for: {}".format(constants.CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN))
-            return None
-
-
-def generate_bucket_policies_for_shares(deployment_map, puppet_account_id):
-    shares = {
-        'accounts': [],
-        'organizations': [],
-    }
-    for account_id, deployment in deployment_map.items():
-        if account_id == puppet_account_id:
-            continue
-        if deployment.get('expanded_from') is None:
-            if account_id not in shares['accounts']:
-                shares['accounts'].append(account_id)
-        else:
-            if deployment.get('organization') not in shares['organizations']:
-                shares['organizations'].append(deployment.get('organization'))
-    return shares
-
-
-def write_share_template(portfolio_use_by_account, region, host_account_id, sharing_policies):
-    output = os.path.sep.join([constants.TEMPLATES, 'shares', region])
-    if not os.path.exists(output):
-        os.makedirs(output)
-
-    with open(os.sep.join([output, "shares.template.yaml"]), 'w') as f:
-        f.write(
-            env.get_template('shares.template.yaml.j2').render(
-                portfolio_use_by_account=portfolio_use_by_account,
-                host_account_id=host_account_id,
-                HOME_REGION=get_home_region(),
-                sharing_policies=sharing_policies,
-            )
-        )
-
-
-template_dir = asset_helpers.resolve_from_site_packages('templates')
-env = Environment(
-    loader=FileSystemLoader(template_dir),
-    extensions=['jinja2.ext.do'],
-)
-
-
-@functools.lru_cache(maxsize=32)
-def get_puppet_account_id():
-    with betterboto_client.ClientContextManager('sts') as sts:
-        return sts.get_caller_identity().get('Account')
-
-
-def get_parameters_for_launch(required_parameters, deployment_map, manifest, launch_details, account_id, status):
-    regular_parameters = []
-    ssm_parameters = []
-
-    for required_parameter_name in required_parameters.keys():
-        account_ssm_param = deployment_map.get(account_id).get('parameters', {}).get(required_parameter_name, {}).get(
-            'ssm')
-        account_regular_param = deployment_map.get(account_id).get('parameters', {}).get(required_parameter_name,
-                                                                                         {}).get('default')
-
-        launch_params = launch_details.get('parameters', {})
-        launch_ssm_param = launch_params.get(required_parameter_name, {}).get('ssm')
-        launch_regular_param = launch_params.get(required_parameter_name, {}).get('default')
-
-        manifest_params = manifest.get('parameters', {})
-        manifest_ssm_param = manifest_params.get(required_parameter_name, {}).get('ssm')
-        manifest_regular_param = manifest_params.get(required_parameter_name, {}).get('default')
-
-        if status == constants.PROVISIONED and account_ssm_param:
-            ssm_parameters.append(
-                get_ssm_config_for_parameter(account_ssm_param, required_parameter_name)
-            )
-        elif status == constants.PROVISIONED and account_regular_param:
-            regular_parameters.append({
-                'name': required_parameter_name,
-                'value': str(account_regular_param),
-            })
-
-        elif launch_ssm_param:
-            ssm_parameters.append(
-                get_ssm_config_for_parameter(launch_ssm_param, required_parameter_name)
-            )
-        elif launch_regular_param:
-            regular_parameters.append({
-                'name': required_parameter_name,
-                'value': launch_regular_param,
-            })
-
-        elif status == constants.PROVISIONED and manifest_ssm_param:
-            ssm_parameters.append(
-                get_ssm_config_for_parameter(manifest_ssm_param, required_parameter_name)
-            )
-        elif status == constants.PROVISIONED and manifest_regular_param:
-            regular_parameters.append({
-                'name': required_parameter_name,
-                'value': manifest_regular_param,
-            })
-
-    return regular_parameters, ssm_parameters
-
-
-def get_ssm_config_for_parameter(account_ssm_param, required_parameter_name):
-    if account_ssm_param.get('region') is not None:
-        return {
-            'name': account_ssm_param.get('name'),
-            'region': account_ssm_param.get('region'),
-            'parameter_name': required_parameter_name,
-        }
-    else:
-        return {
-            'name': account_ssm_param.get('name'),
-            'parameter_name': required_parameter_name,
-        }
-
-
-def wire_dependencies(all_tasks):
-    tasks_to_run = []
-    for task_uid, task in all_tasks.items():
-        for dependency in task.get('depends_on', []):
-            for task_uid_2, task_2 in all_tasks.items():
-                if task_2.get('launch_name') == dependency:
-                    new_task = copy.deepcopy(task_2)
-                    if new_task.get('depends_on') is not None:
-                        del new_task['depends_on']
-                    task.get('dependencies').append(new_task)
-        del task['depends_on']
-        tasks_to_run.append(task)
-
-        for task_to_run in tasks_to_run:
-            for dependency in task_to_run.get('dependencies', []):
-                dependency['dependencies'] = []
-
-    return tasks_to_run
-
-
-def get_puppet_version():
-    return pkg_resources.require("aws-service-catalog-puppet")[0].version
 
 
 def _do_bootstrap_org_master(puppet_account_id, cloudformation, puppet_version):
@@ -300,7 +104,7 @@ def _do_bootstrap_spoke(puppet_account_id, cloudformation, puppet_version):
 def _do_bootstrap(puppet_version, with_manual_approvals):
     click.echo('Starting bootstrap')
 
-    should_use_eventbridge = get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION"))
+    should_use_eventbridge = config.get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION"))
     if should_use_eventbridge:
         with betterboto_client.ClientContextManager('events') as events:
             try:
@@ -310,7 +114,7 @@ def _do_bootstrap(puppet_version, with_manual_approvals):
                     Name=constants.EVENT_BUS_NAME,
                 )
 
-    ALL_REGIONS = get_regions(os.environ.get("AWS_DEFAULT_REGION"))
+    ALL_REGIONS = config.get_regions(os.environ.get("AWS_DEFAULT_REGION"))
     with betterboto_client.MultiRegionClientContextManager('cloudformation', ALL_REGIONS) as clients:
         click.echo('Creating {}-regional'.format(constants.BOOTSTRAP_STACK_NAME))
         threads = []
@@ -364,7 +168,7 @@ def _do_bootstrap(puppet_version, with_manual_approvals):
                 },
                 {
                     'ParameterKey': 'OrgIamRoleArn',
-                    'ParameterValue': str(get_org_iam_role_arn()),
+                    'ParameterValue': str(config.get_org_iam_role_arn()),
                     'UsePreviousValue': False,
                 },
                 {
@@ -390,8 +194,8 @@ def _do_bootstrap(puppet_version, with_manual_approvals):
 
 
 def run_tasks(tasks_to_run, num_workers, dry_run=False):
-    should_use_eventbridge = get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION")) and not dry_run
-    should_forward_failures_to_opscenter = get_should_forward_failures_to_opscenter(os.environ.get("AWS_DEFAULT_REGION")) and not dry_run
+    should_use_eventbridge = config.get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION")) and not dry_run
+    should_forward_failures_to_opscenter = config.get_should_forward_failures_to_opscenter(os.environ.get("AWS_DEFAULT_REGION")) and not dry_run
 
     ssm_client = None
     if should_forward_failures_to_opscenter:
@@ -533,11 +337,11 @@ def run_tasks_for_generate_shares(tasks_to_run):
         log_level='INFO',
     )
 
-    should_use_sns = get_should_use_sns()
-    puppet_account_id = get_puppet_account_id()
-    version = get_puppet_version()
+    should_use_sns = config.get_should_use_sns()
+    puppet_account_id = config.get_puppet_account_id()
+    version = config.get_puppet_version()
 
-    for region in get_regions():
+    for region in config.get_regions():
         sharing_policies = {
             'accounts': [],
             'organizations': [],
@@ -562,7 +366,7 @@ def run_tasks_for_generate_shares(tasks_to_run):
 
             logger.info(f"Finished generating policies collection")
 
-            template = env.get_template('policies.template.yaml.j2').render(
+            template = config.env.get_template('policies.template.yaml.j2').render(
                 sharing_policies=sharing_policies,
                 VERSION=version,
             )
