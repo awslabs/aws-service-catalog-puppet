@@ -8,7 +8,7 @@ import json
 
 @fixture
 def sut():
-    import manifest_utils
+    from servicecatalog_puppet import manifest_utils
     return manifest_utils
 
 

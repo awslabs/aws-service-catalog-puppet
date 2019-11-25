@@ -1,7 +1,7 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import core
+from servicecatalog_puppet import core
 
 
 def run(what="puppet", wait_for_completion=False):

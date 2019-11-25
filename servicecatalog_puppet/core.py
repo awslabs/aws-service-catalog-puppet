@@ -22,16 +22,16 @@ from jinja2 import Template
 from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
-import workflow.management as management_tasks
-import workflow.portfoliomanagement as portfoliomanagement_tasks
-import workflow.provisioning as provisioning_tasks
-import workflow.runner as runner
-import config
-import manifest_utils
-import aws
+from servicecatalog_puppet.workflow import management as management_tasks
+from servicecatalog_puppet.workflow import portfoliomanagement as portfoliomanagement_tasks
+from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
+from servicecatalog_puppet.workflow import runner as runner
+from servicecatalog_puppet import config
+from servicecatalog_puppet import manifest_utils
+from servicecatalog_puppet import aws
 
-import asset_helpers
-import constants
+from servicecatalog_puppet import asset_helpers
+from servicecatalog_puppet import constants
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

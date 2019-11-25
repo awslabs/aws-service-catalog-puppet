@@ -5,7 +5,7 @@ import os
 import click
 import yaml
 
-import constants
+from servicecatalog_puppet import constants
 from betterboto import client as betterboto_client
 
 logger = logging.getLogger(__file__)

@@ -5,8 +5,8 @@ import yaml
 from betterboto import client as betterboto_client
 from jinja2 import Environment, FileSystemLoader
 
-import asset_helpers
-import constants
+from servicecatalog_puppet import asset_helpers
+from servicecatalog_puppet import constants
 
 import logging
 

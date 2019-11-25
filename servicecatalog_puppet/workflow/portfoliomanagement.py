@@ -7,11 +7,11 @@ import time
 import luigi
 from betterboto import client as betterboto_client
 
-import aws
-import config
+from servicecatalog_puppet import aws
+from servicecatalog_puppet import config
 
-from . import provisioning
-from . import tasks
+from servicecatalog_puppet.workflow import provisioning
+from servicecatalog_puppet.workflow import tasks
 
 import logging
 
