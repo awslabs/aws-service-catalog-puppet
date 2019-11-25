@@ -1,7 +1,7 @@
 import luigi
 
 import sdk
-from . import tasks
+from servicecatalog_puppet.workflow import tasks
 
 
 class BootstrapSpokeAsTask(tasks.PuppetTask):

@@ -13,7 +13,7 @@ import yaml
 from betterboto import client as betterboto_client
 from luigi import LuigiStatusCode
 
-import config, constants
+from servicecatalog_puppet import config, constants
 
 import logging
 

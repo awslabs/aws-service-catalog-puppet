@@ -4,7 +4,7 @@
 import click
 import yaml
 
-import core
+from servicecatalog_puppet import core
 
 
 @click.group()

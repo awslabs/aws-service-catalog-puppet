@@ -5,7 +5,7 @@ from pathlib import Path
 import luigi
 from betterboto import client as betterboto_client
 
-import constants
+from servicecatalog_puppet import constants
 
 
 class PuppetTask(luigi.Task):

@@ -2,11 +2,11 @@ import json
 import luigi
 from betterboto import client as betterboto_client
 
-import aws
-import config
-import constants
-from . import tasks
-from . import portfoliomanagement
+from servicecatalog_puppet import aws
+from servicecatalog_puppet import config
+from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet.workflow import portfoliomanagement
 
 import logging
 
