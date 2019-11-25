@@ -56,6 +56,17 @@ def generate_shares(f):
     puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
 
+
+    #####EPF
+
+
+    org_iam_role_arn = config.get_org_iam_role_arn()
+    click.echo('Expanding using role: {}'.format(org_iam_role_arn))
+    with betterboto_client.CrossAccountClientContextManager(
+        'organizations', org_iam_role_arn, 'org-iam-role'
+    ) as organizations:
+        o_id = organizations.describe_organization().get('Organization').get('Id')
+
     task_defs = manifest_utils.convert_manifest_into_task_defs_for_launches(
         manifest, puppet_account_id, False, False, include_expanded_from=True
     )
@@ -72,7 +83,8 @@ def generate_shares(f):
                 account_id=task.get('account_id'),
                 region=task.get('region'),
                 portfolio=task.get('portfolio'),
-                organization=task.get('expanded_from')
+                expanded_from=task.get('expanded_from'),
+                organization=o_id,
             )
         )
 
@@ -89,7 +101,8 @@ def generate_shares(f):
                     account_id=param_kwargs.get('account_id'),
                     region=param_kwargs.get('region'),
                     portfolio=param_kwargs.get('portfolio'),
-                    organization=param_kwargs.get('expanded_from')
+                    expanded_from=task.get('expanded_from'),
+                    organization=o_id
                 )
             )
 

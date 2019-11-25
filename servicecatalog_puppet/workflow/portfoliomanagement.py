@@ -910,6 +910,7 @@ class CreateShareForAccountLaunchRegion(tasks.PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
+    expanded_from = luigi.Parameter()
     organization = luigi.Parameter()
 
     @property
@@ -922,7 +923,7 @@ class CreateShareForAccountLaunchRegion(tasks.PuppetTask):
         )
 
     def requires(self):
-        logging.info(f"{self.uid}: expanded_from = {self.organization}")
+        logging.info(f"{self.uid}: expanded_from = {self.expanded_from}")
         deps = {
             'topic': RequestPolicyTask(
                 type="topic",
@@ -956,108 +957,3 @@ class CreateShareForAccountLaunchRegion(tasks.PuppetTask):
 
     def run(self):
         self.write_output(self.param_kwargs)
-
-
-class CreateShareForAccountLaunch(tasks.PuppetTask):
-    """for the given account_id and launch create the shares"""
-    account_id = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
-    deployment_map_for_account = luigi.DictParameter()
-    launch_name = luigi.Parameter()
-    launch_details = luigi.DictParameter()
-
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/{self.account_id}--{self.launch_name}"
-
-    def requires(self):
-        deps = {}
-        mutable_deployment_map = dict(self.deployment_map_for_account)
-        match = self.launch_details.get('match')
-        logging.info(f"{self.uid}: Starting match was {match}")
-        if match == "tag_match":
-            matching_tag = self.launch_details.get('matching_tag')
-            target_regions = None
-            for tag_details in self.launch_details.get('deploy_to').get('tags'):
-                if tag_details.get('tag') == matching_tag:
-                    target_regions = tag_details.get('regions', 'default_region')
-            assert target_regions is not None, "Could not find the tag for this provisioning"
-            if target_regions == "default_region":
-                target_regions = [mutable_deployment_map.get('default_region')]
-            elif target_regions in ["enabled", "regions_enabled", "enabled_regions"]:
-                target_regions = mutable_deployment_map.get('regions_enabled')
-        elif match == "account_match":
-            target_regions = None
-            for accounts_details in self.launch_details.get('deploy_to').get('accounts'):
-                if accounts_details.get('account_id') == self.account_id:
-                    target_regions = accounts_details.get('regions', 'default_region')
-            assert target_regions is not None, "Could not find the account_id for this provisioning"
-            if target_regions == "default_region":
-                target_regions = [mutable_deployment_map.get('default_region')]
-            elif target_regions in ["enabled", "regions_enabled", "enabled_regions"]:
-                target_regions = mutable_deployment_map.get('regions_enabled')
-
-        else:
-            raise Exception(f"{self.uid}: Unknown match: {match}")
-
-        for region in target_regions:
-            deps[f"{self.account_id}-{self.launch_name}-{region}"] = CreateShareForAccountLaunchRegion(
-                self.account_id,
-                self.puppet_account_id,
-                self.deployment_map_for_account,
-                self.launch_name,
-                self.launch_details.get('portfolio'),
-                region,
-            )
-
-        return deps
-
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/{self.uid}.json"
-        )
-
-    def run(self):
-        self.write_output(self.launch_details)
-
-
-class CreateSharesForAccountImportMapTask(tasks.PuppetTask):
-    """For the given account_id and deployment_map create the shares"""
-    account_id = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
-    deployment_map_for_account = luigi.DictParameter()
-    sharing_type = luigi.Parameter()
-
-    @property
-    def uid(self):
-        return f"{self.account_id}-{self.sharing_type}"
-
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/{self.__class__.__name__}/"
-            f"{self.uid}.json"
-        )
-
-    @property
-    def resources(self):
-        return {}
-
-    def params_for_results_display(self):
-        return {
-            "launch_name": 'na',
-            "account_id": self.account_id,
-        }
-
-    def requires(self):
-        launches = {}
-        for launch_name, launch_details in self.deployment_map_for_account.get(self.sharing_type).items():
-            launches[launch_name] = CreateShareForAccountLaunch(
-                self.account_id, self.puppet_account_id, self.deployment_map_for_account, launch_name, launch_details
-            )
-
-        return {
-            'launches': launches
-        }
-
-    def run(self):
-        self.write_output(self.deployment_map_for_account)
