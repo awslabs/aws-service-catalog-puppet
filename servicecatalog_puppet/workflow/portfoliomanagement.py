@@ -644,6 +644,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                 organization=self.organization,
                 hub_portfolio_id=self.hub_portfolio_id,
                 pre_actions=self.pre_actions,
+                post_actions=self.post_actions,
             ),
             'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
