@@ -127,7 +127,7 @@ def run_tasks(tasks_to_run, num_workers, dry_run=False):
                         "Value": json.dumps(param, default=str),
                         'Type': 'SearchableString',
                     }
-                description = "\n".join(result.get('exception_stack_trace'))[:1024]
+                description = "\n".join(result.get('exception_stack_trace'))[-1024:]
                 ssm_client.create_ops_item(
                     Title=title,
                     Description=description,
