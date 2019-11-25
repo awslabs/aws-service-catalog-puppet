@@ -76,17 +76,18 @@ def bootstrap(with_manual_approvals):
     core.bootstrap(with_manual_approvals)
 
 
-def bootstrap_spoke(puppet_account_id):
+def bootstrap_spoke(puppet_account_id, permission_boundary):
     """
     Bootstrap a spoke so that is can be used by the puppet account to share portfolios and provision products.  This
     must be run in the spoke account.
 
     :param puppet_account_id: this is the account id where you have installed aws-service-catalog-puppet
+    :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
-    core.bootstrap_spoke(puppet_account_id)
+    core.bootstrap_spoke(puppet_account_id, permission_boundary)
 
 
-def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
+def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
     """
     Bootstrap a spoke so that it can be used by the puppet account to share portfolios and provision products.  This
     must be run in an account where you can assume the first ARN in the iam_role_arns list.
@@ -94,11 +95,12 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
     :param puppet_account_id: this is the account id where you have installed aws-service-catalog-puppet
     :param iam_role_arns: this is a list of ARNs the function will assume (in order) before bootstrapping.  The final \
     ARN in the list should be the ARN of the spoke you want to bootstrap.
+    :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
-    core.bootstrap_spoke_as(puppet_account_id, iam_role_arns)
+    core.bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary)
 
 
-def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns):
+def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary):
     """
     Bootstrap each spoke in the given path or id
 
@@ -106,5 +108,6 @@ def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns):
     :param role_name: This is the name (not ARN) of the IAM role to assume in each account when bootstrapping
     :param iam_role_arns: this is a list of ARNs the function will assume (in order) before bootstrapping.  The final \
     ARN in the list should be the ARN of account that can assume the role_name in the accounts to bootstrap.
+    :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
-    core.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns)
+    core.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary)

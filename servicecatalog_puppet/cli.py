@@ -46,22 +46,25 @@ def dry_run(f, single_account):
 @cli.command()
 @click.argument('puppet_account_id')
 @click.argument('iam_role_arns', nargs=-1)
-def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
-    core.bootstrap_spoke_as(puppet_account_id, iam_role_arns)
+@click.option('--permission-boundary', default="arn:aws:iam::aws:policy/AdministratorAccess")
+def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
+    core.bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary)
 
 
 @cli.command()
 @click.argument('puppet_account_id')
-def bootstrap_spoke(puppet_account_id):
-    core.bootstrap_spoke(puppet_account_id)
+@click.option('--permission-boundary', default="arn:aws:iam::aws:policy/AdministratorAccess")
+def bootstrap_spoke(puppet_account_id, permission_boundary):
+    core.bootstrap_spoke(puppet_account_id, permission_boundary)
 
 
 @cli.command()
 @click.argument('ou_path_or_id')
 @click.argument('role_name')
 @click.argument('iam_role_arns', nargs=-1)
-def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns):
-    core.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns)
+@click.option('--permission-boundary', default="arn:aws:iam::aws:policy/AdministratorAccess")
+def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary):
+    core.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary)
 
 
 @cli.command()
