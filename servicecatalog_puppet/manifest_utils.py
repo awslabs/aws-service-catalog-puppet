@@ -348,7 +348,8 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
             **import_into_spoke_local_portfolio_task_params,
             **create_launch_role_constraints_for_portfolio_task_params,
             dependencies=dependencies,
-            post_actions=post_actions
+            post_actions=post_actions,
+            pre_actions=pre_actions,
         )
         tasks_to_run.append(create_launch_role_constraints_for_portfolio)
     return tasks_to_run
