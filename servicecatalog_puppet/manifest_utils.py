@@ -3,91 +3,17 @@ import logging
 import json
 from copy import deepcopy
 
-from .macros import macros
-from . import constants, cli_command_helpers, luigi_tasks_and_targets, aws
+from servicecatalog_puppet.workflow import portfoliomanagement
+from servicecatalog_puppet.workflow import provisioning
+from servicecatalog_puppet import config
+from servicecatalog_puppet.macros import macros
+from servicecatalog_puppet import constants, aws
 
 logger = logging.getLogger(__file__)
 
 
 def load(f):
     return yaml.safe_load(f.read())
-
-
-def group_by_tag(launches):
-    logger.info('Grouping launches by tag')
-    launches_by_tag = {}
-    for launch_name, launch_details in launches.items():
-        launch_details['launch_name'] = launch_name
-        launch_tags = launch_details.get('deploy_to').get('tags', [])
-        for tag_detail in launch_tags:
-            tag = tag_detail.get('tag')
-            if launches_by_tag.get(tag) is None:
-                launches_by_tag[tag] = []
-            launches_by_tag[tag].append(launch_details)
-    logger.info('Finished grouping launches by tag')
-    return launches_by_tag
-
-
-def group_by_account(launches):
-    logger.info('Grouping launches by account')
-    launches_by_account = {}
-    for launch_name, launch_details in launches.items():
-        launch_details['launch_name'] = launch_name
-        launch_accounts = launch_details.get('deploy_to').get('accounts', [])
-        for account_detail in launch_accounts:
-            if not isinstance(account_detail.get('account_id'), str):
-                account_detail['account_id'] = str(account_detail.get('account_id'))
-            account_id = account_detail.get('account_id')
-            if launches_by_account.get(account_id) is None:
-                launches_by_account[account_id] = []
-            launches_by_account[account_id].append(launch_details)
-    logger.info('Finished grouping launches by account')
-    return launches_by_account
-
-
-def generate_launch_map(accounts, launches_by_account, launches_by_tag, section):
-    logger.info('Generating launch map')
-    deployment_map = {}
-    for account in accounts:
-        account_id = account.get('account_id')
-        deployment_map[account_id] = account
-        launches = account[section] = {}
-        for launch in launches_by_account.get(account_id, []):
-            launch['match'] = "account_match"
-            launches[launch.get('launch_name')] = launch
-        for tag in account.get('tags', []):
-            for launch in launches_by_tag.get(tag, []):
-                launch['match'] = "tag_match"
-                launch['matching_tag'] = tag
-                launches[launch.get('launch_name')] = launch
-    logger.info('Finished generating launch map')
-    return deployment_map
-
-
-def build_deployment_map(manifest, section):
-    accounts = manifest.get('accounts')
-    for account_detail in accounts:
-        if not isinstance(account_detail.get('account_id'), str):
-            account_detail['account_id'] = str(account_detail.get('account_id'))
-    launches = manifest.get(section, {})
-
-    verify_no_ous_in_manifest(accounts)
-
-    launches_by_tag = group_by_tag(launches)
-    launches_by_account = group_by_account(launches)
-
-    return generate_launch_map(
-        accounts,
-        launches_by_account,
-        launches_by_tag,
-        section
-    )
-
-
-def verify_no_ous_in_manifest(accounts):
-    for account in accounts:
-        if account.get('account_id') is None:
-            raise Exception("{} account object does not have an account_id".format(account.get('name')))
 
 
 def expand_manifest(manifest, client):
@@ -194,7 +120,9 @@ def expand_ou(original_account, client):
     return expanded
 
 
-def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, should_use_sns, should_use_product_plans):
+def convert_manifest_into_task_defs_for_launches(
+        manifest, puppet_account_id, should_use_sns, should_use_product_plans, include_expanded_from=False
+):
     task_defs = []
     accounts = manifest.get('accounts', [])
     actions = manifest.get('actions', {})
@@ -263,6 +191,8 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
                     if tag == tag_list_item.get('tag'):
                         tag_account_def = deepcopy(task_def)
                         tag_account_def['account_id'] = account.get('account_id')
+                        if include_expanded_from:
+                            tag_account_def['expanded_from'] = account.get('expanded_from')
                         tag_account_def['account_parameters'] = account.get('parameters', {})
 
                         regions = tag_list_item.get('regions')
@@ -277,7 +207,7 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
                                 region_tag_account_def['region'] = account.get('default_region')
                                 task_defs.append(region_tag_account_def)
                             elif regions == "all":
-                                all_regions = cli_command_helpers.get_regions()
+                                all_regions = config.get_regions()
                                 for region_enabled in all_regions:
                                     region_tag_account_def = deepcopy(tag_account_def)
                                     region_tag_account_def['region'] = region_enabled
@@ -297,6 +227,8 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
                 if account.get('account_id') == account_list_item.get('account_id'):
                     account_account_def = deepcopy(task_def)
                     account_account_def['account_id'] = account.get('account_id')
+                    if include_expanded_from:
+                        account_account_def['expanded_from'] = account.get('expanded_from')
                     account_account_def['account_parameters'] = account.get('parameters', {})
 
                     regions = account_list_item.get('regions')
@@ -311,7 +243,7 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
                             region_account_account_def['region'] = account.get('default_region')
                             task_defs.append(region_account_account_def)
                         elif regions in ["all"]:
-                            all_regions = cli_command_helpers.get_regions()
+                            all_regions = config.get_regions()
                             for region_enabled in all_regions:
                                 region_account_account_def = deepcopy(account_account_def)
                                 region_account_account_def['region'] = region_enabled
@@ -343,13 +275,13 @@ def convert_manifest_into_task_defs_for_launches(manifest, puppet_account_id, sh
 
 
 def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
-        account_id, region, launch_details,
+        account_id, expanded_from, organization, region, launch_details,
         puppet_account_id, should_use_sns, launch_tasks, pre_actions, post_actions
 ):
     dependencies = []
     for depend in launch_details.get('depends_on', []):
         for launch_task in launch_tasks:
-            if isinstance(launch_task, luigi_tasks_and_targets.ProvisionProductTask):
+            if isinstance(launch_task, provisioning.ProvisionProductTask):
                 l_params = launch_task.to_str_params()
                 if l_params.get('launch_name') == depend:
                     dependencies.append(launch_task.param_kwargs)
@@ -364,8 +296,9 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         'provider_name': hub_portfolio.get('ProviderName'),
         'description': hub_portfolio.get('Description'),
         'pre_actions': pre_actions,
+        'organization': expanded_from
     }
-    create_spoke_local_portfolio_task = luigi_tasks_and_targets.CreateSpokeLocalPortfolioTask(
+    create_spoke_local_portfolio_task = portfoliomanagement.CreateSpokeLocalPortfolioTask(
         **create_spoke_local_portfolio_task_params,
     )
     tasks_to_run.append(create_spoke_local_portfolio_task)
@@ -374,6 +307,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         'account_id': account_id,
         'region': region,
         'portfolio': launch_details.get('portfolio'),
+        'organization': organization,
     }
 
     create_associations_task_params = {
@@ -381,7 +315,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         'puppet_account_id': puppet_account_id,
         'should_use_sns': should_use_sns,
     }
-    create_associations_for_portfolio_task = luigi_tasks_and_targets.CreateAssociationsForPortfolioTask(
+    create_associations_for_portfolio_task = portfoliomanagement.CreateAssociationsForPortfolioTask(
         **create_spoke_local_portfolio_task_as_dependency_params,
         **create_associations_task_params,
         dependencies=dependencies,
@@ -395,7 +329,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
 
     launch_constraints = launch_details.get('constraints', {}).get('launch', [])
 
-    import_into_spoke_local_portfolio_task = luigi_tasks_and_targets.ImportIntoSpokeLocalPortfolioTask(
+    import_into_spoke_local_portfolio_task = portfoliomanagement.ImportIntoSpokeLocalPortfolioTask(
         **create_spoke_local_portfolio_task_as_dependency_params,
         **import_into_spoke_local_portfolio_task_params,
         pre_actions=pre_actions,
@@ -409,12 +343,13 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
             'puppet_account_id': puppet_account_id,
             'should_use_sns': should_use_sns,
         }
-        create_launch_role_constraints_for_portfolio = luigi_tasks_and_targets.CreateLaunchRoleConstraintsForPortfolio(
+        create_launch_role_constraints_for_portfolio = portfoliomanagement.CreateLaunchRoleConstraintsForPortfolio(
             **create_spoke_local_portfolio_task_as_dependency_params,
             **import_into_spoke_local_portfolio_task_params,
             **create_launch_role_constraints_for_portfolio_task_params,
             dependencies=dependencies,
-            post_actions=post_actions
+            post_actions=post_actions,
+            pre_actions=pre_actions,
         )
         tasks_to_run.append(create_launch_role_constraints_for_portfolio)
     return tasks_to_run
@@ -470,6 +405,8 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                     if tag == tag_list_item.get('tag'):
                         tag_account_def = deepcopy(task_def)
                         tag_account_def['account_id'] = account.get('account_id')
+                        tag_account_def['expanded_from'] = account.get('expanded_from')
+                        tag_account_def['organization'] = account.get('organization')
 
                         regions = tag_list_item.get('regions')
                         if isinstance(regions, str):
@@ -487,7 +424,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                                     **region_tag_account_def
                                 )
                             elif regions == "all":
-                                all_regions = cli_command_helpers.get_regions()
+                                all_regions = config.get_regions()
                                 for region_enabled in all_regions:
                                     region_tag_account_def = deepcopy(tag_account_def)
                                     region_tag_account_def['region'] = region_enabled
@@ -511,6 +448,8 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                 if account.get('account_id') == account_list_item.get('account_id'):
                     account_account_def = deepcopy(task_def)
                     account_account_def['account_id'] = account.get('account_id')
+                    account_account_def['expanded_from'] = account.get('expanded_from')
+                    account_account_def['organization'] = account.get('organization')
                     # account_account_def['account_parameters'] = account.get('parameters', {})
 
                     regions = account_list_item.get('regions')
@@ -529,7 +468,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                                 **region_account_account_def
                             )
                         elif regions == "all":
-                            all_regions = cli_command_helpers.get_regions()
+                            all_regions = config.get_regions()
                             for region_enabled in all_regions:
                                 region_account_account_def = deepcopy(account_account_def)
                                 region_account_account_def['region'] = region_enabled

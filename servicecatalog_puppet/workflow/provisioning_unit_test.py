@@ -1,15 +1,12 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-from unittest.mock import call
-
 from pytest import fixture
-import os
 
 
 @fixture
 def module():
-    from . import luigi_tasks_and_targets
-    return luigi_tasks_and_targets
+    from . import provisioning
+    return provisioning
 
 
 @fixture
@@ -117,7 +114,7 @@ class TestProvisionProductTask():
             self, module, minimal_params, mocker
     ):
         # setup
-        mocker.patch.object(module, 'cli_command_helpers')
+        mocker.patch.object(module, 'config')
         expected_ssm_params = {
             'Foo': {
             }
@@ -147,7 +144,7 @@ class TestProvisionProductTask():
             portfolio, product, version, account_id, region
     ):
         # setup
-        mocker.patch.object(module, 'cli_command_helpers')
+        mocker.patch.object(module, 'config')
         sut = module.ProvisionProductTask(**minimal_params)
 
         # exercise

@@ -10,6 +10,10 @@ Parameters:
     Type: String
     MinLength: 12
     MaxLength: 12
+  PermissionBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
   Version:
     Type: String
     Default: "{{ VERSION }}"
@@ -27,6 +31,7 @@ Resources:
     Properties:
       RoleName: PuppetRole
       Path: /servicecatalog-puppet/
+      PermissionsBoundary: !Ref PermissionBoundary
       Policies:
         - PolicyName: "acceptShares"
           PolicyDocument:
