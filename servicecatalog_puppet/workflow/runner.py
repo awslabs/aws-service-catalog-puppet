@@ -134,6 +134,12 @@ def run_tasks(tasks_to_run, num_workers, dry_run=False):
                     OperationalData=operational_data,
                     Priority=1,
                     Source=constants.SERVICE_CATALOG_PUPPET_OPS_CENTER_SOURCE,
+                    Tags=[
+                        {
+                            'Key': 'ServiceCatalogPuppet:Actor',
+                            'Value': 'ops-item'
+                        },
+                    ]
                 )
 
             click.echo(colorclass.Color("{red}" + result.get('task_type') + " failed{/red}"))
