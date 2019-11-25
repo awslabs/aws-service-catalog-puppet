@@ -3,9 +3,11 @@ import logging
 import json
 from copy import deepcopy
 
-from . import config
-from .macros import macros
-from . import constants, luigi_tasks_and_targets, aws
+import workflow.portfoliomanagement
+import workflow.provisioning
+import config
+from macros import macros
+import constants, aws
 
 logger = logging.getLogger(__file__)
 
@@ -279,7 +281,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
     dependencies = []
     for depend in launch_details.get('depends_on', []):
         for launch_task in launch_tasks:
-            if isinstance(launch_task, luigi_tasks_and_targets.ProvisionProductTask):
+            if isinstance(launch_task, workflow.provisioning.ProvisionProductTask):
                 l_params = launch_task.to_str_params()
                 if l_params.get('launch_name') == depend:
                     dependencies.append(launch_task.param_kwargs)
@@ -296,7 +298,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         'pre_actions': pre_actions,
         'organization': expanded_from
     }
-    create_spoke_local_portfolio_task = luigi_tasks_and_targets.CreateSpokeLocalPortfolioTask(
+    create_spoke_local_portfolio_task = workflow.portfoliomanagement.CreateSpokeLocalPortfolioTask(
         **create_spoke_local_portfolio_task_params,
     )
     tasks_to_run.append(create_spoke_local_portfolio_task)
@@ -312,7 +314,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         'puppet_account_id': puppet_account_id,
         'should_use_sns': should_use_sns,
     }
-    create_associations_for_portfolio_task = luigi_tasks_and_targets.CreateAssociationsForPortfolioTask(
+    create_associations_for_portfolio_task = workflow.portfoliomanagement.CreateAssociationsForPortfolioTask(
         **create_spoke_local_portfolio_task_as_dependency_params,
         **create_associations_task_params,
         dependencies=dependencies,
@@ -326,7 +328,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
 
     launch_constraints = launch_details.get('constraints', {}).get('launch', [])
 
-    import_into_spoke_local_portfolio_task = luigi_tasks_and_targets.ImportIntoSpokeLocalPortfolioTask(
+    import_into_spoke_local_portfolio_task = workflow.portfoliomanagement.ImportIntoSpokeLocalPortfolioTask(
         **create_spoke_local_portfolio_task_as_dependency_params,
         **import_into_spoke_local_portfolio_task_params,
         pre_actions=pre_actions,
@@ -340,7 +342,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
             'puppet_account_id': puppet_account_id,
             'should_use_sns': should_use_sns,
         }
-        create_launch_role_constraints_for_portfolio = luigi_tasks_and_targets.CreateLaunchRoleConstraintsForPortfolio(
+        create_launch_role_constraints_for_portfolio = workflow.portfoliomanagement.CreateLaunchRoleConstraintsForPortfolio(
             **create_spoke_local_portfolio_task_as_dependency_params,
             **import_into_spoke_local_portfolio_task_params,
             **create_launch_role_constraints_for_portfolio_task_params,

@@ -1,7 +1,5 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-from unittest import mock
-
 import pytest
 import yaml
 from pytest import fixture
@@ -10,7 +8,7 @@ import json
 
 @fixture
 def sut():
-    from servicecatalog_puppet import manifest_utils
+    import manifest_utils
     return manifest_utils
 
 
@@ -48,6 +46,7 @@ def test_convert_manifest_into_task_defs(sut, shared_datadir):
         ('accounts', 'test_convert_manifest_into_task_defs_handles_lists'),
     ]
 )
+
 def test_convert_manifest_into_task_defs_handles_default_region(sut, shared_datadir, dir, manifest_file):
     # setup
     manifest = yaml.safe_load(

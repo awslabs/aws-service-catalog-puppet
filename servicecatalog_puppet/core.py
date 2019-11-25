@@ -9,6 +9,7 @@ import terminaltables
 
 import shutil
 import json
+from threading import Thread
 
 import pkg_resources
 import yaml
@@ -21,14 +22,16 @@ from jinja2 import Template
 from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
-from . import config
-from . import cli_command_helpers
-from . import luigi_tasks_and_targets
-from . import manifest_utils
-from . import aws
+import workflow.management as management_tasks
+import workflow.portfoliomanagement as portfoliomanagement_tasks
+import workflow.provisioning as provisioning_tasks
+import workflow.runner as runner
+import config
+import manifest_utils
+import aws
 
-from . import asset_helpers
-from . import constants
+import asset_helpers
+import constants
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -53,8 +56,6 @@ def generate_shares(f):
     puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
 
-    accounts = {}
-
     task_defs = manifest_utils.convert_manifest_into_task_defs_for_launches(
         manifest, puppet_account_id, False, False, include_expanded_from=True
     )
@@ -66,7 +67,7 @@ def generate_shares(f):
         # if accounts.get(task.get('account_id')).get(task.get('region')).get(task.get('portfolio')) is None:
         #     accounts[task.get('account_id')][task.get('region')][task.get('portfolio')] = True
         tasks_to_run.append(
-            luigi_tasks_and_targets.CreateShareForAccountLaunchRegion(
+            portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
                 puppet_account_id=puppet_account_id,
                 account_id=task.get('account_id'),
                 region=task.get('region'),
@@ -80,10 +81,10 @@ def generate_shares(f):
     )
 
     for task in spoke_local_portfolios_tasks:
-        if isinstance(task, luigi_tasks_and_targets.CreateSpokeLocalPortfolioTask):
+        if isinstance(task, portfoliomanagement_tasks.CreateSpokeLocalPortfolioTask):
             param_kwargs = task.param_kwargs
             tasks_to_run.append(
-                luigi_tasks_and_targets.CreateShareForAccountLaunchRegion(
+                portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
                     puppet_account_id=puppet_account_id,
                     account_id=param_kwargs.get('account_id'),
                     region=param_kwargs.get('region'),
@@ -92,7 +93,7 @@ def generate_shares(f):
                 )
             )
 
-    cli_command_helpers.run_tasks_for_generate_shares(tasks_to_run)
+    runner.run_tasks_for_generate_shares(tasks_to_run)
 
 
 def reset_provisioned_product_owner(f):
@@ -108,14 +109,14 @@ def reset_provisioned_product_owner(f):
         task_status = task.get('status')
         if task_status == constants.PROVISIONED:
             tasks_to_run.append(
-                luigi_tasks_and_targets.ResetProvisionedProductOwnerTask(
+                provisioning_tasks.ResetProvisionedProductOwnerTask(
                     launch_name=task.get('launch_name'),
                     account_id=task.get('account_id'),
                     region=task.get('region'),
                 )
             )
 
-    cli_command_helpers.run_tasks(tasks_to_run, 10)
+    runner.run_tasks(tasks_to_run, 10)
 
 
 def generate_tasks(f, single_account=None, dry_run=False):
@@ -139,9 +140,9 @@ def generate_tasks(f, single_account=None, dry_run=False):
         if task_status == constants.PROVISIONED:
             task['should_use_sns'] = should_use_sns
             if dry_run:
-                tasks_to_run.append(luigi_tasks_and_targets.ProvisionProductDryRunTask(**task))
+                tasks_to_run.append(provisioning_tasks.ProvisionProductDryRunTask(**task))
             else:
-                tasks_to_run.append(luigi_tasks_and_targets.ProvisionProductTask(**task))
+                tasks_to_run.append(provisioning_tasks.ProvisionProductTask(**task))
         elif task_status == constants.TERMINATED:
             for attribute in constants.DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES:
                 logger.info(f"checking {task.get('launch_name')} for disallowed attributes")
@@ -166,9 +167,9 @@ def generate_tasks(f, single_account=None, dry_run=False):
             del task['post_actions']
 
             if dry_run:
-                tasks_to_run.append(luigi_tasks_and_targets.TerminateProductDryRunTask(**task))
+                tasks_to_run.append(provisioning_tasks.TerminateProductDryRunTask(**task))
             else:
-                tasks_to_run.append(luigi_tasks_and_targets.TerminateProductTask(**task))
+                tasks_to_run.append(provisioning_tasks.TerminateProductTask(**task))
         else:
             raise Exception(f"Unsupported status of {task_status}")
 
@@ -188,7 +189,7 @@ def generate_tasks(f, single_account=None, dry_run=False):
 
 def deploy(f, single_account, num_workers=10, dry_run=False):
     tasks_to_run = generate_tasks(f, single_account, dry_run)
-    cli_command_helpers.run_tasks(tasks_to_run, num_workers, dry_run)
+    runner.run_tasks(tasks_to_run, num_workers, dry_run)
 
 
 def graph(f):
@@ -208,6 +209,35 @@ def graph(f):
     click.echo("}")
 
 
+def _do_bootstrap_spoke(puppet_account_id, cloudformation, puppet_version):
+    logger.info('Starting bootstrap of spoke')
+    template = asset_helpers.read_from_site_packages('{}-spoke.template.yaml'.format(constants.BOOTSTRAP_STACK_NAME))
+    template = Template(template).render(VERSION=puppet_version)
+    args = {
+        'StackName': "{}-spoke".format(constants.BOOTSTRAP_STACK_NAME),
+        'TemplateBody': template,
+        'Capabilities': ['CAPABILITY_NAMED_IAM'],
+        'Parameters': [
+            {
+                'ParameterKey': 'PuppetAccountId',
+                'ParameterValue': str(puppet_account_id),
+            }, {
+                'ParameterKey': 'Version',
+                'ParameterValue': puppet_version,
+                'UsePreviousValue': False,
+            },
+        ],
+        'Tags': [
+            {
+                "Key": "ServiceCatalogPuppet:Actor",
+                "Value": "Framework",
+            }
+        ]
+    }
+    cloudformation.create_or_update(**args)
+    logger.info('Finished bootstrap of spoke')
+
+
 def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
     cross_accounts = []
     index = 0
@@ -221,25 +251,117 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
             'cloudformation',
             cross_accounts
     ) as cloudformation:
-        cli_command_helpers._do_bootstrap_spoke(puppet_account_id, cloudformation,
+        _do_bootstrap_spoke(puppet_account_id, cloudformation,
                                                 config.get_puppet_version())
+
+
+def _do_bootstrap(puppet_version, with_manual_approvals):
+    click.echo('Starting bootstrap')
+
+    should_use_eventbridge = config.get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION"))
+    if should_use_eventbridge:
+        with betterboto_client.ClientContextManager('events') as events:
+            try:
+                events.describe_event_bus(Name=constants.EVENT_BUS_NAME)
+            except events.exceptions.ResourceNotFoundException:
+                events.create_event_bus(
+                    Name=constants.EVENT_BUS_NAME,
+                )
+
+    all_regions = config.get_regions(os.environ.get("AWS_DEFAULT_REGION"))
+    with betterboto_client.MultiRegionClientContextManager('cloudformation', all_regions) as clients:
+        click.echo('Creating {}-regional'.format(constants.BOOTSTRAP_STACK_NAME))
+        threads = []
+        template = asset_helpers.read_from_site_packages(
+            '{}.template.yaml'.format('{}-regional'.format(constants.BOOTSTRAP_STACK_NAME)))
+        template = Template(template).render(VERSION=puppet_version)
+        args = {
+            'StackName': '{}-regional'.format(constants.BOOTSTRAP_STACK_NAME),
+            'TemplateBody': template,
+            'Capabilities': ['CAPABILITY_IAM'],
+            'Parameters': [
+                {
+                    'ParameterKey': 'Version',
+                    'ParameterValue': puppet_version,
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'DefaultRegionValue',
+                    'ParameterValue': os.environ.get('AWS_DEFAULT_REGION'),
+                    'UsePreviousValue': False,
+                },
+            ],
+            'Tags': [
+                {
+                    "Key": "ServiceCatalogPuppet:Actor",
+                    "Value": "Framework",
+                }
+            ]
+        }
+        for client_region, client in clients.items():
+            process = Thread(name=client_region, target=client.create_or_update, kwargs=args)
+            process.start()
+            threads.append(process)
+        for process in threads:
+            process.join()
+        click.echo('Finished creating {}-regional'.format(constants.BOOTSTRAP_STACK_NAME))
+
+    with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
+        click.echo('Creating {}'.format(constants.BOOTSTRAP_STACK_NAME))
+        template = asset_helpers.read_from_site_packages('{}.template.yaml'.format(constants.BOOTSTRAP_STACK_NAME))
+        template = Template(template).render(VERSION=puppet_version, ALL_REGIONS=all_regions)
+        args = {
+            'StackName': constants.BOOTSTRAP_STACK_NAME,
+            'TemplateBody': template,
+            'Capabilities': ['CAPABILITY_NAMED_IAM'],
+            'Parameters': [
+                {
+                    'ParameterKey': 'Version',
+                    'ParameterValue': puppet_version,
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'OrgIamRoleArn',
+                    'ParameterValue': str(config.get_org_iam_role_arn()),
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'WithManualApprovals',
+                    'ParameterValue': "Yes" if with_manual_approvals else "No",
+                    'UsePreviousValue': False,
+                },
+            ],
+        }
+        cloudformation.create_or_update(**args)
+
+    click.echo('Finished creating {}.'.format(constants.BOOTSTRAP_STACK_NAME))
+    with betterboto_client.ClientContextManager('codecommit') as codecommit:
+        response = codecommit.get_repository(repositoryName=constants.SERVICE_CATALOG_PUPPET_REPO_NAME)
+        clone_url = response.get('repositoryMetadata').get('cloneUrlHttp')
+        clone_command = "git clone --config 'credential.helper=!aws codecommit credential-helper $@' " \
+                        "--config 'credential.UseHttpPath=true' {}".format(clone_url)
+        click.echo(
+            'You need to clone your newly created repo now and will then need to seed it: \n{}'.format(
+                clone_command
+            )
+        )
 
 
 def bootstrap_spoke(puppet_account_id):
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
-        cli_command_helpers._do_bootstrap_spoke(puppet_account_id, cloudformation,
+        _do_bootstrap_spoke(puppet_account_id, cloudformation,
                                                 config.get_puppet_version())
 
 
 def bootstrap_branch(branch_name, with_manual_approvals):
-    cli_command_helpers._do_bootstrap(
+    _do_bootstrap(
         "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(branch_name),
         with_manual_approvals,
     )
 
 
 def bootstrap(with_manual_approvals):
-    cli_command_helpers._do_bootstrap(
+    _do_bootstrap(
         config.get_puppet_version(),
         with_manual_approvals,
     )
@@ -467,9 +589,46 @@ def bootstrap_org_master(puppet_account_id):
     with betterboto_client.ClientContextManager(
             'cloudformation',
     ) as cloudformation:
-        org_iam_role_arn = cli_command_helpers._do_bootstrap_org_master(
-            puppet_account_id, cloudformation, config.get_puppet_version()
-        )
+        puppet_version = config.get_puppet_version()
+        logger.info('Starting bootstrap of org master')
+        stack_name = f"{constants.BOOTSTRAP_STACK_NAME}-org-master-{puppet_account_id}"
+        template = asset_helpers.read_from_site_packages(f'{constants.BOOTSTRAP_STACK_NAME}-org-master.template.yaml')
+        template = Template(template).render(VERSION=puppet_version, puppet_account_id=puppet_account_id)
+        args = {
+            'StackName': stack_name,
+            'TemplateBody': template,
+            'Capabilities': ['CAPABILITY_NAMED_IAM'],
+            'Parameters': [
+                {
+                    'ParameterKey': 'PuppetAccountId',
+                    'ParameterValue': str(puppet_account_id),
+                }, {
+                    'ParameterKey': 'Version',
+                    'ParameterValue': puppet_version,
+                    'UsePreviousValue': False,
+                },
+            ],
+            'Tags': [
+                {
+                    "Key": "ServiceCatalogPuppet:Actor",
+                    "Value": "Framework",
+                }
+            ]
+        }
+        cloudformation.create_or_update(**args)
+        response = cloudformation.describe_stacks(StackName=stack_name)
+        if len(response.get('Stacks')) != 1:
+            raise Exception("Expected there to be only one {} stack".format(stack_name))
+        stack = response.get('Stacks')[0]
+
+        for output in stack.get('Outputs'):
+            if output.get('OutputKey') == constants.PUPPET_ORG_ROLE_FOR_EXPANDS_ARN:
+                logger.info('Finished bootstrap of org-master')
+                org_iam_role_arn = output.get("OutputValue")
+
+        raise Exception(
+            "Could not find output: {} in stack: {}".format(constants.PUPPET_ORG_ROLE_FOR_EXPANDS_ARN, stack_name))
+
     click.echo("Bootstrapped org master, org-iam-role-arn: {}".format(org_iam_role_arn))
 
 
@@ -637,7 +796,7 @@ def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns):
             response = client.list_children_nested(ParentId=ou_id, ChildType='ACCOUNT')
             for spoke in response:
                 tasks.append(
-                    luigi_tasks_and_targets.BootstrapSpokeAsTask(
+                    management_tasks.BootstrapSpokeAsTask(
                         puppet_account_id=puppet_account_id,
                         account_id=spoke.get('Id'),
                         iam_role_arns=iam_role_arns,
@@ -645,7 +804,7 @@ def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns):
                     )
                 )
 
-        cli_command_helpers.run_tasks_for_bootstrap_spokes_in_ou(tasks)
+        runner.run_tasks_for_bootstrap_spokes_in_ou(tasks)
 
 
 def handle_action_execution_detail(action_execution_detail):
