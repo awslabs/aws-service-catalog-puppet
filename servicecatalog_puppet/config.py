@@ -62,9 +62,11 @@ def get_home_region():
         return response.get('Parameter').get('Value')
 
 
+@functools.lru_cache(maxsize=32)
 def get_org_iam_role_arn():
     with betterboto_client.ClientContextManager('ssm', region_name=get_home_region()) as ssm:
-        pass
+        response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN)
+        return response.get('Parameter').get('Value')
 
 
 template_dir = asset_helpers.resolve_from_site_packages('templates')

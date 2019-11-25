@@ -601,6 +601,7 @@ def bootstrap_org_master(puppet_account_id):
     with betterboto_client.ClientContextManager(
             'cloudformation',
     ) as cloudformation:
+        org_iam_role_arn = None
         puppet_version = config.get_puppet_version()
         logger.info('Starting bootstrap of org master')
         stack_name = f"{constants.BOOTSTRAP_STACK_NAME}-org-master-{puppet_account_id}"
@@ -638,8 +639,10 @@ def bootstrap_org_master(puppet_account_id):
                 logger.info('Finished bootstrap of org-master')
                 org_iam_role_arn = output.get("OutputValue")
 
-        raise Exception(
-            "Could not find output: {} in stack: {}".format(constants.PUPPET_ORG_ROLE_FOR_EXPANDS_ARN, stack_name))
+        if org_iam_role_arn is None:
+            raise Exception(
+                "Could not find output: {} in stack: {}".format(constants.PUPPET_ORG_ROLE_FOR_EXPANDS_ARN, stack_name)
+            )
 
     click.echo("Bootstrapped org master, org-iam-role-arn: {}".format(org_iam_role_arn))
 
