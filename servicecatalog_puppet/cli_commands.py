@@ -259,8 +259,6 @@ def list_launches(f, format):
     if format == "table":
         click.echo("Getting details from your account...")
     all_regions = cli_command_helpers.get_regions(os.environ.get("AWS_DEFAULT_REGION"))
-    # TODO
-    # deployment_map = manifest_utils.build_deployment_map(manifest, constants.LAUNCHES)
     account_ids = [a.get('account_id') for a in manifest.get('accounts')]
     deployments = {}
     for account_id in account_ids:
@@ -270,10 +268,8 @@ def list_launches(f, format):
             with betterboto_client.CrossAccountClientContextManager(
                     'servicecatalog', role, 'sc-{}-{}'.format(account_id, region_name), region_name=region_name
             ) as spoke_service_catalog:
-
                 response = spoke_service_catalog.list_accepted_portfolio_shares()
                 portfolios = response.get('PortfolioDetails', [])
-
                 response = spoke_service_catalog.list_portfolios()
                 portfolios += response.get('PortfolioDetails', [])
 
@@ -325,23 +321,26 @@ def list_launches(f, format):
                                 ))
 
     results = {}
-    for account_id, details in deployment_map.items():
-        for launch_name, launch in details.get(constants.LAUNCHES, {}).items():
-            if deployments.get(account_id, {}).get(constants.LAUNCHES, {}).get(launch_name) is None:
-                pass
-            else:
-                for region, regional_details in deployments[account_id][constants.LAUNCHES][launch_name].items():
-                    results[f"{account_id}_{region}_{launch_name}"] = {
-                        'account_id': account_id,
-                        'region': region,
-                        'launch': launch_name,
-                        'portfolio': regional_details.get('portfolio'),
-                        'product': regional_details.get('product'),
-                        'expected_version': launch.get('version'),
-                        'actual_version': regional_details.get('version'),
-                        'active': regional_details.get('active'),
-                        'status': regional_details.get('status'),
-                    }
+    tasks = generate_tasks(f)
+    # deployments[account_id][constants.LAUNCHES][launch_name][region_name]
+    for task in tasks:
+        account_id = task.get('account_id')
+        launch_name = task.get('launch_name')
+        if deployments.get(account_id, {}).get(constants.LAUNCHES, {}).get(launch_name) is None:
+            pass
+        else:
+            for region, regional_details in deployments[account_id][constants.LAUNCHES][launch_name].items():
+                results[f"{account_id}_{region}_{launch_name}"] = {
+                    'account_id': account_id,
+                    'region': region,
+                    'launch': launch_name,
+                    'portfolio': regional_details.get('portfolio'),
+                    'product': regional_details.get('product'),
+                    'expected_version': task.get('version'),
+                    'actual_version': regional_details.get('version'),
+                    'active': regional_details.get('active'),
+                    'status': regional_details.get('status'),
+                }
 
     if format == "table":
         table = [
