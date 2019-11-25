@@ -624,6 +624,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
     portfolio = luigi.Parameter()
     hub_portfolio_id = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
+    organization = luigi.Parameter()
 
     launch_constraints = luigi.DictParameter()
 
@@ -639,6 +640,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                 account_id=self.account_id,
                 region=self.region,
                 portfolio=self.portfolio,
+                organization=self.organization,
                 hub_portfolio_id=self.hub_portfolio_id,
             ),
             'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
