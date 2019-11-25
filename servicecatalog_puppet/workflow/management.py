@@ -1,6 +1,6 @@
 import luigi
 
-import sdk
+from servicecatalog_puppet import sdk
 from servicecatalog_puppet.workflow import tasks
 
 
@@ -9,6 +9,7 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
     account_id = luigi.Parameter()
     iam_role_arns = luigi.ListParameter()
     role_name = luigi.Parameter()
+    permission_boundary = luigi.Parameter()
 
     @property
     def uid(self):
@@ -38,5 +39,6 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
         sdk.bootstrap_spoke_as(
             self.puppet_account_id,
             iam_role_arns_to_use,
+            self.permission_boundary,
         )
         self.write_output({})
