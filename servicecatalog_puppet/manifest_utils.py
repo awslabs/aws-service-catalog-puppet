@@ -275,7 +275,7 @@ def convert_manifest_into_task_defs_for_launches(
 
 
 def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
-        account_id, expanded_from, region, launch_details,
+        account_id, expanded_from, organization, region, launch_details,
         puppet_account_id, should_use_sns, launch_tasks, pre_actions, post_actions
 ):
     dependencies = []
@@ -317,6 +317,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
     create_associations_for_portfolio_task = portfoliomanagement.CreateAssociationsForPortfolioTask(
         **create_spoke_local_portfolio_task_as_dependency_params,
         **create_associations_task_params,
+        organization=organization,
         dependencies=dependencies,
         pre_actions=pre_actions,
     )
@@ -331,6 +332,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
     import_into_spoke_local_portfolio_task = portfoliomanagement.ImportIntoSpokeLocalPortfolioTask(
         **create_spoke_local_portfolio_task_as_dependency_params,
         **import_into_spoke_local_portfolio_task_params,
+        organization=organization,
         pre_actions=pre_actions,
         post_actions=post_actions if len(launch_constraints) == 0 else []
     )
@@ -404,6 +406,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                         tag_account_def = deepcopy(task_def)
                         tag_account_def['account_id'] = account.get('account_id')
                         tag_account_def['expanded_from'] = account.get('expanded_from')
+                        tag_account_def['organization'] = account.get('organization')
 
                         regions = tag_list_item.get('regions')
                         if isinstance(regions, str):
@@ -446,6 +449,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                     account_account_def = deepcopy(task_def)
                     account_account_def['account_id'] = account.get('account_id')
                     account_account_def['expanded_from'] = account.get('expanded_from')
+                    account_account_def['organization'] = account.get('organization')
                     # account_account_def['account_parameters'] = account.get('parameters', {})
 
                     regions = account_list_item.get('regions')

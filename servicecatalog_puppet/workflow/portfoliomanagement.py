@@ -313,6 +313,7 @@ class CreateAssociationsForPortfolioTask(tasks.PuppetTask):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
+    organization = luigi.Parameter()
     pre_actions = luigi.ListParameter(default=[])
 
     associations = luigi.ListParameter(default=[])
@@ -326,6 +327,7 @@ class CreateAssociationsForPortfolioTask(tasks.PuppetTask):
                 account_id=self.account_id,
                 region=self.region,
                 portfolio=self.portfolio,
+                organization=self.organization,
                 pre_actions=self.pre_actions,
             ),
             'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
@@ -404,6 +406,7 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
+    organization = luigi.Parameter()
     pre_actions = luigi.ListParameter()
     hub_portfolio_id = luigi.Parameter()
     post_actions = luigi.ListParameter()
@@ -413,6 +416,7 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
             account_id=self.account_id,
             region=self.region,
             portfolio=self.portfolio,
+            organization=self.organization,
             pre_actions=self.pre_actions,
         )
 
