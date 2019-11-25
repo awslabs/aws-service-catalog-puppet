@@ -56,27 +56,10 @@ def generate_shares(f):
     puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
 
-
-    #####EPF
-
-
-    org_iam_role_arn = config.get_org_iam_role_arn()
-    click.echo('Expanding using role: {}'.format(org_iam_role_arn))
-    with betterboto_client.CrossAccountClientContextManager(
-        'organizations', org_iam_role_arn, 'org-iam-role'
-    ) as organizations:
-        o_id = organizations.describe_organization().get('Organization').get('Id')
-
     task_defs = manifest_utils.convert_manifest_into_task_defs_for_launches(
         manifest, puppet_account_id, False, False, include_expanded_from=True
     )
     for task in task_defs:
-        # if accounts.get(task.get('account_id')) is None:
-        #     accounts[task.get('account_id')] = {}
-        # if accounts.get(task.get('account_id')).get(task.get('region')) is None:
-        #     accounts[task.get('account_id')][task.get('region')] = {}
-        # if accounts.get(task.get('account_id')).get(task.get('region')).get(task.get('portfolio')) is None:
-        #     accounts[task.get('account_id')][task.get('region')][task.get('portfolio')] = True
         tasks_to_run.append(
             portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
                 puppet_account_id=puppet_account_id,
@@ -84,7 +67,7 @@ def generate_shares(f):
                 region=task.get('region'),
                 portfolio=task.get('portfolio'),
                 expanded_from=task.get('expanded_from'),
-                organization=o_id,
+                organization=task.get('organization'),
             )
         )
 
@@ -102,7 +85,7 @@ def generate_shares(f):
                     region=param_kwargs.get('region'),
                     portfolio=param_kwargs.get('portfolio'),
                     expanded_from=task.get('expanded_from'),
-                    organization=o_id
+                    organization=task.get('organization'),
                 )
             )
 
