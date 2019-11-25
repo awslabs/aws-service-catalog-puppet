@@ -408,9 +408,20 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
             logger.info(f"[{self.uid}] looking for previous failures")
             path_id = aws.get_path_for_product(service_catalog, product_id, self.portfolio)
 
-            provisioned_product_id, provisioning_artifact_id = aws.terminate_if_status_is_not_available(
-                service_catalog, self.launch_name, product_id, self.account_id, self.region
+            response = service_catalog.search_provisioned_products(
+                Filters={'SearchQuery': [
+                    "productId:{}".format(product_id)
+                ]}
             )
+            provisioned_product_id = False
+            provisioning_artifact_id = False
+            for r in response.get('ProvisionedProducts', []):
+                if r.get('Name') == self.launch_name:
+                    current_status = r.get('Status')
+                    if current_status in ["AVAILABLE", "TAINTED"]:
+                        provisioned_product_id = r.get('Id')
+                        provisioning_artifact_id = r.get('ProvisioningArtifactId')
+
             logger.info(f"[{self.uid}] pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}")
 
             with betterboto_client.CrossAccountClientContextManager(
