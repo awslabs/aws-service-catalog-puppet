@@ -631,6 +631,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
     dependencies = luigi.ListParameter(default=[])
 
     post_actions = luigi.ListParameter()
+    pre_actions = luigi.ListParameter()
 
     should_use_sns = luigi.Parameter(default=False, significant=False)
 
@@ -642,6 +643,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                 portfolio=self.portfolio,
                 organization=self.organization,
                 hub_portfolio_id=self.hub_portfolio_id,
+                pre_actions=self.pre_actions,
             ),
             'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
