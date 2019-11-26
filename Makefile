@@ -33,6 +33,7 @@ prepare-deploy:
 	pipenv run python setup.py sdist
 
 prepare-deploy-aws:
+	pip install pipenv-setup
 	pipenv run pipenv-setup sync
 	python setup.py sdist
 
