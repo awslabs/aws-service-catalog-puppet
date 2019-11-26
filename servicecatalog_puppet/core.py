@@ -310,6 +310,11 @@ def _do_bootstrap(puppet_version, with_manual_approvals):
             process.join()
         click.echo('Finished creating {}-regional'.format(constants.BOOTSTRAP_STACK_NAME))
 
+    try:
+        org_iam_role = str(config.get_org_iam_role_arn())
+    except Exception:
+        org_iam_role = "None"
+
     with betterboto_client.ClientContextManager('cloudformation') as cloudformation:
         click.echo('Creating {}'.format(constants.BOOTSTRAP_STACK_NAME))
         template = asset_helpers.read_from_site_packages('{}.template.yaml'.format(constants.BOOTSTRAP_STACK_NAME))
@@ -326,7 +331,7 @@ def _do_bootstrap(puppet_version, with_manual_approvals):
                 },
                 {
                     'ParameterKey': 'OrgIamRoleArn',
-                    'ParameterValue': str(config.get_org_iam_role_arn()),
+                    'ParameterValue': org_iam_role,
                     'UsePreviousValue': False,
                 },
                 {
