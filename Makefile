@@ -12,8 +12,8 @@ setup:
 	
 setup-aws:
 	pip install pipenv
-	pipenv lock -r --dev > requirements.txt
-	pip install -r requirements.txt
+	pipenv install --dev
+	pipenv install
 
 activate:
 	pipenv shell -c
@@ -23,6 +23,7 @@ test:
 	pipenv run pytest --cov=./servicecatalog_puppet --cov-branch
 	
 test-aws:
+	pipenv check
 	pytest --cov=./servicecatalog_puppet --cov-branch	
 
 prepare-deploy:
