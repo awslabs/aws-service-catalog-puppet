@@ -20,7 +20,7 @@ account and cross region.
 
 ![What is this](./whatisthis.png)
 
-You use an AWS CodeBuild project in a central _hub_ account that provisions AWS
+You use an AWS CodeBuild project in a central _puppet_ account that provisions AWS
 Service Catalog Products into _spoke_ accounts on your behalf.  The framework
 takes care of cross account sharing and cross region product replication for
 you.
