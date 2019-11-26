@@ -15,7 +15,7 @@ activate:
 
 test:
 	pipenv check
-	pipenv run -- py.test --cov=./servicecatalog_puppet --cov-branch
+	pipenv run pytest --cov=./servicecatalog_puppet --cov-branch
 
 prepare-deploy:
 	pipenv run pipenv-setup sync
