@@ -65,8 +65,12 @@ def get_home_region():
 @functools.lru_cache(maxsize=32)
 def get_org_iam_role_arn():
     with betterboto_client.ClientContextManager('ssm', region_name=get_home_region()) as ssm:
-        response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN)
-        return response.get('Parameter').get('Value')
+        try:
+            response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN)
+            return response.get('Parameter').get('Value')
+        except ssm.exceptions.ParameterNotFound:
+            logger.info("No org role set")
+            return None
 
 
 template_dir = asset_helpers.resolve_from_site_packages('templates')
