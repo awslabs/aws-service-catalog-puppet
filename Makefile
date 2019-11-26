@@ -34,7 +34,7 @@ prepare-deploy:
 
 prepare-deploy-aws:
 	pip install pipenv-setup
-	pipenv run pipenv-setup sync
+	pipenv-setup sync
 	python setup.py sdist
 
 .PHONY: help activate test setup prepare-deploy test-aws setup-aws prepare-deploy-aws
