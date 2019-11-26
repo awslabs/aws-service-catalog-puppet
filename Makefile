@@ -21,9 +21,15 @@ activate:
 test:
 	pipenv check
 	pipenv run pytest --cov=./servicecatalog_puppet --cov-branch
+	
+test-aws:
+	pytest --cov=./servicecatalog_puppet --cov-branch	
 
 prepare-deploy:
 	pipenv run pipenv-setup sync
 	pipenv run python setup.py sdist
 
-.PHONY: help activate test setup prepare-deploy
+prepare-deploy-aws:
+	python setup.py sdist
+
+.PHONY: help activate test setup prepare-deploy test-aws setup-aws prepare-deploy-aws
