@@ -12,9 +12,11 @@ setup:
 	
 setup-aws:
 	pip install pipenv
-	pipenv install --dev
-	pipenv install
-
+	pipenv lock -r > requirements.txt
+	pip install -r requirements.txt
+	pipenv lock -r -d > requirements-dev.txt
+	pip install -r requirements-dev.txt
+	
 activate:
 	pipenv shell -c
 
