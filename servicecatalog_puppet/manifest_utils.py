@@ -310,7 +310,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         'organization': organization,
     }
 
-    if len(launch_details.get('associations')) > 0:
+    if len(launch_details.get('associations', [])) > 0:
         create_associations_for_portfolio_task = portfoliomanagement.CreateAssociationsForPortfolioTask(
             **create_spoke_local_portfolio_task_as_dependency_params,
             associations= launch_details.get('associations'),
