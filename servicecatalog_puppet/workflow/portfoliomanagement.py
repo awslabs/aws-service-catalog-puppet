@@ -834,6 +834,10 @@ class ShareAndAcceptPortfolioTask(tasks.PuppetTask):
                 logging.info(f"{self.uid}: not sharing {portfolio_id} with {self.account_id} as was previously shared")
             else:
                 logging.info(f"{self.uid}: sharing {portfolio_id} with {self.account_id}")
+                servicecatalog.create_portfolio_share(
+                    PortfolioId=portfolio_id,
+                    AccountId=self.account_id,
+                )
 
             with betterboto_client.CrossAccountClientContextManager(
                     'servicecatalog',
