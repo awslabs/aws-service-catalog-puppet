@@ -39,3 +39,6 @@ HOME_REGION = os.environ.get('AWS_REGION', os.environ.get('AWS_DEFAULT_REGION', 
 
 
 EVENTBRIDGE_MAX_EVENTS_PER_CALL = 10
+
+SPOKE_VERSION_SSM_PARAM_NAME = 'service-catalog-puppet-spoke-version'
+PUPPET_VERSION_SSM_PARAM_NAME = 'service-catalog-puppet-version'

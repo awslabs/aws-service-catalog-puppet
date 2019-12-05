@@ -22,11 +22,11 @@ activate:
 
 test:
 	pipenv check
-	pipenv run pytest --cov=./servicecatalog_puppet --cov-branch
+	pipenv run pytest -k unit --cov=./servicecatalog_puppet --cov-branch
 	
 test-aws:
 	pipenv check
-	pytest --cov=./servicecatalog_puppet --cov-branch	
+	pytest -k unit --cov=./servicecatalog_puppet --cov-branch	
 
 prepare-deploy:
 	pipenv run pipenv-setup sync
