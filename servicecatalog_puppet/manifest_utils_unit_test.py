@@ -46,7 +46,6 @@ def test_convert_manifest_into_task_defs(sut, shared_datadir):
         ('accounts', 'test_convert_manifest_into_task_defs_handles_lists'),
     ]
 )
-
 def test_convert_manifest_into_task_defs_handles_default_region(sut, shared_datadir, dir, manifest_file):
     # setup
     manifest = yaml.safe_load(
