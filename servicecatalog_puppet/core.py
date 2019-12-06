@@ -874,3 +874,19 @@ def export_puppet_pipeline_logs(execution_id):
 
         for action_execution_detail in action_execution_details:
             handle_action_execution_detail(action_execution_detail)
+
+
+def uninstall():
+    with betterboto_client.ClientContextManager(
+            "cloudformation",
+            region_name=config.get_home_region()
+    ) as cloudformation:
+        cloudformation.ensure_deleted(StackName=constants.BOOTSTRAP_STACK_NAME)
+
+
+def release_spoke():
+    with betterboto_client.ClientContextManager(
+            "cloudformation",
+            region_name=config.get_home_region()
+    ) as cloudformation:
+        cloudformation.ensure_deleted(StackName=f"{constants.BOOTSTRAP_STACK_NAME}-spoke")

@@ -111,3 +111,20 @@ def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_b
     :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
     core.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary)
+
+
+def uninstall():
+    """
+    Delete the resources created during the boostrap process.  AWS Service Catalog portfolios and their configurations
+    are not modified during this call
+
+    """
+    core.uninstall()
+
+
+def release_spoke():
+    """
+    Delete the resources created during the boostrap spoke process
+
+    """
+    core.release_spoke()

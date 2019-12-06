@@ -204,5 +204,15 @@ def export_puppet_pipeline_logs(execution_id):
     core.export_puppet_pipeline_logs(execution_id)
 
 
+@cli.command()
+def uninstall():
+    core.uninstall()
+
+
+@cli.command()
+def release_spoke():
+    core.release_spoke()
+
+
 if __name__ == "__main__":
     cli()
