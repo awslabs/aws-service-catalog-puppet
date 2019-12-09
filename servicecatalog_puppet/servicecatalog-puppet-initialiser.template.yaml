@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.43.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.58.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Parameters:
   EnabledRegions:

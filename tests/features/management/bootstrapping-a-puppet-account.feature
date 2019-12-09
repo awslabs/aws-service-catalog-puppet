@@ -37,4 +37,3 @@ Feature: bootstrapping a puppet account
     Given a "puppet" account has been bootstrapped with version "x"
     When I bootstrap a "puppet" account with version "x"
     Then the "puppet" account is bootstrapped with version "x"
-    
