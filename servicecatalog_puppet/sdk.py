@@ -66,14 +66,36 @@ def upload_config(config):
     core.upload_config(config)
 
 
-def bootstrap(with_manual_approvals):
+def bootstrap(
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+        source_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+        puppet_generate_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+        puppet_deploy_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+        puppet_provisioning_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+        cloud_formation_deploy_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+):
     """
     Bootstrap the puppet account.  This will create the AWS CodeCommit repo containing the config and it will also
     create the AWS CodePipeline that will run the solution.
 
     :param with_manual_approvals: Boolean to specify whether there should be manual approvals before provisioning occurs
+    :param puppet_code_pipeline_role_permission_boundary: IAM Boundary to apply to the role: PuppetCodePipelineRole
+    :param source_role_permissions_boundary: IAM Boundary to apply to the role: SourceRole
+    :param puppet_generate_role_permission_boundary: IAM Boundary to apply to the role: PuppetGenerateRole
+    :param puppet_deploy_role_permission_boundary: IAM Boundary to apply to the role: PuppetDeployRole
+    :param puppet_provisioning_role_permissions_boundary: IAM Boundary to apply to the role: PuppetProvisioningRole
+    :param cloud_formation_deploy_role_permissions_boundary: IAM Boundary to apply to the role: CloudFormationDeployRole
     """
-    core.bootstrap(with_manual_approvals)
+    core.bootstrap(
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+    )
 
 
 def bootstrap_spoke(puppet_account_id, permission_boundary):

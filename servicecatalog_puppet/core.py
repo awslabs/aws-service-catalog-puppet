@@ -259,7 +259,16 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
         )
 
 
-def _do_bootstrap(puppet_version, with_manual_approvals):
+def _do_bootstrap(
+        puppet_version,
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+):
     click.echo('Starting bootstrap')
 
     should_use_eventbridge = config.get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION"))
@@ -334,6 +343,36 @@ def _do_bootstrap(puppet_version, with_manual_approvals):
                     'ParameterValue': "Yes" if with_manual_approvals else "No",
                     'UsePreviousValue': False,
                 },
+                {
+                    'ParameterKey': 'PuppetCodePipelineRolePermissionBoundary',
+                    'ParameterValue': puppet_code_pipeline_role_permission_boundary,
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'SourceRolePermissionsBoundary',
+                    'ParameterValue': source_role_permissions_boundary,
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'PuppetGenerateRolePermissionBoundary',
+                    'ParameterValue': puppet_generate_role_permission_boundary,
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'PuppetDeployRolePermissionBoundary',
+                    'ParameterValue': puppet_deploy_role_permission_boundary,
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'PuppetProvisioningRolePermissionsBoundary',
+                    'ParameterValue': puppet_provisioning_role_permissions_boundary,
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'CloudFormationDeployRolePermissionsBoundary',
+                    'ParameterValue': cloud_formation_deploy_role_permissions_boundary,
+                    'UsePreviousValue': False,
+                },
             ],
         }
         cloudformation.create_or_update(**args)
@@ -361,17 +400,46 @@ def bootstrap_spoke(puppet_account_id, permission_boundary):
         )
 
 
-def bootstrap_branch(branch_name, with_manual_approvals):
+def bootstrap_branch(
+        branch_name,
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+):
     _do_bootstrap(
         "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(branch_name),
         with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
     )
 
 
-def bootstrap(with_manual_approvals):
+def bootstrap(
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+):
     _do_bootstrap(
         config.get_puppet_version(),
         with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
     )
 
 

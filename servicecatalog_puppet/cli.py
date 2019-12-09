@@ -70,14 +70,60 @@ def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_b
 @cli.command()
 @click.argument('branch-name')
 @click.option('--with-manual-approvals/--with-no-manual-approvals', default=False)
-def bootstrap_branch(branch_name, with_manual_approvals):
-    core.bootstrap_branch(branch_name, with_manual_approvals)
+@click.option("--puppet-code-pipeline-role-permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--source-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--puppet-generate-role-permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--puppet-deploy-role-permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--puppet-provisioning-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--cloud-formation-deploy-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+def bootstrap_branch(
+        branch_name,
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+):
+    core.bootstrap_branch(
+        branch_name,
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+    )
 
 
 @cli.command()
 @click.option('--with-manual-approvals/--with-no-manual-approvals', default=False)
-def bootstrap(with_manual_approvals):
-    core.bootstrap(with_manual_approvals)
+@click.option("--puppet-code-pipeline-role-permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--source-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--puppet-generate-role-permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--puppet-deploy-role-permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--puppet-provisioning-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--cloud-formation-deploy-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+def bootstrap(
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+):
+    core.bootstrap(
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+    )
 
 
 @cli.command()

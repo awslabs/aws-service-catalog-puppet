@@ -29,6 +29,34 @@ Parameters:
       - True
       - False
     Default: True
+  PuppetCodePipelineRolePermissionBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetCodePipelineRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  SourceRolePermissionsBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the SourceRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  PuppetGenerateRolePermissionBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetGenerateRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  PuppetDeployRolePermissionBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetDeployRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  PuppetProvisioningRolePermissionsBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetProvisioningRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  CloudFormationDeployRolePermissionsBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the CloudFormationDeployRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  PuppetRolePermissionBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
 
 Resources:
   InitialiserRole:
@@ -80,6 +108,35 @@ Resources:
           - Name: PUPPET_ACCOUNT_ID
             Type: PLAINTEXT
             Value: !Ref AWS::AccountId
+
+          - Name: PUPPET_CODE_PIPELINE_ROLE_PERMISSION_BOUNDARY
+            Type: PLAINTEXT
+            Value: !Ref PuppetCodePipelineRolePermissionBoundary
+
+          - Name: SOURCE_ROLE_PERMISSIONS_BOUNDARY
+            Type: PLAINTEXT
+            Value: !Ref SourceRolePermissionsBoundary
+
+          - Name: PUPPET_GENERATE_ROLE_PERMISSION_BOUNDARY
+            Type: PLAINTEXT
+            Value: !Ref PuppetGenerateRolePermissionBoundary
+
+          - Name: PUPPET_DEPLOY_ROLE_PERMISSION_BOUNDARY
+            Type: PLAINTEXT
+            Value: !Ref PuppetDeployRolePermissionBoundary
+
+          - Name: PUPPET_PROVISIONING_ROLE_PERMISSIONS_BOUNDARY
+            Type: PLAINTEXT
+            Value: !Ref PuppetProvisioningRolePermissionsBoundary
+
+          - Name: CLOUD_FORMATION_DEPLOY_ROLE_PERMISSIONS_BOUNDARY
+            Type: PLAINTEXT
+            Value: !Ref CloudFormationDeployRolePermissionsBoundary
+
+          - Name: PUPPET_ROLE_PERMISSION_BOUNDARY
+            Type: PLAINTEXT
+            Value: !Ref PuppetRolePermissionBoundary
+
       Source:
         Type: NO_SOURCE
         BuildSpec: |
@@ -92,10 +149,10 @@ Resources:
                 - servicecatalog-puppet set-config-value should_collect_cloudformation_events ${SHOULD_COLLECT_CLOUDFORMATION_EVENTS}
                 - servicecatalog-puppet set-config-value should_forward_events_to_eventbridge ${SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE}
                 - servicecatalog-puppet set-config-value should_forward_failures_to_opscenter ${SHOULD_FORWARD_FAILURES_TO_OPSCENTER}
-                - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID}
+                - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID} --permission-boundary ${PUPPET_ROLE_PERMISSION_BOUNDARY}
             build:
               commands:
-                - servicecatalog-puppet --info bootstrap
+                - servicecatalog-puppet --info bootstrap --puppet-code-pipeline-role-permission-boundary ${PUPPET_CODE_PIPELINE_ROLE_PERMISSION_BOUNDARY} --source-role-permissions-boundary ${SOURCE_ROLE_PERMISSIONS_BOUNDARY} --puppet-generate-role-permission-boundary ${PUPPET_GENERATE_ROLE_PERMISSION_BOUNDARY} --puppet-deploy-role-permission-boundary ${PUPPET_DEPLOY_ROLE_PERMISSION_BOUNDARY} --puppet-provisioning-role-permissions-boundary ${PUPPET_PROVISIONING_ROLE_PERMISSIONS_BOUNDARY} --cloud-formation-deploy-role-permissions-boundary ${CLOUD_FORMATION_DEPLOY_ROLE_PERMISSIONS_BOUNDARY}
 
       TimeoutInMinutes: 60
 

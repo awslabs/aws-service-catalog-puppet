@@ -18,6 +18,30 @@ Parameters:
       - 'Yes'
       - 'No'
     Default: 'No'
+  PuppetCodePipelineRolePermissionBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetCodePipelineRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  SourceRolePermissionsBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the SourceRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  PuppetGenerateRolePermissionBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetGenerateRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  PuppetDeployRolePermissionBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetDeployRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  PuppetProvisioningRolePermissionsBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetProvisioningRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  CloudFormationDeployRolePermissionsBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the CloudFormationDeployRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
 
 Conditions:
   ShouldUseOrgs: !Not [!Equals [!Ref OrgIamRoleArn, None]]
@@ -72,6 +96,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: PuppetProvisioningRole
+      PermissionsBoundary: !Ref PuppetProvisioningRolePermissionsBoundary
       Path: /servicecatalog-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -94,6 +119,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: CloudFormationDeployRole
+      PermissionsBoundary: !Ref CloudFormationDeployRolePermissionsBoundary
       Path: /servicecatalog-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -116,6 +142,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: PuppetCodePipelineRole
+      PermissionsBoundary: !Ref PuppetCodePipelineRolePermissionBoundary
       Path: /servicecatalog-puppet/
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
@@ -133,6 +160,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: PuppetSourceRole
+      PermissionsBoundary: !Ref SourceRolePermissionsBoundary
       Path: /servicecatalog-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -259,6 +287,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: PuppetGenerateRole
+      PermissionsBoundary: !Ref PuppetGenerateRolePermissionBoundary
       Path: /servicecatalog-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -288,6 +317,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: PuppetDeployRole
+      PermissionsBoundary: !Ref PuppetDeployRolePermissionBoundary
       Path: /servicecatalog-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
