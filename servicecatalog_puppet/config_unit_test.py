@@ -119,3 +119,58 @@ def test_get_home_region(sut, mocker):
     assert args == ()
     assert kwargs == {'Name': constants.HOME_REGION_PARAM_NAME}
 
+
+def test_get_org_iam_role_arn(sut, mocker):
+    # setup
+    expected_result = "some_fake_arn"
+    mocked_response = {
+        'Parameter': {
+            "Value": expected_result
+        }
+    }
+    mocked_betterboto_client = mocker.patch.object(sut.betterboto_client, 'ClientContextManager')
+    mocked_betterboto_client().__enter__().get_parameter.return_value = mocked_response
+    mocked_get_home_region = mocker.patch.object(sut, 'get_home_region')
+    mocked_get_home_region.return_value = 'us-east-9'
+
+    # exercise
+    actual_result = sut.get_org_iam_role_arn()
+
+    # verify
+    assert actual_result == expected_result
+    args, kwargs = mocked_betterboto_client().__enter__().get_parameter.call_args
+    assert args == ()
+    assert kwargs == {'Name': constants.CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN}
+
+
+def test_get_puppet_account_id(sut, mocker):
+    # setup
+    expected_result = "some_fake_arn"
+    mocked_response = {
+        'Account': expected_result
+    }
+    mocked_betterboto_client = mocker.patch.object(sut.betterboto_client, 'ClientContextManager')
+    mocked_betterboto_client().__enter__().get_caller_identity.return_value = mocked_response
+
+    # exercise
+    actual_result = sut.get_puppet_account_id()
+
+    # verify
+    assert actual_result == expected_result
+
+
+#TODO fix
+def test_get_puppet_version(sut, mocker):
+    # setup
+    expected_result = "0.0.1"
+    mocked_response = [
+        {'version': expected_result},
+    ]
+    mocked_pkg_require= mocker.patch.object(sut.pkg_resources, 'require')
+    # mocked_pkg_require.return_value = mocked_response
+
+    # exercise
+    actual_result = sut.get_puppet_version()
+
+    # verify
+    # assert actual_result == expected_result
