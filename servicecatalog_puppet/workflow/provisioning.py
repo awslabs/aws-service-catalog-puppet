@@ -1,9 +1,12 @@
 import json
+import time
+
 import luigi
 from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
+
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow import portfoliomanagement
@@ -349,7 +352,7 @@ class ProvisionProductTask(tasks.PuppetTask):
                             if output.get('OutputKey') == ssm_param_output.get('stack_output'):
                                 found_match = True
                                 logger.info(f"[{self.uid}] found value")
-                                ssm.put_parameter(
+                                ssm.put_parameter_and_wait(
                                     Name=ssm_param_output.get('param_name'),
                                     Value=output.get('OutputValue'),
                                     Type=ssm_param_output.get('param_type', 'String'),
