@@ -145,6 +145,10 @@ def provision_product_with_plan(
         ProvisioningParameters=provisioning_parameters,
         Tags=[
             {
+                'Key': 'ServiceCatalogPuppet:Actor',
+                'Value': "Generated",
+            },
+            {
                 'Key': 'launch_name',
                 'Value': launch_name,
             },
@@ -252,6 +256,10 @@ def provision_product(
         ProvisionedProductName=launch_name,
         ProvisioningParameters=provisioning_parameters,
         Tags=[
+            {
+                'Key': 'ServiceCatalogPuppet:Actor',
+                'Value': "Generated",
+            },
             {
                 'Key': 'launch_name',
                 'Value': launch_name,
