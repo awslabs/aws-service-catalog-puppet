@@ -231,7 +231,7 @@ def run_tasks_for_generate_shares(tasks_to_run):
     sys.exit(exit_status_codes.get(run_result.status))
 
 
-def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run):
+def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
     for type in ["failure", "success", "timeout", "process_failure", "processing_time", "broken_task", ]:
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
 
@@ -239,7 +239,7 @@ def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run):
         tasks_to_run,
         local_scheduler=True,
         detailed_summary=True,
-        workers=10,
+        workers=num_workers,
         log_level='INFO',
     )
 

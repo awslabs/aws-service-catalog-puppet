@@ -63,8 +63,9 @@ def bootstrap_spoke(puppet_account_id, permission_boundary):
 @click.argument('role_name')
 @click.argument('iam_role_arns', nargs=-1)
 @click.option('--permission-boundary', default="arn:aws:iam::aws:policy/AdministratorAccess")
-def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary):
-    core.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary)
+@click.option('--num-workers', default=10)
+def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary, num_workers):
+    core.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary, num_workers)
 
 
 @cli.command()

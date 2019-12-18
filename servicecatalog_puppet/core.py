@@ -856,7 +856,7 @@ def set_config_value(name, value):
         upload_config(config)
 
 
-def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary):
+def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary, num_workers=10):
     org_iam_role_arn = config.get_org_iam_role_arn()
     puppet_account_id = config.get_puppet_account_id()
     if org_iam_role_arn is None:
@@ -884,7 +884,7 @@ def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_b
                     )
                 )
 
-        runner.run_tasks_for_bootstrap_spokes_in_ou(tasks)
+        runner.run_tasks_for_bootstrap_spokes_in_ou(tasks, num_workers)
 
 
 def handle_action_execution_detail(action_execution_detail):
