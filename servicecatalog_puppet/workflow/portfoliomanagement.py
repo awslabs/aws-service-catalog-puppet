@@ -759,7 +759,7 @@ class RequestPolicyTask(tasks.PuppetTask):
     type = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
-    expanded_from = luigi.Parameter(default=None)
+    organization = luigi.Parameter(default=None)
 
     @property
     def uid(self):
@@ -771,11 +771,11 @@ class RequestPolicyTask(tasks.PuppetTask):
         )
 
     def run(self):
-        if self.expanded_from is not None:
+        if self.organization is not None:
             p = f'data/{self.type}/{self.region}/organizations/'
             if not os.path.exists(p):
                 os.makedirs(p, exist_ok=True)
-            path = f'{p}/{self.expanded_from}.json'
+            path = f'{p}/{self.organization}.json'
         else:
             p = f'data/{self.type}/{self.region}/accounts/'
             if not os.path.exists(p):
@@ -941,13 +941,13 @@ class CreateShareForAccountLaunchRegion(tasks.PuppetTask):
             'topic': RequestPolicyTask(
                 type="topic",
                 region=self.region,
-                expanded_from=self.expanded_from,
+                organization=self.organization,
                 account_id=self.account_id,
             ),
             'bucket': RequestPolicyTask(
                 type="bucket",
                 region=self.region,
-                expanded_from=self.expanded_from,
+                organization=self.organization,
                 account_id=self.account_id,
             ),
         }

@@ -193,6 +193,7 @@ def convert_manifest_into_task_defs_for_launches(
                         tag_account_def['account_id'] = account.get('account_id')
                         if include_expanded_from:
                             tag_account_def['expanded_from'] = account.get('expanded_from')
+                            tag_account_def['organization'] = account.get('organization')
                         tag_account_def['account_parameters'] = account.get('parameters', {})
 
                         regions = tag_list_item.get('regions')
@@ -229,6 +230,7 @@ def convert_manifest_into_task_defs_for_launches(
                     account_account_def['account_id'] = account.get('account_id')
                     if include_expanded_from:
                         account_account_def['expanded_from'] = account.get('expanded_from')
+                        account_account_def['organization'] = account.get('organization')
                     account_account_def['account_parameters'] = account.get('parameters', {})
 
                     regions = account_list_item.get('regions')
