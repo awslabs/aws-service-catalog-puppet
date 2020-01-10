@@ -56,16 +56,57 @@ def expand_manifest(manifest, client):
             if first_account.get('account_id') == second_account.get('account_id'):
                 times_seen += 1
                 if times_seen > 1:
-                    message = "{} has been seen twice.".format(first_account.get('account_id'))
-                    if first_account.get('expanded_from'):
-                        message += "  It was included due to it being in the ou: {}".format(
-                            first_account.get('expanded_from')
-                        )
-                    if second_account.get('expanded_from'):
-                        message += "  It was included due to it being in the ou: {}".format(
-                            second_account.get('expanded_from')
-                        )
-                    raise Exception(message)
+                    was_first = False
+                    was_second = False
+
+                    if first_account.get('append', None) is not None:
+                        was_first = True
+                        append = first_account.get('append')
+                        for tag in append.get('tags', []):
+                            second_account.get('tags').append(tag)
+                        for region_enabled in append.get('regions_enabled', []):
+                            second_account.get('regions_enabled').append(region_enabled)
+
+                    elif first_account.get('overwrite', None) is not None:
+                        was_first = True
+                        overwrite = first_account.get('overwrite')
+                        if overwrite.get('tags'):
+                            second_account['tags'] = overwrite.get('tags')
+                        if overwrite.get('regions_enabled'):
+                            second_account['regions_enabled'] = overwrite.get('regions_enabled')
+                        if overwrite.get('default_region'):
+                            second_account['default_region'] = overwrite.get('default_region')
+
+                    elif second_account.get('append', None) is not None:
+                        was_second = True
+                        append = second_account.get('append')
+                        for tag in append.get('tags', []):
+                            first_account.get('tags').append(tag)
+                        for region_enabled in append.get('regions_enabled', []):
+                            first_account.get('regions_enabled').append(region_enabled)
+
+                    elif second_account.get('overwrite', None) is not None:
+                        was_second = True
+                        overwrite = second_account.get('overwrite')
+                        if overwrite.get('tags'):
+                            first_account['tags'] = overwrite.get('tags')
+                        if overwrite.get('regions_enabled'):
+                            first_account['regions_enabled'] = overwrite.get('regions_enabled')
+                        if overwrite.get('default_region'):
+                            first_account['default_region'] = overwrite.get('default_region')
+
+
+                    else:
+                        message = "{} has been seen twice without using append or overwrite.".format(first_account.get('account_id'))
+                        if first_account.get('expanded_from'):
+                            message += "  It was included due to it being in the ou: {}".format(
+                                first_account.get('expanded_from')
+                            )
+                        if second_account.get('expanded_from'):
+                            message += "  It was included due to it being in the ou: {}".format(
+                                second_account.get('expanded_from')
+                            )
+                        raise Exception(message)
 
     for launch_name, launch_details in new_manifest.get(constants.LAUNCHES, {}).items():
         for parameter_name, parameter_details in launch_details.get('parameters', {}).items():
