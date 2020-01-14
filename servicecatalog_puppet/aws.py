@@ -447,7 +447,7 @@ def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name,
         return product_id, version_id
 
 
-@functools.lru_cache(max_size=1024)
+@functools.lru_cache()
 def get_portfolio_for(portfolio_name, account_id, region):
     logger.info(f"Getting portfolio id for: {portfolio_name}")
 
