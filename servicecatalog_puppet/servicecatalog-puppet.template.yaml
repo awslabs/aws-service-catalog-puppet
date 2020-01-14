@@ -367,7 +367,7 @@ Resources:
               - shares/*/*/*.json
               - topic/*/*/*.json
             name: GenerateShares
-      TimeoutInMinutes: 120
+      TimeoutInMinutes: 480
       Tags:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
@@ -405,7 +405,7 @@ Resources:
               - output/*/*
             name: DeployProject
 
-      TimeoutInMinutes: 60
+      TimeoutInMinutes: 480
       Tags:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
@@ -443,7 +443,7 @@ Resources:
               - output/*/*
             name: DryRunProject
 
-      TimeoutInMinutes: 60
+      TimeoutInMinutes: 480
       Tags:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
@@ -540,7 +540,7 @@ Resources:
               - data/*/*/*/*.json
               - shares/*/*/*.json
               - topic/*/*/*.json
-      TimeoutInMinutes: 30
+      TimeoutInMinutes: 480
       Tags:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
