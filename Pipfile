@@ -12,6 +12,7 @@ pylint = "*"
 pytest-mock = "*"
 pytest-datadir = "*"
 behave = "*"
+aws-service-catalog-puppet = {path = "."}
 
 [packages]
 requests = "==2.22.0"
@@ -26,6 +27,7 @@ terminaltables = "==3.1.0"
 colorclass = "==2.2.0"
 luigi = "==2.8.9"
 cfn-flip = "==1.2.1"
+aws-service-catalog-puppet = {path = "."}
 
 [requires]
 python_version = "3.7"

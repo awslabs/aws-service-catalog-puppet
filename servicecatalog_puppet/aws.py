@@ -1,3 +1,4 @@
+import functools
 import logging
 import time
 import os
@@ -446,8 +447,10 @@ def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name,
         return product_id, version_id
 
 
+@functools.lru_cache(max_size=1024)
 def get_portfolio_for(portfolio_name, account_id, region):
     logger.info(f"Getting portfolio id for: {portfolio_name}")
+
     role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
     with betterboto_client.CrossAccountClientContextManager(
             'servicecatalog', role, "-".join([account_id, region]), region_name=region
