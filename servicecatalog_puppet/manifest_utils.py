@@ -356,9 +356,9 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
     if len(launch_details.get('associations', [])) > 0:
         create_associations_for_portfolio_task = portfoliomanagement.CreateAssociationsForPortfolioTask(
             **create_spoke_local_portfolio_task_as_dependency_params,
-            associations= launch_details.get('associations'),
-            puppet_account_id= puppet_account_id,
-            should_use_sns= should_use_sns,
+            associations=launch_details.get('associations'),
+            puppet_account_id=puppet_account_id,
+            should_use_sns=should_use_sns,
             dependencies=dependencies,
             pre_actions=pre_actions,
         )
