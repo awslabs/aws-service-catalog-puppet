@@ -803,7 +803,7 @@ class ShareAndAcceptPortfolioTask(tasks.PuppetTask):
     @property
     def resources(self):
         return {
-            f"{self.puppet_account_id}-{self.region}-{self.portfolio}": 1
+            f"{self.puppet_account_id}-{self.account_id}-{self.region}-{self.portfolio}": 1
         }
 
     @property
