@@ -18,23 +18,23 @@ def load(f):
 
 def expand_manifest(manifest, client):
     new_manifest = deepcopy(manifest)
-    new_accounts = new_manifest['accounts'] = []
+    temp_accounts = []
 
     logger.info('Starting the expand')
 
     for account in manifest.get('accounts'):
         if account.get('account_id'):
             logger.info("Found an account: {}".format(account.get('account_id')))
-            new_accounts.append(account)
+            temp_accounts.append(account)
         elif account.get('ou'):
             ou = account.get('ou')
             logger.info("Found an ou: {}".format(ou))
             if ou.startswith('/'):
-                new_accounts += expand_path(account, client)
+                temp_accounts += expand_path(account, client)
             else:
-                new_accounts += expand_ou(account, client)
+                temp_accounts += expand_ou(account, client)
 
-    logger.debug(new_accounts)
+    logger.debug(temp_accounts)
 
     for parameter_name, parameter_details in new_manifest.get('parameters', {}).items():
         if parameter_details.get('macro'):
@@ -43,29 +43,51 @@ def expand_manifest(manifest, client):
             parameter_details['default'] = result
             del parameter_details['macro']
 
-    for first_account in new_accounts:
-        for parameter_name, parameter_details in first_account.get('parameters', {}).items():
+    accounts_by_id = {}
+    for account in temp_accounts:
+        for parameter_name, parameter_details in account.get('parameters', {}).items():
             if parameter_details.get('macro'):
                 macro_to_run = macros.get(parameter_details.get('macro').get('method'))
                 result = macro_to_run(client, parameter_details.get('macro').get('args'))
                 parameter_details['default'] = result
                 del parameter_details['macro']
 
-        times_seen = 0
-        for second_account in new_accounts:
-            if first_account.get('account_id') == second_account.get('account_id'):
-                times_seen += 1
-                if times_seen > 1:
-                    message = "{} has been seen twice.".format(first_account.get('account_id'))
-                    if first_account.get('expanded_from'):
-                        message += "  It was included due to it being in the ou: {}".format(
-                            first_account.get('expanded_from')
-                        )
-                    if second_account.get('expanded_from'):
-                        message += "  It was included due to it being in the ou: {}".format(
-                            second_account.get('expanded_from')
-                        )
-                    raise Exception(message)
+        account_id = account.get('account_id')
+        if account.get('append') or account.get('overwrite'):
+            if account.get('default_region') or account.get('regions_enabled') or account.get('tags'):
+                raise Exception(
+                    f"{account_id}: If using append or overwrite you cannot set default_region, regions_enabled or tags"
+                )
+
+        if accounts_by_id.get(account_id) is None:
+            accounts_by_id[account_id] = account
+        else:
+            stored_account = accounts_by_id[account_id]
+            stored_account.update(account)
+
+            if stored_account.get('append'):
+                append = stored_account.get('append')
+                for tag in append.get('tags', []):
+                    stored_account.get('tags').append(tag)
+                for region_enabled in append.get('regions_enabled', []):
+                    stored_account.get('regions_enabled').append(region_enabled)
+                del stored_account['append']
+
+            elif stored_account.get('overwrite'):
+                overwrite = stored_account.get('overwrite')
+                if overwrite.get('tags'):
+                    stored_account['tags'] = overwrite.get('tags')
+                if overwrite.get('regions_enabled'):
+                    stored_account['regions_enabled'] = overwrite.get('regions_enabled')
+                if overwrite.get('default_region'):
+                    stored_account['default_region'] = overwrite.get('default_region')
+                del stored_account['overwrite']
+
+            else:
+                raise Exception(
+                    f"Account {account_id} has been seen twice without using append or overwrite"
+                )
+    new_manifest['accounts'] = list(accounts_by_id.values())
 
     for launch_name, launch_details in new_manifest.get(constants.LAUNCHES, {}).items():
         for parameter_name, parameter_details in launch_details.get('parameters', {}).items():
