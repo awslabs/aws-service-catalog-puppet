@@ -38,12 +38,14 @@ def test_convert_manifest_into_task_defs(sut, shared_datadir):
         ('tags', 'test_convert_manifest_into_task_defs_handles_regions_enabled'),
         ('tags', 'test_convert_manifest_into_task_defs_handles_enabled_regions'),
         ('tags', 'test_convert_manifest_into_task_defs_handles_lists'),
+        ('tags', 'test_convert_manifest_into_task_defs_handles_empty'),
 
         ('accounts', 'test_convert_manifest_into_task_defs_handles_default_region'),
         ('accounts', 'test_convert_manifest_into_task_defs_handles_enabled'),
         ('accounts', 'test_convert_manifest_into_task_defs_handles_regions_enabled'),
         ('accounts', 'test_convert_manifest_into_task_defs_handles_enabled_regions'),
         ('accounts', 'test_convert_manifest_into_task_defs_handles_lists'),
+        ('accounts', 'test_convert_manifest_into_task_defs_handles_empty'),
     ]
 )
 def test_convert_manifest_into_task_defs_handles_default_region(sut, shared_datadir, dir, manifest_file):
