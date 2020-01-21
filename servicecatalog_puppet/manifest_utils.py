@@ -218,7 +218,7 @@ def convert_manifest_into_task_defs_for_launches(
                             tag_account_def['organization'] = account.get('organization')
                         tag_account_def['account_parameters'] = account.get('parameters', {})
 
-                        regions = tag_list_item.get('regions')
+                        regions = tag_list_item.get('regions', 'default_region')
                         if isinstance(regions, str):
                             if regions in ["enabled", "regions_enabled", "enabled_regions"]:
                                 for region_enabled in account.get('regions_enabled'):
@@ -255,7 +255,7 @@ def convert_manifest_into_task_defs_for_launches(
                         account_account_def['organization'] = account.get('organization')
                     account_account_def['account_parameters'] = account.get('parameters', {})
 
-                    regions = account_list_item.get('regions')
+                    regions = account_list_item.get('regions', 'default_region')
                     if isinstance(regions, str):
                         if regions in ["enabled", "regions_enabled", "enabled_regions"]:
                             for region_enabled in account.get('regions_enabled'):
@@ -420,7 +420,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
             if launch_details.get('configuration').get('requested_priority'):
                 task_def['requested_priority'] = int(launch_details.get('configuration').get('requested_priority'))
 
-        deploy_to = launch_details .get('deploy_to')
+        deploy_to = launch_details.get('deploy_to')
         for tag_list_item in deploy_to.get('tags', []):
             for account in accounts:
                 for tag in account.get('tags', []):
@@ -430,7 +430,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                         tag_account_def['expanded_from'] = account.get('expanded_from')
                         tag_account_def['organization'] = account.get('organization')
 
-                        regions = tag_list_item.get('regions')
+                        regions = tag_list_item.get('regions', 'default_region')
                         if isinstance(regions, str):
                             if regions in ["enabled", "regions_enabled", "enabled_regions"]:
                                 for region_enabled in account.get('regions_enabled'):
@@ -474,7 +474,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
                     account_account_def['organization'] = account.get('organization')
                     # account_account_def['account_parameters'] = account.get('parameters', {})
 
-                    regions = account_list_item.get('regions')
+                    regions = account_list_item.get('regions', 'default_region')
                     if isinstance(regions, str):
                         if regions in ["enabled", "regions_enabled", "enabled_regions"]:
                             for region_enabled in account.get('regions_enabled'):

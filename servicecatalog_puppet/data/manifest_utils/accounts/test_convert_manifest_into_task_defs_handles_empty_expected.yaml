@@ -1,0 +1,30 @@
+- account_id: '246919575282'
+  account_parameters: {}
+  dependencies: []
+  launch_name: assumable-role-account
+  launch_parameters:
+    AccountToTrust:
+      default: '246919575282'
+    Path:
+      default: /
+    RoleName:
+      default: AccountAssumeRole
+  manifest_parameters: {}
+  parameters: []
+  portfolio: example-simple-central-it-team-portfolio
+  product: assumable-role-account
+  puppet_account_id: 9
+  region: eu-west-1
+  requested_priority: 0
+  retry_count: 0
+  should_use_sns: true
+  should_use_product_plans: true
+  ssm_param_inputs: []
+  pre_actions: []
+  post_actions: []
+  ssm_param_outputs:
+  - param_name: ServiceCatalogAccountRoleArn
+    stack_output: RoleArn
+  status: provisioned
+  version: v1
+  worker_timeout: 0
