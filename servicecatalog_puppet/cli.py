@@ -107,6 +107,8 @@ def bootstrap_branch(
 @click.option("--puppet-deploy-role-permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
 @click.option("--puppet-provisioning-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
 @click.option("--cloud-formation-deploy-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--deploy_environment_compute_type", default="BUILD_GENERAL1_SMALL", show_default=True)
+@click.option("--deploy_num_workers", default=10, type=click.INT ,show_default=True)
 def bootstrap(
         with_manual_approvals,
         puppet_code_pipeline_role_permission_boundary,
@@ -115,6 +117,8 @@ def bootstrap(
         puppet_deploy_role_permission_boundary,
         puppet_provisioning_role_permissions_boundary,
         cloud_formation_deploy_role_permissions_boundary,
+        deploy_environment_compute_type,
+        deploy_num_workers,
 ):
     core.bootstrap(
         with_manual_approvals,
@@ -124,6 +128,8 @@ def bootstrap(
         puppet_deploy_role_permission_boundary,
         puppet_provisioning_role_permissions_boundary,
         cloud_formation_deploy_role_permissions_boundary,
+        deploy_environment_compute_type,
+        deploy_num_workers,
     )
 
 

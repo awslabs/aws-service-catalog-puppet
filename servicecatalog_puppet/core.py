@@ -268,6 +268,8 @@ def _do_bootstrap(
         puppet_deploy_role_permission_boundary,
         puppet_provisioning_role_permissions_boundary,
         cloud_formation_deploy_role_permissions_boundary,
+        deploy_environment_compute_type="BUILD_GENERAL1_SMALL",
+        deploy_num_workers=10,
 ):
     click.echo('Starting bootstrap')
 
@@ -373,6 +375,16 @@ def _do_bootstrap(
                     'ParameterValue': cloud_formation_deploy_role_permissions_boundary,
                     'UsePreviousValue': False,
                 },
+                {
+                    'ParameterKey': 'DeployEnvironmentComputeType',
+                    'ParameterValue': deploy_environment_compute_type,
+                    'UsePreviousValue': False,
+                },
+                {
+                    'ParameterKey': 'DeployNumWorkers',
+                    'ParameterValue': str(deploy_num_workers),
+                    'UsePreviousValue': False,
+                },
             ],
         }
         cloudformation.create_or_update(**args)
@@ -430,6 +442,8 @@ def bootstrap(
         puppet_deploy_role_permission_boundary,
         puppet_provisioning_role_permissions_boundary,
         cloud_formation_deploy_role_permissions_boundary,
+        deploy_environment_compute_type,
+        deploy_num_workers,
 ):
     _do_bootstrap(
         config.get_puppet_version(),
@@ -440,6 +454,8 @@ def bootstrap(
         puppet_deploy_role_permission_boundary,
         puppet_provisioning_role_permissions_boundary,
         cloud_formation_deploy_role_permissions_boundary,
+        deploy_environment_compute_type,
+        deploy_num_workers,
     )
 
 

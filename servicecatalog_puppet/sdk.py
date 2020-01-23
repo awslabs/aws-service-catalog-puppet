@@ -74,6 +74,8 @@ def bootstrap(
         puppet_deploy_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
         puppet_provisioning_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
         cloud_formation_deploy_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+        deploy_environment_compute_type="BUILD_GENERAL1_SMALL",
+        deploy_num_workers=10,
 ):
     """
     Bootstrap the puppet account.  This will create the AWS CodeCommit repo containing the config and it will also
@@ -86,6 +88,8 @@ def bootstrap(
     :param puppet_deploy_role_permission_boundary: IAM Boundary to apply to the role: PuppetDeployRole
     :param puppet_provisioning_role_permissions_boundary: IAM Boundary to apply to the role: PuppetProvisioningRole
     :param cloud_formation_deploy_role_permissions_boundary: IAM Boundary to apply to the role: CloudFormationDeployRole
+    :param deploy_environment_compute_type: The AWS CodeBuild Environment Compute Type
+    :param deploy_num_workers: Number of workers that should be used when running a deploy
     """
     core.bootstrap(
         with_manual_approvals,
@@ -95,6 +99,8 @@ def bootstrap(
         puppet_deploy_role_permission_boundary,
         puppet_provisioning_role_permissions_boundary,
         cloud_formation_deploy_role_permissions_boundary,
+        deploy_environment_compute_type,
+        deploy_num_workers,
     )
 
 
