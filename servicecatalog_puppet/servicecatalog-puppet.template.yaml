@@ -42,6 +42,14 @@ Parameters:
     Type: String
     Description: IAM Permission Boundary to apply to the CloudFormationDeployRole
     Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  DeployEnvironmentComputeType:
+    Type: String
+    Description: The AWS CodeBuild Environment Compute Type
+    Default: BUILD_GENERAL1_SMALL
+  DeployNumWorkers:
+    Type: Number
+    Description: Number of workers that should be used when running a deploy
+    Default: 10
 
 Conditions:
   ShouldUseOrgs: !Not [!Equals [!Ref OrgIamRoleArn, None]]
@@ -372,6 +380,15 @@ Resources:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
 
+  NumWorkersSSMParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /servicecatalog-puppet/deploy/num-workers
+      Type: String
+      Value: !Sub "${DeployNumWorkers}"
+      Tags:
+        "ServiceCatalogPuppet:Actor": "Framework"
+
   DeployProject:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -382,8 +399,13 @@ Resources:
         Type: CODEPIPELINE
       Environment:
         Type: linuxContainer
-        ComputeType: BUILD_GENERAL1_SMALL
+        ComputeType: !Ref DeployEnvironmentComputeType
         Image: aws/codebuild/python:3.7.1
+        EnvironmentVariables:
+          - Name: NUM_WORKERS
+            Type: PARAMETER_STORE
+            Value: !Ref NumWorkersSSMParameter
+
       Source:
         Type: CODEPIPELINE
         BuildSpec: |
@@ -398,7 +420,7 @@ Resources:
           {% endif %}
             build:
               commands:
-                - servicecatalog-puppet --info deploy manifest-expanded.yaml
+                - servicecatalog-puppet --info deploy --num-workers ${NUM_WORKERS} manifest-expanded.yaml
           artifacts:
             files:
               - results/*/*
