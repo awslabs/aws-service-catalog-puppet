@@ -495,6 +495,8 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
         with self.input().get('create_spoke_local_portfolio').open('r') as f:
             spoke_portfolio = json.loads(f.read())
         portfolio_id = spoke_portfolio.get("Id")
+        product_versions_that_should_be_copied = {}
+        product_versions_that_should_be_updated = {}
 
         product_name_to_id_dict = {}
         with self.input().get('products_and_provisioning_artifacts').open('r') as f:
@@ -503,9 +505,6 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                 spoke_product_id = False
                 target_product_id = False
                 hub_product_name = product_view_summary.get('Name')
-
-                product_versions_that_should_be_copied = {}
-                product_versions_that_should_be_updated = {}
 
                 for hub_provisioning_artifact_detail in product_view_summary.get('provisioning_artifact_details', []):
                     if hub_provisioning_artifact_detail.get('Type') == 'CLOUD_FORMATION_TEMPLATE':
