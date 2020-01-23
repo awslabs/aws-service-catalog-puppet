@@ -491,7 +491,11 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
 
     def run(self):
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: starting to import into spoke")
-        spoke_portfolio = {}
+
+        with self.input().get('create_spoke_local_portfolio').open('r') as f:
+            spoke_portfolio = json.loads(f.read())
+        portfolio_id = spoke_portfolio.get("Id")
+
         product_name_to_id_dict = {}
         with self.input().get('products_and_provisioning_artifacts').open('r') as f:
             products_and_provisioning_artifacts = json.loads(f.read())
@@ -520,9 +524,6 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                         'CopyTags',
                     ],
                 }
-                with self.input().get('create_spoke_local_portfolio').open('r') as f:
-                    spoke_portfolio = json.loads(f.read())
-                portfolio_id = spoke_portfolio.get("Id")
 
                 logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: searching in "
                             f"spoke for product")
