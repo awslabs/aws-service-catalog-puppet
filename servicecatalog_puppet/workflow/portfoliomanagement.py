@@ -491,7 +491,7 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
 
     def run(self):
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: starting to import into spoke")
-
+        spoke_portfolio = {}
         product_name_to_id_dict = {}
         with self.input().get('products_and_provisioning_artifacts').open('r') as f:
             products_and_provisioning_artifacts = json.loads(f.read())
