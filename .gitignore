@@ -16,3 +16,4 @@ venv-testing
 .venv
 output/
 results/
+log-*
