@@ -402,6 +402,42 @@ class CreateAssociationsForPortfolioTask(tasks.PuppetTask):
             logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Finished importing")
 
 
+class GetProductsAndProvisioningArtifactsTask(tasks.PuppetTask):
+    region = luigi.Parameter()
+    hub_portfolio_id = luigi.Parameter()
+
+    def uid(self):
+        return f"{self.__class__.__name__}/{self.region}_{self.hub_portfolio_id}"
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.uid}.json"
+        )
+
+    def run(self):
+        logger.info(f"[{self.uid} :: starting")
+        product_and_artifact_details = []
+        with betterboto_client.ClientContextManager(
+                'servicecatalog', region_name=self.region
+        ) as service_catalog:
+            response = service_catalog.search_products_as_admin_single_page(PortfolioId=self.hub_portfolio_id)
+            for product_view_detail in response.get('ProductViewDetails', []):
+                product_view_summary = product_view_detail.get('ProductViewSummary')
+                product_view_summary['ProductARN'] = product_view_detail.get('ProductARN')
+                product_and_artifact_details.append(product_view_summary)
+
+                provisioning_artifact_details = product_view_summary['provisioning_artifact_details'] = []
+                hub_product_id = product_view_summary.get('ProductId')
+                hub_provisioning_artifact_details = service_catalog.list_provisioning_artifacts(
+                    ProductId=hub_product_id
+                ).get('ProvisioningArtifactDetails', [])
+                for hub_provisioning_artifact_detail in hub_provisioning_artifact_details:
+                    if hub_provisioning_artifact_detail.get('Type') == 'CLOUD_FORMATION_TEMPLATE':
+                        provisioning_artifact_details.append(hub_provisioning_artifact_detail)
+
+        self.write_output(product_and_artifact_details)
+
+
 class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
@@ -412,13 +448,19 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
     post_actions = luigi.ListParameter(default=[])
 
     def requires(self):
-        return CreateSpokeLocalPortfolioTask(
-            account_id=self.account_id,
-            region=self.region,
-            portfolio=self.portfolio,
-            organization=self.organization,
-            pre_actions=self.pre_actions,
-        )
+        return {
+            'create_spoke_local_portfolio': CreateSpokeLocalPortfolioTask(
+                account_id=self.account_id,
+                region=self.region,
+                portfolio=self.portfolio,
+                organization=self.organization,
+                pre_actions=self.pre_actions,
+            ),
+            'products_and_provisioning_artifacts': GetProductsAndProvisioningArtifactsTask(
+                region=self.region,
+                hub_portfolio_id=self.hub_portfolio_id,
+            )
+        }
 
     @property
     def node_id(self):
@@ -451,24 +493,17 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: starting to import into spoke")
 
         product_name_to_id_dict = {}
-
-        with betterboto_client.ClientContextManager(
-                'servicecatalog', region_name=self.region
-        ) as service_catalog:
-            response = service_catalog.search_products_as_admin_single_page(PortfolioId=self.hub_portfolio_id)
-            for product_view_detail in response.get('ProductViewDetails', []):
+        with self.input().get('products_and_provisioning_artifacts').open('r') as f:
+            products_and_provisioning_artifacts = json.loads(f.read())
+            for product_view_summary in products_and_provisioning_artifacts:
                 spoke_product_id = False
                 target_product_id = False
-                product_view_summary = product_view_detail.get('ProductViewSummary')
                 hub_product_name = product_view_summary.get('Name')
-                hub_product_id = product_view_summary.get('ProductId')
 
                 product_versions_that_should_be_copied = {}
                 product_versions_that_should_be_updated = {}
-                hub_provisioning_artifact_details = service_catalog.list_provisioning_artifacts(
-                    ProductId=hub_product_id
-                ).get('ProvisioningArtifactDetails', [])
-                for hub_provisioning_artifact_detail in hub_provisioning_artifact_details:
+
+                for hub_provisioning_artifact_detail in product_view_summary.get('provisioning_artifact_details', []):
                     if hub_provisioning_artifact_detail.get('Type') == 'CLOUD_FORMATION_TEMPLATE':
                         product_versions_that_should_be_copied[
                             f"{hub_provisioning_artifact_detail.get('Name')}"
@@ -478,14 +513,14 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                         ] = hub_provisioning_artifact_detail
 
                 logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Copying {hub_product_name}")
-                hub_product_arn = product_view_detail.get('ProductARN')
+                hub_product_arn = product_view_summary.get('ProductARN')
                 copy_args = {
                     'SourceProductArn': hub_product_arn,
                     'CopyOptions': [
                         'CopyTags',
                     ],
                 }
-                with self.input().open('r') as f:
+                with self.input().get('create_spoke_local_portfolio').open('r') as f:
                     spoke_portfolio = json.loads(f.read())
                 portfolio_id = spoke_portfolio.get("Id")
 
