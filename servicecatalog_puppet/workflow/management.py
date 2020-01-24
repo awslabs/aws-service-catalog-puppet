@@ -23,7 +23,7 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
 
     @property
     def resources(self):
-        return {}
+        return {self.account_id: 1}
 
     def params_for_results_display(self):
         return {

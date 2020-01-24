@@ -1,5 +1,4 @@
 import json
-import time
 
 import luigi
 from betterboto import client as betterboto_client
@@ -54,6 +53,13 @@ class ProvisioningArtifactParametersTask(tasks.PuppetTask):
         return luigi.LocalTarget(
             f"output/{self.uid}.json"
         )
+
+    @property
+    def resources(self):
+        return {
+            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}": 1,
+            f"servicecatalog.describe_provisioning_parameters_{self.account_id}_{self.region}": 1,
+        }
 
     def run(self):
         with self.input().get('details').open('r') as f:
@@ -212,6 +218,31 @@ class ProvisionProductTask(tasks.PuppetTask):
             f"output/{self.__class__.__name__}/"
             f"{self.uid}.json"
         )
+
+    @property
+    def resources(self):
+        return {
+            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}": 1,
+            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}": 1,
+
+            f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}": 1,
+            f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}": 1,
+            f"servicecatalog.describe_record_{self.account_id}_{self.region}": 1,
+
+            f"cloudformation.get_template_summary_{self.account_id}_{self.region}": 1,
+            f"cloudformation.describe_stacks_{self.account_id}_{self.region}": 1,
+
+            f"servicecatalog.list_provisioned_product_plans_single_page_{self.puppet_account_id}_{self.region}": 1,
+            f"servicecatalog.delete_provisioned_product_plan_{self.puppet_account_id}_{self.region}": 1,
+            f"servicecatalog.create_provisioned_product_plan_{self.puppet_account_id}_{self.region}": 1,
+            f"servicecatalog.describe_provisioned_product_plan_{self.puppet_account_id}_{self.region}": 1,
+            f"servicecatalog.execute_provisioned_product_plan_{self.puppet_account_id}_{self.region}": 1,
+            f"servicecatalog.describe_provisioned_product_{self.puppet_account_id}_{self.region}": 1,
+            f"servicecatalog.update_provisioned_product_{self.puppet_account_id}_{self.region}": 1,
+            f"servicecatalog.provision_product_{self.puppet_account_id}_{self.region}": 1,
+
+            f"ssm.put_parameter_and_wait_{self.puppet_account_id}_{self.region}": 1,
+        }
 
     def run(self):
         logger.info(f"[{self.uid}] starting deploy try {self.try_count} of {self.retry_count}")
@@ -397,6 +428,18 @@ class ProvisionProductTask(tasks.PuppetTask):
 
 
 class ProvisionProductDryRunTask(ProvisionProductTask):
+    @property
+    def resources(self):
+        return {
+            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}": 1,
+            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}": 1,
+            f"servicecatalog.describe_provisioning_artifact_{self.account_id}_{self.region}": 1,
+
+            f"cloudformation.describe_provisioning_artifact_{self.account_id}_{self.region}": 1,
+            f"cloudformation.get_template_summary_{self.account_id}_{self.region}": 1,
+            f"cloudformation.describe_stacks_{self.account_id}_{self.region}": 1,
+        }
+
     def run(self):
         logger.info(f"[{self.uid}] starting deploy try {self.try_count} of {self.retry_count}")
 
@@ -556,6 +599,15 @@ class TerminateProductTask(tasks.PuppetTask):
             f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
         )
 
+    @property
+    def resources(self):
+        return {
+            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}": 1,
+            f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}": 1,
+            f"servicecatalog.describe_record_{self.account_id}_{self.region}": 1,
+            f"ssm.delete_parameter_{self.puppet_account_id}_{self.region}": 1,
+        }
+
     def run(self):
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
                     f"starting terminate try {self.try_count} of {self.retry_count}")
@@ -670,6 +722,13 @@ class TerminateProductDryRunTask(tasks.PuppetTask):
                 )
             )
 
+    @property
+    def resources(self):
+        return {
+            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}": 1,
+            f"servicecatalog.describe_provisioning_artifact_{self.account_id}_{self.region}": 1,
+        }
+
     def run(self):
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
                     f"starting dry run terminate try {self.try_count} of {self.retry_count}")
@@ -717,6 +776,13 @@ class ResetProvisionedProductOwnerTask(tasks.PuppetTask):
             f"output/ResetProvisionedProductOwnerTask/"
             f"{self.launch_name}-{self.account_id}-{self.region}.json"
         )
+
+    @property
+    def resources(self):
+        return {
+            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}": 1,
+            f"servicecatalog.update_provisioned_product_properties_{self.account_id}_{self.region}": 1,
+        }
 
     def run(self):
         logger_prefix = f"[{self.launch_name}] {self.account_id}:{self.region}"
