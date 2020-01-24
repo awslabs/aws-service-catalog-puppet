@@ -232,16 +232,16 @@ class ProvisionProductTask(tasks.PuppetTask):
             f"cloudformation.get_template_summary_{self.account_id}_{self.region}": 1,
             f"cloudformation.describe_stacks_{self.account_id}_{self.region}": 1,
 
-            f"servicecatalog.list_provisioned_product_plans_single_page_{self.puppet_account_id}_{self.region}": 1,
-            f"servicecatalog.delete_provisioned_product_plan_{self.puppet_account_id}_{self.region}": 1,
-            f"servicecatalog.create_provisioned_product_plan_{self.puppet_account_id}_{self.region}": 1,
-            f"servicecatalog.describe_provisioned_product_plan_{self.puppet_account_id}_{self.region}": 1,
-            f"servicecatalog.execute_provisioned_product_plan_{self.puppet_account_id}_{self.region}": 1,
-            f"servicecatalog.describe_provisioned_product_{self.puppet_account_id}_{self.region}": 1,
-            f"servicecatalog.update_provisioned_product_{self.puppet_account_id}_{self.region}": 1,
-            f"servicecatalog.provision_product_{self.puppet_account_id}_{self.region}": 1,
+            f"servicecatalog.list_provisioned_product_plans_single_page_{self.region}": 1,
+            f"servicecatalog.delete_provisioned_product_plan_{self.region}": 1,
+            f"servicecatalog.create_provisioned_product_plan_{self.region}": 1,
+            f"servicecatalog.describe_provisioned_product_plan_{self.region}": 1,
+            f"servicecatalog.execute_provisioned_product_plan_{self.region}": 1,
+            f"servicecatalog.describe_provisioned_product_{self.region}": 1,
+            f"servicecatalog.update_provisioned_product_{self.region}": 1,
+            f"servicecatalog.provision_product_{self.region}": 1,
 
-            f"ssm.put_parameter_and_wait_{self.puppet_account_id}_{self.region}": 1,
+            f"ssm.put_parameter_and_wait_{self.region}": 1,
         }
 
     def run(self):
@@ -605,7 +605,7 @@ class TerminateProductTask(tasks.PuppetTask):
             f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}": 1,
             f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}": 1,
             f"servicecatalog.describe_record_{self.account_id}_{self.region}": 1,
-            f"ssm.delete_parameter_{self.puppet_account_id}_{self.region}": 1,
+            f"ssm.delete_parameter_{self.region}": 1,
         }
 
     def run(self):

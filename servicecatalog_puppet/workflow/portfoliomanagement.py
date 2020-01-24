@@ -452,8 +452,8 @@ class GetProductsAndProvisioningArtifactsTask(tasks.PuppetTask):
     @property
     def resources(self):
         return {
-            f"servicecatalog.search_products_as_admin_{config.get_home_region()}_{self.region}": 1,
-            f"servicecatalog.list_provisioning_artifacts_{config.get_home_region()}_{self.region}": 1,
+            f"servicecatalog.search_products_as_admin_{self.region}": 1,
+            f"servicecatalog.list_provisioning_artifacts_{self.region}": 1,
         }
 
     def run(self):
@@ -897,13 +897,6 @@ class ShareAndAcceptPortfolioTask(tasks.PuppetTask):
     puppet_account_id = luigi.Parameter()
 
     @property
-    def resources(self):
-        return {
-            f"{self.puppet_account_id}-{self.account_id}-{self.region}-{self.portfolio}": 1,
-            f"servicecatalog-{self.account_id}-{self.region}": 1,
-        }
-
-    @property
     def uid(self):
         return f"{self.__class__.__name__}/{self.account_id}--{self.region}--{self.portfolio}"
 
@@ -915,10 +908,10 @@ class ShareAndAcceptPortfolioTask(tasks.PuppetTask):
     @property
     def resources(self):
         return {
-            f"servicecatalog.list_accepted_portfolio_shares_{self.puppet_account_id}_{self.region}": 1,
-            f"servicecatalog.list_portfolios_{self.puppet_account_id}_{self.region}": 1,
-            f"servicecatalog.list_portfolio_access_{self.puppet_account_id}_{self.region}": 1,
-            f"servicecatalog.create_portfolio_share_{self.puppet_account_id}_{self.region}": 1,
+            f"servicecatalog.list_accepted_portfolio_shares_{self.region}": 1,
+            f"servicecatalog.list_portfolios_{self.region}": 1,
+            f"servicecatalog.list_portfolio_access_{self.region}": 1,
+            f"servicecatalog.create_portfolio_share_{self.region}": 1,
 
             f"servicecatalog.list_accepted_portfolio_shares_single_page{self.account_id}_{self.region}": 1,
             f"servicecatalog.accept_portfolio_share{self.account_id}_{self.region}": 1,
@@ -995,12 +988,6 @@ class CreateAssociationsInPythonForPortfolioTask(tasks.PuppetTask):
     portfolio = luigi.Parameter()
 
     @property
-    def resources(self):
-        return {
-            f"{self.region}-{self.portfolio}": 1
-        }
-
-    @property
     def uid(self):
         return f"{self.__class__.__name__}/{self.account_id}--{self.region}--{self.portfolio}"
 
@@ -1012,7 +999,7 @@ class CreateAssociationsInPythonForPortfolioTask(tasks.PuppetTask):
     @property
     def resources(self):
         return {
-            f"servicecatalog.associate_principal_with_portfolio_{self.puppet_account_id}_{self.region}": 1,
+            f"servicecatalog.associate_principal_with_portfolio_{self.region}": 1,
         }
 
     def run(self):
