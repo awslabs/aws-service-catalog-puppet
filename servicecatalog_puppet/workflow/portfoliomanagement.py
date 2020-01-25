@@ -915,7 +915,7 @@ class SharePortfolioTask(tasks.PuppetTask):
     def run(self):
         with self.input().get('portfolio').open('r') as f:
             portfolio_details = json.loads(f.read())
-        portfolio_id = portfolio_details.get('portfolio_id'),
+        portfolio_id = portfolio_details.get('portfolio_id')
 
         p = f'data/shares/{self.region}/{self.portfolio}/'
         if not os.path.exists(p):
