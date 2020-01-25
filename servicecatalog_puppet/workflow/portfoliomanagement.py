@@ -962,7 +962,7 @@ class ShareAndAcceptPortfolioTask(tasks.PuppetTask):
         logger.info(f"{self.uid} starting ShareAndAcceptPortfolioTask")
         with self.input().get('portfolio').open('r') as f:
             portfolio_details = json.loads(f.read())
-        portfolio_id = portfolio_details.get('portfolio_id'),
+        portfolio_id = portfolio_details.get('portfolio_id')
 
         with betterboto_client.CrossAccountClientContextManager(
             'servicecatalog',
