@@ -896,7 +896,6 @@ class SharePortfolioTask(tasks.PuppetTask):
     def uid(self):
         return f"{self.__class__.__name__}/{self.account_id}--{self.region}--{self.portfolio}"
 
-
     def requires(self):
         return {
             'portfolio': GetPortfolioIdByPortfolioName(
@@ -955,6 +954,7 @@ class ShareAndAcceptPortfolioTask(tasks.PuppetTask):
         )
 
     def requires(self):
+        logger.info(f"{self.uid}: {self.portfolio}  {self.account_id}  {self.region}  {self.puppet_account_id}")
         return {
             'portfolio': GetPortfolioIdByPortfolioName(
                 portfolio=self.portfolio,
@@ -966,7 +966,6 @@ class ShareAndAcceptPortfolioTask(tasks.PuppetTask):
                 account_id=self.account_id,
                 region=self.region,
                 puppet_account_id=self.puppet_account_id,
-
             )
         }
 
