@@ -24,8 +24,12 @@ class PuppetTask(luigi.Task):
             f"output/{self.uid}.json"
         )
 
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/{'-'.join(self.params_for_results_display().values())}"
+
     def params_for_results_display(self):
-        return "Omitted"
+        return {}
 
     def write_output(self, content):
         with self.output().open('w') as f:
@@ -49,10 +53,6 @@ class GetSSMParamTask(PuppetTask):
             "name": self.name,
             "region": self.region,
         }
-
-    @property
-    def uid(self):
-        return f"{self.region}-{self.parameter_name}-{self.name}"
 
     def output(self):
         return luigi.LocalTarget(

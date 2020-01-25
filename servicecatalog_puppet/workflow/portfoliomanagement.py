@@ -34,11 +34,10 @@ class GetVersionIdByVersionName(tasks.PuppetTask):
             "version": self.version,
         }
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/GetVersionIdByVersionName/"
-            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
-        )
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/" \
+               f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}"
 
     def requires(self):
         product_id = GetProductIdByProductName(
@@ -109,11 +108,10 @@ class GetProductIdByProductName(tasks.PuppetTask):
             'portfolio': portfolio_id,
         }
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/GetProductIdByProductName/"
-            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}.json"
-        )
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/" \
+               f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}"
 
     def api_calls_used(self):
         return [
@@ -161,11 +159,10 @@ class GetPortfolioIdByPortfolioName(tasks.PuppetTask):
             "portfolio": self.portfolio,
         }
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/GetPortfolioIdByPortfolioName/"
-            f"{self.account_id}-{self.region}-{self.portfolio}.json"
-        )
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/" \
+               f"{self.account_id}-{self.region}-{self.portfolio}"
 
     def api_calls_used(self):
         return [
@@ -295,11 +292,9 @@ class CreateSpokeLocalPortfolioTask(tasks.PuppetTask):
     def get_graph_lines(self):
         return []
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/CreateSpokeLocalPortfolioTask/"
-            f"{self.account_id}-{self.region}-{self.portfolio}.json"
-        )
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/{self.account_id}-{self.region}-{self.portfolio}"
 
     def api_calls_used(self):
         return [
@@ -378,11 +373,9 @@ class CreateAssociationsForPortfolioTask(tasks.PuppetTask):
             "portfolio": self.portfolio,
         }
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/CreateAssociationsForPortfolioTask/"
-            f"{self.account_id}-{self.region}-{self.portfolio}.json"
-        )
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/{self.account_id}-{self.region}-{self.portfolio}"
 
     def api_calls_used(self):
         return [
@@ -512,11 +505,10 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
             "hub_portfolio_id": self.hub_portfolio_id,
         }
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/ImportIntoSpokeLocalPortfolioTask/"
-            f"{self.account_id}-{self.region}-{self.portfolio}-{self.hub_portfolio_id}.json"
-        )
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/" \
+               f"{self.account_id}-{self.region}-{self.portfolio}-{self.hub_portfolio_id}"
 
     def api_calls_used(self):
         return [
@@ -830,11 +822,10 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
             "hub_portfolio_id": self.hub_portfolio_id,
         }
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/CreateLaunchRoleConstraintsForPortfolio/"
-            f"{self.account_id}-{self.region}-{self.portfolio}-{self.hub_portfolio_id}.json"
-        )
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/" \
+               f"{self.account_id}-{self.region}-{self.portfolio}-{self.hub_portfolio_id}"
 
 
 class RequestPolicyTask(tasks.PuppetTask):

@@ -13,13 +13,7 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
 
     @property
     def uid(self):
-        return self.account_id
-
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/{self.__class__.__name__}/"
-            f"{self.uid}.json"
-        )
+        return f"{self.__class__.__name__}/{self.account_id}"
 
     def params_for_results_display(self):
         return {

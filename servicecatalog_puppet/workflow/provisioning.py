@@ -49,11 +49,6 @@ class ProvisioningArtifactParametersTask(tasks.PuppetTask):
         return f"{self.__class__.__name__}/" \
                f"{self.portfolio}--{self.product}--{self.version}--{self.account_id}--{self.region}"
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/{self.uid}.json"
-        )
-
     def api_calls_used(self):
         return [
             f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
@@ -212,12 +207,6 @@ class ProvisionProductTask(tasks.PuppetTask):
             "version": self.version,
         }
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/{self.__class__.__name__}/"
-            f"{self.uid}.json"
-        )
-
     def api_calls_used(self):
         return {
             f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
@@ -229,9 +218,6 @@ class ProvisionProductTask(tasks.PuppetTask):
 
             f"cloudformation.get_template_summary_{self.account_id}_{self.region}",
             f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
-
-
-
 
             f"servicecatalog.list_provisioned_product_plans_single_page_{self.account_id}_{self.region}",
             f"servicecatalog.delete_provisioned_product_plan_{self.account_id}_{self.region}",
@@ -592,11 +578,10 @@ class TerminateProductTask(tasks.PuppetTask):
             "version": self.version,
         }
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/TerminateProductTask/"
-            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
-        )
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/" \
+               f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}"
 
     def api_calls_used(self):
         return [
@@ -699,11 +684,10 @@ class TerminateProductDryRunTask(tasks.PuppetTask):
             "version": self.version,
         }
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/TerminateProductDryRunTask/"
-            f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
-        )
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/" \
+               f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}"
 
     def write_result(self, current_version, new_version, effect, notes=''):
         with self.output().open('w') as f:
@@ -769,11 +753,10 @@ class ResetProvisionedProductOwnerTask(tasks.PuppetTask):
     def params_for_results_display(self):
         return self.param_kwargs
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/ResetProvisionedProductOwnerTask/"
-            f"{self.launch_name}-{self.account_id}-{self.region}.json"
-        )
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/" \
+               f"{self.launch_name}-{self.account_id}-{self.region}.json"
 
     def api_calls_used(self):
         return [
