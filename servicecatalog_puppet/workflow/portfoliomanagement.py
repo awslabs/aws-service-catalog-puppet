@@ -892,6 +892,11 @@ class SharePortfolioTask(tasks.PuppetTask):
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/{self.account_id}--{self.region}--{self.portfolio}"
+
+
     def requires(self):
         return {
             'portfolio': GetPortfolioIdByPortfolioName(
