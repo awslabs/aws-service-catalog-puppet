@@ -936,6 +936,7 @@ class SharePortfolioTask(tasks.PuppetTask):
                     PortfolioId=portfolio_id,
                     AccountId=self.account_id,
                 )
+        self.write_output(self.param_kwargs)
 
 
 class ShareAndAcceptPortfolioTask(tasks.PuppetTask):
