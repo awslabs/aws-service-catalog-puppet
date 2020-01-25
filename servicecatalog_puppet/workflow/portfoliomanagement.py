@@ -269,17 +269,6 @@ class CreateSpokeLocalPortfolioTask(tasks.PuppetTask):
             "portfolio": self.portfolio,
         }
 
-    @property
-    def node_id(self):
-        return f"{self.portfolio}_{self.account_id}_{self.region}"
-
-    def graph_node(self):
-        label = f"<b>CreatePortfolioInSpoke</b><br/>Portfolio: {self.portfolio}<br/>AccountId: {self.account_id}<br/>Region: {self.region}"
-        return f"\"{self.__class__.__name__}_{self.node_id}\" [fillcolor=chocolate style=filled label= < {label} >]"
-
-    def get_graph_lines(self):
-        return []
-
     def api_calls_used(self):
         return [
             f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
@@ -333,22 +322,6 @@ class CreateAssociationsForPortfolioTask(tasks.PuppetTask):
             ),
             'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
-
-    @property
-    def node_id(self):
-        return f"{self.portfolio}_{self.account_id}_{self.region}"
-
-    def graph_node(self):
-        label = f"<b>CreateAssociationsForPortfolio</b><br/>Portfolio: {self.portfolio}<br/>AccountId: {self.account_id}<br/>Region: {self.region}"
-        return f"\"{self.__class__.__name__}_{self.node_id}\" [fillcolor=turquoise style=filled label= < {label} >]"
-
-    def get_graph_lines(self):
-        return [
-                   f"\"{CreateAssociationsForPortfolioTask.__name__}_{self.node_id}\" -> \"{provisioning.ProvisionProductTask.__name__}_{'_'.join([dep.get('launch_name'), dep.get('portfolio'), dep.get('product'), dep.get('version'), dep.get('account_id'), dep.get('region')])}\""
-                   for dep in self.dependencies
-               ] + [
-                   f"\"{CreateAssociationsForPortfolioTask.__name__}_{self.node_id}\" -> \"{CreateSpokeLocalPortfolioTask.__name__}_{'_'.join([self.portfolio, self.account_id, self.region])}\""
-               ]
 
     def params_for_results_display(self):
         return {
@@ -466,19 +439,6 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                 hub_portfolio_id=self.hub_portfolio_id,
             )
         }
-
-    @property
-    def node_id(self):
-        return f"{self.portfolio}_{self.account_id}_{self.region}"
-
-    def graph_node(self):
-        label = f"<b>ImportProductsIntoPortfolio</b><br/>Portfolio: {self.portfolio}<br/>AccountId: {self.account_id}<br/>Region: {self.region}"
-        return f"\"{self.__class__.__name__}_{self.node_id}\" [fillcolor=deepskyblue style=filled label= < {label} >]"
-
-    def get_graph_lines(self):
-        return [
-            f"\"{ImportIntoSpokeLocalPortfolioTask.__name__}_{self.node_id}\" -> \"{CreateSpokeLocalPortfolioTask.__name__}_{self.node_id}\""
-        ]
 
     def params_for_results_display(self):
         return {
@@ -692,22 +652,6 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
             ),
             'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
-
-    @property
-    def node_id(self):
-        return f"{self.portfolio}_{self.account_id}_{self.region}"
-
-    def graph_node(self):
-        label = f"<b>CreateLaunchRoleConstraintsForPortfolio</b><br/>Portfolio: {self.portfolio}<br/>AccountId: {self.account_id}<br/>Region: {self.region}"
-        return f"\"{self.__class__.__name__}_{self.node_id}\" [fillcolor=orange style=filled label= < {label} >]"
-
-    def get_graph_lines(self):
-        return [
-                   f"\"{CreateLaunchRoleConstraintsForPortfolio.__name__}_{self.node_id}\" -> \"{provisioning.ProvisionProductTask.__name__}_{'_'.join([dep.get('launch_name'), dep.get('portfolio'), dep.get('product'), dep.get('version'), dep.get('account_id'), dep.get('region')])}\""
-                   for dep in self.dependencies
-               ] + [
-                   f"\"{CreateLaunchRoleConstraintsForPortfolio.__name__}_{self.node_id}\" -> \"{ImportIntoSpokeLocalPortfolioTask.__name__}_{self.node_id}\""
-               ]
 
     def api_calls_used(self):
         return [

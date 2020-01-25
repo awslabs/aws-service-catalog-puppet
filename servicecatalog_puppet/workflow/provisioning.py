@@ -177,27 +177,6 @@ class ProvisionProductTask(tasks.PuppetTask):
             'pre_actions': [portfoliomanagement.ProvisionActionTask(**p) for p in self.pre_actions],
         }
 
-    @property
-    def node_id(self):
-        return "_".join([
-            self.launch_name,
-            self.portfolio,
-            self.product,
-            self.version,
-            self.account_id,
-            self.region,
-        ])
-
-    def graph_node(self):
-        label = f"<b>ProvisionProduct</b><br/>Launch: {self.launch_name}<br/>Portfolio: {self.portfolio}<br/>Product: {self.product}<br/>Version: {self.version}<br/>AccountId: {self.account_id}<br/>Region: {self.region}"
-        return f"\"{self.__class__.__name__}_{self.node_id}\" [fillcolor=lawngreen style=filled label= < {label} >]"
-
-    def get_graph_lines(self):
-        return [
-            f"\"{ProvisionProductTask.__name__}_{self.node_id}\" -> \"{ProvisionProductTask.__name__}_{'_'.join([dep.get('launch_name'), dep.get('portfolio'), dep.get('product'), dep.get('version'), dep.get('account_id'), dep.get('region')])}\""
-            for dep in self.dependencies
-        ]
-
     def api_calls_used(self):
         return {
             f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",

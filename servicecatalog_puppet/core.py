@@ -193,9 +193,8 @@ def graph(f):
     lines = []
     nodes = []
     for task in tasks_to_run:
-        lines += task.get_graph_lines()
         nodes.append(task.graph_node())
-    print(json.dumps(lines))
+        lines += task.get_graph_lines()
     click.echo("digraph G {\n")
     click.echo("node [shape=record fontname=Arial];")
     for node in nodes:
