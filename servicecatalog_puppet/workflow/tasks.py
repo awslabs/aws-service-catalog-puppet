@@ -19,6 +19,11 @@ class PuppetTask(luigi.Task):
             result[a] = 1
         return result
 
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.uid}.json"
+        )
+
     def params_for_results_display(self):
         return "Omitted"
 
