@@ -34,11 +34,6 @@ class GetVersionIdByVersionName(tasks.PuppetTask):
             "version": self.version,
         }
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/" \
-               f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}"
-
     def requires(self):
         product_id = GetProductIdByProductName(
             self.portfolio,
@@ -99,19 +94,13 @@ class GetProductIdByProductName(tasks.PuppetTask):
         }
 
     def requires(self):
-        portfolio_id = GetPortfolioIdByPortfolioName(
-            self.portfolio,
-            self.account_id,
-            self.region,
-        )
         return {
-            'portfolio': portfolio_id,
+            'portfolio': GetPortfolioIdByPortfolioName(
+                self.portfolio,
+                self.account_id,
+                self.region,
+            ),
         }
-
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/" \
-               f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}"
 
     def api_calls_used(self):
         return [
@@ -159,11 +148,6 @@ class GetPortfolioIdByPortfolioName(tasks.PuppetTask):
             "portfolio": self.portfolio,
         }
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/" \
-               f"{self.account_id}-{self.region}-{self.portfolio}"
-
     def api_calls_used(self):
         return [
             f"servicecatalog.list_accepted_portfolio_shares_({self.account_id}_{self.region}",
@@ -203,12 +187,16 @@ class ProvisionActionTask(tasks.PuppetTask):
     parameters = luigi.DictParameter()
 
     def params_for_results_display(self):
-        return self.param_kwargs
-
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/{self.type}--{self.source}--{self.phase}--{self.source_type}--{self.name}-" \
-               f"-{self.project_name}--{self.account_id}--{self.region}"
+        return {
+            "type": self.type,
+            "source": self.source,
+            "phase": self.phase,
+            "source_type": self.source_type,
+            "name": self.name,
+            "project_name": self.project_name,
+            "account_id": self.account_id,
+            "region": self.region,
+        }
 
     def requires(self):
         ssm_params = {}
@@ -292,10 +280,6 @@ class CreateSpokeLocalPortfolioTask(tasks.PuppetTask):
     def get_graph_lines(self):
         return []
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/{self.account_id}-{self.region}-{self.portfolio}"
-
     def api_calls_used(self):
         return [
             f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
@@ -373,10 +357,6 @@ class CreateAssociationsForPortfolioTask(tasks.PuppetTask):
             "portfolio": self.portfolio,
         }
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/{self.account_id}-{self.region}-{self.portfolio}"
-
     def api_calls_used(self):
         return [
             f"cloudformation.create_or_update_{self.account_id}_{self.region}",
@@ -427,8 +407,11 @@ class GetProductsAndProvisioningArtifactsTask(tasks.PuppetTask):
     region = luigi.Parameter()
     hub_portfolio_id = luigi.Parameter()
 
-    def uid(self):
-        return f"{self.__class__.__name__}/{self.region}_{self.hub_portfolio_id}"
+    def params_for_results_display(self):
+        return {
+            "region": self.region,
+            "hub_portfolio_id": self.hub_portfolio_id,
+        }
 
     def api_calls_used(self):
         return [
@@ -504,11 +487,6 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
             "portfolio": self.portfolio,
             "hub_portfolio_id": self.hub_portfolio_id,
         }
-
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/" \
-               f"{self.account_id}-{self.region}-{self.portfolio}-{self.hub_portfolio_id}"
 
     def api_calls_used(self):
         return [
@@ -822,11 +800,6 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
             "hub_portfolio_id": self.hub_portfolio_id,
         }
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/" \
-               f"{self.account_id}-{self.region}-{self.portfolio}-{self.hub_portfolio_id}"
-
 
 class RequestPolicyTask(tasks.PuppetTask):
     type = luigi.Parameter()
@@ -834,9 +807,11 @@ class RequestPolicyTask(tasks.PuppetTask):
     account_id = luigi.Parameter()
     organization = luigi.Parameter(default=None)
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/{self.account_id}--{self.region}"
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+        }
 
     def run(self):
         if self.organization is not None:
@@ -868,9 +843,12 @@ class SharePortfolioTask(tasks.PuppetTask):
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/{self.account_id}--{self.region}--{self.portfolio}"
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+        }
 
     def requires(self):
         return {
@@ -921,9 +899,12 @@ class ShareAndAcceptPortfolioTask(tasks.PuppetTask):
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/{self.account_id}--{self.region}--{self.portfolio}"
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+        }
 
     def requires(self):
         logger.info(f"{self.uid}: {self.portfolio}  {self.account_id}  {self.region}  {self.puppet_account_id}")
@@ -999,9 +980,12 @@ class CreateAssociationsInPythonForPortfolioTask(tasks.PuppetTask):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/{self.account_id}--{self.region}--{self.portfolio}"
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+        }
 
     def requires(self):
         return {
@@ -1048,9 +1032,12 @@ class CreateShareForAccountLaunchRegion(tasks.PuppetTask):
     expanded_from = luigi.Parameter()
     organization = luigi.Parameter()
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/{self.account_id}--{self.portfolio}--{self.region}"
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+        }
 
     def requires(self):
         logging.info(f"{self.uid}: expanded_from = {self.expanded_from}")

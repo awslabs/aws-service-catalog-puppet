@@ -11,13 +11,8 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
     role_name = luigi.Parameter()
     permission_boundary = luigi.Parameter()
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/{self.account_id}"
-
     def params_for_results_display(self):
         return {
-            "launch_name": 'na',
             "account_id": self.account_id,
         }
 

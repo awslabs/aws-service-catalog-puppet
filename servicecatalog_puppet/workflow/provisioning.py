@@ -44,11 +44,6 @@ class ProvisioningArtifactParametersTask(tasks.PuppetTask):
             ),
         }
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/" \
-               f"{self.portfolio}--{self.product}--{self.version}--{self.account_id}--{self.region}"
-
     def api_calls_used(self):
         return [
             f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
@@ -106,9 +101,15 @@ class ProvisionProductTask(tasks.PuppetTask):
     try_count = 1
     all_params = []
 
-    @property
-    def uid(self):
-        return f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}"
+    def params_for_results_display(self):
+        return {
+            "launch_name": self.launch_name,
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "product": self.product,
+            "version": self.version,
+        }
 
     @property
     def priority(self):
@@ -196,16 +197,6 @@ class ProvisionProductTask(tasks.PuppetTask):
             f"\"{ProvisionProductTask.__name__}_{self.node_id}\" -> \"{ProvisionProductTask.__name__}_{'_'.join([dep.get('launch_name'), dep.get('portfolio'), dep.get('product'), dep.get('version'), dep.get('account_id'), dep.get('region')])}\""
             for dep in self.dependencies
         ]
-
-    def params_for_results_display(self):
-        return {
-            "launch_name": self.launch_name,
-            "account_id": self.account_id,
-            "region": self.region,
-            "portfolio": self.portfolio,
-            "product": self.product,
-            "version": self.version,
-        }
 
     def api_calls_used(self):
         return {
@@ -413,7 +404,6 @@ class ProvisionProductTask(tasks.PuppetTask):
 
 
 class ProvisionProductDryRunTask(ProvisionProductTask):
-
     def api_calls_used(self):
         return [
             f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}",
@@ -578,11 +568,6 @@ class TerminateProductTask(tasks.PuppetTask):
             "version": self.version,
         }
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/" \
-               f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}"
-
     def api_calls_used(self):
         return [
             f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}",
@@ -684,11 +669,6 @@ class TerminateProductDryRunTask(tasks.PuppetTask):
             "version": self.version,
         }
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/" \
-               f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}"
-
     def write_result(self, current_version, new_version, effect, notes=''):
         with self.output().open('w') as f:
             f.write(
@@ -751,12 +731,12 @@ class ResetProvisionedProductOwnerTask(tasks.PuppetTask):
     region = luigi.Parameter()
 
     def params_for_results_display(self):
-        return self.param_kwargs
+        return {
+            "launch_name": self.launch_name,
+            "account_id": self.account_id,
+            "region": self.region,
+        }
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/" \
-               f"{self.launch_name}-{self.account_id}-{self.region}.json"
 
     def api_calls_used(self):
         return [
