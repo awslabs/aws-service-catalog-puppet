@@ -21,10 +21,6 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
             f"{self.uid}.json"
         )
 
-    @property
-    def resources(self):
-        return {self.account_id: 1}
-
     def params_for_results_display(self):
         return {
             "launch_name": 'na',

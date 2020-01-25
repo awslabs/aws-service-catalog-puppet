@@ -9,20 +9,15 @@ from servicecatalog_puppet import constants
 
 
 class PuppetTask(luigi.Task):
+    def api_calls_used(self):
+        return []
 
     @property
     def resources(self):
-        resources_for_this_task = {}
-        resource_parts = []
-        if hasattr(self, 'region'):
-            resource_parts.append(self.region)
-        if hasattr(self, 'account_id'):
-            resource_parts.append(self.account_id)
-
-        if len(resource_parts) > 0:
-            resources_for_this_task["_".join(resource_parts)] = 1
-
-        return resources_for_this_task
+        result = {}
+        for a in self.api_calls_used():
+            result[a] = 1
+        return result
 
     def params_for_results_display(self):
         return "Omitted"
@@ -59,6 +54,11 @@ class GetSSMParamTask(PuppetTask):
             f"output/{self.__class__.__name__}/"
             f"{self.uid}.json"
         )
+
+    def api_calls_used(self):
+        return [
+            'ssm.get_parameter'
+        ]
 
     def run(self):
         with betterboto_client.ClientContextManager('ssm', region_name=self.region) as ssm:
