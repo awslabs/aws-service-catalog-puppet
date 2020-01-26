@@ -9,23 +9,27 @@ from servicecatalog_puppet import constants
 
 
 class PuppetTask(luigi.Task):
+    def api_calls_used(self):
+        return []
 
     @property
     def resources(self):
-        resources_for_this_task = {}
-        resource_parts = []
-        if hasattr(self, 'region'):
-            resource_parts.append(self.region)
-        if hasattr(self, 'account_id'):
-            resource_parts.append(self.account_id)
+        result = {}
+        for a in self.api_calls_used():
+            result[a] = 1
+        return result
 
-        if len(resource_parts) > 0:
-            resources_for_this_task["_".join(resource_parts)] = 1
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.uid}.json"
+        )
 
-        return resources_for_this_task
+    @property
+    def uid(self):
+        return f"{self.__class__.__name__}/{self.node_id}"
 
     def params_for_results_display(self):
-        return "Omitted"
+        return {}
 
     def write_output(self, content):
         with self.output().open('w') as f:
@@ -36,6 +40,33 @@ class PuppetTask(luigi.Task):
                     default=str,
                 )
             )
+
+    @property
+    def node_id(self):
+        return f"{self.__class__.__name__}_{'|'.join(self.params_for_results_display().values())}"
+
+    def graph_node(self):
+        task_friendly_name = self.__class__.__name__.replace("Task", "")
+        task_description = ""
+        for param, value in self.params_for_results_display().items():
+            task_description += f"<br/>{param}: {value}"
+        label = f"<b>{task_friendly_name}</b>{task_description}"
+        return f"\"{self.node_id}\" [fillcolor=lawngreen style=filled label= < {label} >]"
+
+    def get_lines(self, haystack):
+        lines = []
+        if isinstance(haystack, list):
+            for i in haystack:
+                lines += self.get_lines(i)
+        elif isinstance(haystack, dict):
+            for i in haystack.values():
+                lines += self.get_lines(i)
+        else:
+            lines.append(f"\"{self.node_id}\" -> \"{haystack.node_id}\"")
+        return lines
+
+    def get_graph_lines(self):
+        return self.get_lines(self.requires())
 
 
 class GetSSMParamTask(PuppetTask):
@@ -50,15 +81,16 @@ class GetSSMParamTask(PuppetTask):
             "region": self.region,
         }
 
-    @property
-    def uid(self):
-        return f"{self.region}-{self.parameter_name}-{self.name}"
-
     def output(self):
         return luigi.LocalTarget(
             f"output/{self.__class__.__name__}/"
             f"{self.uid}.json"
         )
+
+    def api_calls_used(self):
+        return [
+            'ssm.get_parameter'
+        ]
 
     def run(self):
         with betterboto_client.ClientContextManager('ssm', region_name=self.region) as ssm:

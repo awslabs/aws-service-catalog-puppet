@@ -41,6 +41,7 @@ def terminate_if_status_is_not_available(
     prefix = f"[{provisioned_product_name}] {account_id}:{region}"
     logger.info(f"{prefix} :: checking if should be terminated")
     # TODO - change to name query?
+
     response = service_catalog.search_provisioned_products(
         Filters={'SearchQuery': [
             "productId:{}".format(product_id)
@@ -127,7 +128,6 @@ def provision_product_with_plan(
         if provisioned_product_plan.get('ProvisionProductName') == launch_name:
             f"{uid} :: Found existing plan, going to terminate it"
             service_catalog.delete_provisioned_product_plan(PlanId=provisioned_product_plan.get('PlanId'))
-
     logger.info(f"{uid} :: Creating a plan")
     regional_sns_topic = f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
     provisioning_parameters = []

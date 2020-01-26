@@ -11,23 +11,8 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
     role_name = luigi.Parameter()
     permission_boundary = luigi.Parameter()
 
-    @property
-    def uid(self):
-        return self.account_id
-
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/{self.__class__.__name__}/"
-            f"{self.uid}.json"
-        )
-
-    @property
-    def resources(self):
-        return {}
-
     def params_for_results_display(self):
         return {
-            "launch_name": 'na',
             "account_id": self.account_id,
         }
 

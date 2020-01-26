@@ -1,5 +1,4 @@
 import json
-import time
 
 import luigi
 from betterboto import client as betterboto_client
@@ -45,15 +44,11 @@ class ProvisioningArtifactParametersTask(tasks.PuppetTask):
             ),
         }
 
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/" \
-               f"{self.portfolio}--{self.product}--{self.version}--{self.account_id}--{self.region}"
-
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/{self.uid}.json"
-        )
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
+            f"servicecatalog.describe_provisioning_parameters_{self.account_id}_{self.region}",
+        ]
 
     def run(self):
         with self.input().get('details').open('r') as f:
@@ -106,9 +101,15 @@ class ProvisionProductTask(tasks.PuppetTask):
     try_count = 1
     all_params = []
 
-    @property
-    def uid(self):
-        return f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}"
+    def params_for_results_display(self):
+        return {
+            "launch_name": self.launch_name,
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "product": self.product,
+            "version": self.version,
+        }
 
     @property
     def priority(self):
@@ -176,42 +177,29 @@ class ProvisionProductTask(tasks.PuppetTask):
             'pre_actions': [portfoliomanagement.ProvisionActionTask(**p) for p in self.pre_actions],
         }
 
-    @property
-    def node_id(self):
-        return "_".join([
-            self.launch_name,
-            self.portfolio,
-            self.product,
-            self.version,
-            self.account_id,
-            self.region,
-        ])
-
-    def graph_node(self):
-        label = f"<b>ProvisionProduct</b><br/>Launch: {self.launch_name}<br/>Portfolio: {self.portfolio}<br/>Product: {self.product}<br/>Version: {self.version}<br/>AccountId: {self.account_id}<br/>Region: {self.region}"
-        return f"\"{self.__class__.__name__}_{self.node_id}\" [fillcolor=lawngreen style=filled label= < {label} >]"
-
-    def get_graph_lines(self):
-        return [
-            f"\"{ProvisionProductTask.__name__}_{self.node_id}\" -> \"{ProvisionProductTask.__name__}_{'_'.join([dep.get('launch_name'), dep.get('portfolio'), dep.get('product'), dep.get('version'), dep.get('account_id'), dep.get('region')])}\""
-            for dep in self.dependencies
-        ]
-
-    def params_for_results_display(self):
+    def api_calls_used(self):
         return {
-            "launch_name": self.launch_name,
-            "account_id": self.account_id,
-            "region": self.region,
-            "portfolio": self.portfolio,
-            "product": self.product,
-            "version": self.version,
-        }
+            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
+            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}",
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/{self.__class__.__name__}/"
-            f"{self.uid}.json"
-        )
+            f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
+            f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
+            f"servicecatalog.describe_record_{self.account_id}_{self.region}",
+
+            f"cloudformation.get_template_summary_{self.account_id}_{self.region}",
+            f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
+
+            f"servicecatalog.list_provisioned_product_plans_single_page_{self.account_id}_{self.region}",
+            f"servicecatalog.delete_provisioned_product_plan_{self.account_id}_{self.region}",
+            f"servicecatalog.create_provisioned_product_plan_{self.account_id}_{self.region}",
+            f"servicecatalog.describe_provisioned_product_plan_{self.account_id}_{self.region}",
+            f"servicecatalog.execute_provisioned_product_plan_{self.account_id}_{self.region}",
+            f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
+            f"servicecatalog.update_provisioned_product_{self.account_id}_{self.region}",
+            f"servicecatalog.provision_product_{self.account_id}_{self.region}",
+
+            # f"ssm.put_parameter_and_wait_{self.region}",
+        }
 
     def run(self):
         logger.info(f"[{self.uid}] starting deploy try {self.try_count} of {self.retry_count}")
@@ -273,25 +261,22 @@ class ProvisionProductTask(tasks.PuppetTask):
                     logger.info(f"[{self.uid}] about to provision with params: {json.dumps(params_to_use)}")
 
                     if provisioned_product_id:
-                        with betterboto_client.CrossAccountClientContextManager(
-                                'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
-                        ) as cloudformation:
-                            stack = aws.get_stack_output_for(
-                                cloudformation,
-                                f"SC-{self.account_id}-{provisioned_product_id}"
+                        stack = aws.get_stack_output_for(
+                            cloudformation,
+                            f"SC-{self.account_id}-{provisioned_product_id}"
+                        )
+                        stack_status = stack.get('StackStatus')
+                        logger.info(
+                            f"[{self.uid}] current cfn stack_status is {stack_status}")
+                        if stack_status not in ["UPDATE_COMPLETE", "CREATE_COMPLETE", "UPDATE_ROLLBACK_COMPLETE"]:
+                            raise Exception(
+                                f"[{self.uid}] current cfn stack_status is {stack_status}"
                             )
-                            stack_status = stack.get('StackStatus')
-                            logger.info(
-                                f"[{self.uid}] current cfn stack_status is {stack_status}")
-                            if stack_status not in ["UPDATE_COMPLETE", "CREATE_COMPLETE", "UPDATE_ROLLBACK_COMPLETE"]:
-                                raise Exception(
-                                    f"[{self.uid}] current cfn stack_status is {stack_status}"
-                                )
-                            if stack_status == "UPDATE_ROLLBACK_COMPLETE":
-                                logger.warning(
-                                    f"[{self.uid}] SC-{self.account_id}-{provisioned_product_id} has a status of "
-                                    f"{stack_status}.  This may need manual resolution."
-                                )
+                        if stack_status == "UPDATE_ROLLBACK_COMPLETE":
+                            logger.warning(
+                                f"[{self.uid}] SC-{self.account_id}-{provisioned_product_id} has a status of "
+                                f"{stack_status}.  This may need manual resolution."
+                            )
 
                     if provisioned_product_id:
                         if self.should_use_product_plans:
@@ -348,6 +333,7 @@ class ProvisionProductTask(tasks.PuppetTask):
                     logger.info(f"[{self.uid}] writing SSM Param: {ssm_param_output.get('stack_output')}")
                     with betterboto_client.ClientContextManager('ssm') as ssm:
                         found_match = False
+                        # TODO push into another task
                         for output in stack_details.get('Outputs', []):
                             if output.get('OutputKey') == ssm_param_output.get('stack_output'):
                                 found_match = True
@@ -397,6 +383,17 @@ class ProvisionProductTask(tasks.PuppetTask):
 
 
 class ProvisionProductDryRunTask(ProvisionProductTask):
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}",
+            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
+            f"servicecatalog.describe_provisioning_artifact_{self.account_id}_{self.region}",
+
+            f"cloudformation.describe_provisioning_artifact_{self.account_id}_{self.region}",
+            f"cloudformation.get_template_summary_{self.account_id}_{self.region}",
+            f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
+        ]
+
     def run(self):
         logger.info(f"[{self.uid}] starting deploy try {self.try_count} of {self.retry_count}")
 
@@ -550,11 +547,13 @@ class TerminateProductTask(tasks.PuppetTask):
             "version": self.version,
         }
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/TerminateProductTask/"
-            f"{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
-        )
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}",
+            f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
+            f"servicecatalog.describe_record_{self.account_id}_{self.region}",
+            # f"ssm.delete_parameter_{self.region}": 1,
+        ]
 
     def run(self):
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
@@ -582,6 +581,7 @@ class TerminateProductTask(tasks.PuppetTask):
                 )
                 with betterboto_client.ClientContextManager('ssm') as ssm:
                     try:
+                        # todo push into another task
                         ssm.delete_parameter(
                             Name=param_name,
                         )
@@ -648,12 +648,6 @@ class TerminateProductDryRunTask(tasks.PuppetTask):
             "version": self.version,
         }
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/TerminateProductDryRunTask/"
-            f"{self.launch_name}-{self.account_id}-{self.region}-{self.portfolio}-{self.product}-{self.version}.json"
-        )
-
     def write_result(self, current_version, new_version, effect, notes=''):
         with self.output().open('w') as f:
             f.write(
@@ -669,6 +663,12 @@ class TerminateProductDryRunTask(tasks.PuppetTask):
                     default=str,
                 )
             )
+
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}",
+            f"servicecatalog.describe_provisioning_artifact_{self.account_id}_{self.region}",
+        ]
 
     def run(self):
         logger.info(f"[{self.launch_name}] {self.account_id}:{self.region} :: "
@@ -710,13 +710,18 @@ class ResetProvisionedProductOwnerTask(tasks.PuppetTask):
     region = luigi.Parameter()
 
     def params_for_results_display(self):
-        return self.param_kwargs
+        return {
+            "launch_name": self.launch_name,
+            "account_id": self.account_id,
+            "region": self.region,
+        }
 
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/ResetProvisionedProductOwnerTask/"
-            f"{self.launch_name}-{self.account_id}-{self.region}.json"
-        )
+
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}",
+            f"servicecatalog.update_provisioned_product_properties_{self.account_id}_{self.region}",
+        ]
 
     def run(self):
         logger_prefix = f"[{self.launch_name}] {self.account_id}:{self.region}"
