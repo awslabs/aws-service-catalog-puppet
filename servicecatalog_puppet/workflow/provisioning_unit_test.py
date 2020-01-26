@@ -73,17 +73,6 @@ def dependencies():
 
 
 class TestProvisionProductTask():
-    def test_uid(self, module, launch_name, portfolio, product, version, account_id, region, minimal_params):
-        # setup
-        sut = module.ProvisionProductTask(**minimal_params)
-        expected_result = f"{launch_name}-{account_id}-{region}-{portfolio}-{product}-{version}"
-
-        # exercise
-        actual_result = sut.uid
-
-        # verify
-        assert expected_result == actual_result
-
     def test_priority(self, module, minimal_params):
         # setup
         expected_result = 3
@@ -174,34 +163,6 @@ class TestProvisionProductTask():
             'account_id': account_id,
             'region': region,
         }
-
-    def test_node_id(
-            self, module, minimal_params,
-            launch_name, portfolio, product, version, account_id, region
-    ):
-        # setup
-        sut = module.ProvisionProductTask(**minimal_params)
-
-        # exercise
-        actual_result = sut.node_id
-
-        # verify
-        assert actual_result == "_".join([launch_name, portfolio, product, version, account_id, region])
-
-    def test_graph_node(
-            self, module, minimal_params,
-            launch_name, portfolio, product, version, account_id, region
-    ):
-        # setup
-        sut = module.ProvisionProductTask(**minimal_params)
-        label = f"<b>ProvisionProduct</b><br/>Launch: {launch_name}<br/>Portfolio: {portfolio}<br/>Product: {product}<br/>Version: {version}<br/>AccountId: {account_id}<br/>Region: {region}"
-        expected_result = f"\"{sut.__class__.__name__}_{sut.node_id}\" [fillcolor=lawngreen style=filled label= < {label} >]"
-
-        # exercise
-        actual_result = sut.graph_node()
-
-        # verify
-        assert actual_result == expected_result
 
     def test_params_for_results_display(
             self, module, minimal_params, mocker,
