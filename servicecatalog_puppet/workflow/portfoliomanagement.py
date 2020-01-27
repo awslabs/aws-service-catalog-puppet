@@ -423,6 +423,7 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
     organization = luigi.Parameter()
     pre_actions = luigi.ListParameter()
     hub_portfolio_id = luigi.Parameter()
+    local_association_style = luigi.Parameter()
     post_actions = luigi.ListParameter(default=[])
 
     def requires(self):
@@ -471,27 +472,8 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
         with self.input().get('products_and_provisioning_artifacts').open('r') as f:
             products_and_provisioning_artifacts = json.loads(f.read())
             for product_view_summary in products_and_provisioning_artifacts:
-                spoke_product_id = False
-                target_product_id = False
+                hub_product_id = product_view_summary.get('ProductId')
                 hub_product_name = product_view_summary.get('Name')
-
-                for hub_provisioning_artifact_detail in product_view_summary.get('provisioning_artifact_details', []):
-                    if hub_provisioning_artifact_detail.get('Type') == 'CLOUD_FORMATION_TEMPLATE':
-                        product_versions_that_should_be_copied[
-                            f"{hub_provisioning_artifact_detail.get('Name')}"
-                        ] = hub_provisioning_artifact_detail
-                        product_versions_that_should_be_updated[
-                            f"{hub_provisioning_artifact_detail.get('Name')}"
-                        ] = hub_provisioning_artifact_detail
-
-                logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Copying {hub_product_name}")
-                hub_product_arn = product_view_summary.get('ProductARN')
-                copy_args = {
-                    'SourceProductArn': hub_product_arn,
-                    'CopyOptions': [
-                        'CopyTags',
-                    ],
-                }
 
                 logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: searching in "
                             f"spoke for product")
@@ -499,76 +481,20 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                 with betterboto_client.CrossAccountClientContextManager(
                         'servicecatalog', role, f"sc-{self.account_id}-{self.region}", region_name=self.region
                 ) as spoke_service_catalog:
-                    p = None
-                    try:
-                        p = spoke_service_catalog.search_products_as_admin_single_page(
-                            PortfolioId=portfolio_id,
-                            Filters={'FullTextSearch': [hub_product_name]}
-                        )
-                    except spoke_service_catalog.exceptions.ResourceNotFoundException as e:
-                        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: "
-                                    f"swallowing exception: {str(e)}")
+                    if self.local_association_style == 'import':
+                        # simply associate the imported product
+                        # as this ensures that new versions and provisioning artifacts in the hub
+                        # are automatically available to the spoke
 
-                    if p is not None:
-                        for spoke_product_view_details in p.get('ProductViewDetails'):
-                            spoke_product_view = spoke_product_view_details.get('ProductViewSummary')
-                            if spoke_product_view.get('Name') == hub_product_name:
-                                spoke_product_id = spoke_product_view.get('ProductId')
-                                product_name_to_id_dict[hub_product_name] = spoke_product_id
-                                copy_args['TargetProductId'] = spoke_product_id
-                                spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
-                                    ProductId=spoke_product_id
-                                ).get('ProvisioningArtifactDetails')
-                                for provisioning_artifact_detail in spoke_provisioning_artifact_details:
-                                    id_to_delete = f"{provisioning_artifact_detail.get('Name')}"
-                                    if product_versions_that_should_be_copied.get(id_to_delete, None) is not None:
-                                        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} "
-                                                    f"{hub_product_name} :: Going to skip "
-                                                    f"{spoke_product_id} "
-                                                    f"{provisioning_artifact_detail.get('Name')}"
-                                                    )
-                                        del product_versions_that_should_be_copied[id_to_delete]
-
-                    if len(product_versions_that_should_be_copied.keys()) == 0:
-                        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: "
-                                    f"no versions to copy")
-                    else:
-                        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: "
-                                    f"about to copy product")
-
-                        copy_args['SourceProvisioningArtifactIdentifiers'] = [
-                            {'Id': a.get('Id')} for a in product_versions_that_should_be_copied.values()
-                        ]
-
-                        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: about to copy product with"
-                                    f"args: {copy_args}")
-                        copy_product_token = spoke_service_catalog.copy_product(
-                            **copy_args
-                        ).get('CopyProductToken')
-                        while True:
-                            time.sleep(5)
-                            r = spoke_service_catalog.describe_copy_product_status(
-                                CopyProductToken=copy_product_token
-                            )
-                            target_product_id = r.get('TargetProductId')
-                            logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: "
-                                        f"{hub_product_name} status: {r.get('CopyProductStatus')}")
-                            if r.get('CopyProductStatus') == 'FAILED':
-                                raise Exception(f"[{self.portfolio}] {self.account_id}:{self.region} :: Copying "
-                                                f"{hub_product_name} failed: {r.get('StatusDetail')}")
-                            elif r.get('CopyProductStatus') == 'SUCCEEDED':
-                                break
-
-                        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: adding {target_product_id} "
-                                    f"to portfolio {portfolio_id}")
                         spoke_service_catalog.associate_product_with_portfolio(
-                            ProductId=target_product_id,
+                            ProductId=hub_product_id,
                             PortfolioId=portfolio_id,
+                            SourcePortfolioId=self.hub_portfolio_id
                         )
 
                         # associate_product_with_portfolio is not a synchronous request
                         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: waiting for adding of "
-                                    f"{target_product_id} to portfolio {portfolio_id}")
+                                    f"{hub_product_id} to portfolio {portfolio_id}")
                         while True:
                             time.sleep(2)
                             response = spoke_service_catalog.search_products_as_admin_single_page(
@@ -579,30 +505,148 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                                 in response.get('ProductViewDetails')
                             ]
                             logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Looking for "
-                                        f"{target_product_id} in {products_ids}")
+                                        f"{hub_product_id} in {products_ids}")
 
-                            if target_product_id in products_ids:
+                            if hub_product_id in products_ids:
                                 break
 
-                        product_name_to_id_dict[hub_product_name] = target_product_id
+                        product_name_to_id_dict[hub_product_name] = hub_product_id
 
-                    product_id_in_spoke = spoke_product_id or target_product_id
-                    spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
-                        ProductId=product_id_in_spoke
-                    ).get('ProvisioningArtifactDetails', [])
-                    for version_name, version_details in product_versions_that_should_be_updated.items():
-                        logging.info(f"{version_name} is active: {version_details.get('Active')} in hub")
-                        for spoke_provisioning_artifact_detail in spoke_provisioning_artifact_details:
-                            if spoke_provisioning_artifact_detail.get('Name') == version_name:
-                                logging.info(
-                                    f"Updating active of {version_name}/{spoke_provisioning_artifact_detail.get('Id')} "
-                                    f"in the spoke to {version_details.get('Active')}"
+                    else:
+                        # We need to long-hand copy any new provisioning artifacts
+                        # that have arrived in the hub since the last taskrun
+
+                        spoke_product_id = False
+                        target_product_id = False
+
+                        for hub_provisioning_artifact_detail in product_view_summary.get('provisioning_artifact_details', []):
+                            if hub_provisioning_artifact_detail.get('Type') == 'CLOUD_FORMATION_TEMPLATE':
+                                product_versions_that_should_be_copied[
+                                    f"{hub_provisioning_artifact_detail.get('Name')}"
+                                ] = hub_provisioning_artifact_detail
+                                product_versions_that_should_be_updated[
+                                    f"{hub_provisioning_artifact_detail.get('Name')}"
+                                ] = hub_provisioning_artifact_detail
+
+                        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Copying {hub_product_name}")
+                        hub_product_arn = product_view_summary.get('ProductARN')
+                        copy_args = {
+                            'SourceProductArn': hub_product_arn,
+                            'CopyOptions': [
+                                'CopyTags',
+                            ],
+                        }
+
+                        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: searching in "
+                                    f"spoke for product")
+                        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+                        with betterboto_client.CrossAccountClientContextManager(
+                                'servicecatalog', role, f"sc-{self.account_id}-{self.region}", region_name=self.region
+                        ) as spoke_service_catalog:
+                            p = None
+                            try:
+                                p = spoke_service_catalog.search_products_as_admin_single_page(
+                                    PortfolioId=portfolio_id,
+                                    Filters={'FullTextSearch': [hub_product_name]}
                                 )
-                                spoke_service_catalog.update_provisioning_artifact(
-                                    ProductId=product_id_in_spoke,
-                                    ProvisioningArtifactId=spoke_provisioning_artifact_detail.get('Id'),
-                                    Active=version_details.get('Active'),
+                            except spoke_service_catalog.exceptions.ResourceNotFoundException as e:
+                                logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: "
+                                            f"swallowing exception: {str(e)}")
+
+                            if p is not None:
+                                for spoke_product_view_details in p.get('ProductViewDetails'):
+                                    spoke_product_view = spoke_product_view_details.get('ProductViewSummary')
+                                    if spoke_product_view.get('Name') == hub_product_name:
+                                        spoke_product_id = spoke_product_view.get('ProductId')
+                                        product_name_to_id_dict[hub_product_name] = spoke_product_id
+                                        copy_args['TargetProductId'] = spoke_product_id
+                                        spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
+                                            ProductId=spoke_product_id
+                                        ).get('ProvisioningArtifactDetails')
+                                        for provisioning_artifact_detail in spoke_provisioning_artifact_details:
+                                            id_to_delete = f"{provisioning_artifact_detail.get('Name')}"
+                                            if product_versions_that_should_be_copied.get(id_to_delete, None) is not None:
+                                                logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} "
+                                                            f"{hub_product_name} :: Going to skip "
+                                                            f"{spoke_product_id} "
+                                                            f"{provisioning_artifact_detail.get('Name')}"
+                                                            )
+                                                del product_versions_that_should_be_copied[id_to_delete]
+
+                            if len(product_versions_that_should_be_copied.keys()) == 0:
+                                logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: "
+                                            f"no versions to copy")
+                            else:
+                                logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: "
+                                            f"about to copy product")
+
+                                copy_args['SourceProvisioningArtifactIdentifiers'] = [
+                                    {'Id': a.get('Id')} for a in product_versions_that_should_be_copied.values()
+                                ]
+
+                                logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: about to copy product with"
+                                            f"args: {copy_args}")
+                                copy_product_token = spoke_service_catalog.copy_product(
+                                    **copy_args
+                                ).get('CopyProductToken')
+                                while True:
+                                    time.sleep(5)
+                                    r = spoke_service_catalog.describe_copy_product_status(
+                                        CopyProductToken=copy_product_token
+                                    )
+                                    target_product_id = r.get('TargetProductId')
+                                    logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: "
+                                                f"{hub_product_name} status: {r.get('CopyProductStatus')}")
+                                    if r.get('CopyProductStatus') == 'FAILED':
+                                        raise Exception(f"[{self.portfolio}] {self.account_id}:{self.region} :: Copying "
+                                                        f"{hub_product_name} failed: {r.get('StatusDetail')}")
+                                    elif r.get('CopyProductStatus') == 'SUCCEEDED':
+                                        break
+
+                                logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: adding {target_product_id} "
+                                            f"to portfolio {portfolio_id}")
+                                spoke_service_catalog.associate_product_with_portfolio(
+                                    ProductId=target_product_id,
+                                    PortfolioId=portfolio_id,
                                 )
+
+                                # associate_product_with_portfolio is not a synchronous request
+                                logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: waiting for adding of "
+                                            f"{target_product_id} to portfolio {portfolio_id}")
+                                while True:
+                                    time.sleep(2)
+                                    response = spoke_service_catalog.search_products_as_admin_single_page(
+                                        PortfolioId=portfolio_id,
+                                    )
+                                    products_ids = [
+                                        product_view_detail.get('ProductViewSummary').get('ProductId') for product_view_detail
+                                        in response.get('ProductViewDetails')
+                                    ]
+                                    logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Looking for "
+                                                f"{target_product_id} in {products_ids}")
+
+                                    if target_product_id in products_ids:
+                                        break
+
+                                product_name_to_id_dict[hub_product_name] = target_product_id
+
+                            product_id_in_spoke = spoke_product_id or target_product_id
+                            spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
+                                ProductId=product_id_in_spoke
+                            ).get('ProvisioningArtifactDetails', [])
+                            for version_name, version_details in product_versions_that_should_be_updated.items():
+                                logging.info(f"{version_name} is active: {version_details.get('Active')} in hub")
+                                for spoke_provisioning_artifact_detail in spoke_provisioning_artifact_details:
+                                    if spoke_provisioning_artifact_detail.get('Name') == version_name:
+                                        logging.info(
+                                            f"Updating active of {version_name}/{spoke_provisioning_artifact_detail.get('Id')} "
+                                            f"in the spoke to {version_details.get('Active')}"
+                                        )
+                                        spoke_service_catalog.update_provisioning_artifact(
+                                            ProductId=product_id_in_spoke,
+                                            ProvisioningArtifactId=spoke_provisioning_artifact_detail.get('Id'),
+                                            Active=version_details.get('Active'),
+                                        )
 
         for p in self.post_actions:
             yield ProvisionActionTask(**p)
@@ -612,7 +656,6 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                 json.dumps(
                     {
                         'portfolio': spoke_portfolio,
-                        'product_versions_that_should_be_copied': product_versions_that_should_be_copied,
                         'products': product_name_to_id_dict,
                     },
                     indent=4,

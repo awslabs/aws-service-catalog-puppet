@@ -41,6 +41,7 @@ The following is an example of how to add the portfolio ``example-simple-central
             - product: account-vending-account-creation-shared
               roles:
                 - arn:aws:iam::${AWS::AccountId}:role/MyServiceCatalogAdminRole
+        local_association_style: import
         deploy_to:
           tags:
             - tag: scope:spoke
@@ -56,8 +57,8 @@ The valid values for regions are:
 - list of AWS regions - you can type in a list of AWS regions (each region selected should be present in your config)
 
 
-How can I add an association?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+How can I add a Principal Association?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The example above will add an association for the IAM principal:
 
@@ -69,6 +70,25 @@ users and groups.
 .. note::
 
     Using ``${AWS::AccountId}`` will evaluate in the spoke account.
+
+
+What is the Local Association Style?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The spoke portfolio will always have a different portfolio ID to the imported (hub) portfolio as it is created as a copy.
+
+Using ```local_association_style: copy``` (the default), each product from the imported portfolio will be 
+long-hand copied to the spoke local portfolio, including its provisioning artifactes (versions) meaning each local product 
+has a different ID from its parent in the imported hub portfolio, and is insulated from any changes in the hub until the 
+next puppet run
+
+If a new product, or versions of an existing product, are created in the hub portfolio, puppet must be executed 
+again to sync up the local portfolio with the latest hub changes.
+
+Setting ```local_association_style: import``` means that the products from the imported hub portfolio are simply associated
+to the local spoke portfolio. Any deletion of, or changes to products in the hub portfolio are instantly reflected in the spoke.
+New products in the hub portfolio will only be added to the spoke portfolio after the next puppet run, but new versions of those
+products will appear immediately once the product has been imported.
 
 
 How can I add a launch constraint?

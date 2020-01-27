@@ -346,7 +346,8 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         tasks_to_run.append(create_associations_for_portfolio_task)
 
     import_into_spoke_local_portfolio_task_params = {
-        'hub_portfolio_id': hub_portfolio.get('Id')
+        'hub_portfolio_id': hub_portfolio.get('Id'),
+        'local_association_style': launch_details.get('local_association_style', 'copy')
     }
 
     launch_constraints = launch_details.get('constraints', {}).get('launch', [])
