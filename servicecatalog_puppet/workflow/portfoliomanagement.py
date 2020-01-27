@@ -935,7 +935,7 @@ class CreateAssociationsInPythonForPortfolioTask(tasks.PuppetTask):
         return {
             'portfolio': GetPortfolioIdByPortfolioName(
                 portfolio=self.portfolio,
-                account_id=self.puppet_account_id,
+                account_id=self.account_id,
                 region=self.region,
             ),
         }
