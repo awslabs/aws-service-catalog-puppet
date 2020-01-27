@@ -456,26 +456,25 @@ def get_portfolio_for(portfolio_name, account_id, region):
             'servicecatalog', role, "-".join([account_id, region]), region_name=region
     ) as cross_account_servicecatalog:
         portfolio = None
-        while True:
-            response = cross_account_servicecatalog.list_accepted_portfolio_shares()
-            assert response.get('NextPageToken') is None, "Pagination not supported"
-            for portfolio_detail in response.get('PortfolioDetails'):
+        response = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
+        for portfolio_detail in response.get('PortfolioDetails'):
+            if portfolio_detail.get('DisplayName') == portfolio_name:
+                portfolio = portfolio_detail
+                break
+
+        if portfolio is None:
+            logger.info(f"Portfolio {portfolio_name} was not found in shares, in {region} of account {account_id}")
+            response = cross_account_servicecatalog.list_portfolios_single_page()
+            for portfolio_detail in response.get('PortfolioDetails', []):
                 if portfolio_detail.get('DisplayName') == portfolio_name:
                     portfolio = portfolio_detail
                     break
 
             if portfolio is None:
-                response = cross_account_servicecatalog.list_portfolios()
-                for portfolio_detail in response.get('PortfolioDetails', []):
-                    if portfolio_detail.get('DisplayName') == portfolio_name:
-                        portfolio = portfolio_detail
-                        break
+                raise Exception(f"Portfolio {portfolio_name} was not found in {region} of account {account_id}")
 
-            if portfolio is None:
-                raise Exception(f"Could not find portfolio {portfolio_name} in {region} of account {account_id}")
-
-            logger.info(f"Found portfolio: {portfolio}")
-            return portfolio
+        logger.info(f"Found portfolio: {portfolio}")
+        return portfolio
 
 
 def ensure_portfolio(service_catalog, portfolio_name, provider_name, description=None):
