@@ -4,7 +4,7 @@
 import click
 import yaml
 
-from . import cli_commands
+from servicecatalog_puppet import core
 
 
 @click.group()
@@ -12,13 +12,13 @@ from . import cli_commands
 @click.option('--info-line-numbers/--no-info-line-numbers', default=False)
 def cli(info, info_line_numbers):
     """cli for pipeline tools"""
-    cli_commands.cli(info, info_line_numbers)
+    core.cli(info, info_line_numbers)
 
 
 @cli.command()
 @click.argument('f', type=click.File())
 def generate_shares(f):
-    cli_commands.generate_shares(f)
+    core.generate_shares(f)
 
 
 @cli.command()
@@ -26,85 +26,142 @@ def generate_shares(f):
 @click.option('--single-account', default=None)
 @click.option('--num-workers', default=10)
 def deploy(f, single_account, num_workers):
-    cli_commands.deploy(f, single_account, num_workers)
+    core.deploy(f, single_account, num_workers)
 
 
 @cli.command()
 @click.argument('f', type=click.File())
 @click.option('--single-account', default=None)
 def graph(f, single_account):
-    cli_commands.graph(f)
+    core.graph(f)
 
 
 @cli.command()
 @click.argument('f', type=click.File())
-def dry_run(f):
-    cli_commands.dry_run(f)
+@click.option('--single-account', default=None)
+def dry_run(f, single_account):
+    core.deploy(f, single_account, dry_run=True)
 
 
 @cli.command()
 @click.argument('puppet_account_id')
 @click.argument('iam_role_arns', nargs=-1)
-def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
-    cli_commands.bootstrap_spoke_as(puppet_account_id, iam_role_arns)
+@click.option('--permission-boundary', default="arn:aws:iam::aws:policy/AdministratorAccess")
+def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
+    core.bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary)
 
 
 @cli.command()
 @click.argument('puppet_account_id')
-def bootstrap_spoke(puppet_account_id):
-    cli_commands.bootstrap_spoke(puppet_account_id)
+@click.option('--permission-boundary', default="arn:aws:iam::aws:policy/AdministratorAccess")
+def bootstrap_spoke(puppet_account_id, permission_boundary):
+    core.bootstrap_spoke(puppet_account_id, permission_boundary)
 
 
 @cli.command()
 @click.argument('ou_path_or_id')
 @click.argument('role_name')
 @click.argument('iam_role_arns', nargs=-1)
-def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns):
-    cli_commands.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns)
+@click.option('--permission-boundary', default="arn:aws:iam::aws:policy/AdministratorAccess")
+@click.option('--num-workers', default=10)
+def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary, num_workers):
+    core.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary, num_workers)
 
 
 @cli.command()
 @click.argument('branch-name')
 @click.option('--with-manual-approvals/--with-no-manual-approvals', default=False)
-def bootstrap_branch(branch_name, with_manual_approvals):
-    cli_commands.bootstrap_branch(branch_name, with_manual_approvals)
+@click.option("--puppet-code-pipeline-role-permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--source-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--puppet-generate-role-permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--puppet-deploy-role-permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--puppet-provisioning-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--cloud-formation-deploy-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+def bootstrap_branch(
+        branch_name,
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+):
+    core.bootstrap_branch(
+        branch_name,
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+    )
 
 
 @cli.command()
 @click.option('--with-manual-approvals/--with-no-manual-approvals', default=False)
-def bootstrap(with_manual_approvals):
-    cli_commands.bootstrap(with_manual_approvals)
+@click.option("--puppet-code-pipeline-role-permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--source-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--puppet-generate-role-permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--puppet-deploy-role-permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--puppet-provisioning-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--cloud-formation-deploy-role-permissions-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess", show_default=True)
+@click.option("--deploy_environment_compute_type", default="BUILD_GENERAL1_SMALL", show_default=True)
+@click.option("--deploy_num_workers", default=10, type=click.INT ,show_default=True)
+def bootstrap(
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+        deploy_environment_compute_type,
+        deploy_num_workers,
+):
+    core.bootstrap(
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+        deploy_environment_compute_type,
+        deploy_num_workers,
+    )
 
 
 @cli.command()
 @click.argument('complexity', default='simple')
 @click.argument('p', type=click.Path(exists=True))
 def seed(complexity, p):
-    cli_commands.seed(complexity, p)
+    core.seed(complexity, p)
 
 
 @cli.command()
 @click.argument('expanded_manifest', type=click.File())
-@click.option('--format','-f', type=click.Choice(['table', 'json']),default='table')
+@click.option('--format', '-f', type=click.Choice(['table', 'json']), default='table')
 def list_launches(expanded_manifest, format):
-    cli_commands.list_launches(expanded_manifest, format)
+    core.list_launches(expanded_manifest, format)
 
 
 @cli.command()
 @click.argument('f', type=click.File())
 def expand(f):
-    cli_commands.expand(f)
+    core.expand(f)
 
 
 @cli.command()
 @click.argument('f', type=click.File())
 def validate(f):
-    cli_commands.validate(f)
+    core.validate(f)
 
 
 @cli.command()
 def version():
-    cli_commands.version()
+    core.version()
 
 
 @cli.command()
@@ -112,36 +169,31 @@ def version():
 def upload_config(p):
     content = open(p, 'r').read()
     config = yaml.safe_load(content)
-    cli_commands.upload_config(config)
+    core.upload_config(config)
 
 
 @cli.command()
 @click.argument('org-iam-role-arn')
 def set_org_iam_role_arn(org_iam_role_arn):
-    cli_commands.set_org_iam_role_arn(org_iam_role_arn)
+    core.set_org_iam_role_arn(org_iam_role_arn)
 
 
 @cli.command()
 @click.argument('puppet_account_id')
 def bootstrap_org_master(puppet_account_id):
-    cli_commands.bootstrap_org_master(puppet_account_id)
-
-
-@cli.command()
-def quick_start():
-    cli_commands.quick_start()
+    core.bootstrap_org_master(puppet_account_id)
 
 
 @cli.command()
 @click.argument('what', default='puppet')
 @click.option('--tail/--no-tail', default=False)
 def run(what, tail):
-    cli_commands.run(what, tail)
+    core.run(what, tail)
 
 
 @cli.command()
 def list_resources():
-    cli_commands.list_resources()
+    core.list_resources()
 
 
 @cli.command()
@@ -149,13 +201,13 @@ def list_resources():
 @click.argument('name')
 @click.argument('portfolio_name')
 def import_product_set(f, name, portfolio_name):
-    cli_commands.import_product_set(f, name, portfolio_name)
+    core.import_product_set(f, name, portfolio_name)
 
 
 @cli.command()
 @click.argument('account_or_ou_file_path', type=click.File())
 def add_to_accounts(account_or_ou_file_path):
-    cli_commands.add_to_accounts(
+    core.add_to_accounts(
         yaml.safe_load(account_or_ou_file_path)
     )
 
@@ -163,13 +215,13 @@ def add_to_accounts(account_or_ou_file_path):
 @cli.command()
 @click.argument('account_id_or_ou_id_or_ou_path')
 def remove_from_accounts(account_id_or_ou_id_or_ou_path):
-    cli_commands.remove_from_accounts(account_id_or_ou_id_or_ou_path)
+    core.remove_from_accounts(account_id_or_ou_id_or_ou_path)
 
 
 @cli.command()
 @click.argument('launch_file_path', type=click.File())
 def add_to_launches(launch_name, launch_file_path):
-    cli_commands.add_to_launches(
+    core.add_to_launches(
         launch_name, yaml.safe_load(launch_file_path)
     )
 
@@ -177,32 +229,42 @@ def add_to_launches(launch_name, launch_file_path):
 @cli.command()
 @click.argument('launch_name')
 def remove_from_launches(launch_name):
-    cli_commands.remove_from_launches(launch_name)
+    core.remove_from_launches(launch_name)
 
 
 @cli.command()
 @click.argument('f', type=click.File())
 def reset_provisioned_product_owner(f):
-    cli_commands.reset_provisioned_product_owner(f)
+    core.reset_provisioned_product_owner(f)
 
 
 @cli.command()
 @click.argument('regions', nargs=-1)
 def set_regions(regions):
-    cli_commands.set_config_value('regions', regions)
+    core.set_config_value('regions', regions)
 
 
 @cli.command()
 @click.argument('name')
 @click.argument('value')
 def set_config_value(name, value, type=bool):
-    cli_commands.set_config_value(name, value)
+    core.set_config_value(name, value)
 
 
 @cli.command()
 @click.argument('execution_id')
 def export_puppet_pipeline_logs(execution_id):
-    cli_commands.export_puppet_pipeline_logs(execution_id)
+    core.export_puppet_pipeline_logs(execution_id)
+
+
+@cli.command()
+def uninstall():
+    core.uninstall()
+
+
+@cli.command()
+def release_spoke():
+    core.release_spoke()
 
 
 if __name__ == "__main__":

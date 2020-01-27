@@ -10,6 +10,7 @@ Welcome to aws-service-catalog-puppets's documentation!
    puppet/designing_your_manifest
    puppet/bootstrapping_spokes
    puppet/sharing_a_portfolio
+   puppet/actions
    puppet/notifications
    puppet/upgrading
    puppet/faq

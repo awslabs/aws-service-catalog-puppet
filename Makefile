@@ -9,16 +9,32 @@ help:
 setup:
 	pip install pipenv
 	pipenv install --dev --three
-
+	
+setup-aws:
+	pip install pipenv
+	pipenv lock -r > requirements.txt
+	pip install -r requirements.txt
+	pipenv lock -r -d > requirements-dev.txt
+	pip install -r requirements-dev.txt
+	
 activate:
 	pipenv shell -c
 
 test:
 	pipenv check
-	pipenv run -- py.test --cov=./servicecatalog_puppet --cov-branch
+	pipenv run pytest -k unit --cov=./servicecatalog_puppet --cov-branch
+	
+test-aws:
+	pipenv check
+	pytest -k unit --cov=./servicecatalog_puppet --cov-branch	
 
 prepare-deploy:
 	pipenv run pipenv-setup sync
 	pipenv run python setup.py sdist
 
-.PHONY: help activate test setup prepare-deploy
+prepare-deploy-aws:
+	pip install pipenv-setup
+	pipenv-setup sync
+	python setup.py sdist
+
+.PHONY: help activate test setup prepare-deploy test-aws setup-aws prepare-deploy-aws

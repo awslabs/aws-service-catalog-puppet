@@ -18,6 +18,38 @@ Parameters:
       - 'Yes'
       - 'No'
     Default: 'No'
+  PuppetCodePipelineRolePermissionBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetCodePipelineRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  SourceRolePermissionsBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the SourceRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  PuppetGenerateRolePermissionBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetGenerateRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  PuppetDeployRolePermissionBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetDeployRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  PuppetProvisioningRolePermissionsBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetProvisioningRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  CloudFormationDeployRolePermissionsBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the CloudFormationDeployRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  DeployEnvironmentComputeType:
+    Type: String
+    Description: The AWS CodeBuild Environment Compute Type
+    Default: BUILD_GENERAL1_SMALL
+  DeployNumWorkers:
+    Type: Number
+    Description: Number of workers that should be used when running a deploy
+    Default: 10
 
 Conditions:
   ShouldUseOrgs: !Not [!Equals [!Ref OrgIamRoleArn, None]]
@@ -72,6 +104,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: PuppetProvisioningRole
+      PermissionsBoundary: !Ref PuppetProvisioningRolePermissionsBoundary
       Path: /servicecatalog-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -94,6 +127,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: CloudFormationDeployRole
+      PermissionsBoundary: !Ref CloudFormationDeployRolePermissionsBoundary
       Path: /servicecatalog-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -116,6 +150,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: PuppetCodePipelineRole
+      PermissionsBoundary: !Ref PuppetCodePipelineRolePermissionBoundary
       Path: /servicecatalog-puppet/
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
@@ -133,6 +168,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: PuppetSourceRole
+      PermissionsBoundary: !Ref SourceRolePermissionsBoundary
       Path: /servicecatalog-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -259,6 +295,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: PuppetGenerateRole
+      PermissionsBoundary: !Ref PuppetGenerateRolePermissionBoundary
       Path: /servicecatalog-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -288,6 +325,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: PuppetDeployRole
+      PermissionsBoundary: !Ref PuppetDeployRolePermissionBoundary
       Path: /servicecatalog-puppet/
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -337,10 +375,19 @@ Resources:
               - shares/*/*/*.json
               - topic/*/*/*.json
             name: GenerateShares
-      TimeoutInMinutes: 120
+      TimeoutInMinutes: 480
       Tags:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
+
+  NumWorkersSSMParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /servicecatalog-puppet/deploy/num-workers
+      Type: String
+      Value: !Sub "${DeployNumWorkers}"
+      Tags:
+        "ServiceCatalogPuppet:Actor": "Framework"
 
   DeployProject:
     Type: AWS::CodeBuild::Project
@@ -352,8 +399,13 @@ Resources:
         Type: CODEPIPELINE
       Environment:
         Type: linuxContainer
-        ComputeType: BUILD_GENERAL1_SMALL
+        ComputeType: !Ref DeployEnvironmentComputeType
         Image: aws/codebuild/python:3.7.1
+        EnvironmentVariables:
+          - Name: NUM_WORKERS
+            Type: PARAMETER_STORE
+            Value: !Ref NumWorkersSSMParameter
+
       Source:
         Type: CODEPIPELINE
         BuildSpec: |
@@ -368,14 +420,14 @@ Resources:
           {% endif %}
             build:
               commands:
-                - servicecatalog-puppet --info deploy manifest-expanded.yaml
+                - servicecatalog-puppet --info deploy --num-workers ${NUM_WORKERS} manifest-expanded.yaml
           artifacts:
             files:
               - results/*/*
               - output/*/*
             name: DeployProject
 
-      TimeoutInMinutes: 60
+      TimeoutInMinutes: 480
       Tags:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
@@ -413,7 +465,7 @@ Resources:
               - output/*/*
             name: DryRunProject
 
-      TimeoutInMinutes: 60
+      TimeoutInMinutes: 480
       Tags:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
@@ -510,7 +562,7 @@ Resources:
               - data/*/*/*/*.json
               - shares/*/*/*.json
               - topic/*/*/*.json
-      TimeoutInMinutes: 30
+      TimeoutInMinutes: 480
       Tags:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"

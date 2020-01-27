@@ -1,3 +1,4 @@
+import functools
 import logging
 import time
 import os
@@ -5,7 +6,7 @@ import os
 import click
 import yaml
 
-from . import constants
+from servicecatalog_puppet import constants
 from betterboto import client as betterboto_client
 
 logger = logging.getLogger(__file__)
@@ -40,6 +41,7 @@ def terminate_if_status_is_not_available(
     prefix = f"[{provisioned_product_name}] {account_id}:{region}"
     logger.info(f"{prefix} :: checking if should be terminated")
     # TODO - change to name query?
+
     response = service_catalog.search_provisioned_products(
         Filters={'SearchQuery': [
             "productId:{}".format(product_id)
@@ -81,7 +83,6 @@ def get_stack_output_for(cloudformation, stack_name):
 def get_default_parameters_for_stack(cloudformation, stack_name):
     logger.info(f"Getting default parameters for for {stack_name}")
     existing_stack_params_dict = {}
-    #errored
     summary_response = cloudformation.get_template_summary(
         StackName=stack_name,
     )
@@ -127,7 +128,6 @@ def provision_product_with_plan(
         if provisioned_product_plan.get('ProvisionProductName') == launch_name:
             f"{uid} :: Found existing plan, going to terminate it"
             service_catalog.delete_provisioned_product_plan(PlanId=provisioned_product_plan.get('PlanId'))
-
     logger.info(f"{uid} :: Creating a plan")
     regional_sns_topic = f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
     provisioning_parameters = []
@@ -145,6 +145,10 @@ def provision_product_with_plan(
         ProvisioningArtifactId=provisioning_artifact_id,
         ProvisioningParameters=provisioning_parameters,
         Tags=[
+            {
+                'Key': 'ServiceCatalogPuppet:Actor',
+                'Value': "Generated",
+            },
             {
                 'Key': 'launch_name',
                 'Value': launch_name,
@@ -177,10 +181,11 @@ def provision_product_with_plan(
             f"changes: {yaml.safe_dump(response.get('ResourceChanges'))}"
         )
         if len(response.get('ResourceChanges')) == 0:
-            logger.warning(f"{uid} :: There are no resource changes in this plan, "
-                        f"running this anyway - your product will be marked as tainted as your CloudFormation changeset"
-                        f"will fail but your product will be the correct version and in tact.")
-
+            logger.warning(
+                f"{uid} :: There are no resource changes in this plan, "
+                f"running this anyway - your product will be marked as tainted as your CloudFormation changeset"
+                f"will fail but your product will be the correct version and in tact."
+            )
 
         logger.info(f"{uid} :: executing changes")
         service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
@@ -210,7 +215,7 @@ def provision_product_with_plan(
                 execute_status = provisioned_product_detail.get('Status')
                 if execute_status in ['AVAILABLE', 'TAINTED', 'EXECUTE_SUCCESS']:
                     break
-                elif execute_status ==  'ERROR':
+                elif execute_status == 'ERROR':
                     raise Exception(f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
                 else:
                     time.sleep(5)
@@ -253,6 +258,10 @@ def provision_product(
         ProvisioningParameters=provisioning_parameters,
         Tags=[
             {
+                'Key': 'ServiceCatalogPuppet:Actor',
+                'Value': "Generated",
+            },
+            {
                 'Key': 'launch_name',
                 'Value': launch_name,
             },
@@ -279,7 +288,7 @@ def provision_product(
         execute_status = provisioned_product_detail.get('Status')
         if execute_status in ['AVAILABLE', 'TAINTED', 'EXECUTE_SUCCESS']:
             break
-        elif execute_status ==  'ERROR':
+        elif execute_status == 'ERROR':
             raise Exception(f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
         else:
             time.sleep(5)
@@ -326,7 +335,7 @@ def update_provisioned_product(
         execute_status = provisioned_product_detail.get('Status')
         if execute_status in ['AVAILABLE', 'TAINTED', 'EXECUTE_SUCCESS']:
             break
-        elif execute_status ==  'ERROR':
+        elif execute_status == 'ERROR':
             raise Exception(f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
         else:
             time.sleep(5)
@@ -438,8 +447,10 @@ def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name,
         return product_id, version_id
 
 
+@functools.lru_cache()
 def get_portfolio_for(portfolio_name, account_id, region):
     logger.info(f"Getting portfolio id for: {portfolio_name}")
+
     role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
     with betterboto_client.CrossAccountClientContextManager(
             'servicecatalog', role, "-".join([account_id, region]), region_name=region

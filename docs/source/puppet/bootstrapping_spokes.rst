@@ -92,3 +92,24 @@ You start a run of that project and override the environmental variables to use 
     bootstrap-spokes-in-ou was added in version 0.44.0
 
 
+Restricting Spokes
+------------------
+
+When you are bootstrapping a spoke you can specify the ARN of an IAM Permission Boundary that should be applied to the
+spokes PuppetRole.  This permission boundary should permit the PuppetRole to interact with AWS Service Catalog to accept
+shares, manage portfolios and to add, provision and terminate products.  In addition the role should allow the use of
+AWS SNS, AWS EventBridge, AWS OpsCenter.
+
+To use the boundary you must bootstrap a spoke using an extra parameter:
+
+.. code-block:: shell
+
+    servicecatalog-puppet bootstrap-spoke <ACCOUNT_ID_OF_YOUR_PUPPET> --permission-boundary arn:aws:iam::aws:policy/AdministratorAccess
+
+
+The parameter is available on `bootstrap-spoke-as` and `bootstrap-spokes-in-ou` also.
+
+.. note::
+
+    permission boundary was added in version 0.56.0
+

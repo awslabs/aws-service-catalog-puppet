@@ -58,7 +58,7 @@ Setting it up
 The Puppet will run in your account and needs some configuration.  You will need to stand up the puppet and set up the 
 configuration for it to run smoothly.
 
-You will also need to provision an IAM Role within the _spoke_ accounts - those you want to provision products in.
+You will also need to provision an IAM Role within the *spoke* accounts - those you want to provision products in.
 
 Bootstrap your spokes
 ~~~~~~~~~~~~~~~~~~~~~

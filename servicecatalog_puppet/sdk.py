@@ -1,7 +1,7 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-from . import cli_commands
+from servicecatalog_puppet import core
 
 
 def run(what="puppet", wait_for_completion=False):
@@ -11,7 +11,7 @@ def run(what="puppet", wait_for_completion=False):
     :param what: what should be run.  The only parameter that will work is ``puppet``
     :param wait_for_completion: Whether the command should wait for the completion of the pipeline before it returns
     """
-    cli_commands.run(what, wait_for_completion)
+    core.run(what, wait_for_completion)
 
 
 def add_to_accounts(account_or_ou):
@@ -20,7 +20,7 @@ def add_to_accounts(account_or_ou):
 
     :param account_or_ou: A dict describing the the account or the ou to be added
     """
-    cli_commands.add_to_accounts(account_or_ou)
+    core.add_to_accounts(account_or_ou)
 
 
 def remove_from_accounts(account_id_or_ou_id_or_ou_path):
@@ -30,7 +30,7 @@ def remove_from_accounts(account_id_or_ou_id_or_ou_path):
     :param account_id_or_ou_id_or_ou_path: the value can be an account_id, ou_id or an ou_path.  It should be present \
     in the accounts list within the manifest file or an error is generated
     """
-    cli_commands.remove_from_accounts(account_id_or_ou_id_or_ou_path)
+    core.remove_from_accounts(account_id_or_ou_id_or_ou_path)
 
 
 def add_to_launches(launch_name, launch):
@@ -40,7 +40,7 @@ def add_to_launches(launch_name, launch):
     :param launch_name: The launch name to use when adding the launch to the manifest launches
     :param launch: The dict to add to the launches
     """
-    cli_commands.add_to_launches(launch_name, launch)
+    core.add_to_launches(launch_name, launch)
 
 
 def remove_from_launches(launch_name):
@@ -49,7 +49,7 @@ def remove_from_launches(launch_name):
 
     :param launch_name: The name of the launch to be removed from the launches section of the manifest file
     """
-    cli_commands.remove_from_launches(launch_name)
+    core.remove_from_launches(launch_name)
 
 
 def upload_config(config):
@@ -63,30 +63,59 @@ def upload_config(config):
 
     :param config: The dict containing the configuration used for puppet
     """
-    cli_commands.upload_config(config)
+    core.upload_config(config)
 
 
-def bootstrap(with_manual_approvals):
+def bootstrap(
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+        source_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+        puppet_generate_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+        puppet_deploy_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+        puppet_provisioning_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+        cloud_formation_deploy_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+        deploy_environment_compute_type="BUILD_GENERAL1_SMALL",
+        deploy_num_workers=10,
+):
     """
     Bootstrap the puppet account.  This will create the AWS CodeCommit repo containing the config and it will also
     create the AWS CodePipeline that will run the solution.
 
     :param with_manual_approvals: Boolean to specify whether there should be manual approvals before provisioning occurs
+    :param puppet_code_pipeline_role_permission_boundary: IAM Boundary to apply to the role: PuppetCodePipelineRole
+    :param source_role_permissions_boundary: IAM Boundary to apply to the role: SourceRole
+    :param puppet_generate_role_permission_boundary: IAM Boundary to apply to the role: PuppetGenerateRole
+    :param puppet_deploy_role_permission_boundary: IAM Boundary to apply to the role: PuppetDeployRole
+    :param puppet_provisioning_role_permissions_boundary: IAM Boundary to apply to the role: PuppetProvisioningRole
+    :param cloud_formation_deploy_role_permissions_boundary: IAM Boundary to apply to the role: CloudFormationDeployRole
+    :param deploy_environment_compute_type: The AWS CodeBuild Environment Compute Type
+    :param deploy_num_workers: Number of workers that should be used when running a deploy
     """
-    cli_commands.bootstrap(with_manual_approvals)
+    core.bootstrap(
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+        deploy_environment_compute_type,
+        deploy_num_workers,
+    )
 
 
-def bootstrap_spoke(puppet_account_id):
+def bootstrap_spoke(puppet_account_id, permission_boundary):
     """
     Bootstrap a spoke so that is can be used by the puppet account to share portfolios and provision products.  This
     must be run in the spoke account.
 
     :param puppet_account_id: this is the account id where you have installed aws-service-catalog-puppet
+    :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
-    cli_commands.bootstrap_spoke(puppet_account_id)
+    core.bootstrap_spoke(puppet_account_id, permission_boundary)
 
 
-def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
+def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
     """
     Bootstrap a spoke so that it can be used by the puppet account to share portfolios and provision products.  This
     must be run in an account where you can assume the first ARN in the iam_role_arns list.
@@ -94,11 +123,12 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns):
     :param puppet_account_id: this is the account id where you have installed aws-service-catalog-puppet
     :param iam_role_arns: this is a list of ARNs the function will assume (in order) before bootstrapping.  The final \
     ARN in the list should be the ARN of the spoke you want to bootstrap.
+    :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
-    cli_commands.bootstrap_spoke_as(puppet_account_id, iam_role_arns)
+    core.bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary)
 
 
-def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns):
+def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary):
     """
     Bootstrap each spoke in the given path or id
 
@@ -106,5 +136,23 @@ def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns):
     :param role_name: This is the name (not ARN) of the IAM role to assume in each account when bootstrapping
     :param iam_role_arns: this is a list of ARNs the function will assume (in order) before bootstrapping.  The final \
     ARN in the list should be the ARN of account that can assume the role_name in the accounts to bootstrap.
+    :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
-    cli_commands.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns)
+    core.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary)
+
+
+def uninstall():
+    """
+    Delete the resources created during the boostrap process.  AWS Service Catalog portfolios and their configurations
+    are not modified during this call
+
+    """
+    core.uninstall()
+
+
+def release_spoke():
+    """
+    Delete the resources created during the boostrap spoke process
+
+    """
+    core.release_spoke()
