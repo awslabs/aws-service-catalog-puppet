@@ -955,7 +955,7 @@ class CreateAssociationsInPythonForPortfolioTask(tasks.PuppetTask):
 
         with self.input().get('portfolio').open('r') as f:
             portfolio_details = json.loads(f.read())
-        portfolio_id = portfolio_details.get('portfolio_id'),
+        portfolio_id = portfolio_details.get('portfolio_id')
 
         logging.info(f"{self.uid}: Creating the association for portfolio {portfolio_id}")
         with betterboto_client.ClientContextManager('servicecatalog', region_name=self.region) as servicecatalog:
