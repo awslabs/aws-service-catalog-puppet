@@ -1,0 +1,106 @@
+schema: puppet-2019-04-01
+accounts:
+  - account_id: '105463962595'
+    default_region: eu-west-1
+    name: '105463962595'
+    regions_enabled:
+      - eu-west-1
+#      - eu-west-2
+    tags:
+      - type:prod
+      - partition:eu
+      - scope:pci
+launches:
+  launch-a:
+    portfolio: e-mandatory
+    product: aws-iam-administrator-access-assumable-role-account
+    version: v1
+    depends_on:
+      - launch-b
+      - launch-d
+    parameters:
+      AccountToTrust:
+        default: '105463962595'
+      RoleName:
+        default: 'XAccountA'
+    deploy_to:
+      accounts:
+        - account_id: '105463962595'
+          regions: default_region
+
+  launch-b:
+    portfolio: e-mandatory
+    product: aws-iam-administrator-access-assumable-role-account
+    version: v1
+    depends_on:
+      - launch-c
+      - launch-f
+    parameters:
+      AccountToTrust:
+        default: '105463962595'
+      RoleName:
+        default: 'XAccountB'
+    deploy_to:
+      accounts:
+        - account_id: '105463962595'
+          regions: default_region
+
+  launch-c:
+    portfolio: e-mandatory
+    product: aws-iam-administrator-access-assumable-role-account
+    version: v1
+    depends_on:
+      - launch-d
+    parameters:
+      AccountToTrust:
+        default: '105463962595'
+      RoleName:
+        default: 'XAccountC'
+    deploy_to:
+      accounts:
+        - account_id: '105463962595'
+          regions: default_region
+
+  launch-d:
+    portfolio: e-mandatory
+    product: aws-iam-administrator-access-assumable-role-account
+    version: v1
+    depends_on:
+      - launch-e
+    parameters:
+      AccountToTrust:
+        default: '105463962595'
+      RoleName:
+        default: 'XAccountD'
+    deploy_to:
+      accounts:
+        - account_id: '105463962595'
+          regions: default_region
+
+  launch-e:
+    portfolio: e-mandatory
+    product: aws-iam-administrator-access-assumable-role-account
+    version: v1
+    parameters:
+      AccountToTrust:
+        default: '105463962595'
+      RoleName:
+        default: 'XAccountE'
+    deploy_to:
+      tags:
+        - tag: type:prod
+          regions: default_region
+
+  launch-f:
+    portfolio: e-mandatory
+    product: aws-iam-administrator-access-assumable-role-account
+    version: v1
+    parameters:
+      AccountToTrust:
+        default: '105463962595'
+      RoleName:
+        default: 'XAccountF'
+    deploy_to:
+      accounts:
+        - account_id: '105463962595'
+          regions: default_region

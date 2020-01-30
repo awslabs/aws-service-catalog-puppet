@@ -460,6 +460,7 @@ def get_portfolio_for(portfolio_name, account_id, region):
         for portfolio_detail in response.get('PortfolioDetails'):
             if portfolio_detail.get('DisplayName') == portfolio_name:
                 portfolio = portfolio_detail
+                logger.info(f"found portfolio {portfolio_name} in shares for {region} of {account_id}")
                 break
 
         if portfolio is None:
@@ -468,6 +469,7 @@ def get_portfolio_for(portfolio_name, account_id, region):
             for portfolio_detail in response.get('PortfolioDetails', []):
                 if portfolio_detail.get('DisplayName') == portfolio_name:
                     portfolio = portfolio_detail
+                    logger.info(f"found portfolio {portfolio_name} in list_portfolios for {region} of {account_id}")
                     break
 
             if portfolio is None:

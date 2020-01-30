@@ -149,7 +149,7 @@ def convert_manifest_into_task_defs_for_launches(
     accounts = manifest.get('accounts', [])
     actions = manifest.get('actions', {})
     for launch_name, launch_details in manifest.get('launches', {}).items():
-        logger.info(f"looking at {launch_name}")
+        logger.info(f"looking at {launch_name} in convert_manifest_into_task_defs_for_launches")
         pre_actions = []
         for provision_action in launch_details.get('pre_actions', []):
             action = deepcopy(actions.get(provision_action.get('name')))
@@ -167,6 +167,8 @@ def convert_manifest_into_task_defs_for_launches(
             action['phase'] = 'post'
             action['source_type'] = 'launch'
             post_actions.append(action)
+
+        logger.info(f'looking at {launch_name} and depends on is {launch_details.get("depends_on", [])}')
 
         task_def = {
             'launch_name': launch_name,
@@ -287,13 +289,14 @@ def convert_manifest_into_task_defs_for_launches(
         for depends_on_launch_name in task_def.get('depends_on', []):
             for task_def_2 in task_defs:
                 if task_def_2.get('launch_name') == depends_on_launch_name:
-                    task_def_2_copy = deepcopy(task_def_2)
-                    del task_def_2_copy['depends_on']
-                    task_def_2_copy['dependencies'] = []
-                    task_def['dependencies'].append(task_def_2_copy)
+                    task_def['dependencies'].append(task_def_2)
 
     for task_def in task_defs:
         del task_def['depends_on']
+
+    clean = []
+    for task_def in task_defs:
+        clean.append(deepcopy(task_def))
 
     return task_defs
 
@@ -302,6 +305,9 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
         account_id, expanded_from, organization, region, launch_details,
         puppet_account_id, should_use_sns, launch_tasks, pre_actions, post_actions
 ):
+    logger.info(
+        f"in convert_manifest_into_task_defs_for_spoke_local_portfolios_in"
+    )
     dependencies = []
     for depend in launch_details.get('depends_on', []):
         for launch_task in launch_tasks:
@@ -383,7 +389,7 @@ def convert_manifest_into_task_defs_for_spoke_local_portfolios(manifest, puppet_
     actions = manifest.get('actions', {})
 
     for launch_name, launch_details in manifest.get('spoke-local-portfolios', {}).items():
-        logger.info(f"Looking at {launch_name}")
+        logger.info(f"Looking at {launch_name} in convert_manifest_into_task_defs_for_spoke_local_portfolios")
         pre_actions = []
         for provision_action in launch_details.get('pre_actions', []):
             action = deepcopy(actions.get(provision_action.get('name')))
