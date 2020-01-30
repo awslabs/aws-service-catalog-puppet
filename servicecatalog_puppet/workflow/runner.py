@@ -14,6 +14,7 @@ from betterboto import client as betterboto_client
 from luigi import LuigiStatusCode
 
 from servicecatalog_puppet import config, constants
+from servicecatalog_puppet.workflow import tasks
 
 import logging
 
@@ -36,6 +37,8 @@ def run_tasks(tasks_to_run, num_workers, dry_run=False):
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
 
     logger.info(f"About to run workflow with {num_workers} workers")
+
+    tasks.print_stats()
 
     run_result = luigi.build(
         tasks_to_run,

@@ -44,6 +44,7 @@ setup(
         "lockfile==0.12.2",
         "luigi==2.8.9",
         "markupsafe==1.1.1",
+        "psutil==5.6.7",
         "pykwalify==1.7.0",
         "python-daemon==2.1.2",
         "python-dateutil==2.8.1",
