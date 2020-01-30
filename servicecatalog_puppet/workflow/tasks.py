@@ -151,7 +151,7 @@ def on_task_failure(task, exception):
 
 def print_stats():
     logger.info(f"cpu usage: percent={psutil.cpu_percent()}")
-    total, available, percent, used, free, active, inactive, wired = psutil.virtual_memory()
+    total, available, percent, others = psutil.virtual_memory()
     logger.info(f"memory usage: total={total/1024/1024}MB used={used/1024/1024}MB percent={percent}%")
 
 
