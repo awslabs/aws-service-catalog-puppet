@@ -8,6 +8,8 @@ from betterboto import client as betterboto_client
 from servicecatalog_puppet import constants
 import psutil
 import logging
+import math
+
 
 logger = logging.getLogger("tasks")
 
@@ -152,7 +154,7 @@ def on_task_failure(task, exception):
 def print_stats():
     logger.info(f"cpu usage: percent={psutil.cpu_percent()}")
     mem = psutil.virtual_memory()
-    logger.info(f"memory usage: total={mem.total/1024/1024}MB used={mem.used/1024/1024}MB percent={mem.percent}%")
+    logger.info(f"memory usage: total={math.ceil(mem.total/1024/1024)}MB used={math.ceil(mem.used/1024/1024)}MB percent={mem.percent}%")
 
 
 @luigi.Task.event_handler(luigi.Event.SUCCESS)
