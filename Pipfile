@@ -28,6 +28,7 @@ colorclass = "==2.2.0"
 luigi = "==2.8.9"
 cfn-flip = "==1.2.1"
 aws-service-catalog-puppet = {path = "."}
+psutil = "*"
 
 [requires]
 python_version = "3.7"
