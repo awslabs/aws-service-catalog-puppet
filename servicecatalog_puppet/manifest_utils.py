@@ -298,7 +298,7 @@ def convert_manifest_into_task_defs_for_launches(
     for task_def in task_defs:
         clean.append(deepcopy(task_def))
 
-    return task_defs
+    return clean
 
 
 def convert_manifest_into_task_defs_for_spoke_local_portfolios_in(
