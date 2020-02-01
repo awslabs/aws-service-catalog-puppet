@@ -558,22 +558,26 @@ def get_product_id_for(servicecatalog, portfolio_id, product_name):
     return product_id
 
 
-def get_portfolio_id_for(servicecatalog, portfolio_name):
-    portfolio_id = None
+def get_portfolio_for(servicecatalog, portfolio_name):
+    result = None
 
     response = servicecatalog.list_accepted_portfolio_shares()
     assert response.get('NextPageToken') is None, "Pagination not supported"
     for portfolio_detail in response.get('PortfolioDetails'):
         if portfolio_detail.get('DisplayName') == portfolio_name:
-            portfolio_id = portfolio_detail.get('Id')
+            result = portfolio_detail
             break
 
-    if portfolio_id is None:
+    if result is None:
         response = servicecatalog.list_portfolios()
         for portfolio_detail in response.get('PortfolioDetails', []):
             if portfolio_detail.get('DisplayName') == portfolio_name:
-                portfolio_id = portfolio_detail.get('Id')
+                result = portfolio_detail
                 break
 
-    assert portfolio_id is not None, "Could not find portfolio"
-    return portfolio_id
+    assert result is not None, "Could not find portfolio"
+    return result
+
+
+def get_portfolio_id_for(servicecatalog, portfolio_name):
+    return get_portfolio_for(servicecatalog, portfolio_name).get('Id')

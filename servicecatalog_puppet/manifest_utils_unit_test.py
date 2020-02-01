@@ -21,7 +21,7 @@ def test_convert_manifest_into_task_defs(sut, shared_datadir):
     should_use_product_plans = True
 
     # execute
-    actual_result = sut.convert_manifest_into_task_defs_for_launches(
+    actual_result = sut.generate_launch_tasks(
         manifest, puppet_account_id, should_use_sns, should_use_product_plans
     )
 
@@ -61,7 +61,7 @@ def test_convert_manifest_into_task_defs_handles_default_region(sut, shared_data
     )
 
     # exercise
-    actual_result = sut.convert_manifest_into_task_defs_for_launches(
+    actual_result = sut.generate_launch_tasks(
         manifest, puppet_account_id, should_use_sns, should_use_product_plans
     )
 
@@ -95,7 +95,7 @@ def test_convert_manifest_into_task_defs_handles_default_region_for_all(sut, moc
     ]
 
     # exercise
-    actual_result = sut.convert_manifest_into_task_defs_for_launches(
+    actual_result = sut.generate_launch_tasks(
         manifest, puppet_account_id, should_use_sns, should_use_product_plans
     )
 
@@ -122,7 +122,7 @@ def test_convert_manifest_into_task_defs_handles_for_unsupported_string(sut, sha
 
     # exercise
     with pytest.raises(Exception) as e:
-        sut.convert_manifest_into_task_defs_for_launches(
+        sut.generate_launch_tasks(
             manifest, puppet_account_id, should_use_sns, should_use_product_plans
         )
 
@@ -154,7 +154,7 @@ def test_convert_manifest_into_task_defs_handles_transient_dependencies(sut, sha
     )
 
     # exercise
-    actual_result = sut.convert_manifest_into_task_defs_for_launches(
+    actual_result = sut.generate_launch_tasks(
         manifest, puppet_account_id, should_use_sns, should_use_product_plans
     )
 
