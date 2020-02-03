@@ -254,14 +254,14 @@ class CreateSpokeLocalPortfolioTask(tasks.PuppetTask):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     organization = luigi.Parameter(significant=False)
-    pre_actions = luigi.ListParameter(default=[])
+    # pre_actions = luigi.ListParameter(default=[])
 
     # provider_name = luigi.Parameter(significant=False, default='not set')
     # description = luigi.Parameter(significant=False, default='not set')
 
     def requires(self):
         return {
-            'pre_actions': [ProvisionActionTask(**p) for p in self.pre_actions],
+            # 'pre_actions': [ProvisionActionTask(**p) for p in self.pre_actions],
             'portfolio': GetPortfolioByPortfolioName(
                 self.portfolio,
                 self.account_id,
@@ -313,7 +313,7 @@ class CreateAssociationsForPortfolioTask(tasks.PuppetTask):
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     organization = luigi.Parameter()
-    pre_actions = luigi.ListParameter(default=[])
+    # pre_actions = luigi.ListParameter(default=[])
 
     associations = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
@@ -327,7 +327,7 @@ class CreateAssociationsForPortfolioTask(tasks.PuppetTask):
                 region=self.region,
                 portfolio=self.portfolio,
                 organization=self.organization,
-                pre_actions=self.pre_actions,
+                # pre_actions=self.pre_actions,
             ),
             'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
@@ -444,8 +444,8 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     organization = luigi.Parameter()
-    pre_actions = luigi.ListParameter()
-    post_actions = luigi.ListParameter(default=[])
+    # pre_actions = luigi.ListParameter()
+    # post_actions = luigi.ListParameter(default=[])
     puppet_account_id = luigi.Parameter()
 
     def requires(self):
@@ -455,7 +455,7 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                 region=self.region,
                 portfolio=self.portfolio,
                 organization=self.organization,
-                pre_actions=self.pre_actions,
+                # pre_actions=self.pre_actions,
             ),
             'products_and_provisioning_artifacts': GetProductsAndProvisioningArtifactsTask(
                 region=self.region,
@@ -627,8 +627,8 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                                     Active=version_details.get('Active'),
                                 )
 
-        for p in self.post_actions:
-            yield ProvisionActionTask(**p)
+        # for p in self.post_actions:
+        #     yield ProvisionActionTask(**p)
 
         with self.output().open('w') as f:
             f.write(
@@ -656,8 +656,8 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
 
     dependencies = luigi.ListParameter(default=[])
 
-    post_actions = luigi.ListParameter()
-    pre_actions = luigi.ListParameter()
+    # post_actions = luigi.ListParameter()
+    # pre_actions = luigi.ListParameter()
 
     should_use_sns = luigi.Parameter(default=False, significant=False)
 
@@ -668,8 +668,8 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                 region=self.region,
                 portfolio=self.portfolio,
                 organization=self.organization,
-                pre_actions=self.pre_actions,
-                post_actions=self.post_actions,
+                # pre_actions=self.pre_actions,
+                # post_actions=self.post_actions,
                 puppet_account_id=self.puppet_account_id,
             ),
             'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
@@ -754,8 +754,8 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                     )
                 )
 
-            for p in self.post_actions:
-                yield ProvisionActionTask(**p)
+            # for p in self.post_actions:
+            #     yield ProvisionActionTask(**p)
 
     def params_for_results_display(self):
         return {

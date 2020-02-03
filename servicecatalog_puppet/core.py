@@ -22,6 +22,8 @@ from jinja2 import Template
 from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
+from servicecatalog_puppet import manifest_utils_for_launches
+from servicecatalog_puppet import manifest_utils_for_spoke_local_portfolios
 from servicecatalog_puppet.workflow import management as management_tasks
 from servicecatalog_puppet.workflow import portfoliomanagement as portfoliomanagement_tasks
 from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
@@ -56,39 +58,43 @@ def generate_shares(f):
     puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
 
-    tasks = manifest_utils.generate_launch_tasks(
-        manifest, puppet_account_id, False, False, include_expanded_from=True
-    )
-    for task_ in tasks:
-        task = task_.param_kwargs
-        tasks_to_run.append(
-            portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
-                puppet_account_id=puppet_account_id,
-                account_id=task.get('account_id'),
-                region=task.get('region'),
-                portfolio=task.get('portfolio'),
-                expanded_from=task.get('expanded_from'),
-                organization=task.get('organization'),
-            )
-        )
-
-    spoke_local_portfolios_tasks = manifest_utils.generate_spoke_local_portfolios_tasks(
-        manifest, puppet_account_id, False, False
+    launch_tasks = manifest_utils_for_launches.generate_launch_tasks(
+        manifest, puppet_account_id, False, False, include_expanded_from=False, single_account=None, is_dry_run=False
     )
 
-    for task in spoke_local_portfolios_tasks:
-        if isinstance(task, portfoliomanagement_tasks.CreateSpokeLocalPortfolioTask):
-            param_kwargs = task.param_kwargs
+    for launch_task in launch_tasks:
+        tasks = launch_task.generate_provisions()
+        for task_ in tasks:
+            task = task_.param_kwargs
             tasks_to_run.append(
                 portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
                     puppet_account_id=puppet_account_id,
-                    account_id=param_kwargs.get('account_id'),
-                    region=param_kwargs.get('region'),
-                    portfolio=param_kwargs.get('portfolio'),
-                    expanded_from=param_kwargs.get('expanded_from'),
-                    organization=param_kwargs.get('organization'),
+                    account_id=task.get('account_id'),
+                    region=task.get('region'),
+                    portfolio=task.get('portfolio'),
+                    expanded_from=task.get('expanded_from'),
+                    organization=task.get('organization'),
                 )
             )
+
+    spoke_local_portfolios_tasks = manifest_utils_for_spoke_local_portfolios.generate_spoke_local_portfolios_tasks(
+        manifest, puppet_account_id, False, False, include_expanded_from=False, single_account=None, is_dry_run=False
+    )
+
+    # TODO fixme
+    # for task in spoke_local_portfolios_tasks:
+    #     if isinstance(task, portfoliomanagement_tasks.CreateSpokeLocalPortfolioTask):
+    #         param_kwargs = task.param_kwargs
+    #         tasks_to_run.append(
+    #             portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
+    #                 puppet_account_id=puppet_account_id,
+    #                 account_id=param_kwargs.get('account_id'),
+    #                 region=param_kwargs.get('region'),
+    #                 portfolio=param_kwargs.get('portfolio'),
+    #                 expanded_from=param_kwargs.get('expanded_from'),
+    #                 organization=param_kwargs.get('organization'),
+    #             )
+    #         )
 
     runner.run_tasks_for_generate_shares(tasks_to_run)
 
@@ -97,7 +103,7 @@ def reset_provisioned_product_owner(f):
     puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
 
-    task_defs = manifest_utils.generate_launch_tasks(
+    task_defs = manifest_utils_for_launches.generate_launch_tasks(
         manifest, puppet_account_id, False, False
     )
 
@@ -116,28 +122,34 @@ def reset_provisioned_product_owner(f):
     runner.run_tasks(tasks_to_run, 10)
 
 
-def generate_tasks(f, single_account=None, dry_run=False):
+def generate_tasks(f, single_account=None, is_dry_run=False):
     puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
 
     should_use_sns = config.get_should_use_sns(os.environ.get("AWS_DEFAULT_REGION"))
     should_use_product_plans = config.get_should_use_product_plans(os.environ.get("AWS_DEFAULT_REGION"))
 
-    tasks_to_run = manifest_utils.generate_launch_tasks(
+    tasks_to_run = manifest_utils_for_launches.generate_launch_tasks(
         manifest,
         puppet_account_id,
         should_use_sns,
         should_use_product_plans,
         include_expanded_from=False,
         single_account=single_account,
-        dry_run=dry_run,
+        is_dry_run=is_dry_run,
     )
     logger.info("Finished generating provisioning tasks")
 
-    if not dry_run:
+    if not is_dry_run:
         logger.info("Generating sharing tasks")
-        spoke_local_portfolios_tasks = manifest_utils.generate_spoke_local_portfolios_tasks(
-            manifest, puppet_account_id, should_use_sns, dry_run
+        spoke_local_portfolios_tasks = manifest_utils_for_spoke_local_portfolios.generate_spoke_local_portfolios_tasks(
+            manifest,
+            puppet_account_id,
+            should_use_sns,
+            should_use_product_plans,
+            include_expanded_from=False,
+            single_account=single_account,
+            is_dry_run=is_dry_run,
         )
         tasks_to_run += spoke_local_portfolios_tasks
         logger.info("Finished generating sharing tasks")
@@ -146,9 +158,9 @@ def generate_tasks(f, single_account=None, dry_run=False):
     return tasks_to_run
 
 
-def deploy(f, single_account, num_workers=10, dry_run=False):
-    tasks_to_run = generate_tasks(f, single_account, dry_run)
-    runner.run_tasks(tasks_to_run, num_workers, dry_run)
+def deploy(f, single_account, num_workers=10, is_dry_run=False):
+    tasks_to_run = generate_tasks(f, single_account, is_dry_run)
+    runner.run_tasks(tasks_to_run, num_workers, is_dry_run)
 
 
 def graph(f):

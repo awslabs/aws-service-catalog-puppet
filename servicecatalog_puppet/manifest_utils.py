@@ -1,16 +1,11 @@
-import click
 import yaml
 import logging
 import json
 from copy import deepcopy
 
-from servicecatalog_puppet.workflow import portfoliomanagement
-from servicecatalog_puppet.workflow import provisioning
 from servicecatalog_puppet import config
 from servicecatalog_puppet.macros import macros
-from servicecatalog_puppet import constants, aws
-
-import progressbar
+from servicecatalog_puppet import constants
 
 logger = logging.getLogger(__file__)
 
@@ -36,8 +31,6 @@ def expand_manifest(manifest, client):
                 temp_accounts += expand_path(account, client)
             else:
                 temp_accounts += expand_ou(account, client)
-
-    logger.debug(temp_accounts)
 
     for parameter_name, parameter_details in new_manifest.get('parameters', {}).items():
         if parameter_details.get('macro'):
@@ -145,381 +138,119 @@ def expand_ou(original_account, client):
     return expanded
 
 
-def generate_launch_task_defs(
-        manifest, puppet_account_id, should_use_sns, should_use_product_plans, include_expanded_from=False,
-        single_account=None, dry_run=False
-):
-    task_defs_by_launch_name = {}
-    accounts = manifest.get('accounts', [])
-    actions = manifest.get('actions', {})
-    for launch_name, launch_details in manifest.get('launches', {}).items():
-        logger.info(f"looking at {launch_name} in convert_manifest_into_task_defs_for_launches")
-        pre_actions = []
-        for provision_action in launch_details.get('pre_actions', []):
-            action = deepcopy(actions.get(provision_action.get('name')))
-            action.update(provision_action)
-            action['source'] = launch_name
-            action['phase'] = 'pre'
-            action['source_type'] = 'launch'
-            pre_actions.append(action)
-
-        post_actions = []
-        for provision_action in launch_details.get('post_actions', []):
-            action = deepcopy(actions.get(provision_action.get('name')))
-            action.update(provision_action)
-            action['source'] = launch_name
-            action['phase'] = 'post'
-            action['source_type'] = 'launch'
-            post_actions.append(action)
-
-        logger.info(f'looking at {launch_name} and depends on is {launch_details.get("depends_on", [])}')
-
-        task_def = {
-            'launch_name': launch_name,
-            'portfolio': launch_details.get('portfolio'),
-            'product': launch_details.get('product'),
-            'version': launch_details.get('version'),
-
-            'puppet_account_id': puppet_account_id,
-
-            'parameters': [],
-            'ssm_param_inputs': [],
-            'launch_parameters': launch_details.get('parameters', {}),
-            'manifest_parameters': manifest.get('parameters', {}),
-
-            'depends_on': launch_details.get('depends_on', []),
-            'dependencies': [],
-            'launch_dependencies': [],
-
-            'retry_count': 0,
-            'worker_timeout': launch_details.get('timeoutInSeconds', constants.DEFAULT_TIMEOUT),
-            'ssm_param_outputs': launch_details.get('outputs', {}).get('ssm', []),
-            'should_use_sns': should_use_sns,
-            'should_use_product_plans': should_use_product_plans,
-            'requested_priority': 0,
-
-            'status': launch_details.get('status', constants.PROVISIONED),
-
-            'pre_actions': pre_actions,
-            'post_actions': post_actions,
-        }
-
-        if manifest.get('configuration'):
-            if manifest.get('configuration').get('retry_count'):
-                task_def['retry_count'] = manifest.get('configuration').get('retry_count')
-        if launch_details.get('configuration'):
-            if launch_details.get('configuration').get('retry_count'):
-                task_def['retry_count'] = launch_details.get('configuration').get('retry_count')
-            if launch_details.get('configuration').get('requested_priority'):
-                task_def['requested_priority'] = int(launch_details.get('configuration').get('requested_priority'))
+def get_configuration_overrides(manifest, launch_details):
+    configuration = {}
+    if manifest.get('configuration'):
+        if manifest.get('configuration').get('retry_count'):
+            configuration['retry_count'] = manifest.get('configuration').get('retry_count')
+    if launch_details.get('configuration'):
+        if launch_details.get('configuration').get('retry_count'):
+            configuration['retry_count'] = launch_details.get('configuration').get('retry_count')
+        if launch_details.get('configuration').get('requested_priority'):
+            configuration['requested_priority'] = int(launch_details.get('configuration').get('requested_priority'))
+    return configuration
 
 
-        logger.info(f'{launch_name}: 1')
-
-        deploy_to = launch_details .get('deploy_to')
-        for tag_list_item in deploy_to.get('tags', []):
-            for account in accounts:
-                for tag in account.get('tags', []):
-                    if tag == tag_list_item.get('tag'):
-                        tag_account_def = deepcopy(task_def)
-                        tag_account_def['account_id'] = account.get('account_id')
-                        if include_expanded_from:
-                            tag_account_def['expanded_from'] = account.get('expanded_from')
-                            tag_account_def['organization'] = account.get('organization')
-                        tag_account_def['account_parameters'] = account.get('parameters', {})
-
-                        regions = tag_list_item.get('regions', 'default_region')
-                        if isinstance(regions, str):
-                            if regions in ["enabled", "regions_enabled", "enabled_regions"]:
-                                for region_enabled in account.get('regions_enabled'):
-                                    region_tag_account_def = deepcopy(tag_account_def)
-                                    region_tag_account_def['region'] = region_enabled
-                                    if task_defs_by_launch_name.get(launch_name) is None:
-                                        task_defs_by_launch_name[launch_name] = []
-                                    task_defs_by_launch_name[launch_name].append(region_tag_account_def)
-                            elif regions == 'default_region':
-                                region_tag_account_def = deepcopy(tag_account_def)
-                                region_tag_account_def['region'] = account.get('default_region')
-                                if task_defs_by_launch_name.get(launch_name) is None:
-                                    task_defs_by_launch_name[launch_name] = []
-                                task_defs_by_launch_name[launch_name].append(region_tag_account_def)
-
-                            elif regions == "all":
-                                all_regions = config.get_regions()
-                                for region_enabled in all_regions:
-                                    region_tag_account_def = deepcopy(tag_account_def)
-                                    region_tag_account_def['region'] = region_enabled
-                                    if task_defs_by_launch_name.get(launch_name) is None:
-                                        task_defs_by_launch_name[launch_name] = []
-                                    task_defs_by_launch_name[launch_name].append(region_tag_account_def)
-
-                            else:
-                                raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
-                        elif isinstance(regions, list):
-                            for region in regions:
-                                region_tag_account_def = deepcopy(tag_account_def)
-                                region_tag_account_def['region'] = region
-                                if task_defs_by_launch_name.get(launch_name) is None:
-                                    task_defs_by_launch_name[launch_name] = []
-                                task_defs_by_launch_name[launch_name].append(region_tag_account_def)
-
-                        else:
-                            raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
-
-        logger.info(f'{launch_name}: 2')
-        for account_list_item in deploy_to.get('accounts', []):
-            for account in accounts:
-                if account.get('account_id') == account_list_item.get('account_id'):
-                    account_account_def = deepcopy(task_def)
-                    account_account_def['account_id'] = account.get('account_id')
-                    if include_expanded_from:
-                        account_account_def['expanded_from'] = account.get('expanded_from')
-                        account_account_def['organization'] = account.get('organization')
-                    account_account_def['account_parameters'] = account.get('parameters', {})
-
-                    regions = account_list_item.get('regions', 'default_region')
-                    if isinstance(regions, str):
-                        if regions in ["enabled", "regions_enabled", "enabled_regions"]:
-                            for region_enabled in account.get('regions_enabled'):
-                                region_account_account_def = deepcopy(account_account_def)
-                                region_account_account_def['region'] = region_enabled
-                                if task_defs_by_launch_name.get(launch_name) is None:
-                                    task_defs_by_launch_name[launch_name] = []
-                                task_defs_by_launch_name[launch_name].append(region_account_account_def)
-                        elif regions in ["default_region"]:
-                            region_account_account_def = deepcopy(account_account_def)
-                            region_account_account_def['region'] = account.get('default_region')
-                            if task_defs_by_launch_name.get(launch_name) is None:
-                                task_defs_by_launch_name[launch_name] = []
-                            task_defs_by_launch_name[launch_name].append(region_account_account_def)
-                        elif regions in ["all"]:
-                            all_regions = config.get_regions()
-                            for region_enabled in all_regions:
-                                region_account_account_def = deepcopy(account_account_def)
-                                region_account_account_def['region'] = region_enabled
-                                if task_defs_by_launch_name.get(launch_name) is None:
-                                    task_defs_by_launch_name[launch_name] = []
-                                task_defs_by_launch_name[launch_name].append(region_account_account_def)
-                        else:
-                            raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
-
-                    elif isinstance(regions, list):
-                        for region in regions:
-                            region_account_account_def = deepcopy(account_account_def)
-                            region_account_account_def['region'] = region
-                            if task_defs_by_launch_name.get(launch_name) is None:
-                                task_defs_by_launch_name[launch_name] = []
-                            task_defs_by_launch_name[launch_name].append(region_account_account_def)
-                    else:
-                        raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
-    return task_defs_by_launch_name
+def get_actions_from(name, launch_details, pre_or_post, actions, launch_or_spoke_local_portfolio):
+    result = []
+    for provision_action in launch_details.get(f'{pre_or_post}_actions', []):
+        action = deepcopy(actions.get(provision_action.get('name')))
+        action.update(provision_action)
+        action['source'] = name
+        action['phase'] = pre_or_post
+        action['source_type'] = launch_or_spoke_local_portfolio
+        result.append(action)
+    return result
 
 
-def generate_launch_tasks(
-        manifest, puppet_account_id, should_use_sns, should_use_product_plans, include_expanded_from=False,
-        single_account=None, dry_run=False
-):
-    # Create all task defs and group by launch name
+def get_task_defs_from_details(launch_details, accounts, include_expanded_from, launch_name, configuration):
+    logger.info(f"launch_details: {launch_details}")
+    deploy_to = launch_details.get('deploy_to')
     task_defs = []
-    task_defs_by_launch_name = generate_launch_task_defs(
-        manifest, puppet_account_id, should_use_sns, should_use_product_plans, include_expanded_from,
-        single_account, dry_run
-    )
-    # Create launch tasks and assign taskdefs
-    launch_tasks = {}
-    logger.info('arghhh')
-    for task_defs_launch_name, task_defs in task_defs_by_launch_name.items():
-        logger.info(task_defs)
-        launch_tasks[task_defs_launch_name] = provisioning.LaunchTask(
-            launch_name=task_defs_launch_name,
-            task_defs=task_defs,
-            is_dry_run=dry_run,
-        )
-
-    n_task_defs = len(task_defs)
-    bar = progressbar.ProgressBar(
-        maxval=n_task_defs,
-        widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()]
-    )
-    counter = 1
-    bar.start()
-    click.echo(f'about to wire up dependencies of tasks {n_task_defs}')
-    for task_def in task_defs:
-        bar.update(counter)
-        counter += 1
-        for launch_dependency in task_def.get('depends_on', []):
-            task_def['launch_dependencies'].append(
-                deepcopy(launch_tasks.get(launch_dependency).param_kwargs)
-            )
-    bar.finish()
-    return list(launch_tasks.values())
-
-
-def generate_spoke_local_portfolios_task_defs(
-        manifest, puppet_account_id, should_use_sns
-):
-    tasks_by_spoke_local_portfolios = {}
-    accounts = manifest.get('accounts', [])
-    actions = manifest.get('actions', {})
-
-    for launch_name, launch_details in manifest.get('spoke-local-portfolios', {}).items():
-        logger.info(f"Looking at {launch_name} in generate_spoke_local_portfolios_task_defs")
-        pre_actions = []
-        for provision_action in launch_details.get('pre_actions', []):
-            action = deepcopy(actions.get(provision_action.get('name')))
-            action.update(provision_action)
-            action['source'] = launch_name
-            action['phase'] = 'pre'
-            action['source_type'] = 'spoke-local-portfolios'
-            pre_actions.append(action)
-
-        post_actions = []
-        for provision_action in launch_details.get('post_actions', []):
-            action = deepcopy(actions.get(provision_action.get('name')))
-            action.update(provision_action)
-            action['source'] = launch_name
-            action['phase'] = 'post'
-            action['source_type'] = 'spoke-local-portfolios'
-            post_actions.append(action)
-
-        task_def = {
-            'launch_details': launch_details,
-            'puppet_account_id': puppet_account_id,
-            'should_use_sns': should_use_sns,
-            'pre_actions': pre_actions,
-            'post_actions': post_actions,
-        }
-
-        if manifest.get('configuration'):
-            if manifest.get('configuration').get('retry_count'):
-                task_def['retry_count'] = manifest.get('configuration').get('retry_count')
-        if launch_details.get('configuration'):
-            if launch_details.get('configuration').get('retry_count'):
-                task_def['retry_count'] = launch_details.get('configuration').get('retry_count')
-            if launch_details.get('configuration').get('requested_priority'):
-                task_def['requested_priority'] = int(launch_details.get('configuration').get('requested_priority'))
-
-        deploy_to = launch_details.get('deploy_to')
-        for tag_list_item in deploy_to.get('tags', []):
-            for account in accounts:
-                for tag in account.get('tags', []):
-                    if tag == tag_list_item.get('tag'):
-                        tag_account_def = deepcopy(task_def)
-                        tag_account_def['account_id'] = account.get('account_id')
+    for tag_list_item in deploy_to.get('tags', []):
+        for account in accounts:
+            logger.info(f"for tags looking at account {account}")
+            for tag in account.get('tags', []):
+                logger.info(f"for tags looking at account {account} and tag {tag}")
+                if tag == tag_list_item.get('tag'):
+                    logger.info("found a match!!!!!!!")
+                    tag_account_def = deepcopy(configuration)
+                    tag_account_def['account_id'] = account.get('account_id')
+                    if include_expanded_from:
                         tag_account_def['expanded_from'] = account.get('expanded_from')
                         tag_account_def['organization'] = account.get('organization')
+                    tag_account_def['account_parameters'] = account.get('parameters', {})
 
-                        regions = tag_list_item.get('regions', 'default_region')
-                        if isinstance(regions, str):
-                            if regions in ["enabled", "regions_enabled", "enabled_regions"]:
-                                for region_enabled in account.get('regions_enabled'):
-                                    region_tag_account_def = deepcopy(tag_account_def)
-                                    region_tag_account_def['region'] = region_enabled
-                                    if tasks_by_spoke_local_portfolios.get(launch_name) is None:
-                                        tasks_by_spoke_local_portfolios[launch_name] = []
-                                    tasks_by_spoke_local_portfolios[launch_name].append(
-                                        region_tag_account_def
-                                    )
-                            elif regions == 'default_region':
-                                region_tag_account_def = deepcopy(tag_account_def)
-                                region_tag_account_def['region'] = account.get('default_region')
-                                if tasks_by_spoke_local_portfolios.get(launch_name) is None:
-                                    tasks_by_spoke_local_portfolios[launch_name] = []
-                                tasks_by_spoke_local_portfolios[launch_name].append(
-                                    region_tag_account_def
-                                )
-                            elif regions == "all":
-                                all_regions = config.get_regions()
-                                for region_enabled in all_regions:
-                                    region_tag_account_def = deepcopy(tag_account_def)
-                                    region_tag_account_def['region'] = region_enabled
-                                    if tasks_by_spoke_local_portfolios.get(launch_name) is None:
-                                        tasks_by_spoke_local_portfolios[launch_name] = []
-                                    tasks_by_spoke_local_portfolios[launch_name].append(
-                                        region_tag_account_def
-                                    )
-                            else:
-                                raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
-                        elif isinstance(regions, list):
-                            for region in regions:
-                                region_tag_account_def = deepcopy(tag_account_def)
-                                region_tag_account_def['region'] = region
-                                if tasks_by_spoke_local_portfolios.get(launch_name) is None:
-                                    tasks_by_spoke_local_portfolios[launch_name] = []
-                                tasks_by_spoke_local_portfolios[launch_name].append(
-                                    region_tag_account_def
-                                )
-                        else:
-                            raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
-
-        for account_list_item in deploy_to.get('accounts', []):
-            for account in accounts:
-                if account.get('account_id') == account_list_item.get('account_id'):
-                    account_account_def = deepcopy(task_def)
-                    account_account_def['account_id'] = account.get('account_id')
-                    account_account_def['expanded_from'] = account.get('expanded_from')
-                    account_account_def['organization'] = account.get('organization')
-                    # account_account_def['account_parameters'] = account.get('parameters', {})
-
-                    regions = account_list_item.get('regions', 'default_region')
+                    regions = tag_list_item.get('regions', 'default_region')
+                    logger.info(f"checking for regions: {regions}")
                     if isinstance(regions, str):
+                        logger.info(f"checking for regions: {regions} str")
                         if regions in ["enabled", "regions_enabled", "enabled_regions"]:
+                            logger.info(f"matched regions str adding for each region")
                             for region_enabled in account.get('regions_enabled'):
-                                region_account_account_def = deepcopy(account_account_def)
-                                region_account_account_def['region'] = region_enabled
-                                if tasks_by_spoke_local_portfolios.get(launch_name) is None:
-                                    tasks_by_spoke_local_portfolios[launch_name] = []
-                                tasks_by_spoke_local_portfolios[launch_name].append(
-                                    region_account_account_def
-                                )
+                                logger.info(f'region_enabled: {region_enabled}')
+                                region_tag_account_def = deepcopy(tag_account_def)
+                                region_tag_account_def['region'] = region_enabled
+                                task_defs.append(region_tag_account_def)
                         elif regions == 'default_region':
-                            region_account_account_def = deepcopy(account_account_def)
-                            region_account_account_def['region'] = account.get('default_region')
-                            if tasks_by_spoke_local_portfolios.get(launch_name) is None:
-                                tasks_by_spoke_local_portfolios[launch_name] = []
-                            tasks_by_spoke_local_portfolios[launch_name].append(
-                                region_account_account_def
-                            )
+                            logger.info(f"matched regions str adding for default_region")
+                            region_tag_account_def = deepcopy(tag_account_def)
+                            region_tag_account_def['region'] = account.get('default_region')
+                            logger.info(f'region_enabled: {account.get("default_region")}')
+                            task_defs.append(region_tag_account_def)
                         elif regions == "all":
                             all_regions = config.get_regions()
                             for region_enabled in all_regions:
-                                region_account_account_def = deepcopy(account_account_def)
-                                region_account_account_def['region'] = region_enabled
-                                if tasks_by_spoke_local_portfolios.get(launch_name) is None:
-                                    tasks_by_spoke_local_portfolios[launch_name] = []
-                                tasks_by_spoke_local_portfolios[launch_name].append(
-                                    region_account_account_def
-                                )
+                                region_tag_account_def = deepcopy(tag_account_def)
+                                region_tag_account_def['region'] = region_enabled
+                                task_defs.append(region_tag_account_def)
                         else:
                             raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
-
                     elif isinstance(regions, list):
+                        logger.info(f"checking for regions: {regions} list")
                         for region in regions:
-                            region_account_account_def = deepcopy(account_account_def)
-                            region_account_account_def['region'] = region
-                            if tasks_by_spoke_local_portfolios.get(launch_name) is None:
-                                tasks_by_spoke_local_portfolios[launch_name] = []
-                            tasks_by_spoke_local_portfolios[launch_name].append(
-                                region_account_account_def
-                            )
+                            region_tag_account_def = deepcopy(tag_account_def)
+                            region_tag_account_def['region'] = region
+                            task_defs.append(region_tag_account_def)
+
                     else:
                         raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
-    return tasks_by_spoke_local_portfolios
 
+    for account_list_item in deploy_to.get('accounts', []):
+        for account in accounts:
+            if account.get('account_id') == account_list_item.get('account_id'):
+                account_account_def = deepcopy(configuration)
+                account_account_def['account_id'] = account.get('account_id')
+                if include_expanded_from:
+                    account_account_def['expanded_from'] = account.get('expanded_from')
+                    account_account_def['organization'] = account.get('organization')
+                account_account_def['account_parameters'] = account.get('parameters', {})
 
-def generate_spoke_local_portfolios_tasks(
-        manifest, puppet_account_id, should_use_sns, is_dry_run
-):
-    tasks_by_spoke_local_portfolios = generate_spoke_local_portfolios_task_defs(
-        manifest, puppet_account_id, should_use_sns
-    )
+                regions = account_list_item.get('regions', 'default_region')
+                if isinstance(regions, str):
+                    if regions in ["enabled", "regions_enabled", "enabled_regions"]:
+                        for region_enabled in account.get('regions_enabled'):
+                            region_account_account_def = deepcopy(account_account_def)
+                            region_account_account_def['region'] = region_enabled
+                            task_defs.append(region_account_account_def)
+                    elif regions in ["default_region"]:
+                        region_account_account_def = deepcopy(account_account_def)
+                        region_account_account_def['region'] = account.get('default_region')
+                        task_defs.append(region_account_account_def)
+                    elif regions in ["all"]:
+                        all_regions = config.get_regions()
+                        for region_enabled in all_regions:
+                            region_account_account_def = deepcopy(account_account_def)
+                            region_account_account_def['region'] = region_enabled
+                            task_defs.append(region_account_account_def)
+                    else:
+                        raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
 
-    tasks_by_spoke_local_portfolios_tasks = {}
-    for tasks_by_spoke_local_portfolio_name, tasks_by_spoke_local_portfolio in tasks_by_spoke_local_portfolios.items():
-        logger.info(f"EEEPPPFF {tasks_by_spoke_local_portfolio_name}")
-        tasks_by_spoke_local_portfolios_tasks[tasks_by_spoke_local_portfolio_name] = provisioning.SpokeLocalPortfolioTask(
-            spoke_local_portfolio_name=tasks_by_spoke_local_portfolio_name,
-            task_defs=tasks_by_spoke_local_portfolio,
-            is_dry_run=is_dry_run,
-        )
-    return list(tasks_by_spoke_local_portfolios_tasks.values())
+                elif isinstance(regions, list):
+                    for region in regions:
+                        region_account_account_def = deepcopy(account_account_def)
+                        region_account_account_def['region'] = region
+                        task_defs.append(region_account_account_def)
+                else:
+                    raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
+    return task_defs
