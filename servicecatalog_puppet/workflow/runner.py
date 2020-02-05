@@ -14,6 +14,7 @@ from betterboto import client as betterboto_client
 from luigi import LuigiStatusCode
 
 from servicecatalog_puppet import config, constants
+from servicecatalog_puppet.workflow import tasks
 
 import logging
 
@@ -21,9 +22,9 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def run_tasks(tasks_to_run, num_workers, dry_run=False):
-    should_use_eventbridge = config.get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION")) and not dry_run
-    should_forward_failures_to_opscenter = config.get_should_forward_failures_to_opscenter(os.environ.get("AWS_DEFAULT_REGION")) and not dry_run
+def run_tasks(tasks_to_run, num_workers, is_dry_run=False):
+    should_use_eventbridge = config.get_should_use_eventbridge(os.environ.get("AWS_DEFAULT_REGION")) and not is_dry_run
+    should_forward_failures_to_opscenter = config.get_should_forward_failures_to_opscenter(os.environ.get("AWS_DEFAULT_REGION")) and not is_dry_run
 
     ssm_client = None
     if should_forward_failures_to_opscenter:
@@ -36,6 +37,8 @@ def run_tasks(tasks_to_run, num_workers, dry_run=False):
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
 
     logger.info(f"About to run workflow with {num_workers} workers")
+
+    tasks.print_stats()
 
     run_result = luigi.build(
         tasks_to_run,
@@ -56,7 +59,7 @@ def run_tasks(tasks_to_run, num_workers, dry_run=False):
     }
 
     click.echo("Results")
-    if dry_run:
+    if is_dry_run:
         table_data = [
             ['Result', 'Launch', 'Account', 'Region', 'Current Version', 'New Version', 'Notes'],
 
