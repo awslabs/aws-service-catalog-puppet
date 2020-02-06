@@ -801,27 +801,6 @@ class LaunchTask(tasks.PuppetTask):
                     )
 
             elif task_status == constants.TERMINATED:
-                for attribute in constants.DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES:
-                    logger.info(f"checking {task_def.get('launch_name')} for disallowed attributes")
-                    attribute_value = task_def.get(attribute)
-                    logger.info(f"{attribute} has value {attribute_value}")
-                    if attribute_value is not None:
-                        if not isinstance(attribute_value, list):
-                            if len(attribute_value) != 0:
-                                raise Exception(
-                                    f"Launch {task_def.get('launch_name')} has disallowed attribute: {attribute}")
-                        elif isinstance(attribute_value, dict):
-                            if len(attribute_value.keys()) != 0:
-                                raise Exception(
-                                    f"Launch {task_def.get('launch_name')} has disallowed attribute: {attribute}")
-                        elif isinstance(attribute_value, tuple):
-                            if any(map(len, attribute_value)):
-                                raise Exception(
-                                    f"Launch {task_def.get('launch_name')} has disallowed attribute: {attribute}")
-                        else:
-                            raise Exception(
-                                f"Launch {task_def.get('launch_name')} has disallowed attribute: {attribute}")
-
                 terminating_parameters = {}
                 for p in TerminateProductTask.get_param_names(include_significant=True):
                     terminating_parameters[p] = task_def.get(p)
