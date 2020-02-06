@@ -199,7 +199,8 @@ def run_tasks_for_generate_shares(tasks_to_run):
                 if os.path.exists(path):
                     for organization_file in os.listdir(path):
                         organization = organization_file.split(".")[0]
-                        sharing_policies['organizations'].append(organization)
+                        if organization != "":
+                            sharing_policies['organizations'].append(organization)
 
             logger.info(f"Finished generating policies collection")
 

@@ -911,7 +911,7 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
                 'region': task_def.get('region'),
                 'portfolio': portfolio,
                 # 'pre_actions': task_def.get('pre_actions'),
-                'organization': task_def.get('expanded_from')
+                'organization': task_def.get('organization')
             }
             create_spoke_local_portfolio_task = portfoliomanagement.CreateSpokeLocalPortfolioTask(
                 **create_spoke_local_portfolio_task_params,
