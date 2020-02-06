@@ -74,7 +74,7 @@ def generate_shares(f):
             launch_task.single_account,
             launch_task.is_dry_run
         )
-        tasks = launch_task.generate_provisions(t)
+        tasks = launch_task.generate_provisions(t.get('task_defs'))
         for task_ in tasks:
             task = task_.param_kwargs
             tasks_to_run.append(

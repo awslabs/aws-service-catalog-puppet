@@ -772,24 +772,24 @@ class LaunchTask(tasks.PuppetTask):
             ]
         }
 
-    def generate_provisions(self, task_def):
+    def generate_provisions(self, task_defs):
         provisions = []
 
-        task_defs = task_def.get('task_defs')
-        for parameters in task_defs:
+        # task_defs = launch_task_def.get('task_defs')
+        for task_def in task_defs:
             if self.single_account is not None:
-                if parameters.get('account_id') != self.single_account:
+                if task_def.get('account_id') != self.single_account:
                     continue
 
-            task_status = parameters.get('status')
-            del parameters['status']
-            del parameters['depends_on']
-            parameters['is_dry_run'] = self.is_dry_run
+            task_status = task_def.get('status')
+            del task_def['status']
+            del task_def['depends_on']
+            task_def['is_dry_run'] = self.is_dry_run
 
             if task_status == constants.PROVISIONED:
                 provisioning_parameters = {}
                 for p in ProvisionProductTask.get_param_names(include_significant=True):
-                    provisioning_parameters[p] = parameters.get(p)
+                    provisioning_parameters[p] = task_def.get(p)
 
                 if self.is_dry_run:
                     provisions.append(
@@ -802,29 +802,29 @@ class LaunchTask(tasks.PuppetTask):
 
             elif task_status == constants.TERMINATED:
                 for attribute in constants.DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES:
-                    logger.info(f"checking {parameters.get('launch_name')} for disallowed attributes")
-                    attribute_value = parameters.get(attribute)
+                    logger.info(f"checking {task_def.get('launch_name')} for disallowed attributes")
+                    attribute_value = task_def.get(attribute)
                     logger.info(f"{attribute} has value {attribute_value}")
                     if attribute_value is not None:
                         if not isinstance(attribute_value, list):
                             if len(attribute_value) != 0:
                                 raise Exception(
-                                    f"Launch {parameters.get('launch_name')} has disallowed attribute: {attribute}")
+                                    f"Launch {task_def.get('launch_name')} has disallowed attribute: {attribute}")
                         elif isinstance(attribute_value, dict):
                             if len(attribute_value.keys()) != 0:
                                 raise Exception(
-                                    f"Launch {parameters.get('launch_name')} has disallowed attribute: {attribute}")
+                                    f"Launch {task_def.get('launch_name')} has disallowed attribute: {attribute}")
                         elif isinstance(attribute_value, tuple):
                             if any(map(len, attribute_value)):
                                 raise Exception(
-                                    f"Launch {parameters.get('launch_name')} has disallowed attribute: {attribute}")
+                                    f"Launch {task_def.get('launch_name')} has disallowed attribute: {attribute}")
                         else:
                             raise Exception(
-                                f"Launch {parameters.get('launch_name')} has disallowed attribute: {attribute}")
+                                f"Launch {task_def.get('launch_name')} has disallowed attribute: {attribute}")
 
                 terminating_parameters = {}
                 for p in TerminateProductTask.get_param_names(include_significant=True):
-                    terminating_parameters[p] = parameters.get(p)
+                    terminating_parameters[p] = task_def.get(p)
 
                 if self.is_dry_run:
                     provisions.append(
@@ -839,7 +839,7 @@ class LaunchTask(tasks.PuppetTask):
         return provisions
 
     def run(self):
-        tasks_defs = manifest_utils_for_launches.generate_launch_task_defs_for_launch(
+        launch_tasks_def = manifest_utils_for_launches.generate_launch_task_defs_for_launch(
             self.launch_name,
             self.manifest,
             self.puppet_account_id,
@@ -851,16 +851,16 @@ class LaunchTask(tasks.PuppetTask):
         )
 
         logger.info(f"{self.uid} starting pre actions")
-        yield [portfoliomanagement.ProvisionActionTask(**p) for p in tasks_defs.get('pre_actions', [])]
+        yield [portfoliomanagement.ProvisionActionTask(**p) for p in launch_tasks_def.get('pre_actions', [])]
         logger.info(f"{self.uid} finished pre actions")
 
         logger.info(f"{self.uid} starting launches")
-        yield self.generate_provisions(tasks_defs.get('task_defs', []))
+        yield self.generate_provisions(launch_tasks_def.get('task_defs', []))
 
         logger.info(f"{self.uid} finished launches")
 
         logger.info(f"{self.uid} starting post actions")
-        yield [portfoliomanagement.ProvisionActionTask(**p) for p in tasks_defs.get('post_actions', [])]
+        yield [portfoliomanagement.ProvisionActionTask(**p) for p in launch_tasks_def.get('post_actions', [])]
         logger.info(f"{self.uid} finished post actions")
 
         self.write_output(self.params_for_results_display())
