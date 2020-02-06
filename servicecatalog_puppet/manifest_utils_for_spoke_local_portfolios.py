@@ -20,7 +20,7 @@ def get_task_defs_from_details(launch_details, accounts, include_expanded_from, 
                     tag_account_def = deepcopy(configuration)
                     tag_account_def['account_id'] = account.get('account_id')
                     tag_account_def['expanded_from'] = account.get('expanded_from', '')
-                    tag_account_def['organization'] = account.get('organization', '')
+                    tag_account_def['organization'] = account.get('organization')
 
                     regions = tag_list_item.get('regions', 'default_region')
                     if isinstance(regions, str):

@@ -63,7 +63,18 @@ def generate_shares(f):
     )
 
     for launch_task in launch_tasks:
-        tasks = launch_task.generate_provisions()
+        logger.info("itering")
+        t = manifest_utils_for_launches.generate_launch_task_defs_for_launch(
+            launch_task.launch_name,
+            launch_task.manifest,
+            launch_task.puppet_account_id,
+            launch_task.should_use_sns,
+            launch_task.should_use_product_plans,
+            launch_task.include_expanded_from,
+            launch_task.single_account,
+            launch_task.is_dry_run
+        )
+        tasks = launch_task.generate_provisions(t)
         for task_ in tasks:
             task = task_.param_kwargs
             tasks_to_run.append(
@@ -82,19 +93,32 @@ def generate_shares(f):
     )
 
     # TODO fixme
-    # for task in spoke_local_portfolios_tasks:
-    #     if isinstance(task, portfoliomanagement_tasks.CreateSpokeLocalPortfolioTask):
-    #         param_kwargs = task.param_kwargs
-    #         tasks_to_run.append(
-    #             portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
-    #                 puppet_account_id=puppet_account_id,
-    #                 account_id=param_kwargs.get('account_id'),
-    #                 region=param_kwargs.get('region'),
-    #                 portfolio=param_kwargs.get('portfolio'),
-    #                 expanded_from=param_kwargs.get('expanded_from'),
-    #                 organization=param_kwargs.get('organization'),
-    #             )
-    #         )
+    for spoke_local_portfolios_task in spoke_local_portfolios_tasks:
+        t = manifest_utils_for_spoke_local_portfolios.generate_spoke_local_portfolios_tasks_for_spoke_local_portfolio(
+            spoke_local_portfolios_task.spoke_local_portfolio_name,
+            spoke_local_portfolios_task.manifest,
+            spoke_local_portfolios_task.puppet_account_id,
+            spoke_local_portfolios_task.should_use_sns,
+            spoke_local_portfolios_task.should_use_product_plans,
+            spoke_local_portfolios_task.include_expanded_from,
+            spoke_local_portfolios_task.single_account,
+            spoke_local_portfolios_task.is_dry_run,
+        )
+
+        sub_tasks = spoke_local_portfolios_task.generate_tasks(t.get('task_defs'))
+        for sub_task in sub_tasks:
+            if isinstance(sub_task, portfoliomanagement_tasks.CreateSpokeLocalPortfolioTask):
+                param_kwargs = sub_task.param_kwargs
+                tasks_to_run.append(
+                    portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
+                        puppet_account_id=puppet_account_id,
+                        account_id=param_kwargs.get('account_id'),
+                        region=param_kwargs.get('region'),
+                        portfolio=param_kwargs.get('portfolio'),
+                        expanded_from=param_kwargs.get('expanded_from'),
+                        organization=param_kwargs.get('organization'),
+                    )
+                )
 
     runner.run_tasks_for_generate_shares(tasks_to_run)
 

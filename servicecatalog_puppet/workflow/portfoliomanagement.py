@@ -778,7 +778,7 @@ class RequestPolicyTask(tasks.PuppetTask):
         }
 
     def run(self):
-        if self.organization is not None:
+        if self.organization is not None and self.organization != "":
             p = f'data/{self.type}/{self.region}/organizations/'
             if not os.path.exists(p):
                 os.makedirs(p, exist_ok=True)
