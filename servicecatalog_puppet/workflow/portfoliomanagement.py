@@ -654,7 +654,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
 
     launch_constraints = luigi.DictParameter()
 
-    dependencies = luigi.ListParameter(default=[])
+    # dependencies = luigi.ListParameter(default=[])
 
     # post_actions = luigi.ListParameter()
     # pre_actions = luigi.ListParameter()
@@ -672,7 +672,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                 # post_actions=self.post_actions,
                 puppet_account_id=self.puppet_account_id,
             ),
-            'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
+            # 'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
 
     def api_calls_used(self):
