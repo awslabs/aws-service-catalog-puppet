@@ -507,7 +507,7 @@ class TerminateProductTask(tasks.PuppetTask):
 
     parameters = luigi.ListParameter(default=[])
     ssm_param_inputs = luigi.ListParameter(default=[])
-    dependencies = luigi.ListParameter(default=[])
+    # dependencies = luigi.ListParameter(default=[])
 
     def requires(self):
         product_id = portfoliomanagement.GetProductIdByProductName(
@@ -605,7 +605,7 @@ class TerminateProductDryRunTask(tasks.PuppetTask):
 
     parameters = luigi.ListParameter(default=[])
     ssm_param_inputs = luigi.ListParameter(default=[])
-    dependencies = luigi.ListParameter(default=[])
+    # dependencies = luigi.ListParameter(default=[])
 
     try_count = 1
 
@@ -834,8 +834,8 @@ class LaunchTask(tasks.PuppetTask):
         logger.info(f"{self.uid} finished pre actions")
 
         logger.info(f"{self.uid} starting launches")
-        yield self.generate_provisions(launch_tasks_def.get('task_defs', []))
-
+        ls = self.generate_provisions(launch_tasks_def.get('task_defs', []))
+        yield ls
         logger.info(f"{self.uid} finished launches")
 
         logger.info(f"{self.uid} starting post actions")
