@@ -40,7 +40,6 @@ def terminate_if_status_is_not_available(
 ):
     prefix = f"[{provisioned_product_name}] {account_id}:{region}"
     logger.info(f"{prefix} :: checking if should be terminated")
-    # TODO - change to name query?
 
     response = service_catalog.search_provisioned_products(
         Filters={'SearchQuery': [
@@ -94,7 +93,6 @@ def get_default_parameters_for_stack(cloudformation, stack_name):
 def get_parameters_for_stack(cloudformation, stack_name):
     existing_stack_params_dict = get_default_parameters_for_stack(cloudformation, stack_name)
 
-    logger.info(f"Getting parameters for for {stack_name}")
     stack = get_stack_output_for(cloudformation, stack_name)
     for stack_param in stack.get('Parameters', []):
         existing_stack_params_dict[stack_param.get('ParameterKey')] = stack_param.get('ParameterValue')
@@ -460,6 +458,7 @@ def get_portfolio_for(portfolio_name, account_id, region):
         for portfolio_detail in response.get('PortfolioDetails'):
             if portfolio_detail.get('DisplayName') == portfolio_name:
                 portfolio = portfolio_detail
+                logger.info(f"found portfolio {portfolio_name} in shares for {region} of {account_id}")
                 break
 
         if portfolio is None:
@@ -468,6 +467,7 @@ def get_portfolio_for(portfolio_name, account_id, region):
             for portfolio_detail in response.get('PortfolioDetails', []):
                 if portfolio_detail.get('DisplayName') == portfolio_name:
                     portfolio = portfolio_detail
+                    logger.info(f"found portfolio {portfolio_name} in list_portfolios for {region} of {account_id}")
                     break
 
             if portfolio is None:
@@ -556,22 +556,26 @@ def get_product_id_for(servicecatalog, portfolio_id, product_name):
     return product_id
 
 
-def get_portfolio_id_for(servicecatalog, portfolio_name):
-    portfolio_id = None
+def get_portfolio_for(servicecatalog, portfolio_name):
+    result = None
 
     response = servicecatalog.list_accepted_portfolio_shares()
     assert response.get('NextPageToken') is None, "Pagination not supported"
     for portfolio_detail in response.get('PortfolioDetails'):
         if portfolio_detail.get('DisplayName') == portfolio_name:
-            portfolio_id = portfolio_detail.get('Id')
+            result = portfolio_detail
             break
 
-    if portfolio_id is None:
+    if result is None:
         response = servicecatalog.list_portfolios()
         for portfolio_detail in response.get('PortfolioDetails', []):
             if portfolio_detail.get('DisplayName') == portfolio_name:
-                portfolio_id = portfolio_detail.get('Id')
+                result = portfolio_detail
                 break
 
-    assert portfolio_id is not None, "Could not find portfolio"
-    return portfolio_id
+    assert result is not None, "Could not find portfolio"
+    return result
+
+
+def get_portfolio_id_for(servicecatalog, portfolio_name):
+    return get_portfolio_for(servicecatalog, portfolio_name).get('Id')

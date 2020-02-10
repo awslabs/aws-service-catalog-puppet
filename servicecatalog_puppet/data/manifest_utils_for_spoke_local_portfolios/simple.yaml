@@ -1,0 +1,28 @@
+schema: puppet-2019-04-01
+
+accounts:
+  - account_id: '105463962595'
+    name: 'eamonnf+large-org-testing-manual-1'
+    default_region: eu-west-1
+    regions_enabled:
+      - eu-west-1
+      - eu-west-2
+      - eu-west-3
+    tags:
+      - group:hub
+      - group:all
+
+spoke-local-portfolios:
+  shared_by_tag:
+    portfolio: k-mandatory
+    deploy_to:
+      tags:
+        - tag: group:all
+          regions: enabled_regions
+
+  shared_by_account:
+    portfolio: f-mandatory
+    deploy_to:
+      accounts:
+        - account_id: '105463962595'
+          regions: default_region
