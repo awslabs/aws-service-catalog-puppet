@@ -700,6 +700,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                     'products': [],
                     'roles': launch_constraint.get('roles')
                 }
+                #DEBUG HERE to see why products list dict thing is empty
                 if launch_constraint.get('products', None) is not None:
                     if isinstance(launch_constraint.get('products'), tuple):
                         new_launch_constraint['products'] += launch_constraint.get('products')
@@ -715,6 +716,8 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                                     'ProductId')
                                 if re.match(launch_constraint.get('products'), product_view_summary.get('Name')):
                                     new_launch_constraint['products'].append(product_view_summary.get('Name'))
+                    else:
+                        raise Exception(f'Unexpected launch constraint type {type(launch_constraint.get("products"))}')
 
                 if launch_constraint.get('product', None) is not None:
                     new_launch_constraint['products'].append(launch_constraint.get('product'))
