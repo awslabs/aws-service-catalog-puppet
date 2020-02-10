@@ -66,7 +66,6 @@ def generate_shares(f):
     )
 
     for launch_task in launch_tasks:
-        logger.info("itering")
         t = manifest_utils_for_launches.generate_launch_task_defs_for_launch(
             launch_task.launch_name,
             launch_task.manifest,

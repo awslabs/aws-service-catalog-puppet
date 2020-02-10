@@ -164,16 +164,12 @@ def get_actions_from(name, launch_details, pre_or_post, actions, launch_or_spoke
 
 
 def get_task_defs_from_details(launch_details, accounts, include_expanded_from, launch_name, configuration):
-    logger.info(f"launch_details: {launch_details}")
     deploy_to = launch_details.get('deploy_to')
     task_defs = []
     for tag_list_item in deploy_to.get('tags', []):
         for account in accounts:
-            logger.info(f"for tags looking at account {account}")
             for tag in account.get('tags', []):
-                logger.info(f"for tags looking at account {account} and tag {tag}")
                 if tag == tag_list_item.get('tag'):
-                    logger.info("found a match!!!!!!!")
                     tag_account_def = deepcopy(configuration)
                     tag_account_def['account_id'] = account.get('account_id')
                     if include_expanded_from:
@@ -182,21 +178,15 @@ def get_task_defs_from_details(launch_details, accounts, include_expanded_from, 
                     tag_account_def['account_parameters'] = account.get('parameters', {})
 
                     regions = tag_list_item.get('regions', 'default_region')
-                    logger.info(f"checking for regions: {regions}")
                     if isinstance(regions, str):
-                        logger.info(f"checking for regions: {regions} str")
                         if regions in ["enabled", "regions_enabled", "enabled_regions"]:
-                            logger.info(f"matched regions str adding for each region")
                             for region_enabled in account.get('regions_enabled'):
-                                logger.info(f'region_enabled: {region_enabled}')
                                 region_tag_account_def = deepcopy(tag_account_def)
                                 region_tag_account_def['region'] = region_enabled
                                 task_defs.append(region_tag_account_def)
                         elif regions == 'default_region':
-                            logger.info(f"matched regions str adding for default_region")
                             region_tag_account_def = deepcopy(tag_account_def)
                             region_tag_account_def['region'] = account.get('default_region')
-                            logger.info(f'region_enabled: {account.get("default_region")}')
                             task_defs.append(region_tag_account_def)
                         elif regions == "all":
                             all_regions = config.get_regions()
@@ -207,13 +197,11 @@ def get_task_defs_from_details(launch_details, accounts, include_expanded_from, 
                         else:
                             raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
                     elif isinstance(regions, list):
-                        logger.info(f"checking for regions: {regions} list")
                         for region in regions:
                             region_tag_account_def = deepcopy(tag_account_def)
                             region_tag_account_def['region'] = region
                             task_defs.append(region_tag_account_def)
                     elif isinstance(regions, tuple):
-                        logger.info(f"checking for regions: {regions} list")
                         for region in regions:
                             region_tag_account_def = deepcopy(tag_account_def)
                             region_tag_account_def['region'] = region

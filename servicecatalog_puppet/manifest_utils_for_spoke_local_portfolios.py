@@ -120,8 +120,6 @@ def generate_spoke_local_portfolios_tasks_for_spoke_local_portfolio(
         spoke_local_portfolio_name, manifest, puppet_account_id, should_use_sns, should_use_product_plans,
         include_expanded_from=False, single_account=None, is_dry_run=False,
 ):
-    logger.info(f"in {spoke_local_portfolio_name} in generate_spoke_local_portfolios_tasks_for_spoke_local_portfolio")
-
     accounts = manifest.get('accounts', [])
     actions = manifest.get('actions', {})
 
@@ -136,14 +134,9 @@ def generate_spoke_local_portfolios_tasks_for_spoke_local_portfolio(
     configuration['should_use_sns'] = should_use_sns
     configuration['should_use_product_plans'] = should_use_product_plans
 
-    logger.info(f'looking at {spoke_local_portfolio_name} and depends on is {spoke_local_portfolio_details.get("depends_on", [])}')
-
-    logger.info(f"EAMONN22 spoke_local_portfolio_details:{spoke_local_portfolio_details}, accounts: {accounts}, True, spoke_local_portfolio_name:{spoke_local_portfolio_name}, configuration:{configuration}")
     task_defs = get_task_defs_from_details(
         spoke_local_portfolio_details, accounts, True, spoke_local_portfolio_name, configuration
     )
-    logger.info(f"eamonn1")
-    logger.info(task_defs)
     return {
         'pre_actions': get_actions_from(
             spoke_local_portfolio_name, spoke_local_portfolio_details, 'pre', actions, 'spoke-local-portfolios'

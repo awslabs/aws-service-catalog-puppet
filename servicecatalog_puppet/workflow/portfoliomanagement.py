@@ -411,11 +411,8 @@ class GetProductsAndProvisioningArtifactsTask(tasks.PuppetTask):
         ]
 
     def run(self):
-        logger.info(f"[{self.uid} :: starting")
         with self.input().open('r') as f:
             hub_portfolio = json.loads(f.read())
-            logger.info('EEEEEEE')
-            logger.info(hub_portfolio)
             hub_portfolio_id = hub_portfolio.get('portfolio_id')
         product_and_artifact_details = []
         with betterboto_client.ClientContextManager(

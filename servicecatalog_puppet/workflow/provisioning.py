@@ -114,7 +114,6 @@ class ProvisionProductTask(tasks.PuppetTask):
         return self.requested_priority
 
     def requires(self):
-        logger.info(f"{self.uid} this is being called in")
         all_params = {}
         all_params.update(self.manifest_parameters)
         all_params.update(self.launch_parameters)
@@ -263,8 +262,6 @@ class ProvisionProductTask(tasks.PuppetTask):
 
                     if provisioned_product_id:
                         if self.should_use_product_plans:
-                            logger.info("dknfsdofdnf")
-                            logger.info(params_to_use)
                             provisioned_product_id = aws.provision_product_with_plan(
                                 service_catalog,
                                 self.launch_name,
