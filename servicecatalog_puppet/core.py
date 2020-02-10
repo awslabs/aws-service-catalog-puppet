@@ -57,6 +57,9 @@ def generate_shares(f):
     tasks_to_run = []
     puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
+    accounts_by_id = {}
+    for account in manifest.get('accounts'):
+        accounts_by_id[account.get('account_id')] = account
 
     launch_tasks = manifest_utils_for_launches.generate_launch_tasks(
         manifest, puppet_account_id, False, False, include_expanded_from=False, single_account=None, is_dry_run=False
@@ -77,14 +80,15 @@ def generate_shares(f):
         tasks = launch_task.generate_provisions(t.get('task_defs'))
         for task_ in tasks:
             task = task_.param_kwargs
+            a_id = task.get('account_id')
             tasks_to_run.append(
                 portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
                     puppet_account_id=puppet_account_id,
-                    account_id=task.get('account_id'),
+                    account_id=a_id,
                     region=task.get('region'),
                     portfolio=task.get('portfolio'),
-                    expanded_from=task.get('expanded_from'),
-                    organization=task.get('organization'),
+                    expanded_from=accounts_by_id.get(a_id).get('expanded_from'),
+                    organization=accounts_by_id.get(a_id).get('organization'),
                 )
             )
 
@@ -109,14 +113,15 @@ def generate_shares(f):
         for sub_task in sub_tasks:
             if isinstance(sub_task, portfoliomanagement_tasks.CreateSpokeLocalPortfolioTask):
                 param_kwargs = sub_task.param_kwargs
+                a_id = param_kwargs.get('account_id')
                 tasks_to_run.append(
                     portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
                         puppet_account_id=puppet_account_id,
                         account_id=param_kwargs.get('account_id'),
                         region=param_kwargs.get('region'),
                         portfolio=param_kwargs.get('portfolio'),
-                        expanded_from=param_kwargs.get('expanded_from'),
-                        organization=param_kwargs.get('organization'),
+                        expanded_from=accounts_by_id.get(a_id).get('expanded_from'),
+                        organization=accounts_by_id.get(a_id).get('organization'),
                     )
                 )
 
