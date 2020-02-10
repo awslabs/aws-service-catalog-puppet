@@ -88,6 +88,11 @@ def get_task_defs_from_details(launch_details, accounts, include_expanded_from, 
                         region_account_account_def = deepcopy(account_account_def)
                         region_account_account_def['region'] = region
                         tasks.append(region_account_account_def)
+                elif isinstance(regions, tuple):
+                    for region in regions:
+                        region_account_account_def = deepcopy(account_account_def)
+                        region_account_account_def['region'] = region
+                        tasks.append(region_account_account_def)
                 else:
                     raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
 
