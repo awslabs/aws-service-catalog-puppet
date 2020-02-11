@@ -416,6 +416,27 @@ Here is an example, it deploys a ``v1`` of a product named ``account-iam`` from 
               regions: default_region
 
 
+When you specify more than one tag entry in deploy_to->tags the framework will interpret this as an or so the following
+snippet will provision ``v1`` of ``account-iam`` to all accounts tagged ``type:prod`` or ``type:dev``:
+
+.. code-block:: yaml
+
+    schema: puppet-2019-04-01
+
+    launches:
+      account-iam-for-prod:
+        portfolio: example-simple-central-it-team-portfolio
+        product: account-iam
+        version: v1
+        deploy_to:
+          tags:
+            - tag: type:prod
+              regions: default_region
+            - tag: type:dev
+              regions: default_region
+
+
+
 Account based launches
 ~~~~~~~~~~~~~~~~~~~~~~
 
