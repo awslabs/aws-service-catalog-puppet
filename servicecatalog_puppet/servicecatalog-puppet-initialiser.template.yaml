@@ -95,7 +95,7 @@ Resources:
       Environment:
         Type: linuxContainer
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/python:3.7.1
+        Image: aws/codebuild/standard:3.0
         EnvironmentVariables:
           - Name: ENABLED_REGIONS
             Type: PLAINTEXT
@@ -159,6 +159,8 @@ Resources:
           version: 0.2
           phases:
             install:
+              runtime-versions:
+                python: 3.8
               commands:
                 - pip install aws-service-catalog-puppet --upgrade
                 - servicecatalog-puppet --info set-regions ${ENABLED_REGIONS}
