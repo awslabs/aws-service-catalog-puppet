@@ -40,6 +40,8 @@ schema;map_account_id:
       type: str
     name:
       type: str
+    email:
+      type: str
     default_region:
       type: str
     regions_enabled:
@@ -52,6 +54,88 @@ schema;map_account_id:
         - type: str
     parameters:
       include: map_params
+
+schema;map_deploy_to:
+  type: map
+  mapping:
+    accounts:
+      type: seq
+      sequence:
+        - type: map
+          mapping:
+            account_id:
+              type: str
+            regions:
+              type: any
+    tags:
+      type: seq
+      sequence:
+        - type: map
+          mapping:
+            tag:
+              type: str
+            regions:
+              type: any
+
+
+schema;map_launches:
+  type: map
+  mapping:
+    regex;(.+):
+      type: map
+      mapping:
+        portfolio:
+          type: str
+        product:
+          type: str
+        version:
+          type: str
+        status:
+          type: str
+          enum: ['provisioned', 'terminated']
+        depends_on:
+          type: seq
+          sequence:
+            - type: str
+        parameters:
+          include: map_params
+        deploy_to:
+          include: map_deploy_to
+
+schema;map_spoke_local_portfolios:
+  type: map
+  mapping:
+    regex;(.+):
+      type: map
+      mapping:
+        portfolio:
+          type: str
+        associations:
+          type: seq
+          sequence:
+            - type: str
+        constraints:
+          type: map
+          mapping:
+            launch:
+              type: seq
+              sequence:
+                - type: map
+                  mapping:
+                    products:
+                      type: str
+                    product:
+                      type: str
+                    roles:
+                      type: seq
+                      sequence:
+                        - type: str
+        depends_on:
+          type: seq
+          sequence:
+            - type: str
+        deploy_to:
+          include: map_deploy_to
 
 schema;map_account_ou:
   type: map
@@ -88,45 +172,8 @@ mapping:
     sequence:
       - include: map_account_id
       - include: map_account_ou
+  spoke-local-portfolios:
+    include: map_spoke_local_portfolios
   launches:
-    type: map
-    mapping:
-      regex;(.+):
-        type: map
-        mapping:
-          portfolio:
-            type: str
-          product:
-            type: str
-          version:
-            type: str
-          status:
-            type: str
-            enum: ['provisioned', 'terminated']
-          depends_on:
-            type: seq
-            sequence:
-              - type: str
-          parameters:
-            include: map_params
-          deploy_to:
-            type: map
-            mapping:
-              accounts:
-                type: seq
-                sequence:
-                  - type: map
-                    mapping:
-                      account_id:
-                        type: str
-                      regions:
-                        type: any
-              tags:
-                type: seq
-                sequence:
-                  - type: map
-                    mapping:
-                      tag:
-                        type: str
-                      regions:
-                        type: any
+    include: map_launches
+
