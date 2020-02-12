@@ -876,6 +876,8 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
         }
 
     def generate_tasks(self, task_defs):
+        if len(task_defs) == 0:
+            raise Exception("The configuration for this share does not include any target accounts")
         first_task_def = task_defs[0]
         logger.info('first_task_def')
         portfolio = first_task_def.get('portfolio')
