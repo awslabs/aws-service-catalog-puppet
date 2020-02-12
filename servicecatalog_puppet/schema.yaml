@@ -159,6 +159,7 @@ schema;map_account_ou:
       include: map_params
 
 type: map
+func: ext_schema
 mapping:
   schema:
     type: str
