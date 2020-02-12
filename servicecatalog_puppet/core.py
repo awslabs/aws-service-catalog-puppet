@@ -629,7 +629,11 @@ def expand(f):
 
 def validate(f):
     logger.info('Validating {}'.format(f.name))
-    c = Core(source_file=f.name, schema_files=[asset_helpers.resolve_from_site_packages('schema.yaml')])
+    c = Core(
+        source_file=f.name,
+        schema_files=[asset_helpers.resolve_from_site_packages('schema.yaml')],
+        extensions=[asset_helpers.resolve_from_site_packages('puppet_schema_extensions.py')]
+    )
     c.validate(raise_exception=True)
     click.echo("Finished validating: {}".format(f.name))
     click.echo("Finished validating: OK")

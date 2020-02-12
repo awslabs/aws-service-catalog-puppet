@@ -876,6 +876,8 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
         }
 
     def generate_tasks(self, task_defs):
+        if len(task_defs) == 0:
+            raise Exception("The configuration for this share does not include any target accounts")
         first_task_def = task_defs[0]
         logger.info('first_task_def')
         portfolio = first_task_def.get('portfolio')
@@ -886,7 +888,6 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
                 'account_id': task_def.get('account_id'),
                 'region': task_def.get('region'),
                 'portfolio': portfolio,
-                # 'pre_actions': task_def.get('pre_actions'),
                 'organization': task_def.get('organization')
             }
             create_spoke_local_portfolio_task = portfoliomanagement.CreateSpokeLocalPortfolioTask(
@@ -935,6 +936,7 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
         return tasks
 
     def run(self):
+        self.info("started")
         tasks_defs = manifest_utils_for_spoke_local_portfolios.generate_spoke_local_portfolios_tasks_for_spoke_local_portfolio(
             self.spoke_local_portfolio_name,
             self.manifest,
@@ -945,8 +947,7 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
             self.single_account,
             self.is_dry_run,
         )
-
-        logger.info(f"spoke_local_portfolio_name is {self.spoke_local_portfolio_name}")
+        self.info(json.dumps(tasks_defs, default=str))
 
         logger.info(f"{self.uid} starting pre actions")
         yield [portfoliomanagement.ProvisionActionTask(**p) for p in tasks_defs.get('pre_actions', [])]
@@ -961,3 +962,4 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
         logger.info(f"{self.uid} finished post actions")
 
         self.write_output(self.params_for_results_display())
+        self.info("finished")
