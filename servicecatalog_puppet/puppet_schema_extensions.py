@@ -25,7 +25,7 @@ def ensure_deploy_to_tags_exist(value):
                 tag_to_check = deploy_to.get('tag')
                 if tags_defined_by_accounts.get(tag_to_check) is None:
                     raise AssertionError(
-                        f"{collection_type}.{collection_name} uses tag {tag_to_check} in its deploy_to that doesn't exist"
+                        f"{collection_type}.{collection_name} uses tag {tag_to_check} in deploy_to that doesn't exist"
                     )
 
 
@@ -36,5 +36,5 @@ def ensure_depends_on_exist(value):
             for depends_on in collection_item.get('depends_on', []):
                 if value.get('launches').get(depends_on) is None:
                     raise AssertionError(
-                        f"{collection_type}.{collection_name} uses {depends_on} in its depends_on that doesn't exist"
+                        f"{collection_type}.{collection_name} uses {depends_on} in depends_on that doesn't exist"
                     )
