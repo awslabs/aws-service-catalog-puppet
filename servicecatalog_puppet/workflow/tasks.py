@@ -15,6 +15,10 @@ logger = logging.getLogger("tasks")
 
 
 class PuppetTask(luigi.Task):
+
+    def info(self, message):
+        logger.info(f"{self.uid}: {message}")
+
     def api_calls_used(self):
         return []
 

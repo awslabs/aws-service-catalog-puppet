@@ -411,11 +411,8 @@ class GetProductsAndProvisioningArtifactsTask(tasks.PuppetTask):
         ]
 
     def run(self):
-        logger.info(f"[{self.uid} :: starting")
         with self.input().open('r') as f:
             hub_portfolio = json.loads(f.read())
-            logger.info('EEEEEEE')
-            logger.info(hub_portfolio)
             hub_portfolio_id = hub_portfolio.get('portfolio_id')
         product_and_artifact_details = []
         with betterboto_client.ClientContextManager(
@@ -444,7 +441,6 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     organization = luigi.Parameter()
-    hub_portfolio_id = luigi.Parameter()
     local_association_style = luigi.Parameter()
     # pre_actions = luigi.ListParameter()
     # post_actions = luigi.ListParameter(default=[])
@@ -660,7 +656,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
 
     launch_constraints = luigi.DictParameter()
 
-    dependencies = luigi.ListParameter(default=[])
+    # dependencies = luigi.ListParameter(default=[])
 
     # post_actions = luigi.ListParameter()
     # pre_actions = luigi.ListParameter()
@@ -678,7 +674,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                 # post_actions=self.post_actions,
                 puppet_account_id=self.puppet_account_id,
             ),
-            'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
+            # 'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
 
     def api_calls_used(self):
@@ -706,6 +702,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                     'products': [],
                     'roles': launch_constraint.get('roles')
                 }
+                #DEBUG HERE to see why products list dict thing is empty
                 if launch_constraint.get('products', None) is not None:
                     if isinstance(launch_constraint.get('products'), tuple):
                         new_launch_constraint['products'] += launch_constraint.get('products')
@@ -721,6 +718,8 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                                     'ProductId')
                                 if re.match(launch_constraint.get('products'), product_view_summary.get('Name')):
                                     new_launch_constraint['products'].append(product_view_summary.get('Name'))
+                    else:
+                        raise Exception(f'Unexpected launch constraint type {type(launch_constraint.get("products"))}')
 
                 if launch_constraint.get('product', None) is not None:
                     new_launch_constraint['products'].append(launch_constraint.get('product'))

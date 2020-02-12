@@ -20,7 +20,7 @@ def get_task_defs_from_details(launch_details, accounts, include_expanded_from, 
                     tag_account_def = deepcopy(configuration)
                     tag_account_def['account_id'] = account.get('account_id')
                     tag_account_def['expanded_from'] = account.get('expanded_from', '')
-                    tag_account_def['organization'] = account.get('organization', '')
+                    tag_account_def['organization'] = account.get('organization')
 
                     regions = tag_list_item.get('regions', 'default_region')
                     if isinstance(regions, str):
@@ -42,6 +42,11 @@ def get_task_defs_from_details(launch_details, accounts, include_expanded_from, 
                         else:
                             raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
                     elif isinstance(regions, list):
+                        for region in regions:
+                            region_tag_account_def = deepcopy(tag_account_def)
+                            region_tag_account_def['region'] = region
+                            tasks.append(region_tag_account_def)
+                    elif isinstance(regions, tuple):
                         for region in regions:
                             region_tag_account_def = deepcopy(tag_account_def)
                             region_tag_account_def['region'] = region
@@ -83,6 +88,11 @@ def get_task_defs_from_details(launch_details, accounts, include_expanded_from, 
                         region_account_account_def = deepcopy(account_account_def)
                         region_account_account_def['region'] = region
                         tasks.append(region_account_account_def)
+                elif isinstance(regions, tuple):
+                    for region in regions:
+                        region_account_account_def = deepcopy(account_account_def)
+                        region_account_account_def['region'] = region
+                        tasks.append(region_account_account_def)
                 else:
                     raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
 
@@ -110,8 +120,6 @@ def generate_spoke_local_portfolios_tasks_for_spoke_local_portfolio(
         spoke_local_portfolio_name, manifest, puppet_account_id, should_use_sns, should_use_product_plans,
         include_expanded_from=False, single_account=None, is_dry_run=False,
 ):
-    logger.info(f"in {spoke_local_portfolio_name} in generate_spoke_local_portfolios_tasks_for_spoke_local_portfolio")
-
     accounts = manifest.get('accounts', [])
     actions = manifest.get('actions', {})
 
@@ -126,14 +134,9 @@ def generate_spoke_local_portfolios_tasks_for_spoke_local_portfolio(
     configuration['should_use_sns'] = should_use_sns
     configuration['should_use_product_plans'] = should_use_product_plans
 
-    logger.info(f'looking at {spoke_local_portfolio_name} and depends on is {spoke_local_portfolio_details.get("depends_on", [])}')
-
-    logger.info(f"EAMONN22 spoke_local_portfolio_details:{spoke_local_portfolio_details}, accounts: {accounts}, True, spoke_local_portfolio_name:{spoke_local_portfolio_name}, configuration:{configuration}")
     task_defs = get_task_defs_from_details(
         spoke_local_portfolio_details, accounts, True, spoke_local_portfolio_name, configuration
     )
-    logger.info(f"eamonn1")
-    logger.info(task_defs)
     return {
         'pre_actions': get_actions_from(
             spoke_local_portfolio_name, spoke_local_portfolio_details, 'pre', actions, 'spoke-local-portfolios'

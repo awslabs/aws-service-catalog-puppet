@@ -57,23 +57,37 @@ def generate_shares(f):
     tasks_to_run = []
     puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
+    accounts_by_id = {}
+    for account in manifest.get('accounts'):
+        accounts_by_id[account.get('account_id')] = account
 
     launch_tasks = manifest_utils_for_launches.generate_launch_tasks(
         manifest, puppet_account_id, False, False, include_expanded_from=False, single_account=None, is_dry_run=False
     )
 
     for launch_task in launch_tasks:
-        tasks = launch_task.generate_provisions()
+        t = manifest_utils_for_launches.generate_launch_task_defs_for_launch(
+            launch_task.launch_name,
+            launch_task.manifest,
+            launch_task.puppet_account_id,
+            launch_task.should_use_sns,
+            launch_task.should_use_product_plans,
+            launch_task.include_expanded_from,
+            launch_task.single_account,
+            launch_task.is_dry_run
+        )
+        tasks = launch_task.generate_provisions(t.get('task_defs'))
         for task_ in tasks:
             task = task_.param_kwargs
+            a_id = task.get('account_id')
             tasks_to_run.append(
                 portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
                     puppet_account_id=puppet_account_id,
-                    account_id=task.get('account_id'),
+                    account_id=a_id,
                     region=task.get('region'),
                     portfolio=task.get('portfolio'),
-                    expanded_from=task.get('expanded_from'),
-                    organization=task.get('organization'),
+                    expanded_from=accounts_by_id.get(a_id).get('expanded_from'),
+                    organization=accounts_by_id.get(a_id).get('organization'),
                 )
             )
 
@@ -82,19 +96,33 @@ def generate_shares(f):
     )
 
     # TODO fixme
-    # for task in spoke_local_portfolios_tasks:
-    #     if isinstance(task, portfoliomanagement_tasks.CreateSpokeLocalPortfolioTask):
-    #         param_kwargs = task.param_kwargs
-    #         tasks_to_run.append(
-    #             portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
-    #                 puppet_account_id=puppet_account_id,
-    #                 account_id=param_kwargs.get('account_id'),
-    #                 region=param_kwargs.get('region'),
-    #                 portfolio=param_kwargs.get('portfolio'),
-    #                 expanded_from=param_kwargs.get('expanded_from'),
-    #                 organization=param_kwargs.get('organization'),
-    #             )
-    #         )
+    for spoke_local_portfolios_task in spoke_local_portfolios_tasks:
+        t = manifest_utils_for_spoke_local_portfolios.generate_spoke_local_portfolios_tasks_for_spoke_local_portfolio(
+            spoke_local_portfolios_task.spoke_local_portfolio_name,
+            spoke_local_portfolios_task.manifest,
+            spoke_local_portfolios_task.puppet_account_id,
+            spoke_local_portfolios_task.should_use_sns,
+            spoke_local_portfolios_task.should_use_product_plans,
+            spoke_local_portfolios_task.include_expanded_from,
+            spoke_local_portfolios_task.single_account,
+            spoke_local_portfolios_task.is_dry_run,
+        )
+
+        sub_tasks = spoke_local_portfolios_task.generate_tasks(t.get('task_defs'))
+        for sub_task in sub_tasks:
+            if isinstance(sub_task, portfoliomanagement_tasks.CreateSpokeLocalPortfolioTask):
+                param_kwargs = sub_task.param_kwargs
+                a_id = param_kwargs.get('account_id')
+                tasks_to_run.append(
+                    portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
+                        puppet_account_id=puppet_account_id,
+                        account_id=param_kwargs.get('account_id'),
+                        region=param_kwargs.get('region'),
+                        portfolio=param_kwargs.get('portfolio'),
+                        expanded_from=accounts_by_id.get(a_id).get('expanded_from'),
+                        organization=accounts_by_id.get(a_id).get('organization'),
+                    )
+                )
 
     runner.run_tasks_for_generate_shares(tasks_to_run)
 
@@ -601,7 +629,11 @@ def expand(f):
 
 def validate(f):
     logger.info('Validating {}'.format(f.name))
-    c = Core(source_file=f.name, schema_files=[asset_helpers.resolve_from_site_packages('schema.yaml')])
+    c = Core(
+        source_file=f.name,
+        schema_files=[asset_helpers.resolve_from_site_packages('schema.yaml')],
+        extensions=[asset_helpers.resolve_from_site_packages('puppet_schema_extensions.py')]
+    )
     c.validate(raise_exception=True)
     click.echo("Finished validating: {}".format(f.name))
     click.echo("Finished validating: OK")

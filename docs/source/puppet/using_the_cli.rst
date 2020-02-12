@@ -315,3 +315,17 @@ actions the framework will perform
 .. note::
 
     This was added in version 0.49.0
+
+
+Validate
+--------
+The validate command will check your manifest file is of the correct structure and it will also ensure you are not using
+depends_on or deploy_to.tags that do not exist.
+
+.. code-block:: bash
+
+    servicecatalog-puppet validate <path_to_manifest>
+
+.. note::
+
+    This only works with the non expanded manifest file

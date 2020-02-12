@@ -39,8 +39,6 @@ def generate_launch_task_defs_for_launch(
         launch_name, manifest, puppet_account_id, should_use_sns, should_use_product_plans, include_expanded_from=False,
         single_account=None, is_dry_run=False,
 ):
-    logger.info(f"looking at {launch_name} in generate_launch_task_defs_for_launch")
-
     accounts = manifest.get('accounts', [])
     actions = manifest.get('actions', {})
 
@@ -52,7 +50,6 @@ def generate_launch_task_defs_for_launch(
     configuration['puppet_account_id'] = puppet_account_id
     configuration['should_use_sns'] = should_use_sns
     configuration['should_use_product_plans'] = should_use_product_plans
-    logger.info(f'looking at {launch_name} and depends on is {launch_details.get("depends_on", [])}')
     return {
         'pre_actions': get_actions_from(launch_name, launch_details, 'pre', actions, 'launch'),
         'post_actions': get_actions_from(launch_name, launch_details, 'post', actions, 'launch'),
