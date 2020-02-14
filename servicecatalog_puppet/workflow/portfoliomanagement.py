@@ -460,6 +460,11 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                 portfolio=self.portfolio,
                 puppet_account_id=self.puppet_account_id,
             ),
+            'hub_portfolio': GetPortfolioByPortfolioName(
+                portfolio=self.portfolio,
+                account_id=self.puppet_account_id,
+                region=self.region,
+            ),
         }
 
     def params_for_results_display(self):
@@ -485,6 +490,11 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
         with self.input().get('create_spoke_local_portfolio').open('r') as f:
             spoke_portfolio = json.loads(f.read())
         portfolio_id = spoke_portfolio.get("Id")
+
+        with self.input().get('hub_portfolio').open('r') as f:
+            hub_portfolio = json.loads(f.read())
+        hub_portfolio_id = hub_portfolio.get("portfolio_id")
+
         product_versions_that_should_be_copied = {}
         product_versions_that_should_be_updated = {}
 
@@ -509,7 +519,7 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                         spoke_service_catalog.associate_product_with_portfolio(
                             ProductId=hub_product_id,
                             PortfolioId=portfolio_id,
-                            SourcePortfolioId=self.hub_portfolio_id
+                            SourcePortfolioId=hub_portfolio_id
                         )
 
                         # associate_product_with_portfolio is not a synchronous request
