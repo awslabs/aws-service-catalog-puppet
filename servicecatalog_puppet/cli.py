@@ -40,7 +40,7 @@ def graph(f, single_account):
 @click.argument('f', type=click.File())
 @click.option('--single-account', default=None)
 def dry_run(f, single_account):
-    core.deploy(f, single_account, dry_run=True)
+    core.deploy(f, single_account, is_dry_run=True)
 
 
 @cli.command()

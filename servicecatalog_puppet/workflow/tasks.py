@@ -6,9 +6,19 @@ import luigi
 from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import constants
+import psutil
+import logging
+import math
+
+
+logger = logging.getLogger("tasks")
 
 
 class PuppetTask(luigi.Task):
+
+    def info(self, message):
+        logger.info(f"{self.uid}: {message}")
+
     def api_calls_used(self):
         return []
 
@@ -145,18 +155,27 @@ def on_task_failure(task, exception):
     record_event('failure', task, exception_details)
 
 
+def print_stats():
+    logger.info(f"cpu usage: percent={psutil.cpu_percent()}")
+    mem = psutil.virtual_memory()
+    logger.info(f"memory usage: total={math.ceil(mem.total/1024/1024)}MB used={math.ceil(mem.used/1024/1024)}MB percent={mem.percent}%")
+
+
 @luigi.Task.event_handler(luigi.Event.SUCCESS)
 def on_task_success(task):
+    print_stats()
     record_event('success', task)
 
 
 @luigi.Task.event_handler(luigi.Event.TIMEOUT)
 def on_task_timeout(task):
+    print_stats()
     record_event('timeout', task)
 
 
 @luigi.Task.event_handler(luigi.Event.PROCESS_FAILURE)
 def on_task_process_failure(task, error_msg):
+    print_stats()
     exception_details = {
         "exception_type": 'PROCESS_FAILURE',
         "exception_stack_trace": error_msg,
@@ -166,9 +185,11 @@ def on_task_process_failure(task, error_msg):
 
 @luigi.Task.event_handler(luigi.Event.PROCESSING_TIME)
 def on_task_processing_time(task, duration):
+    print_stats()
     record_event('processing_time', task, {"duration": duration})
 
 
 @luigi.Task.event_handler(luigi.Event.BROKEN_TASK)
 def on_task_broken_task(task, exception):
+    print_stats()
     record_event('broken_task', task, {"exception": exception})

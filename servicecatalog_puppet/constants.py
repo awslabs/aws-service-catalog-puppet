@@ -19,12 +19,6 @@ DEFAULT_TIMEOUT = 0
 LAUNCHES = 'launches'
 SPOKE_LOCAL_PORTFOLIOS = 'spoke-local-portfolios'
 
-DISALLOWED_ATTRIBUTES_FOR_TERMINATED_LAUNCHES = [
-    'depends_on',
-    'outputs',
-    'parameters',
-]
-
 RESULTS_DIRECTORY = "results"
 
 
