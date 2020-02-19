@@ -23,13 +23,16 @@ def load(f):
     manifest.update(
         yaml.safe_load(f.read())
     )
-    d = os.path.dirname(f.name)
+    d = os.path.dirname(
+        os.path.abspath(f.name)
+    )
 
     extendable = ['parameters', 'launches', 'spoke-local-portfolios']
     for t in extendable:
-        if os.path.exists(f"{d}{os.path.sep}{t}"):
-            for f in os.listdir(f"{d}{os.path.sep}{t}"):
-                with open(f"{d}{os.path.sep}{t}{os.path.sep}{f}", 'r') as file:
+        t_path = f"{d}{os.path.sep}{t}"
+        if os.path.exists(t_path):
+            for f in os.listdir(t_path):
+                with open(f"{t_path}{os.path.sep}{f}", 'r') as file:
                     manifest[t].update(yaml.safe_load(file.read()))
 
     if os.path.exists(f"{d}{os.path.sep}manifests"):
