@@ -559,3 +559,54 @@ these in will cause the termination action to fail.
 .. warning::
 
     Since 0.1.16, terminating a product will also remove any SSM Parameters you created for it via the manifest.yaml
+
+
+Managing large manifests or working in teams
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    This was added in version 0.71.0
+
+If you have a large manifest file or are working in a team you may find it difficult managing changes occurring to your
+manifest file.  You may find yourself having a lot of merge conflicts.  To resolve this you can split your manifest file
+into smaller pieces.  You can specify launches in a launch directory within your ServiceCatalogPuppet repository:
+
+.. code-block:: bash
+
+    ✗ tree ServiceCatalogPuppet
+    ServiceCatalogPuppet
+    ├── launches
+    │   └── launches-for-team-a.yaml
+    ├── manifest.yaml
+
+The framework will load the manifest.yaml and *overwrite* any launches with ones defined in files from the launches
+directory.  The framework will not warn you of any overrides.
+
+You can also specify parameters and spoke-local-portfolios in directories too:
+
+.. code-block:: bash
+
+    ✗ tree ServiceCatalogPuppet
+    ServiceCatalogPuppet
+    ├── parameters
+    │   └── parameters-for-team-a.yaml
+    ├── spoke-local-portfolios
+    │   └── spoke-local-portfolios-for-team-a.yaml
+    ├── manifest.yaml
+
+The names of the file within the launches, parameters and spoke-local-portfolios are ignored.
+
+You can also declare other manifest files in a manifests directory:
+
+.. code-block:: bash
+
+    ✗ tree ServiceCatalogPuppet
+    ServiceCatalogPuppet
+    ├── manifests
+    │   └── manifest-for-team-a.yaml
+    │   └── manifest-for-networking.yaml
+    │   └── manifest-for-governance.yaml
+
+When you write a manifest file in the manifests directory the accounts section is ignored - you can only specify
+launches, parameters and spoke-local-portfolios.
