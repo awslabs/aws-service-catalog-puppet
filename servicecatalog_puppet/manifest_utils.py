@@ -1,3 +1,5 @@
+import os
+
 import yaml
 import logging
 import json
@@ -11,7 +13,33 @@ logger = logging.getLogger(__file__)
 
 
 def load(f):
-    return yaml.safe_load(f.read())
+    manifest = {
+        'schema': 'puppet-2019-04-01',
+        'parameters': {},
+        'accounts': [],
+        'launches': {},
+        'spoke-local-portfolios': {},
+    }
+    manifest.update(
+        yaml.safe_load(f.read())
+    )
+    d = os.path.dirname(f.name)
+
+    extendable = ['parameters', 'launches', 'spoke-local-portfolios']
+    for t in extendable:
+        if os.path.exists(f"{d}{os.path.sep}{t}"):
+            for f in os.listdir(f"{d}{os.path.sep}{t}"):
+                with open(f"{d}{os.path.sep}{t}{os.path.sep}{f}", 'r') as file:
+                    manifest[t].update(yaml.safe_load(file.read()))
+
+    if os.path.exists(f"{d}{os.path.sep}manifests"):
+        for f in os.listdir(f"{d}{os.path.sep}manifests"):
+            with open(f"{d}{os.path.sep}manifests{os.path.sep}{f}", 'r') as file:
+                ext = yaml.safe_load(file.read())
+                for t in extendable:
+                    manifest[t].update(ext.get(t, {}))
+
+    return manifest
 
 
 def expand_manifest(manifest, client):
