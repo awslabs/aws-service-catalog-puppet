@@ -76,11 +76,12 @@ There are 2 options for populating products inside the spoke portfolios, Copy or
 | This ensures isolation between hub and spoke - changes to products and versions in the hub will only be 
   reflected in the spoke on the next puppet run.
 
+
 | ``products_copy_or_import: import`` setting will import (using the ``AssociateProductWithPortfolio`` Service Catalog API call) the product and 
-  its provisioning artifacts from the hub portfolio with the same IDs as the spoke portfolio
-| There may be occasions where is it useful to have the same product ID in the spoke as in the hub - 
+  its provisioning artifacts into the spoke from the hub portfolio with the same IDs as the hub portfolio.
+| This is useful for occasions where is it necessary to have the same product ID in the spoke as in the hub - 
   for example if changes to provisioning artifacts in the hub need to be instantly reflected in the spoke 
-  without a puppet run
+  without requiring a puppet run.
 
 
 How can I add an association?
