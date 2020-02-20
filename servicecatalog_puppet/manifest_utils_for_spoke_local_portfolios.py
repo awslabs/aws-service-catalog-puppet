@@ -109,6 +109,7 @@ def get_configuration_from_spoke_local_portfolio(manifest, spoke_local_portfolio
         'retry_count': spoke_local_portfolio_details.get('retry_count', 1),
         'requested_priority': spoke_local_portfolio_details.get('requested_priority', 0),
         'worker_timeout': spoke_local_portfolio_details.get('timeoutInSeconds', constants.DEFAULT_TIMEOUT),
+        'products_copy_or_import': spoke_local_portfolio_details.get('products_copy_or_import', 'copy'),
     }
     configuration.update(
         get_configuration_overrides(manifest, spoke_local_portfolio_details)

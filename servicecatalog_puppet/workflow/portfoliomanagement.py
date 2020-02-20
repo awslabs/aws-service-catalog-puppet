@@ -767,7 +767,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     organization = luigi.Parameter()
-
+    products_copy_or_import = luigi.Parameter()
     launch_constraints = luigi.DictParameter()
 
     # dependencies = luigi.ListParameter(default=[])
@@ -778,18 +778,29 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
     should_use_sns = luigi.Parameter(default=False, significant=False)
 
     def requires(self):
-        return {
-            'create_spoke_local_portfolio_task': CopyIntoSpokeLocalPortfolioTask(
-                account_id=self.account_id,
-                region=self.region,
-                portfolio=self.portfolio,
-                organization=self.organization,
-                # pre_actions=self.pre_actions,
-                # post_actions=self.post_actions,
-                puppet_account_id=self.puppet_account_id,
-            ),
-            # 'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
-        }
+        if self.products_copy_or_import == 'import':
+            return {
+                'create_spoke_local_portfolio_task': ImportIntoSpokeLocalPortfolioTask(
+                    account_id=self.account_id,
+                    region=self.region,
+                    portfolio=self.portfolio,
+                    organization=self.organization,
+                    puppet_account_id=self.puppet_account_id,
+                ),
+            }
+        else: 
+            return {
+                'create_spoke_local_portfolio_task': CopyIntoSpokeLocalPortfolioTask(
+                    account_id=self.account_id,
+                    region=self.region,
+                    portfolio=self.portfolio,
+                    organization=self.organization,
+                    # pre_actions=self.pre_actions,
+                    # post_actions=self.post_actions,
+                    puppet_account_id=self.puppet_account_id,
+                ),
+                # 'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
+            }
 
     def api_calls_used(self):
         return [
