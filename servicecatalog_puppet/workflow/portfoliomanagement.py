@@ -724,8 +724,7 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                     in response.get('ProductViewDetails')
                 ]
 
-                # TODO the logic here, this needs to be a set OR
-                target_products = [product_id for product_id in product_to_import_list if product_id not in spoke_portfolio_products]
+                target_products = [product_id for product_id in hub_product_to_import_list if product_id not in spoke_portfolio_products]
 
                 if not target_products:
                     self.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: No more products "
