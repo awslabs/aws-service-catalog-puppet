@@ -915,7 +915,7 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
 
             launch_constraints = task_def.get('constraints', {}).get('launch', [])
 
-            import_into_spoke_local_portfolio_task = portfoliomanagement.ImportIntoSpokeLocalPortfolioTask(
+            import_into_spoke_local_portfolio_task = portfoliomanagement.CopyIntoSpokeLocalPortfolioTask(
                 **create_spoke_local_portfolio_task_as_dependency_params,
                 puppet_account_id=task_def.get('puppet_account_id'),
             )
