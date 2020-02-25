@@ -436,7 +436,7 @@ class GetProductsAndProvisioningArtifactsTask(tasks.PuppetTask):
         self.write_output(product_and_artifact_details)
 
 
-class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
+class CopyIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -642,13 +642,131 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
         logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Finished importing")
 
 
+class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    organization = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+
+    def requires(self):
+        return {
+            'create_spoke_local_portfolio': CreateSpokeLocalPortfolioTask(
+                account_id=self.account_id,
+                region=self.region,
+                portfolio=self.portfolio,
+                organization=self.organization,
+            ),
+            'products_and_provisioning_artifacts': GetProductsAndProvisioningArtifactsTask(
+                region=self.region,
+                portfolio=self.portfolio,
+                puppet_account_id=self.puppet_account_id,
+            ),
+            'hub_portfolio': GetPortfolioByPortfolioName(
+                portfolio=self.portfolio,
+                account_id=self.puppet_account_id,
+                region=self.region,
+            ),
+        }
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+        }
+
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.search_products_as_admin_{self.account_id}_{self.region}",
+            f"servicecatalog.list_provisioning_artifacts_{self.account_id}_{self.region}",
+            f"servicecatalog.associate_product_with_portfolio_{self.account_id}_{self.region}",
+        ]
+
+    def run(self):
+        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: starting to import into spoke")
+
+        with self.input().get('create_spoke_local_portfolio').open('r') as f:
+            spoke_portfolio = json.loads(f.read())
+        portfolio_id = spoke_portfolio.get("Id")
+
+        with self.input().get('hub_portfolio').open('r') as f:
+            hub_portfolio = json.loads(f.read())
+        hub_portfolio_id = hub_portfolio.get("portfolio_id")
+
+        product_name_to_id_dict = {}
+        hub_product_to_import_list = []    
+
+        with self.input().get('products_and_provisioning_artifacts').open('r') as f:
+            products_and_provisioning_artifacts = json.loads(f.read())
+            for product_view_summary in products_and_provisioning_artifacts:
+                hub_product_name = product_view_summary.get('Name')
+                hub_product_id = product_view_summary.get('ProductId')
+                product_name_to_id_dict[hub_product_name] = hub_product_id
+                hub_product_to_import_list.append(hub_product_id)
+
+        self.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Starting product import with targets {hub_product_to_import_list}")
+
+        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        with betterboto_client.CrossAccountClientContextManager(
+                'servicecatalog', role, f"sc-{self.account_id}-{self.region}", region_name=self.region
+        ) as spoke_service_catalog:
+
+            while True:
+                self.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: "
+                        f"Generating product list for portfolio {portfolio_id}")
+
+                response = spoke_service_catalog.search_products_as_admin_single_page(
+                    PortfolioId=portfolio_id,
+                )
+                spoke_portfolio_products = [
+                    product_view_detail.get('ProductViewSummary').get('ProductId') for product_view_detail
+                    in response.get('ProductViewDetails')
+                ]
+
+                target_products = [product_id for product_id in hub_product_to_import_list if product_id not in spoke_portfolio_products]
+
+                if not target_products:
+                    self.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: No more products "
+                            f"for import to portfolio {portfolio_id}")
+                    break
+
+                self.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Products "
+                        f"{target_products} not yet imported to portfolio {portfolio_id}")
+
+                for product_id in target_products:
+                    self.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Associating {product_id}")
+                    spoke_service_catalog.associate_product_with_portfolio(
+                        ProductId=product_id,
+                        PortfolioId=portfolio_id,
+                        SourcePortfolioId=hub_portfolio_id
+                    )
+
+                # associate_product_with_portfolio is not a synchronous request
+                # so wait a short time, then try again with any products not yet appeared
+                time.sleep(2)
+
+        with self.output().open('w') as f:
+            f.write(
+                json.dumps(
+                    {
+                        'portfolio': spoke_portfolio,
+                        'products': product_name_to_id_dict,
+                    },
+                    indent=4,
+                    default=str,
+                )
+            )
+        logger.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Finished importing")
+
+
 class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     organization = luigi.Parameter()
-
+    product_generation_method = luigi.Parameter()
     launch_constraints = luigi.DictParameter()
 
     # dependencies = luigi.ListParameter(default=[])
@@ -659,18 +777,29 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
     should_use_sns = luigi.Parameter(default=False, significant=False)
 
     def requires(self):
-        return {
-            'create_spoke_local_portfolio_task': ImportIntoSpokeLocalPortfolioTask(
-                account_id=self.account_id,
-                region=self.region,
-                portfolio=self.portfolio,
-                organization=self.organization,
-                # pre_actions=self.pre_actions,
-                # post_actions=self.post_actions,
-                puppet_account_id=self.puppet_account_id,
-            ),
-            # 'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
-        }
+        if self.product_generation_method == 'import':
+            return {
+                'create_spoke_local_portfolio_task': ImportIntoSpokeLocalPortfolioTask(
+                    account_id=self.account_id,
+                    region=self.region,
+                    portfolio=self.portfolio,
+                    organization=self.organization,
+                    puppet_account_id=self.puppet_account_id,
+                ),
+            }
+        else: 
+            return {
+                'create_spoke_local_portfolio_task': CopyIntoSpokeLocalPortfolioTask(
+                    account_id=self.account_id,
+                    region=self.region,
+                    portfolio=self.portfolio,
+                    organization=self.organization,
+                    # pre_actions=self.pre_actions,
+                    # post_actions=self.post_actions,
+                    puppet_account_id=self.puppet_account_id,
+                ),
+                # 'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
+            }
 
     def api_calls_used(self):
         return [
