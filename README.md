@@ -12,9 +12,6 @@ a set of enabled regions.
 Once you have done this you can define portfolios should be shared with each set of accounts using the tags and you 
 can specify which regions the shares occur in.
 
-
-
-
 In addition to this, you can also define products that should be provisioned into accounts using the same tag based 
 approach.  The framework will assume role into the target account and provision the product on your behalf.
 
