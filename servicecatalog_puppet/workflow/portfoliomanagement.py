@@ -705,7 +705,7 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                 product_name_to_id_dict[hub_product_name] = hub_product_id
                 hub_product_to_import_list.append(hub_product_id)
 
-        self.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Starting product import with targets {product_to_import_list}")
+        self.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Starting product import with targets {hub_product_to_import_list}")
 
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
