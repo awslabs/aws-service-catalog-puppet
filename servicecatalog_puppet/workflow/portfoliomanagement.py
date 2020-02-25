@@ -766,7 +766,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     organization = luigi.Parameter()
-    products_copy_or_import = luigi.Parameter()
+    production_generation_method = luigi.Parameter()
     launch_constraints = luigi.DictParameter()
 
     # dependencies = luigi.ListParameter(default=[])
@@ -777,7 +777,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
     should_use_sns = luigi.Parameter(default=False, significant=False)
 
     def requires(self):
-        if self.products_copy_or_import == 'import':
+        if self.production_generation_method == 'import':
             return {
                 'create_spoke_local_portfolio_task': ImportIntoSpokeLocalPortfolioTask(
                     account_id=self.account_id,
