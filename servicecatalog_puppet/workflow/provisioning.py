@@ -914,9 +914,9 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
                 tasks.append(create_associations_for_portfolio_task)
 
             launch_constraints = task_def.get('constraints', {}).get('launch', [])
-            production_generation_method = task_def.get('production_generation_method', 'copy')
+            product_generation_method = task_def.get('product_generation_method', 'copy')
 
-            if production_generation_method == 'import':
+            if product_generation_method == 'import':
                 import_into_spoke_local_portfolio_task = portfoliomanagement.ImportIntoSpokeLocalPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
                     puppet_account_id=task_def.get('puppet_account_id'),
@@ -939,7 +939,7 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
                     **create_spoke_local_portfolio_task_as_dependency_params,
                     **create_launch_role_constraints_for_portfolio_task_params,
                     # dependencies=dependencies,
-                    production_generation_method=production_generation_method,
+                    product_generation_method=product_generation_method,
                 )
                 tasks.append(create_launch_role_constraints_for_portfolio)
         return tasks
