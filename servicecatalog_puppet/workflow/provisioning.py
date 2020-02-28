@@ -884,64 +884,74 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
         tasks = []
 
         for task_def in task_defs:
-            create_spoke_local_portfolio_task_params = {
-                'account_id': task_def.get('account_id'),
-                'region': task_def.get('region'),
-                'portfolio': portfolio,
-                'organization': task_def.get('organization')
-            }
-            create_spoke_local_portfolio_task = portfoliomanagement.CreateSpokeLocalPortfolioTask(
-                **create_spoke_local_portfolio_task_params,
-            )
-            tasks.append(create_spoke_local_portfolio_task)
-
-            create_spoke_local_portfolio_task_as_dependency_params = {
-                'account_id': task_def.get('account_id'),
-                'region': task_def.get('region'),
-                'portfolio': portfolio,
-                'organization': task_def.get('organization'),
-            }
-
-            if len(task_def.get('associations', [])) > 0:
-                create_associations_for_portfolio_task = portfoliomanagement.CreateAssociationsForPortfolioTask(
-                    **create_spoke_local_portfolio_task_as_dependency_params,
-                    associations=task_def.get('associations'),
-                    puppet_account_id=task_def.get('puppet_account_id'),
-                    should_use_sns=task_def.get('should_use_sns'),
-                    # dependencies=dependencies,
-                    # pre_actions=task_def.get('pre_actions'),
-                )
-                tasks.append(create_associations_for_portfolio_task)
-
-            launch_constraints = task_def.get('constraints', {}).get('launch', [])
             product_generation_method = task_def.get('product_generation_method', 'copy')
 
-            if product_generation_method == 'import':
-                import_into_spoke_local_portfolio_task = portfoliomanagement.ImportIntoSpokeLocalPortfolioTask(
-                    **create_spoke_local_portfolio_task_as_dependency_params,
-                    puppet_account_id=task_def.get('puppet_account_id'),
+            if task_def.get('status') == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_TERMINATED:
+                tasks.append(
+                    portfoliomanagement.DeletePortfolio(
+                        account_id=task_def.get('account_id'),
+                        region=task_def.get('region'),
+                        portfolio=portfolio,
+                        product_generation_method=product_generation_method,
+                        associations=task_def.get('associations', []),
+                        puppet_account_id=task_def.get('puppet_account_id'),
+                    )
                 )
-                tasks.append(import_into_spoke_local_portfolio_task)
-            else:
-                copy_into_spoke_local_portfolio_task = portfoliomanagement.CopyIntoSpokeLocalPortfolioTask(
-                    **create_spoke_local_portfolio_task_as_dependency_params,
-                    puppet_account_id=task_def.get('puppet_account_id'),
-                )
-                tasks.append(copy_into_spoke_local_portfolio_task)
-
-            if len(launch_constraints) > 0:
-                create_launch_role_constraints_for_portfolio_task_params = {
-                    'launch_constraints': launch_constraints,
-                    'puppet_account_id': task_def.get('puppet_account_id'),
-                    'should_use_sns': task_def.get('should_use_sns'),
+            elif task_def.get('status') == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED:
+                create_spoke_local_portfolio_task_params = {
+                    'account_id': task_def.get('account_id'),
+                    'region': task_def.get('region'),
+                    'portfolio': portfolio,
+                    'organization': task_def.get('organization')
                 }
-                create_launch_role_constraints_for_portfolio = portfoliomanagement.CreateLaunchRoleConstraintsForPortfolio(
-                    **create_spoke_local_portfolio_task_as_dependency_params,
-                    **create_launch_role_constraints_for_portfolio_task_params,
-                    # dependencies=dependencies,
-                    product_generation_method=product_generation_method,
+                create_spoke_local_portfolio_task = portfoliomanagement.CreateSpokeLocalPortfolioTask(
+                    **create_spoke_local_portfolio_task_params,
                 )
-                tasks.append(create_launch_role_constraints_for_portfolio)
+                tasks.append(create_spoke_local_portfolio_task)
+
+                create_spoke_local_portfolio_task_as_dependency_params = {
+                    'account_id': task_def.get('account_id'),
+                    'region': task_def.get('region'),
+                    'portfolio': portfolio,
+                    'organization': task_def.get('organization'),
+                }
+
+                if len(task_def.get('associations', [])) > 0:
+                    create_associations_for_portfolio_task = portfoliomanagement.CreateAssociationsForPortfolioTask(
+                        **create_spoke_local_portfolio_task_as_dependency_params,
+                        associations=task_def.get('associations'),
+                        puppet_account_id=task_def.get('puppet_account_id'),
+                        should_use_sns=task_def.get('should_use_sns'),
+                    )
+                    tasks.append(create_associations_for_portfolio_task)
+
+                launch_constraints = task_def.get('constraints', {}).get('launch', [])
+
+                if product_generation_method == 'import':
+                    import_into_spoke_local_portfolio_task = portfoliomanagement.ImportIntoSpokeLocalPortfolioTask(
+                        **create_spoke_local_portfolio_task_as_dependency_params,
+                        puppet_account_id=task_def.get('puppet_account_id'),
+                    )
+                    tasks.append(import_into_spoke_local_portfolio_task)
+                else:
+                    copy_into_spoke_local_portfolio_task = portfoliomanagement.CopyIntoSpokeLocalPortfolioTask(
+                        **create_spoke_local_portfolio_task_as_dependency_params,
+                        puppet_account_id=task_def.get('puppet_account_id'),
+                    )
+                    tasks.append(copy_into_spoke_local_portfolio_task)
+
+                if len(launch_constraints) > 0:
+                    create_launch_role_constraints_for_portfolio_task_params = {
+                        'launch_constraints': launch_constraints,
+                        'puppet_account_id': task_def.get('puppet_account_id'),
+                        'should_use_sns': task_def.get('should_use_sns'),
+                    }
+                    create_launch_role_constraints_for_portfolio = portfoliomanagement.CreateLaunchRoleConstraintsForPortfolio(
+                        **create_spoke_local_portfolio_task_as_dependency_params,
+                        **create_launch_role_constraints_for_portfolio_task_params,
+                        product_generation_method=product_generation_method,
+                    )
+                    tasks.append(create_launch_role_constraints_for_portfolio)
         return tasks
 
     def run(self):

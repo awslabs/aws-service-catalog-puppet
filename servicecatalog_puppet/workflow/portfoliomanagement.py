@@ -1167,3 +1167,202 @@ class CreateShareForAccountLaunchRegion(tasks.PuppetTask):
 
     def run(self):
         self.write_output(self.param_kwargs)
+
+
+class DisassociateProductFromPortfolio(tasks.PuppetTask):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    portfolio_id = luigi.Parameter()
+    product_id = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio_id": self.portfolio_id,
+            "product_id": self.product_id,
+        }
+
+    def api_calls_used(self):
+        return {
+            f"servicecatalog.disassociate_product_from_portfolio_{self.account_id}_{self.region}_{self.portfolio_id}_{self.product_id}": 1,
+        }
+
+    def run(self):
+        self.info("Starting")
+        with betterboto_client.CrossAccountClientContextManager(
+                'servicecatalog',
+                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                f"{self.account_id}-{self.region}-PuppetRole",
+                region_name=self.region,
+        ) as servicecatalog:
+            results = servicecatalog.disassociate_product_from_portfolio(
+                PortfolioId=self.portfolio_id,
+                ProductId=self.product_id,
+            )
+            self.write_output(results)
+
+
+class DisassociateProductsFromPortfolio(tasks.PuppetTask):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    portfolio = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+        }
+
+    def api_calls_used(self):
+        return {
+            f"servicecatalog.search_products_as_admin_single_page_{self.account_id}_{self.region}_{self.portfolio}": 1,
+        }
+
+    def requires(self):
+        return {
+            'portfolio': GetPortfolioByPortfolioName(
+                portfolio=self.portfolio,
+                account_id=self.account_id,
+                region=self.region,
+            ),
+        }
+
+    def run(self):
+        self.info("Starting")
+        with self.input().get('portfolio').open('r') as f:
+            portfolio_details = json.loads(f.read())
+            portfolio_id = portfolio_details.get('portfolio_id')
+
+        with betterboto_client.CrossAccountClientContextManager(
+                'servicecatalog',
+                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                f"{self.account_id}-{self.region}-PuppetRole",
+                region_name=self.region,
+        ) as servicecatalog:
+            results = servicecatalog.search_products_as_admin_single_page(PortfolioId=portfolio_id)
+            for product_view_detail in results.get('ProductViewDetails', []):
+                yield DisassociateProductFromPortfolio(
+                    account_id=self.account_id,
+                    region=self.region,
+                    portfolio_id=portfolio_id,
+                    product_id=product_view_detail.get('ProductViewSummary').get('ProductId'),
+                )
+            self.write_output({})
+
+
+class DisassociatePrincipalFromPortfolio(tasks.PuppetTask):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    portfolio_id = luigi.Parameter()
+    principal_arn = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio_id": self.portfolio_id,
+            "principal_arn": self.principal_arn,
+        }
+
+    def api_calls_used(self):
+        return {
+            f"servicecatalog.disassociate_principal_from_portfolio_{self.account_id}_{self.region}_{self.portfolio_id}_{self.principal_arn}": 1,
+        }
+
+    def run(self):
+        self.info("Starting")
+        with betterboto_client.CrossAccountClientContextManager(
+                'servicecatalog',
+                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                f"{self.account_id}-{self.region}-PuppetRole",
+                region_name=self.region,
+        ) as servicecatalog:
+            self.info(f"About to disassociate_principal_from_portfolio {self.principal_arn} from {self.portfolio_id}")
+            results = servicecatalog.disassociate_principal_from_portfolio(
+                PortfolioId=self.portfolio_id,
+                PrincipalARN=self.principal_arn,
+            )
+            self.info(f"Finished disassociate_principal_from_portfolio {self.principal_arn} from {self.portfolio_id}")
+            self.write_output(results)
+
+
+class DisassociateAssociationsFromPortfolio(tasks.PuppetTask):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    associations = luigi.ListParameter()
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+        }
+
+    def requires(self):
+        return {
+            'portfolio': GetPortfolioByPortfolioName(
+                portfolio=self.portfolio,
+                account_id=self.account_id,
+                region=self.region,
+            ),
+        }
+
+    def run(self):
+        self.info("Starting")
+        with self.input().get('portfolio').open('r') as f:
+            portfolio_details = json.loads(f.read())
+            portfolio_id = portfolio_details.get('portfolio_id')
+
+        for principal in self.associations:
+            yield DisassociatePrincipalFromPortfolio(
+                account_id=self.account_id,
+                region=self.region,
+                portfolio_id=portfolio_id,
+                principal_arn=principal.replace('${AWS::AccountId}', self.account_id)
+            )
+        self.write_output({})
+
+
+class DeletePortfolio(tasks.PuppetTask):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    product_generation_method = luigi.Parameter()
+    associations = luigi.ListParameter()
+    puppet_account_id = luigi.Parameter()
+
+    def api_calls_used(self):
+        return {
+            f"servicecatalog.reject_portfolio_share_{self.account_id}_{self.region}_{self.portfolio}": 1,
+        }
+
+    def run(self):
+        self.info("Starting")
+
+        yield DisassociateAssociationsFromPortfolio(
+            account_id=self.account_id,
+            region=self.region,
+            portfolio=self.portfolio,
+            associations=self.associations,
+        )
+
+        if self.account_id != self.puppet_account_id:
+            yield DisassociateProductsFromPortfolio(
+                account_id=self.account_id,
+                region=self.region,
+                portfolio=self.portfolio,
+            )
+
+        # with betterboto_client.CrossAccountClientContextManager(
+        #         'servicecatalog',
+        #         f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+        #         f"{self.account_id}-{self.region}-PuppetRole",
+        #         region_name=self.region,
+        # ) as servicecatalog:
+        #     results = servicecatalog.reject_portfolio_share(PortfolioId=portfolio_id)
+        #     self.write_output(results)
+        self.write_output({})
+#
