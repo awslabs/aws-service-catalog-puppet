@@ -102,6 +102,7 @@ def get_task_defs_from_details(launch_details, accounts, include_expanded_from, 
 def get_configuration_from_spoke_local_portfolio(manifest, spoke_local_portfolio_details, spoke_local_portfolio_name):
     configuration = {
         'spoke_local_portfolio_name': spoke_local_portfolio_name,
+        'status': spoke_local_portfolio_details.get('status', 'shared'),
         'portfolio': spoke_local_portfolio_details.get('portfolio'),
         'associations': spoke_local_portfolio_details.get('associations', []),
         'constraints': spoke_local_portfolio_details.get('constraints', {}),

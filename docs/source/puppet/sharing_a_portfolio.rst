@@ -170,6 +170,43 @@ Using a regular expression:
               regions: default_region
 
 
+How can I unshare a portfolio?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+You can set the status on a spoke-local-portfolio.  When you set it to terminated the spoke-local-portfolio is
+'terminated'.
+
+If the account hosting the spoke-local-portfolio is not the puppet account it will have the associations
+and constraints removed, the local portfolio will be deleted and the share with the puppet account will be deleted.
+
+If the account hosting the spoke-local-portfolio is the puppet account it will delete the associations and the
+constraints but will leave the portfolio in place and will have no share to delete.  
+
+.. code-block:: yaml
+
+    spoke-local-portfolios:
+      account-vending-for-spokes:
+        portfolio: example-simple-central-it-team-portfolio
+        status: terminated
+        depends_on:
+          - account-iam-for-spokes
+        associations:
+          - arn:aws:iam::${AWS::AccountId}:role/MyServiceCatalogAdminRole
+        constraints:
+          launch:
+            - products: "account-vending-account-*"
+              roles:
+                - arn:aws:iam::${AWS::AccountId}:role/MyServiceCatalogAdminRole
+        deploy_to:
+          tags:
+            - tag: scope:spoke
+              regions: default_region
+
+
+.. note::
+
+    This was added in version 0.73.0
+
+
 -----------------------------------------------
 What is the recommended implementation pattern?
 -----------------------------------------------
