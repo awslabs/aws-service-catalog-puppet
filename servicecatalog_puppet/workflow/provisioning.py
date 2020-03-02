@@ -893,7 +893,6 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
                         region=task_def.get('region'),
                         portfolio=portfolio,
                         product_generation_method=product_generation_method,
-                        associations=task_def.get('associations', []),
                         puppet_account_id=task_def.get('puppet_account_id'),
                     )
                 )

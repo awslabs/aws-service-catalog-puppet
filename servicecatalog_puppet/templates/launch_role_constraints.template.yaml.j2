@@ -1,7 +1,15 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Launch role contraints for {{portfolio.DisplayName}}
 
+Conditions:
+  NoOpCondition: !Equals [ true, false]
+
 Resources:
+  NoOpResource:
+    Type: AWS::S3::Bucket
+    Description: Resource to ensure that template contains a resource even when there are no shares
+    Condition: NoOpCondition
+
 {% for launch_constraint in launch_constraints %}{% for role_arn in launch_constraint.roles %}{% for product in launch_constraint.products %}
 #{{ product }}
   LRC{{ portfolio_id|replace("-", "") }}B{{ product_name_to_id_dict.get(product)|replace("-", "") }}C{{ role_arn.split(":")[-1].replace('/','').replace("-", "") }}:
