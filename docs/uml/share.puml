@@ -1,0 +1,47 @@
+@startuml
+
+alt GettingIdsForAPIs
+    SCT -> ServiceCatalog: list_accepted_portfolio_shares()
+    SCT -> ServiceCatalog: list_portfolios()
+end
+
+alt CreateSpokePortfolio
+    SCT -> ServiceCatalog: create_portfolio
+    SCT -> CloudFormation: create stack using AWS::ServiceCatalog::PortfolioPrincipalAssociation resources
+end
+
+alt AddProducts
+    alt IfUsingImports
+        alt InHub
+            SCT -> ServiceCatalog: search_products_as_admin
+            SCT -> ServiceCatalog: list_provisioning_artifacts
+        end
+        alt InSpoke
+            SCT -> ServiceCatalog: search_products_as_admin
+            SCT -> ServiceCatalog: list_provisioning_artifacts
+            SCT -> ServiceCatalog: associate_product_with_portfolio
+        end
+
+    else IfUsingCopy
+        alt InHub
+            SCT -> ServiceCatalog: search_products_as_admin
+            SCT -> ServiceCatalog: list_provisioning_artifacts
+        end
+
+        alt InSpoke
+            SCT -> ServiceCatalog: search_products_as_admin
+            SCT -> ServiceCatalog: list_provisioning_artifacts
+            SCT -> ServiceCatalog: describe_copy_product_status
+            SCT -> ServiceCatalog: associate_product_with_portfolio
+            SCT -> ServiceCatalog: update_provisioning_artifact
+        end
+    end
+end
+
+alt AddLaunchRoleConstraints
+    SCT -> ServiceCatalog: search_products_as_admin
+    SCT -> CloudFormation: create stack using AWS::ServiceCatalog::LaunchRoleConstraint resources
+end
+
+
+@enduml

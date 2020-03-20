@@ -796,10 +796,10 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
 
     def api_calls_used(self):
         return [
-            f"cloudformation.ensure_deleted{self.account_id}_{self.region}",
-            f"cloudformation.describe_stacks{self.account_id}_{self.region}",
-            f"cloudformation.create_or_update{self.account_id}_{self.region}",
-            f"service_catalog.search_products_as_admin{self.account_id}_{self.region}",
+            f"cloudformation.ensure_deleted_{self.account_id}_{self.region}",
+            f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
+            f"cloudformation.create_or_update_{self.account_id}_{self.region}",
+            f"service_catalog.search_products_as_admin_{self.account_id}_{self.region}",
         ]
 
     def run(self):
