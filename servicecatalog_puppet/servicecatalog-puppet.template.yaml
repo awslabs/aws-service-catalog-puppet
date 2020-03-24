@@ -552,7 +552,7 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.8
+                python: 3.x
               commands:
           {% if 'http' in VERSION %}
                 - pip install {{ VERSION }}

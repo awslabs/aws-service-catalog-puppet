@@ -15,6 +15,9 @@ logger = logging.getLogger("tasks")
 
 
 class PuppetTask(luigi.Task):
+    def load_from_input(self, input_name):
+        with self.input().get(input_name).open('r') as f:
+            return json.loads(f.read())
 
     def info(self, message):
         logger.info(f"{self.uid}: {message}")
