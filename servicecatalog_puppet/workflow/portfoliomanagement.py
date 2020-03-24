@@ -152,7 +152,7 @@ class GetProductIdByProductName(tasks.PuppetTask):
         for product_view_details in response.get('ProductViewDetails'):
             product_view = product_view_details.get('ProductViewSummary')
             logging.info(f"looking at product: {product_view.get('Name')}")
-            if product_view.get('Name') == self.product_name:
+            if product_view.get('Name') == self.product:
                 logger.info('Found product: {}'.format(product_view))
                 product_id = product_view.get('ProductId')
         assert product_id is not None, "Did not find product looking for"
