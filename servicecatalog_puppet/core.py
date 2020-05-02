@@ -150,7 +150,7 @@ def reset_provisioned_product_owner(f):
     runner.run_tasks(tasks_to_run, 10)
 
 
-def generate_tasks(f, single_account=None, is_dry_run=False):
+def generate_tasks(f, single_account=None, is_dry_run=False, single_launch=None):
     puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
 
@@ -165,10 +165,13 @@ def generate_tasks(f, single_account=None, is_dry_run=False):
         include_expanded_from=False,
         single_account=single_account,
         is_dry_run=is_dry_run,
+        single_launch=single_launch,
     )
     logger.info("Finished generating provisioning tasks")
 
-    if not is_dry_run:
+    if is_dry_run or single_launch:
+        logger.info("skipping generate_local_portfolios_tasks")
+    else:
         logger.info("Generating sharing tasks")
         spoke_local_portfolios_tasks = manifest_utils_for_spoke_local_portfolios.generate_spoke_local_portfolios_tasks(
             manifest,
@@ -186,8 +189,8 @@ def generate_tasks(f, single_account=None, is_dry_run=False):
     return tasks_to_run
 
 
-def deploy(f, single_account, num_workers=10, is_dry_run=False):
-    tasks_to_run = generate_tasks(f, single_account, is_dry_run)
+def deploy(f, single_account, num_workers=10, is_dry_run=False, single_launch=None):
+    tasks_to_run = generate_tasks(f, single_account, is_dry_run, single_launch)
     runner.run_tasks(tasks_to_run, num_workers, is_dry_run)
 
 

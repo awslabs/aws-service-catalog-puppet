@@ -772,7 +772,6 @@ class LaunchTask(tasks.PuppetTask):
     def generate_provisions(self, task_defs):
         provisions = []
 
-        # task_defs = launch_task_def.get('task_defs')
         for task_def in task_defs:
             if self.single_account is not None:
                 if task_def.get('account_id') != self.single_account:
