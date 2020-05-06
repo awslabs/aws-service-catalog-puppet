@@ -538,24 +538,6 @@ def get_version_id_for(servicecatalog, product_id, version_name):
     return version_id
 
 
-def get_product_id_for(servicecatalog, portfolio_id, product_name):
-    logging.info(f"get_product_id_for {portfolio_id} {product_name}")
-    product_id = None
-
-    response = servicecatalog.search_products_as_admin_single_page(
-        PortfolioId=portfolio_id,
-    )
-
-    for product_view_details in response.get('ProductViewDetails'):
-        product_view = product_view_details.get('ProductViewSummary')
-        logging.info(f"looking at product: {product_view.get('Name')}")
-        if product_view.get('Name') == product_name:
-            logger.info('Found product: {}'.format(product_view))
-            product_id = product_view.get('ProductId')
-    assert product_id is not None, "Did not find product looking for"
-    return product_id
-
-
 def get_portfolio_for(servicecatalog, portfolio_name):
     result = None
 

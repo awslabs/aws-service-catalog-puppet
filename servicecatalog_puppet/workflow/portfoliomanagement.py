@@ -78,6 +78,45 @@ class GetVersionIdByVersionName(tasks.PuppetTask):
                 )
 
 
+class SearchProductsAsAdminTask(tasks.PuppetTask):
+    portfolio = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+        }
+
+    def requires(self):
+        return {
+            'portfolio': GetPortfolioByPortfolioName(
+                self.portfolio,
+                self.account_id,
+                self.region,
+            ),
+        }
+
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.search_products_as_admin_{self.account_id}_{self.region}",
+        ]
+
+    def run(self):
+        portfolio_details = self.load_from_input('portfolio')
+        portfolio_id = portfolio_details.get('portfolio_id')
+        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        with betterboto_client.CrossAccountClientContextManager(
+                'servicecatalog', role, f"sc-{self.account_id}-{self.region}", region_name=self.region
+        ) as spoke_service_catalog:
+            results = spoke_service_catalog.search_products_as_admin_single_page(
+                PortfolioId=portfolio_id,
+            )
+            self.write_output(results)
+
+
 class GetProductIdByProductName(tasks.PuppetTask):
     portfolio = luigi.Parameter()
     product = luigi.Parameter()
@@ -99,40 +138,32 @@ class GetProductIdByProductName(tasks.PuppetTask):
                 self.account_id,
                 self.region,
             ),
+            'search_products_as_admin': SearchProductsAsAdminTask(
+                self.portfolio,
+                self.account_id,
+                self.region,
+            ),
         }
 
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.search_products_as_admin_{self.account_id}_{self.region}",
-        ]
-
     def run(self):
-        with self.input().get('portfolio').open('r') as f:
-            portfolio_details = json.loads(f.read())
-        with betterboto_client.CrossAccountClientContextManager(
-                'servicecatalog',
-                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-                f"{self.account_id}-{self.region}",
-                region_name=self.region
-        ) as cross_account_servicecatalog:
-            product_id = aws.get_product_id_for(
-                cross_account_servicecatalog,
-                portfolio_details.get('portfolio_id'),
-                self.product,
-            )
-            with self.output().open('w') as f:
-                f.write(
-                    json.dumps(
-                        {
-                            'product_name': self.product,
-                            'product_id': product_id,
-                            'portfolio_name': portfolio_details.get('portfolio_name'),
-                            'portfolio_id': portfolio_details.get('portfolio_id'),
-                        },
-                        indent=4,
-                        default=str,
-                    )
-                )
+        portfolio_details = self.load_from_input('portfolio')
+        product_id = None
+        response = self.load_from_input('search_products_as_admin')
+        for product_view_details in response.get('ProductViewDetails'):
+            product_view = product_view_details.get('ProductViewSummary')
+            logging.info(f"looking at product: {product_view.get('Name')}")
+            if product_view.get('Name') == self.product:
+                logger.info('Found product: {}'.format(product_view))
+                product_id = product_view.get('ProductId')
+        assert product_id is not None, "Did not find product looking for"
+        self.write_output(
+            {
+                'product_name': self.product,
+                'product_id': product_id,
+                'portfolio_name': portfolio_details.get('portfolio_name'),
+                'portfolio_id': portfolio_details.get('portfolio_id'),
+            }
+        )
 
 
 class GetPortfolioByPortfolioName(tasks.PuppetTask):
@@ -253,6 +284,7 @@ class CreateSpokeLocalPortfolioTask(tasks.PuppetTask):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     organization = luigi.Parameter(significant=False)
+
     # pre_actions = luigi.ListParameter(default=[])
 
     # provider_name = luigi.Parameter(significant=False, default='not set')
@@ -391,27 +423,25 @@ class GetProductsAndProvisioningArtifactsTask(tasks.PuppetTask):
         }
 
     def requires(self):
-        return GetPortfolioByPortfolioName(
-            portfolio=self.portfolio,
-            region=self.region,
-            account_id=self.puppet_account_id,
-        )
+        return {
+            'search_products_as_admin': SearchProductsAsAdminTask(
+                portfolio=self.portfolio,
+                region=self.region,
+                account_id=self.puppet_account_id,
+            )
+        }
 
     def api_calls_used(self):
         return [
-            f"servicecatalog.search_products_as_admin_{self.region}",
             f"servicecatalog.list_provisioning_artifacts_{self.region}",
         ]
 
     def run(self):
-        with self.input().open('r') as f:
-            hub_portfolio = json.loads(f.read())
-            hub_portfolio_id = hub_portfolio.get('portfolio_id')
         product_and_artifact_details = []
         with betterboto_client.ClientContextManager(
                 'servicecatalog', region_name=self.region
         ) as service_catalog:
-            response = service_catalog.search_products_as_admin_single_page(PortfolioId=hub_portfolio_id)
+            response = self.load_from_input('search_products_as_admin')
             for product_view_detail in response.get('ProductViewDetails', []):
                 product_view_summary = product_view_detail.get('ProductViewSummary')
                 product_view_summary['ProductARN'] = product_view_detail.get('ProductARN')
@@ -434,8 +464,6 @@ class CopyIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     organization = luigi.Parameter()
-    # pre_actions = luigi.ListParameter()
-    # post_actions = luigi.ListParameter(default=[])
     puppet_account_id = luigi.Parameter()
 
     def requires(self):
@@ -688,7 +716,7 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
         hub_portfolio_id = hub_portfolio.get("portfolio_id")
 
         product_name_to_id_dict = {}
-        hub_product_to_import_list = []    
+        hub_product_to_import_list = []
 
         with self.input().get('products_and_provisioning_artifacts').open('r') as f:
             products_and_provisioning_artifacts = json.loads(f.read())
@@ -698,7 +726,8 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                 product_name_to_id_dict[hub_product_name] = hub_product_id
                 hub_product_to_import_list.append(hub_product_id)
 
-        self.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Starting product import with targets {hub_product_to_import_list}")
+        self.info(
+            f"[{self.portfolio}] {self.account_id}:{self.region} :: Starting product import with targets {hub_product_to_import_list}")
 
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
@@ -707,7 +736,7 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
 
             while True:
                 self.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: "
-                        f"Generating product list for portfolio {portfolio_id}")
+                          f"Generating product list for portfolio {portfolio_id}")
 
                 response = spoke_service_catalog.search_products_as_admin_single_page(
                     PortfolioId=portfolio_id,
@@ -717,15 +746,16 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.PuppetTask):
                     in response.get('ProductViewDetails')
                 ]
 
-                target_products = [product_id for product_id in hub_product_to_import_list if product_id not in spoke_portfolio_products]
+                target_products = [product_id for product_id in hub_product_to_import_list if
+                                   product_id not in spoke_portfolio_products]
 
                 if not target_products:
                     self.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: No more products "
-                            f"for import to portfolio {portfolio_id}")
+                              f"for import to portfolio {portfolio_id}")
                     break
 
                 self.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Products "
-                        f"{target_products} not yet imported to portfolio {portfolio_id}")
+                          f"{target_products} not yet imported to portfolio {portfolio_id}")
 
                 for product_id in target_products:
                     self.info(f"[{self.portfolio}] {self.account_id}:{self.region} :: Associating {product_id}")
@@ -761,12 +791,6 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
     organization = luigi.Parameter()
     product_generation_method = luigi.Parameter()
     launch_constraints = luigi.DictParameter()
-
-    # dependencies = luigi.ListParameter(default=[])
-
-    # post_actions = luigi.ListParameter()
-    # pre_actions = luigi.ListParameter()
-
     should_use_sns = luigi.Parameter(default=False, significant=False)
 
     def requires(self):
@@ -780,26 +804,23 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                     puppet_account_id=self.puppet_account_id,
                 ),
             }
-        else: 
+        else:
             return {
                 'create_spoke_local_portfolio_task': CopyIntoSpokeLocalPortfolioTask(
                     account_id=self.account_id,
                     region=self.region,
                     portfolio=self.portfolio,
                     organization=self.organization,
-                    # pre_actions=self.pre_actions,
-                    # post_actions=self.post_actions,
                     puppet_account_id=self.puppet_account_id,
                 ),
-                # 'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
             }
 
     def api_calls_used(self):
         return [
-            f"cloudformation.ensure_deleted{self.account_id}_{self.region}",
-            f"cloudformation.describe_stacks{self.account_id}_{self.region}",
-            f"cloudformation.create_or_update{self.account_id}_{self.region}",
-            f"service_catalog.search_products_as_admin{self.account_id}_{self.region}",
+            f"cloudformation.ensure_deleted_{self.account_id}_{self.region}",
+            f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
+            f"cloudformation.create_or_update_{self.account_id}_{self.region}",
+            f"service_catalog.search_products_as_admin_{self.account_id}_{self.region}",
         ]
 
     def run(self):
@@ -819,7 +840,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                     'products': [],
                     'roles': launch_constraint.get('roles')
                 }
-                #DEBUG HERE to see why products list dict thing is empty
+                # DEBUG HERE to see why products list dict thing is empty
                 if launch_constraint.get('products', None) is not None:
                     if isinstance(launch_constraint.get('products'), tuple):
                         new_launch_constraint['products'] += launch_constraint.get('products')
@@ -1023,10 +1044,10 @@ class ShareAndAcceptPortfolioTask(tasks.PuppetTask):
         portfolio_id = portfolio_details.get('portfolio_id')
 
         with betterboto_client.CrossAccountClientContextManager(
-            'servicecatalog',
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.account_id}-{self.region}-PuppetRole",
-            region_name=self.region,
+                'servicecatalog',
+                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                f"{self.account_id}-{self.region}-PuppetRole",
+                region_name=self.region,
         ) as cross_account_servicecatalog:
             was_accepted = False
             accepted_portfolio_shares = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page().get(
@@ -1330,10 +1351,10 @@ class DeletePortfolio(tasks.PuppetTask):
         self.info("Starting")
         is_puppet_account = self.account_id == self.puppet_account_id
         with betterboto_client.CrossAccountClientContextManager(
-            'servicecatalog',
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.account_id}-{self.region}-PuppetRole",
-            region_name=self.region,
+                'servicecatalog',
+                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                f"{self.account_id}-{self.region}-PuppetRole",
+                region_name=self.region,
         ) as servicecatalog:
             result = None
             self.info("Checking portfolios for a match")

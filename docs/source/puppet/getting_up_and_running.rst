@@ -162,6 +162,11 @@ If you choose to enable manual approvals an AWS SNS Topic with the ARN
 ``arn:aws:sns:${AWS::Region}:${AWS::AccountId}:service-catalog-puppet-dry-run-approvals`` will be created to notify you
 when approvals are required.
 
+It may be required to set the default Region for the next command to work. 
+
+.. code-block:: bash
+    export AWS_DEFAULT_REGION=eu-west-1
+
 To start the bootstrap process you must run the following in your master account:
 
 .. code-block:: bash

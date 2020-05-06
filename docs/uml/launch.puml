@@ -1,0 +1,40 @@
+@startuml
+
+alt GettingIdsForAPIs
+    SCT -> ServiceCatalog: list_accepted_portfolio_shares()
+    SCT -> ServiceCatalog: list_portfolios()
+    SCT -> ServiceCatalog: search_products_as_admin()
+    SCT -> ServiceCatalog: list_provisioning_artifacts()
+    SCT -> ServiceCatalog: list_launch_paths()
+end 
+
+alt CheckingForPreviousProvision
+    SCT -> ServiceCatalog: search_provisioned_products()
+    SCT -> ServiceCatalog: describe_provisioned_product()
+end
+
+alt IfPreviousProvisioningNeedsTerminating
+    SCT -> ServiceCatalog: terminate_provisioned_product()
+    SCT -> ServiceCatalog: describe_record()
+end
+
+alt CalculateParametersForProvisioning
+    SCT -> CloudFormation: get_template_summary()
+    SCT -> CloudFormation: describe_stacks()
+end
+
+alt IfUsingProductPlans
+    SCT -> ServiceCatalog: list_provisioned_product_plans()
+    SCT -> ServiceCatalog: delete_provisioned_product_plan()
+    SCT -> ServiceCatalog: create_provisioned_product_plan()
+    SCT -> ServiceCatalog: describe_provisioned_product_plan()
+    SCT -> ServiceCatalog: execute_provisioned_product_plan()
+    SCT -> ServiceCatalog: describe_provisioned_product()
+else NotUsingProductPlans
+    alt IsAnUpdate
+        SCT -> ServiceCatalog: update_provisioned_product()
+    else
+        SCT -> ServiceCatalog: provision_product()
+    end
+end
+@enduml
