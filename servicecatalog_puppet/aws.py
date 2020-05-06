@@ -445,38 +445,6 @@ def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name,
         return product_id, version_id
 
 
-@functools.lru_cache()
-def get_portfolio_for(portfolio_name, account_id, region):
-    logger.info(f"Getting portfolio id for: {portfolio_name}")
-
-    role = f"arn:aws:iam::{account_id}:role/servicecatalog-puppet/PuppetRole"
-    with betterboto_client.CrossAccountClientContextManager(
-            'servicecatalog', role, "-".join([account_id, region]), region_name=region
-    ) as cross_account_servicecatalog:
-        portfolio = None
-        response = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
-        for portfolio_detail in response.get('PortfolioDetails'):
-            if portfolio_detail.get('DisplayName') == portfolio_name:
-                portfolio = portfolio_detail
-                logger.info(f"found portfolio {portfolio_name} in shares for {region} of {account_id}")
-                break
-
-        if portfolio is None:
-            logger.info(f"Portfolio {portfolio_name} was not found in shares, in {region} of account {account_id}")
-            response = cross_account_servicecatalog.list_portfolios_single_page()
-            for portfolio_detail in response.get('PortfolioDetails', []):
-                if portfolio_detail.get('DisplayName') == portfolio_name:
-                    portfolio = portfolio_detail
-                    logger.info(f"found portfolio {portfolio_name} in list_portfolios for {region} of {account_id}")
-                    break
-
-            if portfolio is None:
-                raise Exception(f"Portfolio {portfolio_name} was not found in {region} of account {account_id}")
-
-        logger.info(f"Found portfolio: {portfolio}")
-        return portfolio
-
-
 def ensure_portfolio(service_catalog, portfolio_name, provider_name, description=None):
     return find_portfolio(service_catalog, portfolio_name) \
            or create_portfolio(service_catalog, portfolio_name, provider_name, description)
@@ -537,27 +505,3 @@ def get_version_id_for(servicecatalog, product_id, version_name):
     assert version_id is not None, "Did not find version looking for"
     return version_id
 
-
-def get_portfolio_for(servicecatalog, portfolio_name):
-    result = None
-
-    response = servicecatalog.list_accepted_portfolio_shares()
-    assert response.get('NextPageToken') is None, "Pagination not supported"
-    for portfolio_detail in response.get('PortfolioDetails'):
-        if portfolio_detail.get('DisplayName') == portfolio_name:
-            result = portfolio_detail
-            break
-
-    if result is None:
-        response = servicecatalog.list_portfolios()
-        for portfolio_detail in response.get('PortfolioDetails', []):
-            if portfolio_detail.get('DisplayName') == portfolio_name:
-                result = portfolio_detail
-                break
-
-    assert result is not None, "Could not find portfolio"
-    return result
-
-
-def get_portfolio_id_for(servicecatalog, portfolio_name):
-    return get_portfolio_for(servicecatalog, portfolio_name).get('Id')

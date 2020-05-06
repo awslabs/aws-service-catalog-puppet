@@ -185,26 +185,42 @@ class GetPortfolioByPortfolioName(tasks.PuppetTask):
         ]
 
     def run(self):
+        logger.info(f"Getting portfolio id for: {self.portfolio}")
+        found_portfolio = None
+
+        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
-                'servicecatalog',
-                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-                f"{self.account_id}-{self.region}",
-                region_name=self.region
+                'servicecatalog', role, "-".join([self.account_id, self.region]), region_name=self.region
         ) as cross_account_servicecatalog:
-            portfolio = aws.get_portfolio_for(cross_account_servicecatalog, self.portfolio)
-            with self.output().open('w') as f:
-                f.write(
-                    json.dumps(
-                        {
-                            "portfolio_name": self.portfolio,
-                            "portfolio_id": portfolio.get('Id'),
-                            "provider_name": portfolio.get('ProviderName'),
-                            "description": portfolio.get('Description'),
-                        },
-                        indent=4,
-                        default=str,
-                    )
-                )
+            response = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
+            for portfolio_detail in response.get('PortfolioDetails'):
+                if portfolio_detail.get('DisplayName') == self.portfolio:
+                    found_portfolio = portfolio_detail
+                    logger.info(f"found portfolio {self.portfolio} in shares for {self.region} of {self.account_id}")
+                    break
+
+            if found_portfolio is None:
+                logger.info(f"Portfolio {self.portfolio} was not found in shares, in {self.region} of account {self.account_id}")
+                response = cross_account_servicecatalog.list_portfolios_single_page()
+                for portfolio_detail in response.get('PortfolioDetails', []):
+                    if portfolio_detail.get('DisplayName') == self.portfolio:
+                        found_portfolio = portfolio_detail
+                        logger.info(f"found portfolio {self.portfolio} in list_portfolios for {self.region} of {self.account_id}")
+                        break
+
+                if found_portfolio is None:
+                    raise Exception(f"Portfolio {self.portfolio} was not found in {self.region} of account {self.account_id}")
+
+            logger.info(f"Found portfolio: {found_portfolio}")
+
+        self.write_output(
+            {
+                "portfolio_name": self.portfolio,
+                "portfolio_id": found_portfolio.get('Id'),
+                "provider_name": found_portfolio.get('ProviderName'),
+                "description": found_portfolio.get('Description'),
+            }
+        )
 
 
 class ProvisionActionTask(tasks.PuppetTask):
