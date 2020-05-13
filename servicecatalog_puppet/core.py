@@ -487,7 +487,7 @@ def list_launches(f, format):
             ) as spoke_service_catalog:
                 response = spoke_service_catalog.list_accepted_portfolio_shares()
                 portfolios = response.get('PortfolioDetails', [])
-                response = spoke_service_catalog.list_portfolios()
+                response = spoke_service_catalog.list_portfolios_single_page()
                 portfolios += response.get('PortfolioDetails', [])
 
                 for portfolio in portfolios:

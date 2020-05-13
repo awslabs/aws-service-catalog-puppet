@@ -416,7 +416,7 @@ def get_provisioning_artifact_id_for(portfolio_name, product_name, version_name,
                 break
 
         if portfolio_id is None:
-            response = cross_account_servicecatalog.list_portfolios()
+            response = cross_account_servicecatalog.list_portfolios_single_page()
             for portfolio_detail in response.get('PortfolioDetails', []):
                 if portfolio_detail.get('DisplayName') == portfolio_name:
                     portfolio_id = portfolio_detail.get('Id')
@@ -549,7 +549,7 @@ def get_portfolio_for(servicecatalog, portfolio_name):
             break
 
     if result is None:
-        response = servicecatalog.list_portfolios()
+        response = servicecatalog.list_portfolios_single_page()
         for portfolio_detail in response.get('PortfolioDetails', []):
             if portfolio_detail.get('DisplayName') == portfolio_name:
                 result = portfolio_detail
