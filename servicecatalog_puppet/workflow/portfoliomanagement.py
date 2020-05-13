@@ -1358,7 +1358,7 @@ class DeletePortfolio(tasks.PuppetTask):
         ) as servicecatalog:
             result = None
             self.info("Checking portfolios for a match")
-            response = servicecatalog.list_portfolios()
+            response = servicecatalog.list_portfolios_single_page()
             for portfolio_detail in response.get('PortfolioDetails', []):
                 if portfolio_detail.get('DisplayName') == self.portfolio:
                     result = portfolio_detail
