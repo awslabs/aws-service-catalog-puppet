@@ -150,7 +150,8 @@ def reset_provisioned_product_owner(f):
     runner.run_tasks(tasks_to_run, 10)
 
 
-def generate_tasks(f, single_account=None, is_dry_run=False, single_launch=None):
+def generate_tasks(f, single_account=None, is_dry_run=False, execution='hub'):
+    click.echo(f"in core.generate_tasks execution is {execution}")
     puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
 
@@ -165,11 +166,11 @@ def generate_tasks(f, single_account=None, is_dry_run=False, single_launch=None)
         include_expanded_from=False,
         single_account=single_account,
         is_dry_run=is_dry_run,
-        single_launch=single_launch,
+        execution=execution,
     )
     logger.info("Finished generating provisioning tasks")
 
-    if is_dry_run or single_launch:
+    if is_dry_run or execution != 'hub':
         logger.info("skipping generate_local_portfolios_tasks")
     else:
         logger.info("Generating sharing tasks")
@@ -189,8 +190,9 @@ def generate_tasks(f, single_account=None, is_dry_run=False, single_launch=None)
     return tasks_to_run
 
 
-def deploy(f, single_account, num_workers=10, is_dry_run=False, single_launch=None):
-    tasks_to_run = generate_tasks(f, single_account, is_dry_run, single_launch)
+def deploy(f, single_account, num_workers=10, is_dry_run=False, execution='hub'):
+    click.echo(f"in core.deploy execution is {execution}")
+    tasks_to_run = generate_tasks(f, single_account, is_dry_run, execution)
     runner.run_tasks(tasks_to_run, num_workers, is_dry_run)
 
 

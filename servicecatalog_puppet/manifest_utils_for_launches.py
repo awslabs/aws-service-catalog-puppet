@@ -62,17 +62,24 @@ def generate_launch_task_defs_for_launch(
 
 def generate_launch_tasks(
         manifest, puppet_account_id, should_use_sns, should_use_product_plans, include_expanded_from=False,
-        single_account=None, is_dry_run=False, single_launch=None
+        single_account=None, is_dry_run=False, execution='hub'
 ):
-    return [
-        provisioning.LaunchTask(
-            launch_name=launch_name,
-            manifest=manifest,
-            puppet_account_id=puppet_account_id,
-            should_use_sns=should_use_sns,
-            should_use_product_plans=should_use_product_plans,
-            include_expanded_from=include_expanded_from,
-            single_account=single_account,
-            is_dry_run=is_dry_run,
-        ) for launch_name in manifest.get('launches', {}).keys() if launch_name != single_launch
-    ]
+    results = []
+    logger.info(f"Execution mode: {execution}")
+    for launch_name, details in manifest.get('launches', {}).items():
+        logger.info(f"for launch {launch_name} the mode is {details.get('execution', 'hub')}")
+        if details.get('execution', 'hub') == execution:
+            logger.info('adding as it is a match')
+            results.append(
+                provisioning.LaunchTask(
+                    launch_name=launch_name,
+                    manifest=manifest,
+                    puppet_account_id=puppet_account_id,
+                    should_use_sns=should_use_sns,
+                    should_use_product_plans=should_use_product_plans,
+                    include_expanded_from=include_expanded_from,
+                    single_account=single_account,
+                    is_dry_run=is_dry_run,
+                )
+            )
+    return results

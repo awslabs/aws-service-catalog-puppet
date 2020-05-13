@@ -25,9 +25,10 @@ def generate_shares(f):
 @click.argument('f', type=click.File())
 @click.option('--single-account', default=None)
 @click.option('--num-workers', default=10)
-@click.option('--single-launch', default=None)
-def deploy(f, single_account, num_workers, single_launch):
-    core.deploy(f, single_account, num_workers, single_launch)
+@click.option('--execution', default=None)
+def deploy(f, single_account, num_workers, execution):
+    click.echo(f"in cli execution is {execution}")
+    core.deploy(f, single_account, num_workers, False, execution)
 
 
 @cli.command()
