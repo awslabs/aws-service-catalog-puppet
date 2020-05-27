@@ -190,7 +190,7 @@ def generate_tasks(f, single_account=None, is_dry_run=False, execution='hub'):
     return tasks_to_run
 
 
-def deploy(f, single_account, num_workers=10, is_dry_run=False, execution='hub'):
+def deploy(f, single_account, num_workers, is_dry_run, execution):
     click.echo(f"in core.deploy execution is {execution}")
     tasks_to_run = generate_tasks(f, single_account, is_dry_run, execution)
     runner.run_tasks(tasks_to_run, num_workers, is_dry_run)

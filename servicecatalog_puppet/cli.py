@@ -26,7 +26,7 @@ def generate_shares(f):
 @click.option('--single-account', default=None)
 @click.option('--num-workers', default=10)
 @click.option('--execution', default=None)
-def deploy(f, single_account, num_workers, execution):
+def deploy(f, single_account, num_workers, execution='hub'):
     click.echo(f"in cli execution is {execution}")
     core.deploy(f, single_account, num_workers, False, execution)
 
@@ -42,7 +42,7 @@ def graph(f, single_account):
 @click.argument('f', type=click.File())
 @click.option('--single-account', default=None)
 def dry_run(f, single_account):
-    core.deploy(f, single_account, is_dry_run=True)
+    core.deploy(f, single_account, 10, True, 'hub')
 
 
 @cli.command()
