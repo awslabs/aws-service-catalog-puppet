@@ -144,7 +144,7 @@ def seed(complexity, p):
 @click.argument('expanded_manifest', type=click.File())
 @click.option('--format', '-f', type=click.Choice(['table', 'json']), default='table')
 def list_launches(expanded_manifest, format):
-    core.list_launches(expanded_manifest, format)
+    core.deploy(expanded_manifest, None, is_dry_run=True, is_list_launches=format)
 
 
 @cli.command()
