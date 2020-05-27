@@ -186,9 +186,9 @@ def generate_tasks(f, single_account=None, is_dry_run=False):
     return tasks_to_run
 
 
-def deploy(f, single_account, num_workers=10, is_dry_run=False):
+def deploy(f, single_account, num_workers=10, is_dry_run=False, is_list_launches=False):
     tasks_to_run = generate_tasks(f, single_account, is_dry_run)
-    runner.run_tasks(tasks_to_run, num_workers, is_dry_run)
+    runner.run_tasks(tasks_to_run, num_workers, is_dry_run, is_list_launches)
 
 
 def graph(f):
@@ -469,140 +469,6 @@ def seed(complexity, p):
         ),
         os.path.sep.join([p, "manifest.yaml"])
     )
-
-
-def list_launches(f, format):
-    manifest = manifest_utils.load(f)
-    if format == "table":
-        click.echo("Getting details from your account...")
-    all_regions = config.get_regions(os.environ.get("AWS_DEFAULT_REGION"))
-    account_ids = [a.get('account_id') for a in manifest.get('accounts')]
-    deployments = {}
-    for account_id in account_ids:
-        for region_name in all_regions:
-            role = "arn:aws:iam::{}:role/{}".format(account_id, 'servicecatalog-puppet/PuppetRole')
-            logger.info("Looking at region: {} in account: {}".format(region_name, account_id))
-            with betterboto_client.CrossAccountClientContextManager(
-                    'servicecatalog', role, 'sc-{}-{}'.format(account_id, region_name), region_name=region_name
-            ) as spoke_service_catalog:
-                response = spoke_service_catalog.list_accepted_portfolio_shares()
-                portfolios = response.get('PortfolioDetails', [])
-                response = spoke_service_catalog.list_portfolios_single_page()
-                portfolios += response.get('PortfolioDetails', [])
-
-                for portfolio in portfolios:
-                    portfolio_id = portfolio.get('Id')
-                    response = spoke_service_catalog.search_products_as_admin(PortfolioId=portfolio_id)
-                    for product_view_detail in response.get('ProductViewDetails', []):
-                        product_view_summary = product_view_detail.get('ProductViewSummary')
-                        product_id = product_view_summary.get('ProductId')
-                        response = spoke_service_catalog.search_provisioned_products(
-                            Filters={'SearchQuery': ["productId:{}".format(product_id)]})
-                        for provisioned_product in response.get('ProvisionedProducts', []):
-                            launch_name = provisioned_product.get('Name')
-                            status = provisioned_product.get('Status')
-
-                            provisioning_artifact_response = spoke_service_catalog.describe_provisioning_artifact(
-                                ProvisioningArtifactId=provisioned_product.get('ProvisioningArtifactId'),
-                                ProductId=provisioned_product.get('ProductId'),
-                            ).get('ProvisioningArtifactDetail')
-
-                            if deployments.get(account_id) is None:
-                                deployments[account_id] = {'account_id': account_id, constants.LAUNCHES: {}}
-
-                            if deployments[account_id][constants.LAUNCHES].get(launch_name) is None:
-                                deployments[account_id][constants.LAUNCHES][launch_name] = {}
-
-                            deployments[account_id][constants.LAUNCHES][launch_name][region_name] = {
-                                'launch_name': launch_name,
-                                'portfolio': portfolio.get('DisplayName'),
-                                'product': manifest.get(constants.LAUNCHES, {}).get(launch_name, {}).get('product'),
-                                'version': provisioning_artifact_response.get('Name'),
-                                'active': provisioning_artifact_response.get('Active'),
-                                'region': region_name,
-                                'status': status,
-                            }
-                            output_path = os.path.sep.join([
-                                constants.LAUNCHES_PATH,
-                                account_id,
-                                region_name,
-                            ])
-                            if not os.path.exists(output_path):
-                                os.makedirs(output_path)
-
-                            output = os.path.sep.join([output_path, "{}.json".format(provisioned_product.get('Id'))])
-                            with open(output, 'w') as f:
-                                f.write(json.dumps(
-                                    provisioned_product,
-                                    indent=4, default=str
-                                ))
-
-    results = {}
-    tasks = generate_tasks(f)
-    # deployments[account_id][constants.LAUNCHES][launch_name][region_name]
-    for task in tasks:
-        account_id = task.get('account_id')
-        launch_name = task.get('launch_name')
-        if deployments.get(account_id, {}).get(constants.LAUNCHES, {}).get(launch_name) is None:
-            pass
-        else:
-            for region, regional_details in deployments[account_id][constants.LAUNCHES][launch_name].items():
-                results[f"{account_id}_{region}_{launch_name}"] = {
-                    'account_id': account_id,
-                    'region': region,
-                    'launch': launch_name,
-                    'portfolio': regional_details.get('portfolio'),
-                    'product': regional_details.get('product'),
-                    'expected_version': task.get('version'),
-                    'actual_version': regional_details.get('version'),
-                    'active': regional_details.get('active'),
-                    'status': regional_details.get('status'),
-                }
-
-    if format == "table":
-        table = [
-            [
-                'account_id',
-                'region',
-                'launch',
-                'portfolio',
-                'product',
-                'expected_version',
-                'actual_version',
-                'active',
-                'status',
-            ]
-        ]
-
-        for result in results.values():
-            table.append([
-                result.get('account_id'),
-                result.get('region'),
-                result.get('launch'),
-                result.get('portfolio'),
-                result.get('product'),
-                result.get('expected_version'),
-                Color("{green}" + result.get('actual_version') + "{/green}") if result.get(
-                    'actual_version') == result.get('expected_version') else Color(
-                    "{red}" + result.get('actual_version') + "{/red}"),
-                Color("{green}" + str(result.get('active')) + "{/green}") if result.get('active') else Color(
-                    "{red}" + str(result.get('active')) + "{/red}"),
-                Color("{green}" + result.get('status') + "{/green}") if result.get('status') == "AVAILABLE" else Color(
-                    "{red}" + result.get('status') + "{/red}")
-            ])
-        click.echo(terminaltables.AsciiTable(table).table)
-
-    elif format == "json":
-        click.echo(
-            json.dumps(
-                results,
-                indent=4,
-                default=str,
-            )
-        )
-
-    else:
-        raise Exception(f"Unsupported format: {format}")
 
 
 def expand(f):
