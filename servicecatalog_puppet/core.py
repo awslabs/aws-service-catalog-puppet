@@ -191,7 +191,7 @@ def generate_tasks(f, single_account=None, is_dry_run=False, execution_mode='hub
 def deploy(f, single_account, num_workers=10, is_dry_run=False, is_list_launches=False, execution_mode='hub'):
     logger.error(f"core.deploy execution_mode is {execution_mode}")
     tasks_to_run = generate_tasks(f, single_account, is_dry_run, execution_mode)
-    runner.run_tasks(tasks_to_run, num_workers, is_dry_run, is_list_launches)
+    runner.run_tasks(tasks_to_run, num_workers, is_dry_run, is_list_launches, execution_mode)
 
 
 def graph(f):
