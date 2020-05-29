@@ -394,6 +394,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
             )
             provisioned_product_id = False
             provisioning_artifact_id = False
+            current_status = "NOT_PROVISIONED"
             for r in response.get('ProvisionedProducts', []):
                 if r.get('Name') == self.launch_name:
                     current_status = r.get('Status')
@@ -402,6 +403,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                         provisioning_artifact_id = r.get('ProvisioningArtifactId')
 
             logger.info(f"[{self.uid}] pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}")
+            current_version_details = self.get_current_version(provisioning_artifact_id, service_catalog)
 
             with betterboto_client.CrossAccountClientContextManager(
                     'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
@@ -437,6 +439,8 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                                 current_version=self.version,
                                 new_version=self.version,
                                 effect=constants.NO_CHANGE,
+                                current_status=current_status,
+                                active=current_version_details.get('Active'),
                                 notes="Versions and params are the same",
                             )
                         else:
@@ -444,17 +448,23 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                                 current_version=self.version,
                                 new_version=self.version,
                                 effect=constants.CHANGE,
+                                current_status=current_status,
+                                active=current_version_details.get('Active'),
                                 notes="Versions are the same but the params are different",
                             )
                 else:
                     if provisioning_artifact_id:
-                        current_version = self.get_current_version(provisioning_artifact_id, service_catalog)
+                        current_version = current_version_details.get('Name')
+                        active = current_version_details.get('Active')
                     else:
                         current_version = ""
+                        active = False
                     self.write_result(
                         current_version=current_version,
                         new_version=self.version,
                         effect=constants.CHANGE,
+                        current_status=current_status,
+                        active=active,
                         notes='Version change',
                     )
 
@@ -465,9 +475,9 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
         return service_catalog.describe_provisioning_artifact(
             ProvisioningArtifactId=provisioning_artifact_id,
             ProductId=product_id,
-        ).get('ProvisioningArtifactDetail').get('Name')
+        ).get('ProvisioningArtifactDetail')
 
-    def write_result(self, current_version, new_version, effect, notes=''):
+    def write_result(self, current_version, new_version, effect, current_status, active, notes=''):
         with self.output().open('w') as f:
             f.write(
                 json.dumps(
@@ -475,6 +485,8 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                         "current_version": current_version,
                         "new_version": new_version,
                         "effect": effect,
+                        "current_status": current_status,
+                        "active": active,
                         "notes": notes,
                         "params": self.param_kwargs
                     },
