@@ -150,7 +150,8 @@ def reset_provisioned_product_owner(f):
     runner.run_tasks(tasks_to_run, 10)
 
 
-def generate_tasks(f, single_account=None, is_dry_run=False):
+def generate_tasks(f, single_account=None, is_dry_run=False, execution_mode='hub'):
+    logger.error(f"core.generate_tasks execution_mode is {execution_mode}")
     puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f)
 
@@ -165,6 +166,7 @@ def generate_tasks(f, single_account=None, is_dry_run=False):
         include_expanded_from=False,
         single_account=single_account,
         is_dry_run=is_dry_run,
+        execution_mode=execution_mode,
     )
     logger.info("Finished generating provisioning tasks")
 
@@ -186,8 +188,9 @@ def generate_tasks(f, single_account=None, is_dry_run=False):
     return tasks_to_run
 
 
-def deploy(f, single_account, num_workers=10, is_dry_run=False, is_list_launches=False):
-    tasks_to_run = generate_tasks(f, single_account, is_dry_run)
+def deploy(f, single_account, num_workers=10, is_dry_run=False, is_list_launches=False, execution_mode='hub'):
+    logger.error(f"core.deploy execution_mode is {execution_mode}")
+    tasks_to_run = generate_tasks(f, single_account, is_dry_run, execution_mode)
     runner.run_tasks(tasks_to_run, num_workers, is_dry_run, is_list_launches)
 
 

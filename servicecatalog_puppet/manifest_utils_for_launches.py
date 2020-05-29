@@ -1,5 +1,6 @@
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.manifest_utils import get_configuration_overrides, get_actions_from, get_task_defs_from_details
+from servicecatalog_puppet.manifest_utils import get_configuration_overrides, get_actions_from, \
+    get_task_defs_from_details
 from servicecatalog_puppet.workflow import provisioning
 
 import logging
@@ -61,17 +62,35 @@ def generate_launch_task_defs_for_launch(
 
 def generate_launch_tasks(
         manifest, puppet_account_id, should_use_sns, should_use_product_plans, include_expanded_from=False,
-        single_account=None, is_dry_run=False
+        single_account=None, is_dry_run=False, execution_mode='hub'
 ):
-    return [
-        provisioning.LaunchTask(
-            launch_name=launch_name,
-            manifest=manifest,
-            puppet_account_id=puppet_account_id,
-            should_use_sns=should_use_sns,
-            should_use_product_plans=should_use_product_plans,
-            include_expanded_from=include_expanded_from,
-            single_account=single_account,
-            is_dry_run=is_dry_run,
-        ) for launch_name in manifest.get('launches', {}).keys()
-    ]
+    logger.error(f"m.generate_launch_tasks execution_mode is {execution_mode}")
+    logger.error(f"execution_mode {execution_mode}")
+    if execution_mode == "spoke":
+        return [
+            provisioning.LaunchTask(
+                launch_name=launch_name,
+                manifest=manifest,
+                puppet_account_id=puppet_account_id,
+                should_use_sns=should_use_sns,
+                should_use_product_plans=should_use_product_plans,
+                include_expanded_from=include_expanded_from,
+                single_account=single_account,
+                is_dry_run=is_dry_run,
+            ) for launch_name, launch_details in manifest.get('launches', {}).items() if
+            launch_details.get('execution') == 'spoke'
+        ]
+    else:
+        return [
+            provisioning.LaunchTask(
+                launch_name=launch_name,
+                manifest=manifest,
+                puppet_account_id=puppet_account_id,
+                should_use_sns=should_use_sns,
+                should_use_product_plans=should_use_product_plans,
+                include_expanded_from=include_expanded_from,
+                single_account=single_account,
+                is_dry_run=is_dry_run,
+            ) for launch_name, launch_details in manifest.get('launches', {}).items() if
+            launch_details.get('execution') != 'spoke'
+        ]
