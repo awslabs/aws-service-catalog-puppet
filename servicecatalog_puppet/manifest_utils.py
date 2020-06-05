@@ -15,6 +15,7 @@ logger = logging.getLogger(__file__)
 def load(f):
     manifest = {
         'schema': 'puppet-2019-04-01',
+        'config': {},
         'parameters': {},
         'accounts': [],
         'launches': {},
@@ -26,6 +27,18 @@ def load(f):
     d = os.path.dirname(
         os.path.abspath(f.name)
     )
+
+    config = manifest.get('config')
+    merge_behaviour = 0 # default to override
+    if 'merge_behaviour' in config:
+        allowed_behaviour = {
+            'override': 0,
+            'forbid': 1,
+            'skip': 2,
+        }
+        merge_behaviour = allowed_behaviour.get(config.get('merge_behaviour', 'override'))
+
+    del manifest['config'] # remove config as it should not be in the output
 
     extendable = ['parameters', 'launches', 'spoke-local-portfolios']
     for t in extendable:
@@ -40,9 +53,19 @@ def load(f):
             with open(f"{d}{os.path.sep}manifests{os.path.sep}{f}", 'r') as file:
                 ext = yaml.safe_load(file.read())
                 for t in extendable:
-                    manifest[t].update(ext.get(t, {}))
+                    update_manifest(manifest, ext, t, merge_behaviour)
 
     return manifest
+
+
+def update_manifest(manifest, extended_manifest, key, merge_behaviour):
+    for extended_key, extended_value in extended_manifest.get(key, {}):
+        if extended_key in manifest[key]:
+            if merge_behaviour is 1:
+                raise Exception(f"Failed to merge manifest - key={extended_key} already exists in {key}")
+            elif merge_behaviour is 2:
+                continue
+        manifest[key].update({extended_key: extended_value})
 
 
 def expand_manifest(manifest, client):
