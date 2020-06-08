@@ -749,7 +749,7 @@ class ResetProvisionedProductOwnerTask(tasks.PuppetTask):
 
 class LaunchTask(tasks.PuppetTask):
     launch_name = luigi.Parameter()
-    manifest = luigi.DictParameter()
+    manifest = luigi.DictParameter(visibility=luigi.parameter.ParameterVisibility.PRIVATE)
     puppet_account_id = luigi.Parameter()
     should_use_sns = luigi.BoolParameter()
     should_use_product_plans = luigi.BoolParameter()
@@ -856,7 +856,7 @@ class LaunchTask(tasks.PuppetTask):
 
 class SpokeLocalPortfolioTask(tasks.PuppetTask):
     spoke_local_portfolio_name = luigi.Parameter()
-    manifest = luigi.DictParameter()
+    manifest = luigi.DictParameter(visibility=luigi.parameter.ParameterVisibility.PRIVATE)
     puppet_account_id = luigi.Parameter()
     should_use_sns = luigi.BoolParameter()
     should_use_product_plans = luigi.BoolParameter()
