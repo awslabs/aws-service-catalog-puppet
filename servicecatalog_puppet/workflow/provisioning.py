@@ -757,6 +757,7 @@ class LaunchTask(tasks.PuppetTask):
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
+    execution_mode = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -883,6 +884,7 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
                     include_expanded_from=self.include_expanded_from,
                     single_account=self.single_account,
                     is_dry_run=self.is_dry_run,
+                    execution_mode=self.manifest.get('launches', {}).get(dependency).get('execution', 'hub')
                 ) for dependency in spoke_local_portfolio.get('depends_on', [])
             ]
         }

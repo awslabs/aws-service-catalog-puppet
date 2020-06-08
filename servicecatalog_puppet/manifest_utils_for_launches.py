@@ -77,6 +77,7 @@ def generate_launch_tasks(
                 include_expanded_from=include_expanded_from,
                 single_account=single_account,
                 is_dry_run=is_dry_run,
+                execution_mode=execution_mode,
             ) for launch_name, launch_details in manifest.get('launches', {}).items() if
             launch_details.get('execution') == 'spoke'
         ]
@@ -91,6 +92,7 @@ def generate_launch_tasks(
                 include_expanded_from=include_expanded_from,
                 single_account=single_account,
                 is_dry_run=is_dry_run,
+                execution_mode=execution_mode,
             ) for launch_name, launch_details in manifest.get('launches', {}).items() if
             launch_details.get('execution') != 'spoke'
         ]
