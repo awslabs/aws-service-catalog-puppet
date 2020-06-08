@@ -25,8 +25,9 @@ def generate_shares(f):
 @click.argument('f', type=click.File())
 @click.option('--single-account', default=None)
 @click.option('--num-workers', default=10)
-def deploy(f, single_account, num_workers):
-    core.deploy(f, single_account, num_workers)
+@click.option('--execution-mode', default='hub')
+def deploy(f, single_account, num_workers, execution_mode):
+    core.deploy(f, single_account, num_workers, execution_mode=execution_mode)
 
 
 @cli.command()
