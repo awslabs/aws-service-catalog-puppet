@@ -187,6 +187,7 @@ def provision_product_with_plan(
 
         logger.info(f"{uid} :: executing changes")
         service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
+
         plan_execute_status = 'EXECUTE_IN_PROGRESS'
         while plan_execute_status == 'EXECUTE_IN_PROGRESS':
             response = service_catalog.describe_provisioned_product_plan(
@@ -240,6 +241,7 @@ def provision_product(
         params,
         version,
         should_use_sns,
+        execution_mode,
 ):
     uid = f"[{launch_name}] {account_id}:{region}]"
     provisioning_parameters = []
@@ -274,23 +276,26 @@ def provision_product(
     ).get('RecordDetail').get('ProvisionedProductId')
     logger.info(f"{uid}: provisioning started: {provisioned_product_id}")
 
-    while True:
-        response = service_catalog.describe_provisioned_product(
-            Id=provisioned_product_id
-        )
-        logger.info(
-            f"{uid} :: "
-            f"waiting for provision to complete: {response.get('ProvisionedProductDetail').get('Status')}"
-        )
-        provisioned_product_detail = response.get('ProvisionedProductDetail')
-        execute_status = provisioned_product_detail.get('Status')
-        if execute_status in ['AVAILABLE', 'TAINTED', 'EXECUTE_SUCCESS']:
-            break
-        elif execute_status == 'ERROR':
-            raise Exception(f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
-        else:
-            time.sleep(5)
-    return provisioned_product_id
+    if execution_mode == constants.EXECUTION_MODE_ASYNC:
+        return provisioned_product_id
+    else:
+        while True:
+            response = service_catalog.describe_provisioned_product(
+                Id=provisioned_product_id
+            )
+            logger.info(
+                f"{uid} :: "
+                f"waiting for provision to complete: {response.get('ProvisionedProductDetail').get('Status')}"
+            )
+            provisioned_product_detail = response.get('ProvisionedProductDetail')
+            execute_status = provisioned_product_detail.get('Status')
+            if execute_status in ['AVAILABLE', 'TAINTED', 'EXECUTE_SUCCESS']:
+                break
+            elif execute_status == 'ERROR':
+                raise Exception(f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
+            else:
+                time.sleep(5)
+        return provisioned_product_id
 
 
 def update_provisioned_product(
@@ -304,6 +309,7 @@ def update_provisioned_product(
         path_id,
         params,
         version,
+        execution_mode,
 ):
     uid = f"[{launch_name}] {account_id}:{region}]"
     provisioning_parameters = []
@@ -321,23 +327,26 @@ def update_provisioned_product(
     ).get('RecordDetail').get('ProvisionedProductId')
     logger.info(f"{uid}: provisioning started: {provisioned_product_id}")
 
-    while True:
-        response = service_catalog.describe_provisioned_product(
-            Id=provisioned_product_id
-        )
-        logger.info(
-            f"{uid} :: "
-            f"waiting for provision to complete: {response.get('ProvisionedProductDetail').get('Status')}"
-        )
-        provisioned_product_detail = response.get('ProvisionedProductDetail')
-        execute_status = provisioned_product_detail.get('Status')
-        if execute_status in ['AVAILABLE', 'TAINTED', 'EXECUTE_SUCCESS']:
-            break
-        elif execute_status == 'ERROR':
-            raise Exception(f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
-        else:
-            time.sleep(5)
-    return provisioned_product_id
+    if execution_mode == constants.EXECUTION_MODE_ASYNC:
+        return provisioned_product_id
+    else:
+        while True:
+            response = service_catalog.describe_provisioned_product(
+                Id=provisioned_product_id
+            )
+            logger.info(
+                f"{uid} :: "
+                f"waiting for provision to complete: {response.get('ProvisionedProductDetail').get('Status')}"
+            )
+            provisioned_product_detail = response.get('ProvisionedProductDetail')
+            execute_status = provisioned_product_detail.get('Status')
+            if execute_status in ['AVAILABLE', 'TAINTED', 'EXECUTE_SUCCESS']:
+                break
+            elif execute_status == 'ERROR':
+                raise Exception(f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}")
+            else:
+                time.sleep(5)
+        return provisioned_product_id
 
 
 def get_path_for_product(service_catalog, product_id, portfolio_name):

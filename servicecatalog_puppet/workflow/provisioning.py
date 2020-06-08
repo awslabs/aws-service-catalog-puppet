@@ -288,6 +288,7 @@ class ProvisionProductTask(tasks.PuppetTask):
                                 path_id,
                                 params_to_use,
                                 self.version,
+                                self.execution_mode,
                             )
 
                     else:
@@ -303,43 +304,40 @@ class ProvisionProductTask(tasks.PuppetTask):
                             params_to_use,
                             self.version,
                             self.should_use_sns,
+                            self.execution_mode,
                         )
 
-                with betterboto_client.CrossAccountClientContextManager(
-                        'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
-                ) as spoke_cloudformation:
-                    stack_details = aws.get_stack_output_for(
-                        spoke_cloudformation, f"SC-{self.account_id}-{provisioned_product_id}"
-                    )
+                if self.execution_mode == constants.EXECUTION_MODE_HUB:
+                    with betterboto_client.CrossAccountClientContextManager(
+                            'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
+                    ) as spoke_cloudformation:
+                        stack_details = aws.get_stack_output_for(
+                            spoke_cloudformation, f"SC-{self.account_id}-{provisioned_product_id}"
+                        )
 
-                for ssm_param_output in self.ssm_param_outputs:
-                    logger.info(f"[{self.uid}] writing SSM Param: {ssm_param_output.get('stack_output')}")
-                    with betterboto_client.ClientContextManager('ssm') as ssm:
-                        found_match = False
-                        # TODO push into another task
-                        for output in stack_details.get('Outputs', []):
-                            if output.get('OutputKey') == ssm_param_output.get('stack_output'):
-                                found_match = True
-                                logger.info(f"[{self.uid}] found value")
-                                ssm.put_parameter_and_wait(
-                                    Name=ssm_param_output.get('param_name'),
-                                    Value=output.get('OutputValue'),
-                                    Type=ssm_param_output.get('param_type', 'String'),
-                                    Overwrite=True,
+                    for ssm_param_output in self.ssm_param_outputs:
+                        logger.info(f"[{self.uid}] writing SSM Param: {ssm_param_output.get('stack_output')}")
+                        with betterboto_client.ClientContextManager('ssm') as ssm:
+                            found_match = False
+                            # TODO push into another task
+                            for output in stack_details.get('Outputs', []):
+                                if output.get('OutputKey') == ssm_param_output.get('stack_output'):
+                                    found_match = True
+                                    logger.info(f"[{self.uid}] found value")
+                                    ssm.put_parameter_and_wait(
+                                        Name=ssm_param_output.get('param_name'),
+                                        Value=output.get('OutputValue'),
+                                        Type=ssm_param_output.get('param_type', 'String'),
+                                        Overwrite=True,
+                                    )
+                            if not found_match:
+                                raise Exception(
+                                    f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
                                 )
-                        if not found_match:
-                            raise Exception(
-                                f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
-                            )
 
-                with self.output().open('w') as f:
-                    f.write(
-                        json.dumps(
-                            stack_details,
-                            indent=4,
-                            default=str,
-                        )
-                    )
+                    self.write_output(stack_details)
+                else:
+                    self.write_output({"provisioned_product_id": provisioned_product_id})
                 logger.info(f"[{self.uid}] finished provisioning")
 
     def get_all_params(self):
