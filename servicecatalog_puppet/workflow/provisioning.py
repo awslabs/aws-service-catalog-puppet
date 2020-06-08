@@ -749,7 +749,6 @@ class ResetProvisionedProductOwnerTask(tasks.PuppetTask):
 
 class LaunchTask(tasks.PuppetTask):
     launch_name = luigi.Parameter()
-    manifest = luigi.DictParameter(visibility=luigi.parameter.ParameterVisibility.PRIVATE)
     puppet_account_id = luigi.Parameter()
     should_use_sns = luigi.BoolParameter()
     should_use_product_plans = luigi.BoolParameter()
@@ -757,6 +756,7 @@ class LaunchTask(tasks.PuppetTask):
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
     execution_mode = luigi.Parameter()
+    manifest = luigi.DictParameter(visibility=luigi.parameter.ParameterVisibility.PRIVATE)
 
     def params_for_results_display(self):
         return {
@@ -856,13 +856,13 @@ class LaunchTask(tasks.PuppetTask):
 
 class SpokeLocalPortfolioTask(tasks.PuppetTask):
     spoke_local_portfolio_name = luigi.Parameter()
-    manifest = luigi.DictParameter(visibility=luigi.parameter.ParameterVisibility.PRIVATE)
     puppet_account_id = luigi.Parameter()
     should_use_sns = luigi.BoolParameter()
     should_use_product_plans = luigi.BoolParameter()
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
+    manifest = luigi.DictParameter(visibility=luigi.parameter.ParameterVisibility.PRIVATE)
 
     def params_for_results_display(self):
         return {
