@@ -344,7 +344,6 @@ class CreateAssociationsForPortfolioTask(tasks.PuppetTask):
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     organization = luigi.Parameter()
-    # pre_actions = luigi.ListParameter(default=[])
 
     associations = luigi.ListParameter(default=[])
     dependencies = luigi.ListParameter(default=[])
@@ -358,8 +357,8 @@ class CreateAssociationsForPortfolioTask(tasks.PuppetTask):
                 region=self.region,
                 portfolio=self.portfolio,
                 organization=self.organization,
-                # pre_actions=self.pre_actions,
             ),
+            #TODO - for execution_mode
             'deps': [provisioning.ProvisionProductTask(**dependency) for dependency in self.dependencies]
         }
 

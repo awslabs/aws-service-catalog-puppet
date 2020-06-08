@@ -1,5 +1,4 @@
 import json
-from copy import deepcopy
 
 import luigi
 from betterboto import client as betterboto_client
@@ -9,7 +8,7 @@ from servicecatalog_puppet import manifest_utils_for_spoke_local_portfolios
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
 
-from servicecatalog_puppet import constants, manifest_utils
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow import portfoliomanagement
 
@@ -95,6 +94,8 @@ class ProvisionProductTask(tasks.PuppetTask):
     should_use_sns = luigi.BoolParameter(significant=False, default=False)
     should_use_product_plans = luigi.BoolParameter(significant=False, default=False)
     requested_priority = luigi.IntParameter(significant=False, default=0)
+
+    execution_mode = luigi.Parameter()
 
     try_count = 1
     all_params = []
@@ -786,7 +787,6 @@ class LaunchTask(tasks.PuppetTask):
     def generate_provisions(self, task_defs):
         provisions = []
 
-        # task_defs = launch_task_def.get('task_defs')
         for task_def in task_defs:
             if self.single_account is not None:
                 if task_def.get('account_id') != self.single_account:

@@ -4,11 +4,9 @@ from pathlib import Path
 
 import cfn_tools
 import requests
-from colorclass import Color
 import terminaltables
 
 import shutil
-import json
 from threading import Thread
 
 import pkg_resources
