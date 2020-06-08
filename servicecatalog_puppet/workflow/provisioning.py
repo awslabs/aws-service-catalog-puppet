@@ -778,6 +778,7 @@ class LaunchTask(tasks.PuppetTask):
                     include_expanded_from=self.include_expanded_from,
                     single_account=self.single_account,
                     is_dry_run=self.is_dry_run,
+                    execution_mode=self.manifest.get('launches', {}).get(dependency).get('execution', 'hub')
                 ) for dependency in launch.get('depends_on', [])
             ]
         }
