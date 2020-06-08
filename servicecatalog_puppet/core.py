@@ -54,7 +54,7 @@ def generate_shares(f):
     logger.info('Starting to generate shares for: {}'.format(f.name))
     tasks_to_run = []
     puppet_account_id = config.get_puppet_account_id()
-    manifest = manifest_utils.load(f)
+    manifest = manifest_utils.load(f, puppet_account_id)
     accounts_by_id = {}
     for account in manifest.get('accounts'):
         accounts_by_id[account.get('account_id')] = account
@@ -127,7 +127,7 @@ def generate_shares(f):
 
 def reset_provisioned_product_owner(f):
     puppet_account_id = config.get_puppet_account_id()
-    manifest = manifest_utils.load(f)
+    manifest = manifest_utils.load(f, puppet_account_id)
 
     task_defs = manifest_utils_for_launches.generate_launch_tasks(
         manifest, puppet_account_id, False, False
@@ -151,7 +151,7 @@ def reset_provisioned_product_owner(f):
 def generate_tasks(f, single_account=None, is_dry_run=False, execution_mode='hub'):
     logger.error(f"core.generate_tasks execution_mode is {execution_mode}")
     puppet_account_id = config.get_puppet_account_id()
-    manifest = manifest_utils.load(f)
+    manifest = manifest_utils.load(f, puppet_account_id)
 
     should_use_sns = config.get_should_use_sns(os.environ.get("AWS_DEFAULT_REGION"))
     should_use_product_plans = config.get_should_use_product_plans(os.environ.get("AWS_DEFAULT_REGION"))
@@ -474,7 +474,8 @@ def seed(complexity, p):
 
 def expand(f):
     click.echo('Expanding')
-    manifest = manifest_utils.load(f)
+    puppet_account_id = config.get_puppet_account_id()
+    manifest = manifest_utils.load(f, puppet_account_id)
     org_iam_role_arn = config.get_org_iam_role_arn()
     if org_iam_role_arn is None:
         click.echo('No org role set - not expanding')
