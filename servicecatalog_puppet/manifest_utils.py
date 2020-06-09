@@ -14,6 +14,7 @@ logger = logging.getLogger(__file__)
 
 
 def load(f, puppet_account_id):
+    manifest_name = f.name
     manifest = {
         'schema': 'puppet-2019-04-01',
         'parameters': {},
@@ -44,8 +45,8 @@ def load(f, puppet_account_id):
                     manifest[t].update(ext.get(t, {}))
 
     for config_file in [
-        f.name.replace('.yaml', '.properties'),
-        f.name.replace('.yaml', f'-{puppet_account_id}.properties')
+        manifest_name.replace('.yaml', '.properties'),
+        manifest_name.replace('.yaml', f'-{puppet_account_id}.properties')
     ]:
         parser = configparser.ConfigParser(interpolation=configparser.BasicInterpolation())
         parser.optionxform = str
