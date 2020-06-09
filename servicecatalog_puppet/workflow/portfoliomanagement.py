@@ -216,7 +216,7 @@ class ProvisionActionTask(tasks.PuppetTask):
     project_name = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
-    parameters = luigi.DictParameter()
+    parameters = luigi.DictParameter(default={})
 
     def params_for_results_display(self):
         return {

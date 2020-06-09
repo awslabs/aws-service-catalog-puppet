@@ -201,7 +201,8 @@ def get_configuration_overrides(manifest, launch_details):
 def get_actions_from(name, launch_details, pre_or_post, actions, launch_or_spoke_local_portfolio):
     result = []
     for provision_action in launch_details.get(f'{pre_or_post}_actions', []):
-        action = deepcopy(actions.get(provision_action.get('name')))
+        action = dict()
+        action.update(actions.get(provision_action.get('name')))
         action.update(provision_action)
         action['source'] = name
         action['phase'] = pre_or_post
