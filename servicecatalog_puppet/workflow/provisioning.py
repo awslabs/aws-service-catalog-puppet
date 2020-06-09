@@ -756,7 +756,7 @@ class LaunchTask(tasks.PuppetTask):
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
     execution_mode = luigi.Parameter()
-    manifest = luigi.DictParameter(visibility=luigi.parameter.ParameterVisibility.PRIVATE)
+    manifest = luigi.DictParameter()
 
     def params_for_results_display(self):
         return {
@@ -862,7 +862,7 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
-    manifest = luigi.DictParameter(visibility=luigi.parameter.ParameterVisibility.PRIVATE)
+    manifest = luigi.DictParameter()
 
     def params_for_results_display(self):
         return {
