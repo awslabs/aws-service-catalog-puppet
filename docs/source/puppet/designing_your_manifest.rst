@@ -9,7 +9,7 @@ premise is the same - it is just a list of accounts and AWS Service Catalog prod
 
 
 Sections of the manifest file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------
 There are three sections to a manifest file - the global parameters, the accounts list and the launches.  Each of the 
 three are described in the following sections.
 
@@ -665,6 +665,6 @@ If you are using multiple instances of puppet you can also create a file named m
 Values in this file will overwrite all other values making the order of reading:
 
 1.  manifest.yaml
-2.  files in manifests/*.yaml
+2.  files in manifests/
 3.  manifest.properties
 4.  manifest-<puppet-account-id>.properties

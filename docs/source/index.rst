@@ -2,7 +2,7 @@ Welcome to aws-service-catalog-puppets's documentation!
 =======================================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :glob:
 
    puppet/what_is_this
