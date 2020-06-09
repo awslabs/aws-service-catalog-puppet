@@ -652,7 +652,7 @@ If you are using puppet to manage multiple environments you may find it easier t
 properties files instead of the manifest.yaml files.  To do this you create a file named manifest.properties in the same
 directory as your manifest.yaml file.  Within this file you can specify the following:
 
-.. code-bloack::
+.. code-block:: ini
 
     [launches]
     IAM-1.version = v50
