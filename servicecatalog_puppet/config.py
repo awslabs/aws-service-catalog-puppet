@@ -9,6 +9,8 @@ from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import constants
 
 import logging
+import os
+import json
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -17,12 +19,15 @@ logger.setLevel(logging.INFO)
 @functools.lru_cache(maxsize=32)
 def get_config(default_region=None):
     logger.info("getting config,  default_region: {}".format(default_region))
-    with betterboto_client.ClientContextManager(
-            'ssm',
-            region_name=default_region if default_region else get_home_region()
-    ) as ssm:
-        response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME)
-        return yaml.safe_load(response.get('Parameter').get('Value'))
+    if os.getenv('SERVICECATALOG_PUPPET_CONFIG'):
+        return json.loads(os.getenv('SERVICECATALOG_PUPPET_CONFIG'))
+    else:
+        with betterboto_client.ClientContextManager(
+                'ssm',
+                region_name=default_region if default_region else get_home_region()
+        ) as ssm:
+            response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME)
+            return yaml.safe_load(response.get('Parameter').get('Value'))
 
 
 @functools.lru_cache(maxsize=32)
@@ -82,6 +87,8 @@ env = Environment(
 
 @functools.lru_cache(maxsize=32)
 def get_puppet_account_id():
+    if os.getenv('SERVICECATALOG_PUPPET_PUPPET_ACCOUNT_ID'):
+        return os.getenv('SERVICECATALOG_PUPPET_PUPPET_ACCOUNT_ID')
     with betterboto_client.ClientContextManager('sts') as sts:
         return sts.get_caller_identity().get('Account')
 

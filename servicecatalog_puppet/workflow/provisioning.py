@@ -1,5 +1,4 @@
 import json
-from copy import deepcopy
 
 import luigi
 from betterboto import client as betterboto_client
@@ -9,7 +8,7 @@ from servicecatalog_puppet import manifest_utils_for_spoke_local_portfolios
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
 
-from servicecatalog_puppet import constants, manifest_utils
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow import portfoliomanagement
 
@@ -95,6 +94,8 @@ class ProvisionProductTask(tasks.PuppetTask):
     should_use_sns = luigi.BoolParameter(significant=False, default=False)
     should_use_product_plans = luigi.BoolParameter(significant=False, default=False)
     requested_priority = luigi.IntParameter(significant=False, default=0)
+
+    execution_mode = luigi.Parameter()
 
     try_count = 1
     all_params = []
@@ -287,6 +288,7 @@ class ProvisionProductTask(tasks.PuppetTask):
                                 path_id,
                                 params_to_use,
                                 self.version,
+                                self.execution_mode,
                             )
 
                     else:
@@ -302,43 +304,40 @@ class ProvisionProductTask(tasks.PuppetTask):
                             params_to_use,
                             self.version,
                             self.should_use_sns,
+                            self.execution_mode,
                         )
 
-                with betterboto_client.CrossAccountClientContextManager(
-                        'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
-                ) as spoke_cloudformation:
-                    stack_details = aws.get_stack_output_for(
-                        spoke_cloudformation, f"SC-{self.account_id}-{provisioned_product_id}"
-                    )
+                if self.execution_mode == constants.EXECUTION_MODE_HUB:
+                    with betterboto_client.CrossAccountClientContextManager(
+                            'cloudformation', role, f'cfn-{self.region}-{self.account_id}', region_name=self.region
+                    ) as spoke_cloudformation:
+                        stack_details = aws.get_stack_output_for(
+                            spoke_cloudformation, f"SC-{self.account_id}-{provisioned_product_id}"
+                        )
 
-                for ssm_param_output in self.ssm_param_outputs:
-                    logger.info(f"[{self.uid}] writing SSM Param: {ssm_param_output.get('stack_output')}")
-                    with betterboto_client.ClientContextManager('ssm') as ssm:
-                        found_match = False
-                        # TODO push into another task
-                        for output in stack_details.get('Outputs', []):
-                            if output.get('OutputKey') == ssm_param_output.get('stack_output'):
-                                found_match = True
-                                logger.info(f"[{self.uid}] found value")
-                                ssm.put_parameter_and_wait(
-                                    Name=ssm_param_output.get('param_name'),
-                                    Value=output.get('OutputValue'),
-                                    Type=ssm_param_output.get('param_type', 'String'),
-                                    Overwrite=True,
+                    for ssm_param_output in self.ssm_param_outputs:
+                        logger.info(f"[{self.uid}] writing SSM Param: {ssm_param_output.get('stack_output')}")
+                        with betterboto_client.ClientContextManager('ssm') as ssm:
+                            found_match = False
+                            # TODO push into another task
+                            for output in stack_details.get('Outputs', []):
+                                if output.get('OutputKey') == ssm_param_output.get('stack_output'):
+                                    found_match = True
+                                    logger.info(f"[{self.uid}] found value")
+                                    ssm.put_parameter_and_wait(
+                                        Name=ssm_param_output.get('param_name'),
+                                        Value=output.get('OutputValue'),
+                                        Type=ssm_param_output.get('param_type', 'String'),
+                                        Overwrite=True,
+                                    )
+                            if not found_match:
+                                raise Exception(
+                                    f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
                                 )
-                        if not found_match:
-                            raise Exception(
-                                f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
-                            )
 
-                with self.output().open('w') as f:
-                    f.write(
-                        json.dumps(
-                            stack_details,
-                            indent=4,
-                            default=str,
-                        )
-                    )
+                    self.write_output(stack_details)
+                else:
+                    self.write_output({"provisioned_product_id": provisioned_product_id})
                 logger.info(f"[{self.uid}] finished provisioning")
 
     def get_all_params(self):
@@ -750,13 +749,14 @@ class ResetProvisionedProductOwnerTask(tasks.PuppetTask):
 
 class LaunchTask(tasks.PuppetTask):
     launch_name = luigi.Parameter()
-    manifest = luigi.DictParameter()
     puppet_account_id = luigi.Parameter()
     should_use_sns = luigi.BoolParameter()
     should_use_product_plans = luigi.BoolParameter()
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
+    execution_mode = luigi.Parameter()
+    manifest = luigi.DictParameter()
 
     def params_for_results_display(self):
         return {
@@ -777,6 +777,7 @@ class LaunchTask(tasks.PuppetTask):
                     include_expanded_from=self.include_expanded_from,
                     single_account=self.single_account,
                     is_dry_run=self.is_dry_run,
+                    execution_mode=self.manifest.get('launches', {}).get(dependency).get('execution', 'hub')
                 ) for dependency in launch.get('depends_on', [])
             ]
         }
@@ -784,7 +785,6 @@ class LaunchTask(tasks.PuppetTask):
     def generate_provisions(self, task_defs):
         provisions = []
 
-        # task_defs = launch_task_def.get('task_defs')
         for task_def in task_defs:
             if self.single_account is not None:
                 if task_def.get('account_id') != self.single_account:
@@ -856,13 +856,13 @@ class LaunchTask(tasks.PuppetTask):
 
 class SpokeLocalPortfolioTask(tasks.PuppetTask):
     spoke_local_portfolio_name = luigi.Parameter()
-    manifest = luigi.DictParameter()
     puppet_account_id = luigi.Parameter()
     should_use_sns = luigi.BoolParameter()
     should_use_product_plans = luigi.BoolParameter()
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
+    manifest = luigi.DictParameter()
 
     def params_for_results_display(self):
         return {
@@ -883,13 +883,14 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
                     include_expanded_from=self.include_expanded_from,
                     single_account=self.single_account,
                     is_dry_run=self.is_dry_run,
+                    execution_mode=self.manifest.get('launches', {}).get(dependency).get('execution', 'hub')
                 ) for dependency in spoke_local_portfolio.get('depends_on', [])
             ]
         }
 
     def generate_tasks(self, task_defs):
         if len(task_defs) == 0:
-            raise Exception("The configuration for this share does not include any target accounts")
+            raise Exception(f"The configuration for this share does not include any target accounts: {self.spoke_local_portfolio_name}")
         first_task_def = task_defs[0]
         logger.info('first_task_def')
         portfolio = first_task_def.get('portfolio')

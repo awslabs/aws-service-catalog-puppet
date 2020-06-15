@@ -9,7 +9,7 @@ premise is the same - it is just a list of accounts and AWS Service Catalog prod
 
 
 Sections of the manifest file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------
 There are three sections to a manifest file - the global parameters, the accounts list and the launches.  Each of the 
 three are described in the following sections.
 
@@ -561,8 +561,8 @@ these in will cause the termination action to fail.
     Since 0.1.16, terminating a product will also remove any SSM Parameters you created for it via the manifest.yaml
 
 
-Managing large manifests or working in teams
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Managing large manifests or working in teams (multiple manifest files)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. note::
 
@@ -580,10 +580,39 @@ into smaller pieces.  You can specify launches in a launch directory within your
     │   └── launches-for-team-a.yaml
     ├── manifest.yaml
 
+The file (in this example launches-for-team-a.yaml) should be a list of launches:
+
+.. code-block:: bash
+
+    ✗ cat launches-for-team-a.yaml
+    account-vending-account-creation:
+        portfolio: demo-central-it-team-portfolio
+        product: account-vending-account-creation
+        version: v1
+        depends_on:
+          - account-vending-account-bootstrap-shared
+          - account-vending-account-creation-shared
+        deploy_to:
+          tags:
+            - tag: scope:puppet-hub
+              regions: default_region
+
+    account-vending-account-bootstrap-shared:
+        portfolio: demo-central-it-team-portfolio
+        product: account-vending-account-bootstrap-shared
+        version: v1
+        deploy_to:
+          tags:
+            - tag: scope:puppet-hub
+              regions: default_region
+
+
+
 The framework will load the manifest.yaml and *overwrite* any launches with ones defined in files from the launches
 directory.  The framework will not warn you of any overrides.
 
-You can also specify parameters and spoke-local-portfolios in directories too:
+You can also specify parameters and spoke-local-portfolios in directories too.  When doing so, the files should contain
+lists of parameters or spoke-local-portfolios and should not be a dictionary.
 
 .. code-block:: bash
 
@@ -610,3 +639,32 @@ You can also declare other manifest files in a manifests directory:
 
 When you write a manifest file in the manifests directory the accounts section is ignored - you can only specify
 launches, parameters and spoke-local-portfolios.
+
+
+Managing large manifests or working across multiple environments (external versions / properties files)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    This was added in version 0.76.0
+
+If you are using puppet to manage multiple environments you may find it easier to keep the versions of your launches in
+properties files instead of the manifest.yaml files.  To do this you create a file named manifest.properties in the same
+directory as your manifest.yaml file.  Within this file you can specify the following:
+
+.. code-block:: ini
+
+    [launches]
+    IAM-1.version = v50
+
+This will set the version for the launch with the name IAM-1 to v50.
+
+Please note this will overwrite the values specified in the manifest.yaml files with no warning.
+
+If you are using multiple instances of puppet you can also create a file named manifest-<puppet-account-id>.properties.
+Values in this file will overwrite all other values making the order of reading:
+
+1.  manifest.yaml
+2.  files in manifests/
+3.  manifest.properties
+4.  manifest-<puppet-account-id>.properties

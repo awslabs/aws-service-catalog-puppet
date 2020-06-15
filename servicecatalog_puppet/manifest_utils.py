@@ -1,3 +1,4 @@
+import configparser
 import os
 
 import yaml
@@ -12,7 +13,8 @@ from servicecatalog_puppet import constants
 logger = logging.getLogger(__file__)
 
 
-def load(f):
+def load(f, puppet_account_id):
+    manifest_name = f.name
     manifest = {
         'schema': 'puppet-2019-04-01',
         'parameters': {},
@@ -42,6 +44,21 @@ def load(f):
                 for t in extendable:
                     manifest[t].update(ext.get(t, {}))
 
+    for config_file in [
+        manifest_name.replace('.yaml', '.properties'),
+        manifest_name.replace('.yaml', f'-{puppet_account_id}.properties')
+    ]:
+        parser = configparser.ConfigParser(interpolation=configparser.BasicInterpolation())
+        parser.optionxform = str
+
+        if os.path.exists(config_file):
+            logger.info(f"reading {config_file}")
+            parser.read(config_file)
+            for name, value in parser['launches'].items():
+                launch_name, property_name = name.split('.')
+                if property_name != "version":
+                    raise Exception("You can only specify a version in the properties file")
+                manifest['launches'][launch_name][property_name] = value
     return manifest
 
 
@@ -185,7 +202,8 @@ def get_configuration_overrides(manifest, launch_details):
 def get_actions_from(name, launch_details, pre_or_post, actions, launch_or_spoke_local_portfolio):
     result = []
     for provision_action in launch_details.get(f'{pre_or_post}_actions', []):
-        action = deepcopy(actions.get(provision_action.get('name')))
+        action = dict()
+        action.update(actions.get(provision_action.get('name')))
         action.update(provision_action)
         action['source'] = name
         action['phase'] = pre_or_post

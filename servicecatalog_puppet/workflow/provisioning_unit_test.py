@@ -54,6 +54,7 @@ def minimal_params(launch_name, portfolio, product, version, account_id, region,
         'account_id': account_id,
         'region': region,
         'puppet_account_id': puppet_account_id,
+        'execution_mode': 'hub',
     }
 
 

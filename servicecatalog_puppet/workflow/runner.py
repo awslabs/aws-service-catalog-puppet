@@ -23,8 +23,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def run_tasks(tasks_to_run, num_workers, is_dry_run=False, is_list_launches=None):
-    if is_list_launches:
+def run_tasks(tasks_to_run, num_workers, is_dry_run=False, is_list_launches=None, execution_mode='hub'):
+    if is_list_launches or execution_mode == "spoke":
         should_use_eventbridge = False
         should_forward_failures_to_opscenter = False
     else:
