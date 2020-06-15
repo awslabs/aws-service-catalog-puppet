@@ -964,6 +964,14 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
                         product_generation_method=product_generation_method,
                     )
                     tasks.append(create_launch_role_constraints_for_portfolio)
+            elif task_def.get('status') == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_GENERATE_ONLY:
+                logger.info(
+                    'Skipping spoke portfolio creation for {} {} {}'.format(
+                        portfolio,
+                        task_def.get('account_id'),
+                        task_def.get('region')
+                    ))
+
         return tasks
 
     def run(self):
