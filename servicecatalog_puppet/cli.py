@@ -193,8 +193,10 @@ def run(what, tail):
 
 
 @cli.command()
-def list_resources():
-    core.list_resources()
+@click.option('--path','-p', default=False, multiple=True)
+
+def list_resources(path):
+    core.list_resources(path)
 
 
 @cli.command()
