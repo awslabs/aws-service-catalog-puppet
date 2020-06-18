@@ -64,8 +64,8 @@ def generate_launch_tasks(
         manifest, puppet_account_id, should_use_sns, should_use_product_plans, include_expanded_from=False,
         single_account=None, is_dry_run=False, execution_mode='hub'
 ):
-    logger.error(f"m.generate_launch_tasks execution_mode is {execution_mode}")
-    logger.error(f"execution_mode {execution_mode}")
+    logger.info(f"m.generate_launch_tasks execution_mode is {execution_mode}")
+    logger.info(f"execution_mode {execution_mode}")
     if execution_mode == "spoke":
         return [
             provisioning.LaunchTask(

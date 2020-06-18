@@ -9,8 +9,10 @@ from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
 
 from servicecatalog_puppet import constants
+from servicecatalog_puppet import manifest_utils
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow import portfoliomanagement
+from servicecatalog_puppet.workflow import manifest as manifest_tasks
 
 import logging
 
@@ -515,6 +517,7 @@ class TerminateProductTask(tasks.PuppetTask):
 
     parameters = luigi.ListParameter(default=[])
     ssm_param_inputs = luigi.ListParameter(default=[])
+
     # dependencies = luigi.ListParameter(default=[])
 
     def requires(self):
@@ -756,7 +759,7 @@ class LaunchTask(tasks.PuppetTask):
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
     execution_mode = luigi.Parameter()
-    manifest = luigi.DictParameter()
+    manifest_file_path = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -764,22 +767,11 @@ class LaunchTask(tasks.PuppetTask):
         }
 
     def requires(self):
-        launch = self.manifest.get('launches').get(self.launch_name)
-
         return {
-            'other_launches': [
-                self.__class__(
-                    launch_name=dependency,
-                    manifest=self.manifest,
-                    puppet_account_id=self.puppet_account_id,
-                    should_use_sns=self.should_use_sns,
-                    should_use_product_plans=self.should_use_product_plans,
-                    include_expanded_from=self.include_expanded_from,
-                    single_account=self.single_account,
-                    is_dry_run=self.is_dry_run,
-                    execution_mode=self.manifest.get('launches', {}).get(dependency).get('execution', 'hub')
-                ) for dependency in launch.get('depends_on', [])
-            ]
+            'manifest': manifest_tasks.ManifestTask(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+            )
         }
 
     def generate_provisions(self, task_defs):
@@ -826,10 +818,26 @@ class LaunchTask(tasks.PuppetTask):
                 raise Exception(f"Unsupported status of {task_status}")
         return provisions
 
-    def run(self):
+    def run_dependencies(self, manifest):
+        launch = manifest.get('launches').get(self.launch_name)
+        yield [
+            self.__class__(
+                launch_name=dependency,
+                manifest=self.manifest,
+                puppet_account_id=self.puppet_account_id,
+                should_use_sns=self.should_use_sns,
+                should_use_product_plans=self.should_use_product_plans,
+                include_expanded_from=self.include_expanded_from,
+                single_account=self.single_account,
+                is_dry_run=self.is_dry_run,
+                execution_mode=self.manifest.get('launches', {}).get(dependency).get('execution', 'hub')
+            ) for dependency in launch.get('depends_on', [])
+        ]
+
+    def run_launch(self, manifest):
         launch_tasks_def = manifest_utils_for_launches.generate_launch_task_defs_for_launch(
             self.launch_name,
-            self.manifest,
+            manifest,
             self.puppet_account_id,
             self.should_use_sns,
             self.should_use_product_plans,
@@ -851,6 +859,10 @@ class LaunchTask(tasks.PuppetTask):
         yield [portfoliomanagement.ProvisionActionTask(**p) for p in launch_tasks_def.get('post_actions', [])]
         logger.info(f"{self.uid} finished post actions")
 
+    def run(self):
+        manifest = self.load_from_input('manifest')
+        self.run_dependencies(manifest)
+        self.run_launch(manifest)
         self.write_output(self.params_for_results_display())
 
 
@@ -862,7 +874,7 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
-    manifest = luigi.DictParameter()
+    manifest_file_path = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -870,27 +882,33 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
         }
 
     def requires(self):
-        spoke_local_portfolio = self.manifest.get('spoke-local-portfolios').get(self.spoke_local_portfolio_name)
-
         return {
-            'other_launches': [
-                LaunchTask(
-                    launch_name=dependency,
-                    manifest=self.manifest,
-                    puppet_account_id=self.puppet_account_id,
-                    should_use_sns=self.should_use_sns,
-                    should_use_product_plans=self.should_use_product_plans,
-                    include_expanded_from=self.include_expanded_from,
-                    single_account=self.single_account,
-                    is_dry_run=self.is_dry_run,
-                    execution_mode=self.manifest.get('launches', {}).get(dependency).get('execution', 'hub')
-                ) for dependency in spoke_local_portfolio.get('depends_on', [])
-            ]
+            'manifest': manifest_tasks.ManifestTask(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+            )
         }
+
+    def run_dependencies(self, manifest):
+        spoke_local_portfolio = manifest.get('spoke-local-portfolios').get(self.spoke_local_portfolio_name)
+        return [
+            LaunchTask(
+                launch_name=dependency,
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                should_use_sns=self.should_use_sns,
+                should_use_product_plans=self.should_use_product_plans,
+                include_expanded_from=self.include_expanded_from,
+                single_account=self.single_account,
+                is_dry_run=self.is_dry_run,
+                execution_mode=manifest.get('launches', {}).get(dependency).get('execution', 'hub')
+            ) for dependency in spoke_local_portfolio.get('depends_on', [])
+        ]
 
     def generate_tasks(self, task_defs):
         if len(task_defs) == 0:
-            raise Exception(f"The configuration for this share does not include any target accounts: {self.spoke_local_portfolio_name}")
+            raise Exception(
+                f"The configuration for this share does not include any target accounts: {self.spoke_local_portfolio_name}")
         first_task_def = task_defs[0]
         logger.info('first_task_def')
         portfolio = first_task_def.get('portfolio')
@@ -967,30 +985,61 @@ class SpokeLocalPortfolioTask(tasks.PuppetTask):
         return tasks
 
     def run(self):
-        self.info("started")
-        tasks_defs = manifest_utils_for_spoke_local_portfolios.generate_spoke_local_portfolios_tasks_for_spoke_local_portfolio(
-            self.spoke_local_portfolio_name,
-            self.manifest,
-            self.puppet_account_id,
-            self.should_use_sns,
-            self.should_use_product_plans,
-            self.include_expanded_from,
-            self.single_account,
-            self.is_dry_run,
+        manifest = self.load_from_input('manifest')
+        self.info("EPF here 1")
+        yield self.run_dependencies(manifest)
+        self.info("EPF here 2")
+
+        accounts = manifest.get('accounts', [])
+        actions = manifest.get('actions', {})
+
+        spoke_local_portfolio_details = manifest.get('spoke-local-portfolios').get(self.spoke_local_portfolio_name)
+
+        configuration = {
+            'spoke_local_portfolio_name': self.spoke_local_portfolio_name,
+            'status': spoke_local_portfolio_details.get('status', 'shared'),
+            'portfolio': spoke_local_portfolio_details.get('portfolio'),
+            'associations': spoke_local_portfolio_details.get('associations', []),
+            'constraints': spoke_local_portfolio_details.get('constraints', {}),
+            'depends_on': spoke_local_portfolio_details.get('depends_on', []),
+            'retry_count': spoke_local_portfolio_details.get('retry_count', 1),
+            'requested_priority': spoke_local_portfolio_details.get('requested_priority', 0),
+            'worker_timeout': spoke_local_portfolio_details.get('timeoutInSeconds', constants.DEFAULT_TIMEOUT),
+            'product_generation_method': spoke_local_portfolio_details.get('product_generation_method', 'copy'),
+            'single_account': self.single_account,
+            'is_dry_run': self.is_dry_run,
+            'puppet_account_id': self.puppet_account_id,
+            'should_use_sns': self.should_use_sns,
+            'should_use_product_plans': self.should_use_product_plans,
+        }
+        configuration.update(
+            manifest_utils.get_configuration_overrides(manifest, spoke_local_portfolio_details)
         )
-        self.info(json.dumps(tasks_defs, default=str))
 
-        logger.info(f"{self.uid} starting pre actions")
-        yield [portfoliomanagement.ProvisionActionTask(**p) for p in tasks_defs.get('pre_actions', [])]
-        logger.info(f"{self.uid} finished pre actions")
+        task_defs = manifest_utils_for_spoke_local_portfolios.get_task_defs_from_details(
+            spoke_local_portfolio_details, accounts, True, self.spoke_local_portfolio_name, configuration
+        )
+        pre_actions = manifest_utils_for_spoke_local_portfolios.get_actions_from(
+            self.spoke_local_portfolio_name, spoke_local_portfolio_details, 'pre', actions, 'spoke-local-portfolios'
+        )
+        post_actions = manifest_utils_for_spoke_local_portfolios.get_actions_from(
+            self.spoke_local_portfolio_name, spoke_local_portfolio_details, 'post', actions, 'spoke-local-portfolios'
+        )
 
-        logger.info(f"{self.uid} starting launches")
-        yield self.generate_tasks(tasks_defs.get('task_defs', []))
-        logger.info(f"{self.uid} finished launches")
+        self.info(f"EPF run_spoke_local_portfolio 2: {len(task_defs)}")
 
-        logger.info(f"{self.uid} starting post actions")
-        yield [portfoliomanagement.ProvisionActionTask(**p) for p in tasks_defs.get('post_actions', [])]
-        logger.info(f"{self.uid} finished post actions")
+        self.info(f"{self.uid} starting pre actions")
+        yield [portfoliomanagement.ProvisionActionTask(**p) for p in pre_actions]
+        self.info(f"{self.uid} finished pre actions")
 
-        self.write_output(self.params_for_results_display())
+        self.info(f"{self.uid} starting launches")
+        yield self.generate_tasks(task_defs)
+        self.info(f"{self.uid} finished launches")
+
+        self.info(f"{self.uid} starting post actions")
+        yield [portfoliomanagement.ProvisionActionTask(**p) for p in post_actions]
+        self.info(f"{self.uid} finished post actions")
         self.info("finished")
+
+        self.info("EPF here 3")
+        self.write_output(self.params_for_results_display())
