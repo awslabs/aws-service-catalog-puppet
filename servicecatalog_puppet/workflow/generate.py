@@ -112,4 +112,4 @@ class GenerateSharesTask(manifest_tasks.SectionTask):
                         portfolio=portfolio_name
                     )
 
-        self.write_output({})
+        self.write_output(self.params_for_results_display())
