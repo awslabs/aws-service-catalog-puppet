@@ -369,7 +369,7 @@ Resources:
             build:
               commands:
                 - servicecatalog-puppet --info expand manifest.yaml
-                - servicecatalog-puppet --info generate-shares manifest-expanded.yaml
+                - servicecatalog-puppet --info deploy --num-workers ${NUM_WORKERS} manifest-expanded.yaml
           artifacts:
             files:
               - manifest-expanded.yaml
