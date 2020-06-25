@@ -61,7 +61,8 @@ class PuppetTask(luigi.Task):
 
     @property
     def node_id(self):
-        return f"{self.__class__.__name__}_{'|'.join(self.params_for_results_display().values())}"
+        values = [str(v) for v in self.params_for_results_display().values()]
+        return f"{self.__class__.__name__}_{'|'.join(values)}"
 
     def graph_node(self):
         task_friendly_name = self.__class__.__name__.replace("Task", "")
