@@ -262,7 +262,7 @@ def run_tasks_for_generate_shares(tasks_to_run):
             'organizations': [],
         }
         with betterboto_client.ClientContextManager('cloudformation', region_name=region) as cloudformation:
-            cloudformation.ensure_deleted(StackName="servicecatalog-puppet-shares")
+            # cloudformation.ensure_deleted(StackName="servicecatalog-puppet-shares")
 
             logger.info(f"generating policies collection for region {region}")
             if os.path.exists(os.path.sep.join(['data', 'bucket'])):

@@ -212,92 +212,173 @@ def get_actions_from(name, launch_details, pre_or_post, actions, launch_or_spoke
     return result
 
 
-def get_task_defs_from_details(launch_details, accounts, include_expanded_from, launch_name, configuration):
-    deploy_to = launch_details.get('deploy_to')
-    task_defs = []
-    for tag_list_item in deploy_to.get('tags', []):
-        for account in accounts:
-            for tag in account.get('tags', []):
-                if tag == tag_list_item.get('tag'):
-                    tag_account_def = deepcopy(configuration)
-                    tag_account_def['account_id'] = account.get('account_id')
-                    if include_expanded_from:
-                        tag_account_def['expanded_from'] = account.get('expanded_from')
-                        tag_account_def['organization'] = account.get('organization')
-                    tag_account_def['account_parameters'] = account.get('parameters', {})
+class Manifest(dict):
+    def get_actions_from(self, launch_name, pre_or_post, launch_or_spoke_local_portfolio):
+        logger.info(f"get_actions_from for {launch_or_spoke_local_portfolio}.{launch_name}")
+        launch_details = self.get(launch_or_spoke_local_portfolio).get(launch_name)
+        actions = self.get('actions')
+        result = list()
+        for provision_action in launch_details.get(f'{pre_or_post}_actions', []):
+            action = dict()
+            action.update(actions.get(provision_action.get('name')))
+            action.update(provision_action)
+            action['source'] = launch_name
+            action['phase'] = pre_or_post
+            action['source_type'] = launch_or_spoke_local_portfolio
+            result.append(action)
+        return result
 
-                    regions = tag_list_item.get('regions', 'default_region')
+    def get_account(self, account_id):
+        for account in self.get('accounts'):
+            if account.get('account_id') == account_id:
+                return account
+        raise Exception(f"Could not find account: {account_id}")
+
+    def get_sharing_policies_by_region(self):
+        sharing_policies_by_region = {}
+        for account in self.get('accounts'):
+            account_regions = list()
+            account_regions += account.get('enabled', [])
+            account_regions += account.get('regions_enabled', [])
+            account_regions += account.get('enabled_regions', [])
+            account_regions.append(account.get('default_region'))
+            for r in account_regions:
+                if sharing_policies_by_region.get(r) is None:
+                    sharing_policies_by_region[r] = dict(accounts=[], organizations=[])
+                if account.get('organization', '') != '':
+                    organization = account.get('organization')
+                    if organization not in sharing_policies_by_region[r]['organizations']:
+                        sharing_policies_by_region[r]['organizations'].append(organization)
+                else:
+                    account_id = account.get('account_id')
+                    if account_id not in sharing_policies_by_region[r]['accounts']:
+                        sharing_policies_by_region[r]['accounts'].append(account_id)
+
+        return sharing_policies_by_region
+
+    def get_shares_by_region_portfolio_account(self):
+        shares_by_region_portfolio_account = {}
+        configuration = {}
+        include_expanded_from = False
+        for launch_name, launch_details in self.get('launches').items():
+            portfolio = launch_details.get('portfolio')
+            tasks = self.get_task_defs_from_details(include_expanded_from, launch_name, configuration, 'launches')
+            for task in tasks:
+                account_id = task.get('account_id')
+                region = task.get('region')
+                if shares_by_region_portfolio_account.get(region) is None:
+                    shares_by_region_portfolio_account[region] = {}
+                if shares_by_region_portfolio_account[region].get(portfolio) is None:
+                    shares_by_region_portfolio_account[region][portfolio] = {}
+                shares_by_region_portfolio_account[region][portfolio][account_id] = self.get_account(account_id)
+        return shares_by_region_portfolio_account
+
+    def get_accounts_by_region(self):
+        accounts_by_region = {}
+        for account in self.get('accounts'):
+            account_regions = list()
+            account_regions += account.get('enabled', [])
+            account_regions += account.get('regions_enabled', [])
+            account_regions += account.get('enabled_regions', [])
+            account_regions.append(account.get('default_region'))
+            for r in account_regions:
+                if accounts_by_region.get(r) is None:
+                    accounts_by_region[r] = []
+                accounts_by_region[r].append(account)
+        return accounts_by_region
+
+    def get_task_defs_from_details(self, include_expanded_from, launch_name, configuration, launch_or_spoke_local_portfolio):
+        logger.info(f"get_task_defs_from_details({include_expanded_from}, {launch_name}, {configuration})")
+        launch_details = self.get(launch_or_spoke_local_portfolio).get(launch_name)
+        logger.info(launch_details)
+        accounts = self.get('accounts')
+        if launch_details is None:
+            raise Exception(f"launch_details is None for {launch_name}")
+        deploy_to = launch_details.get('deploy_to')
+        task_defs = []
+        for tag_list_item in deploy_to.get('tags', []):
+            for account in accounts:
+                for tag in account.get('tags', []):
+                    if tag == tag_list_item.get('tag'):
+                        tag_account_def = deepcopy(configuration)
+                        tag_account_def['account_id'] = account.get('account_id')
+                        if include_expanded_from:
+                            tag_account_def['expanded_from'] = account.get('expanded_from')
+                            tag_account_def['organization'] = account.get('organization')
+                        tag_account_def['account_parameters'] = account.get('parameters', {})
+
+                        regions = tag_list_item.get('regions', 'default_region')
+                        if isinstance(regions, str):
+                            if regions in ["enabled", "regions_enabled", "enabled_regions"]:
+                                for region_enabled in account.get('regions_enabled'):
+                                    region_tag_account_def = deepcopy(tag_account_def)
+                                    region_tag_account_def['region'] = region_enabled
+                                    task_defs.append(region_tag_account_def)
+                            elif regions == 'default_region':
+                                region_tag_account_def = deepcopy(tag_account_def)
+                                region_tag_account_def['region'] = account.get('default_region')
+                                task_defs.append(region_tag_account_def)
+                            elif regions == "all":
+                                all_regions = config.get_regions()
+                                for region_enabled in all_regions:
+                                    region_tag_account_def = deepcopy(tag_account_def)
+                                    region_tag_account_def['region'] = region_enabled
+                                    task_defs.append(region_tag_account_def)
+                            else:
+                                raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
+                        elif isinstance(regions, list):
+                            for region in regions:
+                                region_tag_account_def = deepcopy(tag_account_def)
+                                region_tag_account_def['region'] = region
+                                task_defs.append(region_tag_account_def)
+                        elif isinstance(regions, tuple):
+                            for region in regions:
+                                region_tag_account_def = deepcopy(tag_account_def)
+                                region_tag_account_def['region'] = region
+                                task_defs.append(region_tag_account_def)
+                        else:
+                            raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
+
+        for account_list_item in deploy_to.get('accounts', []):
+            for account in accounts:
+                if account.get('account_id') == account_list_item.get('account_id'):
+                    account_account_def = deepcopy(configuration)
+                    account_account_def['account_id'] = account.get('account_id')
+                    if include_expanded_from:
+                        account_account_def['expanded_from'] = account.get('expanded_from')
+                        account_account_def['organization'] = account.get('organization')
+                    account_account_def['account_parameters'] = account.get('parameters', {})
+
+                    regions = account_list_item.get('regions', 'default_region')
                     if isinstance(regions, str):
                         if regions in ["enabled", "regions_enabled", "enabled_regions"]:
                             for region_enabled in account.get('regions_enabled'):
-                                region_tag_account_def = deepcopy(tag_account_def)
-                                region_tag_account_def['region'] = region_enabled
-                                task_defs.append(region_tag_account_def)
-                        elif regions == 'default_region':
-                            region_tag_account_def = deepcopy(tag_account_def)
-                            region_tag_account_def['region'] = account.get('default_region')
-                            task_defs.append(region_tag_account_def)
-                        elif regions == "all":
+                                region_account_account_def = deepcopy(account_account_def)
+                                region_account_account_def['region'] = region_enabled
+                                task_defs.append(region_account_account_def)
+                        elif regions in ["default_region"]:
+                            region_account_account_def = deepcopy(account_account_def)
+                            region_account_account_def['region'] = account.get('default_region')
+                            task_defs.append(region_account_account_def)
+                        elif regions in ["all"]:
                             all_regions = config.get_regions()
                             for region_enabled in all_regions:
-                                region_tag_account_def = deepcopy(tag_account_def)
-                                region_tag_account_def['region'] = region_enabled
-                                task_defs.append(region_tag_account_def)
+                                region_account_account_def = deepcopy(account_account_def)
+                                region_account_account_def['region'] = region_enabled
+                                task_defs.append(region_account_account_def)
                         else:
                             raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
+
                     elif isinstance(regions, list):
                         for region in regions:
-                            region_tag_account_def = deepcopy(tag_account_def)
-                            region_tag_account_def['region'] = region
-                            task_defs.append(region_tag_account_def)
+                            region_account_account_def = deepcopy(account_account_def)
+                            region_account_account_def['region'] = region
+                            task_defs.append(region_account_account_def)
                     elif isinstance(regions, tuple):
                         for region in regions:
-                            region_tag_account_def = deepcopy(tag_account_def)
-                            region_tag_account_def['region'] = region
-                            task_defs.append(region_tag_account_def)
+                            region_account_account_def = deepcopy(account_account_def)
+                            region_account_account_def['region'] = region
+                            task_defs.append(region_account_account_def)
                     else:
                         raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
-
-    for account_list_item in deploy_to.get('accounts', []):
-        for account in accounts:
-            if account.get('account_id') == account_list_item.get('account_id'):
-                account_account_def = deepcopy(configuration)
-                account_account_def['account_id'] = account.get('account_id')
-                if include_expanded_from:
-                    account_account_def['expanded_from'] = account.get('expanded_from')
-                    account_account_def['organization'] = account.get('organization')
-                account_account_def['account_parameters'] = account.get('parameters', {})
-
-                regions = account_list_item.get('regions', 'default_region')
-                if isinstance(regions, str):
-                    if regions in ["enabled", "regions_enabled", "enabled_regions"]:
-                        for region_enabled in account.get('regions_enabled'):
-                            region_account_account_def = deepcopy(account_account_def)
-                            region_account_account_def['region'] = region_enabled
-                            task_defs.append(region_account_account_def)
-                    elif regions in ["default_region"]:
-                        region_account_account_def = deepcopy(account_account_def)
-                        region_account_account_def['region'] = account.get('default_region')
-                        task_defs.append(region_account_account_def)
-                    elif regions in ["all"]:
-                        all_regions = config.get_regions()
-                        for region_enabled in all_regions:
-                            region_account_account_def = deepcopy(account_account_def)
-                            region_account_account_def['region'] = region_enabled
-                            task_defs.append(region_account_account_def)
-                    else:
-                        raise Exception(f"Unsupported regions {regions} setting for launch: {launch_name}")
-
-                elif isinstance(regions, list):
-                    for region in regions:
-                        region_account_account_def = deepcopy(account_account_def)
-                        region_account_account_def['region'] = region
-                        task_defs.append(region_account_account_def)
-                elif isinstance(regions, tuple):
-                    for region in regions:
-                        region_account_account_def = deepcopy(account_account_def)
-                        region_account_account_def['region'] = region
-                        task_defs.append(region_account_account_def)
-                else:
-                    raise Exception(f"Unexpected regions of {regions} set for launch {launch_name}")
-    return task_defs
+        return task_defs
