@@ -444,7 +444,7 @@ Resources:
     Properties:
       Name: servicecatalog-puppet-single-account-run
       Description: "Runs puppet for a single account - SINGLE_ACCOUNT_ID"
-      ServiceRole: !GetAtt GenerateRole.Arn
+      ServiceRole: !GetAtt DeployRole.Arn
       Artifacts:
         Type: NO_ARTIFACTS
       Environment:
