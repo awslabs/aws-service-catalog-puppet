@@ -26,10 +26,6 @@ Parameters:
     Type: String
     Description: IAM Permission Boundary to apply to the SourceRole
     Default: "arn:aws:iam::aws:policy/AdministratorAccess"
-  PuppetGenerateRolePermissionBoundary:
-    Type: String
-    Description: IAM Permission Boundary to apply to the PuppetGenerateRole
-    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
   PuppetDeployRolePermissionBoundary:
     Type: String
     Description: IAM Permission Boundary to apply to the PuppetDeployRole
@@ -241,10 +237,10 @@ Resources:
                   Provider: CodeBuild
                 Configuration:
                   ProjectName: !Ref DryRunProject
-                  PrimarySource: GenerateShares
+                  PrimarySource: Source
                 RunOrder: 1
                 InputArtifacts:
-                  - Name: GenerateShares
+                  - Name: Source
                 OutputArtifacts:
                   - Name: DryRunProject
               - !Ref AWS::NoValue
@@ -269,10 +265,10 @@ Resources:
                 Provider: CodeBuild
               Configuration:
                 ProjectName: !Ref DeployProject
-                PrimarySource: GenerateShares
+                PrimarySource: Source
               RunOrder: !If [HasManualApprovals, 3, 1]
               InputArtifacts:
-                - Name: GenerateShares
+                - Name: Source
               OutputArtifacts:
                 - Name: DeployProject
 
