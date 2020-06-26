@@ -229,21 +229,6 @@ Resources:
                 - Name: Source
               RunOrder: 1
               RoleArn: !GetAtt SourceRole.Arn
-        - Name: Generate
-          Actions:
-            - Name: GenerateShares
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Version: 1
-                Provider: CodeBuild
-              Configuration:
-                ProjectName: !Ref GenerateSharesProject
-              RunOrder: 1
-              InputArtifacts:
-                - Name: Source
-              OutputArtifacts:
-                - Name: GenerateShares
         - Name: Deploy
           Actions:
             - !If
@@ -291,36 +276,6 @@ Resources:
               OutputArtifacts:
                 - Name: DeployProject
 
-  GenerateRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: PuppetGenerateRole
-      PermissionsBoundary: !Ref PuppetGenerateRolePermissionBoundary
-      Path: /servicecatalog-puppet/
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: "Allow"
-            Principal:
-              Service:
-                - "codebuild.amazonaws.com"
-            Action:
-              - "sts:AssumeRole"
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
-      Policies:
-        - !If
-          - ShouldUseOrgs
-          - PolicyName: Org
-            PolicyDocument:
-              Version: 2012-10-17
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - sts:AssumeRole
-                  Resource: !Ref OrgIamRoleArn
-          - !Ref AWS::NoValue
-
   DeployRole:
     Type: AWS::IAM::Role
     Properties:
@@ -338,53 +293,6 @@ Resources:
               - "sts:AssumeRole"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
-
-
-  GenerateSharesProject:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: servicecatalog-puppet-generate
-      Description: "builds out the products to be deployed"
-      ServiceRole: !GetAtt GenerateRole.Arn
-      Artifacts:
-        Type: CODEPIPELINE
-      Environment:
-        Type: linuxContainer
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:4.0
-        EnvironmentVariables:
-          - Name: NUM_WORKERS
-            Type: PARAMETER_STORE
-            Value: !Ref NumWorkersSSMParameter
-      Source:
-        Type: CODEPIPELINE
-        BuildSpec: |
-          version: 0.2
-          phases:
-            install:
-              runtime-versions:
-                python: 3.x
-              commands:
-          {% if 'http' in VERSION %}
-                - pip install {{ VERSION }}
-          {% else %}
-                - pip install aws-service-catalog-puppet=={{ VERSION }}
-          {% endif %}
-            build:
-              commands:
-                - servicecatalog-puppet --info expand manifest.yaml
-                - servicecatalog-puppet --info deploy --num-workers ${NUM_WORKERS} manifest-expanded.yaml
-          artifacts:
-            files:
-              - manifest-expanded.yaml
-              - data/*/*/*/*.json
-              - shares/*/*/*.json
-              - topic/*/*/*.json
-            name: GenerateShares
-      TimeoutInMinutes: 480
-      Tags:
-        - Key: "ServiceCatalogPuppet:Actor"
-          Value: "Framework"
 
   NumWorkersSSMParameter:
     Type: AWS::SSM::Parameter
@@ -428,6 +336,7 @@ Resources:
           {% endif %}
             build:
               commands:
+                - servicecatalog-puppet --info expand manifest.yaml
                 - servicecatalog-puppet --info deploy --num-workers ${NUM_WORKERS} manifest-expanded.yaml
           artifacts:
             files:
@@ -567,8 +476,6 @@ Resources:
               commands:
                 - git clone --config 'credential.helper=!aws codecommit credential-helper $@' --config 'credential.UseHttpPath=true' ${CodeRepo.CloneUrlHttp}
                 - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml
-                - servicecatalog-puppet --info generate-shares ServiceCatalogPuppet/manifest-expanded.yaml
-                - rm -rf results output data
                 - servicecatalog-puppet --info deploy ServiceCatalogPuppet/manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID
           artifacts:
             files:
