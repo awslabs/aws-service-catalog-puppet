@@ -17,12 +17,6 @@ def cli(info, info_line_numbers):
 
 @cli.command()
 @click.argument('f', type=click.File())
-def generate_shares(f):
-    core.generate_shares(f)
-
-
-@cli.command()
-@click.argument('f', type=click.File())
 @click.option('--single-account', default=None)
 @click.option('--num-workers', default=10)
 @click.option('--execution-mode', default='hub')

@@ -15,9 +15,14 @@ logger = logging.getLogger("tasks")
 
 
 class PuppetTask(luigi.Task):
-    def load_from_input(self, input_name):
+
+    def read_from_input(self, input_name):
         with self.input().get(input_name).open('r') as f:
-            return json.loads(f.read())
+            return f.read()
+
+    def load_from_input(self, input_name):
+        return json.loads(self.read_from_input(input_name))
+
 
     def info(self, message):
         logger.info(f"{self.uid}: {message}")
@@ -56,7 +61,8 @@ class PuppetTask(luigi.Task):
 
     @property
     def node_id(self):
-        return f"{self.__class__.__name__}_{'|'.join(self.params_for_results_display().values())}"
+        values = [str(v) for v in self.params_for_results_display().values()]
+        return f"{self.__class__.__name__}_{'|'.join(values)}"
 
     def graph_node(self):
         task_friendly_name = self.__class__.__name__.replace("Task", "")
@@ -159,7 +165,6 @@ def on_task_failure(task, exception):
 
 
 def print_stats():
-    logger.info(f"cpu usage: percent={psutil.cpu_percent()}")
     mem = psutil.virtual_memory()
     logger.info(f"memory usage: total={math.ceil(mem.total/1024/1024)}MB used={math.ceil(mem.used/1024/1024)}MB percent={mem.percent}%")
 

@@ -26,6 +26,8 @@ from servicecatalog_puppet.workflow import management as management_tasks
 from servicecatalog_puppet.workflow import portfoliomanagement as portfoliomanagement_tasks
 from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
 from servicecatalog_puppet.workflow import runner as runner
+from servicecatalog_puppet.workflow import launch as launch_tasks
+from servicecatalog_puppet.workflow import spoke_local_portfolios as spoke_local_portfolios_tasks
 from servicecatalog_puppet import config
 from servicecatalog_puppet import manifest_utils
 from servicecatalog_puppet import aws
@@ -48,81 +50,6 @@ def cli(info, info_line_numbers):
             datefmt='%Y-%m-%d:%H:%M:%S',
             level=logging.INFO
         )
-
-
-def generate_shares(f):
-    logger.info('Starting to generate shares for: {}'.format(f.name))
-    tasks_to_run = []
-    puppet_account_id = config.get_puppet_account_id()
-    manifest = manifest_utils.load(f, puppet_account_id)
-    accounts_by_id = {}
-    for account in manifest.get('accounts'):
-        accounts_by_id[account.get('account_id')] = account
-
-    launch_tasks = manifest_utils_for_launches.generate_launch_tasks(
-        manifest, puppet_account_id, False, False, include_expanded_from=False, single_account=None, is_dry_run=False
-    )
-
-    for launch_task in launch_tasks:
-        t = manifest_utils_for_launches.generate_launch_task_defs_for_launch(
-            launch_task.launch_name,
-            launch_task.manifest,
-            launch_task.puppet_account_id,
-            launch_task.should_use_sns,
-            launch_task.should_use_product_plans,
-            launch_task.include_expanded_from,
-            launch_task.single_account,
-            launch_task.is_dry_run
-        )
-        tasks = launch_task.generate_provisions(t.get('task_defs'))
-        for task_ in tasks:
-            task = task_.param_kwargs
-            a_id = task.get('account_id')
-            tasks_to_run.append(
-                portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
-                    puppet_account_id=puppet_account_id,
-                    account_id=a_id,
-                    region=task.get('region'),
-                    portfolio=task.get('portfolio'),
-                    expanded_from=accounts_by_id.get(a_id).get('expanded_from'),
-                    organization=accounts_by_id.get(a_id).get('organization'),
-                )
-            )
-
-    spoke_local_portfolios_tasks = manifest_utils_for_spoke_local_portfolios.generate_spoke_local_portfolios_tasks(
-        manifest, puppet_account_id, False, False, include_expanded_from=False, single_account=None, is_dry_run=False
-    )
-
-    # TODO fixme
-    for spoke_local_portfolios_task in spoke_local_portfolios_tasks:
-        t = manifest_utils_for_spoke_local_portfolios.generate_spoke_local_portfolios_tasks_for_spoke_local_portfolio(
-            spoke_local_portfolios_task.spoke_local_portfolio_name,
-            spoke_local_portfolios_task.manifest,
-            spoke_local_portfolios_task.puppet_account_id,
-            spoke_local_portfolios_task.should_use_sns,
-            spoke_local_portfolios_task.should_use_product_plans,
-            spoke_local_portfolios_task.include_expanded_from,
-            spoke_local_portfolios_task.single_account,
-            spoke_local_portfolios_task.is_dry_run,
-        )
-
-        sub_tasks = spoke_local_portfolios_task.generate_tasks(t.get('task_defs'))
-        for sub_task in sub_tasks:
-            if isinstance(sub_task, portfoliomanagement_tasks.CreateSpokeLocalPortfolioTask):
-                param_kwargs = sub_task.param_kwargs
-                a_id = param_kwargs.get('account_id')
-                tasks_to_run.append(
-                    portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
-                        puppet_account_id=puppet_account_id,
-                        account_id=param_kwargs.get('account_id'),
-                        region=param_kwargs.get('region'),
-                        portfolio=param_kwargs.get('portfolio'),
-                        expanded_from=accounts_by_id.get(a_id).get('expanded_from'),
-                        organization=accounts_by_id.get(a_id).get('organization'),
-                    )
-                )
-
-    runner.run_tasks_for_generate_shares(tasks_to_run)
 
 
 def reset_provisioned_product_owner(f):
@@ -151,39 +78,32 @@ def reset_provisioned_product_owner(f):
 def generate_tasks(f, single_account=None, is_dry_run=False, execution_mode='hub'):
     logger.error(f"core.generate_tasks execution_mode is {execution_mode}")
     puppet_account_id = config.get_puppet_account_id()
-    manifest = manifest_utils.load(f, puppet_account_id)
 
     should_use_sns = config.get_should_use_sns(os.environ.get("AWS_DEFAULT_REGION"))
     should_use_product_plans = config.get_should_use_product_plans(os.environ.get("AWS_DEFAULT_REGION"))
 
-    tasks_to_run = manifest_utils_for_launches.generate_launch_tasks(
-        manifest,
-        puppet_account_id,
-        should_use_sns,
-        should_use_product_plans,
-        include_expanded_from=False,
-        single_account=single_account,
-        is_dry_run=is_dry_run,
-        execution_mode=execution_mode,
-    )
-    logger.info("Finished generating provisioning tasks")
-
-    if not is_dry_run:
-        logger.info("Generating sharing tasks")
-        spoke_local_portfolios_tasks = manifest_utils_for_spoke_local_portfolios.generate_spoke_local_portfolios_tasks(
-            manifest,
-            puppet_account_id,
-            should_use_sns,
-            should_use_product_plans,
+    return [
+        launch_tasks.LaunchSectionTask(
+            manifest_file_path=f.name,
+            puppet_account_id=puppet_account_id,
+            should_use_sns=should_use_sns,
+            should_use_product_plans=should_use_product_plans,
             include_expanded_from=False,
             single_account=single_account,
             is_dry_run=is_dry_run,
-        )
-        tasks_to_run += spoke_local_portfolios_tasks
-        logger.info("Finished generating sharing tasks")
-
-    logger.info("Finished generating all tasks")
-    return tasks_to_run
+            execution_mode=execution_mode,
+        ),
+        spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
+            manifest_file_path=f.name,
+            puppet_account_id=puppet_account_id,
+            should_use_sns=should_use_sns,
+            should_use_product_plans=should_use_product_plans,
+            include_expanded_from=False,
+            single_account=single_account,
+            is_dry_run=is_dry_run,
+            execution_mode=execution_mode,
+        ),
+    ]
 
 
 def deploy(f, single_account, num_workers=10, is_dry_run=False, is_list_launches=False, execution_mode='hub'):

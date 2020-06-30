@@ -25,7 +25,7 @@
                 "sha256:8fb13179eca3f3b361892edb54d0c05d6feff6f94d9386cbd67ed57d6a26518a"
             ],
             "index": "pypi",
-            "version": "==0.24.1"
+            "version": "==0.28.0"
         },
         "boto3": {
             "hashes": [

@@ -1,6 +1,5 @@
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.manifest_utils import get_configuration_overrides, get_actions_from, \
-    get_task_defs_from_details
+from servicecatalog_puppet.manifest_utils import get_configuration_overrides
 from servicecatalog_puppet.workflow import provisioning
 
 import logging
@@ -8,7 +7,8 @@ import logging
 logger = logging.getLogger(__file__)
 
 
-def get_configuration_from_launch(manifest, launch_details, launch_name):
+def get_configuration_from_launch(manifest, launch_name):
+    launch_details = manifest.get('launches').get(launch_name)
     configuration = {
         'status': launch_details.get('status', constants.PROVISIONED),
 
@@ -36,36 +36,12 @@ def get_configuration_from_launch(manifest, launch_details, launch_name):
     return configuration
 
 
-def generate_launch_task_defs_for_launch(
-        launch_name, manifest, puppet_account_id, should_use_sns, should_use_product_plans, include_expanded_from=False,
-        single_account=None, is_dry_run=False,
-):
-    accounts = manifest.get('accounts', [])
-    actions = manifest.get('actions', {})
-
-    launch_details = manifest.get('launches').get(launch_name)
-
-    configuration = get_configuration_from_launch(manifest, launch_details, launch_name)
-    configuration['single_account'] = single_account
-    configuration['is_dry_run'] = is_dry_run
-    configuration['puppet_account_id'] = puppet_account_id
-    configuration['should_use_sns'] = should_use_sns
-    configuration['should_use_product_plans'] = should_use_product_plans
-    return {
-        'pre_actions': get_actions_from(launch_name, launch_details, 'pre', actions, 'launch'),
-        'post_actions': get_actions_from(launch_name, launch_details, 'post', actions, 'launch'),
-        'task_defs': get_task_defs_from_details(
-            launch_details, accounts, include_expanded_from, launch_name, configuration
-        )
-    }
-
-
 def generate_launch_tasks(
         manifest, puppet_account_id, should_use_sns, should_use_product_plans, include_expanded_from=False,
         single_account=None, is_dry_run=False, execution_mode='hub'
 ):
-    logger.error(f"m.generate_launch_tasks execution_mode is {execution_mode}")
-    logger.error(f"execution_mode {execution_mode}")
+    logger.info(f"m.generate_launch_tasks execution_mode is {execution_mode}")
+    logger.info(f"execution_mode {execution_mode}")
     if execution_mode == "spoke":
         return [
             provisioning.LaunchTask(
