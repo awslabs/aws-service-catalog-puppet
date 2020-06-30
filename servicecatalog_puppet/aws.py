@@ -43,7 +43,7 @@ def terminate_if_status_is_not_available(
     response = service_catalog.scan_provisioned_products_single_page(
         AccessLevelFilter={
             'Key': 'Account',
-            'Value': 'string'
+            'Value': 'self'
         },
     )
     provisioned_product_id = False
@@ -397,7 +397,7 @@ def get_provisioned_product_details(product_id, provisioned_product_name, servic
     response = service_catalog.scan_provisioned_products_single_page(
         AccessLevelFilter={
             'Key': 'Account',
-            'Value': 'string'
+            'Value': 'self'
         },
     )
     for r in response.get('ProvisionedProducts', []):

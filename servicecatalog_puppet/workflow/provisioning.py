@@ -404,7 +404,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
             response = service_catalog.scan_provisioned_products_single_page(
                 AccessLevelFilter={
                     'Key': 'Account',
-                    'Value': 'string'
+                    'Value': 'self'
                 },
             )
 
