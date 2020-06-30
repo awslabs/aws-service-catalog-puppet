@@ -483,7 +483,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 region=self.region,
                 portfolio=self.portfolio,
                 organization=self.organization,
-                # pre_actions=self.pre_actions,
+                puppet_account_id=self.puppet_account_id,
             ),
             'products_and_provisioning_artifacts': GetProductsAndProvisioningArtifactsTask(
                 manifest_file_path=self.manifest_file_path,

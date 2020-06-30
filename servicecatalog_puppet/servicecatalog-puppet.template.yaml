@@ -26,6 +26,10 @@ Parameters:
     Type: String
     Description: IAM Permission Boundary to apply to the SourceRole
     Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  PuppetGenerateRolePermissionBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetGenerateRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
   PuppetDeployRolePermissionBoundary:
     Type: String
     Description: IAM Permission Boundary to apply to the PuppetDeployRole
