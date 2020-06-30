@@ -187,7 +187,7 @@ def expand_ou(original_account, client):
 
 
 def get_configuration_overrides(manifest, launch_details):
-    configuration = {}
+    configuration = dict()
     if manifest.get('configuration'):
         if manifest.get('configuration').get('retry_count'):
             configuration['retry_count'] = manifest.get('configuration').get('retry_count')
@@ -197,19 +197,6 @@ def get_configuration_overrides(manifest, launch_details):
         if launch_details.get('configuration').get('requested_priority'):
             configuration['requested_priority'] = int(launch_details.get('configuration').get('requested_priority'))
     return configuration
-
-
-def get_actions_from(name, launch_details, pre_or_post, actions, launch_or_spoke_local_portfolio):
-    result = []
-    for provision_action in launch_details.get(f'{pre_or_post}_actions', []):
-        action = dict()
-        action.update(actions.get(provision_action.get('name')))
-        action.update(provision_action)
-        action['source'] = name
-        action['phase'] = pre_or_post
-        action['source_type'] = launch_or_spoke_local_portfolio
-        result.append(action)
-    return result
 
 
 class Manifest(dict):
