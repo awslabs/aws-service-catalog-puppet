@@ -28,7 +28,7 @@ setup(
         "console_scripts": ["servicecatalog-puppet = servicecatalog_puppet.cli:cli"]
     },
     install_requires=[
-        "better-boto==0.24.1",
+        "better-boto==0.28.0",
         "boto3==1.12.28",
         "botocore==1.15.28",
         "certifi==2019.11.28",
