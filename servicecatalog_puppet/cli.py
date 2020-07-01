@@ -20,8 +20,9 @@ def cli(info, info_line_numbers):
 @click.option('--single-account', default=None)
 @click.option('--num-workers', default=10)
 @click.option('--execution-mode', default='hub')
-def deploy(f, single_account, num_workers, execution_mode):
-    core.deploy(f, single_account, num_workers, execution_mode=execution_mode)
+@click.option('--skip-shares', default=None)
+def deploy(f, single_account, num_workers, execution_mode, skip_shares):
+    core.deploy(f, single_account, num_workers, execution_mode=execution_mode, skip_shares=skip_shares)
 
 
 @cli.command()
