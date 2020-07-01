@@ -31,7 +31,7 @@ class SectionTask(tasks.PuppetTask):
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
     execution_mode = luigi.Parameter()
-    skip_shares = luigi.Parameter()
+    skip_shares = luigi.BoolParameter()
 
     def params_for_results_display(self):
         return {
