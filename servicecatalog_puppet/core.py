@@ -103,6 +103,7 @@ def generate_tasks(f, single_account=None, is_dry_run=False, execution_mode='hub
             single_account=single_account,
             is_dry_run=is_dry_run,
             execution_mode=execution_mode,
+            skip_shares=skip_shares
         ),
     ]
 

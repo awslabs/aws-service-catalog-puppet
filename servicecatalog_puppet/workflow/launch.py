@@ -1,12 +1,6 @@
-import logging
-
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
 from servicecatalog_puppet.workflow import generate as generate_tasks
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
 
 class LaunchSectionTask(manifest_tasks.SectionTask):
     def params_for_results_display(self):
@@ -17,7 +11,6 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
 
     def requires(self):
         if self.skip_shares:
-            logger.info(f"Skipping share setup..")
             return {
                 'manifest': manifest_tasks.ManifestTask(
                     manifest_file_path=self.manifest_file_path,
