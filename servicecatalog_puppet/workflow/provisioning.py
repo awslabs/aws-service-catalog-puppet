@@ -936,8 +936,8 @@ class SpokeLocalPortfolioTask(ProvisioningTask):
 
     def generate_tasks(self, task_defs):
         if len(task_defs) == 0:
-            raise Exception(
-                f"The configuration for this share does not include any target accounts: {self.spoke_local_portfolio_name}")
+            logger.warning(f"The configuration for this share does not include any target accounts: {self.spoke_local_portfolio_name}")
+            return []
         first_task_def = task_defs[0]
         portfolio = first_task_def.get('portfolio')
         tasks = []
