@@ -925,6 +925,13 @@ class LaunchTask(ProvisioningTask):
         manifest = manifest_utils.Manifest(self.load_from_input("manifest"))
 
         launch = manifest.get("launches").get(self.launch_name)
+
+        if self.execution_mode == "hub":
+            if launch.get('execution') == 'spoke':
+                self.info(f"Skipping {self.launch_name} as it is execution:spoke")
+                self.write_output(dict(**self.params_for_results_display(), skipped=True))
+                return
+
         yield [
             self.__class__(
                 launch_name=dependency,
@@ -935,9 +942,7 @@ class LaunchTask(ProvisioningTask):
                 include_expanded_from=self.include_expanded_from,
                 single_account=self.single_account,
                 is_dry_run=self.is_dry_run,
-                execution_mode=manifest.get("launches", {})
-                .get(dependency)
-                .get("execution", "hub"),
+                execution_mode=self.execution_mode,
             )
             for dependency in launch.get("depends_on", [])
         ]
@@ -955,8 +960,6 @@ class LaunchTask(ProvisioningTask):
             self.puppet_account_id, False, self.launch_name, configuration, "launches"
         )
 
-        logger.info(f"first len is {len(launch_tasks_def)}")
-
         logger.info(f"{self.uid} starting pre actions")
         pre_actions = manifest.get_actions_from(self.launch_name, "pre", "launches")
         yield [
@@ -969,8 +972,6 @@ class LaunchTask(ProvisioningTask):
 
         logger.info(f"{self.uid} starting launches")
         ls = self.generate_provisions(launch_tasks_def, manifest)
-        logger.info(f"len is {len(ls)}")
-        logger.info(f"ls is {ls}")
         yield ls
         logger.info(f"{self.uid} finished launches")
 
@@ -984,7 +985,7 @@ class LaunchTask(ProvisioningTask):
         ]
         logger.info(f"{self.uid} finished post actions")
 
-        self.write_output(self.params_for_results_display())
+        self.write_output(dict(**self.params_for_results_display(), skipped=False))
         self.info("Finished")
 
 

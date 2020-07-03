@@ -59,7 +59,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                     )
         else:
             for launch_name, launch_details in manifest.get("launches", {}).items():
-                if launch_details.get("execution") == "spoke":
+                if launch_details.get("execution") != "spoke":
                     tasks.append(
                         provisioning_tasks.LaunchTask(
                             launch_name=launch_name,

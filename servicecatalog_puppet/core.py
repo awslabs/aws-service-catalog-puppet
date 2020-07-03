@@ -54,6 +54,7 @@ def cli(info, info_line_numbers):
 
 def reset_provisioned_product_owner(f):
     puppet_account_id = config.get_puppet_account_id()
+    current_account_id = puppet_account_id
     manifest = manifest_utils.load(f, puppet_account_id)
 
     task_defs = manifest_utils_for_launches.generate_launch_tasks(
@@ -72,7 +73,7 @@ def reset_provisioned_product_owner(f):
                 )
             )
 
-    runner.run_tasks(puppet_account_id, tasks_to_run, 10)
+    runner.run_tasks(puppet_account_id, current_account_id, tasks_to_run, 10)
 
 
 def generate_tasks(
@@ -135,6 +136,7 @@ def deploy(
     )
     runner.run_tasks(
         puppet_account_id,
+        executor_account_id,
         tasks_to_run,
         num_workers,
         is_dry_run,
