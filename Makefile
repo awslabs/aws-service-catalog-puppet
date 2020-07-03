@@ -12,7 +12,7 @@ install:
 	poetry install
 
 pre-build:
-	poetry run pytest -vv --exitfirst -k unit --cov=./servicecatalog_puppet --cov-branch
+	poetry run pytest -vv --exitfirst -k unit --junit-xml=reports/junit/junit.xml --cov=./servicecatalog_puppet --cov-branch
 
 build:
 	poetry build
