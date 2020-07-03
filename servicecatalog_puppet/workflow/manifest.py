@@ -32,7 +32,6 @@ class SectionTask(tasks.PuppetTask):
     is_dry_run = luigi.BoolParameter()
     execution_mode = luigi.Parameter()
     skip_shares = luigi.BoolParameter()
-    generate_only = luigi.BoolParameter()
 
     def params_for_results_display(self):
         return {

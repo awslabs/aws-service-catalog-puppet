@@ -28,6 +28,7 @@ from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
 from servicecatalog_puppet.workflow import runner as runner
 from servicecatalog_puppet.workflow import launch as launch_tasks
 from servicecatalog_puppet.workflow import spoke_local_portfolios as spoke_local_portfolios_tasks
+from servicecatalog_puppet.workflow import generate as generate_shares_tasks
 from servicecatalog_puppet import config
 from servicecatalog_puppet import manifest_utils
 from servicecatalog_puppet import aws
@@ -83,8 +84,9 @@ def generate_tasks(f, single_account=None, is_dry_run=False, execution_mode='hub
     should_use_product_plans = config.get_should_use_product_plans(os.environ.get("AWS_DEFAULT_REGION"))
 
     if generate_only:
+        logger.info("core.generate_tasks will only execute GenerateSharesTask")
         return [
-            launch_tasks.LaunchSectionTask(
+            generate_shares_tasks.GenerateSharesTask(
                 manifest_file_path=f.name,
                 puppet_account_id=puppet_account_id,
                 should_use_sns=should_use_sns,
@@ -92,9 +94,7 @@ def generate_tasks(f, single_account=None, is_dry_run=False, execution_mode='hub
                 include_expanded_from=False,
                 single_account=single_account,
                 is_dry_run=is_dry_run,
-                execution_mode=execution_mode,
-                skip_shares=skip_shares,
-                generate_only=generate_only
+                execution_mode=execution_mode
             ),
         ]
     else:

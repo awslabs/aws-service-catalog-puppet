@@ -37,9 +37,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
 
     def run(self):
         manifest = self.load_from_input('manifest')
-        if self.generate_only:
-            pass
-        elif self.execution_mode == "spoke":
+        if self.execution_mode == "spoke":
             yield [
                 provisioning_tasks.LaunchTask(
                     launch_name=launch_name,
