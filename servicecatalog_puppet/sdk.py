@@ -67,15 +67,15 @@ def upload_config(config):
 
 
 def bootstrap(
-        with_manual_approvals,
-        puppet_code_pipeline_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
-        source_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
-        puppet_generate_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
-        puppet_deploy_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
-        puppet_provisioning_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
-        cloud_formation_deploy_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
-        deploy_environment_compute_type="BUILD_GENERAL1_SMALL",
-        deploy_num_workers=10,
+    with_manual_approvals,
+    puppet_code_pipeline_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+    source_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+    puppet_generate_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+    puppet_deploy_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+    puppet_provisioning_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+    cloud_formation_deploy_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+    deploy_environment_compute_type="BUILD_GENERAL1_SMALL",
+    deploy_num_workers=10,
 ):
     """
     Bootstrap the puppet account.  This will create the AWS CodeCommit repo containing the config and it will also
@@ -128,7 +128,9 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
     core.bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary)
 
 
-def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary):
+def bootstrap_spokes_in_ou(
+    ou_path_or_id, role_name, iam_role_arns, permission_boundary
+):
     """
     Bootstrap each spoke in the given path or id
 
@@ -138,7 +140,9 @@ def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_b
     ARN in the list should be the ARN of account that can assume the role_name in the accounts to bootstrap.
     :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
-    core.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary)
+    core.bootstrap_spokes_in_ou(
+        ou_path_or_id, role_name, iam_role_arns, permission_boundary
+    )
 
 
 def uninstall():

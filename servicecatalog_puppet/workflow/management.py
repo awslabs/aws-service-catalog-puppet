@@ -22,8 +22,6 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
             f"arn:aws:iam::{self.account_id}:role/{self.role_name}"
         )
         sdk.bootstrap_spoke_as(
-            self.puppet_account_id,
-            iam_role_arns_to_use,
-            self.permission_boundary,
+            self.puppet_account_id, iam_role_arns_to_use, self.permission_boundary,
         )
         self.write_output({})

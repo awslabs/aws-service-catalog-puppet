@@ -10,22 +10,22 @@ import psutil
 import logging
 import math
 
-
 logger = logging.getLogger("tasks")
 
 
 class PuppetTask(luigi.Task):
-
     def read_from_input(self, input_name):
-        with self.input().get(input_name).open('r') as f:
+        with self.input().get(input_name).open("r") as f:
             return f.read()
 
     def load_from_input(self, input_name):
         return json.loads(self.read_from_input(input_name))
 
-
     def info(self, message):
         logger.info(f"{self.uid}: {message}")
+
+    def error(self, message):
+        logger.error(f"{self.uid}: {message}")
 
     def api_calls_used(self):
         return []
@@ -38,9 +38,7 @@ class PuppetTask(luigi.Task):
         return result
 
     def output(self):
-        return luigi.LocalTarget(
-            f"output/{self.uid}.json"
-        )
+        return luigi.LocalTarget(f"output/{self.uid}.json")
 
     @property
     def uid(self):
@@ -50,14 +48,8 @@ class PuppetTask(luigi.Task):
         return {}
 
     def write_output(self, content):
-        with self.output().open('w') as f:
-            f.write(
-                json.dumps(
-                    content,
-                    indent=4,
-                    default=str,
-                )
-            )
+        with self.output().open("w") as f:
+            f.write(json.dumps(content, indent=4, default=str,))
 
     @property
     def node_id(self):
@@ -70,7 +62,7 @@ class PuppetTask(luigi.Task):
         for param, value in self.params_for_results_display().items():
             task_description += f"<br/>{param}: {value}"
         label = f"<b>{task_friendly_name}</b>{task_description}"
-        return f"\"{self.node_id}\" [fillcolor=lawngreen style=filled label= < {label} >]"
+        return f'"{self.node_id}" [fillcolor=lawngreen style=filled label= < {label} >]'
 
     def get_lines(self, haystack):
         lines = []
@@ -81,7 +73,7 @@ class PuppetTask(luigi.Task):
             for i in haystack.values():
                 lines += self.get_lines(i)
         else:
-            lines.append(f"\"{self.node_id}\" -> \"{haystack.node_id}\"")
+            lines.append(f'"{self.node_id}" -> "{haystack.node_id}"')
         return lines
 
     def get_graph_lines(self):
@@ -102,26 +94,25 @@ class GetSSMParamTask(PuppetTask):
 
     def output(self):
         return luigi.LocalTarget(
-            f"output/{self.__class__.__name__}/"
-            f"{self.uid}.json"
+            f"output/{self.__class__.__name__}/" f"{self.uid}.json"
         )
 
     def api_calls_used(self):
-        return [
-            'ssm.get_parameter'
-        ]
+        return ["ssm.get_parameter"]
 
     def run(self):
-        with betterboto_client.ClientContextManager('ssm', region_name=self.region) as ssm:
+        with betterboto_client.ClientContextManager(
+            "ssm", region_name=self.region
+        ) as ssm:
             try:
-                p = ssm.get_parameter(
-                    Name=self.name,
+                p = ssm.get_parameter(Name=self.name,)
+                self.write_output(
+                    {
+                        "Name": self.name,
+                        "Region": self.region,
+                        "Value": p.get("Parameter").get("Value"),
+                    }
                 )
-                self.write_output({
-                    'Name': self.name,
-                    'Region': self.region,
-                    'Value': p.get('Parameter').get('Value')
-                })
             except ssm.exceptions.ParameterNotFound as e:
                 raise e
 
@@ -140,15 +131,12 @@ def record_event(event_type, task, extra_event_data=None):
         event.update(extra_event_data)
 
     with open(
-            Path(constants.RESULTS_DIRECTORY) / event_type / f"{task_type}-{task.task_id}.json", 'w'
+        Path(constants.RESULTS_DIRECTORY)
+        / event_type
+        / f"{task_type}-{task.task_id}.json",
+        "w",
     ) as f:
-        f.write(
-            json.dumps(
-                event,
-                default=str,
-                indent=4,
-            )
-        )
+        f.write(json.dumps(event, default=str, indent=4,))
 
 
 @luigi.Task.event_handler(luigi.Event.FAILURE)
@@ -156,48 +144,48 @@ def on_task_failure(task, exception):
     exception_details = {
         "exception_type": type(exception),
         "exception_stack_trace": traceback.format_exception(
-            etype=type(exception),
-            value=exception,
-            tb=exception.__traceback__,
-        )
+            etype=type(exception), value=exception, tb=exception.__traceback__,
+        ),
     }
-    record_event('failure', task, exception_details)
+    record_event("failure", task, exception_details)
 
 
 def print_stats():
     mem = psutil.virtual_memory()
-    logger.info(f"memory usage: total={math.ceil(mem.total/1024/1024)}MB used={math.ceil(mem.used/1024/1024)}MB percent={mem.percent}%")
+    logger.info(
+        f"memory usage: total={math.ceil(mem.total / 1024 / 1024)}MB used={math.ceil(mem.used / 1024 / 1024)}MB percent={mem.percent}%"
+    )
 
 
 @luigi.Task.event_handler(luigi.Event.SUCCESS)
 def on_task_success(task):
     print_stats()
-    record_event('success', task)
+    record_event("success", task)
 
 
 @luigi.Task.event_handler(luigi.Event.TIMEOUT)
 def on_task_timeout(task):
     print_stats()
-    record_event('timeout', task)
+    record_event("timeout", task)
 
 
 @luigi.Task.event_handler(luigi.Event.PROCESS_FAILURE)
 def on_task_process_failure(task, error_msg):
     print_stats()
     exception_details = {
-        "exception_type": 'PROCESS_FAILURE',
+        "exception_type": "PROCESS_FAILURE",
         "exception_stack_trace": error_msg,
     }
-    record_event('process_failure', task, exception_details)
+    record_event("process_failure", task, exception_details)
 
 
 @luigi.Task.event_handler(luigi.Event.PROCESSING_TIME)
 def on_task_processing_time(task, duration):
     print_stats()
-    record_event('processing_time', task, {"duration": duration})
+    record_event("processing_time", task, {"duration": duration})
 
 
 @luigi.Task.event_handler(luigi.Event.BROKEN_TASK)
 def on_task_broken_task(task, exception):
     print_stats()
-    record_event('broken_task', task, {"exception": exception})
+    record_event("broken_task", task, {"exception": exception})

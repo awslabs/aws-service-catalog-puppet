@@ -18,3 +18,5 @@ output/
 results/
 log-*
 testing.sh
+config.yaml
+README.rst
