@@ -163,7 +163,7 @@ class ProvisionProductTask(tasks.PuppetTask):
     def api_calls_used(self):
         return {
             f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
-            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}",
+            f"servicecatalog.scan_provisioned_products_{self.account_id}_{self.region}",
 
             f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
             f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
@@ -363,7 +363,7 @@ class ProvisionProductTask(tasks.PuppetTask):
 class ProvisionProductDryRunTask(ProvisionProductTask):
     def api_calls_used(self):
         return [
-            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}",
+            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
             f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
             f"servicecatalog.describe_provisioning_artifact_{self.account_id}_{self.region}",
 
@@ -386,10 +386,11 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
             logger.info(f"[{self.uid}] looking for previous failures")
             path_id = aws.get_path_for_product(service_catalog, product_id, self.portfolio)
 
-            response = service_catalog.search_provisioned_products(
-                Filters={'SearchQuery': [
-                    "productId:{}".format(product_id)
-                ]}
+            response = service_catalog.scan_provisioned_products_single_page(
+                AccessLevelFilter={
+                    'Key': 'Account',
+                    'Value': 'self'
+                },
             )
             provisioned_product_id = False
             provisioning_artifact_id = False
@@ -539,7 +540,7 @@ class TerminateProductTask(tasks.PuppetTask):
 
     def api_calls_used(self):
         return [
-            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}",
+            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
             f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
             f"servicecatalog.describe_record_{self.account_id}_{self.region}",
             # f"ssm.delete_parameter_{self.region}": 1,
@@ -656,7 +657,7 @@ class TerminateProductDryRunTask(tasks.PuppetTask):
 
     def api_calls_used(self):
         return [
-            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}",
+            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
             f"servicecatalog.describe_provisioning_artifact_{self.account_id}_{self.region}",
         ]
 
@@ -708,7 +709,7 @@ class ResetProvisionedProductOwnerTask(tasks.PuppetTask):
 
     def api_calls_used(self):
         return [
-            f"servicecatalog.search_provisioned_products_{self.account_id}_{self.region}",
+            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
             f"servicecatalog.update_provisioned_product_properties_{self.account_id}_{self.region}",
         ]
 
@@ -725,26 +726,25 @@ class ResetProvisionedProductOwnerTask(tasks.PuppetTask):
             logger.info(
                 f"[{logger_prefix} :: Checking if existing provisioned product exists"
             )
-            provisioned_product_search_result = service_catalog.search_provisioned_products(
+            all_results = service_catalog.scan_provisioned_products_single_page(
                 AccessLevelFilter={
                     'Key': 'Account',
                     'Value': 'self'
                 },
-                Filters={
-                    'SearchQuery': [
-                        f'name:{self.launch_name}',
-                    ]
-                }
             ).get('ProvisionedProducts', [])
-            if provisioned_product_search_result:
-                provisioned_product_id = provisioned_product_search_result[0].get('Id')
-                logger.info(f"[{logger_prefix} :: Ensuring current provisioned product owner is correct")
-                service_catalog.update_provisioned_product_properties(
-                    ProvisionedProductId=provisioned_product_id,
-                    ProvisionedProductProperties={
-                        'OWNER': f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
-                    }
-                )
+            changes_made = list()
+            for result in all_results:
+                if result.get('Name') == self.launch_name:
+                    provisioned_product_id = result.get('Id')
+                    logger.info(f"[{logger_prefix} :: Ensuring current provisioned product owner is correct")
+                    changes_made.append(result)
+                    service_catalog.update_provisioned_product_properties(
+                        ProvisionedProductId=provisioned_product_id,
+                        ProvisionedProductProperties={
+                            'OWNER': f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+                        }
+                    )
+        self.write_output(changes_made)
 
 
 class LaunchTask(tasks.PuppetTask):

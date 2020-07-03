@@ -41,10 +41,11 @@ def terminate_if_status_is_not_available(
     prefix = f"[{provisioned_product_name}] {account_id}:{region}"
     logger.info(f"{prefix} :: checking if should be terminated")
 
-    response = service_catalog.search_provisioned_products(
-        Filters={'SearchQuery': [
-            "productId:{}".format(product_id)
-        ]}
+    response = service_catalog.scan_provisioned_products_single_page(
+        AccessLevelFilter={
+            'Key': 'Account',
+            'Value': 'self'
+        },
     )
     provisioned_product_id = False
     provisioning_artifact_id = False
@@ -394,10 +395,11 @@ def ensure_is_terminated(
 
 
 def get_provisioned_product_details(product_id, provisioned_product_name, service_catalog):
-    response = service_catalog.search_provisioned_products(
-        Filters={'SearchQuery': [
-            "productId:{}".format(product_id)
-        ]}
+    response = service_catalog.scan_provisioned_products_single_page(
+        AccessLevelFilter={
+            'Key': 'Account',
+            'Value': 'self'
+        },
     )
     for r in response.get('ProvisionedProducts', []):
         if r.get('Name') == provisioned_product_name:

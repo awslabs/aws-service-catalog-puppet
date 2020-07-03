@@ -18,3 +18,6 @@ output/
 results/
 log-*
 testing.sh
+setup.py
+*.lock
+README.rst
