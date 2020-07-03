@@ -1,40 +1,28 @@
+.PHONY: help install pre-build build bump-patch bump-minor bump-major
+
 help:
 	@echo "Usage:"
 	@echo "    make help        show this message"
-	@echo "    make setup       create virtual environment and install dependencies"
-	@echo "    make activate    enter virtual environment"
-	@echo "    make test        run the test suite"
+	@echo "    make install     install dependencies"
+	@echo "    make pre-build   run tests"
+	@echo "    make build       build the package"
 	@echo "    exit             leave virtual environment"
 
-setup:
-	pip install pipenv
-	pipenv install --dev --three
-	
-setup-aws:
-	pip install pipenv
-	pipenv lock -r > requirements.txt
-	pip install -r requirements.txt
-	pipenv lock -r -d > requirements-dev.txt
-	pip install -r requirements-dev.txt
-	
-activate:
-	pipenv shell -c
+install:
+	pip install poetry
+	poetry install
 
-test:
-	#pipenv check
-	pipenv run pytest -vv -k unit --cov=./servicecatalog_puppet --cov-branch
-	
-test-aws:
-	#pipenv check
-	pytest -k unit --cov=./servicecatalog_puppet --cov-branch	
+pre-build:
+	poetry run pytest -vv -k unit --cov=./servicecatalog_puppet --cov-branch
 
-prepare-deploy:
-	pipenv run pipenv-setup sync
-	pipenv run python setup.py sdist
+build:
+	poetry build
 
-prepare-deploy-aws:
-	pip install pipenv-setup twine
-	pipenv-setup sync
-	python setup.py sdist
+bump-patch:
+	dephell project bump patch
 
-.PHONY: help activate test setup prepare-deploy test-aws setup-aws prepare-deploy-aws
+bump-minor:
+	dephell project bump minor
+
+bump-major:
+	dephell project bump major
