@@ -10,7 +10,7 @@ from betterboto import client as betterboto_client
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
 
-from servicecatalog_puppet.workflow import provisioning, tasks, general
+from servicecatalog_puppet.workflow import tasks, general
 
 import logging
 

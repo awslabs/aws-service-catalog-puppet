@@ -1,7 +1,6 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 import unittest
-from pytest import fixture
 
 
 class TestManifest(unittest.TestCase):

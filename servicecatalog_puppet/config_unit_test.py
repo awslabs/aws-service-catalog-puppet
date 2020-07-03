@@ -1,7 +1,5 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-from unittest.mock import call
-
 import yaml
 from pytest import fixture
 import pytest
@@ -159,20 +157,3 @@ def test_get_puppet_account_id(sut, mocker):
 
     # verify
     assert actual_result == expected_result
-
-
-# TODO fix
-def test_get_puppet_version(sut, mocker):
-    # setup
-    expected_result = "0.0.1"
-    mocked_response = [
-        {"version": expected_result},
-    ]
-    mocked_pkg_require = mocker.patch.object(sut.pkg_resources, "require")
-    # mocked_pkg_require.return_value = mocked_response
-
-    # exercise
-    actual_result = sut.get_puppet_version()
-
-    # verify
-    # assert actual_result == expected_result

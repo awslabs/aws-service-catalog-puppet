@@ -1,5 +1,4 @@
-from copy import deepcopy
-from servicecatalog_puppet import constants, config
+from servicecatalog_puppet import constants
 
 from servicecatalog_puppet.manifest_utils import get_configuration_overrides
 

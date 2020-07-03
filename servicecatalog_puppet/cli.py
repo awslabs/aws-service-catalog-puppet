@@ -365,7 +365,7 @@ def set_regions(regions):
 @cli.command()
 @click.argument("name")
 @click.argument("value")
-def set_config_value(name, value, type=bool):
+def set_config_value(name, value):
     core.set_config_value(name, value)
 
 

@@ -55,7 +55,7 @@ def run_tasks(
 
     entries = []
 
-    for type in [
+    for result_type in [
         "failure",
         "success",
         "timeout",
@@ -63,7 +63,7 @@ def run_tasks(
         "processing_time",
         "broken_task",
     ]:
-        os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
+        os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type)
 
     logger.info(f"About to run workflow with {num_workers} workers")
 
@@ -285,7 +285,7 @@ def run_tasks(
 
 
 def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
-    for type in [
+    for result_type in [
         "failure",
         "success",
         "timeout",
@@ -293,7 +293,7 @@ def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
         "processing_time",
         "broken_task",
     ]:
-        os.makedirs(Path(constants.RESULTS_DIRECTORY) / type)
+        os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type)
 
     run_result = luigi.build(
         tasks_to_run,

@@ -21,11 +21,7 @@ from pykwalify.core import Core
 from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import manifest_utils_for_launches
-from servicecatalog_puppet import manifest_utils_for_spoke_local_portfolios
 from servicecatalog_puppet.workflow import management as management_tasks
-from servicecatalog_puppet.workflow import (
-    portfoliomanagement as portfoliomanagement_tasks,
-)
 from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
 from servicecatalog_puppet.workflow import runner as runner
 from servicecatalog_puppet.workflow import launch as launch_tasks
