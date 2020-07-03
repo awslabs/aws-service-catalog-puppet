@@ -75,43 +75,66 @@ def reset_provisioned_product_owner(f):
     runner.run_tasks(tasks_to_run, 10)
 
 
-def generate_tasks(f, single_account=None, is_dry_run=False, execution_mode='hub', skip_shares=False):
+def generate_tasks(f, single_account=None, is_dry_run=False, execution_mode='hub', skip_shares=False, generate_only=False):
     logger.error(f"core.generate_tasks execution_mode is {execution_mode}")
     puppet_account_id = config.get_puppet_account_id()
 
     should_use_sns = config.get_should_use_sns(os.environ.get("AWS_DEFAULT_REGION"))
     should_use_product_plans = config.get_should_use_product_plans(os.environ.get("AWS_DEFAULT_REGION"))
 
-    return [
-        launch_tasks.LaunchSectionTask(
-            manifest_file_path=f.name,
-            puppet_account_id=puppet_account_id,
-            should_use_sns=should_use_sns,
-            should_use_product_plans=should_use_product_plans,
-            include_expanded_from=False,
-            single_account=single_account,
-            is_dry_run=is_dry_run,
-            execution_mode=execution_mode,
-            skip_shares=skip_shares
-        ),
-        spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
-            manifest_file_path=f.name,
-            puppet_account_id=puppet_account_id,
-            should_use_sns=should_use_sns,
-            should_use_product_plans=should_use_product_plans,
-            include_expanded_from=False,
-            single_account=single_account,
-            is_dry_run=is_dry_run,
-            execution_mode=execution_mode,
-            skip_shares=skip_shares
-        ),
-    ]
+    if generate_only:
+        return [
+            launch_tasks.LaunchSectionTask(
+                manifest_file_path=f.name,
+                puppet_account_id=puppet_account_id,
+                should_use_sns=should_use_sns,
+                should_use_product_plans=should_use_product_plans,
+                include_expanded_from=False,
+                single_account=single_account,
+                is_dry_run=is_dry_run,
+                execution_mode=execution_mode,
+                skip_shares=skip_shares,
+                generate_only=generate_only
+            ),
+        ]
+    else:
+        return [
+            launch_tasks.LaunchSectionTask(
+                manifest_file_path=f.name,
+                puppet_account_id=puppet_account_id,
+                should_use_sns=should_use_sns,
+                should_use_product_plans=should_use_product_plans,
+                include_expanded_from=False,
+                single_account=single_account,
+                is_dry_run=is_dry_run,
+                execution_mode=execution_mode,
+                skip_shares=skip_shares,
+                generate_only=generate_only
+            ),
+            spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
+                manifest_file_path=f.name,
+                puppet_account_id=puppet_account_id,
+                should_use_sns=should_use_sns,
+                should_use_product_plans=should_use_product_plans,
+                include_expanded_from=False,
+                single_account=single_account,
+                is_dry_run=is_dry_run,
+                execution_mode=execution_mode,
+                skip_shares=skip_shares
+            ),
+        ]
 
 
 def deploy(f, single_account, num_workers=10, is_dry_run=False, is_list_launches=False, execution_mode='hub', skip_shares=False):
     logger.error(f"core.deploy execution_mode is {execution_mode}")
     tasks_to_run = generate_tasks(f, single_account, is_dry_run, execution_mode, skip_shares)
     runner.run_tasks(tasks_to_run, num_workers, is_dry_run, is_list_launches, execution_mode)
+
+
+def generate_shares(f):
+    logger.info('Starting to generate shares for: {}'.format(f.name))
+    tasks_to_run = generate_tasks(f, generate_only=True)
+    runner.run_tasks(tasks_to_run, num_workers=10, is_dry_run=False, is_list_launches=False, execution_mode="hub")
 
 
 def graph(f):
