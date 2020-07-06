@@ -272,9 +272,9 @@ def run_tasks(
             if should_use_eventbridge:
                 logging.info(f"Sending {len(entries)} events to eventbridge")
                 with betterboto_client.CrossAccountClientContextManager(
-                        "events",
-                        f"arn:aws:iam::{current_account_id}:role/servicecatalog-puppet/PuppetRole",
-                        f"{current_account_id}-PuppetRole",
+                    "events",
+                    f"arn:aws:iam::{current_account_id}:role/servicecatalog-puppet/PuppetRole",
+                    f"{current_account_id}-PuppetRole",
                 ) as events:
                     for i in range(
                         0, len(entries), constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL

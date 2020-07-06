@@ -1,4 +1,5 @@
 import json
+import os
 
 import luigi
 from betterboto import client as betterboto_client
@@ -820,10 +821,9 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
         logger_prefix = f"[{self.launch_name}] {self.account_id}:{self.region}"
         logger.info(f"{logger_prefix} :: starting ResetProvisionedProductOwnerTask")
 
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            role,
+            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
             f"sc-{self.region}-{self.account_id}",
             region_name=self.region,
         ) as service_catalog:
@@ -848,6 +848,195 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
                         },
                     )
             self.write_output(changes_made)
+
+
+class RunDeployInSpokeTask(tasks.PuppetTask):
+    manifest_file_path = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+    account_id = luigi.Parameter()
+
+    home_region = luigi.Parameter()
+    regions = luigi.ListParameter()
+    should_collect_cloudformation_events = luigi.BoolParameter()
+    should_forward_events_to_eventbridge = luigi.BoolParameter()
+    should_forward_failures_to_opscenter = luigi.BoolParameter()
+
+    def params_for_results_display(self):
+        return {
+            "manifest_file_path": self.manifest_file_path,
+            "puppet_account_id": self.puppet_account_id,
+            "account_id": self.account_id,
+        }
+
+    def run(self):
+        with betterboto_client.CrossAccountClientContextManager(
+            "s3",
+            f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"s3-{self.puppet_account_id}",
+        ) as s3:
+            bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
+            key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
+            s3.put_object(
+                Body=open(self.manifest_file_path).read(), Bucket=bucket, Key=key,
+            )
+            signed_url = s3.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": bucket, "Key": key},
+                ExpiresIn=60 * 60 * 24,
+            )
+        with betterboto_client.CrossAccountClientContextManager(
+            "codebuild",
+            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"codebuild-{self.account_id}",
+        ) as codebuild:
+            response = codebuild.start_build(
+                projectName=constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME,
+                environmentVariablesOverride=[
+                    {"name": "MANIFEST_URL", "value": signed_url, "type": "PLAINTEXT"},
+                    {
+                        "name": "PUPPET_ACCOUNT_ID",
+                        "value": self.puppet_account_id,
+                        "type": "PLAINTEXT",
+                    },
+                    {
+                        "name": "HOME_REGION",
+                        "value": self.home_region,
+                        "type": "PLAINTEXT",
+                    },
+                    {
+                        "name": "REGIONS",
+                        "value": ",".join(self.regions),
+                        "type": "PLAINTEXT",
+                    },
+                    {
+                        "name": "SHOULD_COLLECT_CLOUDFORMATION_EVENTS",
+                        "value": str(self.should_collect_cloudformation_events),
+                        "type": "PLAINTEXT",
+                    },
+                    {
+                        "name": "SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE",
+                        "value": str(self.should_forward_events_to_eventbridge),
+                        "type": "PLAINTEXT",
+                    },
+                    {
+                        "name": "SHOULD_FORWARD_FAILURES_TO_OPSCENTER",
+                        "value": str(self.should_forward_failures_to_opscenter),
+                        "type": "PLAINTEXT",
+                    },
+                ],
+            )
+        self.write_output(response)
+
+
+class LaunchInSpokeTask(ProvisioningTask):
+    launch_name = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+    should_use_sns = luigi.BoolParameter()
+    should_use_product_plans = luigi.BoolParameter()
+    include_expanded_from = luigi.BoolParameter()
+    single_account = luigi.Parameter()
+    is_dry_run = luigi.BoolParameter()
+    execution_mode = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "launch_name": self.launch_name,
+        }
+
+    def requires(self):
+        self.info("requires")
+        return {
+            "manifest": manifest_tasks.ManifestTask(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+            ),
+        }
+
+    def generate_tasks(self, task_defs, manifest):
+        self.info("generate_provisions")
+        provisions = []
+        accounts_by_id = dict()
+        for a in manifest.get("accounts"):
+            accounts_by_id[a.get("account_id")] = a
+
+        for task_def in task_defs:
+            if self.single_account == "None" or self.single_account is None:
+                pass
+            else:
+                if task_def.get("account_id") != self.single_account:
+                    continue
+            task_status = task_def.get("status")
+            del task_def["status"]
+            del task_def["depends_on"]
+            task_def["is_dry_run"] = self.is_dry_run
+            run_deploy_in_spoke_task_params = dict(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                account_id=task_def.get("account_id"),
+                home_region=config.get_home_region(self.puppet_account_id),
+                regions=config.get_regions(self.puppet_account_id),
+                should_collect_cloudformation_events=config.get_should_use_sns(
+                    self.puppet_account_id
+                ),
+                should_forward_events_to_eventbridge=config.get_should_use_eventbridge(
+                    self.puppet_account_id
+                ),
+                should_forward_failures_to_opscenter=config.get_should_forward_failures_to_opscenter(
+                    self.puppet_account_id
+                ),
+            )
+
+            if task_status == constants.PROVISIONED:
+                provisioning_parameters = {}
+                for p in ProvisionProductTask.get_param_names(include_significant=True):
+                    provisioning_parameters[p] = task_def.get(p)
+
+                if self.is_dry_run:
+                    provisions.append(
+                        ProvisionProductDryRunTask(**provisioning_parameters)
+                    )
+                else:
+                    provisions.append(
+                        RunDeployInSpokeTask(**run_deploy_in_spoke_task_params)
+                    )
+
+            elif task_status == constants.TERMINATED:
+                terminating_parameters = {}
+                for p in TerminateProductTask.get_param_names(include_significant=True):
+                    terminating_parameters[p] = task_def.get(p)
+
+                if self.is_dry_run:
+                    provisions.append(
+                        TerminateProductDryRunTask(**terminating_parameters)
+                    )
+                else:
+                    provisions.append(
+                        RunDeployInSpokeTask(**run_deploy_in_spoke_task_params)
+                    )
+            else:
+                raise Exception(f"Unsupported status of {task_status}")
+        self.info(f"len of provisions: {len(provisions)}")
+        return provisions
+
+    def run(self):
+        self.info("started")
+        manifest = manifest_utils.Manifest(self.load_from_input("manifest"))
+        configuration = manifest_utils_for_launches.get_configuration_from_launch(
+            manifest, self.launch_name
+        )
+        configuration["single_account"] = self.single_account
+        configuration["is_dry_run"] = self.is_dry_run
+        configuration["puppet_account_id"] = self.puppet_account_id
+        configuration["should_use_sns"] = self.should_use_sns
+        configuration["should_use_product_plans"] = self.should_use_product_plans
+
+        launch_tasks_def = manifest.get_task_defs_from_details(
+            self.puppet_account_id, False, self.launch_name, configuration, "launches"
+        )
+
+        tasks_to_run = self.generate_tasks(launch_tasks_def, manifest)
+        yield tasks_to_run
+        self.write_output()
 
 
 class LaunchTask(ProvisioningTask):
@@ -926,11 +1115,18 @@ class LaunchTask(ProvisioningTask):
 
         launch = manifest.get("launches").get(self.launch_name)
 
-        if self.execution_mode == "hub":
-            if launch.get('execution') == 'spoke':
-                self.info(f"Skipping {self.launch_name} as it is execution:spoke")
-                self.write_output(dict(**self.params_for_results_display(), skipped=True))
-                return
+        configuration = manifest_utils_for_launches.get_configuration_from_launch(
+            manifest, self.launch_name
+        )
+        configuration["single_account"] = self.single_account
+        configuration["is_dry_run"] = self.is_dry_run
+        configuration["puppet_account_id"] = self.puppet_account_id
+        configuration["should_use_sns"] = self.should_use_sns
+        configuration["should_use_product_plans"] = self.should_use_product_plans
+
+        launch_tasks_def = manifest.get_task_defs_from_details(
+            self.puppet_account_id, False, self.launch_name, configuration, "launches"
+        )
 
         yield [
             self.__class__(
@@ -946,19 +1142,6 @@ class LaunchTask(ProvisioningTask):
             )
             for dependency in launch.get("depends_on", [])
         ]
-
-        configuration = manifest_utils_for_launches.get_configuration_from_launch(
-            manifest, self.launch_name
-        )
-        configuration["single_account"] = self.single_account
-        configuration["is_dry_run"] = self.is_dry_run
-        configuration["puppet_account_id"] = self.puppet_account_id
-        configuration["should_use_sns"] = self.should_use_sns
-        configuration["should_use_product_plans"] = self.should_use_product_plans
-
-        launch_tasks_def = manifest.get_task_defs_from_details(
-            self.puppet_account_id, False, self.launch_name, configuration, "launches"
-        )
 
         logger.info(f"{self.uid} starting pre actions")
         pre_actions = manifest.get_actions_from(self.launch_name, "pre", "launches")

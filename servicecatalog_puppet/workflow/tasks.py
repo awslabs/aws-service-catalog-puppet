@@ -47,9 +47,13 @@ class PuppetTask(luigi.Task):
     def params_for_results_display(self):
         return {}
 
-    def write_output(self, content):
+    def write_output(self, content=None):
         with self.output().open("w") as f:
-            f.write(json.dumps(content, indent=4, default=str,))
+            f.write(
+                json.dumps(
+                    content or self.params_for_results_display(), indent=4, default=str,
+                )
+            )
 
     @property
     def node_id(self):

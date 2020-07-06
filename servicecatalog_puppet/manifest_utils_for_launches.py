@@ -43,7 +43,7 @@ def generate_launch_tasks(
 ):
     logger.info(f"m.generate_launch_tasks execution_mode is {execution_mode}")
     logger.info(f"execution_mode {execution_mode}")
-    if execution_mode == "spoke":
+    if execution_mode == constants.EXECUTION_MODE_SPOKE:
         return [
             provisioning.LaunchTask(
                 launch_name=launch_name,
@@ -57,7 +57,7 @@ def generate_launch_tasks(
                 execution_mode=execution_mode,
             )
             for launch_name, launch_details in manifest.get("launches", {}).items()
-            if launch_details.get("execution") == "spoke"
+            if launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE
         ]
     else:
         return [
@@ -73,5 +73,5 @@ def generate_launch_tasks(
                 execution_mode=execution_mode,
             )
             for launch_name, launch_details in manifest.get("launches", {}).items()
-            if launch_details.get("execution") != "spoke"
+            if launch_details.get("execution") != constants.EXECUTION_MODE_SPOKE
         ]
