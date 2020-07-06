@@ -370,14 +370,6 @@ dev = ["pre-commit", "tox"]
 
 [[package]]
 category = "main"
-description = "Text progress bar library for Python."
-name = "progressbar"
-optional = false
-python-versions = "*"
-version = "2.5"
-
-[[package]]
-category = "main"
 description = "Cross-platform lib for process and system monitoring in Python."
 name = "psutil"
 optional = false
@@ -644,7 +636,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "f88bbbaf4878dd48baeef5747028e7ea63fdea5588aa9b872bfdc5413ed79ef6"
+content-hash = "2e331559af7ef11a7e92ff20a818426c7858ce99b52e9e349494199e9d34796d"
 python-versions = ">=3.7"
 
 [metadata.files]
@@ -864,9 +856,6 @@ parse-type = [
 pluggy = [
     {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},
     {file = "pluggy-0.13.1.tar.gz", hash = "sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0"},
-]
-progressbar = [
-    {file = "progressbar-2.5.tar.gz", hash = "sha256:5d81cb529da2e223b53962afd6c8ca0f05c6670e40309a7219eacc36af9b6c63"},
 ]
 psutil = [
     {file = "psutil-5.7.0-cp27-none-win32.whl", hash = "sha256:298af2f14b635c3c7118fd9183843f4e73e681bb6f01e12284d4d70d48a60953"},
