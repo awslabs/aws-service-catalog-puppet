@@ -1,4 +1,5 @@
 .PHONY: help install pre-build build bump-patch bump-minor bump-major version bootstrap bootstrap-branch expand deploy clean deploy-spoke black pycodestyle
+.DEFAULT_GOAL := help
 
 WS=ignored/testing/$(ENV_NUMBER)
 FACTORY_VENV=${WS}/factory
@@ -6,66 +7,62 @@ PUPPET_VENV=${WS}/puppet
 
 include Makefile.Test
 
-help: ## Prints help message
-	@IFS=$$'\n' ; \
-	help_lines=(`fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##/:/'`); \
-	printf "%-30s %s\n" "Usage: " ; \
-	printf "%-30s %s\n" "  make <target>" ; \
-	printf "%-30s %s\n" "" ; \
-	printf "%-30s %s\n" "Targets: " ; \
-	for help_line in $${help_lines[@]}; do \
-		IFS=$$':' ; \
-		help_split=($$help_line) ; \
-		help_command=`echo $${help_split[0]} | sed -e 's/^ */    /' -e 's/ *$$//'` ; \
-		help_info=`echo $${help_split[2]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
-		printf '\033[36m'; \
-		printf "%-30s %s" $$help_command ; \
-		printf '\033[0m'; \
-		printf "%s\n" $$help_info; \
-	done
-
-install: ## Installs the checked out version of the code to your poetry managed venv
+## @CI_actions Installs the checked out version of the code to your poetry managed venv
+install:
 	poetry install
 
-pre-build: black unit-tests ## CI action to run before the build.  Runs black and unit tests.
+## @CI_actions Runs code quality checks
+pre-build: black unit-tests
 
-build: ## Builds the project into an sdist
+## @CI_actions Builds the project into an sdist
+build:
 	poetry build -f sdist
 
+## @Project_setup Increment patch number
 bump-patch:
 	poetry version patch
 
+## @Project_setup Increment minor number
 bump-minor:
 	poetry version minor
 
+## @Project_setup Increment major number
 bump-major:
 	poetry version major
 
-version: ## runs servicecatalog-puppet version
+## @Puppet_commands Runs servicecatalog-puppet version
+version:
 	poetry run servicecatalog-puppet version
 
-bootstrap: ## runs servicecatalog-puppet --info bootstrap
+## @Puppet_commands Runs servicecatalog-puppet bootstrap
+bootstrap:
 	poetry run servicecatalog-puppet --info bootstrap
 
-bootstrap-self-as-spoke: ## servicecatalog-puppet --info bootstrap-spoke for the current aws profile
+## @Puppet_commands Runs servicecatalog-puppet bootstrap-spoke for the current aws profile
+bootstrap-self-as-spoke:
 	poetry run servicecatalog-puppet --info bootstrap-spoke $$(aws sts get-caller-identity --query Account --output text)
 
-bootstrap-branch: ## runs run servicecatalog-puppet --info bootstrap-branch for the local checkout branch
+## @Puppet_commands Runs servicecatalog-puppet --info bootstrap-branch for the local checkout branch
+bootstrap-branch:
 	poetry run servicecatalog-puppet --info bootstrap-branch \
 		$$(git rev-parse --abbrev-ref HEAD)
 
-expand: ## runs servicecatalog-puppet --info expand for the checked out manifest file
+## @Puppet_commands Runs servicecatalog-puppet --info expand for the checked out manifest file
+expand:
 	poetry run servicecatalog-puppet --info expand \
 		ignored/src/ServiceCatalogPuppet/manifest.yaml
 
-deploy: ## runs servicecatalog-puppet --info deploy
+## @Puppet_commands Runs servicecatalog-puppet --info deploy
+deploy:
 	poetry run servicecatalog-puppet --info deploy \
 		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
 
-clean: ## cleans up after a build
+## @Project_setup Cleans up after a build
+clean:
 	rm -rf data results output config.yaml
 
-deploy-spoke: ## runs servicecatalog-puppet --info deploy for a spoke
+## @Puppet_commands Runs servicecatalog-puppet --info deploy for a spoke
+deploy-spoke:
 	poetry run servicecatalog-puppet --info deploy \
 		--execution-mode spoke \
 		--puppet-account-id 863888216255 \
@@ -77,12 +74,62 @@ deploy-spoke: ## runs servicecatalog-puppet --info deploy for a spoke
 		--should-forward-failures-to-opscenter true \
 		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
 
-black: ## runs black on the checked out code
+## @Code_quality Runs black on the checked out code
+black:
 	poetry run black servicecatalog_puppet
 
-pycodestyle: ## runs pycodestyle on the the checked out code
+## @Code_quality Runs pycodestyle on the the checked out code
+pycodestyle:
 	poetry run pycodestyle --statistics -qq servicecatalog_puppet
 
-prepare-for-testing: build ## generates a setup.py so you can test bootstrapped branches in AWS Codecommit
+## @Project_setup Generates a setup.py so you can test bootstrapped branches in AWS Codecommit
+prepare-for-testing: build
 	tar -zxvf dist/aws-service-catalog-puppet-*.tar.gz -C dist aws-service-catalog-puppet-*/setup.py
 	mv aws-service-catalog-puppet-*/setup.py setup.py
+
+
+
+help: help-prefix help-targets
+
+help-prefix:
+	@echo Usage:
+	@echo '  make <target>'
+	@echo '  make <VAR>=<value> <target>'
+	@echo ''
+	@echo Targets:
+
+HELP_TARGET_MAX_CHAR_NUM = 25
+
+help-targets:
+	@awk '/^[a-zA-Z\-\_0-9]+:/ \
+		{ \
+			helpMessage = match(lastLine, /^## (.*)/); \
+			if (helpMessage) { \
+				helpCommand = substr($$1, 0, index($$1, ":")-1); \
+				helpMessage = substr(lastLine, RSTART + 3, RLENGTH); \
+				helpGroup = match(helpMessage, /^@([^ ]*)/); \
+				if (helpGroup) { \
+					helpGroup = substr(helpMessage, RSTART + 1, index(helpMessage, " ")-2); \
+					helpMessage = substr(helpMessage, index(helpMessage, " ")+1); \
+				} \
+				printf " %s|  %-$(HELP_TARGET_MAX_CHAR_NUM)s %s\n", \
+					helpGroup, helpCommand, helpMessage; \
+			} \
+		} \
+		{ lastLine = $$0 }' \
+		$(MAKEFILE_LIST) \
+	| sort -t'|' -sk1,1 \
+	| awk -F '|' ' \
+			{ \
+			cat = $$1; \
+			if (cat != lastCat || lastCat == "") { \
+				if ( cat == "0" ) { \
+					print "Targets:" \
+				} else { \
+					gsub("_", " ", cat); \
+					printf "%s ~ \n", cat; \
+				} \
+			} \
+			print " " $$2 \
+		} \
+		{ lastCat = $$1 }'
