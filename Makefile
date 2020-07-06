@@ -1,5 +1,11 @@
 .PHONY: help install pre-build build bump-patch bump-minor bump-major version bootstrap bootstrap-branch expand deploy clean deploy-spoke black pycodestyle
 
+WS=ignored/testing/$(ENV_NUMBER)
+FACTORY_VENV=${WS}/factory
+PUPPET_VENV=${WS}/puppet
+
+include Makefile.Test
+
 help:
 	@echo "Usage:"
 	@echo "    make help        show this message"
@@ -32,7 +38,7 @@ version:
 bootstrap:
 	poetry run servicecatalog-puppet --info bootstrap
 
-bootstrap-spoke:
+bootstrap-self-as-spoke:
 	poetry run servicecatalog-puppet --info bootstrap-spoke $$(aws sts get-caller-identity --query Account --output text)
 
 bootstrap-branch:
@@ -72,4 +78,3 @@ prepare-for-testing:
 	poetry build -f sdist
 	tar -zxvf dist/aws-service-catalog-puppet-*.tar.gz -C dist aws-service-catalog-puppet-*/setup.py
 	mv aws-service-catalog-puppet-*/setup.py setup.py
-

@@ -1,0 +1,108 @@
+.PHONY: test-factory-install test-factory-configure test-puppet-hub-install test-puppet-hub-configure test-bootstrap-spoke
+
+WS=ignored/testing/$(ENV_NUMBER)
+FACTORY_VENV=${WS}/factory
+PUPPET_VENV=${WS}/puppet
+
+define MANIFEST
+schema: puppet-2019-04-01
+parameters:
+  SecurityAccountId:
+    default: ${HUB_ACCOUNT_ID_WRAPPED}
+accounts:
+  - account_id: ${HUB_ACCOUNT_ID_WRAPPED}
+    name: ${HUB}
+    default_region: eu-west-1
+    regions_enabled:
+      - eu-west-1
+      - eu-west-2
+      - eu-west-3
+    tags:
+      - scope:hub
+      - scope:all
+  - account_id: ${SPOKE_ACCOUNT_ID_WRAPPED}
+    name: ${SPOKE}
+    default_region: eu-west-1
+    regions_enabled:
+      - eu-west-1
+      - eu-west-2
+      - eu-west-3
+    tags:
+      - scope:spoke
+      - scope:all
+
+spoke-local-portfolios:
+  core2:
+    portfolio: core2-central-it-team-portfolio
+    associations:
+      - arn:aws:iam::\${AWS::AccountId}:role/IT-FinOpsRole
+    depends_on:
+      - iam-assume-roles-spoke
+    deploy_to:
+      tags:
+        - regions: default_region
+          tag: scope:all
+  core3:
+    portfolio: core3-central-it-team-portfolio
+    product_generation_method: import
+    associations:
+      - arn:aws:iam::\${AWS::AccountId}:role/IT-FinOpsRole
+    depends_on:
+      - iam-assume-roles-spoke
+    deploy_to:
+      tags:
+        - regions: default_region
+          tag: scope:all
+endef
+export MANIFEST
+
+test-factory-install:
+	@echo "Installing factory"
+	aws cloudformation create-stack \
+		--stack-name scf-init \
+		--template-url https://service-catalog-tools.s3.eu-west-2.amazonaws.com/factory/latest/servicecatalog-factory-initialiser.template.yaml \
+		--parameters ParameterKey=EnabledRegions,ParameterValue=\"eu-west-1,eu-west-2,eu-west-3\" \
+		--capabilities CAPABILITY_NAMED_IAM 2>/dev/null && echo "Installed factory" || echo "factory already installed"
+	aws cloudformation wait stack-create-complete --stack-name scf-init
+	aws cloudformation update-stack \
+		--stack-name scf-init \
+		--template-url https://service-catalog-tools.s3.eu-west-2.amazonaws.com/factory/latest/servicecatalog-factory-initialiser.template.yaml \
+		--parameters ParameterKey=EnabledRegions,ParameterValue=\"eu-west-1,eu-west-2,eu-west-3\" \
+		--capabilities CAPABILITY_NAMED_IAM 2>/dev/null  && aws cloudformation wait stack-update-complete --stack-name scf-init || echo "Factory up to date"
+
+test-factory-configure:
+	@echo "Setting up factory portfolios"
+	virtualenv ${FACTORY_VENV}
+	${FACTORY_VENV}/bin/pip3 install aws-service-catalog-factory --upgrade
+	rm -rf ${WS}/ServiceCatalogFactory 2>/dev/null || true
+	git clone --config 'credential.helper=!aws codecommit credential-helper $$@' --config 'credential.UseHttpPath=true' https://git-codecommit.eu-west-1.amazonaws.com/v1/repos/ServiceCatalogFactory ${WS}/ServiceCatalogFactory
+	mkdir ${WS}/ServiceCatalogFactory/portfolios 2>/dev/null || true
+	curl https://raw.githubusercontent.com/awslabs/aws-service-catalog-factory/master/servicecatalog_factory/portfolios/example-simple.yaml > ${WS}/ServiceCatalogFactory/portfolios/core.yaml
+	${FACTORY_VENV}/bin/servicecatalog-factory import-product-set ${WS}/ServiceCatalogFactory/portfolios/core.yaml aws-iam central-it-team-portfolio
+	cp ${WS}/ServiceCatalogFactory/portfolios/core.yaml ${WS}/ServiceCatalogFactory/portfolios/core2.yaml
+	cp ${WS}/ServiceCatalogFactory/portfolios/core.yaml ${WS}/ServiceCatalogFactory/portfolios/core3.yaml
+	rm -rf aws-iam-assume-roles-spoke/ aws-iam-groups-security-account/
+	cd ${WS}/ServiceCatalogFactory && git add . && git commit -am "adding" && git push || echo "nothing to commit"
+
+test-puppet-hub-install:
+	@echo "Installing puppet"
+	virtualenv ${PUPPET_VENV}
+	${PUPPET_VENV}/bin/pip3 install . --upgrade
+
+test-puppet-hub-configure:
+	${PUPPET_VENV}/bin/servicecatalog-puppet upload-config servicecatalog_puppet/example-config-small.yaml
+	${PUPPET_VENV}/bin/servicecatalog-puppet bootstrap-org-master $(HUB_ACCOUNT_ID)
+	${PUPPET_VENV}/bin/servicecatalog-puppet bootstrap-spoke $(HUB_ACCOUNT_ID)
+	${PUPPET_VENV}/bin/servicecatalog-puppet set-org-iam-role-arn arn:aws:iam::$(HUB_ACCOUNT_ID):role/servicecatalog-puppet/PuppetOrgRoleForExpands$(HUB_ACCOUNT_ID)
+	${PUPPET_VENV}/bin/servicecatalog-puppet bootstrap-branch "$$(git rev-parse --abbrev-ref HEAD)"
+
+test-bootstrap-spoke:
+	@echo "bootstraping a spoke"
+	${PUPPET_VENV}/bin/servicecatalog-puppet --info bootstrap-spoke $(PUPPET_ACCOUNT_ID)
+
+test-setup-manifest:
+	rm -rf ${WS}/ServiceCatalogPuppet
+	git clone --config 'credential.helper=!aws codecommit credential-helper $$@' --config 'credential.UseHttpPath=true' https://git-codecommit.eu-west-1.amazonaws.com/v1/repos/ServiceCatalogPuppet ${WS}/ServiceCatalogPuppet
+	echo "$${MANIFEST}" > ${WS}/ServiceCatalogPuppet/manifest.yaml
+	${PUPPET_VENV}/bin/servicecatalog-puppet import-product-set ${WS}/ServiceCatalogPuppet/manifest.yaml aws-iam core-central-it-team-portfolio
+	cd ${WS}/ServiceCatalogPuppet && git add . && git commit -am "adding" && git push || echo "nothing to commit"
