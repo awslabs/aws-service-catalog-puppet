@@ -56,6 +56,9 @@ spoke-local-portfolios:
 endef
 export MANIFEST
 
+unit-tests: ## runs unit tests for the project
+	poetry run pytest -vv --exitfirst -k unit --junit-xml=reports/junit/junit.xml --cov=./servicecatalog_puppet --cov-branch
+
 test-factory-install:
 	@echo "Installing factory"
 	aws cloudformation create-stack \
