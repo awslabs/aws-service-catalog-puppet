@@ -20,8 +20,14 @@ Make targets you will need to have python poetry and python 3.7 installed.  We r
 The following describes some of the Make targets.
 
 make black
-----------
-----------
+~~~~~~~~~~
+This will reformat the python files to be consist following the black library.
+
+make clean
+~~~~~~~~~~
+This will delete/clean up the files created during local test runs.
+
+
 
 
 Hub

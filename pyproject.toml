@@ -13,8 +13,8 @@ authors = ["Eamonn Faherty <aws-service-catalog-tools@amazon.com>"]
 packages = [
     { include = "servicecatalog_puppet" },
 ]
-include = ["servicecatalog_puppet"]
-exclude = ["ignored","results","data","output"]
+#include = ["servicecatalog_puppet"]
+#exclude = ["ignored/*"]
 
 [tool.poetry.scripts]
 servicecatalog-puppet = "servicecatalog_puppet.cli:cli"
