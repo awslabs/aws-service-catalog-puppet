@@ -884,6 +884,9 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
                 Params={"Bucket": bucket, "Key": key},
                 ExpiresIn=60 * 60 * 24,
             )
+        with betterboto_client.ClientContextManager("ssm") as ssm:
+            response = ssm.get_parameter(Name="service-catalog-puppet-version")
+            version = response.get("Parameter").get("Value")
         with betterboto_client.CrossAccountClientContextManager(
             "codebuild",
             f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
@@ -892,7 +895,12 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
             response = codebuild.start_build(
                 projectName=constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME,
                 environmentVariablesOverride=[
-                    {"name": "MANIFEST_URL", "value": signed_url, "type": "PLAINTEXT"},
+                    {
+                        "name": "VERSION", "value": version, "type": "PLAINTEXT"
+                    },
+                    {
+                        "name": "MANIFEST_URL", "value": signed_url, "type": "PLAINTEXT"
+                    },
                     {
                         "name": "PUPPET_ACCOUNT_ID",
                         "value": self.puppet_account_id,

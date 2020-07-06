@@ -32,6 +32,9 @@ version:
 bootstrap:
 	poetry run servicecatalog-puppet --info bootstrap
 
+bootstrap-spoke:
+	poetry run servicecatalog-puppet --info bootstrap-spoke $$(aws sts get-caller-identity --query Account --output text)
+
 bootstrap-branch:
 	poetry run servicecatalog-puppet --info bootstrap-branch \
 		$$(git rev-parse --abbrev-ref HEAD)

@@ -129,6 +129,10 @@ Resources:
         ComputeType: !Ref DeployEnvironmentComputeType
         Image: aws/codebuild/standard:4.0
         EnvironmentVariables:
+          - Name: VERSION
+            Type: PLAINTEXT
+            Value: "CHANGE_ME"
+
           - Name: MANIFEST_URL
             Type: PLAINTEXT
             Value: "CHANGE_ME"
@@ -170,24 +174,23 @@ Resources:
               runtime-versions:
                 python: 3.x
               commands:
-          {% if 'http' in VERSION %}
-                - pip install {{ VERSION }}
-          {% else %}
-                - pip install aws-service-catalog-puppet=={{ VERSION }}
-          {% endif %}
+                - echo $VERSION
+                - bash -c "if [[ $VERSION =~ 'http'  ]]; then pip install $VERSION ; else pip install aws-service-catalog-puppet==$VERSION; fi"
+
+
             build:
               commands:
                 - curl $MANIFEST_URL > manifest-expanded.yaml
                 - >
-                  servicecatalog-puppet --info deploy
-                      --execution-mode spoke
-                      --puppet-account-id $PUPPET_ACCOUNT_ID
-                      --single-account $(aws sts get-caller-identity --query Account --output text)
-                      --home-region $HOME_REGION
-                      --regions  $REGIONS
-                      --should-collect-cloudformation-events $SHOULD_COLLECT_CLOUDFORMATION_EVENTS
-                      --should-forward-events-to-eventbridge $SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE
-                      --should-forward-failures-to-opscenter $SHOULD_FORWARD_FAILURES_TO_OPSCENTER
+                  servicecatalog-puppet --info deploy \
+                      --execution-mode spoke \
+                      --puppet-account-id $PUPPET_ACCOUNT_ID \
+                      --single-account $(aws sts get-caller-identity --query Account --output text) \
+                      --home-region $HOME_REGION \
+                      --regions $REGIONS \
+                      --should-collect-cloudformation-events $SHOULD_COLLECT_CLOUDFORMATION_EVENTS \
+                      --should-forward-events-to-eventbridge $SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE \
+                      --should-forward-failures-to-opscenter $SHOULD_FORWARD_FAILURES_TO_OPSCENTER \
                       manifest-expanded.yaml
           artifacts:
             files:
