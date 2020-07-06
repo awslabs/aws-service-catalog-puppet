@@ -72,3 +72,4 @@ prepare-for-testing:
 	poetry build -f sdist
 	tar -zxvf dist/aws-service-catalog-puppet-*.tar.gz -C dist aws-service-catalog-puppet-*/setup.py
 	mv aws-service-catalog-puppet-*/setup.py setup.py
+
