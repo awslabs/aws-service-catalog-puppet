@@ -15,7 +15,7 @@ pre-build:
 	poetry run pytest -vv --exitfirst -k unit --junit-xml=reports/junit/junit.xml --cov=./servicecatalog_puppet --cov-branch
 
 build:
-	poetry build
+	poetry build -f sdist
 
 bump-patch:
 	poetry version patch
@@ -64,3 +64,8 @@ black:
 
 pycodestyle:
 	poetry run pycodestyle --statistics -qq servicecatalog_puppet
+
+prepare-for-testing:
+	poetry build -f sdist
+	tar -zxvf dist/aws-service-catalog-puppet-*.tar.gz -C dist aws-service-catalog-puppet-*/setup.py
+	mv aws-service-catalog-puppet-*/setup.py setup.py

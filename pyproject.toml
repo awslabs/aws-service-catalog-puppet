@@ -11,9 +11,9 @@ readme = "README.md"
 repository = "https://github.com/awslabs/aws-service-catalog-puppet-framework"
 authors = ["Eamonn Faherty <aws-service-catalog-tools@amazon.com>"]
 packages = [
-    { include = "servicecatalog_puppet" },
+    { include = "servicecatalog_puppet", from = "." },
 ]
-#include = ["servicecatalog_puppet"]
+include = ["servicecatalog_puppet"]
 #exclude = ["ignored/*"]
 
 [tool.poetry.scripts]

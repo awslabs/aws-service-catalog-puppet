@@ -123,7 +123,7 @@ Resources:
       Description: "runs puppet in the spoke account"
       ServiceRole: !GetAtt DeployInSpokeRole.Arn
       Artifacts:
-        Type: CODEPIPELINE
+        Type: NO_ARTIFACTS
       Environment:
         Type: linuxContainer
         ComputeType: !Ref DeployEnvironmentComputeType
@@ -162,7 +162,7 @@ Resources:
             Value: "CHANGE_ME"
 
       Source:
-        Type: CODEPIPELINE
+        Type: NO_SOURCE
         BuildSpec: |
           version: 0.2
           phases:
