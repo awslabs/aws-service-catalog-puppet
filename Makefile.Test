@@ -1,4 +1,4 @@
-.PHONY: test-factory-install test-factory-configure test-puppet-hub-install test-puppet-hub-configure test-bootstrap-spoke
+.PHONY: unit-tests test-factory-install test-factory-configure test-puppet-hub-install test-puppet-hub-configure test-bootstrap-spoke test-setup-manifest
 
 WS=ignored/testing/$(ENV_NUMBER)
 FACTORY_VENV=${WS}/factory

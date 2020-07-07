@@ -1,0 +1,13 @@
+.PHONY: install pre-build build
+
+## @CI_actions Installs the checked out version of the code to your poetry managed venv
+install:
+	poetry install
+
+## @CI_actions Runs code quality checks
+pre-build: black unit-tests
+
+## @CI_actions Builds the project into an sdist
+build:
+	poetry build -f sdist
+
