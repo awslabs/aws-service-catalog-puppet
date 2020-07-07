@@ -18,7 +18,7 @@ help-prefix:
 	@echo '  make <target>'
 	@echo '  make <VAR>=<value> <target>'
 	@echo ''
-	@echo Targets:
+	@echo Available targets
 
 HELP_TARGET_MAX_CHAR_NUM = 25
 
@@ -34,7 +34,7 @@ help-targets:
 					helpGroup = substr(helpMessage, RSTART + 1, index(helpMessage, " ")-2); \
 					helpMessage = substr(helpMessage, index(helpMessage, " ")+1); \
 				} \
-				printf " %s|  %-$(HELP_TARGET_MAX_CHAR_NUM)s %s\n", \
+				printf "[ %s|  %-$(HELP_TARGET_MAX_CHAR_NUM)s %s\n", \
 					helpGroup, helpCommand, helpMessage; \
 			} \
 		} \
@@ -49,7 +49,7 @@ help-targets:
 					print "Targets:" \
 				} else { \
 					gsub("_", " ", cat); \
-					printf "%s ~ \n", cat; \
+					printf "%s ] \n", cat; \
 				} \
 			} \
 			print " " $$2 \
