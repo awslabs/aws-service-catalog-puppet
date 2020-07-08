@@ -6,8 +6,8 @@ install:
 
 ## @CI_actions Runs code quality checks
 pre-build: black unit-tests
+	poetry show --no-dev | awk '{print "poetry add "$1"=="$2}' | sort | sh
 
 ## @CI_actions Builds the project into an sdist
 build:
 	poetry build -f sdist
-
