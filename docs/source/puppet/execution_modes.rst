@@ -58,3 +58,23 @@ Async
 With async the provisioning still occurs in the CodeBuild project of the puppet account but when provisioning of
 launches is running the CodeBuild project does not wait for the completion of the product provisioning.  This means you
 cannot depend on a launch that is async and you cannot have outputs for an async launch.
+
+
+Spoke
+-----
+
+.. note::
+
+    This was added in version 0.78.0
+
+.. note::
+
+    This will require you to bootstrap your spokes again.  You can use the AWS Codebuild project
+    ``servicecatalog-puppet-bootstrap-spokes-in-ou`` to bootstrap spokes after installing version 0.78.0+
+
+With spoke the provisioning starts in the puppet account as normal.  Once a launch with spoke execution mode is found
+an AWS Codebuild project is triggered in the spoke account to perform the provisioning. The framework will run the
+project only once per account per run of the main puppet run to avoid wasteful execution times.  The depends_on
+statements are adhered to within the same account but depending on launches across accounts are not adhered to. AWS SSM
+parameters and outputs will not work and nor will actions.  The goal of spoke executions is to split the provisioning
+workflow across multiple accounts to reduce the overall execution time.
