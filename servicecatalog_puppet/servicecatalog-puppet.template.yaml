@@ -515,6 +515,24 @@ Resources:
       Queues:
         - !Ref CloudFormationEventsQueue
 
+  SpokeDeployBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "sc-puppet-spoke-deploy-${AWS::AccountId}"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: TRUE
+        BlockPublicPolicy: TRUE
+        IgnorePublicAcls: TRUE
+        RestrictPublicBuckets: TRUE
+      Tags:
+        - Key: "ServiceCatalogPuppet:Actor"
+          Value: "Framework"
 
 Outputs:
   CloudFormationEventsQueueArn:

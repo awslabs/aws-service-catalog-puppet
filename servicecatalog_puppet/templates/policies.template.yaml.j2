@@ -7,6 +7,7 @@ Description: |
 
 Conditions:
   NoOpCondition: !Equals [ true, false]
+  RunningInHomeRegion: !Equals [ !Ref "AWS::Region", {{ HOME_REGION }} ]
 
 Resources:
   NoOpResource:
@@ -73,4 +74,32 @@ Resources:
             Condition:
               StringEquals:
                 aws:PrincipalOrgID: {{ organization }}{% endfor %}
+  {% endif %}
+
+  {% if sharing_policies.get('accounts')|length > 0 or sharing_policies.get('organizations')|length > 0 %}
+  {% for account_id in sharing_policies.get('accounts') %}
+  EventBusPolicy{{account_id}}:
+    Type: AWS::Events::EventBusPolicy
+    Condition: RunningInHomeRegion
+    Properties:
+      EventBusName: "servicecatalog-puppet-event-bus"
+      Action: "events:PutEvents"
+      Principal: "{{account_id}}"
+      StatementId: "AllowSpokesAccounts{{account_id}}"
+  {% endfor %}
+
+  {% for organization in sharing_policies.get('organizations') %}
+  EventBusPolicy{{organization|replace("-","")}}:
+    Type: AWS::Events::EventBusPolicy
+    Condition: RunningInHomeRegion
+    Properties:
+      EventBusName: "servicecatalog-puppet-event-bus"
+      Action: "events:PutEvents"
+      Principal: "*"
+      StatementId: "AllowSpokesOrgs{{organization}}"
+      Condition:
+        Type: "StringEquals"
+        Key: "aws:PrincipalOrgID"
+        Value: "{{ organization }}"
+  {% endfor %}
   {% endif %}

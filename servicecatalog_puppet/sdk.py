@@ -67,21 +67,23 @@ def upload_config(config):
 
 
 def bootstrap(
-        with_manual_approvals,
-        puppet_code_pipeline_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
-        source_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
-        puppet_generate_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
-        puppet_deploy_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
-        puppet_provisioning_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
-        cloud_formation_deploy_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
-        deploy_environment_compute_type="BUILD_GENERAL1_SMALL",
-        deploy_num_workers=10,
+    with_manual_approvals,
+    puppet_account_id,
+    puppet_code_pipeline_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+    source_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+    puppet_generate_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+    puppet_deploy_role_permission_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+    puppet_provisioning_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+    cloud_formation_deploy_role_permissions_boundary="arn:aws:iam::aws:policy/AdministratorAccess",
+    deploy_environment_compute_type="BUILD_GENERAL1_SMALL",
+    deploy_num_workers=10,
 ):
     """
     Bootstrap the puppet account.  This will create the AWS CodeCommit repo containing the config and it will also
     create the AWS CodePipeline that will run the solution.
 
     :param with_manual_approvals: Boolean to specify whether there should be manual approvals before provisioning occurs
+    :param puppet_account_id: AWS Account Id for your puppet account
     :param puppet_code_pipeline_role_permission_boundary: IAM Boundary to apply to the role: PuppetCodePipelineRole
     :param source_role_permissions_boundary: IAM Boundary to apply to the role: SourceRole
     :param puppet_generate_role_permission_boundary: IAM Boundary to apply to the role: PuppetGenerateRole
@@ -91,8 +93,10 @@ def bootstrap(
     :param deploy_environment_compute_type: The AWS CodeBuild Environment Compute Type
     :param deploy_num_workers: Number of workers that should be used when running a deploy
     """
+
     core.bootstrap(
         with_manual_approvals,
+        puppet_account_id,
         puppet_code_pipeline_role_permission_boundary,
         source_role_permissions_boundary,
         puppet_generate_role_permission_boundary,
@@ -128,7 +132,9 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
     core.bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary)
 
 
-def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary):
+def bootstrap_spokes_in_ou(
+    ou_path_or_id, role_name, iam_role_arns, permission_boundary
+):
     """
     Bootstrap each spoke in the given path or id
 
@@ -138,21 +144,25 @@ def bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_b
     ARN in the list should be the ARN of account that can assume the role_name in the accounts to bootstrap.
     :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
-    core.bootstrap_spokes_in_ou(ou_path_or_id, role_name, iam_role_arns, permission_boundary)
+    core.bootstrap_spokes_in_ou(
+        ou_path_or_id, role_name, iam_role_arns, permission_boundary
+    )
 
 
-def uninstall():
+def uninstall(puppet_account_id):
     """
-    Delete the resources created during the boostrap process.  AWS Service Catalog portfolios and their configurations
+    Delete the resources created during the bootstrap process.  AWS Service Catalog portfolios and their configurations
     are not modified during this call
 
+    :param puppet_account_id: AWS Account Id for your puppet account
     """
-    core.uninstall()
+    core.uninstall(puppet_account_id)
 
 
-def release_spoke():
+def release_spoke(puppet_account_id):
     """
-    Delete the resources created during the boostrap spoke process
+    Delete the resources created during the bootstrap spoke process
 
+    :param puppet_account_id: AWS Account Id for your puppet account
     """
-    core.release_spoke()
+    core.release_spoke(puppet_account_id)

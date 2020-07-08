@@ -1,40 +1,57 @@
-help:
-	@echo "Usage:"
-	@echo "    make help        show this message"
-	@echo "    make setup       create virtual environment and install dependencies"
-	@echo "    make activate    enter virtual environment"
-	@echo "    make test        run the test suite"
-	@echo "    exit             leave virtual environment"
+.PHONY: help install pre-build build bump-patch bump-minor bump-major version bootstrap bootstrap-branch expand deploy clean deploy-spoke black pycodestyle
+.DEFAULT_GOAL := help
 
-setup:
-	pip install pipenv
-	pipenv install --dev --three
-	
-setup-aws:
-	pip install pipenv
-	pipenv lock -r > requirements.txt
-	pip install -r requirements.txt
-	pipenv lock -r -d > requirements-dev.txt
-	pip install -r requirements-dev.txt
-	
-activate:
-	pipenv shell -c
+WS=ignored/testing/$(ENV_NUMBER)
+FACTORY_VENV=${WS}/factory
+PUPPET_VENV=${WS}/puppet
 
-test:
-	#pipenv check
-	pipenv run pytest -vv -k unit --cov=./servicecatalog_puppet --cov-branch
-	
-test-aws:
-	#pipenv check
-	pytest -k unit --cov=./servicecatalog_puppet --cov-branch	
+include Makefile.CI
+include Makefile.Project
+include Makefile.Puppet
+include Makefile.CodeQuality
+include Makefile.Test
 
-prepare-deploy:
-	pipenv run pipenv-setup sync
-	pipenv run python setup.py sdist
+help: help-prefix help-targets
 
-prepare-deploy-aws:
-	pip install pipenv-setup twine
-	pipenv-setup sync
-	python setup.py sdist
+help-prefix:
+	@echo Usage:
+	@echo '  make <target>'
+	@echo '  make <VAR>=<value> <target>'
+	@echo ''
+	@echo Available targets
 
-.PHONY: help activate test setup prepare-deploy test-aws setup-aws prepare-deploy-aws
+HELP_TARGET_MAX_CHAR_NUM = 25
+
+help-targets:
+	@awk '/^[a-zA-Z\-\_0-9]+:/ \
+		{ \
+			helpMessage = match(lastLine, /^## (.*)/); \
+			if (helpMessage) { \
+				helpCommand = substr($$1, 0, index($$1, ":")-1); \
+				helpMessage = substr(lastLine, RSTART + 3, RLENGTH); \
+				helpGroup = match(helpMessage, /^@([^ ]*)/); \
+				if (helpGroup) { \
+					helpGroup = substr(helpMessage, RSTART + 1, index(helpMessage, " ")-2); \
+					helpMessage = substr(helpMessage, index(helpMessage, " ")+1); \
+				} \
+				printf "[ %s|  %-$(HELP_TARGET_MAX_CHAR_NUM)s %s\n", \
+					helpGroup, helpCommand, helpMessage; \
+			} \
+		} \
+		{ lastLine = $$0 }' \
+		$(MAKEFILE_LIST) \
+	| sort -t'|' -sk1,1 \
+	| awk -F '|' ' \
+			{ \
+			cat = $$1; \
+			if (cat != lastCat || lastCat == "") { \
+				if ( cat == "0" ) { \
+					print "Targets:" \
+				} else { \
+					gsub("_", " ", cat); \
+					printf "%s ] \n", cat; \
+				} \
+			} \
+			print " " $$2 \
+		} \
+		{ lastCat = $$1 }'

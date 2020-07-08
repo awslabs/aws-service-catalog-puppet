@@ -19,3 +19,4 @@ Welcome to aws-service-catalog-puppets's documentation!
    puppet/using_the_cli
    puppet/using_the_sdk
    puppet/project_assurance
+   puppet/contributing
