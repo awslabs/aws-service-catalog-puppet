@@ -3,7 +3,7 @@
 
 [tool.poetry]
 name = "aws-service-catalog-puppet"
-version = "0.76.3"
+version = "0.76.4"
 description = "Making it easier to deploy ServiceCatalog products"
 classifiers = ["Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "Programming Language :: Python :: 3", "License :: OSI Approved :: Apache Software License", "Operating System :: OS Independent", "Natural Language :: English"]
 homepage = "https://github.com/awslabs/aws-service-catalog-puppet-framework"
@@ -12,7 +12,6 @@ repository = "https://github.com/awslabs/aws-service-catalog-puppet-framework"
 authors = ["Eamonn Faherty <aws-service-catalog-tools@amazon.com>"]
 packages = [
     { include = "servicecatalog_puppet" },
-    { exclude = "ignored" },
 ]
 include = ["servicecatalog_puppet"]
 exclude = ["ignored"]
