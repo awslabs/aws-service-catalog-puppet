@@ -26,6 +26,9 @@ Parameters:
     Type: String
     Default: "{{ VERSION }}"
 
+Conditions:
+  NotRunningInPuppetAccount: !Not [ !Equals [ !Ref PuppetAccountId, !Ref "AWS::AccountId" ] ]
+
 Resources:
   Param:
     Type: AWS::SSM::Parameter
@@ -205,29 +208,57 @@ Resources:
 
   SpokeEventBus:
     Type: AWS::Events::EventBus
+    Condition: NotRunningInPuppetAccount
     Properties:
-      Name: "SpokeEventBus"
+      Name: "servicecatalog-puppet-spoke-event-bus"
 
   SpokeEventBusPolicy:
     Type: AWS::Events::EventBusPolicy
+    Condition: NotRunningInPuppetAccount
     Properties:
       Action: "events:PutEvents"
       Principal: !Ref AWS::AccountId
       StatementId: "allow-self"
       EventBusName: !Ref SpokeEventBus
 
+  EventBridgeFromSpoke:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: EventBridgeFromSpoke
+      Path: /servicecatalog-puppet/
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: EventBusActions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:PutEvents
+                Resource: !Sub "arn:aws:events:${AWS::Region}:${PuppetAccountId}:event-bus/default"
+
   EventRule:
     Type: AWS::Events::Rule
+    Condition: NotRunningInPuppetAccount
     Properties:
       EventBusName: !Ref SpokeEventBus
       Name: servicecatalog-puppet-forwarder
       EventPattern:
         source:
           - "servicecatalog-puppet"
-      RoleArn: !GetAtt PuppetRole.Arn
+      RoleArn: !GetAtt EventBridgeFromSpoke.Arn
       Targets:
         - Arn: !Sub "arn:aws:events:${AWS::Region}:${PuppetAccountId}:event-bus/servicecatalog-puppet-event-bus"
           Id: servicecatalog-puppet-event-bus
+          RoleArn: !GetAtt EventBridgeFromSpoke.Arn
 
 Outputs:
   Version:

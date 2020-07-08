@@ -10,7 +10,13 @@ bootstrap:
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap-spoke for the current aws profile
 bootstrap-self-as-spoke:
+	@echo "Bootstrapping $$(aws sts get-caller-identity --query Account --output text) as a spoke for $$(aws sts get-caller-identity --query Account --output text)"
 	poetry run servicecatalog-puppet --info bootstrap-spoke $$(aws sts get-caller-identity --query Account --output text)
+
+## @Puppet_commands Runs servicecatalog-puppet bootstrap-spoke for the current aws profile
+bootstrap-spoke:
+	@echo "Bootstrapping $$(aws sts get-caller-identity --query Account --output text) as a spoke for $(PUPPET_ACCOUNT_ID)"
+	poetry run servicecatalog-puppet --info bootstrap-spoke $(PUPPET_ACCOUNT_ID)
 
 ## @Puppet_commands Runs servicecatalog-puppet --info bootstrap-branch for the local checkout branch
 bootstrap-branch:
@@ -31,8 +37,8 @@ deploy:
 deploy-spoke:
 	poetry run servicecatalog-puppet --info deploy \
 		--execution-mode spoke \
-		--puppet-account-id 863888216255 \
-		--single-account 162541427941 \
+		--puppet-account-id $(PUPPET_ACCOUNT_ID) \
+		--single-account $(SPOKE_ACCOUNT_ID) \
 		--home-region eu-west-1 \
 		--regions eu-west-1,eu-west-2,eu-west-3 \
 		--should-collect-cloudformation-events true \
