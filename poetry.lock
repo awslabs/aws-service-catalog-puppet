@@ -69,7 +69,7 @@ description = "Helpers to make using boto3 more enjoyable"
 name = "better-boto"
 optional = false
 python-versions = "*"
-version = "0.28.0"
+version = "0.28.2"
 
 [package.dependencies]
 boto3 = "*"
@@ -684,7 +684,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "c40b4aef8bdcd5801140aded6868864338c94870de3cfbf85a644eb24cce466f"
+content-hash = "9134afcba5a035b1dab59dfd53c7f2148a8eacaad249cacb050f06034f5f5125"
 python-versions = ">=3.7"
 
 [metadata.files]
@@ -709,8 +709,8 @@ behave = [
     {file = "behave-1.2.6.tar.gz", hash = "sha256:b9662327aa53294c1351b0a9c369093ccec1d21026f050c3bd9b3e5cccf81a86"},
 ]
 better-boto = [
-    {file = "better-boto-0.28.0.tar.gz", hash = "sha256:9dd062c6cf865e759438f399d133ae24889a2847e3e6690f53f2c2b1a24c60d7"},
-    {file = "better_boto-0.28.0-py3-none-any.whl", hash = "sha256:faef3512d9c160e60b6e80f0fe37ab1dcc2fe0ea66198793cecbea4df1165be8"},
+    {file = "better-boto-0.28.2.tar.gz", hash = "sha256:86fe56e91557550adb0ee02e9cc0542b489926f59716eb43d53ae359e69ec599"},
+    {file = "better_boto-0.28.2-py3-none-any.whl", hash = "sha256:b45856fe5211bc0a9a47ecc952bc1a11354a5078dcb35ecaf4245489ef00bc54"},
 ]
 black = [
     {file = "black-19.10b0-py36-none-any.whl", hash = "sha256:1b30e59be925fafc1ee4565e5e08abef6b03fe455102883820fe5ee2e4734e0b"},

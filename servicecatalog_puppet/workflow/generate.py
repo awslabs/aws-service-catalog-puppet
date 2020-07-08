@@ -25,7 +25,7 @@ class GeneratePoliciesTemplate(manifest_tasks.SectionTask):
 
     def run(self):
         rendered = config.env.get_template("policies.template.yaml.j2").render(
-            sharing_policies=self.sharing_policies, VERSION=config.get_puppet_version(),
+            sharing_policies=self.sharing_policies, VERSION=config.get_puppet_version(), HOME_REGION=self.region
         )
         with self.output().open("w") as output_file:
             output_file.write(rendered)
@@ -59,9 +59,13 @@ class GeneratePolicies(manifest_tasks.SectionTask):
         }
 
     def run(self):
+        self.info("running")
         template = self.read_from_input("template")
-        with betterboto_client.ClientContextManager(
-            "cloudformation", region_name=self.region
+        with betterboto_client.CrossAccountClientContextManager(
+                "cloudformation",
+                f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
+                f"cf-{self.puppet_account_id}-{self.region}",
+                region_name=self.region,
         ) as cloudformation:
             cloudformation.create_or_update(
                 StackName="servicecatalog-puppet-policies",
@@ -72,7 +76,7 @@ class GeneratePolicies(manifest_tasks.SectionTask):
                 if self.should_use_sns
                 else [],
             )
-        self.write_output({})
+        self.write_output(template)
 
 
 class GenerateSharesTask(manifest_tasks.SectionTask):
@@ -83,6 +87,7 @@ class GenerateSharesTask(manifest_tasks.SectionTask):
         }
 
     def run(self):
+        self.info("running")
         for region_name, accounts in self.manifest.get_accounts_by_region().items():
             yield general_tasks.DeleteCloudFormationStackTask(
                 account_id=self.puppet_account_id,
@@ -107,6 +112,7 @@ class GenerateSharesTask(manifest_tasks.SectionTask):
                 sharing_policies=sharing_policies,
             )
 
+        self.info("Finished generating policies")
         for (
             region_name,
             shares_by_portfolio_account,

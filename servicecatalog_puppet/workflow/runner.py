@@ -75,7 +75,7 @@ def run_tasks(
         local_scheduler=True,
         detailed_summary=True,
         workers=num_workers,
-        log_level="CRITICAL" if is_list_launches else "INFO",
+        log_level="INFO",
     )
 
     exit_status_codes = {

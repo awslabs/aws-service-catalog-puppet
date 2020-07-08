@@ -203,7 +203,31 @@ Resources:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
 
+  SpokeEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: "SpokeEventBus"
 
+  SpokeEventBusPolicy:
+    Type: AWS::Events::EventBusPolicy
+    Properties:
+      Action: "events:PutEvents"
+      Principal: !Ref AWS::AccountId
+      StatementId: "allow-self"
+      EventBusName: !Ref SpokeEventBus
+
+  EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName: !Ref SpokeEventBus
+      Name: servicecatalog-puppet-forwarder
+      EventPattern:
+        source:
+          - "servicecatalog-puppet"
+      RoleArn: !GetAtt PuppetRole.Arn
+      Targets:
+        - Arn: !Sub "arn:aws:events:${AWS::Region}:${PuppetAccountId}:event-bus/servicecatalog-puppet-event-bus"
+          Id: servicecatalog-puppet-event-bus
 
 Outputs:
   Version:
