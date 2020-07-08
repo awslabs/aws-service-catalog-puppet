@@ -85,9 +85,6 @@ class GeneratePolicies(manifest_tasks.SectionTask):
                 region=self.region,
                 sharing_policies=self.sharing_policies,
             ),
-            "ensure_event_engine_eventbus": EnsureEventBridgeEventBusTask(
-                puppet_account_id=self.puppet_account_id, region=self.region,
-            ),
         }
 
     def run(self):
@@ -131,6 +128,10 @@ class GenerateSharesTask(manifest_tasks.SectionTask):
             region_name,
             sharing_policies,
         ) in self.manifest.get_sharing_policies_by_region().items():
+            yield EnsureEventBridgeEventBusTask(
+                puppet_account_id=self.puppet_account_id, region=region_name,
+            )
+
             yield GeneratePolicies(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
