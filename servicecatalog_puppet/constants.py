@@ -25,6 +25,7 @@ NO_CHANGE = "NO_CHANGE"
 CHANGE = "CHANGE"
 
 EVENT_BUS_NAME = "servicecatalog-puppet-event-bus"
+EVENT_BUS_IN_SPOKE_NAME = "servicecatalog-puppet-spoke-event-bus"
 SERVICE_CATALOG_PUPPET_EVENT_SOURCE = "servicecatalog-puppet"
 SERVICE_CATALOG_PUPPET_OPS_CENTER_SOURCE = "servicecatalog-puppet"
 
