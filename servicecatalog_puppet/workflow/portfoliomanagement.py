@@ -1120,7 +1120,7 @@ class SharePortfolioTask(PortfolioManagementTask):
 
     def api_calls_used(self):
         return [
-            f"servicecatalog.list_portfolio_access_{self.region}",
+            f"servicecatalog.list_portfolio_access_single_page_{self.region}",
             f"servicecatalog.create_portfolio_share_{self.region}",
         ]
 
@@ -1142,8 +1142,8 @@ class SharePortfolioTask(PortfolioManagementTask):
         with betterboto_client.ClientContextManager(
             "servicecatalog", region_name=self.region
         ) as servicecatalog:
-            account_ids = servicecatalog.list_portfolio_access(
-                PortfolioId=portfolio_id
+            account_ids = servicecatalog.list_portfolio_access_single_page(
+                PortfolioId=portfolio_id, PageSize=20,
             ).get("AccountIds")
 
             if self.account_id in account_ids:

@@ -224,7 +224,9 @@ def run_tasks(
                             ],
                             "DetailType": result.get("task_type"),
                             "Detail": result_contents,
-                            "EventBusName": constants.EVENT_BUS_NAME,
+                            "EventBusName": constants.EVENT_BUS_IN_SPOKE_NAME
+                            if execution_mode == constants.EXECUTION_MODE_SPOKE
+                            else constants.EVENT_BUS_NAME,
                         }
                     )
 
