@@ -85,7 +85,11 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
                 ).get(
                     "ProvisioningArtifactParameters", []
                 )
-                self.write_output(provisioning_artifact_parameters)
+                self.write_output(
+                    provisioning_artifact_parameters
+                    if isinstance(provisioning_artifact_parameters, list)
+                    else [provisioning_artifact_parameters]
+                )
 
 
 class ProvisionProductTask(ProvisioningTask):
