@@ -159,7 +159,7 @@ def provision_product_with_plan(
         ],
         NotificationArns=[
             regional_sns_topic,
-        ] if should_use_sns else [],
+        ] if str(should_use_sns).lower() == 'true' else [],
     )
     logger.info(f"{uid} :: Plan created, waiting for completion")
 
@@ -273,7 +273,7 @@ def provision_product(
         ],
         NotificationArns=[
             f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events",
-        ] if should_use_sns else [],
+        ] if str(should_use_sns).lower() == 'true' else [],
     ).get('RecordDetail').get('ProvisionedProductId')
     logger.info(f"{uid}: provisioning started: {provisioned_product_id}")
 

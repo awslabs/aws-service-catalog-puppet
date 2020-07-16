@@ -400,7 +400,7 @@ class CreateAssociationsForPortfolioTask(tasks.PuppetTask):
                 TemplateBody=template,
                 NotificationARNs=[
                     f"arn:aws:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-                ] if self.should_use_sns else [],
+                ] if str(self.should_use_sns).lower() == 'true' else [],
             )
             result = cloudformation.describe_stacks(
                 StackName=stack_name,
@@ -882,7 +882,7 @@ class CreateLaunchRoleConstraintsForPortfolio(tasks.PuppetTask):
                 TemplateBody=template,
                 NotificationARNs=[
                     f"arn:aws:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-                ] if self.should_use_sns else [],
+                ] if str(self.should_use_sns).lower() == "true" else [],
             )
             result = cloudformation.describe_stacks(
                 StackName=stack_name_v2,

@@ -292,7 +292,7 @@ def run_tasks_for_generate_shares(tasks_to_run):
                     TemplateBody=template,
                     NotificationARNs=[
                         f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-                    ] if should_use_sns else [],
+                    ] if str(should_use_sns).lower() == 'true' else [],
                 )
 
     for filename in glob('results/failure/*.json'):
