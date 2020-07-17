@@ -3,7 +3,7 @@
 
 [tool.poetry]
 name = "aws-service-catalog-puppet"
-version = "0.76.3"
+version = "0.76.6"
 description = "Making it easier to deploy ServiceCatalog products"
 classifiers = ["Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "Programming Language :: Python :: 3", "License :: OSI Approved :: Apache Software License", "Operating System :: OS Independent", "Natural Language :: English"]
 homepage = "https://github.com/awslabs/aws-service-catalog-puppet-framework"
@@ -12,26 +12,43 @@ repository = "https://github.com/awslabs/aws-service-catalog-puppet-framework"
 authors = ["Eamonn Faherty <aws-service-catalog-tools@amazon.com>"]
 packages = [
     { include = "servicecatalog_puppet" },
-    { exclude = "ignored" },
 ]
 include = ["servicecatalog_puppet"]
 exclude = ["ignored"]
 
 [tool.poetry.dependencies]
-python = ">=3.7"
-requests = "==2.22.0"
+python = "^3.7"
+requests = "2.22.0"
 pyyaml = "==5.1"
 jinja2 = "==2.10.1"
 click = "==7.0"
-boto3 = "*"
-pykwalify = "==1.7.0"
-better-boto = "==0.28.0"
-terminaltables = "==3.1.0"
-colorclass = "==2.2.0"
-luigi = "==2.8.9"
-psutil = "==5.7.0"
-progressbar = "==2.5"
-cfn-flip = "==1.2.3"
+boto3 = "1.14.22"
+pykwalify = "1.7.0"
+better-boto = "0.28.0"
+terminaltables = "3.1.0"
+colorclass = "2.2.0"
+luigi = "2.8.9"
+psutil = "5.7.0"
+progressbar = "2.5"
+cfn-flip = "1.2.3"
+botocore = "1.17.22"
+certifi = "2020.6.20"
+chardet = "3.0.4"
+Click = "7.0"
+docopt = "0.6.2"
+docutils = "0.15.2"
+idna = "2.8"
+Jinja2 = "2.10.1"
+jmespath = "0.10.0"
+lockfile = "0.12.2"
+MarkupSafe = "1.1.1"
+python-daemon = "2.1.2"
+python-dateutil = "2.8.1"
+PyYAML = "5.1"
+s3transfer = "0.3.3"
+six = "1.15.0"
+tornado = "5.1.1"
+urllib3 = "^1.25.9"
 
 [tool.poetry.dev-dependencies]
 pytest = ">=5.3.2"
