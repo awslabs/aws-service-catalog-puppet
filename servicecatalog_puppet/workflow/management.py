@@ -24,4 +24,4 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
         sdk.bootstrap_spoke_as(
             self.puppet_account_id, iam_role_arns_to_use, self.permission_boundary,
         )
-        self.write_output({})
+        self.write_output(self.params_for_results_display())

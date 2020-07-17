@@ -1044,7 +1044,7 @@ class LaunchInSpokeTask(ProvisioningTask):
 
         tasks_to_run = self.generate_tasks(launch_tasks_def, manifest)
         yield tasks_to_run
-        self.write_output()
+        self.write_output(self.params_for_results_display())
 
 
 class LaunchTask(ProvisioningTask):

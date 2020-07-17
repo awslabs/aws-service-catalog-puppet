@@ -33,5 +33,5 @@ class DeleteCloudFormationStackTask(tasks.PuppetTask):
         ) as cloudformation:
             self.info(f"About to delete the stack: {self.stack_name}")
             cloudformation.ensure_deleted(StackName=self.stack_name)
-        self.write_output({})
+        self.write_output(self.params_for_results_display())
         self.info("Finished")

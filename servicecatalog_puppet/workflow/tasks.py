@@ -47,11 +47,11 @@ class PuppetTask(luigi.Task):
     def params_for_results_display(self):
         return {}
 
-    def write_output(self, content=None):
+    def write_output(self, content):
         with self.output().open("w") as f:
             f.write(
                 json.dumps(
-                    content or self.params_for_results_display(), indent=4, default=str,
+                    content, indent=4, default=str,
                 )
             )
 

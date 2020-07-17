@@ -1419,7 +1419,7 @@ class DisassociateProductsFromPortfolio(PortfolioManagementTask):
                         "ProductId"
                     ),
                 )
-            self.write_output({})
+            self.write_output(self.params_for_results_display())
 
 
 class DeleteLocalPortfolio(PortfolioManagementTask):
@@ -1449,7 +1449,7 @@ class DeleteLocalPortfolio(PortfolioManagementTask):
             region_name=self.region,
         ) as servicecatalog:
             servicecatalog.delete_portfolio(Id=self.portfolio_id)
-            self.write_output({})
+            self.write_output(self.params_for_results_display())
 
 
 class DeletePortfolioShare(PortfolioManagementTask):
@@ -1499,7 +1499,7 @@ class DeletePortfolioShare(PortfolioManagementTask):
                 servicecatalog.delete_portfolio_share(
                     PortfolioId=portfolio_id, AccountId=self.account_id,
                 )
-        self.write_output({})
+        self.write_output(self.params_for_results_display())
 
 
 class DeletePortfolio(PortfolioManagementTask):
@@ -1573,7 +1573,7 @@ class DeletePortfolio(PortfolioManagementTask):
         # ) as servicecatalog:
         #     results = servicecatalog.reject_portfolio_share(PortfolioId=portfolio_id)
         #     self.write_output(results)
-        self.write_output({})
+        self.write_output(self.params_for_results_display())
 
 
 #
