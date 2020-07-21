@@ -1418,6 +1418,7 @@ class DisassociateProductsFromPortfolio(PortfolioManagementTask):
                     product_id=product_view_detail.get("ProductViewSummary").get(
                         "ProductId"
                     ),
+                    manifest_file_path=self.manifest_file_path,
                 )
             self.write_output(self.params_for_results_display())
 
@@ -1550,11 +1551,13 @@ class DeletePortfolio(PortfolioManagementTask):
                         account_id=self.account_id,
                         region=self.region,
                         portfolio_id=portfolio_id,
+                        manifest_file_path=self.manifest_file_path,
                     )
                     yield DeleteLocalPortfolio(
                         account_id=self.account_id,
                         region=self.region,
                         portfolio_id=portfolio_id,
+                        manifest_file_path=self.manifest_file_path,
                     )
 
             if not is_puppet_account:
@@ -1563,6 +1566,7 @@ class DeletePortfolio(PortfolioManagementTask):
                     region=self.region,
                     portfolio=self.portfolio,
                     puppet_account_id=self.puppet_account_id,
+                    manifest_file_path=self.manifest_file_path,
                 )
 
         # with betterboto_client.CrossAccountClientContextManager(
