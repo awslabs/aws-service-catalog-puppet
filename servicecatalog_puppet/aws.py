@@ -151,12 +151,13 @@ def provision_product_with_plan(
             ).get('ProvisionedProductPlanDetails')
 
             status = provisioned_product_plan_details.get('Status')
-            if status in ['EXECUTE_FAILED']:
-                logger.info(f"Not deleting plan as status is {status}")
-            else:
-                service_catalog.delete_provisioned_product_plan(
-                    PlanId=provisioned_product_plan.get("PlanId")
-                )
+            # if status in ['EXECUTE_FAILED']:
+            #     logger.info(f"Not deleting plan as status is {status}")
+            # else:
+            service_catalog.delete_provisioned_product_plan(
+                PlanId=provisioned_product_plan.get("PlanId")
+            )
+
     logger.info(f"{uid} :: Creating a plan")
     regional_sns_topic = f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
     provisioning_parameters = []
