@@ -362,7 +362,10 @@ class ProvisionProductTask(ProvisioningTask):
                             self.execution_mode,
                         )
 
+                self.info(f"self.execution_mode is {self.execution_mode}")
                 if self.execution_mode == constants.EXECUTION_MODE_HUB:
+                    self.info(f"Running in execution mode: {self.execution_mode}, checking for SSM outputs")
+                    self.info(f"ssm outputs: {self.ssm_param_outputs}")
                     with betterboto_client.CrossAccountClientContextManager(
                         "cloudformation",
                         role,
@@ -1089,12 +1092,12 @@ class LaunchTask(ProvisioningTask):
             del task_def["depends_on"]
             task_def["is_dry_run"] = self.is_dry_run
 
+
             if task_status == constants.PROVISIONED:
-                provisioning_parameters = {
-                    'execution_mode': self.execution_mode
-                }
+                provisioning_parameters = {}
                 for p in ProvisionProductTask.get_param_names(include_significant=True):
                     provisioning_parameters[p] = task_def.get(p)
+                provisioning_parameters['execution_mode'] = self.execution_mode
 
                 if self.is_dry_run:
                     provisions.append(
