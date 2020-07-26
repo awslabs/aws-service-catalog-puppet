@@ -50,6 +50,7 @@ class EnsureEventBridgeEventBusTask(tasks.PuppetTask):
             "events",
             f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
             f"events-{self.puppet_account_id}-{self.region}",
+            region_name=self.region,
         ) as events:
             created = False
             try:
