@@ -1090,7 +1090,9 @@ class LaunchTask(ProvisioningTask):
             task_def["is_dry_run"] = self.is_dry_run
 
             if task_status == constants.PROVISIONED:
-                provisioning_parameters = {}
+                provisioning_parameters = {
+                    'execution_mode': self.execution_mode
+                }
                 for p in ProvisionProductTask.get_param_names(include_significant=True):
                     provisioning_parameters[p] = task_def.get(p)
 
