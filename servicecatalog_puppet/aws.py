@@ -148,6 +148,7 @@ def provision_product_with_plan(
             service_catalog.delete_provisioned_product_plan(
                 PlanId=provisioned_product_plan.get("PlanId")
             )
+
     logger.info(f"{uid} :: Creating a plan")
     regional_sns_topic = f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
     provisioning_parameters = []
@@ -257,7 +258,7 @@ def provision_product(
     params,
     version,
     should_use_sns,
-    execution_mode,
+    execution,
 ):
     uid = f"[{launch_name}] {account_id}:{region}]"
     provisioning_parameters = []
@@ -288,7 +289,7 @@ def provision_product(
     )
     logger.info(f"{uid}: provisioning started: {provisioned_product_id}")
 
-    if execution_mode == constants.EXECUTION_MODE_ASYNC:
+    if execution == constants.EXECUTION_MODE_ASYNC:
         return provisioned_product_id
     else:
         while True:
@@ -323,7 +324,7 @@ def update_provisioned_product(
     path_id,
     params,
     version,
-    execution_mode,
+    execution,
 ):
     uid = f"[{launch_name}] {account_id}:{region}]"
     provisioning_parameters = []
@@ -344,7 +345,7 @@ def update_provisioned_product(
     )
     logger.info(f"{uid}: provisioning started: {provisioned_product_id}")
 
-    if execution_mode == constants.EXECUTION_MODE_ASYNC:
+    if execution == constants.EXECUTION_MODE_ASYNC:
         return provisioned_product_id
     else:
         while True:

@@ -20,4 +20,4 @@ clean:
 ## @Project_setup Generates a setup.py so you can test bootstrapped branches in AWS Codecommit
 prepare-for-testing: build
 	tar -zxvf dist/aws-service-catalog-puppet-*.tar.gz -C dist aws-service-catalog-puppet-*/setup.py
-	mv aws-service-catalog-puppet-*/setup.py setup.py
+	mv dist/aws-service-catalog-puppet-*/setup.py setup.py
