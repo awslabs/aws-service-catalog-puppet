@@ -76,7 +76,7 @@ class ProvisionProductTaskTest(unittest.TestCase):
     should_use_product_plans = True
     requested_priority = 1
 
-    execution_mode = "hub"
+    execution = "hub"
 
     def setUp(self) -> None:
         from . import provisioning
@@ -101,7 +101,7 @@ class ProvisionProductTaskTest(unittest.TestCase):
             should_use_sns=self.should_use_sns,
             should_use_product_plans=self.should_use_product_plans,
             requested_priority=self.requested_priority,
-            execution_mode=self.execution_mode,
+            execution=self.execution,
         )
 
     def test_params_for_results_display(self):
@@ -112,6 +112,7 @@ class ProvisionProductTaskTest(unittest.TestCase):
             "portfolio": self.portfolio,
             "product": self.product,
             "version": self.version,
+            "execution": self.execution,
         }
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 
@@ -163,7 +164,7 @@ class ProvisionProductDryRunTaskTest(unittest.TestCase):
     should_use_product_plans = True
     requested_priority = 1
 
-    execution_mode = "hub"
+    execution = "hub"
 
     def setUp(self) -> None:
         from . import provisioning
@@ -188,7 +189,7 @@ class ProvisionProductDryRunTaskTest(unittest.TestCase):
             should_use_sns=self.should_use_sns,
             should_use_product_plans=self.should_use_product_plans,
             requested_priority=self.requested_priority,
-            execution_mode=self.execution_mode,
+            execution=self.execution,
         )
 
 
