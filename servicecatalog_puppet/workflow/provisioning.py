@@ -366,7 +366,6 @@ class ProvisionProductTask(ProvisioningTask):
                 self.info(f"self.execution_mode is {self.execution}")
                 if self.execution == constants.EXECUTION_MODE_HUB:
                     self.info(f"Running in execution mode: {self.execution}, checking for SSM outputs")
-                    self.info(f"ssm outputs: {self.ssm_param_outputs}")
                     with betterboto_client.CrossAccountClientContextManager(
                         "cloudformation",
                         role,
