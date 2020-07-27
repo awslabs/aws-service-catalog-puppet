@@ -116,7 +116,7 @@ class ProvisionProductTask(ProvisioningTask):
     should_use_product_plans = luigi.BoolParameter(significant=False, default=False)
     requested_priority = luigi.IntParameter(significant=False, default=0)
 
-    execution_mode = luigi.Parameter()
+    execution = luigi.Parameter()
 
     try_count = 1
     all_params = []
@@ -129,6 +129,7 @@ class ProvisionProductTask(ProvisioningTask):
             "portfolio": self.portfolio,
             "product": self.product,
             "version": self.version,
+            "execution": self.execution,
         }
 
     @property
@@ -343,7 +344,7 @@ class ProvisionProductTask(ProvisioningTask):
                                 path_id,
                                 params_to_use,
                                 self.version,
-                                self.execution_mode,
+                                self.execution,
                             )
 
                     else:
@@ -359,12 +360,12 @@ class ProvisionProductTask(ProvisioningTask):
                             params_to_use,
                             self.version,
                             self.should_use_sns,
-                            self.execution_mode,
+                            self.execution,
                         )
 
-                self.info(f"self.execution_mode is {self.execution_mode}")
-                if self.execution_mode == constants.EXECUTION_MODE_HUB:
-                    self.info(f"Running in execution mode: {self.execution_mode}, checking for SSM outputs")
+                self.info(f"self.execution_mode is {self.execution}")
+                if self.execution == constants.EXECUTION_MODE_HUB:
+                    self.info(f"Running in execution mode: {self.execution}, checking for SSM outputs")
                     self.info(f"ssm outputs: {self.ssm_param_outputs}")
                     with betterboto_client.CrossAccountClientContextManager(
                         "cloudformation",
@@ -1063,6 +1064,7 @@ class LaunchTask(ProvisioningTask):
     def params_for_results_display(self):
         return {
             "launch_name": self.launch_name,
+            "execution_mode": self.execution_mode,
         }
 
     def requires(self):
@@ -1092,12 +1094,11 @@ class LaunchTask(ProvisioningTask):
             del task_def["depends_on"]
             task_def["is_dry_run"] = self.is_dry_run
 
-
             if task_status == constants.PROVISIONED:
                 provisioning_parameters = {}
                 for p in ProvisionProductTask.get_param_names(include_significant=True):
                     provisioning_parameters[p] = task_def.get(p)
-                provisioning_parameters['execution_mode'] = self.execution_mode
+
 
                 if self.is_dry_run:
                     provisions.append(
@@ -1136,6 +1137,8 @@ class LaunchTask(ProvisioningTask):
         configuration["puppet_account_id"] = self.puppet_account_id
         configuration["should_use_sns"] = self.should_use_sns
         configuration["should_use_product_plans"] = self.should_use_product_plans
+
+        configuration["execution"] = launch.get('execution')
 
         launch_tasks_def = manifest.get_task_defs_from_details(
             self.puppet_account_id, False, self.launch_name, configuration, "launches"

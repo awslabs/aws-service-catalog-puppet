@@ -258,7 +258,7 @@ def provision_product(
     params,
     version,
     should_use_sns,
-    execution_mode,
+    execution,
 ):
     uid = f"[{launch_name}] {account_id}:{region}]"
     provisioning_parameters = []
@@ -289,7 +289,7 @@ def provision_product(
     )
     logger.info(f"{uid}: provisioning started: {provisioned_product_id}")
 
-    if execution_mode == constants.EXECUTION_MODE_ASYNC:
+    if execution == constants.EXECUTION_MODE_ASYNC:
         return provisioned_product_id
     else:
         while True:
@@ -324,7 +324,7 @@ def update_provisioned_product(
     path_id,
     params,
     version,
-    execution_mode,
+    execution,
 ):
     uid = f"[{launch_name}] {account_id}:{region}]"
     provisioning_parameters = []
@@ -345,7 +345,7 @@ def update_provisioned_product(
     )
     logger.info(f"{uid}: provisioning started: {provisioned_product_id}")
 
-    if execution_mode == constants.EXECUTION_MODE_ASYNC:
+    if execution == constants.EXECUTION_MODE_ASYNC:
         return provisioned_product_id
     else:
         while True:

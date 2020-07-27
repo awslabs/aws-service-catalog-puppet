@@ -59,6 +59,9 @@ def load(f, puppet_account_id):
                         "You can only specify a version in the properties file"
                     )
                 manifest["launches"][launch_name][property_name] = value
+    for launch_name, launch_details in manifest.get('launches').items():
+        if launch_details.get('execution') is None:
+            launch_details['execution'] = constants.EXECUTION_MODE_DEFAULT
     return manifest
 
 
