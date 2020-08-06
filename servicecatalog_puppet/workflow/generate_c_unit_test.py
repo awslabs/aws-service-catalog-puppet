@@ -1,9 +1,9 @@
-import unittest
+from . import tasks_unit_tests
 
 import pytest
 
 
-class GeneratePoliciesTemplateTest(unittest.TestCase):
+class GeneratePoliciesTemplateTest(tasks_unit_tests.PuppetTaskUnitTest):
     region = "eu-west-0"
     puppet_account_id = "01234567890"
     manifest_file_path = "tcvyuiho"
@@ -33,7 +33,7 @@ class GeneratePoliciesTemplateTest(unittest.TestCase):
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 
 
-class EnsureEventBridgeEventBusTaskTest(unittest.TestCase):
+class EnsureEventBridgeEventBusTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     region = "eu-west-0"
     puppet_account_id = "01234567890"
 
@@ -52,7 +52,7 @@ class EnsureEventBridgeEventBusTaskTest(unittest.TestCase):
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 
 
-class GeneratePoliciesTest(unittest.TestCase):
+class GeneratePoliciesTest(tasks_unit_tests.PuppetTaskUnitTest):
     region = "eu-west-0"
     puppet_account_id = "01234567890"
     manifest_file_path = "tcvyuiho"
@@ -109,7 +109,7 @@ class GeneratePoliciesTest(unittest.TestCase):
         self.assertEqual(expected_result, self.sut.requires())
 
 
-class GenerateSharesTaskTest(unittest.TestCase):
+class GenerateSharesTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     puppet_account_id = "01234567890"
     manifest_file_path = "tcvyuiho"
 

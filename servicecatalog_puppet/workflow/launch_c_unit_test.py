@@ -1,7 +1,7 @@
-import unittest
+from . import tasks_unit_tests
 
 
-class LaunchSectionTaskTest(unittest.TestCase):
+class LaunchSectionTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     puppet_account_id = "01234567890"
     manifest_file_path = "tcvyuiho"
 

@@ -1,7 +1,7 @@
-import unittest
+from . import tasks_unit_tests
 
 
-class ManifestTaskTest(unittest.TestCase):
+class ManifestTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     manifest_file_path = "fddsfd"
     puppet_account_id = "23094983645"
 
@@ -21,7 +21,7 @@ class ManifestTaskTest(unittest.TestCase):
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 
 
-class SectionTaskTest(unittest.TestCase):
+class SectionTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     manifest_file_path = "fddfdsf"
     puppet_account_id = "02345678901"
     should_use_sns = False

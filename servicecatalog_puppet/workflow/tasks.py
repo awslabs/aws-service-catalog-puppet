@@ -49,11 +49,7 @@ class PuppetTask(luigi.Task):
 
     def write_output(self, content):
         with self.output().open("w") as f:
-            f.write(
-                json.dumps(
-                    content, indent=4, default=str,
-                )
-            )
+            f.write(json.dumps(content, indent=4, default=str,))
 
     @property
     def node_id(self):

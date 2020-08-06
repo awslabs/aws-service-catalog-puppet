@@ -1,16 +1,16 @@
-import unittest
+from . import tasks_unit_tests
 
 
-class DeleteCloudFormationStackTaskTest(unittest.TestCase):
-
+class DeleteCloudFormationStackTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     account_id = "0123456789010"
     region = "eu-west-0"
     stack_name = "foo"
 
     def setUp(self) -> None:
-        from . import general
+        from servicecatalog_puppet.workflow import general
 
-        self.sut = general.DeleteCloudFormationStackTask(
+        self.module = general
+        self.sut = self.module.DeleteCloudFormationStackTask(
             account_id=self.account_id, region=self.region, stack_name=self.stack_name,
         )
 

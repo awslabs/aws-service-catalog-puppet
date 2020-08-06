@@ -1,7 +1,7 @@
-import unittest
+from . import tasks_unit_tests
 
 
-class BootstrapSpokeAsTaskTest(unittest.TestCase):
+class BootstrapSpokeAsTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     puppet_account_id = "230947938752"
     account_id = "23948yr59843y5"
     iam_role_arns = list()

@@ -1,7 +1,7 @@
-import unittest
+from . import tasks_unit_tests
 
 
-class ProvisioningArtifactParametersTaskTest(unittest.TestCase):
+class ProvisioningArtifactParametersTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     manifest_file_path = "lnklknkl"
     puppet_account_id = "01234567890"
     portfolio = "port1"
@@ -50,7 +50,7 @@ class ProvisioningArtifactParametersTaskTest(unittest.TestCase):
         self.assertEqual(expected_result, self.sut.requires())
 
 
-class ProvisionProductTaskTest(unittest.TestCase):
+class ProvisionProductTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     manifest_file_path = "lnklknkl"
 
     launch_name = "adsfdf"
@@ -138,7 +138,7 @@ class ProvisionProductTaskTest(unittest.TestCase):
         self.assertEqual(expected_result, self.sut.api_calls_used())
 
 
-class ProvisionProductDryRunTaskTest(unittest.TestCase):
+class ProvisionProductDryRunTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     manifest_file_path = "lnklknkl"
 
     launch_name = "adsfdf"
@@ -193,7 +193,7 @@ class ProvisionProductDryRunTaskTest(unittest.TestCase):
         )
 
 
-class TerminateProductTaskTest(unittest.TestCase):
+class TerminateProductTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     manifest_file_path = "lnklknkl"
 
     launch_name = "adsfdf"
@@ -244,7 +244,7 @@ class TerminateProductTaskTest(unittest.TestCase):
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 
 
-class TerminateProductDryRunTaskTest(unittest.TestCase):
+class TerminateProductDryRunTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     manifest_file_path = "lnklknkl"
 
     launch_name = "adsfdf"
@@ -296,7 +296,7 @@ class TerminateProductDryRunTaskTest(unittest.TestCase):
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 
 
-class ResetProvisionedProductOwnerTaskTest(unittest.TestCase):
+class ResetProvisionedProductOwnerTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     manifest_file_path = "lnklknkl"
     launch_name = "adsfdf"
     account_id = "09876543211"
@@ -321,7 +321,7 @@ class ResetProvisionedProductOwnerTaskTest(unittest.TestCase):
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 
 
-class RunDeployInSpokeTaskTest(unittest.TestCase):
+class RunDeployInSpokeTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     manifest_file_path = "lnklknkl"
     puppet_account_id = "01234567890"
     account_id = "09876543211"
@@ -356,7 +356,7 @@ class RunDeployInSpokeTaskTest(unittest.TestCase):
 
 
 #
-# class LaunchInSpokeTaskTest(unittest.TestCase):
+# class LaunchInSpokeTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import provisioning
@@ -371,7 +371,7 @@ class RunDeployInSpokeTaskTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class LaunchTaskTest(unittest.TestCase):
+# class LaunchTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import provisioning
@@ -386,7 +386,7 @@ class RunDeployInSpokeTaskTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class SpokeLocalPortfolioTaskTest(unittest.TestCase):
+# class SpokeLocalPortfolioTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import provisioning

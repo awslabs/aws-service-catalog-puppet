@@ -1,7 +1,7 @@
-# import unittest
+# from . import tasks_unit_tests
 #
 #
-# class PuppetTaskTest(unittest.TestCase):
+# class PuppetTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import tasks
@@ -14,7 +14,7 @@
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class GetSSMParamTaskTest(unittest.TestCase):
+# class GetSSMParamTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import tasks

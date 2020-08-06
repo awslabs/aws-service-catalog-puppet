@@ -1,7 +1,7 @@
-# import unittest
+# from . import tasks_unit_tests
 #
 #
-# class SpokeLocalPortfolioSectionTaskTest(unittest.TestCase):
+# class SpokeLocalPortfolioSectionTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import spoke_local_portfolios

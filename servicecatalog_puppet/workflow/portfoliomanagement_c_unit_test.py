@@ -1,7 +1,7 @@
-import unittest
+from . import tasks_unit_tests
 
 
-class GetVersionIdByVersionNameTest(unittest.TestCase):
+class GetVersionIdByVersionNameTest(tasks_unit_tests.PuppetTaskUnitTest):
 
     puppet_account_id = "01234567890"
     manifest_file_path = "tcvyuiho"
@@ -35,7 +35,7 @@ class GetVersionIdByVersionNameTest(unittest.TestCase):
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 
 
-class SearchProductsAsAdminTaskTest(unittest.TestCase):
+class SearchProductsAsAdminTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     puppet_account_id = "01234567890"
     manifest_file_path = "tcvyuiho"
     portfolio = "port1"
@@ -76,7 +76,7 @@ class SearchProductsAsAdminTaskTest(unittest.TestCase):
         self.assertEqual(expected_result, self.sut.requires())
 
 
-class GetProductIdByProductNameTest(unittest.TestCase):
+class GetProductIdByProductNameTest(tasks_unit_tests.PuppetTaskUnitTest):
     puppet_account_id = "01234567890"
     manifest_file_path = "tcvyuiho"
     portfolio = "portfolio1"
@@ -127,7 +127,7 @@ class GetProductIdByProductNameTest(unittest.TestCase):
         self.assertEqual(expected_result, self.sut.requires())
 
 
-class GetPortfolioByPortfolioNameTest(unittest.TestCase):
+class GetPortfolioByPortfolioNameTest(tasks_unit_tests.PuppetTaskUnitTest):
     puppet_account_id = "01234567890"
     manifest_file_path = "tcvyuiho"
     portfolio = "portfolio1"
@@ -155,7 +155,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 
 
-# class ProvisionActionTaskTest(unittest.TestCase):
+# class ProvisionActionTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -177,7 +177,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class CreateSpokeLocalPortfolioTaskTest(unittest.TestCase):
+# class CreateSpokeLocalPortfolioTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -194,7 +194,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class CreateAssociationsForPortfolioTaskTest(unittest.TestCase):
+# class CreateAssociationsForPortfolioTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -224,7 +224,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class GetProductsAndProvisioningArtifactsTaskTest(unittest.TestCase):
+# class GetProductsAndProvisioningArtifactsTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -253,7 +253,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.requires())
 #
 #
-# class CopyIntoSpokeLocalPortfolioTaskTest(unittest.TestCase):
+# class CopyIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -289,7 +289,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class ImportIntoSpokeLocalPortfolioTaskTest(unittest.TestCase):
+# class ImportIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -332,7 +332,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class CreateLaunchRoleConstraintsForPortfolioTest(unittest.TestCase):
+# class CreateLaunchRoleConstraintsForPortfolioTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -349,7 +349,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class RequestPolicyTaskTest(unittest.TestCase):
+# class RequestPolicyTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -365,7 +365,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class SharePortfolioTaskTest(unittest.TestCase):
+# class SharePortfolioTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -382,7 +382,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class ShareAndAcceptPortfolioTaskTest(unittest.TestCase):
+# class ShareAndAcceptPortfolioTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -400,7 +400,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class CreateAssociationsInPythonForPortfolioTaskTest(unittest.TestCase):
+# class CreateAssociationsInPythonForPortfolioTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -423,7 +423,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.api_calls_used())
 #
 #
-# class CreateShareForAccountLaunchRegionTest(unittest.TestCase):
+# class CreateShareForAccountLaunchRegionTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -440,7 +440,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class DisassociateProductFromPortfolioTest(unittest.TestCase):
+# class DisassociateProductFromPortfolioTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -464,7 +464,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.api_calls_used())
 #
 #
-# class DisassociateProductsFromPortfolioTest(unittest.TestCase):
+# class DisassociateProductsFromPortfolioTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -487,7 +487,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.api_calls_used())
 #
 #
-# class DeleteLocalPortfolioTest(unittest.TestCase):
+# class DeleteLocalPortfolioTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -510,7 +510,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.api_calls_used())
 #
 #
-# class DeletePortfolioShareTest(unittest.TestCase):
+# class DeletePortfolioShareTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
@@ -534,7 +534,7 @@ class GetPortfolioByPortfolioNameTest(unittest.TestCase):
 #         self.assertEqual(expected_result, self.sut.api_calls_used())
 #
 #
-# class DeletePortfolioTest(unittest.TestCase):
+# class DeletePortfolioTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:
 #         from . import portfoliomanagement
