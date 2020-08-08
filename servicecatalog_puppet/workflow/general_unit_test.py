@@ -19,7 +19,8 @@ class DeleteCloudFormationStackTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     @mock.patch("servicecatalog_puppet.workflow.general.betterboto_client")
     def test_run(self, mock):
         # setup
-        expected_output = "hello world"
+        expected_output = 'hello world'
+
         self.expect_call(
             mock,
             dict(
@@ -30,7 +31,7 @@ class DeleteCloudFormationStackTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
             ),
             "ensure_deleted",
             {"StackName": self.stack_name},
-            expected_output
+            expected_output,
         )
 
         # exercise
@@ -38,4 +39,4 @@ class DeleteCloudFormationStackTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 
         # verify
         self.verify(mock)
-        # self.verify_output(expected_output)
+        self.verify_output(self.sut.params_for_results_display())
