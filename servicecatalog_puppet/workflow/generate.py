@@ -45,6 +45,12 @@ class EnsureEventBridgeEventBusTask(tasks.PuppetTask):
             "puppet_account_id": self.puppet_account_id,
         }
 
+    def api_calls_used(self):
+        return {
+            f"events.describe_event_bus_{self.puppet_account_id}_{self.region}": 1,
+            f"events.create_event_bus_{self.puppet_account_id}_{self.region}": 1,
+        }
+
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "events",
@@ -88,6 +94,11 @@ class GeneratePolicies(manifest_tasks.SectionTask):
             ),
         }
 
+    def api_calls_used(self):
+        return {
+            f"cloudformation.create_or_update_{self.puppet_account_id}_{self.region}": 1,
+        }
+
     def run(self):
         self.info("running")
         template = self.read_from_input("template")
@@ -98,6 +109,7 @@ class GeneratePolicies(manifest_tasks.SectionTask):
             region_name=self.region,
         ) as cloudformation:
             cloudformation.create_or_update(
+                ShouldUseChangeSets=False,
                 StackName="servicecatalog-puppet-policies",
                 TemplateBody=template,
                 NotificationARNs=[
