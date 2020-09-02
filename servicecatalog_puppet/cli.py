@@ -159,6 +159,7 @@ def bootstrap_spokes_in_ou(
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
 )
+@click.option("--deploy_num_workers", default=10, type=click.INT, show_default=True)
 @click.option("--source-provider", default="CodeCommit")
 @click.option("--repository_name", default="ServiceCatalogPuppet")
 @click.option("--branch-name", default="master")
@@ -176,6 +177,7 @@ def bootstrap_branch(
     puppet_deploy_role_permission_boundary,
     puppet_provisioning_role_permissions_boundary,
     cloud_formation_deploy_role_permissions_boundary,
+    deploy_num_workers,
     source_provider,
     repository_name,
     branch_name,
@@ -198,6 +200,7 @@ def bootstrap_branch(
             puppet_deploy_role_permission_boundary,
             puppet_provisioning_role_permissions_boundary,
             cloud_formation_deploy_role_permissions_boundary,
+            deploy_num_workers,
             source_provider,
             None,
             repository_name,
@@ -216,6 +219,7 @@ def bootstrap_branch(
             puppet_deploy_role_permission_boundary,
             puppet_provisioning_role_permissions_boundary,
             cloud_formation_deploy_role_permissions_boundary,
+            deploy_num_workers,
             source_provider,
             owner,
             repo,

@@ -419,6 +419,7 @@ def bootstrap_branch(
     puppet_deploy_role_permission_boundary,
     puppet_provisioning_role_permissions_boundary,
     cloud_formation_deploy_role_permissions_boundary,
+    deploy_num_workers,
     source_provider,
     owner,
     repo,
@@ -438,12 +439,13 @@ def bootstrap_branch(
         puppet_deploy_role_permission_boundary,
         puppet_provisioning_role_permissions_boundary,
         cloud_formation_deploy_role_permissions_boundary,
-        source_provider,
-        owner,
-        repo,
-        branch,
-        poll_for_source_changes,
-        webhook_secret,
+        deploy_num_workers=deploy_num_workers,
+        source_provider=source_provider,
+        owner=owner,
+        repo=repo,
+        branch=branch,
+        poll_for_source_changes=poll_for_source_changes,
+        webhook_secret=webhook_secret,
     )
 
 
