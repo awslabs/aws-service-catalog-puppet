@@ -187,11 +187,13 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
 
+  {% if Source.Provider.lower() == 'codecommit' %}
   CodeRepo:
     Type: AWS::CodeCommit::Repository
     Properties:
       RepositoryDescription: Repo to store the servicecatalog puppet solution
-      RepositoryName: ServiceCatalogPuppet
+      RepositoryName: {{ Source['Configuration']['RepositoryName'] }}
+  {% endif %}
 
   DryRunNotificationTopic:
     Type: AWS::SNS::Topic
@@ -216,19 +218,30 @@ Resources:
       Stages:
         - Name: Source
           Actions:
-            - Name: CodeCommit
+            - Name: Source
               ActionTypeId:
                 Category: Source
-                Owner: AWS
+                Owner: {% if Source.Provider.lower() == 'codecommit' %}AWS{% else %}ThirdParty{% endif %}
                 Version: 1
-                Provider: CodeCommit
+                Provider: {{ Source.Provider }}
+              {% if Source.Provider.lower() == 'codecommit' %}
               Configuration:
                 RepositoryName: !GetAtt CodeRepo.Name
-                BranchName: master
+                BranchName: {{ Source.Configuration.BranchName }}
+                PollForSourceChanges: {{ Source.Configuration.PollForSourceChanges or 'false' }}
+              {% endif %}
+              {% if Source.Provider.lower() == 'github' %}
+              Configuration:
+                Owner: {{ Source['Configuration']['Owner'] }}
+                Repo: {{ Source['Configuration']['Repo'] }}
+                Branch: {{ Source['Configuration']['Branch'] }}
+                OAuthToken: !Sub '{{ '{% raw %}{{{% endraw %}' }}resolve:secretsmanager:{{ Source['Configuration']['SecretsManagerSecret'] }}:SecretString:OAuthToken{{ '{% raw %}}}{% endraw %}' }}'
+                PollForSourceChanges: {{ Source['Configuration']['PollForSourceChanges'] }}
+              {% endif %}
               OutputArtifacts:
                 - Name: Source
               RunOrder: 1
-              RoleArn: !GetAtt SourceRole.Arn
+              {% if Source.Provider.lower() == 'aws' %}RoleArn: !GetAtt SourceRole.Arn{% endif %}
         - Name: Deploy
           Actions:
             - !If
@@ -275,6 +288,24 @@ Resources:
                 - Name: Source
               OutputArtifacts:
                 - Name: DeployProject
+
+
+  {% if Source.Provider.lower() == 'github' %}
+  Webhook:
+    Type: 'AWS::CodePipeline::Webhook'
+    Properties:
+      AuthenticationConfiguration:
+        SecretToken: !Sub '{{ '{% raw %}{{{% endraw %}' }}resolve:secretsmanager:{{ Source['Configuration']['SecretsManagerSecret'] }}:SecretString:SecretToken{{ '{% raw %}}}{% endraw %}' }}'
+      Filters:
+          - JsonPath: "$.ref"
+            MatchEquals: "refs/heads/{{ Source.Configuration.Branch }}"
+      Authentication: GITHUB_HMAC
+      TargetPipeline: !Ref Pipeline
+      TargetAction: Source
+      Name: !Sub "${AWS::StackName}-webhook"
+      TargetPipelineVersion: !GetAtt Pipeline.Version
+      RegisterWithThirdParty: 'true'
+  {% endif %}
 
   DeployRole:
     Type: AWS::IAM::Role
@@ -439,6 +470,8 @@ Resources:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
 
+
+  {% if Source.Provider.lower() == 'codecommit' %}
   SingleAccountRunProject:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -487,6 +520,66 @@ Resources:
       Tags:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
+  {% endif %}
+
+  {% if Source.Provider.lower() == 'github' %}
+  SingleAccountRunProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: servicecatalog-puppet-single-account-run
+      Description: "Runs puppet for a single account - SINGLE_ACCOUNT_ID"
+      ServiceRole: !GetAtt DeployRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: linuxContainer
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        EnvironmentVariables:
+          - Name: SINGLE_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: CHANGE_ME
+          - Name: OWNER
+            Type: PLAINTEXT
+            Value: {{ Source['Configuration']['Owner'] }}
+          - Name: REPO
+            Type: PLAINTEXT
+            Value: {{ Source['Configuration']['Repo'] }}
+          - Name: PAT
+            Type: SECRETS_MANAGER
+            Value: {{ Source['Configuration']['SecretsManagerSecret'] }}
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                python: 3.x
+              commands:
+          {% if 'http' in VERSION %}
+                - pip install {{ VERSION }}
+          {% else %}
+                - pip install aws-service-catalog-puppet=={{ VERSION }}
+          {% endif %}
+            build:
+              commands:
+                - export URL=https://$(echo $PAT | jq -r .SecretToken)@github.com/$OWNER/$REPO.git
+                - git clone $URL ServiceCatalogPuppet
+                - cd ServiceCatalogPuppet && git checkout {{ Source['Configuration']['Branch'] }} && cd -
+                - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml
+                - servicecatalog-puppet --info deploy ServiceCatalogPuppet/manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID
+          artifacts:
+            files:
+              - manifest-expanded.yaml
+              - data/*/*/*/*.json
+              - shares/*/*/*.json
+              - topic/*/*/*.json
+      TimeoutInMinutes: 480
+      Tags:
+        - Key: "ServiceCatalogPuppet:Actor"
+          Value: "Framework"
+  {% endif %}
 
   CloudFormationEventsQueue:
     Type: AWS::SQS::Queue
