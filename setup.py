@@ -18,7 +18,7 @@ package_data = \
                            'templates/*']}
 
 install_requires = \
-['better-boto==0.30.0',
+['better-boto==0.31.0',
  'boto3==1.14.20',
  'cfn-flip==1.2.3',
  'click==7.0',
