@@ -153,6 +153,31 @@ command:
 
 Once you have run that command you are ready for the final stage.
 
+
+Using GitHub.com for your ServiceCatalogPuppet repo
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    This was added in version 0.81.0
+
+If you would like to use GitHub.com to host your ServiceCatalogPuppet repo you will need to bootstrap the solution
+using the cli with the following parameters:
+
+
+.. code-block::
+
+    servicecatalog-puppet --info bootstrap \
+        --source-provider GitHub \
+        --owner eamonnfaherty \
+        --repo servicecatalogpuppetrepo \
+        --branch master \
+        --poll-for-source-changes true \
+        --webhook-secret githubcomPAT
+
+
+If you continue to use AWS CodeCommit you can ignore the above snippet.
+
 Configuring your puppet
 ^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -127,7 +127,7 @@ def bootstrap_spokes_in_ou(
 
 
 @cli.command()
-@click.argument("branch-name")
+@click.argument("branch-to-bootstrap")
 @click.option("--with-manual-approvals/--with-no-manual-approvals", default=False)
 @click.option(
     "--puppet-code-pipeline-role-permission-boundary",
@@ -159,8 +159,16 @@ def bootstrap_spokes_in_ou(
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
 )
+@click.option("--source-provider", default="CodeCommit")
+@click.option("--repository_name", default="ServiceCatalogPuppet")
+@click.option("--branch-name", default="master")
+@click.option("--owner")
+@click.option("--repo")
+@click.option("--branch")
+@click.option("--poll-for-source-changes")
+@click.option("--webhook-secret")
 def bootstrap_branch(
-    branch_name,
+    branch_to_bootstrap,
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
     source_role_permissions_boundary,
@@ -168,19 +176,55 @@ def bootstrap_branch(
     puppet_deploy_role_permission_boundary,
     puppet_provisioning_role_permissions_boundary,
     cloud_formation_deploy_role_permissions_boundary,
+    source_provider,
+    repository_name,
+    branch_name,
+    owner,
+    repo,
+    branch,
+    poll_for_source_changes,
+    webhook_secret,
 ):
     puppet_account_id = config.get_puppet_account_id()
-    core.bootstrap_branch(
-        branch_name,
-        puppet_account_id,
-        with_manual_approvals,
-        puppet_code_pipeline_role_permission_boundary,
-        source_role_permissions_boundary,
-        puppet_generate_role_permission_boundary,
-        puppet_deploy_role_permission_boundary,
-        puppet_provisioning_role_permissions_boundary,
-        cloud_formation_deploy_role_permissions_boundary,
-    )
+
+    if source_provider == "CodeCommit":
+        core.bootstrap_branch(
+            branch_to_bootstrap,
+            puppet_account_id,
+            with_manual_approvals,
+            puppet_code_pipeline_role_permission_boundary,
+            source_role_permissions_boundary,
+            puppet_generate_role_permission_boundary,
+            puppet_deploy_role_permission_boundary,
+            puppet_provisioning_role_permissions_boundary,
+            cloud_formation_deploy_role_permissions_boundary,
+            source_provider,
+            None,
+            repository_name,
+            branch_name,
+            poll_for_source_changes,
+            webhook_secret,
+        )
+    elif source_provider == "GitHub":
+        core.bootstrap_branch(
+            branch_to_bootstrap,
+            puppet_account_id,
+            with_manual_approvals,
+            puppet_code_pipeline_role_permission_boundary,
+            source_role_permissions_boundary,
+            puppet_generate_role_permission_boundary,
+            puppet_deploy_role_permission_boundary,
+            puppet_provisioning_role_permissions_boundary,
+            cloud_formation_deploy_role_permissions_boundary,
+            source_provider,
+            owner,
+            repo,
+            branch,
+            poll_for_source_changes,
+            webhook_secret,
+        )
+    else:
+        raise Exception(f"Unsupported source provider: {source_provider}")
 
 
 @cli.command()
@@ -221,6 +265,14 @@ def bootstrap_branch(
     show_default=True,
 )
 @click.option("--deploy_num_workers", default=10, type=click.INT, show_default=True)
+@click.option("--source-provider", default="CodeCommit")
+@click.option("--repository_name", default="ServiceCatalogPuppet")
+@click.option("--branch-name", default="master")
+@click.option("--owner")
+@click.option("--repo")
+@click.option("--branch")
+@click.option("--poll-for-source-changes")
+@click.option("--webhook-secret")
 def bootstrap(
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
@@ -231,20 +283,56 @@ def bootstrap(
     cloud_formation_deploy_role_permissions_boundary,
     deploy_environment_compute_type,
     deploy_num_workers,
+    source_provider,
+    repository_name,
+    branch_name,
+    owner,
+    repo,
+    branch,
+    poll_for_source_changes,
+    webhook_secret,
 ):
     puppet_account_id = config.get_puppet_account_id()
-    core.bootstrap(
-        with_manual_approvals,
-        puppet_account_id,
-        puppet_code_pipeline_role_permission_boundary,
-        source_role_permissions_boundary,
-        puppet_generate_role_permission_boundary,
-        puppet_deploy_role_permission_boundary,
-        puppet_provisioning_role_permissions_boundary,
-        cloud_formation_deploy_role_permissions_boundary,
-        deploy_environment_compute_type,
-        deploy_num_workers,
-    )
+    if source_provider == "CodeCommit":
+        core.bootstrap(
+            with_manual_approvals,
+            puppet_account_id,
+            puppet_code_pipeline_role_permission_boundary,
+            source_role_permissions_boundary,
+            puppet_generate_role_permission_boundary,
+            puppet_deploy_role_permission_boundary,
+            puppet_provisioning_role_permissions_boundary,
+            cloud_formation_deploy_role_permissions_boundary,
+            deploy_environment_compute_type,
+            deploy_num_workers,
+            source_provider,
+            None,
+            repository_name,
+            branch_name,
+            poll_for_source_changes,
+            webhook_secret,
+        )
+    elif source_provider == "GitHub":
+        core.bootstrap(
+            with_manual_approvals,
+            puppet_account_id,
+            puppet_code_pipeline_role_permission_boundary,
+            source_role_permissions_boundary,
+            puppet_generate_role_permission_boundary,
+            puppet_deploy_role_permission_boundary,
+            puppet_provisioning_role_permissions_boundary,
+            cloud_formation_deploy_role_permissions_boundary,
+            deploy_environment_compute_type,
+            deploy_num_workers,
+            source_provider,
+            owner,
+            repo,
+            branch,
+            poll_for_source_changes,
+            webhook_secret,
+        )
+    else:
+        raise Exception(f"Unsupported source provider: {source_provider}")
 
 
 @cli.command()

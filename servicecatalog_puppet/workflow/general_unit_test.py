@@ -19,7 +19,7 @@ class DeleteCloudFormationStackTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     @mock.patch("servicecatalog_puppet.workflow.general.betterboto_client")
     def test_run(self, mock):
         # setup
-        expected_output = 'hello world'
+        expected_output = "hello world"
 
         self.expect_call(
             mock,

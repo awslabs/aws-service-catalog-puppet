@@ -7,6 +7,7 @@ version:
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap
 bootstrap:
 	poetry run servicecatalog-puppet --info bootstrap
+	#poetry run servicecatalog-puppet --info bootstrap --source-provider GitHub --owner eamonnfaherty --repo servicecatalogfactorytesting --branch master --poll-for-source-changes true --webhook-secret githubPAT
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap-spoke for the current aws profile
 bootstrap-self-as-spoke:

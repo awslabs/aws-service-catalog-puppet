@@ -226,6 +226,12 @@ def _do_bootstrap(
     cloud_formation_deploy_role_permissions_boundary,
     deploy_environment_compute_type="BUILD_GENERAL1_SMALL",
     deploy_num_workers=10,
+    source_provider=None,
+    owner=None,
+    repo=None,
+    branch=None,
+    poll_for_source_changes=None,
+    webhook_secret=None,
 ):
     click.echo("Starting bootstrap")
     should_use_eventbridge = config.get_should_use_eventbridge(
@@ -282,13 +288,34 @@ def _do_bootstrap(
             "Finished creating {}-regional".format(constants.BOOTSTRAP_STACK_NAME)
         )
 
+    source_args = {"Provider": source_provider}
+    if source_provider == "CodeCommit":
+        source_args.update(
+            {"Configuration": {"RepositoryName": repo, "BranchName": branch,},}
+        )
+    elif source_provider == "GitHub":
+        source_args.update(
+            {
+                "Configuration": {
+                    "Owner": owner,
+                    "Repo": repo,
+                    "Branch": branch,
+                    "PollForSourceChanges": poll_for_source_changes,
+                    "SecretsManagerSecret": webhook_secret,
+                },
+            }
+        )
+
     with betterboto_client.ClientContextManager("cloudformation") as cloudformation:
         click.echo("Creating {}".format(constants.BOOTSTRAP_STACK_NAME))
         template = asset_helpers.read_from_site_packages(
             "{}.template.yaml".format(constants.BOOTSTRAP_STACK_NAME)
         )
         template = Template(template).render(
-            VERSION=puppet_version, ALL_REGIONS=all_regions
+            VERSION=puppet_version, ALL_REGIONS=all_regions, Source=source_args
+        )
+        template = Template(template).render(
+            VERSION=puppet_version, ALL_REGIONS=all_regions, Source=source_args
         )
         args = {
             "StackName": constants.BOOTSTRAP_STACK_NAME,
@@ -357,20 +384,19 @@ def _do_bootstrap(
         cloudformation.create_or_update(**args)
 
     click.echo("Finished creating {}.".format(constants.BOOTSTRAP_STACK_NAME))
-    with betterboto_client.ClientContextManager("codecommit") as codecommit:
-        response = codecommit.get_repository(
-            repositoryName=constants.SERVICE_CATALOG_PUPPET_REPO_NAME
-        )
-        clone_url = response.get("repositoryMetadata").get("cloneUrlHttp")
-        clone_command = (
-            "git clone --config 'credential.helper=!aws codecommit credential-helper $@' "
-            "--config 'credential.UseHttpPath=true' {}".format(clone_url)
-        )
-        click.echo(
-            "You need to clone your newly created repo now and will then need to seed it: \n{}".format(
-                clone_command
+    if source_provider == "CodeCommit":
+        with betterboto_client.ClientContextManager("codecommit") as codecommit:
+            response = codecommit.get_repository(repositoryName=repo)
+            clone_url = response.get("repositoryMetadata").get("cloneUrlHttp")
+            clone_command = (
+                "git clone --config 'credential.helper=!aws codecommit credential-helper $@' "
+                "--config 'credential.UseHttpPath=true' {}".format(clone_url)
             )
-        )
+            click.echo(
+                "You need to clone your newly created repo now and will then need to seed it: \n{}".format(
+                    clone_command
+                )
+            )
 
 
 def bootstrap_spoke(puppet_account_id, permission_boundary):
@@ -384,7 +410,7 @@ def bootstrap_spoke(puppet_account_id, permission_boundary):
 
 
 def bootstrap_branch(
-    branch_name,
+    branch_to_bootstrap,
     puppet_account_id,
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
@@ -393,10 +419,16 @@ def bootstrap_branch(
     puppet_deploy_role_permission_boundary,
     puppet_provisioning_role_permissions_boundary,
     cloud_formation_deploy_role_permissions_boundary,
+    source_provider,
+    owner,
+    repo,
+    branch,
+    poll_for_source_changes,
+    webhook_secret,
 ):
     _do_bootstrap(
         "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(
-            branch_name
+            branch_to_bootstrap
         ),
         puppet_account_id,
         with_manual_approvals,
@@ -406,6 +438,12 @@ def bootstrap_branch(
         puppet_deploy_role_permission_boundary,
         puppet_provisioning_role_permissions_boundary,
         cloud_formation_deploy_role_permissions_boundary,
+        source_provider,
+        owner,
+        repo,
+        branch,
+        poll_for_source_changes,
+        webhook_secret,
     )
 
 
@@ -420,6 +458,12 @@ def bootstrap(
     cloud_formation_deploy_role_permissions_boundary,
     deploy_environment_compute_type,
     deploy_num_workers,
+    source_provider,
+    owner,
+    repo,
+    branch,
+    poll_for_source_changes,
+    webhook_secret,
 ):
     _do_bootstrap(
         config.get_puppet_version(),
@@ -433,6 +477,12 @@ def bootstrap(
         cloud_formation_deploy_role_permissions_boundary,
         deploy_environment_compute_type,
         deploy_num_workers,
+        source_provider,
+        owner,
+        repo,
+        branch,
+        poll_for_source_changes,
+        webhook_secret,
     )
 
 
