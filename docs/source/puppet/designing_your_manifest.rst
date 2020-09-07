@@ -668,3 +668,84 @@ Values in this file will overwrite all other values making the order of reading:
 2.  files in manifests/
 3.  manifest.properties
 4.  manifest-<puppet-account-id>.properties
+
+
+
+Lambda Invocations
+##################
+
+.. note::
+
+    This was added in version 0.83.0
+
+If you are migrating to puppet from your own AWS Lambda and AWS Step Functions solution you may want to reuse some of
+your Lambda functions to orchestrate activities like the removal of default VPCs or other actions in your accounts
+where using AWS Service Catalog + AWS CloudFormation may be cumbersome.  To do this you can use ``lambda-invocation``
+in your manifest file:
+
+.. code-block:: yaml
+
+    lambda-invocations:
+      remove-default-vpc:
+        function_name: remove-default-vpc
+        qualifier: $LATEST
+        invocation_type: Event
+        invoke_for:
+          tags:
+            - regions: enabled_regions
+              tag: scope:all
+
+The above example will build a list by walking through each ``enabled_region`` for all accounts tagged ``scope:all``. It
+will then invoke the ``$LATEST`` version of the ``remove-default-vpc`` in your puppet account for each item in the list,
+setting the parameters in the event object of the designated lambda to include ``account_id`` and ``region`` properties
+so you can implement whatever you want.
+
+.. code-block:: yaml
+
+    lambda-invocations:
+      remove-default-vpc:
+        function_name: remove-default-vpc
+        qualifier: $LATEST
+        invocation_type: Event
+        depends_on:
+          - name: remove-default-vpc-lambda
+            type: launch
+        invoke_for:
+          tags:
+            - regions: enabled_regions
+              tag: scope:all
+
+The ``lambda-invocations`` section includes support for depends_on where you can depend on another ``lambda-invocations``
+or a ``launch``.  Using the depends_on you can provision the AWS Lambda function before executing using puppet as your
+complete solution for configuration.
+
+The properties for ``function_name``, ``qualifier`` and ``invocation_type`` are passed as is to the AWS Boto3 Lambda
+invoke function.
+
+You can use parameters as you can for launches:
+
+.. code-block:: yaml
+
+    lambda-invocations:
+      remove-default-vpc:
+        function_name: remove-default-vpc
+        qualifier: $LATEST
+        invocation_type: Event
+        parameters:
+          RoleName:
+            default: DevAdmin
+          CentralLoggingBucketName:
+            ssm:
+              name: central-logging-bucket-name
+              region: eu-west-1
+        depends_on:
+          - name: remove-default-vpc-lambda
+            type: launch
+        invoke_for:
+          tags:
+            - regions: enabled_regions
+              tag: scope:all
+
+If you set the invocation_type to Event puppet will not check if the Lambda function completed successfully.  If you
+set the invocation_type to RequestResponse then it will wait for completion and error should the function not exit
+successfully.

@@ -334,7 +334,12 @@ class Manifest(dict):
         accounts = self.get("accounts")
         if launch_details is None:
             raise Exception(f"launch_details is None for {launch_name}")
-        deploy_to = launch_details.get("deploy_to")
+        if launch_or_spoke_local_portfolio == "lambda-invocations":
+            deploy_to = launch_details.get("invoke_for")
+        elif launch_or_spoke_local_portfolio == "launches":
+            deploy_to = launch_details.get("deploy_to")
+        elif launch_or_spoke_local_portfolio == "spoke-local-portfolios":
+            deploy_to = launch_details.get("deploy_to") or launch_details.get("share_with")
         task_defs = []
         for tag_list_item in deploy_to.get("tags", []):
             for account in accounts:

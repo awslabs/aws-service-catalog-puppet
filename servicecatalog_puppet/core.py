@@ -25,6 +25,7 @@ from servicecatalog_puppet.workflow import management as management_tasks
 from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
 from servicecatalog_puppet.workflow import runner as runner
 from servicecatalog_puppet.workflow import launch as launch_tasks
+from servicecatalog_puppet.workflow import lambda_invocations as lambda_invocations_tasks
 from servicecatalog_puppet.workflow import (
     spoke_local_portfolios as spoke_local_portfolios_tasks,
 )
@@ -103,6 +104,16 @@ def generate_tasks(
             execution_mode=execution_mode,
         ),
         spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
+            manifest_file_path=f.name,
+            puppet_account_id=puppet_account_id,
+            should_use_sns=should_use_sns,
+            should_use_product_plans=should_use_product_plans,
+            include_expanded_from=False,
+            single_account=single_account,
+            is_dry_run=is_dry_run,
+            execution_mode=execution_mode,
+        ),
+        lambda_invocations_tasks.LambdaInvocationsSectionTask(
             manifest_file_path=f.name,
             puppet_account_id=puppet_account_id,
             should_use_sns=should_use_sns,
