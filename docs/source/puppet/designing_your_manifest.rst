@@ -9,7 +9,7 @@ premise is the same - it is just a list of accounts and AWS Service Catalog prod
 
 
 Sections of the manifest file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------
 There are three sections to a manifest file - the global parameters, the accounts list and the launches.  Each of the 
 three are described in the following sections.
 
@@ -561,8 +561,8 @@ these in will cause the termination action to fail.
     Since 0.1.16, terminating a product will also remove any SSM Parameters you created for it via the manifest.yaml
 
 
-Managing large manifests or working in teams
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Managing large manifests or working in teams (multiple manifest files)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. note::
 
@@ -580,10 +580,39 @@ into smaller pieces.  You can specify launches in a launch directory within your
     │   └── launches-for-team-a.yaml
     ├── manifest.yaml
 
+The file (in this example launches-for-team-a.yaml) should be a list of launches:
+
+.. code-block:: bash
+
+    ✗ cat launches-for-team-a.yaml
+    account-vending-account-creation:
+        portfolio: demo-central-it-team-portfolio
+        product: account-vending-account-creation
+        version: v1
+        depends_on:
+          - account-vending-account-bootstrap-shared
+          - account-vending-account-creation-shared
+        deploy_to:
+          tags:
+            - tag: scope:puppet-hub
+              regions: default_region
+
+    account-vending-account-bootstrap-shared:
+        portfolio: demo-central-it-team-portfolio
+        product: account-vending-account-bootstrap-shared
+        version: v1
+        deploy_to:
+          tags:
+            - tag: scope:puppet-hub
+              regions: default_region
+
+
+
 The framework will load the manifest.yaml and *overwrite* any launches with ones defined in files from the launches
 directory.  The framework will not warn you of any overrides.
 
-You can also specify parameters and spoke-local-portfolios in directories too:
+You can also specify parameters and spoke-local-portfolios in directories too.  When doing so, the files should contain
+lists of parameters or spoke-local-portfolios and should not be a dictionary.
 
 .. code-block:: bash
 
@@ -610,3 +639,113 @@ You can also declare other manifest files in a manifests directory:
 
 When you write a manifest file in the manifests directory the accounts section is ignored - you can only specify
 launches, parameters and spoke-local-portfolios.
+
+
+Managing large manifests or working across multiple environments (external versions / properties files)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    This was added in version 0.76.0
+
+If you are using puppet to manage multiple environments you may find it easier to keep the versions of your launches in
+properties files instead of the manifest.yaml files.  To do this you create a file named manifest.properties in the same
+directory as your manifest.yaml file.  Within this file you can specify the following:
+
+.. code-block:: ini
+
+    [launches]
+    IAM-1.version = v50
+
+This will set the version for the launch with the name IAM-1 to v50.
+
+Please note this will overwrite the values specified in the manifest.yaml files with no warning.
+
+If you are using multiple instances of puppet you can also create a file named manifest-<puppet-account-id>.properties.
+Values in this file will overwrite all other values making the order of reading:
+
+1.  manifest.yaml
+2.  files in manifests/
+3.  manifest.properties
+4.  manifest-<puppet-account-id>.properties
+
+
+
+Lambda Invocations
+##################
+
+.. note::
+
+    This was added in version 0.83.0
+
+If you are migrating to puppet from your own AWS Lambda and AWS Step Functions solution you may want to reuse some of
+your Lambda functions to orchestrate activities like the removal of default VPCs or other actions in your accounts
+where using AWS Service Catalog + AWS CloudFormation may be cumbersome.  To do this you can use ``lambda-invocation``
+in your manifest file:
+
+.. code-block:: yaml
+
+    lambda-invocations:
+      remove-default-vpc:
+        function_name: remove-default-vpc
+        qualifier: $LATEST
+        invocation_type: Event
+        invoke_for:
+          tags:
+            - regions: enabled_regions
+              tag: scope:all
+
+The above example will build a list by walking through each ``enabled_region`` for all accounts tagged ``scope:all``. It
+will then invoke the ``$LATEST`` version of the ``remove-default-vpc`` in your puppet account for each item in the list,
+setting the parameters in the event object of the designated lambda to include ``account_id`` and ``region`` properties
+so you can implement whatever you want.
+
+.. code-block:: yaml
+
+    lambda-invocations:
+      remove-default-vpc:
+        function_name: remove-default-vpc
+        qualifier: $LATEST
+        invocation_type: Event
+        depends_on:
+          - name: remove-default-vpc-lambda
+            type: launch
+        invoke_for:
+          tags:
+            - regions: enabled_regions
+              tag: scope:all
+
+The ``lambda-invocations`` section includes support for depends_on where you can depend on another ``lambda-invocations``
+or a ``launch``.  Using the depends_on you can provision the AWS Lambda function before executing using puppet as your
+complete solution for configuration.
+
+The properties for ``function_name``, ``qualifier`` and ``invocation_type`` are passed as is to the AWS Boto3 Lambda
+invoke function.
+
+You can use parameters as you can for launches:
+
+.. code-block:: yaml
+
+    lambda-invocations:
+      remove-default-vpc:
+        function_name: remove-default-vpc
+        qualifier: $LATEST
+        invocation_type: Event
+        parameters:
+          RoleName:
+            default: DevAdmin
+          CentralLoggingBucketName:
+            ssm:
+              name: central-logging-bucket-name
+              region: eu-west-1
+        depends_on:
+          - name: remove-default-vpc-lambda
+            type: launch
+        invoke_for:
+          tags:
+            - regions: enabled_regions
+              tag: scope:all
+
+If you set the invocation_type to Event puppet will not check if the Lambda function completed successfully.  If you
+set the invocation_type to RequestResponse then it will wait for completion and error should the function not exit
+successfully.

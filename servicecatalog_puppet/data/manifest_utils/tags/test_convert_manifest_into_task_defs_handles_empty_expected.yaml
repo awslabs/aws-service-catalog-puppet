@@ -23,8 +23,8 @@
   pre_actions: []
   post_actions: []
   ssm_param_outputs:
-  - param_name: ServiceCatalogAccountRoleArn
-    stack_output: RoleArn
+    - param_name: ServiceCatalogAccountRoleArn
+      stack_output: RoleArn
   status: provisioned
   version: v1
   worker_timeout: 0

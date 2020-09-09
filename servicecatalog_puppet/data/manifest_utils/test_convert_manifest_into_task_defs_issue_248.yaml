@@ -5,7 +5,7 @@ accounts:
     name: '105463962595'
     regions_enabled:
       - eu-west-1
-#      - eu-west-2
+    #      - eu-west-2
     tags:
       - type:prod
       - partition:eu

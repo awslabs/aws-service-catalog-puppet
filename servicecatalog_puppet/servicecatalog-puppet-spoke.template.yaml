@@ -14,9 +14,20 @@ Parameters:
     Type: String
     Description: IAM Permission Boundary to apply to the PuppetRole
     Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  PuppetDeployInSpokeRolePermissionBoundary:
+    Type: String
+    Description: IAM Permission Boundary to apply to the PuppetDeployInSpokeRole
+    Default: "arn:aws:iam::aws:policy/AdministratorAccess"
+  DeployEnvironmentComputeType:
+    Type: String
+    Description: The AWS CodeBuild Environment Compute Type
+    Default: BUILD_GENERAL1_SMALL
   Version:
     Type: String
     Default: "{{ VERSION }}"
+
+Conditions:
+  NotRunningInPuppetAccount: !Not [ !Equals [ !Ref PuppetAccountId, !Ref "AWS::AccountId" ] ]
 
 Resources:
   Param:
@@ -89,6 +100,165 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSServiceCatalogEndUserFullAccess
         - arn:aws:iam::aws:policy/AdministratorAccess
+
+  DeployInSpokeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: PuppetDeployInSpokeRole
+      PermissionsBoundary: !Ref PuppetDeployInSpokeRolePermissionBoundary
+      Path: /servicecatalog-puppet/
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+  DeployInSpokeProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: servicecatalog-puppet-deploy-in-spoke
+      Description: "runs puppet in the spoke account"
+      ServiceRole: !GetAtt DeployInSpokeRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: linuxContainer
+        ComputeType: !Ref DeployEnvironmentComputeType
+        Image: aws/codebuild/standard:4.0
+        EnvironmentVariables:
+          - Name: VERSION
+            Type: PLAINTEXT
+            Value: "CHANGE_ME"
+
+          - Name: MANIFEST_URL
+            Type: PLAINTEXT
+            Value: "CHANGE_ME"
+
+          - Name: NUM_WORKERS
+            Type: PLAINTEXT
+            Value: "10"
+
+          - Name: PUPPET_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: "CHANGE_ME"
+
+          - Name: HOME_REGION
+            Type: PLAINTEXT
+            Value: "CHANGE_ME"
+
+          - Name: REGIONS
+            Type: PLAINTEXT
+            Value: "CHANGE_ME"
+
+          - Name: SHOULD_COLLECT_CLOUDFORMATION_EVENTS
+            Type: PLAINTEXT
+            Value: "CHANGE_ME"
+
+          - Name: SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE
+            Type: PLAINTEXT
+            Value: "CHANGE_ME"
+
+          - Name: SHOULD_FORWARD_FAILURES_TO_OPSCENTER
+            Type: PLAINTEXT
+            Value: "CHANGE_ME"
+
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                python: 3.x
+              commands:
+                - echo $VERSION
+                - bash -c "if [[ $VERSION =~ 'http'  ]]; then pip install $VERSION ; else pip install aws-service-catalog-puppet==$VERSION; fi"
+
+
+            build:
+              commands:
+                - curl $MANIFEST_URL > manifest-expanded.yaml
+                - >
+                  servicecatalog-puppet --info deploy \
+                      --execution-mode spoke \
+                      --puppet-account-id $PUPPET_ACCOUNT_ID \
+                      --single-account $(aws sts get-caller-identity --query Account --output text) \
+                      --home-region $HOME_REGION \
+                      --regions $REGIONS \
+                      --should-collect-cloudformation-events $SHOULD_COLLECT_CLOUDFORMATION_EVENTS \
+                      --should-forward-events-to-eventbridge $SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE \
+                      --should-forward-failures-to-opscenter $SHOULD_FORWARD_FAILURES_TO_OPSCENTER \
+                      manifest-expanded.yaml
+          artifacts:
+            files:
+              - results/*/*
+              - output/*/*
+            name: DeployInSpokeProject
+
+      TimeoutInMinutes: 480
+      Tags:
+        - Key: "ServiceCatalogPuppet:Actor"
+          Value: "Framework"
+
+  SpokeEventBus:
+    Type: AWS::Events::EventBus
+    Condition: NotRunningInPuppetAccount
+    Properties:
+      Name: "servicecatalog-puppet-spoke-event-bus"
+
+  SpokeEventBusPolicy:
+    Type: AWS::Events::EventBusPolicy
+    Condition: NotRunningInPuppetAccount
+    Properties:
+      Action: "events:PutEvents"
+      Principal: !Ref AWS::AccountId
+      StatementId: "allow-self"
+      EventBusName: !Ref SpokeEventBus
+
+  EventBridgeFromSpoke:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: EventBridgeFromSpoke
+      Path: /servicecatalog-puppet/
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: EventBusActions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:PutEvents
+                Resource: !Sub "arn:aws:events:${AWS::Region}:${PuppetAccountId}:event-bus/default"
+
+  EventRule:
+    Type: AWS::Events::Rule
+    Condition: NotRunningInPuppetAccount
+    Properties:
+      EventBusName: !Ref SpokeEventBus
+      Name: servicecatalog-puppet-forwarder
+      EventPattern:
+        source:
+          - "servicecatalog-puppet"
+      RoleArn: !GetAtt EventBridgeFromSpoke.Arn
+      Targets:
+        - Arn: !Sub "arn:aws:events:${AWS::Region}:${PuppetAccountId}:event-bus/servicecatalog-puppet-event-bus"
+          Id: servicecatalog-puppet-event-bus
+          RoleArn: !GetAtt EventBridgeFromSpoke.Arn
 
 Outputs:
   Version:
