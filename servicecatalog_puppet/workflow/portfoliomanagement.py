@@ -184,6 +184,118 @@ class GetProductIdByProductName(PortfolioManagementTask):
         )
 
 
+class GetPortfolios(PortfolioManagementTask):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region
+        }
+
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
+        ]
+
+    def run(self):
+        self.info("run")
+        with betterboto_client.ClientContextManager(
+            "servicecatalog",
+            region_name=self.region,
+        ) as servicecatalog_client:
+            portfolio_list = aws.get_all_portfolios(servicecatalog_client)
+            self.write_output(
+                {
+                    "account": self.account,
+                    "region": self.region,
+                    "portfolios": portfolio_list
+                }
+            )
+
+
+class GetPortfolioShares(PortfolioManagementTask):
+    puppet_account_id = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "account_id": self.account_id,
+            "region": self.region,
+            "puppet_account_id": self.puppet_account_id,
+            "portfolio": self.portfolio,
+        }
+
+    def requires(self):
+        return {
+            "hub_portfolios": GetPortfolios(
+                account_id=self.puppet_account_id,
+                region=self.region,
+            ),
+        }
+
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.list_organization_portfolio_access_{self.account_id}_{self.region}_{self.portfolio}",
+        ]
+
+    def run(self):
+        self.info("run")
+        portfolio_shared = None
+        hub_portfolios = self.load_from_input("hub_portfolios")
+        for portfolio in hub_portfolios:
+            if portfolio.get('DisplayName') == self.portfolio:
+                with betterboto_client.ClientContextManager(
+                    "servicecatalog",
+                    region_name=self.region,
+                ) as servicecatalog_client:
+                    org_nodes = []
+                    response = servicecatalog_client.list_organization_portfolio_access(
+                        PortfolioId=portfolio.get('Id')
+                        )
+                    org_nodes.extend(response.get('OrganizationNodes', []))
+                    while 'NextPageToken' in response:
+                        response = servicecatalog_client.list_organization_portfolio_access(
+                            PortfolioId=portfolio.get('Id'),
+                            PageToken=response['NextPageToken']
+                            )
+                        org_nodes.extend(response.get('OrganizationNodes', []))
+
+                    shared_accounts = [node['Value'] if node['Type'] == 'ACCOUNT' for node in org_nodes]
+                    portfolio_shared = (self.account in shared_accounts)
+                    if not portfolio_shared:
+                        shared_ous = [node['Value'] if node['Type'] == 'ORGANIZATIONAL_UNIT' for node in org_nodes]
+                        # Get the list of accounts in each OU
+                        for ou in shared_ous:
+                            if self.account in aws.get_account_list_from_ou(ou):
+                                portfolio_shared = 'OU'
+                                break
+
+                    if portfolio_shared:
+                        self.write_output(
+                            {
+                                "account": self.account,
+                                "region": self.region,
+                                "portfolio": portfolio,
+                                "share_type": portfolio_shared
+                            }
+                        )
+                        break
+
+        if not portfolio_shared:
+            self.write_output(
+                {
+                    "account": self.account,
+                    "region": self.region,
+                    "portfolio": None
+                    "share_type": None
+                }
+            )
+
+
 class GetPortfolioByPortfolioName(PortfolioManagementTask):
     puppet_account_id = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -204,25 +316,43 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
             f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
         ]
 
+    def requires(self):
+        return {
+            "hub_shared_portfolios": GetPortfolioShares(
+                puppet_account_id=self.puppet_account_id,
+                account_id=self.account_id,
+                region=self.region,
+                portfolio=self.portfolio
+            ),
+        }
+
     def run(self):
         self.info("run")
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.account_id}-{self.region}",
-            region_name=self.region,
-        ) as cross_account_servicecatalog:
-            portfolio = aws.get_portfolio_for(
-                cross_account_servicecatalog, self.portfolio
-            )
-            self.write_output(
-                {
-                    "portfolio_name": self.portfolio,
-                    "portfolio_id": portfolio.get("Id"),
-                    "provider_name": portfolio.get("ProviderName"),
-                    "description": portfolio.get("Description"),
-                }
-            )
+        portfolio = None
+        hub_portfolios = self.load_from_input("hub_shared_portfolios")
+        if hub_portfolios.get('portfolio_share', None):
+            if hub_portfolios['portfolio_share'].get('Id', None):
+                portfolio = hub_portfolios['portfolio_share']
+
+        if not portfolio:
+            with betterboto_client.CrossAccountClientContextManager(
+                "servicecatalog",
+                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                f"{self.account_id}-{self.region}",
+                region_name=self.region,
+            ) as cross_account_servicecatalog:
+                portfolio = aws.get_portfolio_for(
+                    cross_account_servicecatalog, self.portfolio
+                )
+
+        self.write_output(
+            {
+                "portfolio_name": self.portfolio,
+                "portfolio_id": portfolio.get("Id"),
+                "provider_name": portfolio.get("ProviderName"),
+                "description": portfolio.get("Description"),
+            }
+        )
 
 
 class ProvisionActionTask(PortfolioManagementTask):

@@ -1,11 +1,13 @@
 import logging
 import time
 import os
+import functools
 
 import click
 import yaml
 
 from servicecatalog_puppet import constants
+from servicecatalog_puppet import config
 from betterboto import client as betterboto_client
 
 logger = logging.getLogger(__file__)
@@ -546,6 +548,11 @@ def get_version_id_for(servicecatalog, product_id, version_name):
     return version_id
 
 
+def get_all_portfolios(servicecatalog):
+    response = servicecatalog.list_portfolios_single_page()
+    return response.get("PortfolioDetails", [])
+
+
 def get_portfolio_for(servicecatalog, portfolio_name):
     result = None
 
@@ -569,3 +576,22 @@ def get_portfolio_for(servicecatalog, portfolio_name):
 
 def get_portfolio_id_for(servicecatalog, portfolio_name):
     return get_portfolio_for(servicecatalog, portfolio_name).get("Id")
+
+
+@functools.lru_cache()
+def get_account_list_from_ou(ou_id):
+    account_list = []
+    puppet_account_id = config.get_puppet_account_id()
+    org_iam_role_arn = config.get_org_iam_role_arn(puppet_account_id)
+    if org_iam_role_arn is None:
+        logger.info("No org role set - not expanding")
+        return account_list
+
+    with betterboto_client.CrossAccountClientContextManager(
+        "organizations", org_iam_role_arn, "org-iam-role"
+    ) as client:
+        response = client.list_children_nested(
+            ParentId=ou_id, ChildType="ACCOUNT"
+        )
+        account_list = [result['Id'] for result in response]
+        return account_list

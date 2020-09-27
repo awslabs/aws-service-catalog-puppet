@@ -127,6 +127,69 @@ class GetProductIdByProductNameTest(tasks_unit_tests.PuppetTaskUnitTest):
         self.assertEqual(expected_result, self.sut.requires())
 
 
+class GetPortfoliosTest(tasks_unit_tests.PuppetTaskUnitTest):
+    account_id = "23089479278643892"
+    region = "eu-west-1"
+
+    def setUp(self) -> None:
+        from . import portfoliomanagement
+
+        self.sut = portfoliomanagement.GetPortfolios(
+            account_id=self.account_id,
+            region=self.region,
+        )
+
+    def test_requires(self):
+        from . import portfoliomanagement
+
+        expected_result = {}
+        self.assertEqual(expected_result, self.sut.requires())
+
+    def test_params_for_results_display(self):
+        expected_result = {
+            "account_id": self.account_id,
+            "region": self.region
+        }
+        self.assertEqual(expected_result, self.sut.params_for_results_display())
+
+
+class GetPortfolioSharesTest(tasks_unit_tests.PuppetTaskUnitTest):
+    puppet_account_id = "01234567890"
+    portfolio = "portfolio1"
+    account_id = "23089479278643892"
+    region = "eu-west-1"
+
+    def setUp(self) -> None:
+        from . import portfoliomanagement
+
+        self.sut = portfoliomanagement.GetPortfolioShares(
+            puppet_account_id=self.puppet_account_id,
+            portfolio=self.portfolio,
+            account_id=self.account_id,
+            region=self.region,
+        )
+
+    def test_requires(self):
+        from . import portfoliomanagement
+
+        expected_result = {
+            "hub_portfolios": portfoliomanagement.GetPortfolios(
+                account_id=self.puppet_account_id,
+                region=self.region,
+            ),
+        }
+        self.assertEqual(expected_result, self.sut.requires())
+
+    def test_params_for_results_display(self):
+        expected_result = {
+            "account_id": self.account_id,
+            "region": self.region,
+            "puppet_account_id": self.puppet_account_id,
+            "portfolio": self.portfolio,
+        }
+        self.assertEqual(expected_result, self.sut.params_for_results_display())
+
+
 class GetPortfolioByPortfolioNameTest(tasks_unit_tests.PuppetTaskUnitTest):
     puppet_account_id = "01234567890"
     manifest_file_path = "tcvyuiho"
