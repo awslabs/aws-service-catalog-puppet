@@ -371,6 +371,7 @@ Resources:
                 - servicecatalog-puppet --info deploy --num-workers ${NUM_WORKERS} manifest-expanded.yaml
           artifacts:
             files:
+              - manifest-expanded.yaml
               - results/*/*
               - output/*/*
             name: DeployProject
