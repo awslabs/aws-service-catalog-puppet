@@ -1,4 +1,9 @@
+import os
+from functools import lru_cache
+
 import luigi
+import yaml
+
 from servicecatalog_puppet import manifest_utils
 
 from servicecatalog_puppet.workflow import tasks
@@ -22,7 +27,17 @@ class ManifestTask(tasks.PuppetTask):
         self.info("Finished")
 
 
-class SectionTask(tasks.PuppetTask):
+class ManifestMixen(object):
+    manifest_file_path = luigi.Parameter()
+
+    @property
+    @lru_cache
+    def manifest(self):
+        content = open(self.manifest_file_path, 'r').read()
+        return manifest_utils.Manifest(yaml.safe_load(content))
+
+
+class SectionTask(tasks.PuppetTask, tasks.StateLessTask, ManifestMixen):
     manifest_file_path = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     should_use_sns = luigi.BoolParameter()
@@ -38,14 +53,8 @@ class SectionTask(tasks.PuppetTask):
             "manifest_file_path": self.manifest_file_path,
         }
 
-    def requires(self):
-        return {
-            "manifest": ManifestTask(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-            ),
-        }
-
     @property
+    @lru_cache
     def manifest(self):
-        return manifest_utils.Manifest(self.load_from_input("manifest"))
+        content = open(self.manifest_file_path, 'r').read()
+        return manifest_utils.Manifest(yaml.safe_load(content))

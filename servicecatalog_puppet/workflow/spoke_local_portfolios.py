@@ -12,35 +12,18 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
         }
 
     def requires(self):
-        requirements = dict(
-            manifest=manifest_tasks.ManifestTask(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-            )
-        )
+        requirements = dict()
 
         if self.execution_mode == "hub":
-            requirements.update(
-                {
-                    "generate_shares": generate_tasks.GenerateSharesTask(
-                        manifest_file_path=self.manifest_file_path,
-                        puppet_account_id=self.puppet_account_id,
-                        should_use_sns=self.should_use_sns,
-                        should_use_product_plans=self.should_use_product_plans,
-                        include_expanded_from=self.include_expanded_from,
-                        single_account=self.single_account,
-                        is_dry_run=self.is_dry_run,
-                        execution_mode=self.execution_mode,
-                    ),
-                }
+            requirements["generate_shares"] = generate_tasks.GenerateSharesTask(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                should_use_sns=self.should_use_sns,
             )
-        return requirements
 
-    def run(self):
-        manifest = self.load_from_input("manifest")
         if self.execution_mode == "hub" and not self.is_dry_run:
             self.info("Generating sharing tasks")
-            yield [
+            requirements["spoke_local_portfolio_tasks"] = [
                 provisioning_tasks.SpokeLocalPortfolioTask(
                     spoke_local_portfolio_name=spoke_local_portfolio_name,
                     manifest_file_path=self.manifest_file_path,
@@ -52,8 +35,12 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
                     is_dry_run=self.is_dry_run,
                     depends_on=spoke_local_portfolio.get("depends_on", []),
                 )
-                for spoke_local_portfolio_name, spoke_local_portfolio in manifest.get(
+                for spoke_local_portfolio_name, spoke_local_portfolio in self.manifest.get(
                     "spoke-local-portfolios", {}
                 ).items()
             ]
-        self.write_output(manifest)
+
+        return requirements
+
+    def run(self):
+        self.write_output(self.manifest.get("spoke-local-portfolios"))

@@ -3,6 +3,7 @@ import json
 import os
 import re
 import time
+from functools import lru_cache
 
 import luigi
 from betterboto import client as betterboto_client
@@ -192,10 +193,10 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
-            "account_id": self.account_id,
-            "region": self.region,
-            "portfolio": self.portfolio,
             "puppet_account_id": self.puppet_account_id,
+            "portfolio": self.portfolio,
+            "region": self.region,
+            "account_id": self.account_id,
         }
 
     def api_calls_used(self):
@@ -204,25 +205,63 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
             f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
         ]
 
-    def run(self):
-        self.info("run")
+    def complete(self):
+        target_created = super().complete()
+        if target_created:
+            with open(self.output_location, 'r') as f:
+                j = json.loads(f.read())
+                result = self.get_portfolio()
+                if j.get("portfolio_id") == result.get("Id"):
+                    return True
+                else:
+                    self.write_output({
+                        "portfolio_name": self.portfolio,
+                        "portfolio_id": result.get("Id"),
+                        "provider_name": result.get("ProviderName"),
+                        "description": result.get("Description"),
+                    })
+                    return True
+        else:
+            return False
+
+    @lru_cache
+    def get_portfolio(self):
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
             f"{self.account_id}-{self.region}",
             region_name=self.region,
         ) as cross_account_servicecatalog:
-            portfolio = aws.get_portfolio_for(
-                cross_account_servicecatalog, self.portfolio
-            )
-            self.write_output(
-                {
-                    "portfolio_name": self.portfolio,
-                    "portfolio_id": portfolio.get("Id"),
-                    "provider_name": portfolio.get("ProviderName"),
-                    "description": portfolio.get("Description"),
-                }
-            )
+            result = None
+
+            response = cross_account_servicecatalog.list_accepted_portfolio_shares()
+            assert response.get("NextPageToken") is None, "Pagination not supported"
+            for portfolio_detail in response.get("PortfolioDetails"):
+                if portfolio_detail.get("DisplayName") == self.portfolio:
+                    result = portfolio_detail
+                    break
+
+            if result is None:
+                response = cross_account_servicecatalog.list_portfolios_single_page()
+                for portfolio_detail in response.get("PortfolioDetails", []):
+                    if portfolio_detail.get("DisplayName") == self.portfolio:
+                        result = portfolio_detail
+                        break
+
+            assert result is not None, "Could not find portfolio"
+            return result
+
+    def run(self):
+        self.info("run")
+        result = self.get_portfolio()
+        self.write_output(
+            {
+                "portfolio_name": self.portfolio,
+                "portfolio_id": result.get("Id"),
+                "provider_name": result.get("ProviderName"),
+                "description": result.get("Description"),
+            }
+        )
 
 
 class ProvisionActionTask(PortfolioManagementTask):
@@ -387,9 +426,9 @@ class CreateAssociationsForPortfolioTask(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "portfolio": self.portfolio,
             "account_id": self.account_id,
             "region": self.region,
-            "portfolio": self.portfolio,
         }
 
     def api_calls_used(self):
@@ -1101,9 +1140,9 @@ class SharePortfolioTask(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
-            "account_id": self.account_id,
-            "region": self.region,
             "portfolio": self.portfolio,
+            "region": self.region,
+            "account_id": self.account_id,
         }
 
     def requires(self):
@@ -1157,7 +1196,7 @@ class SharePortfolioTask(PortfolioManagementTask):
                 servicecatalog.create_portfolio_share(
                     PortfolioId=portfolio_id, AccountId=self.account_id,
                 )
-        self.write_output(self.param_kwargs)
+        self.write_output(dict(portfolio_id=portfolio_id, **self.param_kwargs))
 
 
 class ShareAndAcceptPortfolioTask(PortfolioManagementTask):
@@ -1253,7 +1292,7 @@ class ShareAndAcceptPortfolioTask(PortfolioManagementTask):
         self.write_output(self.param_kwargs)
 
 
-class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):
+class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):  # DONE
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
@@ -1261,9 +1300,9 @@ class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
-            "account_id": self.account_id,
-            "region": self.region,
             "portfolio": self.portfolio,
+            "region": self.region,
+            "account_id": self.account_id,
         }
 
     def requires(self):
@@ -1310,7 +1349,7 @@ class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):
         self.write_output(self.param_kwargs)
 
 
-class CreateShareForAccountLaunchRegion(PortfolioManagementTask):
+class CreateShareForAccountLaunchRegion(PortfolioManagementTask):  # DONE
     """for the given account_id and launch and region create the shares"""
 
     puppet_account_id = luigi.Parameter()
@@ -1320,9 +1359,9 @@ class CreateShareForAccountLaunchRegion(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
-            "account_id": self.account_id,
-            "region": self.region,
             "portfolio": self.portfolio,
+            "region": self.region,
+            "account_id": self.account_id,
         }
 
     def requires(self):
@@ -1398,9 +1437,9 @@ class DisassociateProductsFromPortfolio(PortfolioManagementTask):
             f"servicecatalog.search_products_as_admin_single_page_{self.account_id}_{self.region}_{self.portfolio_id}": 1,
         }
 
-    def run(self):
-        self.info("Starting")
-
+    def requires(self):
+        disassociates = list()
+        requirements = dict(disassociates=disassociates)
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
@@ -1411,16 +1450,22 @@ class DisassociateProductsFromPortfolio(PortfolioManagementTask):
                 PortfolioId=self.portfolio_id
             )
             for product_view_detail in results.get("ProductViewDetails", []):
-                yield DisassociateProductFromPortfolio(
-                    account_id=self.account_id,
-                    region=self.region,
-                    portfolio_id=self.portfolio_id,
-                    product_id=product_view_detail.get("ProductViewSummary").get(
-                        "ProductId"
-                    ),
-                    manifest_file_path=self.manifest_file_path,
+                disassociates.append(
+                    DisassociateProductFromPortfolio(
+                        account_id=self.account_id,
+                        region=self.region,
+                        portfolio_id=self.portfolio_id,
+                        product_id=product_view_detail.get("ProductViewSummary").get(
+                            "ProductId"
+                        ),
+                        manifest_file_path=self.manifest_file_path,
+                    )
                 )
-            self.write_output(self.params_for_results_display())
+        return requirements
+
+    def run(self):
+        self.info("Starting")
+        self.write_output(self.params_for_results_display())
 
 
 class DeleteLocalPortfolio(PortfolioManagementTask):

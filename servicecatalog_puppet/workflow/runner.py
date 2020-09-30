@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import sys
 import time
 from glob import glob
@@ -69,6 +70,25 @@ def run_tasks(
     logger.info(f"About to run workflow with {num_workers} workers")
 
     tasks.print_stats()
+
+    # constants.TASK_OUTPUTS_THAT_SHOULD_NOT_BE_DELETE
+
+    # for task_that_should_always_be_run in [
+    #     "LambdaInvocationsSectionTask",
+    #     "LaunchSectionTask",
+    #     "SpokeLocalPortfolioSectionTask",
+    #     "GeneratePoliciesTemplate",
+    #     "GenerateSharesTask",
+    #     "GeneratePolicies",
+    #     "ManifestTask",
+    #     "LaunchTask",
+    #     "LaunchInSpokeTask",
+    #     "LambdaInvocationTask",
+    #     "ProvisionActionTask",
+    # ]:
+    #     p = f"output/{task_that_should_always_be_run}"
+    #     if os.path.exists(p):
+    #         shutil.rmtree(p)
 
     run_result = luigi.build(
         tasks_to_run,

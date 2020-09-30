@@ -36,7 +36,6 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
             "lambda_invocation_name": self.lambda_invocation_name,
             "account_id": self.account_id,
             "region": self.region,
-
             "function_name": self.function_name,
             "qualifier": self.qualifier,
             "invocation_type": self.invocation_type,
@@ -79,10 +78,10 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)
         with betterboto_client.CrossAccountClientContextManager(
-            "lambda",
-            f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"sc-{home_region}-{self.puppet_account_id}",
-            region_name=home_region,
+                "lambda",
+                f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
+                f"sc-{home_region}-{self.puppet_account_id}",
+                region_name=home_region,
         ) as lambda_client:
             payload = dict(
                 account_id=self.account_id,
@@ -97,18 +96,24 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
             )
         success_results = dict(RequestResponse=200, Event=202, DryRun=204)
 
-        if success_results.get(self.invocation_type) != response.get('StatusCode'):
-            raise Exception(f"{self.lambda_invocation_name} failed for {self.account_id}, {self.region}")
+        if success_results.get(self.invocation_type) != response.get("StatusCode"):
+            raise Exception(
+                f"{self.lambda_invocation_name} failed for {self.account_id}, {self.region}"
+            )
         else:
-            if response.get('FunctionError'):
-                error_payload = response.get('Payload').read()
+            if response.get("FunctionError"):
+                error_payload = response.get("Payload").read()
                 raise Exception(error_payload)
             else:
-                output = dict(**self.params_for_results_display(), payload=payload, response=response)
+                output = dict(
+                    **self.params_for_results_display(),
+                    payload=payload,
+                    response=response,
+                )
                 self.write_output(output)
 
 
-class LambdaInvocationTask(workflow_tasks.PuppetTask):
+class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
     lambda_invocation_name = luigi.Parameter()
     manifest_file_path = luigi.Parameter()
 
@@ -126,21 +131,13 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask):
             "lambda_invocation_name": self.lambda_invocation_name,
         }
 
-    def requires(self):
-        return {
-            "manifest": manifest_tasks.ManifestTask(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-            ),
-        }
-
     def run(self):
-        manifest = manifest_utils.Manifest(self.load_from_input("manifest"))
-
-        lambda_invocation = manifest.get("lambda-invocations").get(self.lambda_invocation_name)
+        lambda_invocation = self.manifest.get("lambda-invocations").get(
+            self.lambda_invocation_name
+        )
 
         dependencies = list()
-        for dependency in lambda_invocation.get('depends_on', []):
+        for dependency in lambda_invocation.get("depends_on", []):
             if isinstance(dependency, str):
                 dependencies.append(
                     LaunchTask(
@@ -156,11 +153,11 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask):
                     )
                 )
             else:
-                dependency_type = dependency.get('type', 'launch')
+                dependency_type = dependency.get("type", "launch")
                 if dependency_type == "launch":
                     dependencies.append(
                         LaunchTask(
-                            launch_name=dependency.get('name'),
+                            launch_name=dependency.get("name"),
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,
                             should_use_sns=self.should_use_sns,
@@ -174,7 +171,7 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask):
                 elif dependency_type == "lambda-invocation":
                     dependencies.append(
                         self.__class__(
-                            lambda_invocation_name=dependency.get('name'),
+                            lambda_invocation_name=dependency.get("name"),
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,
                             should_use_sns=self.should_use_sns,
@@ -186,7 +183,7 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask):
                     )
         yield dependencies
 
-        task_defs = manifest.get_task_defs_from_details(
+        task_defs = self.manifest.get_task_defs_from_details(
             self.puppet_account_id,
             True,
             self.lambda_invocation_name,
@@ -196,24 +193,20 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask):
 
         common_params = {
             "lambda_invocation_name": self.lambda_invocation_name,
-
             "function_name": lambda_invocation.get("function_name"),
             "qualifier": lambda_invocation.get("qualifier", "$LATEST"),
             "invocation_type": lambda_invocation.get("invocation_type"),
-
             "puppet_account_id": self.puppet_account_id,
-
             "parameters": lambda_invocation.get("parameters", {}),
-
-            "launch_parameters": lambda_invocation.get('parameters', {}),
-            "manifest_parameters": manifest.get('parameters', {}),
+            "launch_parameters": lambda_invocation.get("parameters", {}),
+            "manifest_parameters": self.manifest.get("parameters", {}),
         }
 
         for task_def in task_defs:
             task_def_parameters = {
-                "account_id": task_def.get('account_id'),
-                "region": task_def.get('region'),
-                "account_parameters": task_def.get('account_parameters'),
+                "account_id": task_def.get("account_id"),
+                "region": task_def.get("region"),
+                "account_parameters": task_def.get("account_parameters"),
             }
             task_def_parameters.update(common_params)
             yield InvokeLambdaTask(**task_def_parameters)
@@ -230,30 +223,23 @@ class LambdaInvocationsSectionTask(manifest_tasks.SectionTask):
 
     def requires(self):
         requirements = dict(
-            manifest=manifest_tasks.ManifestTask(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-            )
+            invocations=[
+                LambdaInvocationTask(
+                    lambda_invocation_name=lambda_invocation_name,
+                    manifest_file_path=self.manifest_file_path,
+                    puppet_account_id=self.puppet_account_id,
+                    should_use_sns=self.should_use_sns,
+                    should_use_product_plans=self.should_use_product_plans,
+                    include_expanded_from=self.include_expanded_from,
+                    single_account=self.single_account,
+                    is_dry_run=self.is_dry_run,
+                )
+                for lambda_invocation_name, lambda_invocation in self.manifest.get(
+                    "lambda-invocations", {}
+                ).items()
+            ]
         )
         return requirements
 
     def run(self):
-        manifest = self.load_from_input("manifest")
-
-        yield [
-            LambdaInvocationTask(
-                lambda_invocation_name=lambda_invocation_name,
-                manifest_file_path=self.manifest_file_path,
-
-                puppet_account_id=self.puppet_account_id,
-                should_use_sns=self.should_use_sns,
-                should_use_product_plans=self.should_use_product_plans,
-                include_expanded_from=self.include_expanded_from,
-                single_account=self.single_account,
-                is_dry_run=self.is_dry_run,
-            )
-            for lambda_invocation_name, lambda_invocation in manifest.get(
-                "lambda-invocations", {}
-            ).items()
-        ]
-        self.write_output(manifest)
+        self.write_output(self.manifest.get("lambda-invocations"))

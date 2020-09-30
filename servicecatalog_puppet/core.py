@@ -25,7 +25,9 @@ from servicecatalog_puppet.workflow import management as management_tasks
 from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
 from servicecatalog_puppet.workflow import runner as runner
 from servicecatalog_puppet.workflow import launch as launch_tasks
-from servicecatalog_puppet.workflow import lambda_invocations as lambda_invocations_tasks
+from servicecatalog_puppet.workflow import (
+    lambda_invocations as lambda_invocations_tasks,
+)
 from servicecatalog_puppet.workflow import (
     spoke_local_portfolios as spoke_local_portfolios_tasks,
 )

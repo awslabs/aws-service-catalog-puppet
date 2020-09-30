@@ -339,7 +339,9 @@ class Manifest(dict):
         elif launch_or_spoke_local_portfolio == "launches":
             deploy_to = launch_details.get("deploy_to")
         elif launch_or_spoke_local_portfolio == "spoke-local-portfolios":
-            deploy_to = launch_details.get("deploy_to") or launch_details.get("share_with")
+            deploy_to = launch_details.get("deploy_to") or launch_details.get(
+                "share_with"
+            )
         task_defs = []
         for tag_list_item in deploy_to.get("tags", []):
             for account in accounts:
