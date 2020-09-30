@@ -31,6 +31,13 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
 
     all_params = []
 
+    manifest_file_path = luigi.Parameter()
+    should_use_sns = luigi.BoolParameter()
+    should_use_product_plans = luigi.BoolParameter()
+    include_expanded_from = luigi.BoolParameter()
+    single_account = luigi.Parameter()
+    is_dry_run = luigi.BoolParameter()
+
     def params_for_results_display(self):
         return {
             "lambda_invocation_name": self.lambda_invocation_name,
@@ -61,9 +68,20 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
                 )
         self.all_params = all_params
 
-        return {
-            "ssm_params": ssm_params,
-        }
+        return dict(
+            ssm_params=ssm_params,
+            dependencies=LambdaInvocationDependenciesWrapperTask(
+                lambda_invocation_name=self.lambda_invocation_name,
+                manifest_file_path=self.manifest_file_path,
+
+                puppet_account_id=self.puppet_account_id,
+                should_use_sns=self.should_use_sns,
+                should_use_product_plans=self.should_use_product_plans,
+                include_expanded_from=self.include_expanded_from,
+                single_account=self.single_account,
+                is_dry_run=self.is_dry_run,
+            )
+        )
 
     def get_all_params(self):
         all_params = dict()
@@ -113,7 +131,7 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
                 self.write_output(output)
 
 
-class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
+class LambdaInvocationDependenciesWrapperTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
     lambda_invocation_name = luigi.Parameter()
     manifest_file_path = luigi.Parameter()
 
@@ -131,7 +149,7 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
             "lambda_invocation_name": self.lambda_invocation_name,
         }
 
-    def run(self):
+    def requires(self):
         lambda_invocation = self.manifest.get("lambda-invocations").get(
             self.lambda_invocation_name
         )
@@ -170,7 +188,7 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
                     )
                 elif dependency_type == "lambda-invocation":
                     dependencies.append(
-                        self.__class__(
+                        LambdaInvocationTask(
                             lambda_invocation_name=dependency.get("name"),
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,
@@ -181,7 +199,35 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
                             is_dry_run=self.is_dry_run,
                         )
                     )
-        yield dependencies
+        return dependencies
+
+    def run(self):
+        self.write_output(self.params_for_results_display())
+
+
+class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
+    lambda_invocation_name = luigi.Parameter()
+    manifest_file_path = luigi.Parameter()
+
+    puppet_account_id = luigi.Parameter()
+    should_use_sns = luigi.BoolParameter()
+    should_use_product_plans = luigi.BoolParameter()
+    include_expanded_from = luigi.BoolParameter()
+    single_account = luigi.Parameter()
+    is_dry_run = luigi.BoolParameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "manifest_file_path": self.manifest_file_path,
+            "lambda_invocation_name": self.lambda_invocation_name,
+        }
+
+    def requires(self):
+        requirements = list()
+        lambda_invocation = self.manifest.get("lambda-invocations").get(
+            self.lambda_invocation_name
+        )
 
         task_defs = self.manifest.get_task_defs_from_details(
             self.puppet_account_id,
@@ -202,6 +248,15 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
             "manifest_parameters": self.manifest.get("parameters", {}),
         }
 
+        wrapper_params = dict(
+            manifest_file_path=self.manifest_file_path,
+            should_use_sns=self.should_use_sns,
+            should_use_product_plans=self.should_use_product_plans,
+            include_expanded_from=self.include_expanded_from,
+            single_account=self.single_account,
+            is_dry_run=self.is_dry_run,
+        )
+
         for task_def in task_defs:
             task_def_parameters = {
                 "account_id": task_def.get("account_id"),
@@ -209,8 +264,13 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
                 "account_parameters": task_def.get("account_parameters"),
             }
             task_def_parameters.update(common_params)
-            yield InvokeLambdaTask(**task_def_parameters)
+            task_def_parameters.update(wrapper_params)
+            requirements.append(
+                InvokeLambdaTask(**task_def_parameters)
+            )
+            return requirements
 
+    def run(self):
         self.write_output(self.params_for_results_display())
 
 
