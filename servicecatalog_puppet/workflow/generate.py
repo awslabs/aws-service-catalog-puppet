@@ -24,15 +24,11 @@ class GeneratePoliciesTemplate(tasks.PuppetTask):
     def output_suffix(self):
         return "template.yaml"
 
-    @property
-    def node_id(self):
-        return "/".join([self.puppet_account_id, self.region])
-
     def params_for_results_display(self):
         return {
-            "region": self.region,
-            "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
+            "puppet_account_id": self.puppet_account_id,
+            "region": self.region,
         }
 
     def run(self):
@@ -84,16 +80,12 @@ class GeneratePolicies(tasks.PuppetTask):
     sharing_policies = luigi.DictParameter()
     should_use_sns = luigi.BoolParameter()
 
-    @property
-    def node_id(self):
-        return "/".join([self.puppet_account_id, self.region])
-
     def params_for_results_display(self):
         return {
-            "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
-            "should_use_sns": self.should_use_sns,
+            "puppet_account_id": self.puppet_account_id,
             "region": self.region,
+            "should_use_sns": self.should_use_sns,
         }
 
     def requires(self):
@@ -146,19 +138,22 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
     puppet_account_id = luigi.Parameter()
     manifest_file_path = luigi.Parameter()
     should_use_sns = luigi.BoolParameter()
+    section = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
+            "section": self.section,
         }
 
     def requires(self):
+        portfolios = dict()
         requirements = dict(
             deletes=list(),
             ensure_event_buses=list(),
             generate_policies=list(),
-            create_share_for_account_launch_regions=list(),
+            portfolios=portfolios,
         )
         for region_name, accounts in self.manifest.get_accounts_by_region().items():
             requirements["deletes"].append(
@@ -189,32 +184,76 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                 )
             )
 
-        self.info("Finished generating policies")
-
-        ##TODO MOVE THIS INTO RUN AND CREATE GetPortfolioByName tasks in requires
-        raise Exception("Hello world")
         for (
             region_name,
             shares_by_portfolio_account,
         ) in self.manifest.get_shares_by_region_portfolio_account(
-            self.puppet_account_id
+            self.puppet_account_id, constants.SPOKE_LOCAL_PORTFOLIOS
         ).items():
             for (
                 portfolio_name,
                 shares_by_account,
             ) in shares_by_portfolio_account.items():
                 for account_id, share in shares_by_account.items():
-                    requirements["create_share_for_account_launch_regions"].append(
+                    portfolios[
+                        "_".join(
+                            [
+                                self.puppet_account_id,
+                                portfolio_name,
+                                account_id,
+                                region_name,
+                            ]
+                        )
+                    ] = portfoliomanagement_tasks.GetPortfolioByPortfolioName(
+                        manifest_file_path=self.manifest_file_path,
+                        puppet_account_id=self.puppet_account_id,
+                        portfolio=portfolio_name,
+                        account_id=self.puppet_account_id,
+                        region=region_name,
+                    )
+        return requirements
+
+    def run(self):
+        tasks = list()
+        for (
+            region_name,
+            shares_by_portfolio_account,
+        ) in self.manifest.get_shares_by_region_portfolio_account(
+            self.puppet_account_id, self.section
+        ).items():
+            for (
+                portfolio_name,
+                shares_by_account,
+            ) in shares_by_portfolio_account.items():
+                for account_id, share in shares_by_account.items():
+                    portfolio_input = (
+                        self.input()
+                        .get("portfolios")
+                        .get(
+                            "_".join(
+                                [
+                                    self.puppet_account_id,
+                                    portfolio_name,
+                                    account_id,
+                                    region_name,
+                                ]
+                            )
+                        )
+                    )
+
+                    portfolio = json.loads(portfolio_input.open("r").read())
+
+                    tasks.append(
                         portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,
                             account_id=account_id,
                             region=region_name,
                             portfolio=portfolio_name,
+                            portfolio_id=portfolio.get("portfolio_id"),
                         )
                     )
-        return requirements
 
-    def run(self):
+        yield tasks
         self.info("running")
         self.write_output(self.params_for_results_display())

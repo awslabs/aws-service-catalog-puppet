@@ -21,6 +21,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                 puppet_account_id=self.puppet_account_id,
                 manifest_file_path=self.manifest_file_path,
                 should_use_sns=self.should_use_sns,
+                section=constants.LAUNCHES,
             )
 
         tasks = list()

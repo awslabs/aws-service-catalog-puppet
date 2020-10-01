@@ -1,3 +1,5 @@
+from servicecatalog_puppet import constants
+
 from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
 
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
@@ -19,6 +21,7 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 should_use_sns=self.should_use_sns,
+                section=constants.SPOKE_LOCAL_PORTFOLIOS,
             )
 
         if self.execution_mode == "hub" and not self.is_dry_run:

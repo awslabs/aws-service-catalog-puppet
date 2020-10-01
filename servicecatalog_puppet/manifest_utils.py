@@ -279,18 +279,19 @@ class Manifest(dict):
 
         return sharing_policies_by_region
 
-    def get_shares_by_region_portfolio_account(self, puppet_account_id):
+    def get_shares_by_region_portfolio_account(self, puppet_account_id, section):
+        logger.info("in get_shares_by_region_portfolio_account")
         shares_by_region_portfolio_account = {}
         configuration = {}
         include_expanded_from = False
-        for launch_name, launch_details in self.get("launches").items():
+        for launch_name, launch_details in self.get(section, {}).items():
             portfolio = launch_details.get("portfolio")
             tasks = self.get_task_defs_from_details(
                 puppet_account_id,
                 include_expanded_from,
                 launch_name,
                 configuration,
-                "launches",
+                section,
             )
             for task in tasks:
                 account_id = task.get("account_id")
@@ -302,6 +303,7 @@ class Manifest(dict):
                 shares_by_region_portfolio_account[region][portfolio][
                     account_id
                 ] = self.get_account(account_id)
+        logger.info("out get_shares_by_region_portfolio_account")
         return shares_by_region_portfolio_account
 
     def get_accounts_by_region(self):

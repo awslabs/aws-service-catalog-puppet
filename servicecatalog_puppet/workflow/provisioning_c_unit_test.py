@@ -5,7 +5,9 @@ class ProvisioningArtifactParametersTaskTest(tasks_unit_tests.PuppetTaskUnitTest
     manifest_file_path = "lnklknkl"
     puppet_account_id = "01234567890"
     portfolio = "port1"
+    portfolio_id = "port-1sdsd"
     product = "prod1"
+    product_id = "prod1"
     version = "v1"
     account_id = "00987654321"
     region = "eu-west-0"
@@ -41,7 +43,9 @@ class ProvisioningArtifactParametersTaskTest(tasks_unit_tests.PuppetTaskUnitTest
                 self.puppet_account_id,
                 self.manifest_file_path,
                 self.portfolio,
+                self.portfolio_id,
                 self.product,
+                self.product_id,
                 self.version,
                 self.account_id,
                 self.region,
