@@ -5,7 +5,6 @@ from servicecatalog_puppet import constants
 
 
 class LaunchSectionTask(manifest_tasks.SectionTask):
-
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -26,7 +25,9 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
 
         tasks = list()
         if self.execution_mode == constants.EXECUTION_MODE_SPOKE:
-            for launch_name, launch_details in self.manifest.get("launches", {}).items():
+            for launch_name, launch_details in self.manifest.get(
+                "launches", {}
+            ).items():
                 if launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE:
                     tasks.append(
                         provisioning_tasks.LaunchTask(
@@ -42,7 +43,9 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                         )
                     )
         else:
-            for launch_name, launch_details in self.manifest.get("launches", {}).items():
+            for launch_name, launch_details in self.manifest.get(
+                "launches", {}
+            ).items():
                 if launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE:
                     tasks.append(
                         provisioning_tasks.LaunchInSpokeTask(
@@ -71,7 +74,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                             execution_mode=self.execution_mode,
                         )
                     )
-        requirements['tasks'] = tasks
+        requirements["tasks"] = tasks
 
         return requirements
 

@@ -1,3 +1,6 @@
+import json
+from functools import lru_cache
+
 import luigi
 
 from servicecatalog_puppet import config, constants, manifest_utils
@@ -60,10 +63,10 @@ class EnsureEventBridgeEventBusTask(tasks.PuppetTask):  # DONE
 
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
-                "events",
-                f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
-                f"events-{self.puppet_account_id}-{self.region}",
-                region_name=self.region,
+            "events",
+            f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"events-{self.puppet_account_id}-{self.region}",
+            region_name=self.region,
         ) as events:
             created = False
             try:
@@ -87,9 +90,10 @@ class GeneratePolicies(tasks.PuppetTask):
 
     def params_for_results_display(self):
         return {
-            "region": self.region,
             "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
+            "should_use_sns": self.should_use_sns,
+            "region": self.region,
         }
 
     def requires(self):
@@ -102,6 +106,11 @@ class GeneratePolicies(tasks.PuppetTask):
             ),
         }
 
+    def purge_target_if_needed(self, output_location):
+        if json.loads(open(output_location, "r").read()) != self.get_sharing_policies():
+            self.purge_dependencies_outputs()
+            self.remove_output()
+
     def api_calls_used(self):
         return {
             f"cloudformation.create_or_update_{self.puppet_account_id}_{self.region}": 1,
@@ -111,10 +120,10 @@ class GeneratePolicies(tasks.PuppetTask):
         self.info("running")
         template = self.read_from_input("template")
         with betterboto_client.CrossAccountClientContextManager(
-                "cloudformation",
-                f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
-                f"cf-{self.puppet_account_id}-{self.region}",
-                region_name=self.region,
+            "cloudformation",
+            f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"cf-{self.puppet_account_id}-{self.region}",
+            region_name=self.region,
         ) as cloudformation:
             cloudformation.create_or_update(
                 ShouldUseChangeSets=False,
@@ -126,7 +135,11 @@ class GeneratePolicies(tasks.PuppetTask):
                 if self.should_use_sns
                 else [],
             )
-        self.write_output(template)
+        self.write_output(self.get_sharing_policies())
+
+    @lru_cache
+    def get_sharing_policies(self):
+        return json.loads(json.dumps(self.sharing_policies.get_wrapped()))
 
 
 class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
@@ -148,7 +161,7 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
             create_share_for_account_launch_regions=list(),
         )
         for region_name, accounts in self.manifest.get_accounts_by_region().items():
-            requirements['deletes'].append(
+            requirements["deletes"].append(
                 general_tasks.DeleteCloudFormationStackTask(
                     account_id=self.puppet_account_id,
                     region=region_name,
@@ -157,16 +170,16 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
             )
 
         for (
-                region_name,
-                sharing_policies,
+            region_name,
+            sharing_policies,
         ) in self.manifest.get_sharing_policies_by_region().items():
-            requirements['ensure_event_buses'].append(
+            requirements["ensure_event_buses"].append(
                 EnsureEventBridgeEventBusTask(
                     puppet_account_id=self.puppet_account_id, region=region_name,
                 )
             )
 
-            requirements['generate_policies'].append(
+            requirements["generate_policies"].append(
                 GeneratePolicies(
                     puppet_account_id=self.puppet_account_id,
                     manifest_file_path=self.manifest_file_path,
@@ -177,18 +190,21 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
             )
 
         self.info("Finished generating policies")
+
+        ##TODO MOVE THIS INTO RUN AND CREATE GetPortfolioByName tasks in requires
+        raise Exception("Hello world")
         for (
-                region_name,
-                shares_by_portfolio_account,
+            region_name,
+            shares_by_portfolio_account,
         ) in self.manifest.get_shares_by_region_portfolio_account(
             self.puppet_account_id
         ).items():
             for (
-                    portfolio_name,
-                    shares_by_account,
+                portfolio_name,
+                shares_by_account,
             ) in shares_by_portfolio_account.items():
                 for account_id, share in shares_by_account.items():
-                    requirements['create_share_for_account_launch_regions'].append(
+                    requirements["create_share_for_account_launch_regions"].append(
                         portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,

@@ -1,9 +1,7 @@
-import io
 import json
 
 import luigi
 
-from servicecatalog_puppet import manifest_utils
 from servicecatalog_puppet.workflow import tasks as workflow_tasks
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow.provisioning import LaunchTask
@@ -73,14 +71,13 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
             dependencies=LambdaInvocationDependenciesWrapperTask(
                 lambda_invocation_name=self.lambda_invocation_name,
                 manifest_file_path=self.manifest_file_path,
-
                 puppet_account_id=self.puppet_account_id,
                 should_use_sns=self.should_use_sns,
                 should_use_product_plans=self.should_use_product_plans,
                 include_expanded_from=self.include_expanded_from,
                 single_account=self.single_account,
                 is_dry_run=self.is_dry_run,
-            )
+            ),
         )
 
     def get_all_params(self):
@@ -96,10 +93,10 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)
         with betterboto_client.CrossAccountClientContextManager(
-                "lambda",
-                f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
-                f"sc-{home_region}-{self.puppet_account_id}",
-                region_name=home_region,
+            "lambda",
+            f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"sc-{home_region}-{self.puppet_account_id}",
+            region_name=home_region,
         ) as lambda_client:
             payload = dict(
                 account_id=self.account_id,
@@ -131,7 +128,9 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
                 self.write_output(output)
 
 
-class LambdaInvocationDependenciesWrapperTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
+class LambdaInvocationDependenciesWrapperTask(
+    workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen
+):
     lambda_invocation_name = luigi.Parameter()
     manifest_file_path = luigi.Parameter()
 
@@ -265,10 +264,8 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
             }
             task_def_parameters.update(common_params)
             task_def_parameters.update(wrapper_params)
-            requirements.append(
-                InvokeLambdaTask(**task_def_parameters)
-            )
-            return requirements
+            requirements.append(InvokeLambdaTask(**task_def_parameters))
+        return requirements
 
     def run(self):
         self.write_output(self.params_for_results_display())

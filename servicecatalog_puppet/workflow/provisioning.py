@@ -1,5 +1,6 @@
 import json
 import os
+from functools import lru_cache
 
 import luigi
 from betterboto import client as betterboto_client
@@ -17,7 +18,6 @@ from servicecatalog_puppet.workflow import (
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 
 import logging
-
 
 logger = logging.getLogger("tasks")
 
@@ -97,7 +97,9 @@ class ProvisionProductTask(ProvisioningTask):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
     product = luigi.Parameter()
+    product_id = luigi.Parameter()
     version = luigi.Parameter()
+    version_id = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
 
@@ -129,20 +131,15 @@ class ProvisionProductTask(ProvisioningTask):
             "region": self.region,
             "portfolio": self.portfolio,
             "product": self.product,
+            "product_id": self.product_id,
             "version": self.version,
+            "version_id": self.version_id,
             "execution": self.execution,
         }
 
     @property
     def priority(self):
         return self.requested_priority
-
-    # def complete(self):
-    #     output_complete = super().complete()
-    #     if output_complete:
-    #         raise Exception(self.input())
-    #
-    #     return False
 
     def requires(self):
         all_params = {}
@@ -219,8 +216,9 @@ class ProvisionProductTask(ProvisioningTask):
         }
 
     def run(self):
-        logger.info(
-            f"[{self.uid}] starting deploy try {self.try_count} of {self.retry_count}"
+        self.info(f"starting deploy try {self.try_count} of {self.retry_count}")
+        task_output = dict(
+            cache_details=dict(product_id=self.product_id, version_id=self.version_id,)
         )
 
         product_id, version_id = self.get_product_and_version_ids()
@@ -413,12 +411,14 @@ class ProvisionProductTask(ProvisioningTask):
                                     f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
                                 )
 
-                    self.write_output(stack_details)
+                    task_output.update(stack_details)
+                    self.write_output(task_output)
                 else:
-                    self.write_output(
+                    task_output.update(
                         {"provisioned_product_id": provisioned_product_id}
                     )
-                logger.info(f"[{self.uid}] finished provisioning")
+                    self.write_output(task_output)
+                self.info("finished")
 
     def get_all_params(self):
         all_params = {}
@@ -1043,7 +1043,9 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         launch_tasks_def = self.manifest.get_task_defs_from_details(
             self.puppet_account_id, False, self.launch_name, configuration, "launches"
         )
-        requirements = dict(launches=self.generate_tasks(launch_tasks_def, self.manifest))
+        requirements = dict(
+            launches=self.generate_tasks(launch_tasks_def, self.manifest)
+        )
         return requirements
 
     def run(self):
@@ -1074,6 +1076,9 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         for a in manifest.get("accounts"):
             accounts_by_id[a.get("account_id")] = a
 
+        version_ids = self.input().get("version_ids")
+        product_ids = self.input().get("product_ids")
+
         for task_def in task_defs:
             if self.single_account == "None" or self.single_account is None:
                 pass
@@ -1086,7 +1091,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             task_def["is_dry_run"] = self.is_dry_run
 
             if task_status == constants.PROVISIONED:
-                provisioning_parameters = {}
+                provisioning_parameters = dict()
                 for p in ProvisionProductTask.get_param_names(include_significant=True):
                     provisioning_parameters[p] = task_def.get(p)
 
@@ -1095,6 +1100,32 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         ProvisionProductDryRunTask(**provisioning_parameters)
                     )
                 else:
+                    puppet_account_id = task_def.get("puppet_account_id")
+                    portfolio = task_def.get("portfolio")
+                    product = task_def.get("product")
+                    version = task_def.get("version")
+                    account_id = task_def.get("account_id")
+                    region = task_def.get("region")
+
+                    d = json.loads(
+                        version_ids[
+                            "_".join(
+                                [
+                                    puppet_account_id,
+                                    portfolio,
+                                    product,
+                                    version,
+                                    account_id,
+                                    region,
+                                ]
+                            )
+                        ]
+                        .open("r")
+                        .read()
+                    )
+                    provisioning_parameters["version_id"] = d.get("version_id")
+                    provisioning_parameters["product_id"] = d.get("product_id")
+
                     provisions.append(ProvisionProductTask(**provisioning_parameters))
 
             elif task_status == constants.TERMINATED:
@@ -1113,30 +1144,19 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         self.info(f"len of provisions: {len(provisions)}")
         return provisions
 
-    def run(self):
-        self.info("started")
-
+    def requires(self):
         launch = self.manifest.get("launches").get(self.launch_name)
 
         if not launch:
             raise Exception(self.launch_name)
 
-        configuration = manifest_utils_for_launches.get_configuration_from_launch(
-            self.manifest, self.launch_name
-        )
-        configuration["single_account"] = self.single_account
-        configuration["is_dry_run"] = self.is_dry_run
-        configuration["puppet_account_id"] = self.puppet_account_id
-        configuration["should_use_sns"] = self.should_use_sns
-        configuration["should_use_product_plans"] = self.should_use_product_plans
-
-        configuration["execution"] = launch.get("execution")
-
-        launch_tasks_def = self.manifest.get_task_defs_from_details(
-            self.puppet_account_id, False, self.launch_name, configuration, "launches"
-        )
-
         dependencies = list()
+        version_ids = dict()
+        product_ids = dict()
+        requirements = dict(
+            dependencies=dependencies, version_ids=version_ids, product_ids=product_ids,
+        )
+
         for dependency in launch.get("depends_on", []):
             if isinstance(dependency, str):
                 dependencies.append(
@@ -1185,10 +1205,78 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                             is_dry_run=self.is_dry_run,
                         )
                     )
-        yield dependencies
+
+        launch_tasks_defs = self.get_launch_tasks_defs()
+        for task_def in launch_tasks_defs:
+            if self.single_account == "None" or self.single_account is None:
+                pass
+            else:
+                if task_def.get("account_id") != self.single_account:
+                    continue
+
+            puppet_account_id = task_def.get("puppet_account_id")
+            portfolio = task_def.get("portfolio")
+            product = task_def.get("product")
+            version = task_def.get("version")
+            account_id = task_def.get("account_id")
+            region = task_def.get("region")
+
+            version_ids[
+                "_".join(
+                    [puppet_account_id, portfolio, product, version, account_id, region]
+                )
+            ] = portfoliomanagement_tasks.GetVersionIdByVersionName(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=puppet_account_id,
+                portfolio=portfolio,
+                product=product,
+                version=version,
+                account_id=account_id,
+                region=region,
+            )
+            product_ids[
+                "_".join([puppet_account_id, portfolio, product, account_id, region])
+            ] = portfoliomanagement_tasks.GetProductIdByProductName(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=puppet_account_id,
+                portfolio=portfolio,
+                product=product,
+                account_id=account_id,
+                region=region,
+            )
+
+        return requirements
+
+    @lru_cache
+    def get_launch_tasks_defs(self):
+        launch = self.manifest.get("launches").get(self.launch_name)
+        if not launch:
+            raise Exception(self.launch_name)
+
+        configuration = manifest_utils_for_launches.get_configuration_from_launch(
+            self.manifest, self.launch_name
+        )
+        configuration["single_account"] = self.single_account
+        configuration["is_dry_run"] = self.is_dry_run
+        configuration["puppet_account_id"] = self.puppet_account_id
+        configuration["should_use_sns"] = self.should_use_sns
+        configuration["should_use_product_plans"] = self.should_use_product_plans
+
+        configuration["execution"] = launch.get("execution")
+
+        launch_tasks_def = self.manifest.get_task_defs_from_details(
+            self.puppet_account_id, False, self.launch_name, configuration, "launches"
+        )
+        return launch_tasks_def
+
+    def run(self):
+        self.info("started")
+        launch_tasks_def = self.get_launch_tasks_defs()
 
         logger.info(f"{self.uid} starting pre actions")
-        pre_actions = self.manifest.get_actions_from(self.launch_name, "pre", "launches")
+        pre_actions = self.manifest.get_actions_from(
+            self.launch_name, "pre", "launches"
+        )
         yield [
             portfoliomanagement_tasks.ProvisionActionTask(
                 self.manifest_file_path, **p, puppet_account_id=self.puppet_account_id
@@ -1203,7 +1291,9 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         logger.info(f"{self.uid} finished launches")
 
         logger.info(f"{self.uid} starting post actions")
-        post_actions = self.manifest.get_actions_from(self.launch_name, "post", "launches")
+        post_actions = self.manifest.get_actions_from(
+            self.launch_name, "post", "launches"
+        )
         yield [
             portfoliomanagement_tasks.ProvisionActionTask(
                 self.manifest_file_path, **p, puppet_account_id=self.puppet_account_id

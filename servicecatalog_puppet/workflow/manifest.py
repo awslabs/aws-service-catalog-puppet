@@ -33,11 +33,12 @@ class ManifestMixen(object):
     @property
     @lru_cache
     def manifest(self):
-        content = open(self.manifest_file_path, 'r').read()
+        content = open(self.manifest_file_path, "r").read()
         return manifest_utils.Manifest(yaml.safe_load(content))
 
 
 class SectionTask(tasks.PuppetTask, tasks.StateLessTask, ManifestMixen):
+    # class SectionTask(tasks.PuppetTask, ManifestMixen):
     manifest_file_path = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     should_use_sns = luigi.BoolParameter()
@@ -56,5 +57,5 @@ class SectionTask(tasks.PuppetTask, tasks.StateLessTask, ManifestMixen):
     @property
     @lru_cache
     def manifest(self):
-        content = open(self.manifest_file_path, 'r').read()
+        content = open(self.manifest_file_path, "r").read()
         return manifest_utils.Manifest(yaml.safe_load(content))

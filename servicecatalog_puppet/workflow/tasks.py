@@ -63,7 +63,7 @@ class MTimeMixin:
         return True
 
 
-class PuppetTask(luigi.Task, MTimeMixin):
+class PuppetTask(luigi.Task):
     def read_from_input(self, input_name):
         with self.input().get(input_name).open("r") as f:
             return f.read()
@@ -91,13 +91,22 @@ class PuppetTask(luigi.Task, MTimeMixin):
     def output_location(self):
         return f"output/{self.uid}.{self.output_suffix}"
 
-    def purge_target_if_needed(self):
+    def purge_target_if_needed(self, output_location):
         pass
-        # if os.path.exists(self.output_location):
-        #     os.remove(self.output_location)
+
+    def purge_dependencies_outputs(self):
+        for r in luigi.task.flatten(self.requires()):
+            outputs = luigi.task.flatten(r.output())
+            for out in outputs:
+                if out.exists():
+                    os.remove(r.output().path)
+
+    def remove_output(self):
+        os.remove(self.output_location)
 
     def output(self):
-        self.purge_target_if_needed()
+        if os.path.exists(self.output_location):
+            self.purge_target_if_needed(self.output_location)
         return luigi.LocalTarget(self.output_location)
 
     @property
