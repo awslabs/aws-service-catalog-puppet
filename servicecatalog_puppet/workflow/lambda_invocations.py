@@ -46,6 +46,7 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
             "function_name": self.function_name,
             "qualifier": self.qualifier,
             "invocation_type": self.invocation_type,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -150,6 +151,7 @@ class LambdaInvocationDependenciesWrapperTask(
             "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
             "lambda_invocation_name": self.lambda_invocation_name,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -229,6 +231,7 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
             "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
             "lambda_invocation_name": self.lambda_invocation_name,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -286,6 +289,7 @@ class LambdaInvocationsSectionTask(manifest_tasks.SectionTask):
         return {
             "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):

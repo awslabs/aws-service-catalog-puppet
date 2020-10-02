@@ -37,7 +37,7 @@ class ManifestMixen(object):
         return manifest_utils.Manifest(yaml.safe_load(content))
 
 
-class SectionTask(tasks.PuppetTask, tasks.StateLessTask, ManifestMixen):
+class SectionTask(tasks.PuppetTask, ManifestMixen):
     # class SectionTask(tasks.PuppetTask, ManifestMixen):
     manifest_file_path = luigi.Parameter()
     puppet_account_id = luigi.Parameter()

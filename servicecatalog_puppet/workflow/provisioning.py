@@ -1,6 +1,5 @@
 import json
 import os
-from datetime import datetime
 from functools import lru_cache
 
 import luigi
@@ -115,6 +114,8 @@ class ProvisionProductTask(ProvisioningTask):
 
     execution = luigi.Parameter()
 
+    cache_invalidator = luigi.Parameter()
+
     try_count = 1
     all_params = []
 
@@ -130,6 +131,7 @@ class ProvisionProductTask(ProvisioningTask):
             "version": self.version,
             "version_id": self.version_id,
             "execution": self.execution,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     @property
@@ -584,6 +586,8 @@ class TerminateProductTask(ProvisioningTask):
 
     # dependencies = luigi.ListParameter(default=[])
 
+    cache_invalidator = luigi.Parameter()
+
     def requires(self):
         product_id = portfoliomanagement_tasks.GetProductIdByProductName(
             puppet_account_id=self.puppet_account_id,
@@ -592,6 +596,7 @@ class TerminateProductTask(ProvisioningTask):
             product=self.product,
             account_id=self.account_id,
             region=self.region,
+            cache_invalidator=self.cache_invalidator,
         )
         return {
             "product": product_id,
@@ -683,7 +688,8 @@ class TerminateProductDryRunTask(ProvisioningTask):
 
     parameters = luigi.ListParameter(default=[])
     ssm_param_inputs = luigi.ListParameter(default=[])
-    # dependencies = luigi.ListParameter(default=[])
+
+    cache_invalidator = luigi.Parameter()
 
     try_count = 1
 
@@ -695,6 +701,7 @@ class TerminateProductDryRunTask(ProvisioningTask):
             self.product,
             self.account_id,
             self.region,
+            self.cache_invalidator,
         )
         return {
             "product": product_id,
@@ -1037,6 +1044,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         return {
             "launch_name": self.launch_name,
             "execution_mode": self.execution_mode,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def generate_provisions(self, task_defs, manifest):
@@ -1092,15 +1100,22 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                             .open("r")
                             .read()
                     )
-                    provisioning_parameters["version_id"] = d.get(
-                        "version_details"
-                    ).get("version_id")
-                    provisioning_parameters["product_id"] = d.get(
-                        "product_details"
-                    ).get("product_id")
-                    provisioning_parameters["portfolio_id"] = d.get(
-                        "portfolio_details"
-                    ).get("portfolio_id")
+                    provisioning_parameters.update(dict(
+                        version_id=d.get(
+                            "version_details"
+                        ).get("version_id"),
+
+                        product_id=d.get(
+                            "product_details"
+                        ).get("product_id"),
+
+                        portfolio_id=d.get(
+                            "portfolio_details"
+                        ).get("portfolio_id"),
+
+                        cache_invalidator=self.cache_invalidator,
+                    ))
+
 
                     provisions.append(ProvisionProductTask(**provisioning_parameters))
 
@@ -1287,6 +1302,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     def params_for_results_display(self):
         return {
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -1328,6 +1344,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 portfolio=task_def.get("portfolio"),
                 account_id=task_def.get("account_id"),
                 region=task_def.get("region"),
+                cache_invalidator=self.cache_invalidator,
             )
 
         return dict(dependencies=dependencies, portfolio_ids=portfolio_ids, )
@@ -1391,6 +1408,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     portfolio=task_def.get("portfolio"),
                     organization=task_def.get("organization"),
                     portfolio_id=portfolio_id,
+                    cache_invalidator=self.cache_invalidator,
                 )
 
                 create_spoke_local_portfolio_task = portfoliomanagement_tasks.CreateSpokeLocalPortfolioTask(
@@ -1405,6 +1423,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 portfolio=task_def.get("portfolio"),
                 organization=task_def.get("organization"),
                 portfolio_id=portfolio_id,
+                cache_invalidator=self.cache_invalidator,
             )
 
             if len(task_def.get("associations", [])) > 0:

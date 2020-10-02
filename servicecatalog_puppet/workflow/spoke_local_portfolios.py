@@ -11,6 +11,7 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
         return {
             "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -22,6 +23,7 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
                 puppet_account_id=self.puppet_account_id,
                 should_use_sns=self.should_use_sns,
                 section=constants.SPOKE_LOCAL_PORTFOLIOS,
+                cache_invalidator=self.cache_invalidator,
             )
 
         if self.execution_mode == "hub" and not self.is_dry_run:

@@ -54,6 +54,7 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
             portfolio=self.portfolio,
             account_id=self.account_id,
             region=self.region,
+            cache_invalidator=self.cache_invalidator,
         )
         portfolio_details = json.loads(portfolio_details.open("r").read())
 
@@ -65,6 +66,7 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
             product=self.product,
             account_id=self.account_id,
             region=self.region,
+            cache_invalidator=self.cache_invalidator,
         )
         product_details = json.loads(product_details.open("r").read())
 
@@ -148,6 +150,7 @@ class SearchProductsAsAdminTask(PortfolioManagementTask):
     portfolio_id = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
+    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -156,6 +159,7 @@ class SearchProductsAsAdminTask(PortfolioManagementTask):
             "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
@@ -185,6 +189,8 @@ class GetProductIdByProductName(PortfolioManagementTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
 
+    cache_invalidator = luigi.Parameter()
+
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -204,6 +210,7 @@ class GetProductIdByProductName(PortfolioManagementTask):
                 portfolio_id=self.portfolio_id,
                 account_id=self.account_id,
                 region=self.region,
+                cache_invalidator=self.cache_invalidator,
             ),
         }
 
@@ -232,6 +239,7 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
     portfolio = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
+    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -239,6 +247,7 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
@@ -393,6 +402,18 @@ class CreateSpokeLocalPortfolioTask(PortfolioManagementTask):
     portfolio_id = luigi.Parameter()
     organization = luigi.Parameter(significant=False)
 
+    cache_invalidator = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "portfolio": self.portfolio,
+            "portfolio_id": self.portfolio_id,
+            "region": self.region,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
     def requires(self):
         self.info("requires")
         return {
@@ -410,16 +431,8 @@ class CreateSpokeLocalPortfolioTask(PortfolioManagementTask):
                 portfolio=self.portfolio,
                 account_id=self.puppet_account_id,
                 region=self.region,
+                cache_invalidator=self.cache_invalidator,
             ),
-        }
-
-    def params_for_results_display(self):
-        return {
-            "puppet_account_id": self.puppet_account_id,
-            "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
-            "region": self.region,
-            "account_id": self.account_id,
         }
 
     def api_calls_used(self):
@@ -461,6 +474,18 @@ class CreateAssociationsForPortfolioTask(PortfolioManagementTask):
 
     should_use_sns = luigi.Parameter(significant=False, default=False)
 
+    cache_invalidator = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "portfolio": self.portfolio,
+            "portfolio_id": self.portfolio_id,
+            "region": self.region,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
     def requires(self):
         return {
             "create_spoke_local_portfolio_task": CreateSpokeLocalPortfolioTask(
@@ -471,16 +496,8 @@ class CreateAssociationsForPortfolioTask(PortfolioManagementTask):
                 portfolio=self.portfolio,
                 portfolio_id=self.portfolio_id,
                 organization=self.organization,
+                cache_invalidator=self.cache_invalidator,
             ),
-        }
-
-    def params_for_results_display(self):
-        return {
-            "puppet_account_id": self.puppet_account_id,
-            "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
-            "region": self.region,
-            "account_id": self.account_id,
         }
 
     def api_calls_used(self):
@@ -534,12 +551,15 @@ class GetProductsAndProvisioningArtifactsTask(PortfolioManagementTask):
     portfolio_id = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
+    cache_invalidator = luigi.Parameter()
+
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
             "portfolio_id": self.portfolio_id,
             "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -551,6 +571,7 @@ class GetProductsAndProvisioningArtifactsTask(PortfolioManagementTask):
                 portfolio_id=self.portfolio_id,
                 region=self.region,
                 account_id=self.puppet_account_id,
+                cache_invalidator=self.cache_invalidator,
             )
         }
 
@@ -603,6 +624,18 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
     organization = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
+    cache_invalidator = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "portfolio": self.portfolio,
+            "portfolio_id": self.portfolio_id,
+            "region": self.region,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
     def requires(self):
         return {
             "create_spoke_local_portfolio": CreateSpokeLocalPortfolioTask(
@@ -613,6 +646,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 portfolio_id=self.portfolio_id,
                 organization=self.organization,
                 puppet_account_id=self.puppet_account_id,
+                cache_invalidator=self.cache_invalidator,
             ),
             "products_and_provisioning_artifacts": GetProductsAndProvisioningArtifactsTask(
                 manifest_file_path=self.manifest_file_path,
@@ -620,16 +654,8 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 portfolio=self.portfolio,
                 portfolio_id=self.portfolio_id,
                 puppet_account_id=self.puppet_account_id,
+                cache_invalidator=self.cache_invalidator,
             ),
-        }
-
-    def params_for_results_display(self):
-        return {
-            "puppet_account_id": self.puppet_account_id,
-            "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
-            "region": self.region,
-            "account_id": self.account_id,
         }
 
     def api_calls_used(self):
@@ -879,6 +905,18 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
     organization = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
+    cache_invalidator = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "portfolio": self.portfolio,
+            "portfolio_id": self.portfolio_id,
+            "region": self.region,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
     def requires(self):
         return {
             "create_spoke_local_portfolio": CreateSpokeLocalPortfolioTask(
@@ -889,6 +927,7 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 portfolio=self.portfolio,
                 portfolio_id=self.portfolio_id,
                 organization=self.organization,
+                cache_invalidator=self.cache_invalidator,
             ),
             "products_and_provisioning_artifacts": GetProductsAndProvisioningArtifactsTask(
                 manifest_file_path=self.manifest_file_path,
@@ -896,6 +935,7 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 portfolio=self.portfolio,
                 portfolio_id=self.portfolio_id,
                 puppet_account_id=self.puppet_account_id,
+                cache_invalidator=self.cache_invalidator,
             ),
             "hub_portfolio": GetPortfolioByPortfolioName(
                 manifest_file_path=self.manifest_file_path,
@@ -903,16 +943,8 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 portfolio=self.portfolio,
                 account_id=self.puppet_account_id,
                 region=self.region,
+                cache_invalidator=self.cache_invalidator,
             ),
-        }
-
-    def params_for_results_display(self):
-        return {
-            "puppet_account_id": self.puppet_account_id,
-            "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
-            "region": self.region,
-            "account_id": self.account_id,
         }
 
     def api_calls_used(self):

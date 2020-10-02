@@ -9,6 +9,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
         return {
             "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -22,6 +23,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                 manifest_file_path=self.manifest_file_path,
                 should_use_sns=self.should_use_sns,
                 section=constants.LAUNCHES,
+                cache_invalidator=self.cache_invalidator,
             )
 
         tasks = list()

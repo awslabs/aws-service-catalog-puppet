@@ -20,6 +20,8 @@ class GeneratePoliciesTemplate(tasks.PuppetTask):
     region = luigi.Parameter()
     sharing_policies = luigi.DictParameter()
 
+    cache_invalidator = luigi.Parameter()
+
     @property
     def output_suffix(self):
         return "template.yaml"
@@ -29,6 +31,7 @@ class GeneratePoliciesTemplate(tasks.PuppetTask):
             "manifest_file_path": self.manifest_file_path,
             "puppet_account_id": self.puppet_account_id,
             "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):
@@ -80,12 +83,15 @@ class GeneratePolicies(tasks.PuppetTask):
     sharing_policies = luigi.DictParameter()
     should_use_sns = luigi.BoolParameter()
 
+    cache_invalidator = luigi.Parameter()
+
     def params_for_results_display(self):
         return {
             "manifest_file_path": self.manifest_file_path,
             "puppet_account_id": self.puppet_account_id,
             "region": self.region,
             "should_use_sns": self.should_use_sns,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -95,6 +101,7 @@ class GeneratePolicies(tasks.PuppetTask):
                 manifest_file_path=self.manifest_file_path,
                 region=self.region,
                 sharing_policies=self.sharing_policies,
+                cache_invalidator=self.cache_invalidator,
             ),
         }
 
@@ -139,12 +146,14 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
     manifest_file_path = luigi.Parameter()
     should_use_sns = luigi.BoolParameter()
     section = luigi.Parameter()
+    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
             "section": self.section,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -181,6 +190,7 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                     region=region_name,
                     sharing_policies=sharing_policies,
                     should_use_sns=self.should_use_sns,
+                    cache_invalidator=self.cache_invalidator,
                 )
             )
 
@@ -212,6 +222,7 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                         portfolio=portfolio_name,
                         account_id=self.puppet_account_id,
                         region=region_name,
+                        cache_invalidator=self.cache_invalidator,
                     )
         return requirements
 
