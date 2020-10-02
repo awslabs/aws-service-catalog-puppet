@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from functools import lru_cache
 
 import luigi
@@ -1030,6 +1031,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
     execution_mode = luigi.Parameter()
+    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -1096,6 +1098,9 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     provisioning_parameters["product_id"] = d.get(
                         "product_details"
                     ).get("product_id")
+                    provisioning_parameters["portfolio_id"] = d.get(
+                        "portfolio_details"
+                    ).get("portfolio_id")
 
                     provisions.append(ProvisionProductTask(**provisioning_parameters))
 
@@ -1138,6 +1143,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         single_account=self.single_account,
                         is_dry_run=self.is_dry_run,
                         execution_mode=self.execution_mode,
+                        cache_invalidator=self.cache_invalidator
                     )
                 )
             else:
@@ -1154,6 +1160,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                             single_account=self.single_account,
                             is_dry_run=self.is_dry_run,
                             execution_mode=self.execution_mode,
+                            cache_invalidator=self.cache_invalidator,
                         )
                     )
                 elif dependency_type == "lambda-invocation":
@@ -1171,6 +1178,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                             include_expanded_from=self.include_expanded_from,
                             single_account=self.single_account,
                             is_dry_run=self.is_dry_run,
+                            cache_invalidator=self.cache_invalidator,
                         )
                     )
 
@@ -1201,6 +1209,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 version=version,
                 account_id=account_id,
                 region=region,
+                cache_invalidator=self.cache_invalidator,
             )
 
         return requirements
@@ -1273,6 +1282,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
     depends_on = luigi.ListParameter()
+    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -1292,6 +1302,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 single_account=self.single_account,
                 is_dry_run=self.is_dry_run,
                 execution_mode="hub",
+                cache_invalidator=self.cache_invalidator,
             )
             for dependency in self.depends_on
         ]

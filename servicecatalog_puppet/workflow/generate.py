@@ -188,22 +188,24 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
             region_name,
             shares_by_portfolio_account,
         ) in self.manifest.get_shares_by_region_portfolio_account(
-            self.puppet_account_id, constants.SPOKE_LOCAL_PORTFOLIOS
+            self.puppet_account_id, self.section
         ).items():
             for (
                 portfolio_name,
                 shares_by_account,
             ) in shares_by_portfolio_account.items():
                 for account_id, share in shares_by_account.items():
+                    i = "_".join(
+                        [
+                            self.puppet_account_id,
+                            portfolio_name,
+                            account_id,
+                            region_name,
+                        ]
+                    )
+                    self.info(f"deps i is {i}")
                     portfolios[
-                        "_".join(
-                            [
-                                self.puppet_account_id,
-                                portfolio_name,
-                                account_id,
-                                region_name,
-                            ]
-                        )
+                        i
                     ] = portfoliomanagement_tasks.GetPortfolioByPortfolioName(
                         manifest_file_path=self.manifest_file_path,
                         puppet_account_id=self.puppet_account_id,
@@ -226,20 +228,19 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                 shares_by_account,
             ) in shares_by_portfolio_account.items():
                 for account_id, share in shares_by_account.items():
-                    portfolio_input = (
-                        self.input()
-                        .get("portfolios")
-                        .get(
-                            "_".join(
-                                [
-                                    self.puppet_account_id,
-                                    portfolio_name,
-                                    account_id,
-                                    region_name,
-                                ]
-                            )
-                        )
+                    i = "_".join(
+                        [
+                            self.puppet_account_id,
+                            portfolio_name,
+                            account_id,
+                            region_name,
+                        ]
                     )
+                    self.info(f"i is {i}")
+                    portfolio_input = self.input().get("portfolios").get(i)
+
+                    if portfolio_input is None:
+                        raise Exception(f"failed to get portfolios details for {i} in {self.input().get('portfolios')}")
 
                     portfolio = json.loads(portfolio_input.open("r").read())
 

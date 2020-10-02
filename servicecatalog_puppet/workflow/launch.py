@@ -41,6 +41,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                             single_account=self.single_account,
                             is_dry_run=self.is_dry_run,
                             execution_mode=self.execution_mode,
+                            cache_invalidator=self.cache_invalidator,
                         )
                     )
         else:
@@ -73,6 +74,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                             single_account=self.single_account,
                             is_dry_run=self.is_dry_run,
                             execution_mode=self.execution_mode,
+                            cache_invalidator=self.cache_invalidator,
                         )
                     )
         requirements["tasks"] = tasks

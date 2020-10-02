@@ -94,6 +94,8 @@ def generate_tasks(
         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
     )
 
+    cache_invalidator = str(datetime.now())
+
     return [
         launch_tasks.LaunchSectionTask(
             manifest_file_path=f.name,
@@ -104,6 +106,7 @@ def generate_tasks(
             single_account=single_account,
             is_dry_run=is_dry_run,
             execution_mode=execution_mode,
+            cache_invalidator=cache_invalidator,
         ),
         spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
             manifest_file_path=f.name,
@@ -114,6 +117,7 @@ def generate_tasks(
             single_account=single_account,
             is_dry_run=is_dry_run,
             execution_mode=execution_mode,
+            cache_invalidator=cache_invalidator,
         ),
         lambda_invocations_tasks.LambdaInvocationsSectionTask(
             manifest_file_path=f.name,
@@ -124,6 +128,7 @@ def generate_tasks(
             single_account=single_account,
             is_dry_run=is_dry_run,
             execution_mode=execution_mode,
+            cache_invalidator=cache_invalidator,
         ),
     ]
 

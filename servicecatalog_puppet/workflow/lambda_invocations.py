@@ -36,6 +36,8 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
 
+    cache_invalidator = luigi.Parameter()
+
     def params_for_results_display(self):
         return {
             "lambda_invocation_name": self.lambda_invocation_name,
@@ -77,6 +79,7 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
                 include_expanded_from=self.include_expanded_from,
                 single_account=self.single_account,
                 is_dry_run=self.is_dry_run,
+                cache_invalidator=self.cache_invalidator,
             ),
         )
 
@@ -140,6 +143,7 @@ class LambdaInvocationDependenciesWrapperTask(
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
+    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -167,6 +171,7 @@ class LambdaInvocationDependenciesWrapperTask(
                         single_account=self.single_account,
                         is_dry_run=self.is_dry_run,
                         execution_mode="hub",
+                        cache_invalidator=self.cache_invalidator,
                     )
                 )
             else:
@@ -183,6 +188,7 @@ class LambdaInvocationDependenciesWrapperTask(
                             single_account=self.single_account,
                             is_dry_run=self.is_dry_run,
                             execution_mode="hub",
+                            cache_invalidator=self.cache_invalidator,
                         )
                     )
                 elif dependency_type == "lambda-invocation":
@@ -196,6 +202,7 @@ class LambdaInvocationDependenciesWrapperTask(
                             include_expanded_from=self.include_expanded_from,
                             single_account=self.single_account,
                             is_dry_run=self.is_dry_run,
+                            cache_invalidator=self.cache_invalidator,
                         )
                     )
         return dependencies
@@ -214,6 +221,8 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
+
+    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -261,6 +270,7 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
                 "account_id": task_def.get("account_id"),
                 "region": task_def.get("region"),
                 "account_parameters": task_def.get("account_parameters"),
+                "cache_invalidator": self.cache_invalidator,
             }
             task_def_parameters.update(common_params)
             task_def_parameters.update(wrapper_params)
@@ -290,6 +300,7 @@ class LambdaInvocationsSectionTask(manifest_tasks.SectionTask):
                     include_expanded_from=self.include_expanded_from,
                     single_account=self.single_account,
                     is_dry_run=self.is_dry_run,
+                    cache_invalidator=self.cache_invalidator,
                 )
                 for lambda_invocation_name, lambda_invocation in self.manifest.get(
                     "lambda-invocations", {}

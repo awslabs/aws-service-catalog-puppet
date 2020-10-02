@@ -47,11 +47,13 @@ class SectionTask(tasks.PuppetTask, tasks.StateLessTask, ManifestMixen):
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
     execution_mode = luigi.Parameter()
+    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     @property

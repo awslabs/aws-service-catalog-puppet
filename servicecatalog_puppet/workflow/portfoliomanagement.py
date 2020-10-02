@@ -3,6 +3,7 @@ import json
 import os
 import re
 import time
+from datetime import datetime
 from functools import lru_cache
 
 import luigi
@@ -30,6 +31,8 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
 
+    cache_invalidator = luigi.Parameter()
+
     # def purge_target_if_needed(self, output_location):
     #     self.remove_output()
 
@@ -41,6 +44,7 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
             "product": self.product,
             "version": self.version,
             "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):
