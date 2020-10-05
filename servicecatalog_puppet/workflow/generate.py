@@ -251,7 +251,9 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                     portfolio_input = self.input().get("portfolios").get(i)
 
                     if portfolio_input is None:
-                        raise Exception(f"failed to get portfolios details for {i} in {self.input().get('portfolios')}")
+                        raise Exception(
+                            f"failed to get portfolios details for {i} in {self.input().get('portfolios')}"
+                        )
 
                     portfolio = json.loads(portfolio_input.open("r").read())
 

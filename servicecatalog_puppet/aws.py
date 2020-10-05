@@ -263,6 +263,10 @@ def provision_product(
     uid = f"[{launch_name}] {account_id}:{region}]"
     provisioning_parameters = []
     for p in params.keys():
+        if params.get(p) is None:
+            raise Exception(
+                f"Could not provision {launch_name} in {region} of {account_id}, parameter {p} was None"
+            )
         provisioning_parameters.append(
             {"Key": p, "Value": params.get(p),}
         )

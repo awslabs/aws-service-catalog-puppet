@@ -16,7 +16,6 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
 
     def requires(self):
         requirements = dict()
-
         if self.execution_mode == "hub":
             requirements["generate_shares"] = generate_tasks.GenerateSharesTask(
                 manifest_file_path=self.manifest_file_path,
@@ -25,10 +24,12 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
                 section=constants.SPOKE_LOCAL_PORTFOLIOS,
                 cache_invalidator=self.cache_invalidator,
             )
+        return requirements
 
+    def run(self):
         if self.execution_mode == "hub" and not self.is_dry_run:
             self.info("Generating sharing tasks")
-            requirements["spoke_local_portfolio_tasks"] = [
+            yield [
                 provisioning_tasks.SpokeLocalPortfolioTask(
                     spoke_local_portfolio_name=spoke_local_portfolio_name,
                     manifest_file_path=self.manifest_file_path,
@@ -46,7 +47,4 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
                 ).items()
             ]
 
-        return requirements
-
-    def run(self):
         self.write_output(self.manifest.get("spoke-local-portfolios"))

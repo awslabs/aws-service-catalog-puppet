@@ -31,7 +31,7 @@ def get_configuration_from_launch(manifest, launch_name):
     return configuration
 
 
-#TODO - delete?
+# TODO - delete?
 def generate_launch_tasks(
     manifest,
     puppet_account_id,

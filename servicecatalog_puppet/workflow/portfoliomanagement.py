@@ -329,6 +329,8 @@ class ProvisionActionTask(PortfolioManagementTask):
     region = luigi.Parameter()
     parameters = luigi.DictParameter(default={})
 
+    cache_invalidate = luigi.Parameter()
+
     def params_for_results_display(self):
         return {
             "type": self.type,
@@ -353,6 +355,7 @@ class ProvisionActionTask(PortfolioManagementTask):
                     region=param_details.get("ssm").get(
                         "region", config.get_home_region(self.puppet_account_id)
                     ),
+                    cache_invalidator=self.cache_invalidator,
                 )
         return {
             "ssm_params": ssm_params,

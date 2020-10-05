@@ -158,11 +158,14 @@ class GetSSMParamTask(PuppetTask):
     name = luigi.Parameter()
     region = luigi.Parameter(default=None)
 
+    cache_invalidator = luigi.Parameter()
+
     def params_for_results_display(self):
         return {
             "parameter_name": self.parameter_name,
             "name": self.name,
             "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):

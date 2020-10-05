@@ -4,6 +4,7 @@ from functools import lru_cache
 
 import luigi
 from betterboto import client as betterboto_client
+from servicecatalog_puppet.workflow import generate as generate_tasks
 
 from servicecatalog_puppet import manifest_utils_for_launches
 from servicecatalog_puppet import aws
@@ -60,10 +61,10 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
 
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
-                "servicecatalog",
-                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-                f"{self.account_id}-{self.region}-sc",
-                region_name=self.region,
+            "servicecatalog",
+            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"{self.account_id}-{self.region}-sc",
+            region_name=self.region,
         ) as service_catalog:
             logger.info(
                 f"{self.uid}: getting path for {self.product_id} of portfolio: {self.portfolio}"
@@ -156,6 +157,7 @@ class ProvisionProductTask(ProvisioningTask):
                     region=param_details.get("ssm").get(
                         "region", config.get_home_region(self.puppet_account_id)
                     ),
+                    cache_invalidator=self.cache_invalidator,
                 )
         self.all_params = all_params
 
@@ -198,17 +200,17 @@ class ProvisionProductTask(ProvisioningTask):
     def run(self):
         self.info(f"starting deploy try {self.try_count} of {self.retry_count}")
         task_output = dict(
-            cache_details=dict(product_id=self.product_id, version_id=self.version_id, )
+            cache_details=dict(product_id=self.product_id, version_id=self.version_id,)
         )
 
         all_params = self.get_all_params()
 
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
-                "servicecatalog",
-                role,
-                f"sc-{self.region}-{self.account_id}",
-                region_name=self.region,
+            "servicecatalog",
+            role,
+            f"sc-{self.region}-{self.account_id}",
+            region_name=self.region,
         ) as service_catalog:
             logger.info(f"[{self.uid}] looking for previous failures")
             path_id = aws.get_path_for_product(
@@ -230,10 +232,10 @@ class ProvisionProductTask(ProvisioningTask):
             )
 
             with betterboto_client.CrossAccountClientContextManager(
-                    "cloudformation",
-                    role,
-                    f"cfn-{self.region}-{self.account_id}",
-                    region_name=self.region,
+                "cloudformation",
+                role,
+                f"cfn-{self.region}-{self.account_id}",
+                region_name=self.region,
             ) as cloudformation:
                 need_to_provision = True
 
@@ -242,7 +244,7 @@ class ProvisionProductTask(ProvisioningTask):
                 )
 
                 with self.input().get("provisioning_artifact_parameters").open(
-                        "r"
+                    "r"
                 ) as f:
                     provisioning_artifact_parameters = json.loads(f.read())
 
@@ -353,10 +355,10 @@ class ProvisionProductTask(ProvisioningTask):
                         f"Running in execution mode: {self.execution}, checking for SSM outputs"
                     )
                     with betterboto_client.CrossAccountClientContextManager(
-                            "cloudformation",
-                            role,
-                            f"cfn-{self.region}-{self.account_id}",
-                            region_name=self.region,
+                        "cloudformation",
+                        role,
+                        f"cfn-{self.region}-{self.account_id}",
+                        region_name=self.region,
                     ) as spoke_cloudformation:
                         stack_details = aws.get_stack_output_for(
                             spoke_cloudformation,
@@ -372,7 +374,7 @@ class ProvisionProductTask(ProvisioningTask):
                             # TODO push into another task
                             for output in stack_details.get("Outputs", []):
                                 if output.get("OutputKey") == ssm_param_output.get(
-                                        "stack_output"
+                                    "stack_output"
                                 ):
                                     found_match = True
                                     logger.info(f"[{self.uid}] found value")
@@ -423,24 +425,22 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
         ]
 
     def run(self):
-        logger.info(
-            f"[{self.uid}] starting deploy try {self.try_count} of {self.retry_count}"
+        self.info(
+            f"starting deploy try {self.try_count} of {self.retry_count}"
         )
-
-        product_id, version_id = self.get_product_and_version_ids()
 
         all_params = self.get_all_params()
 
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
-                "servicecatalog",
-                role,
-                f"sc-{self.region}-{self.account_id}",
-                region_name=self.region,
+            "servicecatalog",
+            role,
+            f"sc-{self.region}-{self.account_id}",
+            region_name=self.region,
         ) as service_catalog:
             logger.info(f"[{self.uid}] looking for previous failures")
             path_id = aws.get_path_for_product(
-                service_catalog, product_id, self.portfolio
+                service_catalog, self.product_id, self.portfolio
             )
 
             response = service_catalog.scan_provisioned_products_single_page(
@@ -465,17 +465,17 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
             )
 
             with betterboto_client.CrossAccountClientContextManager(
-                    "cloudformation",
-                    role,
-                    f"cfn-{self.region}-{self.account_id}",
-                    region_name=self.region,
+                "cloudformation",
+                role,
+                f"cfn-{self.region}-{self.account_id}",
+                region_name=self.region,
             ) as cloudformation:
                 logging.info(
-                    f"running as {role},checking {product_id} {version_id} {path_id} in {self.account_id} {self.region}"
+                    f"running as {role},checking {self.product_id} {self.version_id} {path_id} in {self.account_id} {self.region}"
                 )
 
                 with self.input().get("provisioning_artifact_parameters").open(
-                        "r"
+                    "r"
                 ) as f:
                     provisioning_artifact_parameters = json.loads(f.read())
 
@@ -486,7 +486,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                         param_name, p.get("DefaultValue")
                     )
 
-                if provisioning_artifact_id == version_id:
+                if provisioning_artifact_id == self.version_id:
                     logger.info(f"[{self.uid}] found previous good provision")
                     if provisioned_product_id:
                         logger.info(f"[{self.uid}] checking params for diffs")
@@ -535,15 +535,12 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                     )
 
     def get_current_version(self, provisioning_artifact_id, service_catalog):
-        with self.input().get("product").open("r") as f:
-            product_id = json.loads(f.read()).get("product_id")
-
         return service_catalog.describe_provisioning_artifact(
-            ProvisioningArtifactId=provisioning_artifact_id, ProductId=product_id,
+            ProvisioningArtifactId=provisioning_artifact_id, ProductId=self.product_id,
         ).get("ProvisioningArtifactDetail")
 
     def write_result(
-            self, current_version, new_version, effect, current_status, active, notes=""
+        self, current_version, new_version, effect, current_status, active, notes=""
     ):
         with self.output().open("w") as f:
             f.write(
@@ -566,8 +563,11 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
 class TerminateProductTask(ProvisioningTask):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
+    portfolio_id = luigi.Parameter()
     product = luigi.Parameter()
+    product_id = luigi.Parameter()
     version = luigi.Parameter()
+    version_id = luigi.Parameter()
 
     account_id = luigi.Parameter()
     region = luigi.Parameter()
@@ -588,27 +588,18 @@ class TerminateProductTask(ProvisioningTask):
 
     cache_invalidator = luigi.Parameter()
 
-    def requires(self):
-        product_id = portfoliomanagement_tasks.GetProductIdByProductName(
-            puppet_account_id=self.puppet_account_id,
-            manifest_file_path=self.manifest_file_path,
-            portfolio=self.portfolio,
-            product=self.product,
-            account_id=self.account_id,
-            region=self.region,
-            cache_invalidator=self.cache_invalidator,
-        )
-        return {
-            "product": product_id,
-        }
-
     def params_for_results_display(self):
         return {
+            "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
+            "portfolio_id": self.portfolio_id,
             "product": self.product,
+            "product_id": self.product_id,
             "version": self.version,
+            "version_id": self.version_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
@@ -620,29 +611,24 @@ class TerminateProductTask(ProvisioningTask):
         ]
 
     def run(self):
-        logger.info(
-            f"[{self.launch_name}] {self.account_id}:{self.region} :: "
-            f"starting terminate try {self.try_count} of {self.retry_count}"
-        )
+        self.info(f"starting terminate try {self.try_count} of {self.retry_count}")
 
-        with self.input().get("product").open("r") as f:
-            product_id = json.loads(f.read()).get("product_id")
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
-                "servicecatalog",
-                role,
-                f"sc-{self.region}-{self.account_id}",
-                region_name=self.region,
+            "servicecatalog",
+            role,
+            f"sc-{self.region}-{self.account_id}",
+            region_name=self.region,
         ) as service_catalog:
             logger.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures"
             )
             provisioned_product_id, provisioning_artifact_id = aws.ensure_is_terminated(
-                service_catalog, self.launch_name, product_id
+                service_catalog, self.launch_name, self.product_id
             )
             log_output = self.to_str_params()
             log_output.update(
-                {"provisioned_product_id": provisioned_product_id, }
+                {"provisioned_product_id": provisioned_product_id,}
             )
 
             for ssm_param_output in self.ssm_param_outputs:
@@ -653,7 +639,7 @@ class TerminateProductTask(ProvisioningTask):
                 with betterboto_client.ClientContextManager("ssm") as ssm:
                     try:
                         # todo push into another task
-                        ssm.delete_parameter(Name=param_name, )
+                        ssm.delete_parameter(Name=param_name,)
                         logger.info(
                             f"[{self.launch_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
                         )
@@ -663,7 +649,7 @@ class TerminateProductTask(ProvisioningTask):
                         )
 
             with self.output().open("w") as f:
-                f.write(json.dumps(log_output, indent=4, default=str, ))
+                f.write(json.dumps(log_output, indent=4, default=str,))
 
             logger.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: finished terminating"
@@ -673,8 +659,11 @@ class TerminateProductTask(ProvisioningTask):
 class TerminateProductDryRunTask(ProvisioningTask):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
+    portfolio_id = luigi.Parameter()
     product = luigi.Parameter()
+    product_id = luigi.Parameter()
     version = luigi.Parameter()
+    version_id = luigi.Parameter()
 
     account_id = luigi.Parameter()
     region = luigi.Parameter()
@@ -693,28 +682,18 @@ class TerminateProductDryRunTask(ProvisioningTask):
 
     try_count = 1
 
-    def requires(self):
-        product_id = portfoliomanagement_tasks.GetProductIdByProductName(
-            self.puppet_account_id,
-            self.manifest_file_path,
-            self.portfolio,
-            self.product,
-            self.account_id,
-            self.region,
-            self.cache_invalidator,
-        )
-        return {
-            "product": product_id,
-        }
-
     def params_for_results_display(self):
         return {
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
+            "portfolio_id": self.portfolio_id,
             "product": self.product,
+            "product_id": self.product_id,
             "version": self.version,
+            "version_id": self.version_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def write_result(self, current_version, new_version, effect, notes=""):
@@ -740,26 +719,22 @@ class TerminateProductDryRunTask(ProvisioningTask):
         ]
 
     def run(self):
-        logger.info(
-            f"[{self.launch_name}] {self.account_id}:{self.region} :: "
+        self.info(
             f"starting dry run terminate try {self.try_count} of {self.retry_count}"
         )
 
-        with self.input().get("product").open("r") as f:
-            product_id = json.loads(f.read()).get("product_id")
-
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
-                "servicecatalog",
-                role,
-                f"sc-{self.region}-{self.account_id}",
-                region_name=self.region,
+            "servicecatalog",
+            role,
+            f"sc-{self.region}-{self.account_id}",
+            region_name=self.region,
         ) as service_catalog:
             logger.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures"
             )
             r = aws.get_provisioned_product_details(
-                product_id, self.launch_name, service_catalog
+                self.product_id, self.launch_name, service_catalog
             )
 
             if r is None:
@@ -770,10 +745,10 @@ class TerminateProductDryRunTask(ProvisioningTask):
                 provisioned_product_name = (
                     service_catalog.describe_provisioning_artifact(
                         ProvisioningArtifactId=r.get("ProvisioningArtifactId"),
-                        ProductId=product_id,
+                        ProductId=self.product_id,
                     )
-                        .get("ProvisioningArtifactDetail")
-                        .get("Name")
+                    .get("ProvisioningArtifactDetail")
+                    .get("Name")
                 )
 
                 if r.get("Status") != "TERMINATED":
@@ -815,10 +790,10 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
         logger.info(f"{logger_prefix} :: starting ResetProvisionedProductOwnerTask")
 
         with betterboto_client.CrossAccountClientContextManager(
-                "servicecatalog",
-                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-                f"sc-{self.region}-{self.account_id}",
-                region_name=self.region,
+            "servicecatalog",
+            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"sc-{self.region}-{self.account_id}",
+            region_name=self.region,
         ) as service_catalog:
             logger.info(
                 f"[{logger_prefix} :: Checking if existing provisioned product exists"
@@ -863,9 +838,9 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
 
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
-                "s3",
-                f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
-                f"s3-{self.puppet_account_id}",
+            "s3",
+            f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"s3-{self.puppet_account_id}",
         ) as s3:
             bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
             key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
@@ -881,9 +856,9 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
             response = ssm.get_parameter(Name="service-catalog-puppet-version")
             version = response.get("Parameter").get("Value")
         with betterboto_client.CrossAccountClientContextManager(
-                "codebuild",
-                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-                f"codebuild-{self.account_id}",
+            "codebuild",
+            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"codebuild-{self.account_id}",
         ) as codebuild:
             response = codebuild.start_build(
                 projectName=constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME,
@@ -1067,62 +1042,78 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             del task_def["depends_on"]
             task_def["is_dry_run"] = self.is_dry_run
 
+            puppet_account_id = task_def.get("puppet_account_id")
+            portfolio = task_def.get("portfolio")
+            product = task_def.get("product")
+            version = task_def.get("version")
+            account_id = task_def.get("account_id")
+            region = task_def.get("region")
+
+            d = json.loads(
+                version_details[
+                    "_".join(
+                        [
+                            puppet_account_id,
+                            portfolio,
+                            product,
+                            version,
+                            account_id,
+                            region,
+                        ]
+                    )
+                ]
+                .open("r")
+                .read()
+            )
+
+            version_id = d.get("version_details").get("version_id")
+
+            product_id = d.get("product_details").get("product_id")
+
+            portfolio_id = d.get("portfolio_details").get("portfolio_id")
+
             if task_status == constants.PROVISIONED:
                 provisioning_parameters = dict()
+
                 for p in ProvisionProductTask.get_param_names(include_significant=True):
                     provisioning_parameters[p] = task_def.get(p)
 
+                provisioning_parameters.update(
+                    dict(
+                        version_id=version_id,
+                        product_id=product_id,
+                        portfolio_id=portfolio_id,
+                        cache_invalidator=self.cache_invalidator,
+                    )
+                )
+
+                self.info(f"2. provisioning_parameters is {provisioning_parameters}")
                 if self.is_dry_run:
+                    self.info(
+                        f"3. provisioning_parameters is {provisioning_parameters}"
+                    )
                     provisions.append(
                         ProvisionProductDryRunTask(**provisioning_parameters)
                     )
                 else:
-                    puppet_account_id = task_def.get("puppet_account_id")
-                    portfolio = task_def.get("portfolio")
-                    product = task_def.get("product")
-                    version = task_def.get("version")
-                    account_id = task_def.get("account_id")
-                    region = task_def.get("region")
-
-                    d = json.loads(
-                        version_details[
-                            "_".join(
-                                [
-                                    puppet_account_id,
-                                    portfolio,
-                                    product,
-                                    version,
-                                    account_id,
-                                    region,
-                                ]
-                            )
-                        ]
-                            .open("r")
-                            .read()
+                    self.info(
+                        f"4. provisioning_parameters is {provisioning_parameters}"
                     )
-                    provisioning_parameters.update(dict(
-                        version_id=d.get(
-                            "version_details"
-                        ).get("version_id"),
-
-                        product_id=d.get(
-                            "product_details"
-                        ).get("product_id"),
-
-                        portfolio_id=d.get(
-                            "portfolio_details"
-                        ).get("portfolio_id"),
-
-                        cache_invalidator=self.cache_invalidator,
-                    ))
-
-
                     provisions.append(ProvisionProductTask(**provisioning_parameters))
 
             elif task_status == constants.TERMINATED:
-                terminating_parameters = {}
+                terminating_parameters = dict()
                 for p in TerminateProductTask.get_param_names(include_significant=True):
                     terminating_parameters[p] = task_def.get(p)
+
+                    terminating_parameters.update(
+                        dict(
+                            version_id=version_id,
+                            product_id=product_id,
+                            portfolio_id=portfolio_id,
+                            cache_invalidator=self.cache_invalidator,
+                        )
+                    )
 
                 if self.is_dry_run:
                     provisions.append(
@@ -1143,7 +1134,17 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
         dependencies = list()
         version_details = dict()
-        requirements = dict(dependencies=dependencies, version_details=version_details)
+        requirements = dict(
+            dependencies=dependencies,
+            version_details=version_details,
+            generate_shares=generate_tasks.GenerateSharesTask(
+                puppet_account_id=self.puppet_account_id,
+                manifest_file_path=self.manifest_file_path,
+                should_use_sns=self.should_use_sns,
+                section=constants.LAUNCHES,
+                cache_invalidator=self.cache_invalidator,
+            ),
+        )
 
         for dependency in launch.get("depends_on", []):
             if isinstance(dependency, str):
@@ -1158,7 +1159,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         single_account=self.single_account,
                         is_dry_run=self.is_dry_run,
                         execution_mode=self.execution_mode,
-                        cache_invalidator=self.cache_invalidator
+                        cache_invalidator=self.cache_invalidator,
                     )
                 )
             else:
@@ -1261,7 +1262,10 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         )
         yield [
             portfoliomanagement_tasks.ProvisionActionTask(
-                self.manifest_file_path, **p, puppet_account_id=self.puppet_account_id
+                self.manifest_file_path,
+                **p,
+                puppet_account_id=self.puppet_account_id,
+                cache_invalidator=self.cache_invalidator,
             )
             for p in pre_actions
         ]
@@ -1278,7 +1282,10 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         )
         yield [
             portfoliomanagement_tasks.ProvisionActionTask(
-                self.manifest_file_path, **p, puppet_account_id=self.puppet_account_id
+                self.manifest_file_path,
+                **p,
+                puppet_account_id=self.puppet_account_id,
+                cache_invalidator=self.cache_invalidator,
             )
             for p in post_actions
         ]
@@ -1347,7 +1354,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 cache_invalidator=self.cache_invalidator,
             )
 
-        return dict(dependencies=dependencies, portfolio_ids=portfolio_ids, )
+        return dict(dependencies=dependencies, portfolio_ids=portfolio_ids,)
 
     def generate_tasks(self, task_defs):
         if len(task_defs) == 0:
@@ -1372,8 +1379,8 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         ]
                     )
                 ]
-                    .open("r")
-                    .read()
+                .open("r")
+                .read()
             )
             p = json.loads(p)
             portfolio_id = p.get("portfolio_id")
@@ -1383,8 +1390,8 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             )
 
             if (
-                    task_def.get("status")
-                    == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_TERMINATED
+                task_def.get("status")
+                == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_TERMINATED
             ):
                 tasks.append(
                     portfoliomanagement_tasks.DeletePortfolio(
@@ -1397,7 +1404,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     )
                 )
             elif (
-                    task_def.get("status") == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED
+                task_def.get("status") == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED
             ):
 
                 create_spoke_local_portfolio_task_params = dict(
@@ -1525,7 +1532,9 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         self.info(f"starting pre actions")
         yield [
             portfoliomanagement_tasks.ProvisionActionTask(
-                **p, puppet_account_id=self.puppet_account_id
+                **p,
+                puppet_account_id=self.puppet_account_id,
+                cache_invalidator=self.cache_invalidator,
             )
             for p in pre_actions
         ]
@@ -1541,7 +1550,9 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         self.info(f"{self.uid} starting post actions")
         yield [
             portfoliomanagement_tasks.ProvisionActionTask(
-                **p, puppet_account_id=self.puppet_account_id
+                **p,
+                puppet_account_id=self.puppet_account_id,
+                cache_invalidator=self.cache_invalidator,
             )
             for p in post_actions
         ]
