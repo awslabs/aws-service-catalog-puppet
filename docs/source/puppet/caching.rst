@@ -23,6 +23,7 @@ When Luigi runs a task it generates a target which is a file containing the resu
 checks to see if the target exists already - if it does then it will not rerun the task.
 
 You can enable the caching of the following tasks:
+
 * DeleteCloudFormationStackTask
 * EnsureEventBridgeEventBusTask
 * BootstrapSpokeAsTask
