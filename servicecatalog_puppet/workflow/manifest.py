@@ -12,7 +12,7 @@ class ManifestMixen(object):
     manifest_file_path = luigi.Parameter()
 
     @property
-    @lru_cache
+    @lru_cache(maxsize=100)
     def manifest(self):
         content = open(self.manifest_file_path, "r").read()
         return manifest_utils.Manifest(yaml.safe_load(content))
@@ -37,7 +37,7 @@ class SectionTask(tasks.PuppetTask, ManifestMixen):
         }
 
     @property
-    @lru_cache
+    @lru_cache(maxsize=100)
     def manifest(self):
         content = open(self.manifest_file_path, "r").read()
         return manifest_utils.Manifest(yaml.safe_load(content))
