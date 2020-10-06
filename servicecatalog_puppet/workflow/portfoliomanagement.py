@@ -77,6 +77,7 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
             version=self.version,
             account_id=self.account_id,
             region=self.region,
+            cache_invalidator=self.cache_invalidator,
         )
         version_details = json.loads(version_details.open("r").read())
 
@@ -98,6 +99,7 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
     version = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
+    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -109,6 +111,7 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
             "product_id": self.product_id,
             "version": self.version,
             "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
