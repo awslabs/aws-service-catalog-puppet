@@ -6,31 +6,41 @@ class GetVersionIdByVersionNameTest(tasks_unit_tests.PuppetTaskUnitTest):
     puppet_account_id = "01234567890"
     manifest_file_path = "tcvyuiho"
     portfolio = "port1"
+    portfolio_id = "psdsdort1"
     product = "prod1"
+    product_id = "sdsdprod1"
     version = "v1"
     account_id = "23089479278643892"
     region = "eu-west-1"
+    cache_invalidator = "foo"
 
     def setUp(self) -> None:
         from . import portfoliomanagement
 
         self.sut = portfoliomanagement.GetVersionIdByVersionName(
-            puppet_account_id=self.puppet_account_id,
             manifest_file_path=self.manifest_file_path,
+            puppet_account_id=self.puppet_account_id,
             portfolio=self.portfolio,
+            portfolio_id=self.portfolio_id,
             product=self.product,
+            product_id=self.product_id,
             version=self.version,
             account_id=self.account_id,
             region=self.region,
+            cache_invalidator=self.cache_invalidator,
         )
 
     def test_params_for_results_display(self):
         expected_result = {
-            "account_id": self.account_id,
-            "region": self.region,
+            "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
+            "portfolio_id": self.portfolio_id,
+            "region": self.region,
             "product": self.product,
+            "product_id": self.product_id,
             "version": self.version,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 
@@ -39,8 +49,10 @@ class SearchProductsAsAdminTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     puppet_account_id = "01234567890"
     manifest_file_path = "tcvyuiho"
     portfolio = "port1"
+    portfolio_id = "psdlsdm;lmort1"
     account_id = "23089479278643892"
     region = "eu-west-1"
+    cache_invalidator = "foo"
 
     def setUp(self) -> None:
         from . import portfoliomanagement
@@ -49,40 +61,33 @@ class SearchProductsAsAdminTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
             puppet_account_id=self.puppet_account_id,
             manifest_file_path=self.manifest_file_path,
             portfolio=self.portfolio,
+            portfolio_id=self.portfolio_id,
             account_id=self.account_id,
             region=self.region,
+            cache_invalidator=self.cache_invalidator,
         )
 
     def test_params_for_results_display(self):
         expected_result = {
-            "account_id": self.account_id,
-            "region": self.region,
+            "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
+            "portfolio_id": self.portfolio_id,
+            "region": self.region,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
         self.assertEqual(expected_result, self.sut.params_for_results_display())
-
-    def test_requires(self):
-        from . import portfoliomanagement
-
-        expected_result = {
-            "portfolio": portfoliomanagement.GetPortfolioByPortfolioName(
-                self.manifest_file_path,
-                self.puppet_account_id,
-                self.portfolio,
-                self.account_id,
-                self.region,
-            ),
-        }
-        self.assertEqual(expected_result, self.sut.requires())
 
 
 class GetProductIdByProductNameTest(tasks_unit_tests.PuppetTaskUnitTest):
     puppet_account_id = "01234567890"
     manifest_file_path = "tcvyuiho"
     portfolio = "portfolio1"
+    portfolio_id = "sdsdsdsdportfolio1"
     product = "prod1"
     account_id = "23089479278643892"
     region = "eu-west-1"
+    cache_invalidator = "foo"
 
     def setUp(self) -> None:
         from . import portfoliomanagement
@@ -91,17 +96,22 @@ class GetProductIdByProductNameTest(tasks_unit_tests.PuppetTaskUnitTest):
             puppet_account_id=self.puppet_account_id,
             manifest_file_path=self.manifest_file_path,
             portfolio=self.portfolio,
+            portfolio_id=self.portfolio_id,
             product=self.product,
             account_id=self.account_id,
             region=self.region,
+            cache_invalidator=self.cache_invalidator,
         )
 
     def test_params_for_results_display(self):
         expected_result = {
-            "account_id": self.account_id,
-            "region": self.region,
+            "puppet_account_id":self.puppet_account_id,
             "portfolio": self.portfolio,
+            "portfolio_id": self.portfolio_id,
+            "region": self.region,
             "product": self.product,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 
@@ -109,19 +119,14 @@ class GetProductIdByProductNameTest(tasks_unit_tests.PuppetTaskUnitTest):
         from . import portfoliomanagement
 
         expected_result = {
-            "portfolio": portfoliomanagement.GetPortfolioByPortfolioName(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                portfolio=self.portfolio,
-                account_id=self.account_id,
-                region=self.region,
-            ),
             "search_products_as_admin": portfoliomanagement.SearchProductsAsAdminTask(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 portfolio=self.portfolio,
+                portfolio_id=self.portfolio_id,
                 account_id=self.account_id,
                 region=self.region,
+                cache_invalidator=self.cache_invalidator,
             ),
         }
         self.assertEqual(expected_result, self.sut.requires())
@@ -133,6 +138,7 @@ class GetPortfolioByPortfolioNameTest(tasks_unit_tests.PuppetTaskUnitTest):
     portfolio = "portfolio1"
     account_id = "23089479278643892"
     region = "eu-west-1"
+    cache_invalidator = "foo"
 
     def setUp(self) -> None:
         from . import portfoliomanagement
@@ -143,14 +149,16 @@ class GetPortfolioByPortfolioNameTest(tasks_unit_tests.PuppetTaskUnitTest):
             portfolio=self.portfolio,
             account_id=self.account_id,
             region=self.region,
+            cache_invalidator=self.cache_invalidator,
         )
 
     def test_params_for_results_display(self):
         expected_result = {
-            "account_id": self.account_id,
-            "region": self.region,
-            "portfolio": self.portfolio,
             "puppet_account_id": self.puppet_account_id,
+            "portfolio": self.portfolio,
+            "region": self.region,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 

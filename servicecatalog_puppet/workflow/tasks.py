@@ -1,4 +1,5 @@
 import json
+import os
 import traceback
 from pathlib import Path
 
@@ -37,8 +38,19 @@ class PuppetTask(luigi.Task):
             result[a] = 1
         return result
 
+    @property
+    def output_location(self):
+        return f"output/{self.uid}.{self.output_suffix}"
+
+    def remove_output(self):
+        os.remove(self.output_location)
+
     def output(self):
-        return luigi.LocalTarget(f"output/{self.uid}.json")
+        return luigi.LocalTarget(self.output_location)
+
+    @property
+    def output_suffix(self):
+        return "json"
 
     @property
     def uid(self):
@@ -54,7 +66,7 @@ class PuppetTask(luigi.Task):
     @property
     def node_id(self):
         values = [str(v) for v in self.params_for_results_display().values()]
-        return f"{self.__class__.__name__}_{'|'.join(values)}"
+        return "/".join(values)
 
     def graph_node(self):
         task_friendly_name = self.__class__.__name__.replace("Task", "")
@@ -85,17 +97,15 @@ class GetSSMParamTask(PuppetTask):
     name = luigi.Parameter()
     region = luigi.Parameter(default=None)
 
+    cache_invalidator = luigi.Parameter()
+
     def params_for_results_display(self):
         return {
             "parameter_name": self.parameter_name,
             "name": self.name,
             "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
         }
-
-    def output(self):
-        return luigi.LocalTarget(
-            f"output/{self.__class__.__name__}/" f"{self.uid}.json"
-        )
 
     def api_calls_used(self):
         return ["ssm.get_parameter"]

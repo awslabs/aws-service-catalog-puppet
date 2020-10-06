@@ -25,7 +25,9 @@ from servicecatalog_puppet.workflow import management as management_tasks
 from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
 from servicecatalog_puppet.workflow import runner as runner
 from servicecatalog_puppet.workflow import launch as launch_tasks
-from servicecatalog_puppet.workflow import lambda_invocations as lambda_invocations_tasks
+from servicecatalog_puppet.workflow import (
+    lambda_invocations as lambda_invocations_tasks,
+)
 from servicecatalog_puppet.workflow import (
     spoke_local_portfolios as spoke_local_portfolios_tasks,
 )
@@ -74,7 +76,15 @@ def reset_provisioned_product_owner(f):
                 )
             )
 
-    runner.run_tasks(puppet_account_id, current_account_id, tasks_to_run, 10)
+    cache_invalidator = str(datetime.now())
+
+    runner.run_tasks(
+        puppet_account_id,
+        current_account_id,
+        tasks_to_run,
+        10,
+        cache_invalidator=cache_invalidator,
+    )
 
 
 def generate_tasks(
@@ -84,6 +94,7 @@ def generate_tasks(
     single_account=None,
     is_dry_run=False,
     execution_mode="hub",
+    cache_invalidator="now",
 ):
     should_use_sns = config.get_should_use_sns(
         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
@@ -102,6 +113,7 @@ def generate_tasks(
             single_account=single_account,
             is_dry_run=is_dry_run,
             execution_mode=execution_mode,
+            cache_invalidator=cache_invalidator,
         ),
         spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
             manifest_file_path=f.name,
@@ -112,6 +124,7 @@ def generate_tasks(
             single_account=single_account,
             is_dry_run=is_dry_run,
             execution_mode=execution_mode,
+            cache_invalidator=cache_invalidator,
         ),
         lambda_invocations_tasks.LambdaInvocationsSectionTask(
             manifest_file_path=f.name,
@@ -122,6 +135,7 @@ def generate_tasks(
             single_account=single_account,
             is_dry_run=is_dry_run,
             execution_mode=execution_mode,
+            cache_invalidator=cache_invalidator,
         ),
     ]
 
@@ -136,7 +150,8 @@ def deploy(
     is_list_launches=False,
     execution_mode="hub",
 ):
-    logger.info(f"Puppet account id set to {puppet_account_id}")
+    cache_invalidator = str(datetime.now())
+
     tasks_to_run = generate_tasks(
         f,
         puppet_account_id,
@@ -144,6 +159,7 @@ def deploy(
         single_account,
         is_dry_run,
         execution_mode,
+        cache_invalidator,
     )
     runner.run_tasks(
         puppet_account_id,
@@ -153,6 +169,7 @@ def deploy(
         is_dry_run,
         is_list_launches,
         execution_mode,
+        cache_invalidator,
     )
 
 
@@ -176,7 +193,6 @@ def graph(f):
 def _do_bootstrap_spoke(
     puppet_account_id, cloudformation, puppet_version, permission_boundary
 ):
-    logger.info("Starting bootstrap of spoke")
     template = asset_helpers.read_from_site_packages(
         "{}-spoke.template.yaml".format(constants.BOOTSTRAP_STACK_NAME)
     )
@@ -323,7 +339,12 @@ def _do_bootstrap(
             "{}.template.yaml".format(constants.BOOTSTRAP_STACK_NAME)
         )
         template = Template(template).render(
-            VERSION=puppet_version, ALL_REGIONS=all_regions, Source=source_args
+            VERSION=puppet_version,
+            ALL_REGIONS=all_regions,
+            Source=source_args,
+            is_caching_enabled=config.is_caching_enabled(
+                puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
+            ),
         )
         template = Template(template).render(
             VERSION=puppet_version, ALL_REGIONS=all_regions, Source=source_args
@@ -865,7 +886,7 @@ def handle_action_execution_detail(puppet_account_id, action_execution_detail):
                             f.write(f"{d} : {e.get('message')}")
 
 
-def export_puppet_pipeline_logs(puppet_account_id, execution_id):
+def export_puppet_pipeline_logs(execution_id, puppet_account_id):
     with betterboto_client.ClientContextManager(
         "codepipeline", region_name=config.get_home_region(puppet_account_id)
     ) as codepipeline:

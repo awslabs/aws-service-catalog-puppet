@@ -11,9 +11,9 @@ class DeleteCloudFormationStackTask(tasks.PuppetTask):
 
     def params_for_results_display(self):
         return {
+            "stack_name": self.stack_name,
             "account_id": self.account_id,
             "region": self.region,
-            "stack_name": self.stack_name,
         }
 
     def api_calls_used(self):

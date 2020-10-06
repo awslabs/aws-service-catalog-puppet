@@ -1,6 +1,9 @@
+import json
+from functools import lru_cache
+
 import luigi
 
-from servicecatalog_puppet import config, constants
+from servicecatalog_puppet import config, constants, manifest_utils
 
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow import (
@@ -11,18 +14,24 @@ from servicecatalog_puppet.workflow import tasks
 from betterboto import client as betterboto_client
 
 
-class GeneratePoliciesTemplate(manifest_tasks.SectionTask):
+class GeneratePoliciesTemplate(tasks.PuppetTask):
+    puppet_account_id = luigi.Parameter()
+    manifest_file_path = luigi.Parameter()
     region = luigi.Parameter()
     sharing_policies = luigi.DictParameter()
 
-    def output(self):
-        return luigi.LocalTarget(f"output/{self.uid}.template.yaml")
+    cache_invalidator = luigi.Parameter()
+
+    @property
+    def output_suffix(self):
+        return "template.yaml"
 
     def params_for_results_display(self):
         return {
-            "region": self.region,
-            "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
+            "puppet_account_id": self.puppet_account_id,
+            "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):
@@ -41,8 +50,8 @@ class EnsureEventBridgeEventBusTask(tasks.PuppetTask):
 
     def params_for_results_display(self):
         return {
-            "region": self.region,
             "puppet_account_id": self.puppet_account_id,
+            "region": self.region,
         }
 
     def api_calls_used(self):
@@ -67,30 +76,32 @@ class EnsureEventBridgeEventBusTask(tasks.PuppetTask):
         self.write_output(created)
 
 
-class GeneratePolicies(manifest_tasks.SectionTask):
+class GeneratePolicies(tasks.PuppetTask):
+    puppet_account_id = luigi.Parameter()
+    manifest_file_path = luigi.Parameter()
     region = luigi.Parameter()
     sharing_policies = luigi.DictParameter()
+    should_use_sns = luigi.BoolParameter()
+
+    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
-            "region": self.region,
-            "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
+            "puppet_account_id": self.puppet_account_id,
+            "region": self.region,
+            "should_use_sns": self.should_use_sns,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
         return {
             "template": GeneratePoliciesTemplate(
-                manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
-                should_use_sns=self.should_use_sns,
-                should_use_product_plans=self.should_use_product_plans,
-                include_expanded_from=self.include_expanded_from,
-                single_account=self.single_account,
-                is_dry_run=self.is_dry_run,
-                execution_mode=self.execution_mode,
+                manifest_file_path=self.manifest_file_path,
                 region=self.region,
                 sharing_policies=self.sharing_policies,
+                cache_invalidator=self.cache_invalidator,
             ),
         }
 
@@ -118,64 +129,138 @@ class GeneratePolicies(manifest_tasks.SectionTask):
                 if self.should_use_sns
                 else [],
             )
-        self.write_output(template)
+        self.write_output(self.get_sharing_policies())
+
+    @lru_cache
+    def get_sharing_policies(self):
+        return json.loads(json.dumps(self.sharing_policies.get_wrapped()))
 
 
-class GenerateSharesTask(manifest_tasks.SectionTask):
+class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
+    puppet_account_id = luigi.Parameter()
+    manifest_file_path = luigi.Parameter()
+    should_use_sns = luigi.BoolParameter()
+    section = luigi.Parameter()
+    cache_invalidator = luigi.Parameter()
+
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
+            "section": self.section,
+            "cache_invalidator": self.cache_invalidator,
         }
 
-    def run(self):
-        self.info("running")
+    def requires(self):
+        portfolios = dict()
+        requirements = dict(
+            deletes=list(),
+            ensure_event_buses=list(),
+            generate_policies=list(),
+            portfolios=portfolios,
+        )
         for region_name, accounts in self.manifest.get_accounts_by_region().items():
-            yield general_tasks.DeleteCloudFormationStackTask(
-                account_id=self.puppet_account_id,
-                region=region_name,
-                stack_name="servicecatalog-puppet-shares",
+            requirements["deletes"].append(
+                general_tasks.DeleteCloudFormationStackTask(
+                    account_id=self.puppet_account_id,
+                    region=region_name,
+                    stack_name="servicecatalog-puppet-shares",
+                )
             )
 
         for (
             region_name,
             sharing_policies,
         ) in self.manifest.get_sharing_policies_by_region().items():
-            yield EnsureEventBridgeEventBusTask(
-                puppet_account_id=self.puppet_account_id, region=region_name,
+            requirements["ensure_event_buses"].append(
+                EnsureEventBridgeEventBusTask(
+                    puppet_account_id=self.puppet_account_id, region=region_name,
+                )
             )
 
-            yield GeneratePolicies(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                should_use_sns=self.should_use_sns,
-                should_use_product_plans=self.should_use_product_plans,
-                include_expanded_from=self.include_expanded_from,
-                single_account=self.single_account,
-                is_dry_run=self.is_dry_run,
-                execution_mode=self.execution_mode,
-                region=region_name,
-                sharing_policies=sharing_policies,
+            requirements["generate_policies"].append(
+                GeneratePolicies(
+                    puppet_account_id=self.puppet_account_id,
+                    manifest_file_path=self.manifest_file_path,
+                    region=region_name,
+                    sharing_policies=sharing_policies,
+                    should_use_sns=self.should_use_sns,
+                    cache_invalidator=self.cache_invalidator,
+                )
             )
 
-        self.info("Finished generating policies")
         for (
             region_name,
             shares_by_portfolio_account,
         ) in self.manifest.get_shares_by_region_portfolio_account(
-            self.puppet_account_id
+            self.puppet_account_id, self.section
         ).items():
             for (
                 portfolio_name,
                 shares_by_account,
             ) in shares_by_portfolio_account.items():
                 for account_id, share in shares_by_account.items():
-                    yield portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
+                    i = "_".join(
+                        [
+                            self.puppet_account_id,
+                            portfolio_name,
+                            account_id,
+                            region_name,
+                        ]
+                    )
+                    portfolios[
+                        i
+                    ] = portfoliomanagement_tasks.GetPortfolioByPortfolioName(
                         manifest_file_path=self.manifest_file_path,
                         puppet_account_id=self.puppet_account_id,
-                        account_id=account_id,
-                        region=region_name,
                         portfolio=portfolio_name,
+                        account_id=self.puppet_account_id,
+                        region=region_name,
+                        cache_invalidator=self.cache_invalidator,
+                    )
+        return requirements
+
+    def run(self):
+        tasks = list()
+        for (
+            region_name,
+            shares_by_portfolio_account,
+        ) in self.manifest.get_shares_by_region_portfolio_account(
+            self.puppet_account_id, self.section
+        ).items():
+            for (
+                portfolio_name,
+                shares_by_account,
+            ) in shares_by_portfolio_account.items():
+                for account_id, share in shares_by_account.items():
+                    i = "_".join(
+                        [
+                            self.puppet_account_id,
+                            portfolio_name,
+                            account_id,
+                            region_name,
+                        ]
+                    )
+                    portfolio_input = self.input().get("portfolios").get(i)
+
+                    if portfolio_input is None:
+                        raise Exception(
+                            f"failed to get portfolios details for {i} in {self.input().get('portfolios')}"
+                        )
+
+                    portfolio = json.loads(portfolio_input.open("r").read())
+
+                    tasks.append(
+                        portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
+                            manifest_file_path=self.manifest_file_path,
+                            puppet_account_id=self.puppet_account_id,
+                            account_id=account_id,
+                            region=region_name,
+                            portfolio=portfolio_name,
+                            portfolio_id=portfolio.get("portfolio_id"),
+                        )
                     )
 
+        yield tasks
+        self.info("running")
         self.write_output(self.params_for_results_display())

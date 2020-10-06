@@ -263,6 +263,10 @@ def provision_product(
     uid = f"[{launch_name}] {account_id}:{region}]"
     provisioning_parameters = []
     for p in params.keys():
+        if params.get(p) is None:
+            raise Exception(
+                f"Could not provision {launch_name} in {region} of {account_id}, parameter {p} was None"
+            )
         provisioning_parameters.append(
             {"Key": p, "Value": params.get(p),}
         )
@@ -544,28 +548,3 @@ def get_version_id_for(servicecatalog, product_id, version_name):
             version_id = provisioning_artifact_detail.get("Id")
     assert version_id is not None, "Did not find version looking for"
     return version_id
-
-
-def get_portfolio_for(servicecatalog, portfolio_name):
-    result = None
-
-    response = servicecatalog.list_accepted_portfolio_shares()
-    assert response.get("NextPageToken") is None, "Pagination not supported"
-    for portfolio_detail in response.get("PortfolioDetails"):
-        if portfolio_detail.get("DisplayName") == portfolio_name:
-            result = portfolio_detail
-            break
-
-    if result is None:
-        response = servicecatalog.list_portfolios_single_page()
-        for portfolio_detail in response.get("PortfolioDetails", []):
-            if portfolio_detail.get("DisplayName") == portfolio_name:
-                result = portfolio_detail
-                break
-
-    assert result is not None, "Could not find portfolio"
-    return result
-
-
-def get_portfolio_id_for(servicecatalog, portfolio_name):
-    return get_portfolio_for(servicecatalog, portfolio_name).get("Id")

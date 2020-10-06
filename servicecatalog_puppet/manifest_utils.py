@@ -279,18 +279,18 @@ class Manifest(dict):
 
         return sharing_policies_by_region
 
-    def get_shares_by_region_portfolio_account(self, puppet_account_id):
+    def get_shares_by_region_portfolio_account(self, puppet_account_id, section):
         shares_by_region_portfolio_account = {}
         configuration = {}
         include_expanded_from = False
-        for launch_name, launch_details in self.get("launches").items():
+        for launch_name, launch_details in self.get(section, {}).items():
             portfolio = launch_details.get("portfolio")
             tasks = self.get_task_defs_from_details(
                 puppet_account_id,
                 include_expanded_from,
                 launch_name,
                 configuration,
-                "launches",
+                section,
             )
             for task in tasks:
                 account_id = task.get("account_id")
@@ -326,9 +326,6 @@ class Manifest(dict):
         configuration,
         launch_or_spoke_local_portfolio,
     ):
-        logger.info(
-            f"get_task_defs_from_details({include_expanded_from}, {launch_name}, {configuration})"
-        )
         launch_details = self.get(launch_or_spoke_local_portfolio).get(launch_name)
         logger.info(launch_details)
         accounts = self.get("accounts")
@@ -339,7 +336,9 @@ class Manifest(dict):
         elif launch_or_spoke_local_portfolio == "launches":
             deploy_to = launch_details.get("deploy_to")
         elif launch_or_spoke_local_portfolio == "spoke-local-portfolios":
-            deploy_to = launch_details.get("deploy_to") or launch_details.get("share_with")
+            deploy_to = launch_details.get("deploy_to") or launch_details.get(
+                "share_with"
+            )
         task_defs = []
         for tag_list_item in deploy_to.get("tags", []):
             for account in accounts:

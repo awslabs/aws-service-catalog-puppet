@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import sys
 import time
 from glob import glob
@@ -31,6 +32,7 @@ def run_tasks(
     is_dry_run=False,
     is_list_launches=None,
     execution_mode="hub",
+    cache_invalidator="now",
 ):
     if is_list_launches:
         should_use_eventbridge = False
@@ -104,7 +106,10 @@ def run_tasks(
                 ]
             ]
 
-            for filename in glob("output/ProvisionProductDryRunTask/*.json"):
+            for filename in glob(
+                f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
+                recursive=True,
+            ):
                 result = json.loads(open(filename, "r").read())
                 current_version = (
                     Color("{green}" + result.get("current_version") + "{/green}")
@@ -141,7 +146,10 @@ def run_tasks(
 
         elif is_list_launches == "json":
             results = dict()
-            for filename in glob("output/ProvisionProductDryRunTask/*.json"):
+            for filename in glob(
+                f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
+                recursive=True,
+            ):
                 result = json.loads(open(filename, "r").read())
                 account_id = result.get("params").get("account_id")
                 region = result.get("params").get("region")
@@ -178,7 +186,10 @@ def run_tasks(
                 ],
             ]
             table = terminaltables.AsciiTable(table_data)
-            for filename in glob("output/TerminateProductDryRunTask/*.json"):
+            for filename in glob(
+                f"output/TerminateProductDryRunTask/**/{cache_invalidator}.json",
+                recursive=True,
+            ):
                 result = json.loads(open(filename, "r").read())
                 table_data.append(
                     [
@@ -191,7 +202,10 @@ def run_tasks(
                         result.get("notes"),
                     ]
                 )
-            for filename in glob("output/ProvisionProductDryRunTask/*.json"):
+            for filename in glob(
+                f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
+                recursive=True,
+            ):
                 result = json.loads(open(filename, "r").read())
                 table_data.append(
                     [
