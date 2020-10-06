@@ -23,24 +23,24 @@ When Luigi runs a task it generates a target which is a file containing the resu
 checks to see if the target exists already - if it does then it will not rerun the task.
 
 You can enable the caching of the following tasks:
-- DeleteCloudFormationStackTask
-- EnsureEventBridgeEventBusTask
-- BootstrapSpokeAsTask
-- CreateLaunchRoleConstraintsForPortfolio
-- RequestPolicyTask
-- SharePortfolioTask
-- ShareAndAcceptPortfolioTask
-- CreateAssociationsInPythonForPortfolioTask
-- CreateShareForAccountLaunchRegion
-- DisassociateProductFromPortfolio
-- DisassociateProductsFromPortfolio
-- DeleteLocalPortfolio
-- DeletePortfolioShare
-- DeletePortfolio
-- ProvisioningArtifactParametersTask
-- ResetProvisionedProductOwnerTask
-- RunDeployInSpokeTask
-- LaunchInSpokeTask
+* DeleteCloudFormationStackTask
+* EnsureEventBridgeEventBusTask
+* BootstrapSpokeAsTask
+* CreateLaunchRoleConstraintsForPortfolio
+* RequestPolicyTask
+* SharePortfolioTask
+* ShareAndAcceptPortfolioTask
+* CreateAssociationsInPythonForPortfolioTask
+* CreateShareForAccountLaunchRegion
+* DisassociateProductFromPortfolio
+* DisassociateProductsFromPortfolio
+* DeleteLocalPortfolio
+* DeletePortfolioShare
+* DeletePortfolio
+* ProvisioningArtifactParametersTask
+* ResetProvisionedProductOwnerTask
+* RunDeployInSpokeTask
+* LaunchInSpokeTask
 
 .. warning::
 
