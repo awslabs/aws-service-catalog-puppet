@@ -131,7 +131,7 @@ class GeneratePolicies(tasks.PuppetTask):
             )
         self.write_output(self.get_sharing_policies())
 
-    @lru_cache
+    @lru_cache()
     def get_sharing_policies(self):
         return json.loads(json.dumps(self.sharing_policies.get_wrapped()))
 

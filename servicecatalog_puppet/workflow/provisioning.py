@@ -1224,7 +1224,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
         return requirements
 
-    @lru_cache
+    @lru_cache()
     def get_launch_tasks_defs(self):
         launch = self.manifest.get("launches").get(self.launch_name)
         if not launch:
@@ -1467,7 +1467,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         logger.info(f"tasks are {tasks}")
         return tasks
 
-    @lru_cache
+    @lru_cache()
     def get_task_defs(self):
         spoke_local_portfolio_details = self.manifest.get("spoke-local-portfolios").get(
             self.spoke_local_portfolio_name

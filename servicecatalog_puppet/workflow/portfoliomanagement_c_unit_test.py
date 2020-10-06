@@ -105,7 +105,7 @@ class GetProductIdByProductNameTest(tasks_unit_tests.PuppetTaskUnitTest):
 
     def test_params_for_results_display(self):
         expected_result = {
-            "puppet_account_id":self.puppet_account_id,
+            "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
             "portfolio_id": self.portfolio_id,
             "region": self.region,

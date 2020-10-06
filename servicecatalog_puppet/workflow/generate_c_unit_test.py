@@ -72,7 +72,6 @@ class GeneratePoliciesTest(tasks_unit_tests.PuppetTaskUnitTest):
             region=self.region,
             sharing_policies=self.sharing_policies,
             should_use_sns=self.should_use_sns,
-
             cache_invalidator=self.cache_invalidator,
         )
 

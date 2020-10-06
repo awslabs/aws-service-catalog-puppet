@@ -275,7 +275,7 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
         else:
             return False
 
-    @lru_cache
+    @lru_cache()
     def get_portfolio(self):
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
