@@ -4,7 +4,7 @@ from betterboto import client as betterboto_client
 from servicecatalog_puppet.workflow import tasks
 
 
-class DeleteCloudFormationStackTask(tasks.PuppetTask):  # DONE
+class DeleteCloudFormationStackTask(tasks.PuppetTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     stack_name = luigi.Parameter()

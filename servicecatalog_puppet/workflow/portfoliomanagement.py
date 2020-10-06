@@ -3,7 +3,6 @@ import json
 import os
 import re
 import time
-from datetime import datetime
 from functools import lru_cache
 
 import luigi
@@ -15,8 +14,6 @@ from servicecatalog_puppet import config
 from servicecatalog_puppet.workflow import tasks, general
 
 import logging
-
-logger = logging.getLogger("tasks")
 
 
 class PortfolioManagementTask(tasks.PuppetTask):
@@ -221,7 +218,7 @@ class GetProductIdByProductName(PortfolioManagementTask):
             product_view = product_view_details.get("ProductViewSummary")
             logging.info(f"looking at product: {product_view.get('Name')}")
             if product_view.get("Name") == self.product:
-                logger.info("Found product: {}".format(product_view))
+                self.info("Found product: {}".format(product_view))
                 product_id = product_view.get("ProductId")
         assert product_id is not None, "Did not find product looking for"
         self.write_output(
@@ -374,7 +371,7 @@ class ProvisionActionTask(PortfolioManagementTask):
                     all_params[param_name] = json.loads(f.read()).get("Value")
             if param_details.get("default"):
                 all_params[param_name] = param_details.get("default")
-        logger.info(f"[{self.uid}] :: finished collecting all_params: {all_params}")
+        self.info(f"finished collecting all_params: {all_params}")
 
         environment_variables_override = [
             {"name": param_name, "value": param_details, "type": "PLAINTEXT"}
@@ -672,9 +669,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        logger.info(
-            f"[{self.portfolio}] {self.account_id}:{self.region} :: starting to import into spoke"
-        )
+        self.info(f"starting to import into spoke")
 
         with self.input().get("create_spoke_local_portfolio").open("r") as f:
             spoke_portfolio = json.loads(f.read())
@@ -704,19 +699,14 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                             f"{hub_provisioning_artifact_detail.get('Name')}"
                         ] = hub_provisioning_artifact_detail
 
-                logger.info(
-                    f"[{self.portfolio}] {self.account_id}:{self.region} :: Copying {hub_product_name}"
-                )
+                self.info(f"Copying {hub_product_name}")
                 hub_product_arn = product_view_summary.get("ProductARN")
                 copy_args = {
                     "SourceProductArn": hub_product_arn,
                     "CopyOptions": ["CopyTags",],
                 }
 
-                logger.info(
-                    f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: searching in "
-                    f"spoke for product"
-                )
+                self.info(f"searching in spoke for product")
                 role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
                 with betterboto_client.CrossAccountClientContextManager(
                     "servicecatalog",
@@ -731,10 +721,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                             Filters={"FullTextSearch": [hub_product_name]},
                         )
                     except spoke_service_catalog.exceptions.ResourceNotFoundException as e:
-                        logger.info(
-                            f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: "
-                            f"swallowing exception: {str(e)}"
-                        )
+                        self.info(f"swallowing exception: {str(e)}")
 
                     if p is not None:
                         for spoke_product_view_details in p.get("ProductViewDetails"):
@@ -764,36 +751,24 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                                         )
                                         is not None
                                     ):
-                                        logger.info(
-                                            f"[{self.portfolio}] {self.account_id}:{self.region} "
-                                            f"{hub_product_name} :: Going to skip "
-                                            f"{spoke_product_id} "
-                                            f"{provisioning_artifact_detail.get('Name')}"
+                                        self.info(
+                                            f"{hub_product_name} :: Going to skip {spoke_product_id} {provisioning_artifact_detail.get('Name')}"
                                         )
                                         del product_versions_that_should_be_copied[
                                             id_to_delete
                                         ]
 
                     if len(product_versions_that_should_be_copied.keys()) == 0:
-                        logger.info(
-                            f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: "
-                            f"no versions to copy"
-                        )
+                        self.info(f"no versions to copy")
                     else:
-                        logger.info(
-                            f"[{self.portfolio}] {self.account_id}:{self.region} {hub_product_name} :: "
-                            f"about to copy product"
-                        )
+                        self.info(f"about to copy product")
 
                         copy_args["SourceProvisioningArtifactIdentifiers"] = [
                             {"Id": a.get("Id")}
                             for a in product_versions_that_should_be_copied.values()
                         ]
 
-                        logger.info(
-                            f"[{self.portfolio}] {self.account_id}:{self.region} :: about to copy product with"
-                            f"args: {copy_args}"
-                        )
+                        self.info(f"about to copy product with args: {copy_args}")
                         copy_product_token = spoke_service_catalog.copy_product(
                             **copy_args
                         ).get("CopyProductToken")
@@ -803,30 +778,27 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                                 CopyProductToken=copy_product_token
                             )
                             target_product_id = r.get("TargetProductId")
-                            logger.info(
-                                f"[{self.portfolio}] {self.account_id}:{self.region} :: "
+                            self.info(
                                 f"{hub_product_name} status: {r.get('CopyProductStatus')}"
                             )
                             if r.get("CopyProductStatus") == "FAILED":
                                 raise Exception(
-                                    f"[{self.portfolio}] {self.account_id}:{self.region} :: Copying "
+                                    f"Copying "
                                     f"{hub_product_name} failed: {r.get('StatusDetail')}"
                                 )
                             elif r.get("CopyProductStatus") == "SUCCEEDED":
                                 break
 
-                        logger.info(
-                            f"[{self.portfolio}] {self.account_id}:{self.region} :: adding {target_product_id} "
-                            f"to portfolio {portfolio_id}"
+                        self.info(
+                            f"adding {target_product_id} to portfolio {portfolio_id}"
                         )
                         spoke_service_catalog.associate_product_with_portfolio(
                             ProductId=target_product_id, PortfolioId=portfolio_id,
                         )
 
                         # associate_product_with_portfolio is not a synchronous request
-                        logger.info(
-                            f"[{self.portfolio}] {self.account_id}:{self.region} :: waiting for adding of "
-                            f"{target_product_id} to portfolio {portfolio_id}"
+                        self.info(
+                            f"waiting for adding of {target_product_id} to portfolio {portfolio_id}"
                         )
                         while True:
                             time.sleep(2)
@@ -841,9 +813,8 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                                     "ProductViewDetails"
                                 )
                             ]
-                            logger.info(
-                                f"[{self.portfolio}] {self.account_id}:{self.region} :: Looking for "
-                                f"{target_product_id} in {products_ids}"
+                            self.info(
+                                f"Looking for {target_product_id} in {products_ids}"
                             )
 
                             if target_product_id in products_ids:
@@ -895,9 +866,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                     default=str,
                 )
             )
-        logger.info(
-            f"[{self.portfolio}] {self.account_id}:{self.region} :: Finished importing"
-        )
+        self.info(f"Finished importing")
 
 
 class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
@@ -958,9 +927,7 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        logger.info(
-            f"[{self.portfolio}] {self.account_id}:{self.region} :: starting to import into spoke"
-        )
+        self.info(f"starting to import into spoke")
 
         with self.input().get("create_spoke_local_portfolio").open("r") as f:
             spoke_portfolio = json.loads(f.read())
@@ -981,9 +948,7 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 product_name_to_id_dict[hub_product_name] = hub_product_id
                 hub_product_to_import_list.append(hub_product_id)
 
-        self.info(
-            f"[{self.portfolio}] {self.account_id}:{self.region} :: Starting product import with targets {hub_product_to_import_list}"
-        )
+        self.info(f"Starting product import with targets {hub_product_to_import_list}")
 
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with betterboto_client.CrossAccountClientContextManager(
@@ -994,10 +959,7 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
         ) as spoke_service_catalog:
 
             while True:
-                self.info(
-                    f"[{self.portfolio}] {self.account_id}:{self.region} :: "
-                    f"Generating product list for portfolio {portfolio_id}"
-                )
+                self.info(f"Generating product list for portfolio {portfolio_id}")
 
                 response = spoke_service_catalog.search_products_as_admin_single_page(
                     PortfolioId=portfolio_id,
@@ -1015,20 +977,16 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
 
                 if not target_products:
                     self.info(
-                        f"[{self.portfolio}] {self.account_id}:{self.region} :: No more products "
-                        f"for import to portfolio {portfolio_id}"
+                        f"No more products for import to portfolio {portfolio_id}"
                     )
                     break
 
                 self.info(
-                    f"[{self.portfolio}] {self.account_id}:{self.region} :: Products "
-                    f"{target_products} not yet imported to portfolio {portfolio_id}"
+                    f"Products {target_products} not yet imported to portfolio {portfolio_id}"
                 )
 
                 for product_id in target_products:
-                    self.info(
-                        f"[{self.portfolio}] {self.account_id}:{self.region} :: Associating {product_id}"
-                    )
+                    self.info(f"Associating {product_id}")
                     spoke_service_catalog.associate_product_with_portfolio(
                         ProductId=product_id,
                         PortfolioId=portfolio_id,
@@ -1050,9 +1008,7 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                     default=str,
                 )
             )
-        logger.info(
-            f"[{self.portfolio}] {self.account_id}:{self.region} :: Finished importing"
-        )
+        self.info(f"Finished importing")
 
 
 class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
@@ -1110,9 +1066,7 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
         ]
 
     def run(self):
-        logger.info(
-            f"[{self.portfolio}] {self.account_id}:{self.region} :: Creating launch role constraints for hub"
-        )
+        self.info(f"Creating launch role constraints for hub")
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with self.input().get("create_spoke_local_portfolio_task").open("r") as f:
             dependency_output = json.loads(f.read())
@@ -1147,7 +1101,6 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
                             response = service_catalog.search_products_as_admin_single_page(
                                 PortfolioId=portfolio_id
                             )
-                            logger.info(f"response is {response}")
                             for product_view_details in response.get(
                                 "ProductViewDetails", []
                             ):
@@ -1325,7 +1278,7 @@ class ShareAndAcceptPortfolioTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        self.info(f"{self.uid} starting ShareAndAcceptPortfolioTask")
+        self.info(f"starting")
 
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
@@ -1373,7 +1326,7 @@ class ShareAndAcceptPortfolioTask(PortfolioManagementTask):
         self.write_output(self.param_kwargs)
 
 
-class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):  # DONE
+class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
@@ -1403,9 +1356,7 @@ class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):  # DO
         with open(path, "w") as f:
             f.write("{}")
 
-        logging.info(
-            f"{self.uid}: Creating the association for portfolio {self.portfolio_id}"
-        )
+        self.info(f"Creating the association for portfolio {self.portfolio_id}")
         with betterboto_client.ClientContextManager(
             "servicecatalog", region_name=self.region
         ) as servicecatalog:
@@ -1417,7 +1368,7 @@ class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):  # DO
         self.write_output(self.param_kwargs)
 
 
-class CreateShareForAccountLaunchRegion(PortfolioManagementTask):  # DONE
+class CreateShareForAccountLaunchRegion(PortfolioManagementTask):
     """for the given account_id and launch and region create the shares"""
 
     puppet_account_id = luigi.Parameter()

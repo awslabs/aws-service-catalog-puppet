@@ -44,7 +44,7 @@ class GeneratePoliciesTemplate(tasks.PuppetTask):
             output_file.write(rendered)
 
 
-class EnsureEventBridgeEventBusTask(tasks.PuppetTask):  # DONE
+class EnsureEventBridgeEventBusTask(tasks.PuppetTask):
     puppet_account_id = luigi.Parameter()
     region = luigi.Parameter()
 
@@ -213,7 +213,6 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                             region_name,
                         ]
                     )
-                    self.info(f"deps i is {i}")
                     portfolios[
                         i
                     ] = portfoliomanagement_tasks.GetPortfolioByPortfolioName(
@@ -247,7 +246,6 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                             region_name,
                         ]
                     )
-                    self.info(f"i is {i}")
                     portfolio_input = self.input().get("portfolios").get(i)
 
                     if portfolio_input is None:

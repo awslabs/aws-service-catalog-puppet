@@ -280,7 +280,6 @@ class Manifest(dict):
         return sharing_policies_by_region
 
     def get_shares_by_region_portfolio_account(self, puppet_account_id, section):
-        logger.info("in get_shares_by_region_portfolio_account")
         shares_by_region_portfolio_account = {}
         configuration = {}
         include_expanded_from = False
@@ -303,7 +302,6 @@ class Manifest(dict):
                 shares_by_region_portfolio_account[region][portfolio][
                     account_id
                 ] = self.get_account(account_id)
-        logger.info("out get_shares_by_region_portfolio_account")
         return shares_by_region_portfolio_account
 
     def get_accounts_by_region(self):
@@ -328,9 +326,6 @@ class Manifest(dict):
         configuration,
         launch_or_spoke_local_portfolio,
     ):
-        logger.info(
-            f"get_task_defs_from_details({include_expanded_from}, {launch_name}, {configuration})"
-        )
         launch_details = self.get(launch_or_spoke_local_portfolio).get(launch_name)
         logger.info(launch_details)
         accounts = self.get("accounts")

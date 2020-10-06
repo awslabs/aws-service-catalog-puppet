@@ -78,7 +78,13 @@ def reset_provisioned_product_owner(f):
 
     cache_invalidator = str(datetime.now())
 
-    runner.run_tasks(puppet_account_id, current_account_id, tasks_to_run, 10, cache_invalidator=cache_invalidator)
+    runner.run_tasks(
+        puppet_account_id,
+        current_account_id,
+        tasks_to_run,
+        10,
+        cache_invalidator=cache_invalidator,
+    )
 
 
 def generate_tasks(
@@ -88,7 +94,7 @@ def generate_tasks(
     single_account=None,
     is_dry_run=False,
     execution_mode="hub",
-    cache_invalidator="now"
+    cache_invalidator="now",
 ):
     should_use_sns = config.get_should_use_sns(
         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
@@ -144,7 +150,6 @@ def deploy(
     is_list_launches=False,
     execution_mode="hub",
 ):
-    logger.info(f"Puppet account id set to {puppet_account_id}")
     cache_invalidator = str(datetime.now())
 
     tasks_to_run = generate_tasks(
@@ -188,7 +193,6 @@ def graph(f):
 def _do_bootstrap_spoke(
     puppet_account_id, cloudformation, puppet_version, permission_boundary
 ):
-    logger.info("Starting bootstrap of spoke")
     template = asset_helpers.read_from_site_packages(
         "{}-spoke.template.yaml".format(constants.BOOTSTRAP_STACK_NAME)
     )
@@ -877,7 +881,7 @@ def handle_action_execution_detail(puppet_account_id, action_execution_detail):
                             f.write(f"{d} : {e.get('message')}")
 
 
-def export_puppet_pipeline_logs(puppet_account_id, execution_id):
+def export_puppet_pipeline_logs(execution_id, puppet_account_id):
     with betterboto_client.ClientContextManager(
         "codepipeline", region_name=config.get_home_region(puppet_account_id)
     ) as codepipeline:

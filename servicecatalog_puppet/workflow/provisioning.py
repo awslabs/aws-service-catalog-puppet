@@ -66,8 +66,8 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
             f"{self.account_id}-{self.region}-sc",
             region_name=self.region,
         ) as service_catalog:
-            logger.info(
-                f"{self.uid}: getting path for {self.product_id} of portfolio: {self.portfolio}"
+            self.info(
+                f"getting path for {self.product_id} of portfolio: {self.portfolio}"
             )
             path_id = aws.get_path_for_product(
                 service_catalog, self.product_id, self.portfolio
@@ -212,7 +212,7 @@ class ProvisionProductTask(ProvisioningTask):
             f"sc-{self.region}-{self.account_id}",
             region_name=self.region,
         ) as service_catalog:
-            logger.info(f"[{self.uid}] looking for previous failures")
+            self.info("looking for previous failures")
             path_id = aws.get_path_for_product(
                 service_catalog, self.product_id, self.portfolio
             )
@@ -227,8 +227,8 @@ class ProvisionProductTask(ProvisioningTask):
                 self.account_id,
                 self.region,
             )
-            logger.info(
-                f"[{self.uid}] pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}"
+            self.info(
+                f"pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}"
             )
 
             with betterboto_client.CrossAccountClientContextManager(
@@ -239,7 +239,7 @@ class ProvisionProductTask(ProvisioningTask):
             ) as cloudformation:
                 need_to_provision = True
 
-                logging.info(
+                self.info(
                     f"running as {role},checking {self.product_id} {self.version_id} {path_id} in {self.account_id} {self.region}"
                 )
 
@@ -256,28 +256,26 @@ class ProvisionProductTask(ProvisioningTask):
                     )
 
                 if provisioning_artifact_id == self.version_id:
-                    logger.info(f"[{self.uid}] found previous good provision")
+                    self.info(f"found previous good provision")
                     if provisioned_product_id:
-                        logger.info(f"[{self.uid}] checking params for diffs")
+                        self.info(f"checking params for diffs")
                         provisioned_parameters = aws.get_parameters_for_stack(
                             cloudformation,
                             f"SC-{self.account_id}-{provisioned_product_id}",
                         )
-                        logger.info(
-                            f"[{self.uid}] current params: {provisioned_parameters}"
-                        )
+                        self.info(f"current params: {provisioned_parameters}")
 
-                        logger.info(f"[{self.uid}] new params: {params_to_use}")
+                        self.info(f"new params: {params_to_use}")
 
                         if provisioned_parameters == params_to_use:
-                            logger.info(f"[{self.uid}] params unchanged")
+                            self.info(f"params unchanged")
                             need_to_provision = False
                         else:
-                            logger.info(f"[{self.uid}] params changed")
+                            self.info(f"params changed")
 
                 if need_to_provision:
-                    logger.info(
-                        f"[{self.uid}] about to provision with params: {json.dumps(params_to_use)}"
+                    self.info(
+                        f"about to provision with params: {json.dumps(params_to_use)}"
                     )
 
                     if provisioned_product_id:
@@ -286,9 +284,7 @@ class ProvisionProductTask(ProvisioningTask):
                             f"SC-{self.account_id}-{provisioned_product_id}",
                         )
                         stack_status = stack.get("StackStatus")
-                        logger.info(
-                            f"[{self.uid}] current cfn stack_status is {stack_status}"
-                        )
+                        self.info(f"current cfn stack_status is {stack_status}")
                         if stack_status not in [
                             "UPDATE_COMPLETE",
                             "CREATE_COMPLETE",
@@ -366,8 +362,8 @@ class ProvisionProductTask(ProvisioningTask):
                         )
 
                     for ssm_param_output in self.ssm_param_outputs:
-                        logger.info(
-                            f"[{self.uid}] writing SSM Param: {ssm_param_output.get('stack_output')}"
+                        self.info(
+                            f"writing SSM Param: {ssm_param_output.get('stack_output')}"
                         )
                         with betterboto_client.ClientContextManager("ssm") as ssm:
                             found_match = False
@@ -377,7 +373,7 @@ class ProvisionProductTask(ProvisioningTask):
                                     "stack_output"
                                 ):
                                     found_match = True
-                                    logger.info(f"[{self.uid}] found value")
+                                    self.info(f"found value")
                                     ssm.put_parameter_and_wait(
                                         Name=ssm_param_output.get("param_name"),
                                         Value=output.get("OutputValue"),
@@ -402,14 +398,14 @@ class ProvisionProductTask(ProvisioningTask):
 
     def get_all_params(self):
         all_params = {}
-        logger.info(f"[{self.uid}] :: collecting all_params")
+        self.info(f"collecting all_params")
         for param_name, param_details in self.all_params.items():
             if param_details.get("ssm"):
                 with self.input().get("ssm_params").get(param_name).open() as f:
                     all_params[param_name] = json.loads(f.read()).get("Value")
             if param_details.get("default"):
                 all_params[param_name] = param_details.get("default")
-        logger.info(f"[{self.uid}] :: finished collecting all_params: {all_params}")
+        self.info(f"finished collecting all_params: {all_params}")
         return all_params
 
 
@@ -425,9 +421,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
         ]
 
     def run(self):
-        self.info(
-            f"starting deploy try {self.try_count} of {self.retry_count}"
-        )
+        self.info(f"starting deploy try {self.try_count} of {self.retry_count}")
 
         all_params = self.get_all_params()
 
@@ -438,7 +432,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
             f"sc-{self.region}-{self.account_id}",
             region_name=self.region,
         ) as service_catalog:
-            logger.info(f"[{self.uid}] looking for previous failures")
+            self.info(f"looking for previous failures")
             path_id = aws.get_path_for_product(
                 service_catalog, self.product_id, self.portfolio
             )
@@ -457,8 +451,8 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                         provisioned_product_id = r.get("Id")
                         provisioning_artifact_id = r.get("ProvisioningArtifactId")
 
-            logger.info(
-                f"[{self.uid}] pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}"
+            self.info(
+                f"pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}"
             )
             current_version_details = self.get_current_version(
                 provisioning_artifact_id, service_catalog
@@ -470,7 +464,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                 f"cfn-{self.region}-{self.account_id}",
                 region_name=self.region,
             ) as cloudformation:
-                logging.info(
+                self.info(
                     f"running as {role},checking {self.product_id} {self.version_id} {path_id} in {self.account_id} {self.region}"
                 )
 
@@ -487,20 +481,18 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                     )
 
                 if provisioning_artifact_id == self.version_id:
-                    logger.info(f"[{self.uid}] found previous good provision")
+                    self.info(f"found previous good provision")
                     if provisioned_product_id:
-                        logger.info(f"[{self.uid}] checking params for diffs")
+                        self.info(f"checking params for diffs")
                         provisioned_parameters = aws.get_parameters_for_stack(
                             cloudformation,
                             f"SC-{self.account_id}-{provisioned_product_id}",
                         )
-                        logger.info(
-                            f"[{self.uid}] current params: {provisioned_parameters}"
-                        )
-                        logger.info(f"[{self.uid}] new params: {params_to_use}")
+                        self.info(f"current params: {provisioned_parameters}")
+                        self.info(f"new params: {params_to_use}")
 
                         if provisioned_parameters == params_to_use:
-                            logger.info(f"[{self.uid}] params unchanged")
+                            self.info(f"params unchanged")
                             self.write_result(
                                 current_version=self.version,
                                 new_version=self.version,
