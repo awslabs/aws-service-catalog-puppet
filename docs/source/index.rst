@@ -13,6 +13,7 @@ Welcome to aws-service-catalog-puppets's documentation!
    puppet/execution_modes
    puppet/actions
    puppet/notifications
+   puppet/caching
    puppet/upgrading
    puppet/faq
 

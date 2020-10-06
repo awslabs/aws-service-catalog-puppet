@@ -14,55 +14,6 @@ import math
 logger = logging.getLogger("tasks")
 
 
-class StateLessTask(luigi.Task):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        outputs = luigi.task.flatten(self.output())
-        for out in outputs:
-            if out.exists():
-                os.remove(self.output().path)
-
-        for r in luigi.task.flatten(self.requires()):
-            outputs = luigi.task.flatten(r.output())
-            for out in outputs:
-                if out.exists():
-                    os.remove(r.output().path)
-
-
-class MTimeMixin:
-    """
-        Mixin that flags a task as incomplete if any requirement
-        is incomplete or has been updated more recently than this task
-        This is based on http://stackoverflow.com/a/29304506, but extends
-        it to support multiple input / output dependencies.
-    """
-
-    def complete(self):
-        def to_list(obj):
-            if type(obj) in (type(()), type([])):
-                return obj
-            else:
-                return [obj]
-
-        def mtime(path):
-            return os.path.getmtime(path)
-
-        if not all(os.path.exists(out.path) for out in to_list(self.output())):
-            return False
-
-        self_mtime = min(mtime(out.path) for out in to_list(self.output()))
-
-        # the below assumes a list of requirements, each with a list of outputs. YMMV
-        for el in to_list(self.requires()):
-            if not el.complete():
-                return False
-            for output in to_list(el.output()):
-                if mtime(output.path) > self_mtime:
-                    return False
-
-        return True
-
-
 class PuppetTask(luigi.Task):
     def read_from_input(self, input_name):
         with self.input().get(input_name).open("r") as f:
@@ -91,22 +42,10 @@ class PuppetTask(luigi.Task):
     def output_location(self):
         return f"output/{self.uid}.{self.output_suffix}"
 
-    def purge_target_if_needed(self, output_location):
-        pass
-
-    def purge_dependencies_outputs(self):
-        for r in luigi.task.flatten(self.requires()):
-            outputs = luigi.task.flatten(r.output())
-            for out in outputs:
-                if out.exists():
-                    os.remove(r.output().path)
-
     def remove_output(self):
         os.remove(self.output_location)
 
     def output(self):
-        if os.path.exists(self.output_location):
-            self.purge_target_if_needed(self.output_location)
         return luigi.LocalTarget(self.output_location)
 
     @property

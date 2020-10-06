@@ -5,10 +5,12 @@ class ProvisioningArtifactParametersTaskTest(tasks_unit_tests.PuppetTaskUnitTest
     manifest_file_path = "lnklknkl"
     puppet_account_id = "01234567890"
     portfolio = "port1"
+    portfolio_id = "sddsport1"
     portfolio_id = "port-1sdsd"
     product = "prod1"
-    product_id = "prod1"
+    product_id = "sdsdprod1"
     version = "v1"
+    version_id = "sdsddv1"
     account_id = "00987654321"
     region = "eu-west-0"
 
@@ -19,39 +21,28 @@ class ProvisioningArtifactParametersTaskTest(tasks_unit_tests.PuppetTaskUnitTest
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
             portfolio=self.portfolio,
+            portfolio_id=self.portfolio_id,
             product=self.product,
+            product_id=self.product_id,
             version=self.version,
+            version_id=self.version_id,
             account_id=self.account_id,
             region=self.region,
         )
 
     def test_params_for_results_display(self):
         expected_result = {
+            "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
+            "portfolio_id": self.portfolio_id,
             "product": self.product,
+            "product_id": self.product_id,
             "version": self.version,
+            "version_id": self.version_id,
             "account_id": self.account_id,
             "region": self.region,
         }
         self.assertEqual(expected_result, self.sut.params_for_results_display())
-
-    def test_requires(self):
-        from . import portfoliomanagement as portfoliomanagement_tasks
-
-        expected_result = {
-            "details": portfoliomanagement_tasks.GetVersionIdByVersionName(
-                self.puppet_account_id,
-                self.manifest_file_path,
-                self.portfolio,
-                self.portfolio_id,
-                self.product,
-                self.product_id,
-                self.version,
-                self.account_id,
-                self.region,
-            ),
-        }
-        self.assertEqual(expected_result, self.sut.requires())
 
 
 class ProvisionProductTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
@@ -59,8 +50,11 @@ class ProvisionProductTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 
     launch_name = "adsfdf"
     portfolio = "port1"
+    portfolio_id = "sdsdport1"
     product = "prod1"
+    product_id = "prodsdsd1"
     version = "version1"
+    version_id = "verssdsdsdion1"
     region = "eu-west-0"
     account_id = "09876543211"
 
@@ -82,6 +76,8 @@ class ProvisionProductTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 
     execution = "hub"
 
+    cache_invalidator = "foo"
+
     def setUp(self) -> None:
         from . import provisioning
 
@@ -89,8 +85,11 @@ class ProvisionProductTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             launch_name=self.launch_name,
             portfolio=self.portfolio,
+            portfolio_id=self.portfolio_id,
             product=self.product,
+            product_id=self.product_id,
             version=self.version,
+            version_id=self.version_id,
             region=self.region,
             account_id=self.account_id,
             puppet_account_id=self.puppet_account_id,
@@ -106,6 +105,7 @@ class ProvisionProductTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
             should_use_product_plans=self.should_use_product_plans,
             requested_priority=self.requested_priority,
             execution=self.execution,
+            cache_invalidator=self.cache_invalidator,
         )
 
     def test_params_for_results_display(self):
@@ -114,9 +114,13 @@ class ProvisionProductTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
+            "portfolio_id": self.portfolio_id,
             "product": self.product,
+            "product_id": self.product_id,
             "version": self.version,
+            "version_id": self.version_id,
             "execution": self.execution,
+            "cache_invalidator": self.cache_invalidator,
         }
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 
@@ -202,8 +206,11 @@ class TerminateProductTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 
     launch_name = "adsfdf"
     portfolio = "port1"
+    portfolio_id = "sdsdport1"
     product = "prod1"
+    product_id = "prod1sdsd"
     version = "version1"
+    version_id = "versionsdsd1"
 
     account_id = "09876543211"
     region = "eu-west-0"
@@ -217,6 +224,8 @@ class TerminateProductTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 
     parameters = list()
     ssm_param_inputs = list()
+
+    cache_invalidator = "foo"
 
     def setUp(self) -> None:
         from . import provisioning
@@ -226,8 +235,11 @@ class TerminateProductTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
             puppet_account_id=self.puppet_account_id,
             launch_name=self.launch_name,
             portfolio=self.portfolio,
+            portfolio_id=self.portfolio_id,
             product=self.product,
+            product_id=self.product_id,
             version=self.version,
+            version_id=self.version_id,
             account_id=self.account_id,
             region=self.region,
             retry_count=self.retry_count,
@@ -235,15 +247,21 @@ class TerminateProductTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
             worker_timeout=self.worker_timeout,
             parameters=self.parameters,
             ssm_param_inputs=self.ssm_param_inputs,
+            cache_invalidator=self.cache_invalidator,
         )
 
     def test_params_for_results_display(self):
         expected_result = {
+            "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
+            "portfolio_id": self.portfolio_id,
             "product": self.product,
+            "product_id": self.product_id,
             "version": self.version,
+            "version_id": self.version_id,
+            "cache_invalidator": self.cache_invalidator,
         }
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 
@@ -253,8 +271,11 @@ class TerminateProductDryRunTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 
     launch_name = "adsfdf"
     portfolio = "port1"
+    portfolio_id = "port1_id"
     product = "prod1"
+    product_id = "prod1_id"
     version = "version1"
+    version_id = "version1_id"
 
     account_id = "09876543211"
     region = "eu-west-0"
@@ -269,6 +290,8 @@ class TerminateProductDryRunTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
     parameters = list()
     ssm_param_inputs = list()
 
+    cache_invalidator = "foo"
+
     def setUp(self) -> None:
         from . import provisioning
 
@@ -277,8 +300,11 @@ class TerminateProductDryRunTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
             puppet_account_id=self.puppet_account_id,
             launch_name=self.launch_name,
             portfolio=self.portfolio,
+            portfolio_id=self.portfolio_id,
             product=self.product,
+            product_id=self.product_id,
             version=self.version,
+            version_id=self.version_id,
             account_id=self.account_id,
             region=self.region,
             retry_count=self.retry_count,
@@ -286,6 +312,7 @@ class TerminateProductDryRunTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
             worker_timeout=self.worker_timeout,
             parameters=self.parameters,
             ssm_param_inputs=self.ssm_param_inputs,
+            cache_invalidator=self.cache_invalidator,
         )
 
     def test_params_for_results_display(self):
@@ -294,8 +321,12 @@ class TerminateProductDryRunTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
+            "portfolio_id": self.portfolio_id,
             "product": self.product,
+            "product_id": self.product_id,
             "version": self.version,
+            "version_id": self.version_id,
+            "cache_invalidator": self.cache_invalidator,
         }
         self.assertEqual(expected_result, self.sut.params_for_results_display())
 

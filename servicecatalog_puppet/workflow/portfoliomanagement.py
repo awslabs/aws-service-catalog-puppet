@@ -30,9 +30,6 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
 
     cache_invalidator = luigi.Parameter()
 
-    # def purge_target_if_needed(self, output_location):
-    #     self.remove_output()
-
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -199,6 +196,7 @@ class GetProductIdByProductName(PortfolioManagementTask):
             "region": self.region,
             "product": self.product,
             "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):

@@ -105,11 +105,6 @@ class GeneratePolicies(tasks.PuppetTask):
             ),
         }
 
-    def purge_target_if_needed(self, output_location):
-        if json.loads(open(output_location, "r").read()) != self.get_sharing_policies():
-            self.purge_dependencies_outputs()
-            self.remove_output()
-
     def api_calls_used(self):
         return {
             f"cloudformation.create_or_update_{self.puppet_account_id}_{self.region}": 1,

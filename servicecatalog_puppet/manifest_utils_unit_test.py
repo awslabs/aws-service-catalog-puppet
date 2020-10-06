@@ -81,7 +81,7 @@ class TestManifest(unittest.TestCase):
 
         # exercise
         actual_result = self.sut.get_shares_by_region_portfolio_account(
-            self.puppet_account_id
+            self.puppet_account_id, 'launches'
         )
 
         # verify

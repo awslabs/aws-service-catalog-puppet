@@ -1,4 +1,3 @@
-import os
 from functools import lru_cache
 
 import luigi
@@ -7,24 +6,6 @@ import yaml
 from servicecatalog_puppet import manifest_utils
 
 from servicecatalog_puppet.workflow import tasks
-
-
-class ManifestTask(tasks.PuppetTask):
-    manifest_file_path = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
-
-    def params_for_results_display(self):
-        return {
-            "puppet_account_id": self.puppet_account_id,
-            "manifest_file_path": self.manifest_file_path,
-        }
-
-    def run(self):
-        self.info("started")
-        with open(self.manifest_file_path, "r") as m:
-            manifest = manifest_utils.load(m, self.puppet_account_id)
-        self.write_output(manifest)
-        self.info("Finished")
 
 
 class ManifestMixen(object):
@@ -38,7 +19,6 @@ class ManifestMixen(object):
 
 
 class SectionTask(tasks.PuppetTask, ManifestMixen):
-    # class SectionTask(tasks.PuppetTask, ManifestMixen):
     manifest_file_path = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     should_use_sns = luigi.BoolParameter()
