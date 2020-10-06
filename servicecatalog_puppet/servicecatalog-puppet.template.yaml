@@ -376,6 +376,7 @@ Resources:
                 - servicecatalog-puppet --info expand manifest.yaml
                 - aws s3 sync s3://sc-puppet-caching-bucket-${PUPPET_ACCOUNT_ID}-${PUPPET_REGION}/output output
                 - servicecatalog-puppet --info deploy --num-workers ${NUM_WORKERS} manifest-expanded.yaml
+              finally:
                 - aws s3 sync output s3://sc-puppet-caching-bucket-${PUPPET_ACCOUNT_ID}-${PUPPET_REGION}/output
           artifacts:
             files:
