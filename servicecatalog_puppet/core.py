@@ -339,7 +339,12 @@ def _do_bootstrap(
             "{}.template.yaml".format(constants.BOOTSTRAP_STACK_NAME)
         )
         template = Template(template).render(
-            VERSION=puppet_version, ALL_REGIONS=all_regions, Source=source_args
+            VERSION=puppet_version,
+            ALL_REGIONS=all_regions,
+            Source=source_args,
+            is_caching_enabled=config.is_caching_enabled(
+                puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
+            ),
         )
         template = Template(template).render(
             VERSION=puppet_version, ALL_REGIONS=all_regions, Source=source_args

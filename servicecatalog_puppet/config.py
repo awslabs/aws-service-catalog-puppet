@@ -49,6 +49,16 @@ def get_should_use_sns(puppet_account_id, default_region=None):
 
 
 @functools.lru_cache(maxsize=32)
+def is_caching_enabled(puppet_account_id, default_region=None):
+    logger.info(
+        "getting is_caching_enabled,  default_region: {}".format(default_region)
+    )
+    return get_config(puppet_account_id, default_region).get(
+        "is_caching_enabled", False
+    )
+
+
+@functools.lru_cache(maxsize=32)
 def get_should_use_eventbridge(puppet_account_id, default_region=None):
     logger.info(
         "getting should_use_eventbridge,  default_region: {}".format(default_region)
