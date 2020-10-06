@@ -1076,6 +1076,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         product_id=product_id,
                         portfolio_id=portfolio_id,
                         cache_invalidator=self.cache_invalidator,
+                        manifest_file_path=self.manifest_file_path,
                     )
                 )
 
@@ -1104,6 +1105,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                             product_id=product_id,
                             portfolio_id=portfolio_id,
                             cache_invalidator=self.cache_invalidator,
+                            manifest_file_path=self.manifest_file_path,
                         )
                     )
 
