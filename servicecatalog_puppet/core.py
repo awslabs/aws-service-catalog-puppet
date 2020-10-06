@@ -76,7 +76,9 @@ def reset_provisioned_product_owner(f):
                 )
             )
 
-    runner.run_tasks(puppet_account_id, current_account_id, tasks_to_run, 10)
+    cache_invalidator = str(datetime.now())
+
+    runner.run_tasks(puppet_account_id, current_account_id, tasks_to_run, 10, cache_invalidator=cache_invalidator)
 
 
 def generate_tasks(
@@ -86,6 +88,7 @@ def generate_tasks(
     single_account=None,
     is_dry_run=False,
     execution_mode="hub",
+    cache_invalidator="now"
 ):
     should_use_sns = config.get_should_use_sns(
         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
@@ -93,8 +96,6 @@ def generate_tasks(
     should_use_product_plans = config.get_should_use_product_plans(
         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
     )
-
-    cache_invalidator = str(datetime.now())
 
     return [
         launch_tasks.LaunchSectionTask(
@@ -144,6 +145,8 @@ def deploy(
     execution_mode="hub",
 ):
     logger.info(f"Puppet account id set to {puppet_account_id}")
+    cache_invalidator = str(datetime.now())
+
     tasks_to_run = generate_tasks(
         f,
         puppet_account_id,
@@ -151,6 +154,7 @@ def deploy(
         single_account,
         is_dry_run,
         execution_mode,
+        cache_invalidator,
     )
     runner.run_tasks(
         puppet_account_id,
@@ -160,6 +164,7 @@ def deploy(
         is_dry_run,
         is_list_launches,
         execution_mode,
+        cache_invalidator,
     )
 
 
