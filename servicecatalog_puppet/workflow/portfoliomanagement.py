@@ -327,7 +327,7 @@ class ProvisionActionTask(PortfolioManagementTask):
     region = luigi.Parameter()
     parameters = luigi.DictParameter(default={})
 
-    cache_invalidate = luigi.Parameter()
+    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -339,6 +339,7 @@ class ProvisionActionTask(PortfolioManagementTask):
             "project_name": self.project_name,
             "account_id": self.account_id,
             "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
