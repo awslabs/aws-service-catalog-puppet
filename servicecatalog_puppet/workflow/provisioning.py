@@ -1045,11 +1045,11 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 version_details[
                     "_".join(
                         [
-                            puppet_account_id,
+                            str(puppet_account_id),
                             portfolio,
                             product,
                             version,
-                            account_id,
+                            str(account_id),
                             region,
                         ]
                     )
@@ -1209,7 +1209,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
             version_details[
                 "_".join(
-                    [puppet_account_id, portfolio, product, version, account_id, region]
+                    [str(puppet_account_id), portfolio, product, version, str(account_id), region]
                 )
             ] = portfoliomanagement_tasks.GetVersionDetailsByNames(
                 manifest_file_path=self.manifest_file_path,
@@ -1333,9 +1333,9 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             portfolio_ids[
                 "_".join(
                     [
-                        self.puppet_account_id,
+                        str(self.puppet_account_id),
                         task_def.get("portfolio"),
-                        task_def.get("account_id"),
+                        str(task_def.get("account_id")),
                         task_def.get("region"),
                     ]
                 )
@@ -1366,9 +1366,9 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 portfolio_ids[
                     "_".join(
                         [
-                            self.puppet_account_id,
+                            str(self.puppet_account_id),
                             task_def.get("portfolio"),
-                            task_def.get("account_id"),
+                            str(task_def.get("account_id")),
                             task_def.get("region"),
                         ]
                     )

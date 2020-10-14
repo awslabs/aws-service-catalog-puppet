@@ -202,9 +202,9 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                 for account_id, share in shares_by_account.items():
                     i = "_".join(
                         [
-                            self.puppet_account_id,
+                            str(self.puppet_account_id),
                             portfolio_name,
-                            account_id,
+                            str(account_id),
                             region_name,
                         ]
                     )
@@ -235,9 +235,9 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                 for account_id, share in shares_by_account.items():
                     i = "_".join(
                         [
-                            self.puppet_account_id,
+                            str(self.puppet_account_id),
                             portfolio_name,
-                            account_id,
+                            str(account_id),
                             region_name,
                         ]
                     )
