@@ -1464,7 +1464,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 )
                 tasks.append(create_launch_role_constraints_for_portfolio)
         logger.info(f"tasks len are {len(tasks)}")
-        logger.info(f"tasks are {tasks}")
+        # logger.info(f"tasks are {tasks}")
         return tasks
 
     @lru_cache()
