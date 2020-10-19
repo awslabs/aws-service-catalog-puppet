@@ -34,6 +34,11 @@ deploy:
 	poetry run servicecatalog-puppet --info deploy \
 		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
 
+## @Puppet_commands Runs servicecatalog-puppet --info deploy
+dry-run:
+	poetry run servicecatalog-puppet --info dry-run \
+		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
+
 ## @Puppet_commands Runs servicecatalog-puppet --info deploy for a spoke
 deploy-spoke:
 	poetry run servicecatalog-puppet --info deploy \
