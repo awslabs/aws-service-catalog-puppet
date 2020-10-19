@@ -38,6 +38,8 @@ from servicecatalog_puppet import aws
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import constants
 
+import traceback
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -913,3 +915,23 @@ def release_spoke(puppet_account_id):
         cloudformation.ensure_deleted(
             StackName=f"{constants.BOOTSTRAP_STACK_NAME}-spoke"
         )
+
+
+def wait_for_code_build_in(iam_role_arns):
+    cross_accounts = []
+    index = 0
+    for role in iam_role_arns:
+        cross_accounts.append((role, "waiting-for-code-build-{}".format(index)))
+        index += 1
+
+    with betterboto_client.CrossMultipleAccountsClientContextManager(
+            "codebuild", cross_accounts
+    ) as codebuild:
+        while True:
+            try:
+                result = codebuild.list_projects()
+                logger.info(f"Was able to list projects: {result}")
+                break
+            except Exception as e:
+                logger.error("type error: " + str(e))
+                logger.error(traceback.format_exc())

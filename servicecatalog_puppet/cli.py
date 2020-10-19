@@ -486,5 +486,12 @@ def release_spoke(puppet_account_id):
     core.release_spoke(puppet_account_id)
 
 
+@cli.command()
+@click.argument("iam_role_arns", nargs=-1)
+def wait_for_code_build_in(iam_role_arns):
+    core.wait_for_code_build_in(iam_role_arns)
+    click.echo("AWS CodeBuild is available")
+
+
 if __name__ == "__main__":
     cli()
