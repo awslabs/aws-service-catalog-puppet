@@ -383,7 +383,7 @@ Resources:
               - manifest-expanded.yaml
               - results/*/*
               - output/*/*
-              - *.log
+              - tasks.log
             name: DeployProject
 
       TimeoutInMinutes: 480
@@ -424,7 +424,7 @@ Resources:
             files:
               - results/*/*
               - output/*/*
-              - *.log
+              - tasks.log
             name: DryRunProject
 
       TimeoutInMinutes: 480
@@ -538,7 +538,7 @@ Resources:
               - ServiceCatalogPuppet/manifest-expanded.yaml
               - output/*/*
               - results/*/*
-              - *.log
+              - tasks.log
             name: Deploy
       TimeoutInMinutes: 480
       Tags:
@@ -609,7 +609,7 @@ Resources:
               - ServiceCatalogPuppet/manifest-expanded.yaml
               - output/*/*
               - results/*/*
-              - *.log
+              - tasks.log
             name: Deploy
       TimeoutInMinutes: 480
       Tags:
