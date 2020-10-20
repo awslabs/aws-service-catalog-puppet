@@ -13,8 +13,6 @@ from servicecatalog_puppet import config
 
 from servicecatalog_puppet.workflow import tasks, general
 
-import logging
-
 
 class PortfolioManagementTask(tasks.PuppetTask):
     manifest_file_path = luigi.Parameter()
@@ -217,7 +215,7 @@ class GetProductIdByProductName(PortfolioManagementTask):
         response = self.load_from_input("search_products_as_admin")
         for product_view_details in response.get("ProductViewDetails"):
             product_view = product_view_details.get("ProductViewSummary")
-            logging.info(f"looking at product: {product_view.get('Name')}")
+            self.info(f"looking at product: {product_view.get('Name')}")
             if product_view.get("Name") == self.product:
                 self.info("Found product: {}".format(product_view))
                 product_id = product_view.get("ProductId")
@@ -834,7 +832,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                         version_name,
                         version_details,
                     ) in product_versions_that_should_be_updated.items():
-                        logging.info(
+                        self.info(
                             f"{version_name} is active: {version_details.get('Active')} in hub"
                         )
                         for (
@@ -844,7 +842,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                                 spoke_provisioning_artifact_detail.get("Name")
                                 == version_name
                             ):
-                                logging.info(
+                                self.info(
                                     f"Updating active of {version_name}/{spoke_provisioning_artifact_detail.get('Id')} "
                                     f"in the spoke to {version_details.get('Active')}"
                                 )
@@ -1220,7 +1218,7 @@ class SharePortfolioTask(PortfolioManagementTask):
         with open(path, "w") as f:
             f.write("{}")
 
-        logging.info(f"{self.uid}: checking {self.portfolio_id} with {self.account_id}")
+        self.info(f"{self.uid}: checking {self.portfolio_id} with {self.account_id}")
 
         with betterboto_client.ClientContextManager(
             "servicecatalog", region_name=self.region
@@ -1230,11 +1228,11 @@ class SharePortfolioTask(PortfolioManagementTask):
             ).get("AccountIds")
 
             if self.account_id in account_ids:
-                logging.info(
+                self.info(
                     f"{self.uid}: not sharing {self.portfolio_id} with {self.account_id} as was previously shared"
                 )
             else:
-                logging.info(
+                self.info(
                     f"{self.uid}: sharing {self.portfolio_id} with {self.account_id}"
                 )
                 servicecatalog.create_portfolio_share(
@@ -1297,7 +1295,7 @@ class ShareAndAcceptPortfolioTask(PortfolioManagementTask):
                     was_accepted = True
                     break
             if not was_accepted:
-                logging.info(f"{self.uid}: accepting {self.portfolio_id}")
+                self.info(f"{self.uid}: accepting {self.portfolio_id}")
                 cross_account_servicecatalog.accept_portfolio_share(
                     PortfolioId=self.portfolio_id,
                 )

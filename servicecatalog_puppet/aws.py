@@ -177,17 +177,17 @@ def provision_product_with_plan(
     plan_status = "CREATE_IN_PROGRESS"
 
     while plan_status == "CREATE_IN_PROGRESS":
-        response = service_catalog.describe_provisioned_product_plan(PlanId=plan_id)
-        plan_status = response.get("ProvisionedProductPlanDetails").get("Status")
+        describe_provisioned_product_plan_response = service_catalog.describe_provisioned_product_plan(PlanId=plan_id)
+        plan_status = describe_provisioned_product_plan_response.get("ProvisionedProductPlanDetails").get("Status")
         logger.info(f"{uid} :: Waiting for product plan: {plan_status}")
         time.sleep(5)
 
     if plan_status in ["CREATE_SUCCESS", "EXECUTE_SUCCESS"]:
         logger.info(
             f"{uid} :: Plan created, "
-            f"changes: {yaml.safe_dump(response.get('ResourceChanges'))}"
+            f"changes: {yaml.safe_dump(describe_provisioned_product_plan_response.get('ResourceChanges'))}"
         )
-        if len(response.get("ResourceChanges")) == 0:
+        if len(describe_provisioned_product_plan_response.get("ResourceChanges")) == 0:
             logger.warning(
                 f"{uid} :: There are no resource changes in this plan, "
                 f"running this anyway - your product will be marked as tainted as your CloudFormation changeset"
@@ -241,9 +241,15 @@ def provision_product_with_plan(
             raise Exception(f"{uid} :: Plan execute failed: {plan_execute_status}")
 
     else:
-        raise Exception(
-            f"{uid} :: Plan failed: {response.get('ProvisionedProductPlanDetails').get('StatusMessage')}"
-        )
+        if plan_status == "CREATE_FAILED" and describe_provisioned_product_plan_response.get('ProvisionedProductPlanDetails').get('StatusMessage') == "No updates are to be performed.":
+            logger.warn(f"{uid} :: Swallowing that plan {plan_status} due to {describe_provisioned_product_plan_response.get('ProvisionedProductPlanDetails').get('StatusMessage')}")
+            if describe_provisioned_product_plan_response.get("ProvisionedProductPlanDetails", {}).get("ProvisionProductId", None) is None:
+                raise Exception(f"The plan for {uid} resulted in no changes and there was no previously provisioned product")
+            return describe_provisioned_product_plan_response.get("ProvisionedProductPlanDetails", {}).get("ProvisionProductId")
+        else:
+            raise Exception(
+                f"{uid} :: Plan failed ({plan_status}): {describe_provisioned_product_plan_response.get('ProvisionedProductPlanDetails').get('StatusMessage')}"
+            )
 
 
 def provision_product(
