@@ -1076,18 +1076,11 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     )
                 )
 
-                self.info(f"2. provisioning_parameters is {provisioning_parameters}")
                 if self.is_dry_run:
-                    self.info(
-                        f"3. provisioning_parameters is {provisioning_parameters}"
-                    )
                     provisions.append(
                         ProvisionProductDryRunTask(**provisioning_parameters)
                     )
                 else:
-                    self.info(
-                        f"4. provisioning_parameters is {provisioning_parameters}"
-                    )
                     provisions.append(ProvisionProductTask(**provisioning_parameters))
 
             elif task_status == constants.TERMINATED:
@@ -1113,7 +1106,6 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     provisions.append(TerminateProductTask(**terminating_parameters))
             else:
                 raise Exception(f"Unsupported status of {task_status}")
-        self.info(f"len of provisions: {len(provisions)}")
         return provisions
 
     def requires(self):
