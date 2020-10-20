@@ -13,6 +13,12 @@ import math
 
 logger = logging.getLogger("tasks")
 
+fh = logging.FileHandler('tasks.log')
+fh.setLevel(logging.INFO)
+formatter = logging.Formatter('%(levelname)s %(threadName)s [%(filename)s:%(lineno)d] %(message)s')
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+
 
 class PuppetTask(luigi.Task):
     def read_from_input(self, input_name):
@@ -27,6 +33,9 @@ class PuppetTask(luigi.Task):
 
     def error(self, message):
         logger.error(f"{self.uid}: {message}")
+
+    def warning(self, message):
+        logger.warning(f"{self.uid}: {message}")
 
     def api_calls_used(self):
         return []

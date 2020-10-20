@@ -18,10 +18,6 @@ from servicecatalog_puppet.workflow import (
 )
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 
-import logging
-
-logger = logging.getLogger("tasks")
-
 
 class ProvisioningTask(tasks.PuppetTask):
     manifest_file_path = luigi.Parameter()
@@ -294,7 +290,7 @@ class ProvisionProductTask(ProvisioningTask):
                                 f"[{self.uid}] current cfn stack_status is {stack_status}"
                             )
                         if stack_status == "UPDATE_ROLLBACK_COMPLETE":
-                            logger.warning(
+                            self.warning(
                                 f"[{self.uid}] SC-{self.account_id}-{provisioned_product_id} has a status of "
                                 f"{stack_status}.  This may need manual resolution."
                             )
@@ -612,7 +608,7 @@ class TerminateProductTask(ProvisioningTask):
             f"sc-{self.region}-{self.account_id}",
             region_name=self.region,
         ) as service_catalog:
-            logger.info(
+            self.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures"
             )
             provisioned_product_id, provisioning_artifact_id = aws.ensure_is_terminated(
@@ -625,25 +621,25 @@ class TerminateProductTask(ProvisioningTask):
 
             for ssm_param_output in self.ssm_param_outputs:
                 param_name = ssm_param_output.get("param_name")
-                logger.info(
+                self.info(
                     f"[{self.launch_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
                 )
                 with betterboto_client.ClientContextManager("ssm") as ssm:
                     try:
                         # todo push into another task
                         ssm.delete_parameter(Name=param_name,)
-                        logger.info(
+                        self.info(
                             f"[{self.launch_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
                         )
                     except ssm.exceptions.ParameterNotFound:
-                        logger.info(
+                        self.info(
                             f"[{self.launch_name}] {self.account_id}:{self.region} :: SSM Param: {param_name} not found"
                         )
 
             with self.output().open("w") as f:
                 f.write(json.dumps(log_output, indent=4, default=str,))
 
-            logger.info(
+            self.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: finished terminating"
             )
 
@@ -722,7 +718,7 @@ class TerminateProductDryRunTask(ProvisioningTask):
             f"sc-{self.region}-{self.account_id}",
             region_name=self.region,
         ) as service_catalog:
-            logger.info(
+            self.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures"
             )
             r = aws.get_provisioned_product_details(
@@ -779,7 +775,7 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
 
     def run(self):
         logger_prefix = f"[{self.launch_name}] {self.account_id}:{self.region}"
-        logger.info(f"{logger_prefix} :: starting ResetProvisionedProductOwnerTask")
+        self.info(f"{logger_prefix} :: starting ResetProvisionedProductOwnerTask")
 
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
@@ -787,7 +783,7 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
             f"sc-{self.region}-{self.account_id}",
             region_name=self.region,
         ) as service_catalog:
-            logger.info(
+            self.info(
                 f"[{logger_prefix} :: Checking if existing provisioned product exists"
             )
             all_results = service_catalog.scan_provisioned_products_single_page(
@@ -797,7 +793,7 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
             for result in all_results:
                 if result.get("Name") == self.launch_name:
                     provisioned_product_id = result.get("Id")
-                    logger.info(
+                    self.info(
                         f"[{logger_prefix} :: Ensuring current provisioned product owner is correct"
                     )
                     changes_made.append(result)
@@ -1250,7 +1246,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         self.info("started")
         launch_tasks_def = self.get_launch_tasks_defs()
 
-        logger.info(f"{self.uid} starting pre actions")
+        self.info(f"{self.uid} starting pre actions")
         pre_actions = self.manifest.get_actions_from(
             self.launch_name, "pre", "launches"
         )
@@ -1263,14 +1259,14 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             )
             for p in pre_actions
         ]
-        logger.info(f"{self.uid} finished pre actions")
+        self.info(f"{self.uid} finished pre actions")
 
-        logger.info(f"{self.uid} starting launches")
+        self.info(f"{self.uid} starting launches")
         ls = self.generate_provisions(launch_tasks_def, self.manifest)
         yield ls
-        logger.info(f"{self.uid} finished launches")
+        self.info(f"{self.uid} finished launches")
 
-        logger.info(f"{self.uid} starting post actions")
+        self.info(f"{self.uid} starting post actions")
         post_actions = self.manifest.get_actions_from(
             self.launch_name, "post", "launches"
         )
@@ -1283,7 +1279,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             )
             for p in post_actions
         ]
-        logger.info(f"{self.uid} finished post actions")
+        self.info(f"{self.uid} finished post actions")
 
         self.write_output(dict(**self.params_for_results_display(), skipped=False))
         self.info("Finished")
@@ -1463,8 +1459,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     product_generation_method=product_generation_method,
                 )
                 tasks.append(create_launch_role_constraints_for_portfolio)
-        logger.info(f"tasks len are {len(tasks)}")
-        # logger.info(f"tasks are {tasks}")
+        self.info(f"tasks len are {len(tasks)}")
         return tasks
 
     @lru_cache()
@@ -1537,7 +1532,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         self.info(f"starting launches")
         all_t = self.generate_tasks(task_defs)
         for t in all_t:
-            self.info(f"shedddddduling {t}")
             yield t
         self.info(f"{self.uid} finished launches")
 
