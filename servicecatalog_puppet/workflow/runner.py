@@ -23,9 +23,11 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-fh = logging.FileHandler('tasks.log')
+fh = logging.FileHandler("tasks.log")
 fh.setLevel(logging.INFO)
-formatter = logging.Formatter('%(levelname)s %(threadName)s [%(filename)s:%(lineno)d] %(message)s')
+formatter = logging.Formatter(
+    "%(levelname)s %(threadName)s [%(filename)s:%(lineno)d] %(message)s"
+)
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 

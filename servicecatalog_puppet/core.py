@@ -925,7 +925,7 @@ def wait_for_code_build_in(iam_role_arns):
         index += 1
 
     with betterboto_client.CrossMultipleAccountsClientContextManager(
-            "codebuild", cross_accounts
+        "codebuild", cross_accounts
     ) as codebuild:
         while True:
             try:

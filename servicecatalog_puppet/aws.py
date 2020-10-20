@@ -177,8 +177,12 @@ def provision_product_with_plan(
     plan_status = "CREATE_IN_PROGRESS"
 
     while plan_status == "CREATE_IN_PROGRESS":
-        describe_provisioned_product_plan_response = service_catalog.describe_provisioned_product_plan(PlanId=plan_id)
-        plan_status = describe_provisioned_product_plan_response.get("ProvisionedProductPlanDetails").get("Status")
+        describe_provisioned_product_plan_response = service_catalog.describe_provisioned_product_plan(
+            PlanId=plan_id
+        )
+        plan_status = describe_provisioned_product_plan_response.get(
+            "ProvisionedProductPlanDetails"
+        ).get("Status")
         logger.info(f"{uid} :: Waiting for product plan: {plan_status}")
         time.sleep(5)
 
@@ -241,11 +245,28 @@ def provision_product_with_plan(
             raise Exception(f"{uid} :: Plan execute failed: {plan_execute_status}")
 
     else:
-        if plan_status == "CREATE_FAILED" and describe_provisioned_product_plan_response.get('ProvisionedProductPlanDetails').get('StatusMessage') == "No updates are to be performed.":
-            logger.warn(f"{uid} :: Swallowing that plan {plan_status} due to {describe_provisioned_product_plan_response.get('ProvisionedProductPlanDetails').get('StatusMessage')}")
-            if describe_provisioned_product_plan_response.get("ProvisionedProductPlanDetails", {}).get("ProvisionProductId", None) is None:
-                raise Exception(f"The plan for {uid} resulted in no changes and there was no previously provisioned product")
-            return describe_provisioned_product_plan_response.get("ProvisionedProductPlanDetails", {}).get("ProvisionProductId")
+        if (
+            plan_status == "CREATE_FAILED"
+            and describe_provisioned_product_plan_response.get(
+                "ProvisionedProductPlanDetails"
+            ).get("StatusMessage")
+            == "No updates are to be performed."
+        ):
+            logger.warn(
+                f"{uid} :: Swallowing that plan {plan_status} due to {describe_provisioned_product_plan_response.get('ProvisionedProductPlanDetails').get('StatusMessage')}"
+            )
+            if (
+                describe_provisioned_product_plan_response.get(
+                    "ProvisionedProductPlanDetails", {}
+                ).get("ProvisionProductId", None)
+                is None
+            ):
+                raise Exception(
+                    f"The plan for {uid} resulted in no changes and there was no previously provisioned product"
+                )
+            return describe_provisioned_product_plan_response.get(
+                "ProvisionedProductPlanDetails", {}
+            ).get("ProvisionProductId")
         else:
             raise Exception(
                 f"{uid} :: Plan failed ({plan_status}): {describe_provisioned_product_plan_response.get('ProvisionedProductPlanDetails').get('StatusMessage')}"

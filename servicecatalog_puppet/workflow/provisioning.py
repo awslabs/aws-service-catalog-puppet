@@ -1205,7 +1205,14 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
             version_details[
                 "_".join(
-                    [str(puppet_account_id), portfolio, product, version, str(account_id), region]
+                    [
+                        str(puppet_account_id),
+                        portfolio,
+                        product,
+                        version,
+                        str(account_id),
+                        region,
+                    ]
                 )
             ] = portfoliomanagement_tasks.GetVersionDetailsByNames(
                 manifest_file_path=self.manifest_file_path,
