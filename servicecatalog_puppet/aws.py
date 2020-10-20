@@ -245,13 +245,14 @@ def provision_product_with_plan(
             raise Exception(f"{uid} :: Plan execute failed: {plan_execute_status}")
 
     else:
-        if (
-            plan_status == "CREATE_FAILED"
-            and describe_provisioned_product_plan_response.get(
-                "ProvisionedProductPlanDetails"
-            ).get("StatusMessage")
-            == "No updates are to be performed."
-        ):
+        if plan_status == "CREATE_FAILED" and describe_provisioned_product_plan_response.get(
+            "ProvisionedProductPlanDetails"
+        ).get(
+            "StatusMessage"
+        ) in [
+            "No updates are to be performed.",
+            "The submitted information didn't contain changes. Submit different information to create a change set.",
+        ]:
             logger.warn(
                 f"{uid} :: Swallowing that plan {plan_status} due to {describe_provisioned_product_plan_response.get('ProvisionedProductPlanDetails').get('StatusMessage')}"
             )
