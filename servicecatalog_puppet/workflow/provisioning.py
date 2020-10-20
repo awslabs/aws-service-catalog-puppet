@@ -1212,7 +1212,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 portfolio=portfolio,
                 product=product,
                 version=version,
-                account_id=account_id,
+                account_id=puppet_account_id,
                 region=region,
                 cache_invalidator=self.cache_invalidator,
             )
