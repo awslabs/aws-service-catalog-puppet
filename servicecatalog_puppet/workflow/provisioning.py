@@ -194,7 +194,6 @@ class ProvisionProductTask(ProvisioningTask):
         }
 
     def run(self):
-        self.info(f"starting deploy try {self.try_count} of {self.retry_count}")
         task_output = dict(
             cache_details=dict(product_id=self.product_id, version_id=self.version_id,)
         )
@@ -208,7 +207,6 @@ class ProvisionProductTask(ProvisioningTask):
             f"sc-{self.region}-{self.account_id}",
             region_name=self.region,
         ) as service_catalog:
-            self.info("looking for previous failures")
             path_id = aws.get_path_for_product(
                 service_catalog, self.product_id, self.portfolio
             )
@@ -1323,6 +1321,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         task_defs = self.get_task_defs()
         portfolio_ids = dict()
 
+        self.info("requires:about to iter")
         for task_def in task_defs:
             # if task_def.get("status") == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED:  # Dodgy if
             portfolio_ids[
@@ -1338,14 +1337,16 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 portfolio=task_def.get("portfolio"),
-                account_id=task_def.get("account_id"),
+                account_id=self.puppet_account_id,
                 region=task_def.get("region"),
                 cache_invalidator=self.cache_invalidator,
             )
 
+        self.info("requires:about to return")
         return dict(dependencies=dependencies, portfolio_ids=portfolio_ids,)
 
     def generate_tasks(self, task_defs):
+        self.info("generate_tasks in")
         if len(task_defs) == 0:
             logger.warning(
                 f"The configuration for this share does not include any target accounts: {self.spoke_local_portfolio_name}"
@@ -1357,6 +1358,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         portfolio_ids = self.input().get("portfolio_ids")
 
         for task_def in task_defs:
+            self.info("generate_tasks main loop iteration 1")
             p = (
                 portfolio_ids[
                     "_".join(
@@ -1378,6 +1380,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 "product_generation_method", "copy"
             )
 
+            self.info("generate_tasks main loop iteration 2")
             if (
                 task_def.get("status")
                 == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_TERMINATED
@@ -1411,6 +1414,8 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     **create_spoke_local_portfolio_task_params
                 )
                 tasks.append(create_spoke_local_portfolio_task)
+
+            self.info("generate_tasks main loop iteration 3")
 
             create_spoke_local_portfolio_task_as_dependency_params = dict(
                 manifest_file_path=self.manifest_file_path,
@@ -1459,10 +1464,12 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 )
                 tasks.append(create_launch_role_constraints_for_portfolio)
         self.info(f"tasks len are {len(tasks)}")
+        self.info("generate_tasks out")
         return tasks
 
     @lru_cache()
     def get_task_defs(self):
+        self.info("get_task_defs in")
         spoke_local_portfolio_details = self.manifest.get("spoke-local-portfolios").get(
             self.spoke_local_portfolio_name
         )
@@ -1494,6 +1501,8 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 self.manifest, spoke_local_portfolio_details
             )
         )
+
+        self.info("get_task_defs out")
 
         return self.manifest.get_task_defs_from_details(
             self.puppet_account_id,
@@ -1529,9 +1538,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         self.info(f"finished pre actions")
 
         self.info(f"starting launches")
-        all_t = self.generate_tasks(task_defs)
-        for t in all_t:
-            yield t
+        yield self.generate_tasks(task_defs)
         self.info(f"{self.uid} finished launches")
 
         self.info(f"{self.uid} starting post actions")
