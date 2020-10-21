@@ -1339,7 +1339,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 portfolio=task_def.get("portfolio"),
-                account_id=task_def.get("account_id"),
+                account_id=self.puppet_account_id,
                 region=task_def.get("region"),
                 cache_invalidator=self.cache_invalidator,
             )
