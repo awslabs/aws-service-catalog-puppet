@@ -1540,9 +1540,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         self.info(f"finished pre actions")
 
         self.info(f"starting launches")
-        all_t = self.generate_tasks(task_defs)
-        # for t in all_t:
-        yield all_t
+        yield self.generate_tasks(task_defs)
         self.info(f"{self.uid} finished launches")
 
         self.info(f"{self.uid} starting post actions")
