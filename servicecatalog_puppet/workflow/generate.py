@@ -111,7 +111,6 @@ class GeneratePolicies(tasks.PuppetTask):
         }
 
     def run(self):
-        self.info("running")
         template = self.read_from_input("template")
         with betterboto_client.CrossAccountClientContextManager(
             "cloudformation",
@@ -262,5 +261,4 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                     )
 
         yield tasks
-        self.info("running")
         self.write_output(self.params_for_results_display())

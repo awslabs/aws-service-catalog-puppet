@@ -194,7 +194,6 @@ class ProvisionProductTask(ProvisioningTask):
         }
 
     def run(self):
-        self.info(f"starting deploy try {self.try_count} of {self.retry_count}")
         task_output = dict(
             cache_details=dict(product_id=self.product_id, version_id=self.version_id,)
         )
@@ -208,7 +207,6 @@ class ProvisionProductTask(ProvisioningTask):
             f"sc-{self.region}-{self.account_id}",
             region_name=self.region,
         ) as service_catalog:
-            self.info("looking for previous failures")
             path_id = aws.get_path_for_product(
                 service_catalog, self.product_id, self.portfolio
             )

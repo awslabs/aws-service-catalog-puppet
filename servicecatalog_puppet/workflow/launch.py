@@ -13,8 +13,6 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
         }
 
     def requires(self):
-        self.info("requires in")
-
         requirements = list()
 
         if self.execution_mode == "hub":

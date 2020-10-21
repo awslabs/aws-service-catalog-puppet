@@ -301,7 +301,6 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
             return result
 
     def run(self):
-        self.info("run")
         result = self.get_portfolio()
         self.write_output(
             {
@@ -415,7 +414,6 @@ class CreateSpokeLocalPortfolioTask(PortfolioManagementTask):
         }
 
     def requires(self):
-        self.info("requires")
         return {
             "create_share_for_account_launch_region": CreateShareForAccountLaunchRegion(
                 manifest_file_path=self.manifest_file_path,
@@ -442,7 +440,6 @@ class CreateSpokeLocalPortfolioTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        self.info(f"running")
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with self.input().get("puppet_portfolio").open("r") as f:
             portfolio_details = json.loads(f.read())
@@ -459,7 +456,6 @@ class CreateSpokeLocalPortfolioTask(PortfolioManagementTask):
                 portfolio_details.get("description"),
             )
         self.write_output(spoke_portfolio)
-        self.info(f"running complete")
 
 
 class CreateAssociationsForPortfolioTask(PortfolioManagementTask):
@@ -507,7 +503,6 @@ class CreateAssociationsForPortfolioTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        self.info(f"starting")
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
 
         with self.input().get("create_spoke_local_portfolio_task").open("r") as f:
@@ -542,7 +537,6 @@ class CreateAssociationsForPortfolioTask(PortfolioManagementTask):
                 "Stacks"
             )[0]
             self.write_output(result)
-            self.info(f"Finished")
 
 
 class GetProductsAndProvisioningArtifactsTask(PortfolioManagementTask):
@@ -669,8 +663,6 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        self.info(f"starting to import into spoke")
-
         with self.input().get("create_spoke_local_portfolio").open("r") as f:
             spoke_portfolio = json.loads(f.read())
         portfolio_id = spoke_portfolio.get("Id")
@@ -706,7 +698,6 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                     "CopyOptions": ["CopyTags",],
                 }
 
-                self.info(f"searching in spoke for product")
                 role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
                 with betterboto_client.CrossAccountClientContextManager(
                     "servicecatalog",
@@ -866,7 +857,6 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                     default=str,
                 )
             )
-        self.info(f"Finished importing")
 
 
 class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
@@ -927,8 +917,6 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        self.info(f"starting to import into spoke")
-
         with self.input().get("create_spoke_local_portfolio").open("r") as f:
             spoke_portfolio = json.loads(f.read())
         portfolio_id = spoke_portfolio.get("Id")
@@ -1008,7 +996,6 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                     default=str,
                 )
             )
-        self.info(f"Finished importing")
 
 
 class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
@@ -1066,7 +1053,6 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
         ]
 
     def run(self):
-        self.info(f"Creating launch role constraints for hub")
         role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
         with self.input().get("create_spoke_local_portfolio_task").open("r") as f:
             dependency_output = json.loads(f.read())
@@ -1209,8 +1195,6 @@ class SharePortfolioTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        self.info("run")
-
         p = f"data/shares/{self.region}/{self.portfolio}/"
         if not os.path.exists(p):
             os.makedirs(p, exist_ok=True)
@@ -1278,8 +1262,6 @@ class ShareAndAcceptPortfolioTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        self.info(f"starting")
-
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
@@ -1348,7 +1330,6 @@ class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):
         }
 
     def run(self):
-        self.info("run")
         p = f"data/associations/{self.region}/{self.portfolio}/"
         if not os.path.exists(p):
             os.makedirs(p, exist_ok=True)
@@ -1387,7 +1368,6 @@ class CreateShareForAccountLaunchRegion(PortfolioManagementTask):
         }
 
     def requires(self):
-        self.info("requires")
         if self.account_id == self.puppet_account_id:
             return CreateAssociationsInPythonForPortfolioTask(
                 manifest_file_path=self.manifest_file_path,
@@ -1431,7 +1411,6 @@ class DisassociateProductFromPortfolio(PortfolioManagementTask):
         }
 
     def run(self):
-        self.info("Starting")
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
@@ -1488,7 +1467,6 @@ class DisassociateProductsFromPortfolio(PortfolioManagementTask):
         return requirements
 
     def run(self):
-        self.info("Starting")
         self.write_output(self.params_for_results_display())
 
 
@@ -1510,8 +1488,6 @@ class DeleteLocalPortfolio(PortfolioManagementTask):
         }
 
     def run(self):
-        self.info("Starting")
-
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
@@ -1542,8 +1518,6 @@ class DeletePortfolioShare(PortfolioManagementTask):
         }
 
     def run(self):
-        self.info("Starting")
-
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
