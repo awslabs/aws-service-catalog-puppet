@@ -326,9 +326,7 @@ class Manifest(dict):
         configuration,
         launch_or_spoke_local_portfolio,
     ):
-        logger.info("get_task_defs_from_details in")
         launch_details = self.get(launch_or_spoke_local_portfolio).get(launch_name)
-        logger.info(launch_details)
         accounts = self.get("accounts")
         if launch_details is None:
             raise Exception(f"launch_details is None for {launch_name}")
@@ -340,7 +338,6 @@ class Manifest(dict):
             deploy_to = launch_details.get("deploy_to") or launch_details.get(
                 "share_with"
             )
-        logger.info("get_task_defs_from_details 1")
         task_defs = []
         for tag_list_item in deploy_to.get("tags", []):
             for account in accounts:
@@ -401,7 +398,6 @@ class Manifest(dict):
                                 f"Unexpected regions of {regions} set for launch {launch_name}"
                             )
 
-        logger.info("get_task_defs_from_details 2")
         for account_list_item in deploy_to.get("accounts", []):
             for account in accounts:
                 if account.get("account_id") == account_list_item.get("account_id"):
@@ -460,5 +456,4 @@ class Manifest(dict):
                         raise Exception(
                             f"Unexpected regions of {regions} set for launch {launch_name}"
                         )
-        logger.info("get_task_defs_from_details out")
         return task_defs
