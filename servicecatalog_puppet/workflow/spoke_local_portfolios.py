@@ -41,7 +41,7 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
                     is_dry_run=self.is_dry_run,
                     depends_on=spoke_local_portfolio.get("depends_on", []),
                     sharing_mode=spoke_local_portfolio.get(
-                        "sharing_mode", constants.SHARING_MODE_ACCOUNT
+                        "sharing_mode", constants.SHARING_MODE_DEFAULT
                     ),
                     cache_invalidator=self.cache_invalidator,
                 )

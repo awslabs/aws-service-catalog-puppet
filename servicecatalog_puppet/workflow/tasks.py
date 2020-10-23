@@ -15,6 +15,17 @@ logger = logging.getLogger("tasks")
 logger.setLevel(logging.INFO)
 
 
+def unwrap(what):
+    if hasattr(what, "get_wrapped"):
+        thing = what.get_wrapped()
+    else:
+        thing = what
+    if isinstance(what, dict):
+        for k, v in thing.items():
+            thing[k] = unwrap(v)
+    return thing
+
+
 class PuppetTask(luigi.Task):
     def read_from_input(self, input_name):
         with self.input().get(input_name).open("r") as f:
@@ -125,6 +136,7 @@ class GetSSMParamTask(PuppetTask):
                         "Name": self.name,
                         "Region": self.region,
                         "Value": p.get("Parameter").get("Value"),
+                        "Version": p.get("Parameter").get("Version"),
                     }
                 )
             except ssm.exceptions.ParameterNotFound as e:
