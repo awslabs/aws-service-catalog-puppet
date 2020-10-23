@@ -54,6 +54,18 @@ schema;map_account_id:
         - type: str
     parameters:
       include: map_params
+    exclude:
+      type: map
+      mapping:
+        accounts:
+          type: seq
+          sequence:
+            - type: str
+        ous:
+          type: seq
+          sequence:
+            - type: str
+
 
 schema;map_deploy_to:
   type: map
@@ -90,6 +102,8 @@ schema;map_launches:
           type: str
         version:
           type: str
+        sharing_mode:
+          type: str
         status:
           type: str
           enum: ['provisioned', 'terminated']
@@ -110,6 +124,11 @@ schema;map_spoke_local_portfolios:
       mapping:
         portfolio:
           type: str
+        sharing_mode:
+          type: str
+        product_generation_method:
+          type: str
+          enum: ['import', 'copy']
         associations:
           type: seq
           sequence:
@@ -157,6 +176,18 @@ schema;map_account_ou:
         - type: str
     parameters:
       include: map_params
+    exclude:
+      type: map
+      mapping:
+        accounts:
+          type: seq
+          sequence:
+            - type: str
+        ous:
+          type: seq
+          sequence:
+            - type: str
+
 
 type: map
 func: ext_schema

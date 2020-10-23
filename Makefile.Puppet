@@ -52,3 +52,6 @@ deploy-spoke:
 		--should-forward-failures-to-opscenter true \
 		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
 
+## @Puppet_commands Runs servicecatalog-puppet validate for a spoke
+validate:
+	poetry run servicecatalog-puppet validate ignored/src/ServiceCatalogPuppet/manifest.yaml
