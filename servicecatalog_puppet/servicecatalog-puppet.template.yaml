@@ -544,6 +544,71 @@ Resources:
       Tags:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
+
+
+  SingleAccountRunWithCallbackProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: servicecatalog-puppet-single-account-run-with-callback
+      Description: "Runs puppet for a single account - SINGLE_ACCOUNT_ID and then does a http put"
+      ServiceRole: !GetAtt DeployRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: linuxContainer
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        EnvironmentVariables:
+          - Name: SINGLE_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: CHANGE_ME
+          - Name: GIT_REPO
+            Type: PLAINTEXT
+            Value: !GetAtt CodeRepo.CloneUrlHttp
+          - Name: PUPPET_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: !Ref AWS::AccountId
+          - Name: PUPPET_REGION
+            Type: PLAINTEXT
+            Value: !Ref AWS::Region
+          - Name: CALLBACK_URL
+            Type: PLAINTEXT
+            Value: CHANGE_ME
+
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                python: 3.x
+              commands:
+          {% if 'http' in VERSION %}
+                - pip install {{ VERSION }}
+          {% else %}
+                - pip install aws-service-catalog-puppet=={{ VERSION }}
+          {% endif %}
+            build:
+              commands:
+                - git clone --config 'credential.helper=!aws codecommit credential-helper $@' --config 'credential.UseHttpPath=true' ${CodeRepo.CloneUrlHttp}
+                - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml
+                {% if is_caching_enabled %}- aws s3 sync --quiet s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output output{% endif %}
+                - servicecatalog-puppet --info deploy --on-complete-url $CALLBACK_URL ServiceCatalogPuppet/manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID
+              {% if is_caching_enabled %}finally:
+                - aws s3 sync --quiet output s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output{% endif %}
+          artifacts:
+            files:
+              - ServiceCatalogPuppet/manifest.yaml
+              - ServiceCatalogPuppet/manifest-expanded.yaml
+              - output/*/*
+              - results/*/*
+              - tasks.log
+            name: Deploy
+      TimeoutInMinutes: 480
+      Tags:
+        - Key: "ServiceCatalogPuppet:Actor"
+          Value: "Framework"
   {% endif %}
 
   {% if Source.Provider.lower() == 'github' %}
@@ -601,6 +666,79 @@ Resources:
                 - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml
                 {% if is_caching_enabled %}- aws s3 sync --quiet s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output output{% endif %}
                 - servicecatalog-puppet --info deploy ServiceCatalogPuppet/manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID
+              {% if is_caching_enabled %}finally:
+                - aws s3 sync --quiet output s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output{% endif %}
+          artifacts:
+            files:
+              - ServiceCatalogPuppet/manifest.yaml
+              - ServiceCatalogPuppet/manifest-expanded.yaml
+              - output/*/*
+              - results/*/*
+              - tasks.log
+            name: Deploy
+      TimeoutInMinutes: 480
+      Tags:
+        - Key: "ServiceCatalogPuppet:Actor"
+          Value: "Framework"
+
+
+  SingleAccountRunWithCallbackProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: servicecatalog-puppet-single-account-run-with-callback
+      Description: "Runs puppet for a single account - SINGLE_ACCOUNT_ID and then does a http put to the given url"
+      ServiceRole: !GetAtt DeployRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: linuxContainer
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        EnvironmentVariables:
+          - Name: SINGLE_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: CHANGE_ME
+          - Name: OWNER
+            Type: PLAINTEXT
+            Value: {{ Source['Configuration']['Owner'] }}
+          - Name: REPO
+            Type: PLAINTEXT
+            Value: {{ Source['Configuration']['Repo'] }}
+          - Name: PAT
+            Type: SECRETS_MANAGER
+            Value: {{ Source['Configuration']['SecretsManagerSecret'] }}
+          - Name: PUPPET_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: !Ref AWS::AccountId
+          - Name: PUPPET_REGION
+            Type: PLAINTEXT
+            Value: !Ref AWS::Region
+          - Name: CALLBACK_URL
+            Type: PLAINTEXT
+            Value: CHANGE_ME
+
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                python: 3.x
+              commands:
+          {% if 'http' in VERSION %}
+                - pip install {{ VERSION }}
+          {% else %}
+                - pip install aws-service-catalog-puppet=={{ VERSION }}
+          {% endif %}
+            build:
+              commands:
+                - export URL=https://$(echo $PAT | jq -r .SecretToken)@github.com/$OWNER/$REPO.git
+                - git clone $URL ServiceCatalogPuppet
+                - cd ServiceCatalogPuppet && git checkout {{ Source['Configuration']['Branch'] }} && cd -
+                - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml
+                {% if is_caching_enabled %}- aws s3 sync --quiet s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output output{% endif %}
+                - servicecatalog-puppet --info deploy --on-complete-url $CALLBACK_URL ServiceCatalogPuppet/manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID
               {% if is_caching_enabled %}finally:
                 - aws s3 sync --quiet output s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output{% endif %}
           artifacts:

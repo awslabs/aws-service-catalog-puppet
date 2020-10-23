@@ -34,7 +34,9 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
 
-    retry_count = 5
+    @property
+    def retry_count(self):
+        return 5
 
     def params_for_results_display(self):
         return {
@@ -194,9 +196,16 @@ class ProvisionProductTask(ProvisioningTask):
         }
 
     def run(self):
+        ssm_params = dict()
         task_output = dict(
-            cache_details=dict(product_id=self.product_id, version_id=self.version_id,)
+            **self.params_for_results_display(),
+            account_parameters=tasks.unwrap(self.account_parameters),
+            launch_parameters=tasks.unwrap(self.launch_parameters),
+            manifest_parameters=tasks.unwrap(self.manifest_parameters),
+            ssm_params=ssm_params,
         )
+        for k, v in self.input().get("ssm_params").items():
+            ssm_params[k] = json.loads(v.open("r").read())
 
         all_params = self.get_all_params()
 
@@ -381,12 +390,8 @@ class ProvisionProductTask(ProvisioningTask):
                                     f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
                                 )
 
-                    task_output.update(stack_details)
                     self.write_output(task_output)
                 else:
-                    task_output.update(
-                        {"provisioned_product_id": provisioned_product_id}
-                    )
                     self.write_output(task_output)
                 self.info("finished")
 
@@ -1382,7 +1387,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 "product_generation_method", "copy"
             )
 
-            sharing_mode = task_def.get("sharing_mode")
+            sharing_mode = task_def.get("sharing_mode", constants.SHARING_MODE_DEFAULT)
 
             self.info("generate_tasks main loop iteration 2")
             if (

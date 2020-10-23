@@ -34,6 +34,12 @@ deploy:
 	time poetry run servicecatalog-puppet --info deploy \
 		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
 
+deploy-with-put:
+	time poetry run servicecatalog-puppet --info deploy \
+		--on-complete-url https://localhost/foo?sdsds=sdsd \
+		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
+
+
 ## @Puppet_commands Runs servicecatalog-puppet --info deploy
 dry-run:
 	poetry run servicecatalog-puppet --info dry-run \

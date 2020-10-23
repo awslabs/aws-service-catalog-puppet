@@ -86,6 +86,7 @@ def reset_provisioned_product_owner(f):
         tasks_to_run,
         10,
         cache_invalidator=cache_invalidator,
+        on_complete_url=None,
     )
 
 
@@ -151,6 +152,7 @@ def deploy(
     is_dry_run=False,
     is_list_launches=False,
     execution_mode="hub",
+    on_complete_url=None,
 ):
     cache_invalidator = str(datetime.now())
 
@@ -172,6 +174,7 @@ def deploy(
         is_list_launches,
         execution_mode,
         cache_invalidator,
+        on_complete_url,
     )
 
 

@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import time
+import urllib
 from glob import glob
 from pathlib import Path
 
@@ -32,7 +33,9 @@ def run_tasks(
     is_list_launches=None,
     execution_mode="hub",
     cache_invalidator="now",
+    on_complete_url=None,
 ):
+    codebuild_id = os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD")
     if is_list_launches:
         should_use_eventbridge = False
         should_forward_failures_to_opscenter = False
@@ -255,7 +258,9 @@ def run_tasks(
                 if should_forward_failures_to_opscenter:
                     title = f"{result.get('task_type')} failed: {params.get('launch_name')} - {params.get('account_id')} - {params.get('region')}"
                     logging.info(f"Sending failure to opscenter: {title}")
-                    operational_data = {}
+                    operational_data = dict(
+                        codebuild_id=dict(Value=codebuild_id, Type="SearchableString")
+                    )
                     for param_name, param in params.items():
                         operational_data[param_name] = {
                             "Value": json.dumps(param, default=str),
@@ -301,7 +306,33 @@ def run_tasks(
                         )
                         time.sleep(1)
                 logging.info(f"Finished sending {len(entries)} events to eventbridge")
-    sys.exit(exit_status_codes.get(run_result.status))
+
+    exit_status_code = exit_status_codes.get(run_result.status)
+    if on_complete_url:
+        logger.info(f"About to post results")
+        if exit_status_code == 0:
+            result = dict(
+                Status="SUCCESS",
+                Reason=f"All tasks run with success: {codebuild_id}",
+                UniqueId=codebuild_id.replace(":", "").replace("-", ""),
+                Data=dict(codebuild_id=codebuild_id),
+            )
+        else:
+            result = dict(
+                Status="FAILURE",
+                Reason=f"All tasks did not run with success: {codebuild_id}",
+                UniqueId=codebuild_id.replace(":", "").replace("-", ""),
+                Data=dict(codebuild_id=codebuild_id),
+            )
+        req = urllib.request.Request(
+            url="http://localhost:8080", data=json.dumps(result).encode(), method="PUT"
+        )
+        with urllib.request.urlopen(req) as f:
+            pass
+        logger.info(f.status)
+        logger.info(f.reason)
+
+    sys.exit(exit_status_code)
 
 
 def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
