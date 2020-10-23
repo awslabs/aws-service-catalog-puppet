@@ -1291,11 +1291,13 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
     depends_on = luigi.ListParameter()
+    sharing_mode = luigi.Parameter()
     cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -1380,6 +1382,8 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 "product_generation_method", "copy"
             )
 
+            sharing_mode = task_def.get("sharing_mode")
+
             self.info("generate_tasks main loop iteration 2")
             if (
                 task_def.get("status")
@@ -1407,6 +1411,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     portfolio=task_def.get("portfolio"),
                     organization=task_def.get("organization"),
                     portfolio_id=portfolio_id,
+                    sharing_mode=sharing_mode,
                     cache_invalidator=self.cache_invalidator,
                 )
 
@@ -1415,8 +1420,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 )
                 tasks.append(create_spoke_local_portfolio_task)
 
-            self.info("generate_tasks main loop iteration 3")
-
             create_spoke_local_portfolio_task_as_dependency_params = dict(
                 manifest_file_path=self.manifest_file_path,
                 account_id=task_def.get("account_id"),
@@ -1424,6 +1427,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 portfolio=task_def.get("portfolio"),
                 organization=task_def.get("organization"),
                 portfolio_id=portfolio_id,
+                sharing_mode=sharing_mode,
                 cache_invalidator=self.cache_invalidator,
             )
 

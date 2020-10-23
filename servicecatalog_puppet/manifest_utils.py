@@ -299,9 +299,11 @@ class Manifest(dict):
                     shares_by_region_portfolio_account[region] = {}
                 if shares_by_region_portfolio_account[region].get(portfolio) is None:
                     shares_by_region_portfolio_account[region][portfolio] = {}
+                result = self.get_account(account_id)
+                result[section] = launch_details
                 shares_by_region_portfolio_account[region][portfolio][
                     account_id
-                ] = self.get_account(account_id)
+                ] = result
         return shares_by_region_portfolio_account
 
     def get_accounts_by_region(self):
