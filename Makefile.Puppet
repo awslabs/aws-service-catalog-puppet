@@ -31,7 +31,7 @@ expand:
 
 ## @Puppet_commands Runs servicecatalog-puppet --info deploy
 deploy:
-	poetry run servicecatalog-puppet --info deploy \
+	time poetry run servicecatalog-puppet --info deploy \
 		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
 
 ## @Puppet_commands Runs servicecatalog-puppet --info deploy

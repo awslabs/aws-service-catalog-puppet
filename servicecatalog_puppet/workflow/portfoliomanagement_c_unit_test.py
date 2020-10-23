@@ -357,22 +357,6 @@ class GetPortfolioByPortfolioNameTest(tasks_unit_tests.PuppetTaskUnitTest):
 #         self.assertEqual(expected_result, self.sut.params_for_results_display())
 #
 #
-# class RequestPolicyTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
-#
-#     def setUp(self) -> None:
-#         from . import portfoliomanagement
-#
-#         self.sut = portfoliomanagement.RequestPolicyTask(
-#         )
-#
-#     def test_params_for_results_display(self):
-#         expected_result = {
-#             "account_id": self.account_id,
-#             "region": self.region,
-#         }
-#         self.assertEqual(expected_result, self.sut.params_for_results_display())
-#
-#
 # class SharePortfolioTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
 #
 #     def setUp(self) -> None:

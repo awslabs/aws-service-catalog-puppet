@@ -257,6 +257,7 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                             region=region_name,
                             portfolio=portfolio_name,
                             portfolio_id=portfolio.get("portfolio_id"),
+                            sharing_mode=share.get(self.section).get("sharing_mode"),
                         )
                     )
 
