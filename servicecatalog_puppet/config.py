@@ -91,6 +91,18 @@ def get_should_use_product_plans(puppet_account_id, default_region=None):
 
 
 @functools.lru_cache(maxsize=32)
+def get_global_sharing_mode_default(puppet_account_id, default_region=None):
+    logger.info(
+        "getting global_sharing_mode_default,  default_region: {}".format(
+            default_region
+        )
+    )
+    return get_config(puppet_account_id, default_region).get(
+        "global_sharing_mode_default", constants.SHARING_MODE_DEFAULT
+    )
+
+
+@functools.lru_cache(maxsize=32)
 def get_local_config(what):
     if os.path.exists("config.yaml"):
         with open("config.yaml", "r") as f:
