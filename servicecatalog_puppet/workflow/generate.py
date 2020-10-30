@@ -3,7 +3,7 @@ from functools import lru_cache
 
 import luigi
 
-from servicecatalog_puppet import config, constants, manifest_utils
+from servicecatalog_puppet import config, constants
 
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow import (
@@ -258,7 +258,10 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                             portfolio=portfolio_name,
                             portfolio_id=portfolio.get("portfolio_id"),
                             sharing_mode=share.get(self.section).get(
-                                "sharing_mode", constants.SHARING_MODE_DEFAULT
+                                "sharing_mode",
+                                config.get_global_sharing_mode_default(
+                                    self.puppet_account_id
+                                ),
                             ),
                         )
                     )
