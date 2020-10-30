@@ -258,7 +258,10 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                             portfolio=portfolio_name,
                             portfolio_id=portfolio.get("portfolio_id"),
                             sharing_mode=share.get(self.section).get(
-                                "sharing_mode", config.get_global_sharing_mode_default(self.puppet_account_id)
+                                "sharing_mode",
+                                config.get_global_sharing_mode_default(
+                                    self.puppet_account_id
+                                ),
                             ),
                         )
                     )
