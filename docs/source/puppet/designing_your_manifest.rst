@@ -670,6 +670,68 @@ Values in this file will overwrite all other values making the order of reading:
 4.  manifest-<puppet-account-id>.properties
 
 
+Sharing mode
+~~~~~~~~~~~~
+
+.. note::
+
+    This was added in version 0.88.0
+
+When you write a launch, the framework will share the portfolio used with each spoke account you are deploying into.
+The framework shares with each account and accepts the share within each account.  You can tell the framework to share
+with an OU (using Organizational sharing) instead and then accept the share from within each account still.  This
+reduces the time taken to share portfolios but means all accounts in the same OU will have the portfolio shared with
+them - those account will not have the portfolio share accepted.  To enable this behaviour you need to set the
+sharing_mode:
+
+.. code-block:: yaml
+
+    launches:
+      account-iam-for-prod:
+        portfolio: example-simple-central-it-team-portfolio
+        product: account-iam
+        version: v1
+        sharing_mode: AWS_ORGANIZATIONS
+        deploy_to:
+          tags:
+            - tag: type:prod
+              regions: default_region
+
+
+To revert back you can set sharing_mode back to ACCOUNT:
+
+.. code-block:: yaml
+
+    launches:
+      account-iam-for-prod:
+        portfolio: example-simple-central-it-team-portfolio
+        product: account-iam
+        version: v1
+        sharing_mode: ACCOUNT
+        deploy_to:
+          tags:
+            - tag: type:prod
+              regions: default_region
+
+
+If you are using this feature you must be able to share using Organizations in your puppet account.  To do this you must
+have installed puppet into your AWS Organizations management account or you must have delegated your puppet account as
+an AWS Service Catalog organizations master account.
+
+The default value for sharing_mode is ACCOUNT unless you change it using the following command
+
+.. code-block:: bash
+
+    servicecatalog-puppet set-config-value global_sharing_mode_default AWS_ORGANIZATIONS
+
+Alternatively, you can also add the following to your config:
+
+.. code-block:: yaml
+
+    global_sharing_mode_default: AWS_ORGANIZATIONS
+
+When you change the global_sharing_mode_default it affects launches and spoke-local-portfolios.
+
 
 Lambda Invocations
 ##################
