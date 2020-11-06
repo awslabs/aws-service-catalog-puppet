@@ -1031,6 +1031,9 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
     launch_constraints = luigi.DictParameter()
     should_use_sns = luigi.Parameter(default=False, significant=False)
 
+    sharing_mode = luigi.Parameter()
+    cache_invalidator = luigi.Parameter()
+
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -1051,6 +1054,9 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
                     portfolio_id=self.portfolio_id,
                     organization=self.organization,
                     puppet_account_id=self.puppet_account_id,
+
+                    sharing_mode=self.sharing_mode,
+                    cache_invalidator=self.cache_invalidator,
                 ),
             }
         else:
@@ -1063,6 +1069,9 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
                     portfolio_id=self.portfolio_id,
                     organization=self.organization,
                     puppet_account_id=self.puppet_account_id,
+
+                    sharing_mode=self.sharing_mode,
+                    cache_invalidator=self.cache_invalidator,
                 ),
             }
 
