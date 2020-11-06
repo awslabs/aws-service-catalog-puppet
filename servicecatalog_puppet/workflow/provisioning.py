@@ -777,8 +777,7 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
         ]
 
     def run(self):
-        logger_prefix = f"[{self.launch_name}] {self.account_id}:{self.region}"
-        self.info(f"{logger_prefix} :: starting ResetProvisionedProductOwnerTask")
+        self.info(f"starting ResetProvisionedProductOwnerTask")
 
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
@@ -787,7 +786,7 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
             region_name=self.region,
         ) as service_catalog:
             self.info(
-                f"[{logger_prefix} :: Checking if existing provisioned product exists"
+                f"Checking if existing provisioned product exists"
             )
             all_results = service_catalog.scan_provisioned_products_single_page(
                 AccessLevelFilter={"Key": "Account", "Value": "self"},
@@ -797,7 +796,7 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
                 if result.get("Name") == self.launch_name:
                     provisioned_product_id = result.get("Id")
                     self.info(
-                        f"[{logger_prefix} :: Ensuring current provisioned product owner is correct"
+                        f"Ensuring current provisioned product owner is correct"
                     )
                     changes_made.append(result)
                     service_catalog.update_provisioned_product_properties(
@@ -1355,7 +1354,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     def generate_tasks(self, task_defs):
         self.info("generate_tasks in")
         if len(task_defs) == 0:
-            logger.warning(
+            self.warning(
                 f"The configuration for this share does not include any target accounts: {self.spoke_local_portfolio_name}"
             )
             return []
@@ -1432,13 +1431,13 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 portfolio=task_def.get("portfolio"),
                 organization=task_def.get("organization"),
                 portfolio_id=portfolio_id,
-                cache_invalidator=self.cache_invalidator,
             )
 
             if len(task_def.get("associations", [])) > 0:
                 create_associations_for_portfolio_task = portfoliomanagement_tasks.CreateAssociationsForPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
                     sharing_mode=sharing_mode,
+                    cache_invalidator=self.cache_invalidator,
                     associations=task_def.get("associations"),
                     puppet_account_id=task_def.get("puppet_account_id"),
                     should_use_sns=task_def.get("should_use_sns"),
@@ -1451,6 +1450,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 import_into_spoke_local_portfolio_task = portfoliomanagement_tasks.ImportIntoSpokeLocalPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
                     sharing_mode=sharing_mode,
+                    cache_invalidator=self.cache_invalidator,
                     puppet_account_id=task_def.get("puppet_account_id"),
                 )
                 tasks.append(import_into_spoke_local_portfolio_task)
@@ -1458,6 +1458,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 copy_into_spoke_local_portfolio_task = portfoliomanagement_tasks.CopyIntoSpokeLocalPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
                     sharing_mode=sharing_mode,
+                    cache_invalidator=self.cache_invalidator,
                     puppet_account_id=task_def.get("puppet_account_id"),
                 )
                 tasks.append(copy_into_spoke_local_portfolio_task)
@@ -1471,6 +1472,8 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 create_launch_role_constraints_for_portfolio = portfoliomanagement_tasks.CreateLaunchRoleConstraintsForPortfolio(
                     **create_spoke_local_portfolio_task_as_dependency_params,
                     **create_launch_role_constraints_for_portfolio_task_params,
+                    sharing_mode=sharing_mode,
+                    cache_invalidator=self.cache_invalidator,
                     product_generation_method=product_generation_method,
                 )
                 tasks.append(create_launch_role_constraints_for_portfolio)
