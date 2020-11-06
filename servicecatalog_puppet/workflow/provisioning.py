@@ -1432,13 +1432,13 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 portfolio=task_def.get("portfolio"),
                 organization=task_def.get("organization"),
                 portfolio_id=portfolio_id,
-                sharing_mode=sharing_mode,
                 cache_invalidator=self.cache_invalidator,
             )
 
             if len(task_def.get("associations", [])) > 0:
                 create_associations_for_portfolio_task = portfoliomanagement_tasks.CreateAssociationsForPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
+                    sharing_mode=sharing_mode,
                     associations=task_def.get("associations"),
                     puppet_account_id=task_def.get("puppet_account_id"),
                     should_use_sns=task_def.get("should_use_sns"),
@@ -1450,12 +1450,14 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             if product_generation_method == "import":
                 import_into_spoke_local_portfolio_task = portfoliomanagement_tasks.ImportIntoSpokeLocalPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
+                    sharing_mode=sharing_mode,
                     puppet_account_id=task_def.get("puppet_account_id"),
                 )
                 tasks.append(import_into_spoke_local_portfolio_task)
             else:
                 copy_into_spoke_local_portfolio_task = portfoliomanagement_tasks.CopyIntoSpokeLocalPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
+                    sharing_mode=sharing_mode,
                     puppet_account_id=task_def.get("puppet_account_id"),
                 )
                 tasks.append(copy_into_spoke_local_portfolio_task)
