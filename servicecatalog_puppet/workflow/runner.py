@@ -325,7 +325,7 @@ def run_tasks(
                 Data=dict(codebuild_id=codebuild_id),
             )
         req = urllib.request.Request(
-            url="http://localhost:8080", data=json.dumps(result).encode(), method="PUT"
+            url=on_complete_url, data=json.dumps(result).encode(), method="PUT"
         )
         with urllib.request.urlopen(req) as f:
             pass
