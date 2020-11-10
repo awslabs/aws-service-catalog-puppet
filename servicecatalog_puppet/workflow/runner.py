@@ -315,14 +315,14 @@ def run_tasks(
                 Status="SUCCESS",
                 Reason=f"All tasks run with success: {codebuild_id}",
                 UniqueId=codebuild_id.replace(":", "").replace("-", ""),
-                Data=dict(codebuild_id=codebuild_id),
+                Data=f"{codebuild_id}",
             )
         else:
             result = dict(
                 Status="FAILURE",
                 Reason=f"All tasks did not run with success: {codebuild_id}",
                 UniqueId=codebuild_id.replace(":", "").replace("-", ""),
-                Data=dict(codebuild_id=codebuild_id),
+                Data=f"{codebuild_id}",
             )
         req = urllib.request.Request(
             url=on_complete_url, data=json.dumps(result).encode(), method="PUT"
