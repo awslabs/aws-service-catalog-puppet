@@ -87,8 +87,8 @@ Resources:
       Action: "events:PutEvents"
       Principal: "{{account_id}}"
       StatementId: "AllowSpokesAccounts{{account_id}}"
-  {% endif %}
   {% endfor %}
+  {% endif %}
 
   {% for organization in sharing_policies.get('organizations') %}
   EventBusPolicy{{organization|replace("-","")}}:
