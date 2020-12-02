@@ -77,6 +77,7 @@ Resources:
   {% endif %}
 
   {% if sharing_policies.get('accounts')|length > 0 or sharing_policies.get('organizations')|length > 0 %}
+  {% if sharing_policies.get('accounts')|length < 51 %}
   {% for account_id in sharing_policies.get('accounts') %}
   EventBusPolicy{{account_id}}:
     Type: AWS::Events::EventBusPolicy
@@ -86,6 +87,7 @@ Resources:
       Action: "events:PutEvents"
       Principal: "{{account_id}}"
       StatementId: "AllowSpokesAccounts{{account_id}}"
+  {% endif %}
   {% endfor %}
 
   {% for organization in sharing_policies.get('organizations') %}
