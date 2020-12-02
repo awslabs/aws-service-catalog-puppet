@@ -785,9 +785,7 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
             f"sc-{self.region}-{self.account_id}",
             region_name=self.region,
         ) as service_catalog:
-            self.info(
-                f"Checking if existing provisioned product exists"
-            )
+            self.info(f"Checking if existing provisioned product exists")
             all_results = service_catalog.scan_provisioned_products_single_page(
                 AccessLevelFilter={"Key": "Account", "Value": "self"},
             ).get("ProvisionedProducts", [])
@@ -795,9 +793,7 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
             for result in all_results:
                 if result.get("Name") == self.launch_name:
                     provisioned_product_id = result.get("Id")
-                    self.info(
-                        f"Ensuring current provisioned product owner is correct"
-                    )
+                    self.info(f"Ensuring current provisioned product owner is correct")
                     changes_made.append(result)
                     service_catalog.update_provisioned_product_properties(
                         ProvisionedProductId=provisioned_product_id,

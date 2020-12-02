@@ -257,12 +257,20 @@ class Manifest(dict):
         for account in self.get("accounts"):
             account_regions = list()
             if account.get("default_region") is None:
-                raise Exception(f"Account {account.get('account_id')} has no default_region")
+                raise Exception(
+                    f"Account {account.get('account_id')} has no default_region"
+                )
             account_regions.append(account.get("default_region"))
 
-            enabled_regions = account.get("enabled", []) + account.get("regions_enabled", []) + account.get("enabled_regions", [])
+            enabled_regions = (
+                account.get("enabled", [])
+                + account.get("regions_enabled", [])
+                + account.get("enabled_regions", [])
+            )
             if len(enabled_regions) == 0:
-                raise Exception(f"Account {account.get('account_id')} has no enabled|regions_enabled|enabled_regions")
+                raise Exception(
+                    f"Account {account.get('account_id')} has no enabled|regions_enabled|enabled_regions"
+                )
             account_regions += enabled_regions
 
             for r in account_regions:

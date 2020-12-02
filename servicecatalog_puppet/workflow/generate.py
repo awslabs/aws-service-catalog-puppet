@@ -35,6 +35,10 @@ class GeneratePoliciesTemplate(tasks.PuppetTask):
         }
 
     def run(self):
+        if len(self.sharing_policies.get("accounts")) > 50:
+            self.warning(
+                "You have specified more than 50 accounts will not create the eventbus policy and spoke execution mode will not work"
+            )
         rendered = config.env.get_template("policies.template.yaml.j2").render(
             sharing_policies=self.sharing_policies,
             VERSION=config.get_puppet_version(),

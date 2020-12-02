@@ -1054,7 +1054,6 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
                     portfolio_id=self.portfolio_id,
                     organization=self.organization,
                     puppet_account_id=self.puppet_account_id,
-
                     sharing_mode=self.sharing_mode,
                     cache_invalidator=self.cache_invalidator,
                 ),
@@ -1069,7 +1068,6 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
                     portfolio_id=self.portfolio_id,
                     organization=self.organization,
                     puppet_account_id=self.puppet_account_id,
-
                     sharing_mode=self.sharing_mode,
                     cache_invalidator=self.cache_invalidator,
                 ),
