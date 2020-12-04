@@ -552,16 +552,13 @@ def expand(f, single_account):
     click.echo("Expanded")
     if single_account:
         click.echo(f"Filtering for single account: {single_account}")
-        filtered_manifest = dict(accounts=list())
-        filtered_manifest['launches'] =  new_manifest.get('launches', {})
-        filtered_manifest['spoke-local-portfolios'] =  new_manifest.get('spoke-local-portfolios', {})
 
         for account in new_manifest.get('accounts', []):
             if account.get("account_id") == single_account:
                 click.echo(f"Found single account: {single_account}")
-                filtered_manifest['accounts'].append(account)
+                new_manifest['accounts'] = [account]
+                break
 
-        new_manifest = filtered_manifest
         click.echo("Filtered")
 
     new_name = f.name.replace(".yaml", "-expanded.yaml")
