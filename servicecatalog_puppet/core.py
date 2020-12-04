@@ -535,7 +535,7 @@ def seed(complexity, p):
     )
 
 
-def expand(f):
+def expand(f, single_account):
     click.echo("Expanding")
     puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f, puppet_account_id)
@@ -550,6 +550,17 @@ def expand(f):
         ) as client:
             new_manifest = manifest_utils.expand_manifest(manifest, client)
     click.echo("Expanded")
+    if single_account:
+        click.echo(f"Filtering for single account: {single_account}")
+
+        for account in new_manifest.get('accounts', []):
+            if account.get("account_id") == single_account:
+                click.echo(f"Found single account: {single_account}")
+                new_manifest['accounts'] = [account]
+                break
+
+        click.echo("Filtered")
+
     new_name = f.name.replace(".yaml", "-expanded.yaml")
     logger.info("Writing new manifest: {}".format(new_name))
     with open(new_name, "w") as output:

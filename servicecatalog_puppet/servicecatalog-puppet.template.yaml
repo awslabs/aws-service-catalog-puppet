@@ -527,11 +527,8 @@ Resources:
             build:
               commands:
                 - git clone --config 'credential.helper=!aws codecommit credential-helper $@' --config 'credential.UseHttpPath=true' ${CodeRepo.CloneUrlHttp}
-                - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml
-                {% if is_caching_enabled %}- aws s3 sync --quiet s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output output{% endif %}
+                - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml --single-account $SINGLE_ACCOUNT_ID
                 - servicecatalog-puppet --info deploy ServiceCatalogPuppet/manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID
-              {% if is_caching_enabled %}finally:
-                - aws s3 sync --quiet output s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output{% endif %}
           artifacts:
             files:
               - ServiceCatalogPuppet/manifest.yaml
@@ -592,11 +589,8 @@ Resources:
             build:
               commands:
                 - git clone --config 'credential.helper=!aws codecommit credential-helper $@' --config 'credential.UseHttpPath=true' ${CodeRepo.CloneUrlHttp}
-                - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml
-                {% if is_caching_enabled %}- aws s3 sync --quiet s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output output{% endif %}
+                - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml --single-account $SINGLE_ACCOUNT_ID
                 - servicecatalog-puppet --info deploy --on-complete-url $CALLBACK_URL ServiceCatalogPuppet/manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID
-              {% if is_caching_enabled %}finally:
-                - aws s3 sync --quiet output s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output{% endif %}
           artifacts:
             files:
               - ServiceCatalogPuppet/manifest.yaml
@@ -663,11 +657,8 @@ Resources:
                 - export URL=https://$(echo $PAT | jq -r .SecretToken)@github.com/$OWNER/$REPO.git
                 - git clone $URL ServiceCatalogPuppet
                 - cd ServiceCatalogPuppet && git checkout {{ Source['Configuration']['Branch'] }} && cd -
-                - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml
-                {% if is_caching_enabled %}- aws s3 sync --quiet s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output output{% endif %}
+                - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml --single-account $SINGLE_ACCOUNT_ID
                 - servicecatalog-puppet --info deploy ServiceCatalogPuppet/manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID
-              {% if is_caching_enabled %}finally:
-                - aws s3 sync --quiet output s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output{% endif %}
           artifacts:
             files:
               - ServiceCatalogPuppet/manifest.yaml
@@ -736,11 +727,8 @@ Resources:
                 - export URL=https://$(echo $PAT | jq -r .SecretToken)@github.com/$OWNER/$REPO.git
                 - git clone $URL ServiceCatalogPuppet
                 - cd ServiceCatalogPuppet && git checkout {{ Source['Configuration']['Branch'] }} && cd -
-                - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml
-                {% if is_caching_enabled %}- aws s3 sync --quiet s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output output{% endif %}
+                - servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml --single-account $SINGLE_ACCOUNT_ID
                 - servicecatalog-puppet --info deploy --on-complete-url $CALLBACK_URL ServiceCatalogPuppet/manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID
-              {% if is_caching_enabled %}finally:
-                - aws s3 sync --quiet output s3://sc-puppet-caching-bucket-$PUPPET_ACCOUNT_ID-$PUPPET_REGION/output{% endif %}
           artifacts:
             files:
               - ServiceCatalogPuppet/manifest.yaml
