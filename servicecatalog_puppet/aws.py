@@ -457,65 +457,6 @@ def get_provisioned_product_details(
     return None
 
 
-def get_provisioning_artifact_id_for(
-    portfolio_name, product_name, version_name, account_id, region
-):
-    logger.info(
-        "Getting provisioning artifact id for: {} {} {} in the region: {} of account: {}".format(
-            portfolio_name, product_name, version_name, region, account_id
-        )
-    )
-    role = "arn:aws:iam::{}:role/{}".format(
-        account_id, "servicecatalog-puppet/PuppetRole"
-    )
-    with betterboto_client.CrossAccountClientContextManager(
-        "servicecatalog", role, "-".join([account_id, region]), region_name=region
-    ) as cross_account_servicecatalog:
-        product_id = None
-        version_id = None
-        portfolio_id = None
-
-        response = cross_account_servicecatalog.list_accepted_portfolio_shares()
-        assert response.get("NextPageToken") is None, "Pagination not supported"
-        for portfolio_detail in response.get("PortfolioDetails"):
-            if portfolio_detail.get("DisplayName") == portfolio_name:
-                portfolio_id = portfolio_detail.get("Id")
-                break
-
-        if portfolio_id is None:
-            response = cross_account_servicecatalog.list_portfolios_single_page()
-            for portfolio_detail in response.get("PortfolioDetails", []):
-                if portfolio_detail.get("DisplayName") == portfolio_name:
-                    portfolio_id = portfolio_detail.get("Id")
-                    break
-
-        assert portfolio_id is not None, "Could not find portfolio"
-        logger.info(
-            f"Found portfolio: {portfolio_id}, looking for product: {product_name}"
-        )
-
-        response = cross_account_servicecatalog.search_products_as_admin_single_page(
-            PortfolioId=portfolio_id
-        )
-        for product_view_details in response.get("ProductViewDetails"):
-            product_view = product_view_details.get("ProductViewSummary")
-            logging.info(f"looking at {product_view.get('Name')}")
-            if product_view.get("Name") == product_name:
-                logger.info("Found product: {}".format(product_view))
-                product_id = product_view.get("ProductId")
-
-        assert product_id is not None, "Did not find product looking for"
-
-        response = cross_account_servicecatalog.list_provisioning_artifacts_single_page(
-            ProductId=product_id
-        )
-        for provisioning_artifact_detail in response.get("ProvisioningArtifactDetails"):
-            if provisioning_artifact_detail.get("Name") == version_name:
-                version_id = provisioning_artifact_detail.get("Id")
-        assert version_id is not None, "Did not find version looking for"
-        return product_id, version_id
-
-
 def ensure_portfolio(service_catalog, portfolio_name, provider_name, description=None):
     return find_portfolio(service_catalog, portfolio_name) or create_portfolio(
         service_catalog, portfolio_name, provider_name, description
