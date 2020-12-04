@@ -253,7 +253,7 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
 
     def api_calls_used(self):
         return [
-            f"servicecatalog.list_accepted_portfolio_shares_({self.account_id}_{self.region}",
+            f"servicecatalog.list_accepted_portfolio_shares_single_page{self.account_id}_{self.region}",
             f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
         ]
 
@@ -288,7 +288,7 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
         ) as cross_account_servicecatalog:
             result = None
 
-            response = cross_account_servicecatalog.list_accepted_portfolio_shares()
+            response = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
             assert response.get("NextPageToken") is None, "Pagination not supported"
             for portfolio_detail in response.get("PortfolioDetails"):
                 if portfolio_detail.get("DisplayName") == self.portfolio:
@@ -1638,10 +1638,10 @@ class DeletePortfolioShare(PortfolioManagementTask):
         }
 
     def api_calls_used(self):
-        return {
-            f"servicecatalog.list_accepted_portfolio_shares_{self.account_id}_{self.region}_{self.portfolio}": 1,
-            f"servicecatalog.delete_portfolio_share_{self.puppet_account_id}_{self.region}_{self.portfolio}": 1,
-        }
+        return [
+            f"servicecatalog.list_accepted_portfolio_shares_single_page{self.account_id}_{self.region}",
+            f"servicecatalog.delete_portfolio_share_{self.puppet_account_id}_{self.region}_{self.portfolio}",
+        ]
 
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
