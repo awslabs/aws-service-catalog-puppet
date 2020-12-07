@@ -102,6 +102,24 @@ def get_global_sharing_mode_default(puppet_account_id, default_region=None):
     )
 
 
+@functools.lru_cache()
+def get_partition():
+    logger.info("getting partition")
+    return os.getenv(constants.PARTITION_ENVIRONMENTAL_VARIABLE_NAME, constants.PARTITION_DEFAULT)
+
+
+@functools.lru_cache()
+def get_puppet_role_name():
+    logger.info("getting puppet_role_name")
+    return os.getenv(constants.PUPPET_ROLE_NAME_ENVIRONMENTAL_VARIABLE_NAME, constants.PUPPET_ROLE_NAME_DEFAULT)
+
+
+@functools.lru_cache()
+def get_puppet_role_path():
+    logger.info("getting puppet_role_path")
+    return os.getenv(constants.PUPPET_ROLE_PATH_ENVIRONMENTAL_VARIABLE_NAME, constants.PUPPET_ROLE_PATH_DEFAULT)
+
+
 @functools.lru_cache(maxsize=32)
 def get_local_config(what):
     if os.path.exists("config.yaml"):
