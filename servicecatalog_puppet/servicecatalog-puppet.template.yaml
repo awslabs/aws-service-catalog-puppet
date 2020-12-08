@@ -51,6 +51,10 @@ Parameters:
     Description: Number of workers that should be used when running a deploy
     Default: 10
 
+  PuppetRoleName:
+    Type: String
+    Default: PuppetRole
+
 Conditions:
   ShouldUseOrgs: !Not [!Equals [!Ref OrgIamRoleArn, None]]
   HasManualApprovals: !Equals [!Ref WithManualApprovals, 'Yes']
@@ -80,6 +84,15 @@ Resources:
       Name: /servicecatalog-puppet/partition
       Type: String
       Value: !Ref AWS::Partition
+      Tags:
+        "ServiceCatalogPuppet:Actor": "Framework"
+
+  PuppetRoleNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /servicecatalog-puppet/puppet-role/name
+      Type: String
+      Value: !Ref PuppetRoleName
       Tags:
         "ServiceCatalogPuppet:Actor": "Framework"
 
@@ -368,6 +381,9 @@ Resources:
           - Name: PARTITION
             Type: PARAMETER_STORE
             Value: !Ref PartitionParameter
+          - Name: PUPPET_ROLE_NAME
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRoleNameParameter
 
       Source:
         Type: CODEPIPELINE

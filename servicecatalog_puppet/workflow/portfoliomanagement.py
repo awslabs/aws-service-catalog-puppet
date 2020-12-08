@@ -1539,7 +1539,7 @@ class DisassociateProductFromPortfolio(PortfolioManagementTask):
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            f"arn:{config.get_partition()}:iam::{self.account_id}:role/{config.get_puppet_role_path()}/{config.get_puppet_role_name()}",
             f"{self.account_id}-{self.region}-PuppetRole",
             region_name=self.region,
         ) as servicecatalog:
