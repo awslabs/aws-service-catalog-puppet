@@ -74,6 +74,15 @@ Resources:
       Tags:
         "ServiceCatalogPuppet:Actor": "Framework"
 
+  PartitionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /servicecatalog-puppet/partition
+      Type: String
+      Value: !Ref AWS::Partition
+      Tags:
+        "ServiceCatalogPuppet:Actor": "Framework"
+
   ShareAcceptFunctionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -356,6 +365,9 @@ Resources:
           - Name: PUPPET_REGION
             Type: PLAINTEXT
             Value: !Ref AWS::Region
+          - Name: PARTITION
+            Type: PARAMETER_STORE
+            Value: !Ref PartitionParameter
 
       Source:
         Type: CODEPIPELINE
@@ -366,6 +378,7 @@ Resources:
               runtime-versions:
                 python: 3.x
               commands:
+                - env
           {% if 'http' in VERSION %}
                 - pip install {{ VERSION }}
           {% else %}
@@ -509,6 +522,9 @@ Resources:
           - Name: PUPPET_REGION
             Type: PLAINTEXT
             Value: !Ref AWS::Region
+          - Name: PARTITION
+            Type: PARAMETER_STORE
+            Value: /servicecatalog-puppet/partition
 
       Source:
         Type: NO_SOURCE
@@ -571,6 +587,9 @@ Resources:
           - Name: CALLBACK_URL
             Type: PLAINTEXT
             Value: CHANGE_ME
+          - Name: PARTITION
+            Type: PARAMETER_STORE
+            Value: /servicecatalog-puppet/partition
 
       Source:
         Type: NO_SOURCE
@@ -637,6 +656,9 @@ Resources:
           - Name: PUPPET_REGION
             Type: PLAINTEXT
             Value: !Ref AWS::Region
+          - Name: PARTITION
+            Type: PARAMETER_STORE
+            Value: /servicecatalog-puppet/partition
 
       Source:
         Type: NO_SOURCE
@@ -707,6 +729,9 @@ Resources:
           - Name: CALLBACK_URL
             Type: PLAINTEXT
             Value: CHANGE_ME
+          - Name: PARTITION
+            Type: PARAMETER_STORE
+            Value: /servicecatalog-puppet/partition
 
       Source:
         Type: NO_SOURCE
