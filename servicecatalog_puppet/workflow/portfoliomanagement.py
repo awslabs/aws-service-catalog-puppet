@@ -168,7 +168,7 @@ class SearchProductsAsAdminTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        role = config.get_puppet_role_arn(self.account_id),
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             role,

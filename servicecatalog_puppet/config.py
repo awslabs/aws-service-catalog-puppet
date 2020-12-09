@@ -28,7 +28,7 @@ def get_config(puppet_account_id, default_region=None):
     with betterboto_client.CrossAccountClientContextManager(
         "ssm",
         get_puppet_role_arn(puppet_account_id),
-        f"{puppet_account_id}-{region}-{get_puppet_role_name}",
+        f"{puppet_account_id}-{region}-{get_puppet_role_name()}",
         region_name=region,
     ) as ssm:
         response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME)
@@ -159,7 +159,7 @@ def get_org_iam_role_arn(puppet_account_id):
     with betterboto_client.CrossAccountClientContextManager(
         "ssm",
         get_puppet_role_arn(puppet_account_id),
-        f"{puppet_account_id}-{get_puppet_role_name}",
+        f"{puppet_account_id}-{get_puppet_role_name()}",
         region_name=get_home_region(puppet_account_id),
     ) as ssm:
         try:
