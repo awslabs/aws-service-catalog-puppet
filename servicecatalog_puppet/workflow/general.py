@@ -1,6 +1,7 @@
 import luigi
 from betterboto import client as betterboto_client
 
+from servicecatalog_puppet import config
 from servicecatalog_puppet.workflow import tasks
 
 
@@ -26,8 +27,8 @@ class DeleteCloudFormationStackTask(tasks.PuppetTask):
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "cloudformation",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.account_id}-{self.region}-PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
+            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
             region_name=self.region,
         ) as cloudformation:
             self.info(f"About to delete the stack: {self.stack_name}")

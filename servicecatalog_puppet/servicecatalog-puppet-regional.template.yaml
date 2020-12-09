@@ -13,7 +13,6 @@ Parameters:
     Type: String
 
 Resources:
-
   DefaultRegionParam:
     Type: AWS::SSM::Parameter
     Properties:
@@ -40,8 +39,8 @@ Resources:
         Status: Enabled
       BucketEncryption:
         ServerSideEncryptionConfiguration:
-        - ServerSideEncryptionByDefault:
-            SSEAlgorithm: AES256
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
       PublicAccessBlockConfiguration:
         BlockPublicAcls: TRUE
         BlockPublicPolicy: TRUE
@@ -57,7 +56,7 @@ Resources:
       DisplayName: servicecatalog-puppet-cloudformation-regional-events
       TopicName: servicecatalog-puppet-cloudformation-regional-events
       Subscription:
-        - Endpoint: !Sub "arn:aws:sqs:${DefaultRegionValue}:${AWS::AccountId}:servicecatalog-puppet-cloudformation-events"
+        - Endpoint: !Sub "arn:${AWS::Partition}:sqs:${DefaultRegionValue}:${AWS::AccountId}:servicecatalog-puppet-cloudformation-events"
           Protocol: "sqs"
 
 Outputs:
