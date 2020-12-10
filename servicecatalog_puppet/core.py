@@ -553,10 +553,10 @@ def expand(f, single_account):
     if single_account:
         click.echo(f"Filtering for single account: {single_account}")
 
-        for account in new_manifest.get('accounts', []):
+        for account in new_manifest.get("accounts", []):
             if account.get("account_id") == single_account:
                 click.echo(f"Found single account: {single_account}")
-                new_manifest['accounts'] = [account]
+                new_manifest["accounts"] = [account]
                 break
 
         click.echo("Filtered")
@@ -939,7 +939,7 @@ def wait_for_code_build_in(iam_role_arns):
         index += 1
 
     with betterboto_client.CrossMultipleAccountsClientContextManager(
-            "codebuild", cross_accounts
+        "codebuild", cross_accounts
     ) as codebuild:
         while True:
             try:
@@ -959,7 +959,7 @@ def wait_for_cloudformation_in(iam_role_arns):
         index += 1
 
     with betterboto_client.CrossMultipleAccountsClientContextManager(
-            "cloudformation", cross_accounts
+        "cloudformation", cross_accounts
     ) as cloudformation:
         while True:
             try:
