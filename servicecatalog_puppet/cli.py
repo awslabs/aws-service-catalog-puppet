@@ -494,6 +494,7 @@ def release_spoke(puppet_account_id):
 @click.argument("iam_role_arns", nargs=-1)
 def wait_for_code_build_in(iam_role_arns):
     core.wait_for_code_build_in(iam_role_arns)
+    core.wait_for_cloudformation_in(iam_role_arns)
     click.echo("AWS CodeBuild is available")
 
 

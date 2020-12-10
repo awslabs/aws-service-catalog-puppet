@@ -949,6 +949,15 @@ def wait_for_code_build_in(iam_role_arns):
             except Exception as e:
                 logger.error("type error: " + str(e))
                 logger.error(traceback.format_exc())
+
+
+def wait_for_cloudformation_in(iam_role_arns):
+    cross_accounts = []
+    index = 0
+    for role in iam_role_arns:
+        cross_accounts.append((role, "waiting-for-cloudformation-{}".format(index)))
+        index += 1
+
     with betterboto_client.CrossMultipleAccountsClientContextManager(
             "cloudformation", cross_accounts
     ) as cloudformation:
