@@ -939,12 +939,23 @@ def wait_for_code_build_in(iam_role_arns):
         index += 1
 
     with betterboto_client.CrossMultipleAccountsClientContextManager(
-        "codebuild", cross_accounts
+            "codebuild", cross_accounts
     ) as codebuild:
         while True:
             try:
                 result = codebuild.list_projects()
                 logger.info(f"Was able to list projects: {result}")
+                break
+            except Exception as e:
+                logger.error("type error: " + str(e))
+                logger.error(traceback.format_exc())
+    with betterboto_client.CrossMultipleAccountsClientContextManager(
+            "cloudformation", cross_accounts
+    ) as cloudformation:
+        while True:
+            try:
+                result = cloudformation.list_stacks()
+                logger.info(f"Was able to list stacks: {result}")
                 break
             except Exception as e:
                 logger.error("type error: " + str(e))
