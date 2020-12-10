@@ -176,7 +176,7 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.x
+                python: 3.7
               commands:
                 - echo $VERSION
                 - bash -c "if [[ $VERSION =~ 'http'  ]]; then pip install $VERSION ; else pip install aws-service-catalog-puppet==$VERSION; fi"
