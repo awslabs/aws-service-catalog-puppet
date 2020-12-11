@@ -553,10 +553,10 @@ def expand(f, single_account):
     if single_account:
         click.echo(f"Filtering for single account: {single_account}")
 
-        for account in new_manifest.get('accounts', []):
+        for account in new_manifest.get("accounts", []):
             if account.get("account_id") == single_account:
                 click.echo(f"Found single account: {single_account}")
-                new_manifest['accounts'] = [account]
+                new_manifest["accounts"] = [account]
                 break
 
         click.echo("Filtered")
@@ -958,6 +958,26 @@ def wait_for_code_build_in(iam_role_arns):
             try:
                 result = codebuild.list_projects()
                 logger.info(f"Was able to list projects: {result}")
+                break
+            except Exception as e:
+                logger.error("type error: " + str(e))
+                logger.error(traceback.format_exc())
+
+
+def wait_for_cloudformation_in(iam_role_arns):
+    cross_accounts = []
+    index = 0
+    for role in iam_role_arns:
+        cross_accounts.append((role, "waiting-for-cloudformation-{}".format(index)))
+        index += 1
+
+    with betterboto_client.CrossMultipleAccountsClientContextManager(
+        "cloudformation", cross_accounts
+    ) as cloudformation:
+        while True:
+            try:
+                result = cloudformation.list_stacks()
+                logger.info(f"Was able to list stacks: {result}")
                 break
             except Exception as e:
                 logger.error("type error: " + str(e))
