@@ -50,10 +50,12 @@ Parameters:
     Type: Number
     Description: Number of workers that should be used when running a deploy
     Default: 10
-
   PuppetRoleName:
     Type: String
     Default: PuppetRole
+  PuppetRolePath:
+    Type: String
+    Default: /servicecatalog-puppet/
 
 Conditions:
   ShouldUseOrgs: !Not [!Equals [!Ref OrgIamRoleArn, None]]
@@ -93,6 +95,15 @@ Resources:
       Name: /servicecatalog-puppet/puppet-role/name
       Type: String
       Value: !Ref PuppetRoleName
+      Tags:
+        "ServiceCatalogPuppet:Actor": "Framework"
+
+  PuppetRolePathParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /servicecatalog-puppet/puppet-role/path
+      Type: String
+      Value: !Ref PuppetRolePath
       Tags:
         "ServiceCatalogPuppet:Actor": "Framework"
 
@@ -384,6 +395,9 @@ Resources:
           - Name: PUPPET_ROLE_NAME
             Type: PARAMETER_STORE
             Value: !Ref PuppetRoleNameParameter
+          - Name: PUPPET_ROLE_PATH
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRolePathParameter
 
       Source:
         Type: CODEPIPELINE
@@ -540,7 +554,14 @@ Resources:
             Value: !Ref AWS::Region
           - Name: PARTITION
             Type: PARAMETER_STORE
-            Value: /servicecatalog-puppet/partition
+            Value: !Ref PartitionParameter
+          - Name: PUPPET_ROLE_NAME
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRoleNameParameter
+          - Name: PUPPET_ROLE_PATH
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRolePathParameter
+
 
       Source:
         Type: NO_SOURCE
@@ -605,7 +626,14 @@ Resources:
             Value: CHANGE_ME
           - Name: PARTITION
             Type: PARAMETER_STORE
-            Value: /servicecatalog-puppet/partition
+            Value: !Ref PartitionParameter
+          - Name: PUPPET_ROLE_NAME
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRoleNameParameter
+          - Name: PUPPET_ROLE_PATH
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRolePathParameter
+
 
       Source:
         Type: NO_SOURCE
@@ -674,7 +702,14 @@ Resources:
             Value: !Ref AWS::Region
           - Name: PARTITION
             Type: PARAMETER_STORE
-            Value: /servicecatalog-puppet/partition
+            Value: !Ref PartitionParameter
+          - Name: PUPPET_ROLE_NAME
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRoleNameParameter
+          - Name: PUPPET_ROLE_PATH
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRolePathParameter
+
 
       Source:
         Type: NO_SOURCE
@@ -747,7 +782,13 @@ Resources:
             Value: CHANGE_ME
           - Name: PARTITION
             Type: PARAMETER_STORE
-            Value: /servicecatalog-puppet/partition
+            Value: !Ref PartitionParameter
+          - Name: PUPPET_ROLE_NAME
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRoleNameParameter
+          - Name: PUPPET_ROLE_PATH
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRolePathParameter
 
       Source:
         Type: NO_SOURCE

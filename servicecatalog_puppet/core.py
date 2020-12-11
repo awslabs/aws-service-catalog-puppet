@@ -256,14 +256,16 @@ def _do_bootstrap(
     puppet_deploy_role_permission_boundary,
     puppet_provisioning_role_permissions_boundary,
     cloud_formation_deploy_role_permissions_boundary,
-    deploy_environment_compute_type="BUILD_GENERAL1_SMALL",
-    deploy_num_workers=10,
-    source_provider=None,
-    owner=None,
-    repo=None,
-    branch=None,
-    poll_for_source_changes=None,
-    webhook_secret=None,
+    deploy_environment_compute_type,
+    deploy_num_workers,
+    source_provider,
+    owner,
+    repo,
+    branch,
+    poll_for_source_changes,
+    webhook_secret,
+    puppet_role_name,
+    puppet_role_path,
 ):
     click.echo("Starting bootstrap")
     should_use_eventbridge = config.get_should_use_eventbridge(
@@ -416,6 +418,16 @@ def _do_bootstrap(
                     "ParameterValue": str(deploy_num_workers),
                     "UsePreviousValue": False,
                 },
+                {
+                    "ParameterKey": "PuppetRoleName",
+                    "ParameterValue": puppet_role_name,
+                    "UsePreviousValue": False,
+                },
+                {
+                    "ParameterKey": "PuppetRolePath",
+                    "ParameterValue": puppet_role_path,
+                    "UsePreviousValue": False,
+                },
             ],
         }
         cloudformation.create_or_update(**args)
@@ -463,6 +475,8 @@ def bootstrap_branch(
     branch,
     poll_for_source_changes,
     webhook_secret,
+    puppet_role_name,
+    puppet_role_path,
 ):
     _do_bootstrap(
         "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(
@@ -476,13 +490,16 @@ def bootstrap_branch(
         puppet_deploy_role_permission_boundary,
         puppet_provisioning_role_permissions_boundary,
         cloud_formation_deploy_role_permissions_boundary,
-        deploy_num_workers=deploy_num_workers,
-        source_provider=source_provider,
-        owner=owner,
-        repo=repo,
-        branch=branch,
-        poll_for_source_changes=poll_for_source_changes,
-        webhook_secret=webhook_secret,
+        constants.DEPLOY_ENVIRONMENT_COMPUTE_TYPE_DEFAULT,
+        deploy_num_workers,
+        source_provider,
+        owner,
+        repo,
+        branch,
+        poll_for_source_changes,
+        webhook_secret,
+        puppet_role_name,
+        puppet_role_path,
     )
 
 
@@ -503,6 +520,8 @@ def bootstrap(
     branch,
     poll_for_source_changes,
     webhook_secret,
+    puppet_role_name,
+    puppet_role_path,
 ):
     _do_bootstrap(
         config.get_puppet_version(),
@@ -522,6 +541,8 @@ def bootstrap(
         branch,
         poll_for_source_changes,
         webhook_secret,
+        puppet_role_name,
+        puppet_role_path,
     )
 
 
