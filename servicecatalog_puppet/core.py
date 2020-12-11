@@ -553,10 +553,10 @@ def expand(f, single_account):
     if single_account:
         click.echo(f"Filtering for single account: {single_account}")
 
-        for account in new_manifest.get('accounts', []):
+        for account in new_manifest.get("accounts", []):
             if account.get("account_id") == single_account:
                 click.echo(f"Found single account: {single_account}")
-                new_manifest['accounts'] = [account]
+                new_manifest["accounts"] = [account]
                 break
 
         click.echo("Filtered")
@@ -823,10 +823,7 @@ def set_named_config_value(name, value):
         "ssm", region_name=constants.HOME_REGION
     ) as ssm:
         ssm.put_parameter(
-            Name=name,
-            Type="String",
-            Value=value,
-            Overwrite=True,
+            Name=name, Type="String", Value=value, Overwrite=True,
         )
         click.echo("Uploaded named config")
 

@@ -288,9 +288,10 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
         ) as cross_account_servicecatalog:
             result = None
 
-            response = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
-            assert response.get(
-                "NextPageToken") is None, "Pagination not supported"
+            response = (
+                cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
+            )
+            assert response.get("NextPageToken") is None, "Pagination not supported"
             for portfolio_detail in response.get("PortfolioDetails"):
                 if portfolio_detail.get("DisplayName") == self.portfolio:
                     result = portfolio_detail
@@ -355,8 +356,7 @@ class ProvisionActionTask(PortfolioManagementTask):
                     parameter_name=param_name,
                     name=param_details.get("ssm").get("name"),
                     region=param_details.get("ssm").get(
-                        "region", config.get_home_region(
-                            self.puppet_account_id)
+                        "region", config.get_home_region(self.puppet_account_id)
                     ),
                     cache_invalidator=self.cache_invalidator,
                 )
@@ -395,8 +395,7 @@ class ProvisionActionTask(PortfolioManagementTask):
                 environmentVariablesOverride=environment_variables_override,
             )
             if build.get("buildStatus") != "SUCCEEDED":
-                raise Exception(
-                    f"{self.uid}: Build failed: {build.get('buildStatus')}")
+                raise Exception(f"{self.uid}: Build failed: {build.get('buildStatus')}")
         self.write_output(self.param_kwargs)
 
 
@@ -597,8 +596,7 @@ class GetProductsAndProvisioningArtifactsTask(PortfolioManagementTask):
         ) as service_catalog:
             response = self.load_from_input("search_products_as_admin")
             for product_view_detail in response.get("ProductViewDetails", []):
-                product_view_summary = product_view_detail.get(
-                    "ProductViewSummary")
+                product_view_summary = product_view_detail.get("ProductViewSummary")
                 product_view_summary["ProductARN"] = product_view_detail.get(
                     "ProductARN"
                 )
@@ -716,7 +714,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 hub_product_arn = product_view_summary.get("ProductARN")
                 copy_args = {
                     "SourceProductArn": hub_product_arn,
-                    "CopyOptions": ["CopyTags", ],
+                    "CopyOptions": ["CopyTags",],
                 }
 
                 role = config.get_puppet_role_arn(self.account_id)
@@ -741,8 +739,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                                 "ProductViewSummary"
                             )
                             if spoke_product_view.get("Name") == hub_product_name:
-                                spoke_product_id = spoke_product_view.get(
-                                    "ProductId")
+                                spoke_product_id = spoke_product_view.get("ProductId")
                                 product_name_to_id_dict[
                                     hub_product_name
                                 ] = spoke_product_id
@@ -781,8 +778,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                             for a in product_versions_that_should_be_copied.values()
                         ]
 
-                        self.info(
-                            f"about to copy product with args: {copy_args}")
+                        self.info(f"about to copy product with args: {copy_args}")
                         copy_product_token = spoke_service_catalog.copy_product(
                             **copy_args
                         ).get("CopyProductToken")
@@ -963,8 +959,7 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 product_name_to_id_dict[hub_product_name] = hub_product_id
                 hub_product_to_import_list.append(hub_product_id)
 
-        self.info(
-            f"Starting product import with targets {hub_product_to_import_list}")
+        self.info(f"Starting product import with targets {hub_product_to_import_list}")
 
         role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
@@ -975,15 +970,13 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
         ) as spoke_service_catalog:
 
             while True:
-                self.info(
-                    f"Generating product list for portfolio {portfolio_id}")
+                self.info(f"Generating product list for portfolio {portfolio_id}")
 
                 response = spoke_service_catalog.search_products_as_admin_single_page(
                     PortfolioId=portfolio_id,
                 )
                 spoke_portfolio_products = [
-                    product_view_detail.get(
-                        "ProductViewSummary").get("ProductId")
+                    product_view_detail.get("ProductViewSummary").get("ProductId")
                     for product_view_detail in response.get("ProductViewDetails")
                 ]
 
@@ -1155,7 +1148,7 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
             template = config.env.get_template(
                 "launch_role_constraints.template.yaml.j2"
             ).render(
-                portfolio={"DisplayName": self.portfolio, },
+                portfolio={"DisplayName": self.portfolio,},
                 portfolio_id=portfolio_id,
                 launch_constraints=new_launch_constraints,
                 product_name_to_id_dict=product_name_to_id_dict,
@@ -1239,8 +1232,7 @@ class SharePortfolioTask(PortfolioManagementTask):
         with open(path, "w") as f:
             f.write("{}")
 
-        self.info(
-            f"{self.uid}: checking {self.portfolio_id} with {self.account_id}")
+        self.info(f"{self.uid}: checking {self.portfolio_id} with {self.account_id}")
 
         with betterboto_client.ClientContextManager(
             "servicecatalog", region_name=self.region
@@ -1316,8 +1308,7 @@ class SharePortfolioViaOrgsTask(PortfolioManagementTask):
                     else:
                         errors.append(error)
                 if len(errors) > 0:
-                    raise Exception(yaml.safe_dump(
-                        response.get("ShareDetails")))
+                    raise Exception(yaml.safe_dump(response.get("ShareDetails")))
 
         self.write_output(self.param_kwargs)
 
@@ -1421,9 +1412,7 @@ class ShareAndAcceptPortfolioTask(
                 "Principals"
             )
             principal_was_associated = False
-            principal_to_associate = (
-                config.get_puppet_role_arn(self.account_id)
-            )
+            principal_to_associate = config.get_puppet_role_arn(self.account_id)
             for principal_for_portfolio in principals_for_portfolio:
                 if (
                     principal_for_portfolio.get("PrincipalARN")
@@ -1470,8 +1459,7 @@ class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):
         with open(path, "w") as f:
             f.write("{}")
 
-        self.info(
-            f"Creating the association for portfolio {self.portfolio_id}")
+        self.info(f"Creating the association for portfolio {self.portfolio_id}")
         with betterboto_client.ClientContextManager(
             "servicecatalog", region_name=self.region
         ) as servicecatalog:
