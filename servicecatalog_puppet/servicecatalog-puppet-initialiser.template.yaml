@@ -180,7 +180,7 @@ Resources:
                 - servicecatalog-puppet set-config-value should_collect_cloudformation_events ${SHOULD_COLLECT_CLOUDFORMATION_EVENTS}
                 - servicecatalog-puppet set-config-value should_forward_events_to_eventbridge ${SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE}
                 - servicecatalog-puppet set-config-value should_forward_failures_to_opscenter ${SHOULD_FORWARD_FAILURES_TO_OPSCENTER}
-                - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID} --permission-boundary ${PUPPET_ROLE_PERMISSION_BOUNDARY}
+                - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID} --permission-boundary ${PUPPET_ROLE_PERMISSION_BOUNDARY} --puppet-role-name ${PUPPET_ROLE_NAME} --puppet-role-path ${PUPPET_ROLE_PATH}
             build:
               commands:
                 - servicecatalog-puppet --info bootstrap --puppet-code-pipeline-role-permission-boundary ${PUPPET_CODE_PIPELINE_ROLE_PERMISSION_BOUNDARY} --source-role-permissions-boundary ${SOURCE_ROLE_PERMISSIONS_BOUNDARY} --puppet-generate-role-permission-boundary ${PUPPET_GENERATE_ROLE_PERMISSION_BOUNDARY} --puppet-deploy-role-permission-boundary ${PUPPET_DEPLOY_ROLE_PERMISSION_BOUNDARY} --puppet-provisioning-role-permissions-boundary ${PUPPET_PROVISIONING_ROLE_PERMISSIONS_BOUNDARY} --cloud-formation-deploy-role-permissions-boundary ${CLOUD_FORMATION_DEPLOY_ROLE_PERMISSIONS_BOUNDARY} --deploy_num_workers ${DEPLOY_NUM_WORKERS} --deploy_environment_compute_type ${DEPLOY_ENVIRONMENT_COMPUTE_TYPE} --puppet-role-name ${PUPPET_ROLE_NAME} --puppet-role-path ${PUPPET_ROLE_PATH}

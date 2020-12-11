@@ -196,7 +196,12 @@ def graph(f):
 
 
 def _do_bootstrap_spoke(
-    puppet_account_id, cloudformation, puppet_version, permission_boundary
+    puppet_account_id,
+    cloudformation,
+    puppet_version,
+    permission_boundary,
+    puppet_role_name,
+    puppet_role_path,
 ):
     template = asset_helpers.read_from_site_packages(
         "{}-spoke.template.yaml".format(constants.BOOTSTRAP_STACK_NAME)
@@ -221,6 +226,16 @@ def _do_bootstrap_spoke(
                 "ParameterValue": puppet_version,
                 "UsePreviousValue": False,
             },
+            {
+                "ParameterKey": "PuppetRoleName",
+                "ParameterValue": puppet_role_name,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetRolePath",
+                "ParameterValue": puppet_role_path,
+                "UsePreviousValue": False,
+            },
         ],
         "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}],
     }
@@ -228,7 +243,13 @@ def _do_bootstrap_spoke(
     logger.info("Finished bootstrap of spoke")
 
 
-def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
+def bootstrap_spoke_as(
+    puppet_account_id,
+    iam_role_arns,
+    permission_boundary,
+    puppet_role_name,
+    puppet_role_path,
+):
     cross_accounts = []
     index = 0
     for role in iam_role_arns:
@@ -243,6 +264,8 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
             cloudformation,
             config.get_puppet_version(),
             permission_boundary,
+            puppet_role_name,
+            puppet_role_path,
         )
 
 
@@ -448,13 +471,17 @@ def _do_bootstrap(
             )
 
 
-def bootstrap_spoke(puppet_account_id, permission_boundary):
+def bootstrap_spoke(
+    puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path
+):
     with betterboto_client.ClientContextManager("cloudformation") as cloudformation:
         _do_bootstrap_spoke(
             puppet_account_id,
             cloudformation,
             config.get_puppet_version(),
             permission_boundary,
+            puppet_role_name,
+            puppet_role_path,
         )
 
 
@@ -850,7 +877,13 @@ def set_named_config_value(name, value):
 
 
 def bootstrap_spokes_in_ou(
-    ou_path_or_id, role_name, iam_role_arns, permission_boundary, num_workers=10
+    ou_path_or_id,
+    role_name,
+    iam_role_arns,
+    permission_boundary,
+    num_workers,
+    puppet_role_name,
+    puppet_role_path,
 ):
     puppet_account_id = config.get_puppet_account_id()
     org_iam_role_arn = config.get_org_iam_role_arn(puppet_account_id)
@@ -876,6 +909,8 @@ def bootstrap_spokes_in_ou(
                         iam_role_arns=iam_role_arns,
                         role_name=role_name,
                         permission_boundary=permission_boundary,
+                        puppet_role_name=puppet_role_name,
+                        puppet_role_path=puppet_role_path,
                     )
                 )
 

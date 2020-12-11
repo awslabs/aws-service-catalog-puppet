@@ -100,8 +100,22 @@ def dry_run(f, single_account, puppet_account_id):
 @click.option(
     "--permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess"
 )
-def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
-    core.bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary)
+@click.option("--puppet-role-name", default="PuppetRole")
+@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
+def bootstrap_spoke_as(
+    puppet_account_id,
+    iam_role_arns,
+    permission_boundary,
+    puppet_role_name,
+    puppet_role_path,
+):
+    core.bootstrap_spoke_as(
+        puppet_account_id,
+        iam_role_arns,
+        permission_boundary,
+        puppet_role_name,
+        puppet_role_path,
+    )
 
 
 @cli.command()
@@ -109,8 +123,14 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
 @click.option(
     "--permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess"
 )
-def bootstrap_spoke(puppet_account_id, permission_boundary):
-    core.bootstrap_spoke(puppet_account_id, permission_boundary)
+@click.option("--puppet-role-name", default="PuppetRole")
+@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
+def bootstrap_spoke(
+    puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path
+):
+    core.bootstrap_spoke(
+        puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path
+    )
 
 
 @cli.command()
@@ -121,11 +141,25 @@ def bootstrap_spoke(puppet_account_id, permission_boundary):
     "--permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess"
 )
 @click.option("--num-workers", default=10)
+@click.option("--puppet-role-name", default="PuppetRole")
+@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
 def bootstrap_spokes_in_ou(
-    ou_path_or_id, role_name, iam_role_arns, permission_boundary, num_workers
+    ou_path_or_id,
+    role_name,
+    iam_role_arns,
+    permission_boundary,
+    num_workers,
+    puppet_role_name,
+    puppet_role_path,
 ):
     core.bootstrap_spokes_in_ou(
-        ou_path_or_id, role_name, iam_role_arns, permission_boundary, num_workers
+        ou_path_or_id,
+        role_name,
+        iam_role_arns,
+        permission_boundary,
+        num_workers,
+        puppet_role_name,
+        puppet_role_path,
     )
 
 
