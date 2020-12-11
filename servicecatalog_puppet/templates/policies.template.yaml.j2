@@ -60,7 +60,7 @@ Resources:
               - !Sub "arn:${AWS::Partition}:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
               - !Sub "arn:${AWS::Partition}:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}"
             Principal:
-              AWS: "arn:${AWS::Partition}:iam::{{ account_id }}:root"{% endfor %}
+              AWS: !Sub "arn:${AWS::Partition}:iam::{{ account_id }}:root"{% endfor %}
         {% for organization in sharing_policies.get('organizations') %}
           - Sid: OrganizationalShareFor{{ organization }}
             Action:
