@@ -466,6 +466,13 @@ def set_config_value(name, value):
 
 
 @cli.command()
+@click.argument("name")
+@click.argument("value")
+def set_named_config_value(name, value):
+    core.set_named_config_value(name, value)
+
+
+@cli.command()
 @click.argument("execution_id")
 @click.option("--puppet-account-id", default=None)
 def export_puppet_pipeline_logs(execution_id, puppet_account_id):

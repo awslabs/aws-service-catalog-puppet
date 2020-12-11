@@ -60,7 +60,7 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
             f"{self.account_id}-{self.region}-sc",
             region_name=self.region,
         ) as service_catalog:
@@ -108,7 +108,8 @@ class ProvisionProductTask(ProvisioningTask):
     worker_timeout = luigi.IntParameter(default=0, significant=False)
     ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
     should_use_sns = luigi.BoolParameter(significant=False, default=False)
-    should_use_product_plans = luigi.BoolParameter(significant=False, default=False)
+    should_use_product_plans = luigi.BoolParameter(
+        significant=False, default=False)
     requested_priority = luigi.IntParameter(significant=False, default=0)
 
     execution = luigi.Parameter()
@@ -153,7 +154,8 @@ class ProvisionProductTask(ProvisioningTask):
                     parameter_name=param_name,
                     name=param_details.get("ssm").get("name"),
                     region=param_details.get("ssm").get(
-                        "region", config.get_home_region(self.puppet_account_id)
+                        "region", config.get_home_region(
+                            self.puppet_account_id)
                     ),
                     cache_invalidator=self.cache_invalidator,
                 )
@@ -209,7 +211,7 @@ class ProvisionProductTask(ProvisioningTask):
 
         all_params = self.get_all_params()
 
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             role,
@@ -287,7 +289,8 @@ class ProvisionProductTask(ProvisioningTask):
                             f"SC-{self.account_id}-{provisioned_product_id}",
                         )
                         stack_status = stack.get("StackStatus")
-                        self.info(f"current cfn stack_status is {stack_status}")
+                        self.info(
+                            f"current cfn stack_status is {stack_status}")
                         if stack_status not in [
                             "UPDATE_COMPLETE",
                             "CREATE_COMPLETE",
@@ -378,7 +381,8 @@ class ProvisionProductTask(ProvisioningTask):
                                     found_match = True
                                     self.info(f"found value")
                                     ssm.put_parameter_and_wait(
-                                        Name=ssm_param_output.get("param_name"),
+                                        Name=ssm_param_output.get(
+                                            "param_name"),
                                         Value=output.get("OutputValue"),
                                         Type=ssm_param_output.get(
                                             "param_type", "String"
@@ -420,11 +424,12 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
         ]
 
     def run(self):
-        self.info(f"starting deploy try {self.try_count} of {self.retry_count}")
+        self.info(
+            f"starting deploy try {self.try_count} of {self.retry_count}")
 
         all_params = self.get_all_params()
 
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             role,
@@ -448,7 +453,8 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                     current_status = r.get("Status")
                     if current_status in ["AVAILABLE", "TAINTED"]:
                         provisioned_product_id = r.get("Id")
-                        provisioning_artifact_id = r.get("ProvisioningArtifactId")
+                        provisioning_artifact_id = r.get(
+                            "ProvisioningArtifactId")
 
             self.info(
                 f"pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}"
@@ -602,9 +608,10 @@ class TerminateProductTask(ProvisioningTask):
         ]
 
     def run(self):
-        self.info(f"starting terminate try {self.try_count} of {self.retry_count}")
+        self.info(
+            f"starting terminate try {self.try_count} of {self.retry_count}")
 
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             role,
@@ -619,7 +626,7 @@ class TerminateProductTask(ProvisioningTask):
             )
             log_output = self.to_str_params()
             log_output.update(
-                {"provisioned_product_id": provisioned_product_id,}
+                {"provisioned_product_id": provisioned_product_id, }
             )
 
             for ssm_param_output in self.ssm_param_outputs:
@@ -714,7 +721,7 @@ class TerminateProductDryRunTask(ProvisioningTask):
             f"starting dry run terminate try {self.try_count} of {self.retry_count}"
         )
 
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             role,
@@ -781,7 +788,7 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
 
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
             f"sc-{self.region}-{self.account_id}",
             region_name=self.region,
         ) as service_catalog:
@@ -793,12 +800,13 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
             for result in all_results:
                 if result.get("Name") == self.launch_name:
                     provisioned_product_id = result.get("Id")
-                    self.info(f"Ensuring current provisioned product owner is correct")
+                    self.info(
+                        f"Ensuring current provisioned product owner is correct")
                     changes_made.append(result)
                     service_catalog.update_provisioned_product_properties(
                         ProvisionedProductId=provisioned_product_id,
                         ProvisionedProductProperties={
-                            "OWNER": f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+                            "OWNER": config.get_puppet_role_arn(self.account_id)
                         },
                     )
             self.write_output(changes_made)
@@ -825,7 +833,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "s3",
-            f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
+            config.get_puppet_role_arn(self.puppet_account_id),
             f"s3-{self.puppet_account_id}",
         ) as s3:
             bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
@@ -843,7 +851,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
             version = response.get("Parameter").get("Value")
         with betterboto_client.CrossAccountClientContextManager(
             "codebuild",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
             f"codebuild-{self.account_id}",
         ) as codebuild:
             response = codebuild.start_build(
@@ -1079,7 +1087,8 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         ProvisionProductDryRunTask(**provisioning_parameters)
                     )
                 else:
-                    provisions.append(ProvisionProductTask(**provisioning_parameters))
+                    provisions.append(ProvisionProductTask(
+                        **provisioning_parameters))
 
             elif task_status == constants.TERMINATED:
                 terminating_parameters = dict()
@@ -1101,7 +1110,8 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         TerminateProductDryRunTask(**terminating_parameters)
                     )
                 else:
-                    provisions.append(TerminateProductTask(**terminating_parameters))
+                    provisions.append(TerminateProductTask(
+                        **terminating_parameters))
             else:
                 raise Exception(f"Unsupported status of {task_status}")
         return provisions
@@ -1278,7 +1288,8 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         ]
         self.info(f"{self.uid} finished post actions")
 
-        self.write_output(dict(**self.params_for_results_display(), skipped=False))
+        self.write_output(
+            dict(**self.params_for_results_display(), skipped=False))
         self.info("Finished")
 
 
@@ -1382,7 +1393,8 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 "product_generation_method", "copy"
             )
 
-            sharing_mode = task_def.get("sharing_mode", constants.SHARING_MODE_DEFAULT)
+            sharing_mode = task_def.get(
+                "sharing_mode", constants.SHARING_MODE_DEFAULT)
 
             self.info("generate_tasks main loop iteration 2")
             if (
@@ -1400,7 +1412,8 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     )
                 )
             elif (
-                task_def.get("status") == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED
+                task_def.get(
+                    "status") == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED
             ):
 
                 create_spoke_local_portfolio_task_params = dict(
@@ -1440,7 +1453,8 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 )
                 tasks.append(create_associations_for_portfolio_task)
 
-            launch_constraints = task_def.get("constraints", {}).get("launch", [])
+            launch_constraints = task_def.get(
+                "constraints", {}).get("launch", [])
 
             if product_generation_method == "import":
                 import_into_spoke_local_portfolio_task = portfoliomanagement_tasks.ImportIntoSpokeLocalPortfolioTask(

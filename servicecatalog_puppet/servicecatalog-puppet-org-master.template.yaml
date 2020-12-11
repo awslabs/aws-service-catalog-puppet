@@ -47,7 +47,7 @@ Resources:
         Statement:
           - Effect: "Allow"
             Principal:
-              AWS: !Sub "arn:aws:iam::${PuppetAccountId}:root"
+              AWS: !Sub "arn:${AWS::Partition}:iam::${PuppetAccountId}:root"
             Action:
               - "sts:AssumeRole"
 

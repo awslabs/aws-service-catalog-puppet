@@ -82,7 +82,7 @@ Resources:
             Action:
               - "sts:AssumeRole"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
 
   InitialiserProject:
     Type: AWS::CodeBuild::Project
@@ -99,7 +99,7 @@ Resources:
         EnvironmentVariables:
           - Name: ENABLED_REGIONS
             Type: PLAINTEXT
-            Value: !Join [ ',', !Split [ ', ', !Ref EnabledRegions]]
+            Value: !Join [",", !Split [", ", !Ref EnabledRegions]]
 
           - Name: SHOULD_COLLECT_CLOUDFORMATION_EVENTS
             Type: PLAINTEXT
@@ -160,7 +160,7 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.x
+                python: 3.7
               commands:
                 - pip install aws-service-catalog-puppet --upgrade
                 - servicecatalog-puppet --info set-regions ${ENABLED_REGIONS}
@@ -180,8 +180,8 @@ Resources:
       RoleName: StartPuppetInstallRole
       Path: /servicecatalog-puppet/
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-        - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSCodeBuildDeveloperAccess
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:

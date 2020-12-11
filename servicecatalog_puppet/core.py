@@ -818,6 +818,19 @@ def set_config_value(name, value):
         upload_config(config)
 
 
+def set_named_config_value(name, value):
+    with betterboto_client.ClientContextManager(
+        "ssm", region_name=constants.HOME_REGION
+    ) as ssm:
+        ssm.put_parameter(
+            Name=name,
+            Type="String",
+            Value=value,
+            Overwrite=True,
+        )
+        click.echo("Uploaded named config")
+
+
 def bootstrap_spokes_in_ou(
     ou_path_or_id, role_name, iam_role_arns, permission_boundary, num_workers=10
 ):
