@@ -122,6 +122,7 @@ class GeneratePolicies(tasks.PuppetTask):
             f"cf-{self.puppet_account_id}-{self.region}",
             region_name=self.region,
         ) as cloudformation:
+            self.info(template)
             cloudformation.create_or_update(
                 ShouldUseChangeSets=False,
                 StackName="servicecatalog-puppet-policies",

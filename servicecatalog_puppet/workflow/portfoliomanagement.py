@@ -287,11 +287,9 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
             region_name=self.region,
         ) as cross_account_servicecatalog:
             result = None
-
             response = (
                 cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
             )
-            assert response.get("NextPageToken") is None, "Pagination not supported"
             for portfolio_detail in response.get("PortfolioDetails"):
                 if portfolio_detail.get("DisplayName") == self.portfolio:
                     result = portfolio_detail

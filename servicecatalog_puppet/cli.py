@@ -100,8 +100,22 @@ def dry_run(f, single_account, puppet_account_id):
 @click.option(
     "--permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess"
 )
-def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
-    core.bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary)
+@click.option("--puppet-role-name", default="PuppetRole")
+@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
+def bootstrap_spoke_as(
+    puppet_account_id,
+    iam_role_arns,
+    permission_boundary,
+    puppet_role_name,
+    puppet_role_path,
+):
+    core.bootstrap_spoke_as(
+        puppet_account_id,
+        iam_role_arns,
+        permission_boundary,
+        puppet_role_name,
+        puppet_role_path,
+    )
 
 
 @cli.command()
@@ -109,8 +123,14 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
 @click.option(
     "--permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess"
 )
-def bootstrap_spoke(puppet_account_id, permission_boundary):
-    core.bootstrap_spoke(puppet_account_id, permission_boundary)
+@click.option("--puppet-role-name", default="PuppetRole")
+@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
+def bootstrap_spoke(
+    puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path
+):
+    core.bootstrap_spoke(
+        puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path
+    )
 
 
 @cli.command()
@@ -121,11 +141,25 @@ def bootstrap_spoke(puppet_account_id, permission_boundary):
     "--permission-boundary", default="arn:aws:iam::aws:policy/AdministratorAccess"
 )
 @click.option("--num-workers", default=10)
+@click.option("--puppet-role-name", default="PuppetRole")
+@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
 def bootstrap_spokes_in_ou(
-    ou_path_or_id, role_name, iam_role_arns, permission_boundary, num_workers
+    ou_path_or_id,
+    role_name,
+    iam_role_arns,
+    permission_boundary,
+    num_workers,
+    puppet_role_name,
+    puppet_role_path,
 ):
     core.bootstrap_spokes_in_ou(
-        ou_path_or_id, role_name, iam_role_arns, permission_boundary, num_workers
+        ou_path_or_id,
+        role_name,
+        iam_role_arns,
+        permission_boundary,
+        num_workers,
+        puppet_role_name,
+        puppet_role_path,
     )
 
 
@@ -171,6 +205,8 @@ def bootstrap_spokes_in_ou(
 @click.option("--branch")
 @click.option("--poll-for-source-changes")
 @click.option("--webhook-secret")
+@click.option("--puppet-role-name", default="PuppetRole")
+@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
 def bootstrap_branch(
     branch_to_bootstrap,
     with_manual_approvals,
@@ -189,6 +225,8 @@ def bootstrap_branch(
     branch,
     poll_for_source_changes,
     webhook_secret,
+    puppet_role_name,
+    puppet_role_path,
 ):
     puppet_account_id = config.get_puppet_account_id()
 
@@ -210,6 +248,8 @@ def bootstrap_branch(
             branch_name,
             poll_for_source_changes,
             webhook_secret,
+            puppet_role_name,
+            puppet_role_path,
         )
     elif source_provider == "GitHub":
         core.bootstrap_branch(
@@ -280,6 +320,8 @@ def bootstrap_branch(
 @click.option("--branch")
 @click.option("--poll-for-source-changes")
 @click.option("--webhook-secret")
+@click.option("--puppet-role-name", default="PuppetRole")
+@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
 def bootstrap(
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
@@ -298,6 +340,8 @@ def bootstrap(
     branch,
     poll_for_source_changes,
     webhook_secret,
+    puppet_role_name,
+    puppet_role_path,
 ):
     puppet_account_id = config.get_puppet_account_id()
     if source_provider == "CodeCommit":
@@ -318,6 +362,8 @@ def bootstrap(
             branch_name,
             poll_for_source_changes,
             webhook_secret,
+            puppet_role_name,
+            puppet_role_path,
         )
     elif source_provider == "GitHub":
         core.bootstrap(
@@ -337,6 +383,8 @@ def bootstrap(
             branch,
             poll_for_source_changes,
             webhook_secret,
+            puppet_role_name,
+            puppet_role_path,
         )
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")
@@ -501,6 +549,7 @@ def release_spoke(puppet_account_id):
 @click.argument("iam_role_arns", nargs=-1)
 def wait_for_code_build_in(iam_role_arns):
     core.wait_for_code_build_in(iam_role_arns)
+    core.wait_for_cloudformation_in(iam_role_arns)
     click.echo("AWS CodeBuild is available")
 
 

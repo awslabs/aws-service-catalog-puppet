@@ -25,6 +25,12 @@ Parameters:
   Version:
     Type: String
     Default: "{{ VERSION }}"
+  PuppetRoleName:
+    Type: String
+    Default: PuppetRole
+  PuppetRolePath:
+    Type: String
+    Default: /servicecatalog-puppet/
 
 Conditions:
   NotRunningInPuppetAccount:
@@ -41,8 +47,8 @@ Resources:
   PuppetRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: PuppetRole
-      Path: /servicecatalog-puppet/
+      RoleName: !Ref PuppetRoleName
+      Path: !Ref PuppetRolePath
       PermissionsBoundary: !Ref PermissionBoundary
       Policies:
         - PolicyName: "acceptShares"
@@ -264,3 +270,6 @@ Resources:
 Outputs:
   Version:
     Value: !GetAtt Param.Value
+
+  PuppetRoleArn:
+    Value: !GetAtt PuppetRole.Arn
