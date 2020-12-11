@@ -18,8 +18,7 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
 
     def run(self):
         partition = config.get_partition()
-        iam_role_arns_to_use = [
-            iam_role_arn for iam_role_arn in self.iam_role_arns]
+        iam_role_arns_to_use = [iam_role_arn for iam_role_arn in self.iam_role_arns]
         iam_role_arns_to_use.append(
             f"arn:{partition}:iam::{self.account_id}:role/{self.role_name}"
         )

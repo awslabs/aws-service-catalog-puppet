@@ -823,10 +823,7 @@ def set_named_config_value(name, value):
         "ssm", region_name=constants.HOME_REGION
     ) as ssm:
         ssm.put_parameter(
-            Name=name,
-            Type="String",
-            Value=value,
-            Overwrite=True,
+            Name=name, Type="String", Value=value, Overwrite=True,
         )
         click.echo("Uploaded named config")
 

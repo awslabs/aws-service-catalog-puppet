@@ -64,8 +64,7 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
                     parameter_name=param_name,
                     name=param_details.get("ssm").get("name"),
                     region=param_details.get("ssm").get(
-                        "region", config.get_home_region(
-                            self.puppet_account_id)
+                        "region", config.get_home_region(self.puppet_account_id)
                     ),
                     cache_invalidator=self.cache_invalidator,
                 )

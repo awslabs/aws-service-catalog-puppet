@@ -23,8 +23,7 @@ def get_config(puppet_account_id, default_region=None):
             return conf
 
     logger.info("getting config,  default_region: {}".format(default_region))
-    region = default_region if default_region else get_home_region(
-        puppet_account_id)
+    region = default_region if default_region else get_home_region(puppet_account_id)
     with betterboto_client.CrossAccountClientContextManager(
         "ssm",
         get_puppet_role_arn(puppet_account_id),
@@ -43,8 +42,7 @@ def get_regions(puppet_account_id, default_region=None):
 
 @functools.lru_cache(maxsize=32)
 def get_should_use_sns(puppet_account_id, default_region=None):
-    logger.info(
-        "getting should_use_sns,  default_region: {}".format(default_region))
+    logger.info("getting should_use_sns,  default_region: {}".format(default_region))
     return get_config(puppet_account_id, default_region).get(
         "should_collect_cloudformation_events", True
     )
@@ -53,8 +51,7 @@ def get_should_use_sns(puppet_account_id, default_region=None):
 @functools.lru_cache(maxsize=32)
 def is_caching_enabled(puppet_account_id, default_region=None):
     logger.info(
-        "getting is_caching_enabled,  default_region: {}".format(
-            default_region)
+        "getting is_caching_enabled,  default_region: {}".format(default_region)
     )
     return get_config(puppet_account_id, default_region).get(
         "is_caching_enabled", False
@@ -64,8 +61,7 @@ def is_caching_enabled(puppet_account_id, default_region=None):
 @functools.lru_cache(maxsize=32)
 def get_should_use_eventbridge(puppet_account_id, default_region=None):
     logger.info(
-        "getting should_use_eventbridge,  default_region: {}".format(
-            default_region)
+        "getting should_use_eventbridge,  default_region: {}".format(default_region)
     )
     return get_config(puppet_account_id, default_region).get(
         "should_forward_events_to_eventbridge", False
@@ -87,8 +83,7 @@ def get_should_forward_failures_to_opscenter(puppet_account_id, default_region=N
 @functools.lru_cache(maxsize=32)
 def get_should_use_product_plans(puppet_account_id, default_region=None):
     logger.info(
-        "getting should_use_product_plans,  default_region: {}".format(
-            default_region)
+        "getting should_use_product_plans,  default_region: {}".format(default_region)
     )
     return get_config(puppet_account_id, default_region).get(
         "should_use_product_plans", True
@@ -110,19 +105,27 @@ def get_global_sharing_mode_default(puppet_account_id, default_region=None):
 @functools.lru_cache()
 def get_partition():
     logger.info("getting partition")
-    return os.getenv(constants.PARTITION_ENVIRONMENTAL_VARIABLE_NAME, constants.PARTITION_DEFAULT)
+    return os.getenv(
+        constants.PARTITION_ENVIRONMENTAL_VARIABLE_NAME, constants.PARTITION_DEFAULT
+    )
 
 
 @functools.lru_cache()
 def get_puppet_role_name():
     logger.info("getting puppet_role_name")
-    return os.getenv(constants.PUPPET_ROLE_NAME_ENVIRONMENTAL_VARIABLE_NAME, constants.PUPPET_ROLE_NAME_DEFAULT)
+    return os.getenv(
+        constants.PUPPET_ROLE_NAME_ENVIRONMENTAL_VARIABLE_NAME,
+        constants.PUPPET_ROLE_NAME_DEFAULT,
+    )
 
 
 @functools.lru_cache()
 def get_puppet_role_path():
     logger.info("getting puppet_role_path")
-    return os.getenv(constants.PUPPET_ROLE_PATH_ENVIRONMENTAL_VARIABLE_NAME, constants.PUPPET_ROLE_PATH_DEFAULT)
+    return os.getenv(
+        constants.PUPPET_ROLE_PATH_ENVIRONMENTAL_VARIABLE_NAME,
+        constants.PUPPET_ROLE_PATH_DEFAULT,
+    )
 
 
 @functools.lru_cache()
@@ -173,8 +176,7 @@ def get_org_iam_role_arn(puppet_account_id):
 
 
 template_dir = asset_helpers.resolve_from_site_packages("templates")
-env = Environment(loader=FileSystemLoader(
-    template_dir), extensions=["jinja2.ext.do"],)
+env = Environment(loader=FileSystemLoader(template_dir), extensions=["jinja2.ext.do"],)
 
 
 @functools.lru_cache(maxsize=32)

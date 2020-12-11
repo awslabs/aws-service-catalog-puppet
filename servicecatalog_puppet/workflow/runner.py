@@ -249,7 +249,7 @@ def run_tasks(
                 params = yaml.safe_dump(params)
 
                 table_data.append(
-                    [result.get("task_type"), params, result.get("duration"), ]
+                    [result.get("task_type"), params, result.get("duration"),]
                 )
             click.echo(table.table)
             for filename in glob("results/failure/*.json"):
@@ -259,16 +259,14 @@ def run_tasks(
                     title = f"{result.get('task_type')} failed: {params.get('launch_name')} - {params.get('account_id')} - {params.get('region')}"
                     logging.info(f"Sending failure to opscenter: {title}")
                     operational_data = dict(
-                        codebuild_id=dict(Value=codebuild_id,
-                                          Type="SearchableString")
+                        codebuild_id=dict(Value=codebuild_id, Type="SearchableString")
                     )
                     for param_name, param in params.items():
                         operational_data[param_name] = {
                             "Value": json.dumps(param, default=str),
                             "Type": "SearchableString",
                         }
-                    description = "\n".join(result.get(
-                        "exception_stack_trace"))[-1024:]
+                    description = "\n".join(result.get("exception_stack_trace"))[-1024:]
                     ssm_client.create_ops_item(
                         Title=title,
                         Description=description,
@@ -276,8 +274,7 @@ def run_tasks(
                         Priority=1,
                         Source=constants.SERVICE_CATALOG_PUPPET_OPS_CENTER_SOURCE,
                         Tags=[
-                            {"Key": "ServiceCatalogPuppet:Actor",
-                                "Value": "ops-item"},
+                            {"Key": "ServiceCatalogPuppet:Actor", "Value": "ops-item"},
                         ],
                     )
 
@@ -304,12 +301,11 @@ def run_tasks(
                     ):
                         events.put_events(
                             Entries=entries[
-                                i: i + constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL
+                                i : i + constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL
                             ]
                         )
                         time.sleep(1)
-                logging.info(
-                    f"Finished sending {len(entries)} events to eventbridge")
+                logging.info(f"Finished sending {len(entries)} events to eventbridge")
 
     exit_status_code = exit_status_codes.get(run_result.status)
     if on_complete_url:
@@ -361,11 +357,9 @@ def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
     for filename in glob("results/failure/*.json"):
         result = json.loads(open(filename, "r").read())
         click.echo(
-            colorclass.Color(
-                "{red}" + result.get("task_type") + " failed{/red}")
+            colorclass.Color("{red}" + result.get("task_type") + " failed{/red}")
         )
-        click.echo(
-            f"{yaml.safe_dump({'parameters': result.get('task_params')})}")
+        click.echo(f"{yaml.safe_dump({'parameters': result.get('task_params')})}")
         click.echo("\n".join(result.get("exception_stack_trace")))
         click.echo("")
     exit_status_codes = {
