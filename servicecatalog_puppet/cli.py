@@ -171,8 +171,8 @@ def bootstrap_spokes_in_ou(
 @click.option("--branch")
 @click.option("--poll-for-source-changes")
 @click.option("--webhook-secret")
-@click.option("--puppet-role-name")
-@click.option("--puppet-role-path")
+@click.option("--puppet-role-name", default="PuppetRole")
+@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
 def bootstrap_branch(
     branch_to_bootstrap,
     with_manual_approvals,
@@ -286,8 +286,8 @@ def bootstrap_branch(
 @click.option("--branch")
 @click.option("--poll-for-source-changes")
 @click.option("--webhook-secret")
-@click.option("--puppet-role-name")
-@click.option("--puppet-role-path")
+@click.option("--puppet-role-name", default="PuppetRole")
+@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
 def bootstrap(
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
