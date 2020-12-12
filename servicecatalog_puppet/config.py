@@ -104,11 +104,10 @@ def get_global_sharing_mode_default(puppet_account_id, default_region=None):
 
 @functools.lru_cache()
 def get_partition():
-    partition = os.getenv(
+    logger.info(f"getting partition")
+    return os.getenv(
         constants.PARTITION_ENVIRONMENTAL_VARIABLE_NAME, constants.PARTITION_DEFAULT
     )
-    logger.info(f"getting partition: {partition}")
-    return partition
 
 
 @functools.lru_cache()
