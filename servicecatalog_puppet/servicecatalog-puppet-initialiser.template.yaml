@@ -159,6 +159,9 @@ Resources:
             Type: PLAINTEXT
             Value: !Ref DeployNumWorkers
 
+          - Name: PARTITION
+            Type: PLAINTEXT
+            Value: !Ref AWS::Partition
           - Name: PUPPET_ROLE_NAME
             Type: PLAINTEXT
             Value: !Ref PuppetRoleName
