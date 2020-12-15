@@ -1159,7 +1159,7 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
                 StackName=stack_name_v2,
                 TemplateBody=template,
                 NotificationARNs=[
-                    f"arn:{config.get_partition}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                    f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
                 ]
                 if self.should_use_sns
                 else [],
