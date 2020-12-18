@@ -113,3 +113,26 @@ The parameter is available on `bootstrap-spoke-as` and `bootstrap-spokes-in-ou` 
 
     permission boundary was added in version 0.56.0
 
+
+Customising the PuppetRole
+--------------------------
+
+When you bootstrap a spoke you can specify an optional `puppet-role-name` and `puppet-role-path`:
+
+.. code-block:: bash
+
+    servicecatalog-puppet bootstrap-spoke <ACCOUNT_ID_OF_YOUR_PUPPET> --puppet-role-name PuppetExecutionRole --puppet-role-path /automation/
+
+Please note you must choose the same PuppetRoleName and PuppetRolePath for each spoke in your environment and you must
+choose that same PuppetRoleName and PuppetRolePath when bootstrapping the hub account:
+
+.. code-block: bash
+
+    servicecatalog-puppet bootstrap --puppet-role-name PuppetExecutionRole --puppet-role-path /automation/ ...
+
+You can have two independent hub accounts and bootstrap a spoke twice so that it can be managed by two independent hub
+accounts so long as the PuppetRoleName and PuppetRolePath are different.
+
+.. note::
+
+    configurable puppet role name and paths were added in version 0.91.0
