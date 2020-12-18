@@ -17,6 +17,8 @@ class BootstrapSpokeAsTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
             iam_role_arns=self.iam_role_arns,
             role_name=self.role_name,
             permission_boundary=self.permission_boundary,
+            puppet_role_name="PuppetRole",
+            puppet_role_path="/servicecatalog-puppet/",
         )
 
     def test_params_for_results_display(self):
