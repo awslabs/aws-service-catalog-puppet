@@ -119,7 +119,13 @@ def bootstrap_spoke(puppet_account_id, permission_boundary):
     core.bootstrap_spoke(puppet_account_id, permission_boundary)
 
 
-def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
+def bootstrap_spoke_as(
+    puppet_account_id,
+    iam_role_arns,
+    permission_boundary,
+    puppet_role_name="PuppetRole",
+    puppet_role_path="/servicecatalog-puppet/",
+):
     """
     Bootstrap a spoke so that it can be used by the puppet account to share portfolios and provision products.  This
     must be run in an account where you can assume the first ARN in the iam_role_arns list.
@@ -129,11 +135,23 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
     ARN in the list should be the ARN of the spoke you want to bootstrap.
     :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
-    core.bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary)
+    core.bootstrap_spoke_as(
+        puppet_account_id,
+        iam_role_arns,
+        permission_boundary,
+        puppet_role_name,
+        puppet_role_path,
+    )
 
 
 def bootstrap_spokes_in_ou(
-    ou_path_or_id, role_name, iam_role_arns, permission_boundary
+    ou_path_or_id,
+    role_name,
+    iam_role_arns,
+    permission_boundary,
+    num_workers=10,
+    puppet_role_name="PuppetRole",
+    puppet_role_path="/servicecatalog-puppet/",
 ):
     """
     Bootstrap each spoke in the given path or id
@@ -145,7 +163,13 @@ def bootstrap_spokes_in_ou(
     :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
     core.bootstrap_spokes_in_ou(
-        ou_path_or_id, role_name, iam_role_arns, permission_boundary
+        ou_path_or_id,
+        role_name,
+        iam_role_arns,
+        permission_boundary,
+        num_workers,
+        puppet_role_name,
+        puppet_role_path,
     )
 
 

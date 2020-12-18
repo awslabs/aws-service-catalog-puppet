@@ -50,6 +50,12 @@ Parameters:
     Type: Number
     Description: Number of workers that should be used when running a deploy
     Default: 10
+  PuppetRoleName:
+    Type: String
+    Default: PuppetRole
+  PuppetRolePath:
+    Type: String
+    Default: /servicecatalog-puppet/
 
 Conditions:
   ShouldUseOrgs: !Not [!Equals [!Ref OrgIamRoleArn, None]]
@@ -74,6 +80,33 @@ Resources:
       Tags:
         "ServiceCatalogPuppet:Actor": "Framework"
 
+  PartitionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /servicecatalog-puppet/partition
+      Type: String
+      Value: !Ref AWS::Partition
+      Tags:
+        "ServiceCatalogPuppet:Actor": "Framework"
+
+  PuppetRoleNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /servicecatalog-puppet/puppet-role/name
+      Type: String
+      Value: !Ref PuppetRoleName
+      Tags:
+        "ServiceCatalogPuppet:Actor": "Framework"
+
+  PuppetRolePathParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /servicecatalog-puppet/puppet-role/path
+      Type: String
+      Value: !Ref PuppetRolePath
+      Tags:
+        "ServiceCatalogPuppet:Actor": "Framework"
+
   ShareAcceptFunctionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -89,7 +122,7 @@ Resources:
       RoleName: ShareAcceptFunctionRole
       Path: /servicecatalog-puppet/
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
         - PolicyName: ServiceCatalogActions
           PolicyDocument:
@@ -98,7 +131,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - sts:AssumeRole
-                Resource: arn:aws:iam::*:role/servicecatalog-puppet/PuppetRole
+                Resource: !Sub arn:${AWS::Partition}:iam::*:role/servicecatalog-puppet/PuppetRole
 
   ProvisioningRole:
     Type: AWS::IAM::Role
@@ -121,7 +154,7 @@ Resources:
             Action:
               - "sts:AssumeRole"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
 
   CloudFormationDeployRole:
     Type: AWS::IAM::Role
@@ -144,7 +177,7 @@ Resources:
             Action:
               - "sts:AssumeRole"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
 
   PipelineRole:
     Type: AWS::IAM::Role
@@ -153,7 +186,7 @@ Resources:
       PermissionsBoundary: !Ref PuppetCodePipelineRolePermissionBoundary
       Path: /servicecatalog-puppet/
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -181,11 +214,11 @@ Resources:
               - "sts:AssumeRole"
           - Effect: "Allow"
             Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+              AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
             Action:
               - "sts:AssumeRole"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
 
   {% if Source.Provider.lower() == 'codecommit' %}
   CodeRepo:
@@ -323,7 +356,7 @@ Resources:
             Action:
               - "sts:AssumeRole"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
 
   NumWorkersSSMParameter:
     Type: AWS::SSM::Parameter
@@ -356,6 +389,15 @@ Resources:
           - Name: PUPPET_REGION
             Type: PLAINTEXT
             Value: !Ref AWS::Region
+          - Name: PARTITION
+            Type: PARAMETER_STORE
+            Value: !Ref PartitionParameter
+          - Name: PUPPET_ROLE_NAME
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRoleNameParameter
+          - Name: PUPPET_ROLE_PATH
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRolePathParameter
 
       Source:
         Type: CODEPIPELINE
@@ -364,8 +406,9 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.x
+                python: 3.7
               commands:
+                - env
           {% if 'http' in VERSION %}
                 - pip install {{ VERSION }}
           {% else %}
@@ -410,7 +453,7 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.x
+                python: 3.7
               commands:
           {% if 'http' in VERSION %}
                 - pip install {{ VERSION }}
@@ -461,7 +504,7 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.x
+                python: 3.7
               commands:
           {% if 'http' in VERSION %}
                 - pip install {{ VERSION }}
@@ -509,6 +552,16 @@ Resources:
           - Name: PUPPET_REGION
             Type: PLAINTEXT
             Value: !Ref AWS::Region
+          - Name: PARTITION
+            Type: PARAMETER_STORE
+            Value: !Ref PartitionParameter
+          - Name: PUPPET_ROLE_NAME
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRoleNameParameter
+          - Name: PUPPET_ROLE_PATH
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRolePathParameter
+
 
       Source:
         Type: NO_SOURCE
@@ -517,7 +570,7 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.x
+                python: 3.7
               commands:
           {% if 'http' in VERSION %}
                 - pip install {{ VERSION }}
@@ -571,6 +624,16 @@ Resources:
           - Name: CALLBACK_URL
             Type: PLAINTEXT
             Value: CHANGE_ME
+          - Name: PARTITION
+            Type: PARAMETER_STORE
+            Value: !Ref PartitionParameter
+          - Name: PUPPET_ROLE_NAME
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRoleNameParameter
+          - Name: PUPPET_ROLE_PATH
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRolePathParameter
+
 
       Source:
         Type: NO_SOURCE
@@ -579,7 +642,7 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.x
+                python: 3.7
               commands:
           {% if 'http' in VERSION %}
                 - pip install {{ VERSION }}
@@ -637,6 +700,16 @@ Resources:
           - Name: PUPPET_REGION
             Type: PLAINTEXT
             Value: !Ref AWS::Region
+          - Name: PARTITION
+            Type: PARAMETER_STORE
+            Value: !Ref PartitionParameter
+          - Name: PUPPET_ROLE_NAME
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRoleNameParameter
+          - Name: PUPPET_ROLE_PATH
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRolePathParameter
+
 
       Source:
         Type: NO_SOURCE
@@ -645,7 +718,7 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.x
+                python: 3.7
               commands:
           {% if 'http' in VERSION %}
                 - pip install {{ VERSION }}
@@ -707,6 +780,15 @@ Resources:
           - Name: CALLBACK_URL
             Type: PLAINTEXT
             Value: CHANGE_ME
+          - Name: PARTITION
+            Type: PARAMETER_STORE
+            Value: !Ref PartitionParameter
+          - Name: PUPPET_ROLE_NAME
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRoleNameParameter
+          - Name: PUPPET_ROLE_PATH
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRolePathParameter
 
       Source:
         Type: NO_SOURCE
@@ -715,7 +797,7 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.x
+                python: 3.7
               commands:
           {% if 'http' in VERSION %}
                 - pip install {{ VERSION }}
@@ -766,7 +848,7 @@ Resources:
             Resource: "*"
             Condition:
               ArnEquals:
-                aws:SourceArn: !Sub "arn:aws:sns:*:${AWS::AccountId}:servicecatalog-puppet-cloudformation-regional-events"
+                aws:SourceArn: !Sub "arn:${AWS::Partition}:sns:*:${AWS::AccountId}:servicecatalog-puppet-cloudformation-regional-events"
       Queues:
         - !Ref CloudFormationEventsQueue
 

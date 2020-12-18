@@ -196,7 +196,12 @@ def graph(f):
 
 
 def _do_bootstrap_spoke(
-    puppet_account_id, cloudformation, puppet_version, permission_boundary
+    puppet_account_id,
+    cloudformation,
+    puppet_version,
+    permission_boundary,
+    puppet_role_name,
+    puppet_role_path,
 ):
     template = asset_helpers.read_from_site_packages(
         "{}-spoke.template.yaml".format(constants.BOOTSTRAP_STACK_NAME)
@@ -221,6 +226,16 @@ def _do_bootstrap_spoke(
                 "ParameterValue": puppet_version,
                 "UsePreviousValue": False,
             },
+            {
+                "ParameterKey": "PuppetRoleName",
+                "ParameterValue": puppet_role_name,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetRolePath",
+                "ParameterValue": puppet_role_path,
+                "UsePreviousValue": False,
+            },
         ],
         "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}],
     }
@@ -228,7 +243,13 @@ def _do_bootstrap_spoke(
     logger.info("Finished bootstrap of spoke")
 
 
-def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
+def bootstrap_spoke_as(
+    puppet_account_id,
+    iam_role_arns,
+    permission_boundary,
+    puppet_role_name,
+    puppet_role_path,
+):
     cross_accounts = []
     index = 0
     for role in iam_role_arns:
@@ -243,6 +264,8 @@ def bootstrap_spoke_as(puppet_account_id, iam_role_arns, permission_boundary):
             cloudformation,
             config.get_puppet_version(),
             permission_boundary,
+            puppet_role_name,
+            puppet_role_path,
         )
 
 
@@ -256,14 +279,16 @@ def _do_bootstrap(
     puppet_deploy_role_permission_boundary,
     puppet_provisioning_role_permissions_boundary,
     cloud_formation_deploy_role_permissions_boundary,
-    deploy_environment_compute_type="BUILD_GENERAL1_SMALL",
-    deploy_num_workers=10,
-    source_provider=None,
-    owner=None,
-    repo=None,
-    branch=None,
-    poll_for_source_changes=None,
-    webhook_secret=None,
+    deploy_environment_compute_type,
+    deploy_num_workers,
+    source_provider,
+    owner,
+    repo,
+    branch,
+    poll_for_source_changes,
+    webhook_secret,
+    puppet_role_name,
+    puppet_role_path,
 ):
     click.echo("Starting bootstrap")
     should_use_eventbridge = config.get_should_use_eventbridge(
@@ -416,6 +441,16 @@ def _do_bootstrap(
                     "ParameterValue": str(deploy_num_workers),
                     "UsePreviousValue": False,
                 },
+                {
+                    "ParameterKey": "PuppetRoleName",
+                    "ParameterValue": puppet_role_name,
+                    "UsePreviousValue": False,
+                },
+                {
+                    "ParameterKey": "PuppetRolePath",
+                    "ParameterValue": puppet_role_path,
+                    "UsePreviousValue": False,
+                },
             ],
         }
         cloudformation.create_or_update(**args)
@@ -436,13 +471,17 @@ def _do_bootstrap(
             )
 
 
-def bootstrap_spoke(puppet_account_id, permission_boundary):
+def bootstrap_spoke(
+    puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path
+):
     with betterboto_client.ClientContextManager("cloudformation") as cloudformation:
         _do_bootstrap_spoke(
             puppet_account_id,
             cloudformation,
             config.get_puppet_version(),
             permission_boundary,
+            puppet_role_name,
+            puppet_role_path,
         )
 
 
@@ -463,6 +502,8 @@ def bootstrap_branch(
     branch,
     poll_for_source_changes,
     webhook_secret,
+    puppet_role_name,
+    puppet_role_path,
 ):
     _do_bootstrap(
         "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(
@@ -476,13 +517,16 @@ def bootstrap_branch(
         puppet_deploy_role_permission_boundary,
         puppet_provisioning_role_permissions_boundary,
         cloud_formation_deploy_role_permissions_boundary,
-        deploy_num_workers=deploy_num_workers,
-        source_provider=source_provider,
-        owner=owner,
-        repo=repo,
-        branch=branch,
-        poll_for_source_changes=poll_for_source_changes,
-        webhook_secret=webhook_secret,
+        constants.DEPLOY_ENVIRONMENT_COMPUTE_TYPE_DEFAULT,
+        deploy_num_workers,
+        source_provider,
+        owner,
+        repo,
+        branch,
+        poll_for_source_changes,
+        webhook_secret,
+        puppet_role_name,
+        puppet_role_path,
     )
 
 
@@ -503,6 +547,8 @@ def bootstrap(
     branch,
     poll_for_source_changes,
     webhook_secret,
+    puppet_role_name,
+    puppet_role_path,
 ):
     _do_bootstrap(
         config.get_puppet_version(),
@@ -522,6 +568,8 @@ def bootstrap(
         branch,
         poll_for_source_changes,
         webhook_secret,
+        puppet_role_name,
+        puppet_role_path,
     )
 
 
@@ -553,10 +601,10 @@ def expand(f, single_account):
     if single_account:
         click.echo(f"Filtering for single account: {single_account}")
 
-        for account in new_manifest.get('accounts', []):
+        for account in new_manifest.get("accounts", []):
             if account.get("account_id") == single_account:
                 click.echo(f"Found single account: {single_account}")
-                new_manifest['accounts'] = [account]
+                new_manifest["accounts"] = [account]
                 break
 
         click.echo("Filtered")
@@ -818,8 +866,24 @@ def set_config_value(name, value):
         upload_config(config)
 
 
+def set_named_config_value(name, value):
+    with betterboto_client.ClientContextManager(
+        "ssm", region_name=constants.HOME_REGION
+    ) as ssm:
+        ssm.put_parameter(
+            Name=name, Type="String", Value=value, Overwrite=True,
+        )
+        click.echo("Uploaded named config")
+
+
 def bootstrap_spokes_in_ou(
-    ou_path_or_id, role_name, iam_role_arns, permission_boundary, num_workers=10
+    ou_path_or_id,
+    role_name,
+    iam_role_arns,
+    permission_boundary,
+    num_workers,
+    puppet_role_name,
+    puppet_role_path,
 ):
     puppet_account_id = config.get_puppet_account_id()
     org_iam_role_arn = config.get_org_iam_role_arn(puppet_account_id)
@@ -845,6 +909,8 @@ def bootstrap_spokes_in_ou(
                         iam_role_arns=iam_role_arns,
                         role_name=role_name,
                         permission_boundary=permission_boundary,
+                        puppet_role_name=puppet_role_name,
+                        puppet_role_path=puppet_role_path,
                     )
                 )
 
@@ -945,6 +1011,26 @@ def wait_for_code_build_in(iam_role_arns):
             try:
                 result = codebuild.list_projects()
                 logger.info(f"Was able to list projects: {result}")
+                break
+            except Exception as e:
+                logger.error("type error: " + str(e))
+                logger.error(traceback.format_exc())
+
+
+def wait_for_cloudformation_in(iam_role_arns):
+    cross_accounts = []
+    index = 0
+    for role in iam_role_arns:
+        cross_accounts.append((role, "waiting-for-cloudformation-{}".format(index)))
+        index += 1
+
+    with betterboto_client.CrossMultipleAccountsClientContextManager(
+        "cloudformation", cross_accounts
+    ) as cloudformation:
+        while True:
+            try:
+                result = cloudformation.list_stacks()
+                logger.info(f"Was able to list stacks: {result}")
                 break
             except Exception as e:
                 logger.error("type error: " + str(e))

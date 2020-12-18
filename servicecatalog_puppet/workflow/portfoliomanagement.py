@@ -122,7 +122,7 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
             f"{self.account_id}-{self.region}",
             region_name=self.region,
         ) as cross_account_servicecatalog:
@@ -168,7 +168,7 @@ class SearchProductsAsAdminTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             role,
@@ -282,14 +282,14 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
     def get_portfolio(self):
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
             f"{self.account_id}-{self.region}",
             region_name=self.region,
         ) as cross_account_servicecatalog:
             result = None
-
-            response = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
-            assert response.get("NextPageToken") is None, "Pagination not supported"
+            response = (
+                cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
+            )
             for portfolio_detail in response.get("PortfolioDetails"):
                 if portfolio_detail.get("DisplayName") == self.portfolio:
                     result = portfolio_detail
@@ -381,8 +381,7 @@ class ProvisionActionTask(PortfolioManagementTask):
             {"name": param_name, "value": param_details, "type": "PLAINTEXT"}
             for param_name, param_details in all_params.items()
         ]
-
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "codebuild",
             role,
@@ -450,7 +449,7 @@ class CreateSpokeLocalPortfolioTask(
         ]
 
     def run(self):
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
         with self.input().get("puppet_portfolio").open("r") as f:
             portfolio_details = json.loads(f.read())
         with betterboto_client.CrossAccountClientContextManager(
@@ -517,7 +516,7 @@ class CreateAssociationsForPortfolioTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
 
         with self.input().get("create_spoke_local_portfolio_task").open("r") as f:
             portfolio_id = json.loads(f.read()).get("Id")
@@ -542,7 +541,7 @@ class CreateAssociationsForPortfolioTask(PortfolioManagementTask):
                 StackName=stack_name,
                 TemplateBody=template,
                 NotificationARNs=[
-                    f"arn:aws:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                    f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
                 ]
                 if self.should_use_sns
                 else [],
@@ -716,7 +715,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                     "CopyOptions": ["CopyTags",],
                 }
 
-                role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+                role = config.get_puppet_role_arn(self.account_id)
                 with betterboto_client.CrossAccountClientContextManager(
                     "servicecatalog",
                     role,
@@ -960,7 +959,7 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
 
         self.info(f"Starting product import with targets {hub_product_to_import_list}")
 
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             role,
@@ -1082,7 +1081,7 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
         ]
 
     def run(self):
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
         with self.input().get("create_spoke_local_portfolio_task").open("r") as f:
             dependency_output = json.loads(f.read())
         spoke_portfolio = dependency_output.get("portfolio")
@@ -1160,7 +1159,7 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
                 StackName=stack_name_v2,
                 TemplateBody=template,
                 NotificationARNs=[
-                    f"arn:aws:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                    f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
                 ]
                 if self.should_use_sns
                 else [],
@@ -1278,8 +1277,8 @@ class SharePortfolioViaOrgsTask(PortfolioManagementTask):
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.puppet_account_id}-{self.region}-PuppetRole",
+            config.get_puppet_role_arn(self.puppet_account_id),
+            f"{self.puppet_account_id}-{self.region}-{config.get_puppet_role_name()}",
             region_name=self.region,
         ) as servicecatalog:
             portfolio_share_token = servicecatalog.create_portfolio_share(
@@ -1387,8 +1386,8 @@ class ShareAndAcceptPortfolioTask(
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.account_id}-{self.region}-PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
+            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
             region_name=self.region,
         ) as cross_account_servicecatalog:
             was_accepted = False
@@ -1411,9 +1410,7 @@ class ShareAndAcceptPortfolioTask(
                 "Principals"
             )
             principal_was_associated = False
-            principal_to_associate = (
-                f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
-            )
+            principal_to_associate = config.get_puppet_role_arn(self.account_id)
             for principal_for_portfolio in principals_for_portfolio:
                 if (
                     principal_for_portfolio.get("PrincipalARN")
@@ -1466,7 +1463,7 @@ class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):
         ) as servicecatalog:
             servicecatalog.associate_principal_with_portfolio(
                 PortfolioId=self.portfolio_id,
-                PrincipalARN=f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+                PrincipalARN=config.get_puppet_role_arn(self.account_id),
                 PrincipalType="IAM",
             )
         self.write_output(self.param_kwargs)
@@ -1539,8 +1536,8 @@ class DisassociateProductFromPortfolio(PortfolioManagementTask):
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.account_id}-{self.region}-PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
+            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
             region_name=self.region,
         ) as servicecatalog:
             results = servicecatalog.disassociate_product_from_portfolio(
@@ -1571,8 +1568,8 @@ class DisassociateProductsFromPortfolio(PortfolioManagementTask):
         requirements = dict(disassociates=disassociates)
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.account_id}-{self.region}-PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
+            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
             region_name=self.region,
         ) as servicecatalog:
             results = servicecatalog.search_products_as_admin_single_page(
@@ -1616,8 +1613,8 @@ class DeleteLocalPortfolio(PortfolioManagementTask):
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.account_id}-{self.region}-PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
+            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
             region_name=self.region,
         ) as servicecatalog:
             servicecatalog.delete_portfolio(Id=self.portfolio_id)
@@ -1646,8 +1643,8 @@ class DeletePortfolioShare(PortfolioManagementTask):
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.account_id}-{self.region}-PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
+            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
             region_name=self.region,
         ) as servicecatalog:
             self.info(
@@ -1662,8 +1659,8 @@ class DeletePortfolioShare(PortfolioManagementTask):
         if portfolio_id:
             with betterboto_client.CrossAccountClientContextManager(
                 "servicecatalog",
-                f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
-                f"{self.puppet_account_id}-{self.region}-PuppetRole",
+                config.get_puppet_role_arn(self.puppet_account_id),
+                f"{self.puppet_account_id}-{self.region}-{config.get_puppet_role_name()}",
                 region_name=self.region,
             ) as servicecatalog:
                 servicecatalog.delete_portfolio_share(
@@ -1691,8 +1688,8 @@ class DeletePortfolio(PortfolioManagementTask):
         is_puppet_account = self.account_id == self.puppet_account_id
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
-            f"{self.account_id}-{self.region}-PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
+            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
             region_name=self.region,
         ) as servicecatalog:
             result = None

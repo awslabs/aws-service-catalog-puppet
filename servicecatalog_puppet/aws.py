@@ -5,7 +5,7 @@ import os
 import click
 import yaml
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import config, constants
 from betterboto import client as betterboto_client
 
 logger = logging.getLogger(__file__)
@@ -150,7 +150,8 @@ def provision_product_with_plan(
             )
 
     logger.info(f"{uid} :: Creating a plan")
-    regional_sns_topic = f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+    partition = config.get_partition()
+    regional_sns_topic = f"arn:{partition}:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
     provisioning_parameters = []
     for p in params.keys():
         provisioning_parameters.append(
@@ -288,6 +289,7 @@ def provision_product(
     should_use_sns,
     execution,
 ):
+    partition = config.get_partition()
     uid = f"[{launch_name}] {account_id}:{region}]"
     provisioning_parameters = []
     for p in params.keys():
@@ -311,7 +313,7 @@ def provision_product(
                 {"Key": "version", "Value": version,},
             ],
             NotificationArns=[
-                f"arn:aws:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events",
+                f"arn:{partition}:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events",
             ]
             if should_use_sns
             else [],

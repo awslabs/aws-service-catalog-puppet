@@ -25,9 +25,16 @@ Parameters:
   Version:
     Type: String
     Default: "{{ VERSION }}"
+  PuppetRoleName:
+    Type: String
+    Default: PuppetRole
+  PuppetRolePath:
+    Type: String
+    Default: /servicecatalog-puppet/
 
 Conditions:
-  NotRunningInPuppetAccount: !Not [ !Equals [ !Ref PuppetAccountId, !Ref "AWS::AccountId" ] ]
+  NotRunningInPuppetAccount:
+    !Not [!Equals [!Ref PuppetAccountId, !Ref "AWS::AccountId"]]
 
 Resources:
   Param:
@@ -40,8 +47,8 @@ Resources:
   PuppetRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: PuppetRole
-      Path: /servicecatalog-puppet/
+      RoleName: !Ref PuppetRoleName
+      Path: !Ref PuppetRolePath
       PermissionsBoundary: !Ref PermissionBoundary
       Policies:
         - PolicyName: "acceptShares"
@@ -50,31 +57,31 @@ Resources:
             Statement:
               - Effect: "Allow"
                 Action: servicecatalog:AcceptPortfolioShare
-                Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:portfolio/*"
+                Resource: !Sub "arn:${AWS::Partition}:catalog:*:${AWS::AccountId}:portfolio/*"
               - Effect: "Allow"
                 Action: servicecatalog:AssociatePrincipalWithPortfolio
-                Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:portfolio/*"
+                Resource: !Sub "arn:${AWS::Partition}:catalog:*:${AWS::AccountId}:portfolio/*"
               - Effect: "Allow"
                 Action: iam:GetRole
-                Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/servicecatalog-puppet/PuppetRole"
+                Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/servicecatalog-puppet/PuppetRole"
               - Effect: "Allow"
                 Action: servicecatalog:SearchProductsAsAdmin
-                Resource: !Sub "arn:aws:servicecatalog:*:${AWS::AccountId}:*/*"
+                Resource: !Sub "arn:${AWS::Partition}:servicecatalog:*:${AWS::AccountId}:*/*"
               - Effect: "Allow"
                 Action: servicecatalog:SearchProductsAsAdmin
-                Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:portfolio/*"
+                Resource: !Sub "arn:${AWS::Partition}:catalog:*:${AWS::AccountId}:portfolio/*"
               - Effect: "Allow"
                 Action: servicecatalog:ListAcceptedPortfolioShares
-                Resource: !Sub "arn:aws:servicecatalog:*:${AWS::AccountId}:*/*"
+                Resource: !Sub "arn:${AWS::Partition}:servicecatalog:*:${AWS::AccountId}:*/*"
               - Effect: "Allow"
                 Action: servicecatalog:ListProvisioningArtifacts
-                Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:product/*"
+                Resource: !Sub "arn:${AWS::Partition}:catalog:*:${AWS::AccountId}:product/*"
               - Effect: "Allow"
                 Action: servicecatalog:ListPortfolios
-                Resource: !Sub "arn:aws:catalog:*:${AWS::AccountId}:product/*"
+                Resource: !Sub "arn:${AWS::Partition}:catalog:*:${AWS::AccountId}:product/*"
               - Effect: "Allow"
                 Action: sns:Publish
-                Resource: !Sub "arn:aws:sns:*:${PuppetAccountId}:servicecatalog-puppet-cloudformation-regional-events"
+                Resource: !Sub "arn:${AWS::Partition}:sns:*:${PuppetAccountId}:servicecatalog-puppet-cloudformation-regional-events"
         - PolicyName: "AllowAccessToSCTemplates"
           PolicyDocument:
             Version: "2012-10-17"
@@ -82,24 +89,24 @@ Resources:
               - Effect: "Allow"
                 Action: s3:GetObject
                 Resource:
-                  - "arn:aws:s3:::cf-templates-*"
-                  - "arn:aws:s3:::cf-templates-*/*"
+                  - !Sub "arn:${AWS::Partition}:s3:::cf-templates-*"
+                  - !Sub "arn:${AWS::Partition}:s3:::cf-templates-*/*"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
           - Effect: "Allow"
             Principal:
-              AWS: !Sub "arn:aws:iam::${PuppetAccountId}:root"
+              AWS: !Sub "arn:${AWS::Partition}:iam::${PuppetAccountId}:root"
             Action:
               - "sts:AssumeRole"
           - Effect: "Allow"
             Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+              AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
             Action:
               - "sts:AssumeRole"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AWSServiceCatalogEndUserFullAccess
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSServiceCatalogEndUserFullAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
 
   DeployInSpokeRole:
     Type: AWS::IAM::Role
@@ -117,7 +124,7 @@ Resources:
             Action:
               - "sts:AssumeRole"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
 
   DeployInSpokeProject:
     Type: AWS::CodeBuild::Project
@@ -168,6 +175,16 @@ Resources:
             Type: PLAINTEXT
             Value: "CHANGE_ME"
 
+          - Name: PARTITION
+            Type: PARAMETER_STORE
+            Value: !Ref AWS::Partition
+          - Name: PUPPET_ROLE_NAME
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRoleName
+          - Name: PUPPET_ROLE_PATH
+            Type: PARAMETER_STORE
+            Value: !Ref PuppetRolePath
+
       Source:
         Type: NO_SOURCE
         BuildSpec: |
@@ -175,7 +192,7 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.x
+                python: 3.7
               commands:
                 - echo $VERSION
                 - bash -c "if [[ $VERSION =~ 'http'  ]]; then pip install $VERSION ; else pip install aws-service-catalog-puppet==$VERSION; fi"
@@ -227,7 +244,7 @@ Resources:
       RoleName: EventBridgeFromSpoke
       Path: /servicecatalog-puppet/
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -243,7 +260,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - events:PutEvents
-                Resource: !Sub "arn:aws:events:${AWS::Region}:${PuppetAccountId}:event-bus/default"
+                Resource: !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${PuppetAccountId}:event-bus/default"
 
   EventRule:
     Type: AWS::Events::Rule
@@ -256,10 +273,13 @@ Resources:
           - "servicecatalog-puppet"
       RoleArn: !GetAtt EventBridgeFromSpoke.Arn
       Targets:
-        - Arn: !Sub "arn:aws:events:${AWS::Region}:${PuppetAccountId}:event-bus/servicecatalog-puppet-event-bus"
+        - Arn: !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${PuppetAccountId}:event-bus/servicecatalog-puppet-event-bus"
           Id: servicecatalog-puppet-event-bus
           RoleArn: !GetAtt EventBridgeFromSpoke.Arn
 
 Outputs:
   Version:
     Value: !GetAtt Param.Value
+
+  PuppetRoleArn:
+    Value: !GetAtt PuppetRole.Arn

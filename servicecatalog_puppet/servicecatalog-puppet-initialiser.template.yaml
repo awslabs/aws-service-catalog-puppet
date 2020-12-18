@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.58.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.91.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Parameters:
   EnabledRegions:
@@ -65,6 +65,12 @@ Parameters:
     Type: Number
     Description: Number of workers that should be used when running a deploy
     Default: 10
+  PuppetRoleName:
+    Type: String
+    Default: PuppetRole
+  PuppetRolePath:
+    Type: String
+    Default: /servicecatalog-puppet/
 
 Resources:
   InitialiserRole:
@@ -82,7 +88,7 @@ Resources:
             Action:
               - "sts:AssumeRole"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
 
   InitialiserProject:
     Type: AWS::CodeBuild::Project
@@ -99,7 +105,7 @@ Resources:
         EnvironmentVariables:
           - Name: ENABLED_REGIONS
             Type: PLAINTEXT
-            Value: !Join [ ',', !Split [ ', ', !Ref EnabledRegions]]
+            Value: !Join [",", !Split [", ", !Ref EnabledRegions]]
 
           - Name: SHOULD_COLLECT_CLOUDFORMATION_EVENTS
             Type: PLAINTEXT
@@ -153,6 +159,16 @@ Resources:
             Type: PLAINTEXT
             Value: !Ref DeployNumWorkers
 
+          - Name: PARTITION
+            Type: PLAINTEXT
+            Value: !Ref AWS::Partition
+          - Name: PUPPET_ROLE_NAME
+            Type: PLAINTEXT
+            Value: !Ref PuppetRoleName
+          - Name: PUPPET_ROLE_PATH
+            Type: PLAINTEXT
+            Value: !Ref PuppetRolePath
+
       Source:
         Type: NO_SOURCE
         BuildSpec: |
@@ -160,17 +176,17 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.x
+                python: 3.7
               commands:
                 - pip install aws-service-catalog-puppet --upgrade
                 - servicecatalog-puppet --info set-regions ${ENABLED_REGIONS}
                 - servicecatalog-puppet set-config-value should_collect_cloudformation_events ${SHOULD_COLLECT_CLOUDFORMATION_EVENTS}
                 - servicecatalog-puppet set-config-value should_forward_events_to_eventbridge ${SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE}
                 - servicecatalog-puppet set-config-value should_forward_failures_to_opscenter ${SHOULD_FORWARD_FAILURES_TO_OPSCENTER}
-                - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID} --permission-boundary ${PUPPET_ROLE_PERMISSION_BOUNDARY}
+                - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID} --permission-boundary ${PUPPET_ROLE_PERMISSION_BOUNDARY} --puppet-role-name ${PUPPET_ROLE_NAME} --puppet-role-path ${PUPPET_ROLE_PATH}
             build:
               commands:
-                - servicecatalog-puppet --info bootstrap --puppet-code-pipeline-role-permission-boundary ${PUPPET_CODE_PIPELINE_ROLE_PERMISSION_BOUNDARY} --source-role-permissions-boundary ${SOURCE_ROLE_PERMISSIONS_BOUNDARY} --puppet-generate-role-permission-boundary ${PUPPET_GENERATE_ROLE_PERMISSION_BOUNDARY} --puppet-deploy-role-permission-boundary ${PUPPET_DEPLOY_ROLE_PERMISSION_BOUNDARY} --puppet-provisioning-role-permissions-boundary ${PUPPET_PROVISIONING_ROLE_PERMISSIONS_BOUNDARY} --cloud-formation-deploy-role-permissions-boundary ${CLOUD_FORMATION_DEPLOY_ROLE_PERMISSIONS_BOUNDARY} --deploy_num_workers ${DEPLOY_NUM_WORKERS} --deploy_environment_compute_type ${DEPLOY_ENVIRONMENT_COMPUTE_TYPE}
+                - servicecatalog-puppet --info bootstrap --puppet-code-pipeline-role-permission-boundary ${PUPPET_CODE_PIPELINE_ROLE_PERMISSION_BOUNDARY} --source-role-permissions-boundary ${SOURCE_ROLE_PERMISSIONS_BOUNDARY} --puppet-generate-role-permission-boundary ${PUPPET_GENERATE_ROLE_PERMISSION_BOUNDARY} --puppet-deploy-role-permission-boundary ${PUPPET_DEPLOY_ROLE_PERMISSION_BOUNDARY} --puppet-provisioning-role-permissions-boundary ${PUPPET_PROVISIONING_ROLE_PERMISSIONS_BOUNDARY} --cloud-formation-deploy-role-permissions-boundary ${CLOUD_FORMATION_DEPLOY_ROLE_PERMISSIONS_BOUNDARY} --deploy_num_workers ${DEPLOY_NUM_WORKERS} --deploy_environment_compute_type ${DEPLOY_ENVIRONMENT_COMPUTE_TYPE} --puppet-role-name ${PUPPET_ROLE_NAME} --puppet-role-path ${PUPPET_ROLE_PATH}
 
       TimeoutInMinutes: 60
 
@@ -180,8 +196,8 @@ Resources:
       RoleName: StartPuppetInstallRole
       Path: /servicecatalog-puppet/
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-        - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSCodeBuildDeveloperAccess
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:

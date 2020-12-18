@@ -26,8 +26,8 @@ def get_config(puppet_account_id, default_region=None):
     region = default_region if default_region else get_home_region(puppet_account_id)
     with betterboto_client.CrossAccountClientContextManager(
         "ssm",
-        f"arn:aws:iam::{puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
-        f"{puppet_account_id}-{region}-PuppetRole",
+        get_puppet_role_arn(puppet_account_id),
+        f"{puppet_account_id}-{region}-{get_puppet_role_name()}",
         region_name=region,
     ) as ssm:
         response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME)
@@ -102,6 +102,38 @@ def get_global_sharing_mode_default(puppet_account_id, default_region=None):
     )
 
 
+@functools.lru_cache()
+def get_partition():
+    logger.info(f"getting partition")
+    return os.getenv(
+        constants.PARTITION_ENVIRONMENTAL_VARIABLE_NAME, constants.PARTITION_DEFAULT
+    )
+
+
+@functools.lru_cache()
+def get_puppet_role_name():
+    logger.info("getting puppet_role_name")
+    return os.getenv(
+        constants.PUPPET_ROLE_NAME_ENVIRONMENTAL_VARIABLE_NAME,
+        constants.PUPPET_ROLE_NAME_DEFAULT,
+    )
+
+
+@functools.lru_cache()
+def get_puppet_role_path():
+    logger.info("getting puppet_role_path")
+    return os.getenv(
+        constants.PUPPET_ROLE_PATH_ENVIRONMENTAL_VARIABLE_NAME,
+        constants.PUPPET_ROLE_PATH_DEFAULT,
+    )
+
+
+@functools.lru_cache()
+def get_puppet_role_arn(puppet_account_id):
+    logger.info("getting puppet_role_arn")
+    return f"arn:{get_partition()}:iam::{puppet_account_id}:role{get_puppet_role_path()}{get_puppet_role_name()}"
+
+
 @functools.lru_cache(maxsize=32)
 def get_local_config(what):
     if os.path.exists("config.yaml"):
@@ -118,8 +150,8 @@ def get_home_region(puppet_account_id):
         return get_local_config("home_region")
     with betterboto_client.CrossAccountClientContextManager(
         "ssm",
-        f"arn:aws:iam::{puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
-        f"{puppet_account_id}-PuppetRole",
+        get_puppet_role_arn(puppet_account_id),
+        f"{puppet_account_id}-{get_puppet_role_name()}",
     ) as ssm:
         response = ssm.get_parameter(Name=constants.HOME_REGION_PARAM_NAME)
         return response.get("Parameter").get("Value")
@@ -129,8 +161,8 @@ def get_home_region(puppet_account_id):
 def get_org_iam_role_arn(puppet_account_id):
     with betterboto_client.CrossAccountClientContextManager(
         "ssm",
-        f"arn:aws:iam::{puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
-        f"{puppet_account_id}-PuppetRole",
+        get_puppet_role_arn(puppet_account_id),
+        f"{puppet_account_id}-{get_puppet_role_name()}",
         region_name=get_home_region(puppet_account_id),
     ) as ssm:
         try:

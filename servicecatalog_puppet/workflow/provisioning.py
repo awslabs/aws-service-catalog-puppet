@@ -60,7 +60,7 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
             f"{self.account_id}-{self.region}-sc",
             region_name=self.region,
         ) as service_catalog:
@@ -209,7 +209,7 @@ class ProvisionProductTask(ProvisioningTask):
 
         all_params = self.get_all_params()
 
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             role,
@@ -424,7 +424,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
 
         all_params = self.get_all_params()
 
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             role,
@@ -604,7 +604,7 @@ class TerminateProductTask(ProvisioningTask):
     def run(self):
         self.info(f"starting terminate try {self.try_count} of {self.retry_count}")
 
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             role,
@@ -714,7 +714,7 @@ class TerminateProductDryRunTask(ProvisioningTask):
             f"starting dry run terminate try {self.try_count} of {self.retry_count}"
         )
 
-        role = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
             role,
@@ -781,7 +781,7 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
 
         with betterboto_client.CrossAccountClientContextManager(
             "servicecatalog",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
             f"sc-{self.region}-{self.account_id}",
             region_name=self.region,
         ) as service_catalog:
@@ -798,7 +798,7 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
                     service_catalog.update_provisioned_product_properties(
                         ProvisionedProductId=provisioned_product_id,
                         ProvisionedProductProperties={
-                            "OWNER": f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole"
+                            "OWNER": config.get_puppet_role_arn(self.account_id)
                         },
                     )
             self.write_output(changes_made)
@@ -825,7 +825,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "s3",
-            f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
+            config.get_puppet_role_arn(self.puppet_account_id),
             f"s3-{self.puppet_account_id}",
         ) as s3:
             bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
@@ -843,7 +843,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
             version = response.get("Parameter").get("Value")
         with betterboto_client.CrossAccountClientContextManager(
             "codebuild",
-            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/PuppetRole",
+            config.get_puppet_role_arn(self.account_id),
             f"codebuild-{self.account_id}",
         ) as codebuild:
             response = codebuild.start_build(

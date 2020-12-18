@@ -99,7 +99,7 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
         home_region = config.get_home_region(self.puppet_account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "lambda",
-            f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
+            config.get_puppet_role_arn(self.puppet_account_id),
             f"sc-{home_region}-{self.puppet_account_id}",
             region_name=home_region,
         ) as lambda_client:

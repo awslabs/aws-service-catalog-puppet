@@ -21,7 +21,7 @@ Resources:
     Type: AWS::SNS::TopicPolicy
     Properties:
       Topics:
-        - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:servicecatalog-puppet-cloudformation-regional-events"
+        - !Sub "arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:servicecatalog-puppet-cloudformation-regional-events"
       PolicyDocument:
         Id: MyTopicPolicy
         Version: '2012-10-17'
@@ -29,7 +29,7 @@ Resources:
           - Sid: "ShareFor{{ account_id }}"
             Effect: Allow
             Principal:
-              AWS: !Sub "arn:aws:iam::{{ account_id }}:root"
+              AWS: !Sub "arn:${AWS::Partition}:iam::{{ account_id }}:root"
             Action: sns:Publish
             Resource: "*"{% endfor %}
         {% for organization in sharing_policies.get('organizations') %}
@@ -57,10 +57,10 @@ Resources:
               - "s3:List*"
             Effect: "Allow"
             Resource:
-              - !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
-              - !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}"
+              - !Sub "arn:${AWS::Partition}:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
+              - !Sub "arn:${AWS::Partition}:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}"
             Principal:
-              AWS: "arn:aws:iam::{{ account_id }}:root"{% endfor %}
+              AWS: !Sub "arn:${AWS::Partition}:iam::{{ account_id }}:root"{% endfor %}
         {% for organization in sharing_policies.get('organizations') %}
           - Sid: OrganizationalShareFor{{ organization }}
             Action:
@@ -68,8 +68,8 @@ Resources:
               - "s3:List*"
             Effect: "Allow"
             Resource:
-              - !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
-              - !Sub "arn:aws:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}"
+              - !Sub "arn:${AWS::Partition}:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"
+              - !Sub "arn:${AWS::Partition}:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}"
             Principal: "*"
             Condition:
               StringEquals:

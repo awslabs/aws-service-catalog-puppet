@@ -67,7 +67,7 @@ class EnsureEventBridgeEventBusTask(tasks.PuppetTask):
     def run(self):
         with betterboto_client.CrossAccountClientContextManager(
             "events",
-            f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
+            config.get_puppet_role_arn(self.puppet_account_id),
             f"events-{self.puppet_account_id}-{self.region}",
             region_name=self.region,
         ) as events:
@@ -118,16 +118,17 @@ class GeneratePolicies(tasks.PuppetTask):
         template = self.read_from_input("template")
         with betterboto_client.CrossAccountClientContextManager(
             "cloudformation",
-            f"arn:aws:iam::{self.puppet_account_id}:role/servicecatalog-puppet/PuppetRole",
+            config.get_puppet_role_arn(self.puppet_account_id),
             f"cf-{self.puppet_account_id}-{self.region}",
             region_name=self.region,
         ) as cloudformation:
+            self.info(template)
             cloudformation.create_or_update(
                 ShouldUseChangeSets=False,
                 StackName="servicecatalog-puppet-policies",
                 TemplateBody=template,
                 NotificationARNs=[
-                    f"arn:aws:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                    f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
                 ]
                 if self.should_use_sns
                 else [],
