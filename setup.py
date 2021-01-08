@@ -19,7 +19,7 @@ package_data = \
 
 install_requires = \
 ['better-boto==0.31.0',
- 'boto3==1.14.20',
+ 'boto3',
  'cfn-flip==1.2.3',
  'click==7.0',
  'colorclass==2.2.0',
