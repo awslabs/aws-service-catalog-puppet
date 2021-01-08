@@ -10,6 +10,7 @@ from servicecatalog_puppet import config
 from servicecatalog_puppet.macros import macros
 from servicecatalog_puppet import constants
 
+
 logger = logging.getLogger(__file__)
 
 
@@ -226,7 +227,51 @@ def get_configuration_overrides(manifest, launch_details):
     return configuration
 
 
+def get_from_dict(d, path):
+    parts = path.split("/")
+    if len(parts) == 1:
+        result = d.get(parts[0])
+    elif len(parts) == 2:
+        result = d.get(parts[0], {}).get(parts[1])
+    elif len(parts) == 3:
+        result = d.get(parts[0], {}).get(parts[1], {}).get(parts[2])
+    if result is None:
+        raise KeyError
+    return result
+
+
 class Manifest(dict):
+    def get_mapping(self, mapping, account_id, region):
+        manifest_mappings = self.get("mappings")
+        new_mapping = []
+        for item in mapping:
+            if item == "AWS::AccountId":
+                new_mapping.append(account_id)
+            elif item == "AWS::Region":
+                new_mapping.append(region)
+            else:
+                new_mapping.append(item)
+        path_to_find = "/".join(new_mapping)
+        result = None
+        try:
+            result = get_from_dict(manifest_mappings, path_to_find)
+        except KeyError:
+            logger.debug(f"Could not find: {path_to_find}")
+            while len(new_mapping) > 0:
+                new_mapping[-1] = "default"
+                path_to_find = "/".join(new_mapping)
+                try:
+                    logger.info(f"now looking for {path_to_find}")
+                    result = get_from_dict(manifest_mappings, path_to_find)
+                    break
+                except KeyError:
+                    logger.info(f"Could not find {path_to_find}")
+                    new_mapping.pop()
+
+        if result is None:
+            raise Exception(f"Could not find: {''+'/'.join(mapping)}")
+        return result
+
     def get_actions_from(
         self, launch_name, pre_or_post, launch_or_spoke_local_portfolio
     ):

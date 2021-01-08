@@ -10,7 +10,7 @@ from servicecatalog_puppet import config
 from betterboto import client as betterboto_client
 
 
-class InvokeLambdaTask(workflow_tasks.PuppetTask):
+class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
     lambda_invocation_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -93,6 +93,11 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask):
                     all_params[param_name] = json.loads(f.read()).get("Value")
             if param_details.get("default"):
                 all_params[param_name] = param_details.get("default")
+            if param_details.get("mapping"):
+                all_params[param_name] = self.manifest.get_mapping(
+                    param_details.get("mapping"), self.account_id, self.region
+                )
+
         return all_params
 
     def run(self):

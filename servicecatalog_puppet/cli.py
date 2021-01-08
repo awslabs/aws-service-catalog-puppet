@@ -40,7 +40,9 @@ def deploy(
     should_forward_failures_to_opscenter,
     on_complete_url,
 ):
-    click.echo(f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}")
+    click.echo(
+        f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"
+    )
     if puppet_account_id is None:
         puppet_account_id = config.get_puppet_account_id()
     executor_account_id = config.get_current_account_id()
