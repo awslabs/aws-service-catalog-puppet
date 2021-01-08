@@ -84,7 +84,7 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
             )
 
 
-class ProvisionProductTask(ProvisioningTask):
+class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
     portfolio_id = luigi.Parameter()
@@ -404,6 +404,11 @@ class ProvisionProductTask(ProvisioningTask):
                     all_params[param_name] = json.loads(f.read()).get("Value")
             if param_details.get("default"):
                 all_params[param_name] = param_details.get("default")
+            if param_details.get("mapping"):
+                all_params[param_name] = self.manifest.get_mapping(
+                    param_details.get("mapping"), self.account_id, self.region
+                )
+
         self.info(f"finished collecting all_params: {all_params}")
         return all_params
 
