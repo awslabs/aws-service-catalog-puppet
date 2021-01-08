@@ -203,6 +203,96 @@ At the moment there are the following macros supported:
     +------------------------+------------------------------+----------------------------------------------+
 
 
+Mappings
+########
+
+.. note::
+
+    This was added in version 0.92.0
+
+
+Within the mappings section you can define mappings that can be used to set the value of parameters.
+
+Here a mapping is defined:
+
+.. code-block:: yaml
+
+    schema: puppet-2019-04-01
+
+    mappings:
+      WebProxyDevice:
+        us-east-1:
+          "ami": "ami-15f77f867"
+        us-west-1:
+          "ami": "ami-0bdb82235"
+        eu-west-1:
+          "ami": "ami-16506cd98"
+
+
+Here a mapping is used:
+
+.. code-block:: yaml
+
+    schema: puppet-2019-04-01
+
+    launches:
+      DeployProxy:
+        deploy_to:
+          tags:
+          - regions: enabled_regions
+            tag: ou:prod
+        parameters:
+          AMI:
+            mapping:
+            - WebProxyDevice
+            - AWS::Region
+            - ami
+        portfolio: networking
+        product: proxy
+        version: v3
+
+When DeployProxy is provisioned the parameter named AMI will have its value determined.  It's value will be taken from
+the mappings section.  The framework will look through the mappings for one named WebProxyDevice.  The framework will
+then look within the WebProxyDevice dictionary for an object with the name of the current region and then within that
+for an item with the key ami.
+
+It is also possible to use AWS::AccountId:
+
+.. code-block:: yaml
+
+    schema: puppet-2019-04-01
+
+    mappings:
+      AccountDetails:
+        0123456789010:
+          "owner": "appteam1@example.com"
+
+
+You can also combine them:
+
+.. code-block:: yaml
+
+    schema: puppet-2019-04-01
+
+    mappings:
+      Networking:
+        0123456789010:
+          eu-west-1:
+            cidr: "10.0.0.0/24"
+
+You can use the special value of default as a catch all when you do you not specify a value:
+
+.. code-block:: yaml
+
+    schema: puppet-2019-04-01
+
+    mappings:
+      AccountDetails:
+        owners:
+            0123456789010: "appteam1@example.com"
+            0098765432102: "appteam2@example.com"
+            default: "cloudteam@example.com"
+
 Accounts
 ########
 
