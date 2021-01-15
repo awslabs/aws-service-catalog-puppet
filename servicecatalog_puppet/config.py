@@ -53,9 +53,16 @@ def is_caching_enabled(puppet_account_id, default_region=None):
     logger.info(
         "getting is_caching_enabled,  default_region: {}".format(default_region)
     )
-    return get_config(puppet_account_id, default_region).get(
-        "is_caching_enabled", False
-    )
+    if os.getenv(constants.CONFIG_IS_CACHING_ENABLED) is None:
+        caching_enabled = get_config(puppet_account_id, default_region).get(
+            "is_caching_enabled", False
+        )
+        os.putenv(constants.CONFIG_IS_CACHING_ENABLED, f"{caching_enabled}".lower())
+    else:
+        caching_enabled = (
+            os.getenv(constants.CONFIG_IS_CACHING_ENABLED).lower() == "true"
+        )
+    return caching_enabled
 
 
 @functools.lru_cache(maxsize=32)

@@ -276,7 +276,7 @@ The default value for sharing_mode is ACCOUNT unless you change it using the fol
 
 .. code-block:: bash
 
-    servicecatalog-puppet set-config-value global_sharing_mode_default AWS_ORGANIZATIONS
+    servicecatalog-puppet set-named-config-value global_sharing_mode_default AWS_ORGANIZATIONS
 
 Alternatively, you can also add the following to your config:
 

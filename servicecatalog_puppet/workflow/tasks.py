@@ -5,8 +5,9 @@ from pathlib import Path
 
 import luigi
 from betterboto import client as betterboto_client
+from luigi.contrib import s3
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, config
 import psutil
 import logging
 import math
@@ -209,6 +210,55 @@ def on_task_process_failure(task, error_msg):
 def on_task_processing_time(task, duration):
     print_stats()
     record_event("processing_time", task, {"duration": duration})
+
+    task_params = dict(**task.param_kwargs)
+    task_params.update(task.params_for_results_display())
+
+    with betterboto_client.CrossAccountClientContextManager(
+        "cloudwatch",
+        config.get_puppet_role_arn(config.get_puppet_account_id()),
+        "cloudwatch-puppethub",
+    ) as cloudwatch:
+
+        dimensions = [dict(Name="task_type", Value=task.__class__.__name__,)]
+        for note_worthy in [
+            "launch_name",
+            "region",
+            "account_id",
+            "puppet_account_id",
+            "sharing_mode",
+            "portfolio",
+            "product",
+            "version",
+            "execution",
+        ]:
+            if task_params.get(note_worthy):
+                dimensions.append(
+                    dict(Name=note_worthy, Value=task_params.get(note_worthy))
+                )
+
+        cloudwatch.put_metric_data(
+            Namespace=f"ServiceCatalogTools/Puppet/v1/ProcessingTime/{task.__class__.__name__}",
+            MetricData=[
+                dict(
+                    MetricName=task.__class__.__name__,
+                    Dimensions=dimensions,
+                    Value=duration,
+                    Unit="Seconds",
+                ),
+            ],
+        )
+        cloudwatch.put_metric_data(
+            Namespace=f"ServiceCatalogTools/Puppet/v1/ProcessingTime/Tasks",
+            MetricData=[
+                dict(
+                    MetricName="Tasks",
+                    Dimensions=[dict(Name="TaskType", Value=task.__class__.__name__)],
+                    Value=duration,
+                    Unit="Seconds",
+                ),
+            ],
+        )
 
 
 @luigi.Task.event_handler(luigi.Event.BROKEN_TASK)
