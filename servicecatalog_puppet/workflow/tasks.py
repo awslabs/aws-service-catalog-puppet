@@ -66,13 +66,7 @@ class PuppetTask(luigi.Task):
 
     def output(self):
         if config.is_caching_enabled(config.get_puppet_account_id()):
-            with betterboto_client.CrossAccountClientContextManager(
-                    "s3",
-                    config.get_puppet_role_arn(config.get_puppet_account_id()),
-                    "s3-puppethub",
-            ) as s3_client:
-                print(f"CHECKING {self.output_location} for existence")
-                return s3.S3Target(self.output_location, format=format.UTF8)
+            return s3.S3Target(self.output_location, format=format.UTF8)
         else:
             return luigi.LocalTarget(self.output_location)
 
