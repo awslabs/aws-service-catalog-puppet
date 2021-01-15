@@ -6,6 +6,7 @@ from pathlib import Path
 import luigi
 from betterboto import client as betterboto_client
 from luigi.contrib import s3
+from luigi import format
 
 from servicecatalog_puppet import constants, config
 import psutil
@@ -56,13 +57,24 @@ class PuppetTask(luigi.Task):
 
     @property
     def output_location(self):
-        return f"output/{self.uid}.{self.output_suffix}"
-
-    def remove_output(self):
-        os.remove(self.output_location)
+        puppet_account_id = config.get_puppet_account_id()
+        path = f"output/{self.uid}.{self.output_suffix}"
+        if config.is_caching_enabled(puppet_account_id):
+            return f"s3://sc-puppet-caching-bucket-{config.get_puppet_account_id()}-{config.get_home_region(puppet_account_id)}/{path}"
+        else:
+            return path
 
     def output(self):
-        return luigi.LocalTarget(self.output_location)
+        if config.is_caching_enabled(config.get_puppet_account_id()):
+            with betterboto_client.CrossAccountClientContextManager(
+                    "s3",
+                    config.get_puppet_role_arn(config.get_puppet_account_id()),
+                    "s3-puppethub",
+            ) as s3_client:
+                print(f"CHECKING {self.output_location} for existence")
+                return s3.S3Target(self.output_location, format=format.UTF8)
+        else:
+            return luigi.LocalTarget(self.output_location)
 
     @property
     def output_suffix(self):

@@ -260,21 +260,21 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
     def complete(self):
         target_created = super().complete()
         if target_created:
-            with open(self.output_location, "r") as f:
-                j = json.loads(f.read())
-                result = self.get_portfolio()
-                if j.get("portfolio_id") == result.get("Id"):
-                    return True
-                else:
-                    self.write_output(
-                        {
-                            "portfolio_name": self.portfolio,
-                            "portfolio_id": result.get("Id"),
-                            "provider_name": result.get("ProviderName"),
-                            "description": result.get("Description"),
-                        }
-                    )
-                    return True
+            t = self.output().open("r").read()
+            j = json.loads(t)
+            result = self.get_portfolio()
+            if j.get("portfolio_id") == result.get("Id"):
+                return True
+            else:
+                self.write_output(
+                    {
+                        "portfolio_name": self.portfolio,
+                        "portfolio_id": result.get("Id"),
+                        "provider_name": result.get("ProviderName"),
+                        "description": result.get("Description"),
+                    }
+                )
+                return True
         else:
             return False
 
