@@ -63,7 +63,7 @@ Resources:
                 Resource: !Sub "arn:${AWS::Partition}:catalog:*:${AWS::AccountId}:portfolio/*"
               - Effect: "Allow"
                 Action: iam:GetRole
-                Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/servicecatalog-puppet/PuppetRole"
+                Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role${PuppetRolePath}${PuppetRoleName}"
               - Effect: "Allow"
                 Action: servicecatalog:SearchProductsAsAdmin
                 Resource: !Sub "arn:${AWS::Partition}:servicecatalog:*:${AWS::AccountId}:*/*"
