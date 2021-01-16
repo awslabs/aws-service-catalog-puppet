@@ -351,8 +351,12 @@ class ProvisionActionTask(PortfolioManagementTask):
                 if param_details.get("default"):
                     del param_details["default"]
                 ssm_parameter_name = param_details.get("ssm").get("name")
-                ssm_parameter_name = ssm_parameter_name.replace("${AWS::Region}", self.region)
-                ssm_parameter_name = ssm_parameter_name.replace("${AWS::AccountId}", self.account_id)
+                ssm_parameter_name = ssm_parameter_name.replace(
+                    "${AWS::Region}", self.region
+                )
+                ssm_parameter_name = ssm_parameter_name.replace(
+                    "${AWS::AccountId}", self.account_id
+                )
                 ssm_params[param_name] = tasks.GetSSMParamTask(
                     parameter_name=param_name,
                     name=ssm_parameter_name,
