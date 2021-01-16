@@ -87,7 +87,8 @@ Retrieving AWS SSM Parameters
 
     This was added in version 0.0.33
 
-You can retrieve parameter values from SSM.  Here is an an example:
+You can retrieve parameter values from SSM in the puppet account - these parameters do not belong to the spoke account.
+Here is an an example:
 
 .. code-block:: yaml
 
@@ -111,6 +112,27 @@ You can get a different value for each region:
             name: central-logging-bucket-name
             region: eu-west-1
 
+.. note::
+
+  Since 0.94.0 you can use intrinsic functions within the parameter name
+
+You can use intrinsic functions for AWS AccountId and Region within the ssm parameter name:
+
+.. code-block:: yaml
+
+    schema: puppet-2019-04-01
+
+    parameters:
+        VPCCidrRange:
+          ssm:
+            name: /vpcs/${AWS::AccountId}/${AWS::Region}/cidr
+
+${AWS::AccountId} and ${AWS::Region} will be replaced with the spoke account id and the region where the provisioning
+will occur.  This allows you to build out account specific parameters using SSM parameter store parameters in the hub
+account.
+
+You can use your account vending machine to provision the account specific ssm parameters in the hub account and then
+use this to read them.
 
 Setting AWS SSM Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

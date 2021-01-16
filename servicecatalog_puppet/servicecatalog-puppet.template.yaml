@@ -417,10 +417,7 @@ Resources:
             build:
               commands:
                 - servicecatalog-puppet --info expand manifest.yaml
-                {% if is_caching_enabled %}- aws s3 sync --quiet s3://sc-puppet-caching-bucket-${PUPPET_ACCOUNT_ID}-${PUPPET_REGION}/output output{% endif %}
                 - servicecatalog-puppet --info deploy --num-workers ${NUM_WORKERS} manifest-expanded.yaml
-              {% if is_caching_enabled %}finally:
-                - aws s3 sync --quiet output s3://sc-puppet-caching-bucket-${PUPPET_ACCOUNT_ID}-${PUPPET_REGION}/output{% endif %}
           artifacts:
             files:
               - manifest-expanded.yaml

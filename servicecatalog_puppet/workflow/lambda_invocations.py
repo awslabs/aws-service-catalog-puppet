@@ -60,9 +60,12 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
             if param_details.get("ssm"):
                 if param_details.get("default"):
                     del param_details["default"]
+                ssm_parameter_name = param_details.get("ssm").get("name")
+                ssm_parameter_name = ssm_parameter_name.replace("${AWS::Region}", self.region)
+                ssm_parameter_name = ssm_parameter_name.replace("${AWS::AccountId}", self.account_id)
                 ssm_params[param_name] = tasks.GetSSMParamTask(
                     parameter_name=param_name,
-                    name=param_details.get("ssm").get("name"),
+                    name=ssm_parameter_name,
                     region=param_details.get("ssm").get(
                         "region", config.get_home_region(self.puppet_account_id)
                     ),

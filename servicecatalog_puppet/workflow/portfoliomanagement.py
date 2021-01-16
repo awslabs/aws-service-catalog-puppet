@@ -260,21 +260,21 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
     def complete(self):
         target_created = super().complete()
         if target_created:
-            with open(self.output_location, "r") as f:
-                j = json.loads(f.read())
-                result = self.get_portfolio()
-                if j.get("portfolio_id") == result.get("Id"):
-                    return True
-                else:
-                    self.write_output(
-                        {
-                            "portfolio_name": self.portfolio,
-                            "portfolio_id": result.get("Id"),
-                            "provider_name": result.get("ProviderName"),
-                            "description": result.get("Description"),
-                        }
-                    )
-                    return True
+            t = self.output().open("r").read()
+            j = json.loads(t)
+            result = self.get_portfolio()
+            if j.get("portfolio_id") == result.get("Id"):
+                return True
+            else:
+                self.write_output(
+                    {
+                        "portfolio_name": self.portfolio,
+                        "portfolio_id": result.get("Id"),
+                        "provider_name": result.get("ProviderName"),
+                        "description": result.get("Description"),
+                    }
+                )
+                return True
         else:
             return False
 
@@ -350,9 +350,12 @@ class ProvisionActionTask(PortfolioManagementTask):
             if param_details.get("ssm"):
                 if param_details.get("default"):
                     del param_details["default"]
+                ssm_parameter_name = param_details.get("ssm").get("name")
+                ssm_parameter_name = ssm_parameter_name.replace("${AWS::Region}", self.region)
+                ssm_parameter_name = ssm_parameter_name.replace("${AWS::AccountId}", self.account_id)
                 ssm_params[param_name] = tasks.GetSSMParamTask(
                     parameter_name=param_name,
-                    name=param_details.get("ssm").get("name"),
+                    name=ssm_parameter_name,
                     region=param_details.get("ssm").get(
                         "region", config.get_home_region(self.puppet_account_id)
                     ),
