@@ -1277,8 +1277,8 @@ class SharePortfolioViaOrgsTask(PortfolioManagementTask):
 
     def api_calls_used(self):
         return [
-            f"servicecatalog.create_portfolio_share_{self.region}",
-            f"servicecatalog.describe_portfolio_share_status_{self.region}",
+            f"servicecatalog.create_portfolio_share",
+            f"servicecatalog.describe_portfolio_share_status",
         ]
 
     def run(self):
