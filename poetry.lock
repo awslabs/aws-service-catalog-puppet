@@ -207,14 +207,6 @@ optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [[package]]
-name = "enum34"
-version = "1.1.10"
-description = "Python 3.4 Enum backported to 3.3, 3.2, 3.1, 2.7, 2.6, 2.5, and 2.4"
-category = "main"
-optional = false
-python-versions = "*"
-
-[[package]]
 name = "idna"
 version = "2.8"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -291,17 +283,16 @@ python-versions = "*"
 
 [[package]]
 name = "luigi"
-version = "2.8.9"
-description = "Workflow mgmgt + task scheduling + dependency resolution"
+version = "3.0.2"
+description = "Workflow mgmgt + task scheduling + dependency resolution."
 category = "main"
 optional = false
 python-versions = "*"
 
 [package.dependencies]
-enum34 = ">1.1.0"
-python-daemon = "<2.2.0"
+python-daemon = "*"
 python-dateutil = ">=2.7.5,<3"
-tornado = ">=4.0,<6"
+tornado = ">=5.0,<7"
 
 [package.extras]
 prometheus = ["prometheus-client (0.5.0)"]
@@ -670,7 +661,7 @@ testing = ["jaraco.itertools", "func-timeout"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<4" 
-content-hash = "380fd34b6ecf8a4c9e1d373dd71bb360ebad332135c168291ca45ea86d6193f4"
+content-hash = "2a0ecd9ee96083817aee2263d4191e986cff488afb5c2904730ef85294a80772"
 
 [metadata.files]
 appdirs = [
@@ -786,11 +777,6 @@ docutils = [
     {file = "docutils-0.15.2-py3-none-any.whl", hash = "sha256:6c4f696463b79f1fb8ba0c594b63840ebd41f059e92b31957c46b74a4599b6d0"},
     {file = "docutils-0.15.2.tar.gz", hash = "sha256:a2aeea129088da402665e92e0b25b04b073c04b2dce4ab65caaa38b7ce2e1a99"},
 ]
-enum34 = [
-    {file = "enum34-1.1.10-py2-none-any.whl", hash = "sha256:a98a201d6de3f2ab3db284e70a33b0f896fbf35f8086594e8c9e74b909058d53"},
-    {file = "enum34-1.1.10-py3-none-any.whl", hash = "sha256:c3858660960c984d6ab0ebad691265180da2b43f07e061c0f8dca9ef3cffd328"},
-    {file = "enum34-1.1.10.tar.gz", hash = "sha256:cce6a7477ed816bd2542d03d53db9f0db935dd013b70f336a95c73979289f248"},
-]
 idna = [
     {file = "idna-2.8-py2.py3-none-any.whl", hash = "sha256:ea8b7f6188e6fa117537c3df7da9fc686d485087abf6ac197f9c46432f7e4a3c"},
     {file = "idna-2.8.tar.gz", hash = "sha256:c357b3f628cf53ae2c4c05627ecc484553142ca23264e593d327bcde5e9c3407"},
@@ -839,7 +825,7 @@ lockfile = [
     {file = "lockfile-0.12.2.tar.gz", hash = "sha256:6aed02de03cba24efabcd600b30540140634fc06cfa603822d508d5361e9f799"},
 ]
 luigi = [
-    {file = "luigi-2.8.9.tar.gz", hash = "sha256:ac8d6f25a417498f09bbf79ab7ea4d9f16d431cf5015ed03fbf489307f3ea661"},
+    {file = "luigi-3.0.2.tar.gz", hash = "sha256:b4b1ccf086586d041d7e91e68515d495c550f30e4d179d63863fea9ccdbb78eb"},
 ]
 markupsafe = [
     {file = "MarkupSafe-1.1.1-cp27-cp27m-macosx_10_6_intel.whl", hash = "sha256:09027a7803a62ca78792ad89403b1b7a73a01c8cb65909cd876f7fcebd79b161"},

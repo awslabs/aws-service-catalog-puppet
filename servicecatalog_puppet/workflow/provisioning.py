@@ -382,10 +382,17 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                                 if output.get("OutputKey") == ssm_param_output.get(
                                     "stack_output"
                                 ):
+                                    ssm_parameter_name = ssm_param_output.get("param_name")
+                                    ssm_parameter_name = ssm_parameter_name.replace(
+                                        "${AWS::Region}", self.region
+                                    )
+                                    ssm_parameter_name = ssm_parameter_name.replace(
+                                        "${AWS::AccountId}", self.account_id
+                                    )
                                     found_match = True
                                     self.info(f"found value")
                                     ssm.put_parameter_and_wait(
-                                        Name=ssm_param_output.get("param_name"),
+                                        Name=ssm_parameter_name,
                                         Value=output.get("OutputValue"),
                                         Type=ssm_param_output.get(
                                             "param_type", "String"

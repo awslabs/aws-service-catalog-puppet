@@ -3,7 +3,7 @@
 
 [tool.poetry]
 name = "aws-service-catalog-puppet"
-version = "0.95.0"
+version = "0.96.0"
 description = "Making it easier to deploy ServiceCatalog products"
 classifiers = ["Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "Programming Language :: Python :: 3", "License :: OSI Approved :: Apache Software License", "Operating System :: OS Independent", "Natural Language :: English"]
 homepage = "https://service-catalog-tools-workshop.com/"
@@ -49,6 +49,6 @@ pykwalify = "==1.7.0"
 better-boto = "0.31.0"
 terminaltables = "==3.1.0"
 colorclass = "==2.2.0"
-luigi = "==2.8.9"
+luigi = "3.0.2"
 psutil = "==5.7.0"
 cfn-flip = "==1.2.3"
