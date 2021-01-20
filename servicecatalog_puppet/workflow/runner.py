@@ -76,7 +76,7 @@ def run_tasks(
 
     run_result = luigi.build(
         tasks_to_run,
-        local_scheduler=True,
+        # local_scheduler=True,
         detailed_summary=True,
         workers=num_workers,
         log_level="INFO",
@@ -348,7 +348,7 @@ def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
 
     run_result = luigi.build(
         tasks_to_run,
-        local_scheduler=True,
+        # local_scheduler=True,
         detailed_summary=True,
         workers=num_workers,
         log_level="INFO",
