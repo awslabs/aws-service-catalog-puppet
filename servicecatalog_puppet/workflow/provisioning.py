@@ -177,7 +177,7 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 product_id=self.product_id,
                 version=self.version,
                 version_id=self.version_id,
-                account_id=self.account_id,
+                account_id=self.puppet_account_id,
                 region=self.region,
             ),
         }
