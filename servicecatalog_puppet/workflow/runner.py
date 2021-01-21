@@ -74,9 +74,14 @@ def run_tasks(
 
     tasks.print_stats()
 
+    should_use_shared_scheduler = config.get_should_use_shared_scheduler(puppet_account_id)
+
+    if should_use_shared_scheduler:
+        os.system(constants.START_SHARED_SCHEDULER_COMMAND)
+
     run_result = luigi.build(
         tasks_to_run,
-        # local_scheduler=True,
+        local_scheduler=not should_use_shared_scheduler,
         detailed_summary=True,
         workers=num_workers,
         log_level="INFO",
@@ -348,7 +353,7 @@ def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
 
     run_result = luigi.build(
         tasks_to_run,
-        # local_scheduler=True,
+        local_scheduler=True,
         detailed_summary=True,
         workers=num_workers,
         log_level="INFO",
