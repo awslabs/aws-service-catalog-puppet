@@ -79,6 +79,8 @@ def run_tasks(
     if should_use_shared_scheduler:
         os.system(constants.START_SHARED_SCHEDULER_COMMAND)
 
+    logger.info(f"should_use_shared_scheduler: {should_use_shared_scheduler}")
+
     run_result = luigi.build(
         tasks_to_run,
         local_scheduler=not should_use_shared_scheduler,
