@@ -177,7 +177,7 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 product_id=self.product_id,
                 version=self.version,
                 version_id=self.version_id,
-                account_id=self.account_id,
+                account_id=self.account_id, #TODO switch this to puppet_account_id but need to first ensure there is an association for the puppet user and then resolve CreateAssociationsInPythonForPortfolioTask differences
                 region=self.region,
             ),
         }

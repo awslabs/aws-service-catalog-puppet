@@ -74,12 +74,25 @@ def run_tasks(
 
     tasks.print_stats()
 
-    run_result = luigi.build(
-        tasks_to_run,
-        local_scheduler=True,
+    should_use_shared_scheduler = config.get_should_use_shared_scheduler(puppet_account_id)
+
+    build_params = dict(
         detailed_summary=True,
         workers=num_workers,
         log_level="INFO",
+    )
+
+    if should_use_shared_scheduler:
+        os.system(constants.START_SHARED_SCHEDULER_COMMAND)
+    else:
+        build_params['local_scheduler'] = True
+
+
+    logger.info(f"should_use_shared_scheduler: {should_use_shared_scheduler}")
+
+    run_result = luigi.build(
+        tasks_to_run,
+        **build_params
     )
 
     exit_status_codes = {
