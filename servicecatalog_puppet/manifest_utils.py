@@ -522,7 +522,7 @@ class Manifest(dict):
 
 def create_minimal_manifest(manifest):
     minimal_manifest = deepcopy(manifest)
-    minimal_manifest[constants.ACCOUNTS] = dict()
+    # minimal_manifest[constants.ACCOUNTS] = dict()
     minimal_manifest[constants.LAUNCHES] = dict()
     minimal_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
     minimal_manifest[constants.ACTIONS] = dict()
