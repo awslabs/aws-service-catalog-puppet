@@ -419,7 +419,8 @@ def list_launches(expanded_manifest, format):
 @click.argument("f", type=click.File())
 @click.option("--single-account", default=None)
 def expand(f, single_account):
-    core.expand(f, single_account)
+    # core.expand(f, single_account)
+    core.explode(f)
 
 
 @cli.command()

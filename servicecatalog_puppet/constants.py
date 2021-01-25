@@ -16,8 +16,18 @@ PROVISIONED = "provisioned"
 TERMINATED = "terminated"
 
 DEFAULT_TIMEOUT = 0
+PARAMETERS = "parameters"
+ACCOUNTS = "accounts"
+MAPPINGS = "mappings"
 LAUNCHES = "launches"
 SPOKE_LOCAL_PORTFOLIOS = "spoke-local-portfolios"
+LAMBDA_INVOCATIONS = "lambda-invocations"
+ACTIONS = "actions"
+
+LAUNCH = "launch"
+LAMBDA_INVOCATION = "lambda-invocation"
+SPOKE_LOCAL_PORTFOLIO = "spoke-local-portfolio"
+ACTION = "action"
 
 RESULTS_DIRECTORY = "results"
 
