@@ -577,7 +577,6 @@ def explode(expanded_manifest):
             data = deepcopy(node[1])
             del data['section']
             del data['name']
-            # raise Exception(['section'])
             m[node[1].get("section")][node[1].get("name")] = data
         exploded.append(m)
     return exploded
