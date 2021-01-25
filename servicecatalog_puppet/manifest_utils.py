@@ -531,9 +531,6 @@ def create_minimal_manifest(manifest):
 
 
 def explode(expanded_manifest):
-    count = 0
-    exploded = dict()
-
     sections = [
         constants.LAUNCHES,
         constants.SPOKE_LOCAL_PORTFOLIOS,
@@ -546,9 +543,14 @@ def explode(expanded_manifest):
     for section in sections:
         for item_name, item_details in expanded_manifest.get(section, {}).items():
             uid = f"{section}|{item_name}"
-            G.add_node(
-                (uid, uid),
+            data = dict(
+                section=section,
+                name=item_name,
             )
+            data.update(item_details)
+            G.add_nodes_from([
+                (uid, data),
+            ])
 
     mapping = dict()
     mapping[constants.LAUNCH] = constants.LAUNCHES
@@ -559,230 +561,23 @@ def explode(expanded_manifest):
     for section in sections:
         for item_name, item_details in expanded_manifest.get(section, {}).items():
             uid = f"{section}|{item_name}"
-            for d in item_details.get('depend_on', []):
+            for d in item_details.get('depends_on', []):
                 if isinstance(d, str):
-                    G.add_edge(uid, f"{constants.LAUNCHES}_{d}")
+                    G.add_edge(uid, f"{constants.LAUNCHES}|{d}")
                 else:
                     G.add_edge(uid, f"{mapping.get(d.get('type'))}|{d.get('name')}")
 
     S = [G.subgraph(c).copy() for c in nx.connected_components(G)]
+
+    exploded = list()
+
     for s in S:
-        print(s.nodes)
-
-    return
-
-
-#
-#     #
-#     # Add launches
-#     #
-#     for launch_name, launch_details in expanded_manifest.get(constants.LAUNCHES, {}).items():
-#         manifest_to_place_in = None
-#         # are any of the depends_on already placed
-#         for d in launch_details.get('depends_on', []):
-#             if isinstance(d, str):
-#                 new_dependency_name = d
-#                 for m_id, m_details in exploded.items():
-#                     if m_details.get(constants.LAUNCHES).get(new_dependency_name):
-#                         manifest_to_place_in = m_id
-#                         break
-#             else:
-#                 if d.get('type') == constants.LAUNCH:
-#                     new_dependency_name = d.get("name")
-#                     for m_id, m_details in exploded.items():
-#                         if m_details.get(constants.LAUNCHES).get(new_dependency_name):
-#                             manifest_to_place_in = m_id
-#                             break
-#
-#         # has something that lists this as a depends_on been placed already
-#         if manifest_to_place_in is None:
-#             for m_id, m_details in exploded.items():
-#                 for l_name, l_details in m_details.get(constants.LAUNCHES).items():
-#                     for d in l_details.get("depends_on", []):
-#                         if isinstance(d, str):
-#                             if launch_name == d:
-#                                 manifest_to_place_in = m_id
-#                                 break
-#                         else:
-#                             if d.get('type') == constants.LAUNCH:
-#                                 if d.get("name") == launch_name:
-#                                     manifest_to_place_in = m_id
-#                                     break
-#         # place it
-#         if manifest_to_place_in is None:
-#             exploded[count] = next_manifest = create_minimal_manifest(expanded_manifest)
-#             count += 1
-#             print(f"Adding launch: {launch_name} to new {count - 1}")
-#         else:
-#             next_manifest = exploded.get(manifest_to_place_in)
-#             print(f"Adding launch: {launch_name} to {manifest_to_place_in}")
-#         next_manifest[constants.LAUNCHES][launch_name] = launch_details
-#
-#     #
-#     # Add spoke-local-portfolios
-#     #
-#     for name, details in expanded_manifest.get(constants.SPOKE_LOCAL_PORTFOLIOS, {}).items():
-#         manifest_to_place_in = decide_which_manifest_to_add_to(
-#             exploded,
-#             details,
-#             name,
-#             constants.SPOKE_LOCAL_PORTFOLIO,
-#         )
-#         # place it
-#         if manifest_to_place_in is None:
-#             exploded[count] = next_manifest = create_minimal_manifest(expanded_manifest)
-#             count += 1
-#         else:
-#             next_manifest = exploded.get(manifest_to_place_in)
-#         next_manifest[constants.SPOKE_LOCAL_PORTFOLIOS][name] = details
-#
-#     #
-#     # Add actions
-#     #
-#     for name, details in expanded_manifest.get(constants.ACTIONS, {}).items():
-#         manifest_to_place_in = decide_which_manifest_to_add_to(
-#             exploded,
-#             details,
-#             name,
-#             constants.ACTION,
-#         )
-#
-#         # place it
-#         if manifest_to_place_in is None:
-#             exploded[count] = next_manifest = create_minimal_manifest(expanded_manifest)
-#             count += 1
-#         else:
-#             next_manifest = exploded.get(manifest_to_place_in)
-#         next_manifest[constants.ACTIONS][name] = details
-#
-#     #
-#     # Add lambda-invocations
-#     #
-#     for name, details in expanded_manifest.get(constants.LAMBDA_INVOCATIONS, {}).items():
-#         manifest_to_place_in = decide_which_manifest_to_add_to(
-#             exploded,
-#             details,
-#             name,
-#             constants.LAMBDA_INVOCATION,
-#         )
-#
-#         # place it
-#         if manifest_to_place_in is None:
-#             exploded[count] = next_manifest = create_minimal_manifest(expanded_manifest)
-#             count += 1
-#         else:
-#             next_manifest = exploded.get(manifest_to_place_in)
-#         next_manifest[constants.LAMBDA_INVOCATIONS][name] = details
-#
-#     missing_dependency_name, this_section, to_id, from_id, item_name = swap(exploded)
-#
-#     while missing_dependency_name:
-#         print("while")
-#         dependency = exploded[from_id][this_section].get(missing_dependency_name)
-#         dependency['moved'] = True
-#         exploded[to_id][this_section][missing_dependency_name] = dependency
-#         del exploded[from_id][this_section][missing_dependency_name]
-#
-#         from_manifest = exploded[from_id]
-#         if len(from_manifest.get(constants.LAUNCHES).values()) + len(
-#                 from_manifest.get(constants.SPOKE_LOCAL_PORTFOLIOS).values()) + len(
-#                 from_manifest.get(constants.ACTIONS).values()) + len(
-#                 from_manifest.get(constants.LAMBDA_INVOCATIONS).values()) == 0:
-#             del exploded[from_id]
-#
-#         missing_dependency_name, this_section, to_id, from_id, item_name = swap(exploded)
-#         print("ran complete", missing_dependency_name, this_section, to_id, from_id, item_name)
-#
-#     return list(exploded.values())
-#
-#
-# def swap(exploded):
-#     counter = 0
-#     n = len(exploded.items())
-#     for m_id, m_details in exploded.items():
-#         sections = [
-#             constants.LAUNCHES,
-#             constants.SPOKE_LOCAL_PORTFOLIOS,
-#             constants.ACTIONS,
-#             constants.LAMBDA_INVOCATIONS,
-#         ]
-#         item_type_map = dict()
-#         item_type_map[constants.LAUNCH] = constants.LAUNCHES
-#         item_type_map[constants.SPOKE_LOCAL_PORTFOLIO] = constants.SPOKE_LOCAL_PORTFOLIOS
-#         item_type_map[constants.ACTION] = constants.ACTIONS
-#         item_type_map[constants.LAMBDA_INVOCATION] = constants.LAMBDA_INVOCATIONS
-#
-#         for section in sections:
-#             for item_name, item_details in m_details.get(section, {}).items():
-#                 if item_details.get("moved"): continue
-#                 print(f"{counter}/{n} in {section}/{len(sections)} {item_name}/{len(m_details.get(section, {}).values())}")
-#                 for d in item_details.get("depends_on", []):
-#                     if isinstance(d, str):
-#                         if m_details.get(constants.LAUNCHES).get(d) is None:
-#                             missing_dependency_name = d
-#                             for m2_id, m2_details in exploded.items():
-#                                 if m2_id == m_id: continue
-#                                 # print("in one section depends_on two")
-#                                 if m2_details.get(constants.LAUNCHES).get(missing_dependency_name):
-#                                     if m2_details.get(constants.LAUNCHES).get(missing_dependency_name).get('moved'): continue
-#                                     return missing_dependency_name, constants.LAUNCHES, m_id, m2_id, item_name
-#                     else:
-#                         this_section = item_type_map.get(d.get("type"))
-#                         if m_details.get(this_section).get(d.get("name")) is None:
-#                             missing_dependency_name = d.get("name")
-#                             for m2_id, m2_details in exploded.items():
-#                                 # print("in one section depends_on two (2nd)")
-#                                 if m2_details.get(this_section).get(missing_dependency_name):
-#                                     return missing_dependency_name, this_section, m_id, m2_id, item_name
-#
-#         counter += 1
-#     return False, False, False, False, False
-#
-#
-# def decide_which_manifest_to_add_to(exploded, details, name, item_type):
-#     manifest_to_place_in = None
-#     # are any of the depends_on already placed
-#     for depends_on in details.get('depends_on', []):
-#         if isinstance(depends_on, str):
-#             # must be a launch as its a string
-#             new_dependency_name = depends_on
-#             for m_id, m_details in exploded.items():
-#                 if m_details.get(constants.LAUNCHES).get(new_dependency_name):
-#                     manifest_to_place_in = m_id
-#                     break
-#         else:
-#             # if it is a launch
-#             if depends_on.get('type') == constants.LAUNCH:
-#                 new_dependency_name = depends_on.get("name")
-#                 for m_id, m_details in exploded.items():
-#                     if m_details.get(constants.LAUNCHES).get(new_dependency_name):
-#                         manifest_to_place_in = m_id
-#                         break
-#             # if it is a lambda invocation
-#             elif depends_on.get('type') == constants.LAMBDA_INVOCATION:
-#                 new_dependency_name = depends_on.get("name")
-#                 for m_id, m_details in exploded.items():
-#                     if m_details.get(constants.LAMBDA_INVOCATIONS).get(new_dependency_name):
-#                         manifest_to_place_in = m_id
-#                         break
-#     # has something that lists this as a depends_on been placed already
-#     if manifest_to_place_in is None:
-#         # does a lambda invocation depend on this
-#         for m_id, m_details in exploded.items():
-#             for l_name, l_details in m_details.get(constants.LAMBDA_INVOCATIONS).items():
-#                 for d in l_details.get("depends_on", []):
-#                     if not isinstance(d, str):
-#                         if d.get("type") == item_type:
-#                             if d.get("name") == name:
-#                                 manifest_to_place_in = m_id
-#                                 break
-#             # does a launch depend on this
-#             if manifest_to_place_in is None:
-#                 for l_name, l_details in m_details.get(constants.LAUNCHES).items():
-#                     for d in l_details.get("depends_on", []):
-#                         if not isinstance(d, str):
-#                             if d.get("type") == item_type:
-#                                 if d.get("name") == name:
-#                                     manifest_to_place_in = m_id
-#                                     break
-#     return manifest_to_place_in
+        m = create_minimal_manifest(expanded_manifest)
+        for node in s.nodes(data=True):
+            data = deepcopy(node[1])
+            del data['section']
+            del data['name']
+            # raise Exception(['section'])
+            m[node[1].get("section")][node[1].get("name")] = data
+        exploded.append(m)
+    return exploded
