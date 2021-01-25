@@ -40,8 +40,6 @@ from servicecatalog_puppet import aws
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import constants
 
-import networkx as nx
-
 import traceback
 
 logger = logging.getLogger()
