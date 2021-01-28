@@ -34,6 +34,7 @@ def run_tasks(
     execution_mode="hub",
     cache_invalidator="now",
     on_complete_url=None,
+    running_exploded=False,
 ):
     codebuild_id = os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD")
     if is_list_launches:
@@ -68,7 +69,7 @@ def run_tasks(
         "processing_time",
         "broken_task",
     ]:
-        os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type)
+        os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type, exist_ok=running_exploded)
 
     logger.info(f"About to run workflow with {num_workers} workers")
 
@@ -339,7 +340,10 @@ def run_tasks(
         logger.info(f.status)
         logger.info(f.reason)
 
-    sys.exit(exit_status_code)
+    if running_exploded:
+        pass
+    else:
+        sys.exit(exit_status_code)
 
 
 def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):

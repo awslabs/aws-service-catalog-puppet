@@ -155,6 +155,7 @@ def deploy(
     is_list_launches=False,
     execution_mode="hub",
     on_complete_url=None,
+    running_exploded=False,
 ):
     cache_invalidator = str(datetime.now())
 
@@ -177,6 +178,7 @@ def deploy(
         execution_mode,
         cache_invalidator,
         on_complete_url,
+        running_exploded,
     )
 
 

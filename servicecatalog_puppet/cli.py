@@ -3,6 +3,7 @@
 
 import click
 import yaml
+import glob
 
 from servicecatalog_puppet import core, config
 
@@ -61,16 +62,46 @@ def deploy(
                     )
                 )
             )
+        core.deploy(
+            f,
+            puppet_account_id,
+            executor_account_id,
+            single_account=single_account,
+            num_workers=num_workers,
+            execution_mode=execution_mode,
+            on_complete_url=on_complete_url,
+        )
+    else:
+        if config.get_should_explode_manifest(puppet_account_id):
+            click.echo("Using an exploded manifest")
+            exploded_files = f.name.replace("expanded.yaml", "exploded-*.yaml")
+            exploded_manifests = glob.glob(exploded_files)
+            for exploded_manifest in exploded_manifests:
+                click.echo(f"Created and running {exploded_manifest}")
+                open(f.name, 'w').write(
+                    open(exploded_manifest, 'r').read()
+                )
+                core.deploy(
+                    f,
+                    puppet_account_id,
+                    executor_account_id,
+                    single_account=single_account,
+                    num_workers=num_workers,
+                    execution_mode=execution_mode,
+                    on_complete_url=on_complete_url,
+                    running_exploded=True,
+                )
 
-    core.deploy(
-        f,
-        puppet_account_id,
-        executor_account_id,
-        single_account=single_account,
-        num_workers=num_workers,
-        execution_mode=execution_mode,
-        on_complete_url=on_complete_url,
-    )
+        else:
+            core.deploy(
+                f,
+                puppet_account_id,
+                executor_account_id,
+                single_account=single_account,
+                num_workers=num_workers,
+                execution_mode=execution_mode,
+                on_complete_url=on_complete_url,
+            )
 
 
 @cli.command()
@@ -402,7 +433,9 @@ def list_launches(expanded_manifest, format):
 @click.option("--single-account", default=None)
 def expand(f, single_account):
     core.expand(f, single_account)
-    core.explode(f)
+    puppet_account_id = config.get_puppet_account_id()
+    if config.get_should_explode_manifest(puppet_account_id):
+        core.explode(f)
 
 
 @cli.command()

@@ -83,3 +83,9 @@ CONFIG_IS_CACHING_ENABLED = "CONFIG_IS_CACHING_ENABLED"
 
 
 START_SHARED_SCHEDULER_COMMAND = "luigid --background --pidfile luigi.pid --logdir results/logs --state-path results/state"
+
+
+CONFIG_REGIONS = "regions"
+CONFIG_SHOULD_COLLECT_CLOUDFORMATION_EVENTS = "should_collect_cloudformation_events"
+CONFIG_SHOULD_USE_SHARED_SCHEDULER = "should_use_shared_scheduler"
+CONFIG_SHOULD_EXPLODE_MANIFEST = "should_explode_manifest"
