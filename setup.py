@@ -18,13 +18,14 @@ package_data = \
                            'templates/*']}
 
 install_requires = \
-['better-boto==0.31.0',
+['better-boto==0.35.0',
  'boto3==1.16.56',
  'cfn-flip==1.2.3',
  'click==7.0',
  'colorclass==2.2.0',
  'jinja2==2.10.1',
  'luigi==3.0.2',
+ 'networkx>=2.5,<3.0',
  'psutil==5.7.0',
  'pykwalify==1.7.0',
  'pyyaml==5.1',
