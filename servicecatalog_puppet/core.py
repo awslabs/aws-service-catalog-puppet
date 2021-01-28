@@ -293,19 +293,6 @@ def _do_bootstrap(
     puppet_role_path,
 ):
     click.echo("Starting bootstrap")
-    with betterboto_client.ClientContextManager("ssm") as ssm:
-        try:
-            ssm.get_parameter(Name=constants.PUPPET_VERSION_INITIAL_SSM_PARAM_NAME,)
-        except ssm.exceptions.ParameterNotFound:
-            initial_version = ssm.get_parameter_version(
-                Version=1, Name=constants.PUPPET_VERSION_SSM_PARAM_NAME
-            )
-            ssm.put_parameter(
-                Name=constants.PUPPET_VERSION_INITIAL_SSM_PARAM_NAME,
-                Type="String",
-                Value=initial_version.get("Parameter").get("Value"),
-            )
-
     should_use_eventbridge = config.get_should_use_eventbridge(
         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
     )
