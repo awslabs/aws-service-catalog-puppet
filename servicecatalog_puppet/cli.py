@@ -347,50 +347,32 @@ def bootstrap(
     puppet_role_path,
 ):
     puppet_account_id = config.get_puppet_account_id()
+
+    parameters = dict(
+        with_manual_approvals=with_manual_approvals,
+        puppet_account_id=puppet_account_id,
+        puppet_code_pipeline_role_permission_boundary=puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary=source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary=puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary=puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary=puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary=cloud_formation_deploy_role_permissions_boundary,
+        deploy_environment_compute_type=deploy_environment_compute_type,
+        deploy_num_workers=deploy_num_workers,
+        source_provider=source_provider,
+        poll_for_source_changes=poll_for_source_changes,
+        webhook_secret=webhook_secret,
+        puppet_role_name=puppet_role_name,
+        puppet_role_path=puppet_role_path,
+    )
+
     if source_provider == "CodeCommit":
-        core.bootstrap(
-            with_manual_approvals,
-            puppet_account_id,
-            puppet_code_pipeline_role_permission_boundary,
-            source_role_permissions_boundary,
-            puppet_generate_role_permission_boundary,
-            puppet_deploy_role_permission_boundary,
-            puppet_provisioning_role_permissions_boundary,
-            cloud_formation_deploy_role_permissions_boundary,
-            deploy_environment_compute_type,
-            deploy_num_workers,
-            source_provider,
-            None,
-            repository_name,
-            branch_name,
-            poll_for_source_changes,
-            webhook_secret,
-            puppet_role_name,
-            puppet_role_path,
-        )
+        parameters.update(dict(owner=None, repo=repository_name, branch=branch_name,))
     elif source_provider == "GitHub":
-        core.bootstrap(
-            with_manual_approvals,
-            puppet_account_id,
-            puppet_code_pipeline_role_permission_boundary,
-            source_role_permissions_boundary,
-            puppet_generate_role_permission_boundary,
-            puppet_deploy_role_permission_boundary,
-            puppet_provisioning_role_permissions_boundary,
-            cloud_formation_deploy_role_permissions_boundary,
-            deploy_environment_compute_type,
-            deploy_num_workers,
-            source_provider,
-            owner,
-            repo,
-            branch,
-            poll_for_source_changes,
-            webhook_secret,
-            puppet_role_name,
-            puppet_role_path,
-        )
+        parameters.update(dict(owner=owner, repo=repo, branch=branch,))
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")
+    core.bootstrap(**parameters)
 
 
 @cli.command()
@@ -419,7 +401,7 @@ def list_launches(expanded_manifest, format):
 @click.argument("f", type=click.File())
 @click.option("--single-account", default=None)
 def expand(f, single_account):
-    # core.expand(f, single_account)
+    core.expand(f, single_account)
     core.explode(f)
 
 

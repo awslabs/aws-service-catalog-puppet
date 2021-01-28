@@ -11,8 +11,9 @@ from betterboto import client as betterboto_client
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
+from servicecatalog_puppet import utils
 
-from servicecatalog_puppet.workflow import tasks, general
+from servicecatalog_puppet.workflow import tasks, general as general_tasks
 
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 
@@ -474,7 +475,8 @@ class CreateSpokeLocalPortfolioTask(
         self.write_output(spoke_portfolio)
 
 
-class CreateAssociationsForPortfolioTask(PortfolioManagementTask):
+class CreateAssociationsForSpokeLocalPortfolioTask(PortfolioManagementTask):
+    spoke_local_portfolio_name = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -493,6 +495,7 @@ class CreateAssociationsForPortfolioTask(PortfolioManagementTask):
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
+            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "portfolio": self.portfolio,
             "portfolio_id": self.portfolio_id,
             "region": self.region,
@@ -523,12 +526,19 @@ class CreateAssociationsForPortfolioTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        role = config.get_puppet_role_arn(self.account_id)
-
-        with self.input().get("create_spoke_local_portfolio_task").open("r") as f:
-            portfolio_id = json.loads(f.read()).get("Id")
+        create_spoke_local_portfolio_task = self.load_from_input(
+            "create_spoke_local_portfolio_task"
+        )
+        portfolio_id = create_spoke_local_portfolio_task.get("Id")
         self.info(f"using portfolio_id: {portfolio_id}")
 
+        yield general_tasks.DeleteCloudFormationStackTask(
+            account_id=self.account_id,
+            region=self.region,
+            stack_name=f"associations-for-portfolio-{portfolio_id}",
+        )
+
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "cloudformation",
             role,
@@ -542,7 +552,7 @@ class CreateAssociationsForPortfolioTask(PortfolioManagementTask):
                 },
                 portfolio_id=portfolio_id,
             )
-            stack_name = f"associations-for-portfolio-{portfolio_id}"
+            stack_name = f"associations-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
             self.info(template)
             cloudformation.create_or_update(
                 StackName=stack_name,
@@ -631,6 +641,7 @@ class GetProductsAndProvisioningArtifactsTask(PortfolioManagementTask):
 
 
 class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
+    spoke_local_portfolio_name = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -645,6 +656,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
+            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "portfolio": self.portfolio,
             "portfolio_id": self.portfolio_id,
             "region": self.region,
@@ -884,6 +896,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
 
 
 class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
+    spoke_local_portfolio_name = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -898,6 +911,7 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
+            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "portfolio": self.portfolio,
             "portfolio_id": self.portfolio_id,
             "region": self.region,
@@ -1026,7 +1040,8 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
             )
 
 
-class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
+class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementTask):
+    spoke_local_portfolio_name = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -1050,34 +1065,26 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
         }
 
     def requires(self):
-        if self.product_generation_method == "import":
-            return {
-                "create_spoke_local_portfolio_task": ImportIntoSpokeLocalPortfolioTask(
-                    manifest_file_path=self.manifest_file_path,
-                    account_id=self.account_id,
-                    region=self.region,
-                    portfolio=self.portfolio,
-                    portfolio_id=self.portfolio_id,
-                    organization=self.organization,
-                    puppet_account_id=self.puppet_account_id,
-                    sharing_mode=self.sharing_mode,
-                    cache_invalidator=self.cache_invalidator,
-                ),
-            }
-        else:
-            return {
-                "create_spoke_local_portfolio_task": CopyIntoSpokeLocalPortfolioTask(
-                    manifest_file_path=self.manifest_file_path,
-                    account_id=self.account_id,
-                    region=self.region,
-                    portfolio=self.portfolio,
-                    portfolio_id=self.portfolio_id,
-                    organization=self.organization,
-                    puppet_account_id=self.puppet_account_id,
-                    sharing_mode=self.sharing_mode,
-                    cache_invalidator=self.cache_invalidator,
-                ),
-            }
+        create_spoke_local_portfolio_task_klass = (
+            ImportIntoSpokeLocalPortfolioTask
+            if self.product_generation_method == "import"
+            else CopyIntoSpokeLocalPortfolioTask
+        )
+
+        return dict(
+            create_spoke_local_portfolio_task=create_spoke_local_portfolio_task_klass(
+                spoke_local_portfolio_name=self.spoke_local_portfolio_name,
+                manifest_file_path=self.manifest_file_path,
+                account_id=self.account_id,
+                region=self.region,
+                portfolio=self.portfolio,
+                portfolio_id=self.portfolio_id,
+                organization=self.organization,
+                puppet_account_id=self.puppet_account_id,
+                sharing_mode=self.sharing_mode,
+                cache_invalidator=self.cache_invalidator,
+            ),
+        )
 
     def api_calls_used(self):
         return [
@@ -1088,67 +1095,34 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
         ]
 
     def run(self):
-        role = config.get_puppet_role_arn(self.account_id)
-        with self.input().get("create_spoke_local_portfolio_task").open("r") as f:
-            dependency_output = json.loads(f.read())
+        dependency_output = self.load_from_input("create_spoke_local_portfolio_task")
         spoke_portfolio = dependency_output.get("portfolio")
         portfolio_id = spoke_portfolio.get("Id")
+
+        yield [
+            general_tasks.DeleteCloudFormationStackTask(
+                account_id=self.account_id,
+                region=self.region,
+                stack_name=f"launch-constraints-for-portfolio-{portfolio_id}",
+            ),
+            general_tasks.DeleteCloudFormationStackTask(
+                account_id=self.account_id,
+                region=self.region,
+                stack_name=f"launch-constraints-v2-for-portfolio-{portfolio_id}",
+            ),
+        ]
+
         product_name_to_id_dict = dependency_output.get("products")
+        role = config.get_puppet_role_arn(self.account_id)
         with betterboto_client.CrossAccountClientContextManager(
             "cloudformation",
             role,
             f"cfn-{self.account_id}-{self.region}",
             region_name=self.region,
         ) as cloudformation:
-            new_launch_constraints = []
-            for launch_constraint in self.launch_constraints:
-                new_launch_constraint = {
-                    "products": [],
-                    "roles": launch_constraint.get("roles"),
-                }
-                # DEBUG HERE to see why products list dict thing is empty
-                if launch_constraint.get("products", None) is not None:
-                    if isinstance(launch_constraint.get("products"), tuple):
-                        new_launch_constraint["products"] += launch_constraint.get(
-                            "products"
-                        )
-                    elif isinstance(launch_constraint.get("products"), str):
-                        with betterboto_client.CrossAccountClientContextManager(
-                            "servicecatalog",
-                            role,
-                            f"sc-{self.account_id}-{self.region}",
-                            region_name=self.region,
-                        ) as service_catalog:
-                            response = service_catalog.search_products_as_admin_single_page(
-                                PortfolioId=portfolio_id
-                            )
-                            for product_view_details in response.get(
-                                "ProductViewDetails", []
-                            ):
-                                product_view_summary = product_view_details.get(
-                                    "ProductViewSummary"
-                                )
-                                product_name_to_id_dict[
-                                    product_view_summary.get("Name")
-                                ] = product_view_summary.get("ProductId")
-                                if re.match(
-                                    launch_constraint.get("products"),
-                                    product_view_summary.get("Name"),
-                                ):
-                                    new_launch_constraint["products"].append(
-                                        product_view_summary.get("Name")
-                                    )
-                    else:
-                        raise Exception(
-                            f'Unexpected launch constraint type {type(launch_constraint.get("products"))}'
-                        )
-
-                if launch_constraint.get("product", None) is not None:
-                    new_launch_constraint["products"].append(
-                        launch_constraint.get("product")
-                    )
-
-                new_launch_constraints.append(new_launch_constraint)
+            new_launch_constraints = self.generate_new_launch_constraints(
+                portfolio_id, product_name_to_id_dict, role
+            )
 
             template = config.env.get_template(
                 "launch_role_constraints.template.yaml.j2"
@@ -1158,12 +1132,9 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
                 launch_constraints=new_launch_constraints,
                 product_name_to_id_dict=product_name_to_id_dict,
             )
-            # time.sleep(30)
-            stack_name_v1 = f"launch-constraints-for-portfolio-{portfolio_id}"
-            cloudformation.ensure_deleted(StackName=stack_name_v1,)
-            stack_name_v2 = f"launch-constraints-v2-for-portfolio-{portfolio_id}"
+            stack_name = f"launch-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
             cloudformation.create_or_update(
-                StackName=stack_name_v2,
+                StackName=stack_name,
                 TemplateBody=template,
                 NotificationARNs=[
                     f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
@@ -1171,11 +1142,63 @@ class CreateLaunchRoleConstraintsForPortfolio(PortfolioManagementTask):
                 if self.should_use_sns
                 else [],
             )
-            result = cloudformation.describe_stacks(StackName=stack_name_v2,).get(
+            result = cloudformation.describe_stacks(StackName=stack_name,).get(
                 "Stacks"
             )[0]
-            with self.output().open("w") as f:
-                f.write(json.dumps(result, indent=4, default=str,))
+            self.write_output(result)
+
+    def generate_new_launch_constraints(
+        self, portfolio_id, product_name_to_id_dict, role
+    ):
+        new_launch_constraints = []
+        for launch_constraint in self.launch_constraints:
+            new_launch_constraint = {
+                "products": [],
+                "roles": launch_constraint.get("roles"),
+            }
+            if launch_constraint.get("products", None) is not None:
+                if isinstance(launch_constraint.get("products"), tuple):
+                    new_launch_constraint["products"] += launch_constraint.get(
+                        "products"
+                    )
+                elif isinstance(launch_constraint.get("products"), str):
+                    with betterboto_client.CrossAccountClientContextManager(
+                        "servicecatalog",
+                        role,
+                        f"sc-{self.account_id}-{self.region}",
+                        region_name=self.region,
+                    ) as service_catalog:
+                        response = service_catalog.search_products_as_admin_single_page(
+                            PortfolioId=portfolio_id
+                        )
+                        for product_view_details in response.get(
+                            "ProductViewDetails", []
+                        ):
+                            product_view_summary = product_view_details.get(
+                                "ProductViewSummary"
+                            )
+                            product_name_to_id_dict[
+                                product_view_summary.get("Name")
+                            ] = product_view_summary.get("ProductId")
+                            if re.match(
+                                launch_constraint.get("products"),
+                                product_view_summary.get("Name"),
+                            ):
+                                new_launch_constraint["products"].append(
+                                    product_view_summary.get("Name")
+                                )
+                else:
+                    raise Exception(
+                        f'Unexpected launch constraint type {type(launch_constraint.get("products"))}'
+                    )
+
+            if launch_constraint.get("product", None) is not None:
+                new_launch_constraint["products"].append(
+                    launch_constraint.get("product")
+                )
+
+            new_launch_constraints.append(new_launch_constraint)
+        return new_launch_constraints
 
 
 class RequestPolicyTask(PortfolioManagementTask):
@@ -1677,6 +1700,7 @@ class DeletePortfolioShare(PortfolioManagementTask):
 
 
 class DeletePortfolio(PortfolioManagementTask):
+    spoke_local_portfolio_name = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -1685,6 +1709,7 @@ class DeletePortfolio(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
@@ -1710,17 +1735,17 @@ class DeletePortfolio(PortfolioManagementTask):
             if result:
                 portfolio_id = result.get("Id")
                 requirements.append(
-                    general.DeleteCloudFormationStackTask(
+                    general_tasks.DeleteCloudFormationStackTask(
                         account_id=self.account_id,
                         region=self.region,
-                        stack_name=f"associations-for-portfolio-{portfolio_id}",
+                        stack_name = f"associations-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}",
                     )
                 )
                 requirements.append(
-                    general.DeleteCloudFormationStackTask(
+                    general_tasks.DeleteCloudFormationStackTask(
                         account_id=self.account_id,
                         region=self.region,
-                        stack_name=f"launch-constraints-v2-for-portfolio-{portfolio_id}",
+                        stack_name = f"launch-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
                     )
                 )
                 if not is_puppet_account:

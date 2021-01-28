@@ -293,6 +293,19 @@ def _do_bootstrap(
     puppet_role_path,
 ):
     click.echo("Starting bootstrap")
+    with betterboto_client.ClientContextManager("ssm") as ssm:
+        try:
+            ssm.get_parameter(Name=constants.PUPPET_VERSION_INITIAL_SSM_PARAM_NAME,)
+        except ssm.exceptions.ParameterNotFound:
+            initial_version = ssm.get_parameter_version(
+                Version=1, Name=constants.PUPPET_VERSION_SSM_PARAM_NAME
+            )
+            ssm.put_parameter(
+                Name=constants.PUPPET_VERSION_INITIAL_SSM_PARAM_NAME,
+                Type="String",
+                Value=initial_version.get("Parameter").get("Value"),
+            )
+
     should_use_eventbridge = config.get_should_use_eventbridge(
         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
     )
@@ -621,22 +634,21 @@ def expand(f, single_account):
 
 
 def explode(f):
+    logger.info("Exploding")
     puppet_account_id = config.get_puppet_account_id()
     original_name = f.name
     expanded_output = f.name.replace(".yaml", "-expanded.yaml")
-    expanded_manifest = manifest_utils.load(open(expanded_output, 'r'), puppet_account_id)
+    expanded_manifest = manifest_utils.load(
+        open(expanded_output, "r"), puppet_account_id
+    )
     expanded_manifest = manifest_utils.Manifest(expanded_manifest)
 
     exploded = manifest_utils.explode(expanded_manifest)
     print(f"found {len(exploded)} graphs")
     count = 0
     for mani in exploded:
-        with open(original_name.replace(".yaml", f"-exploded-{count}.yaml"), 'w') as f:
-            f.write(
-                yaml.safe_dump(
-                    json.loads(json.dumps(mani))
-                )
-            )
+        with open(original_name.replace(".yaml", f"-exploded-{count}.yaml"), "w") as f:
+            f.write(yaml.safe_dump(json.loads(json.dumps(mani))))
         count += 1
 
 

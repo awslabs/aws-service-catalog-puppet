@@ -6,7 +6,6 @@ from copy import deepcopy
 from servicecatalog_puppet import constants
 
 
-
 class TestManifestForExplode(unittest.TestCase):
     account_a = {
         "account_id": "012345678910",
@@ -33,10 +32,14 @@ class TestManifestForExplode(unittest.TestCase):
         "regions_enabled": ["ap-west-2",],
         "tags": ["group:C"],
     }
-    accounts = [account_a, account_b, account_c,]
+    accounts = [
+        account_a,
+        account_b,
+        account_c,
+    ]
 
     lambda_invocation_with_no_dependencies = dict(
-        product = "lambda_invocation_with_no_dependencies",
+        product="lambda_invocation_with_no_dependencies",
     )
     lambda_invocation_with_one_lambda_dependency = dict(
         function_name="lambda_invocation_with_one_lambda_dependency",
@@ -45,37 +48,30 @@ class TestManifestForExplode(unittest.TestCase):
                 name="lambda_invocation_with_no_dependencies",
                 type=constants.LAMBDA_INVOCATION,
             )
-        ]
+        ],
     )
     lambda_invocation_with_one_launch_dependency = dict(
         function_name="lambda_invocation_with_one_launch_dependency",
-        depends_on=[
-            dict(
-                name="launch_with_no_dependencies",
-                type=constants.LAUNCH,
-            )
-        ]
+        depends_on=[dict(name="launch_with_no_dependencies", type=constants.LAUNCH,)],
     )
-    launch_with_no_dependencies = dict(
-        product = "launch_with_no_dependencies",
-    )
+    launch_with_no_dependencies = dict(product="launch_with_no_dependencies",)
     spoke_local_portfolio_with_no_dependencies = dict(
-        product = "spoke_local_portfolio_with_no_dependencies",
+        product="spoke_local_portfolio_with_no_dependencies",
     )
     spoke_local_portfolio_with_one_launch_dependency = dict(
-        product = "spoke_local_portfolio_with_one_launch_dependency",
-        depends_on=["launch_with_no_dependencies"]
+        product="spoke_local_portfolio_with_one_launch_dependency",
+        depends_on=["launch_with_no_dependencies"],
     )
     launch_depending_on_depending_launch = dict(
-        product = "launch_depending_on_depending_launch",
+        product="launch_depending_on_depending_launch",
         depends_on=[dict(type=constants.LAUNCH, name="launch_depending_on_launch")],
     )
     launch_depending_on_launch = dict(
-        product = "launch_depending_on_launch",
+        product="launch_depending_on_launch",
         depends_on=[dict(type=constants.LAUNCH, name="launch_with_no_dependencies")],
     )
     another_launch_with_no_dependencies = dict(
-        product = "another_launch_with_no_dependencies",
+        product="another_launch_with_no_dependencies",
     )
     launch_with_one_lambda_dependency = dict(
         function_name="launch_with_one_lambda_dependency",
@@ -86,7 +82,7 @@ class TestManifestForExplode(unittest.TestCase):
         depends_on=[
             dict(
                 name="lambda_invocation_with_no_dependencies",
-                type=constants.LAMBDA_INVOCATION
+                type=constants.LAMBDA_INVOCATION,
             )
         ],
     )
@@ -94,6 +90,7 @@ class TestManifestForExplode(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
         from servicecatalog_puppet import manifest_utils
+
         self.sut = manifest_utils.explode
 
     def tearDown(self):
@@ -117,7 +114,6 @@ class TestManifestForExplode(unittest.TestCase):
         # verify
         self.assertListEqual(actual_results, expected_results)
 
-
     def test_explode_simple_for_launch(self):
         # setup
         expanded_manifest = dict()
@@ -136,7 +132,6 @@ class TestManifestForExplode(unittest.TestCase):
 
         # verify
         self.assertListEqual(actual_results, expected_results)
-
 
     def test_explode_simple_for_spoke_local_portfolio(self):
         # setup
@@ -157,13 +152,12 @@ class TestManifestForExplode(unittest.TestCase):
         # verify
         self.assertListEqual(actual_results, expected_results)
 
-
     def test_explode_simple_for_spoke_local_portfolio_depends_on_launch(self):
         # setup
         expanded_manifest = dict()
         expanded_manifest[constants.ACCOUNTS] = self.accounts
         expanded_manifest[constants.LAUNCHES] = dict(
-            launch_with_no_dependencies = self.launch_with_no_dependencies,
+            launch_with_no_dependencies=self.launch_with_no_dependencies,
         )
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict(
             spoke_local_portfolio_with_no_dependencies=self.spoke_local_portfolio_with_one_launch_dependency,
@@ -178,7 +172,6 @@ class TestManifestForExplode(unittest.TestCase):
 
         # verify
         self.assertListEqual(actual_results, expected_results)
-
 
     def test_explode_simple_for_two_launches(self):
         # setup
@@ -208,7 +201,6 @@ class TestManifestForExplode(unittest.TestCase):
         # verify
         self.assertListEqual(actual_results, expected_results)
 
-
     def test_explode_single_lambda_dependency_on_lambda(self):
         # setup
         expanded_manifest = dict()
@@ -228,13 +220,12 @@ class TestManifestForExplode(unittest.TestCase):
         # verify
         self.assertListEqual(actual_results, expected_results)
 
-
     def test_explode_single_lambda_dependency_on_launch(self):
         # setup
         expanded_manifest = dict()
         expanded_manifest[constants.ACCOUNTS] = self.accounts
         expanded_manifest[constants.LAUNCHES] = dict(
-            launch_with_no_dependencies = self.launch_with_no_dependencies
+            launch_with_no_dependencies=self.launch_with_no_dependencies
         )
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
         expanded_manifest[constants.ACTIONS] = dict()
@@ -249,13 +240,12 @@ class TestManifestForExplode(unittest.TestCase):
         # verify
         self.assertListEqual(actual_results, expected_results)
 
-
     def test_explode_single_launch_depends_on_lambda(self):
         # setup
         expanded_manifest = dict()
         expanded_manifest[constants.ACCOUNTS] = self.accounts
         expanded_manifest[constants.LAUNCHES] = dict(
-            launch_depending_on_lambda = self.launch_depending_on_lambda
+            launch_depending_on_lambda=self.launch_depending_on_lambda
         )
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
         expanded_manifest[constants.ACTIONS] = dict()
@@ -269,7 +259,6 @@ class TestManifestForExplode(unittest.TestCase):
 
         # verify
         self.assertListEqual(actual_results, expected_results)
-
 
     def test_explode_single_lambda_dependency_on_lambda_reversed(self):
         # setup
@@ -289,7 +278,6 @@ class TestManifestForExplode(unittest.TestCase):
 
         # verify
         self.assertListEqual(actual_results, expected_results)
-
 
     def test_explode_single_launch_dependency_on_launch(self):
         # setup
@@ -311,7 +299,6 @@ class TestManifestForExplode(unittest.TestCase):
         # verify
         self.assertListEqual(actual_results, expected_results)
 
-
     def test_explode_single_launch_dependency_on_launch_reversed(self):
         # setup
         expanded_manifest = dict()
@@ -331,7 +318,6 @@ class TestManifestForExplode(unittest.TestCase):
 
         # verify
         self.assertListEqual(actual_results, expected_results)
-
 
     def test_explode_3_launches_with_a_gap(self):
         # setup

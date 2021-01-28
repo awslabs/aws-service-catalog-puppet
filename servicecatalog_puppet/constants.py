@@ -47,6 +47,7 @@ EVENTBRIDGE_MAX_EVENTS_PER_CALL = 10
 
 SPOKE_VERSION_SSM_PARAM_NAME = "service-catalog-puppet-spoke-version"
 PUPPET_VERSION_SSM_PARAM_NAME = "service-catalog-puppet-version"
+PUPPET_VERSION_INITIAL_SSM_PARAM_NAME = "service-catalog-puppet-version-initial"
 
 SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED = "shared"
 SPOKE_LOCAL_PORTFOLIO_STATUS_TERMINATED = "terminated"

@@ -11,7 +11,7 @@ Resources:
     Condition: NoOpCondition
 
 {% for association in portfolio.Associations %}
-  Association{{ loop.index }}:
+  A{{ loop.index }}:
     Type: AWS::ServiceCatalog::PortfolioPrincipalAssociation
     Properties:
       PrincipalARN: !Sub "{{ association }}"

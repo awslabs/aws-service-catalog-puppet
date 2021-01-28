@@ -100,7 +100,9 @@ def get_should_use_product_plans(puppet_account_id, default_region=None):
 @functools.lru_cache(maxsize=32)
 def get_should_use_shared_scheduler(puppet_account_id, default_region=None):
     logger.info(
-        "getting should_use_shared_scheduler,  default_region: {}".format(default_region)
+        "getting should_use_shared_scheduler,  default_region: {}".format(
+            default_region
+        )
     )
     return get_config(puppet_account_id, default_region).get(
         "should_use_shared_scheduler", False

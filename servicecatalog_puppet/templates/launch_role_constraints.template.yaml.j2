@@ -12,7 +12,7 @@ Resources:
 
 {% for launch_constraint in launch_constraints %}{% for role_arn in launch_constraint.roles %}{% for product in launch_constraint.products %}
 #{{ product }}
-  LRC{{ portfolio_id|replace("-", "") }}B{{ product_name_to_id_dict.get(product)|replace("-", "") }}C{{ role_arn.split(":")[-1].replace('/','').replace("-", "") }}:
+  L{{ portfolio_id|replace("-", "") }}B{{ product_name_to_id_dict.get(product)|replace("-", "") }}C{{ role_arn.split(":")[-1].replace('/','').replace("-", "") }}:
     Type: AWS::ServiceCatalog::LaunchRoleConstraint
     Properties:
       PortfolioId: {{ portfolio_id }}

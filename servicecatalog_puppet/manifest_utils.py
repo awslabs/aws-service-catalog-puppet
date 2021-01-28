@@ -106,9 +106,9 @@ def expand_manifest(manifest, client):
         account_id = account.get("account_id")
         if account.get("append") or account.get("overwrite"):
             if (
-                    account.get("default_region")
-                    or account.get("regions_enabled")
-                    or account.get("tags")
+                account.get("default_region")
+                or account.get("regions_enabled")
+                or account.get("tags")
             ):
                 raise Exception(
                     f"{account_id}: If using append or overwrite you cannot set default_region, regions_enabled or tags"
@@ -146,7 +146,7 @@ def expand_manifest(manifest, client):
 
     for launch_name, launch_details in new_manifest.get(constants.LAUNCHES, {}).items():
         for parameter_name, parameter_details in launch_details.get(
-                "parameters", {}
+            "parameters", {}
         ).items():
             if parameter_details.get("macro"):
                 macro_to_run = macros.get(parameter_details.get("macro").get("method"))
@@ -274,7 +274,7 @@ class Manifest(dict):
         return result
 
     def get_actions_from(
-            self, launch_name, pre_or_post, launch_or_spoke_local_portfolio
+        self, launch_name, pre_or_post, launch_or_spoke_local_portfolio
     ):
         logger.info(
             f"get_actions_from for {launch_or_spoke_local_portfolio}.{launch_name}"
@@ -309,9 +309,9 @@ class Manifest(dict):
             account_regions.append(account.get("default_region"))
 
             enabled_regions = (
-                    account.get("enabled", [])
-                    + account.get("regions_enabled", [])
-                    + account.get("enabled_regions", [])
+                account.get("enabled", [])
+                + account.get("regions_enabled", [])
+                + account.get("enabled_regions", [])
             )
             if len(enabled_regions) == 0:
                 raise Exception(
@@ -325,8 +325,8 @@ class Manifest(dict):
                 if account.get("organization", "") != "":
                     organization = account.get("organization")
                     if (
-                            organization
-                            not in sharing_policies_by_region[r]["organizations"]
+                        organization
+                        not in sharing_policies_by_region[r]["organizations"]
                     ):
                         sharing_policies_by_region[r]["organizations"].append(
                             organization
@@ -380,12 +380,12 @@ class Manifest(dict):
         return accounts_by_region
 
     def get_task_defs_from_details(
-            self,
-            puppet_account_id,
-            include_expanded_from,
-            launch_name,
-            configuration,
-            launch_or_spoke_local_portfolio,
+        self,
+        puppet_account_id,
+        include_expanded_from,
+        launch_name,
+        configuration,
+        launch_or_spoke_local_portfolio,
     ):
         launch_details = self.get(launch_or_spoke_local_portfolio).get(launch_name)
         accounts = self.get("accounts")
@@ -543,14 +543,11 @@ def explode(expanded_manifest):
     for section in sections:
         for item_name, item_details in expanded_manifest.get(section, {}).items():
             uid = f"{section}|{item_name}"
-            data = dict(
-                section=section,
-                name=item_name,
-            )
+            data = dict(section=section, item_name=item_name,)
             data.update(item_details)
-            G.add_nodes_from([
-                (uid, data),
-            ])
+            G.add_nodes_from(
+                [(uid, data),]
+            )
 
     mapping = dict()
     mapping[constants.LAUNCH] = constants.LAUNCHES
@@ -561,7 +558,7 @@ def explode(expanded_manifest):
     for section in sections:
         for item_name, item_details in expanded_manifest.get(section, {}).items():
             uid = f"{section}|{item_name}"
-            for d in item_details.get('depends_on', []):
+            for d in item_details.get("depends_on", []):
                 if isinstance(d, str):
                     G.add_edge(uid, f"{constants.LAUNCHES}|{d}")
                 else:
@@ -575,8 +572,8 @@ def explode(expanded_manifest):
         m = create_minimal_manifest(expanded_manifest)
         for node in s.nodes(data=True):
             data = deepcopy(node[1])
-            del data['section']
-            del data['name']
-            m[node[1].get("section")][node[1].get("name")] = data
+            del data["section"]
+            del data["item_name"]
+            m[node[1].get("section")][node[1].get("item_name")] = data
         exploded.append(m)
     return exploded
