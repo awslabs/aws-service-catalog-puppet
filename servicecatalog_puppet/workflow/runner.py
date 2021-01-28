@@ -69,11 +69,12 @@ def run_tasks(
         "processing_time",
         "broken_task",
     ]:
-        os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type, exist_ok=running_exploded)
+        os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type)
 
     logger.info(f"About to run workflow with {num_workers} workers")
 
-    tasks.print_stats()
+    if not running_exploded:
+        tasks.print_stats()
 
     should_use_shared_scheduler = config.get_should_use_shared_scheduler(
         puppet_account_id

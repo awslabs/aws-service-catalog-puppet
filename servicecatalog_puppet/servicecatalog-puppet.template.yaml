@@ -423,6 +423,7 @@ Resources:
               - manifest-expanded.yaml
               - results/*/*
               - output/*/*
+              - exploded_results/*/*
               - tasks.log
             name: DeployProject
 

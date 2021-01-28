@@ -4,6 +4,9 @@
 import click
 import yaml
 import glob
+import os
+import re
+import shutil
 
 from servicecatalog_puppet import core, config
 
@@ -78,6 +81,7 @@ def deploy(
             exploded_manifests = glob.glob(exploded_files)
             for exploded_manifest in exploded_manifests:
                 click.echo(f"Created and running {exploded_manifest}")
+                uid = re.search('.*exploded-(.*).yaml', exploded_manifest).group(1)
                 open(f.name, 'w').write(
                     open(exploded_manifest, 'r').read()
                 )
@@ -91,6 +95,15 @@ def deploy(
                     on_complete_url=on_complete_url,
                     running_exploded=True,
                 )
+                output = f"exploded_results{os.path.sep}{uid}"
+                os.makedirs(
+                    output
+                )
+                for d in ["results", "output", "data", "arghhh"]:
+                    if os.path.exists(d):
+                        shutil.move(
+                            d, f"{output}{os.path.sep}"
+                        )
 
         else:
             core.deploy(
