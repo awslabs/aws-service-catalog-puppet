@@ -7,6 +7,7 @@ import requests
 import terminaltables
 
 import shutil
+import json
 from threading import Thread
 
 import pkg_resources
@@ -153,6 +154,7 @@ def deploy(
     is_list_launches=False,
     execution_mode="hub",
     on_complete_url=None,
+    running_exploded=False,
 ):
     cache_invalidator = str(datetime.now())
 
@@ -175,6 +177,7 @@ def deploy(
         execution_mode,
         cache_invalidator,
         on_complete_url,
+        running_exploded,
     )
 
 
@@ -609,10 +612,32 @@ def expand(f, single_account):
 
         click.echo("Filtered")
 
+    if new_manifest.get(constants.LAMBDA_INVOCATIONS) is None:
+        new_manifest[constants.LAMBDA_INVOCATIONS] = dict()
+
     new_name = f.name.replace(".yaml", "-expanded.yaml")
     logger.info("Writing new manifest: {}".format(new_name))
     with open(new_name, "w") as output:
         output.write(yaml.safe_dump(new_manifest, default_flow_style=False))
+
+
+def explode(f):
+    logger.info("Exploding")
+    puppet_account_id = config.get_puppet_account_id()
+    original_name = f.name
+    expanded_output = f.name.replace(".yaml", "-expanded.yaml")
+    expanded_manifest = manifest_utils.load(
+        open(expanded_output, "r"), puppet_account_id
+    )
+    expanded_manifest = manifest_utils.Manifest(expanded_manifest)
+
+    exploded = manifest_utils.explode(expanded_manifest)
+    logger.info(f"found {len(exploded)} graphs")
+    count = 0
+    for mani in exploded:
+        with open(original_name.replace(".yaml", f"-exploded-{count}.yaml"), "w") as f:
+            f.write(yaml.safe_dump(json.loads(json.dumps(mani))))
+        count += 1
 
 
 def validate(f):

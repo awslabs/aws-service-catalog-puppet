@@ -36,15 +36,15 @@ def get_config(puppet_account_id, default_region=None):
 
 @functools.lru_cache(maxsize=32)
 def get_regions(puppet_account_id, default_region=None):
-    logger.info("getting regions,  default_region: {}".format(default_region))
-    return get_config(puppet_account_id, default_region).get("regions")
+    logger.info(f"getting {constants.CONFIG_REGIONS},  default_region: {default_region}")
+    return get_config(puppet_account_id, default_region).get(constants.CONFIG_REGIONS)
 
 
 @functools.lru_cache(maxsize=32)
 def get_should_use_sns(puppet_account_id, default_region=None):
-    logger.info("getting should_use_sns,  default_region: {}".format(default_region))
+    logger.info(f"getting {constants.CONFIG_SHOULD_COLLECT_CLOUDFORMATION_EVENTS},  default_region: {default_region}")
     return get_config(puppet_account_id, default_region).get(
-        "should_collect_cloudformation_events", True
+        constants.CONFIG_SHOULD_COLLECT_CLOUDFORMATION_EVENTS, True
     )
 
 
@@ -100,10 +100,20 @@ def get_should_use_product_plans(puppet_account_id, default_region=None):
 @functools.lru_cache(maxsize=32)
 def get_should_use_shared_scheduler(puppet_account_id, default_region=None):
     logger.info(
-        "getting should_use_shared_scheduler,  default_region: {}".format(default_region)
+        f"getting {constants.CONFIG_SHOULD_USE_SHARED_SCHEDULER},  default_region: {default_region}"
     )
     return get_config(puppet_account_id, default_region).get(
-        "should_use_shared_scheduler", False
+        constants.CONFIG_SHOULD_USE_SHARED_SCHEDULER, False
+    )
+
+
+@functools.lru_cache(maxsize=32)
+def get_should_explode_manifest(puppet_account_id, default_region=None):
+    logger.info(
+        f"getting {constants.CONFIG_SHOULD_EXPLODE_MANIFEST},  default_region: {default_region}"
+    )
+    return get_config(puppet_account_id, default_region).get(
+        constants.CONFIG_SHOULD_EXPLODE_MANIFEST, False
     )
 
 

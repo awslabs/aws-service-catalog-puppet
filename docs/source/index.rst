@@ -16,6 +16,7 @@ Welcome to aws-service-catalog-puppets's documentation!
    puppet/caching
    puppet/upgrading
    puppet/faq
+   puppet/kitchen_sink_example
 
    puppet/using_the_cli
    puppet/using_the_sdk

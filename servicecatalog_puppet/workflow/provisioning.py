@@ -177,7 +177,7 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 product_id=self.product_id,
                 version=self.version,
                 version_id=self.version_id,
-                account_id=self.account_id, #TODO switch this to puppet_account_id but need to first ensure there is an association for the puppet user and then resolve CreateAssociationsInPythonForPortfolioTask differences
+                account_id=self.account_id,  # TODO switch this to puppet_account_id but need to first ensure there is an association for the puppet user and then resolve CreateAssociationsInPythonForPortfolioTask differences
                 region=self.region,
             ),
         }
@@ -382,7 +382,9 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                                 if output.get("OutputKey") == ssm_param_output.get(
                                     "stack_output"
                                 ):
-                                    ssm_parameter_name = ssm_param_output.get("param_name")
+                                    ssm_parameter_name = ssm_param_output.get(
+                                        "param_name"
+                                    )
                                     ssm_parameter_name = ssm_parameter_name.replace(
                                         "${AWS::Region}", self.region
                                     )
@@ -1411,6 +1413,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 tasks.append(
                     portfoliomanagement_tasks.DeletePortfolio(
                         manifest_file_path=self.manifest_file_path,
+                        spoke_local_portfolio_name=self.spoke_local_portfolio_name,
                         account_id=task_def.get("account_id"),
                         region=task_def.get("region"),
                         portfolio=task_def.get("portfolio"),
@@ -1449,8 +1452,9 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             )
 
             if len(task_def.get("associations", [])) > 0:
-                create_associations_for_portfolio_task = portfoliomanagement_tasks.CreateAssociationsForPortfolioTask(
+                create_associations_for_portfolio_task = portfoliomanagement_tasks.CreateAssociationsForSpokeLocalPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
+                    spoke_local_portfolio_name=self.spoke_local_portfolio_name,
                     sharing_mode=sharing_mode,
                     cache_invalidator=self.cache_invalidator,
                     associations=task_def.get("associations"),
@@ -1464,6 +1468,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             if product_generation_method == "import":
                 import_into_spoke_local_portfolio_task = portfoliomanagement_tasks.ImportIntoSpokeLocalPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
+                    spoke_local_portfolio_name=self.spoke_local_portfolio_name,
                     sharing_mode=sharing_mode,
                     cache_invalidator=self.cache_invalidator,
                     puppet_account_id=task_def.get("puppet_account_id"),
@@ -1472,6 +1477,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             else:
                 copy_into_spoke_local_portfolio_task = portfoliomanagement_tasks.CopyIntoSpokeLocalPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
+                    spoke_local_portfolio_name=self.spoke_local_portfolio_name,
                     sharing_mode=sharing_mode,
                     cache_invalidator=self.cache_invalidator,
                     puppet_account_id=task_def.get("puppet_account_id"),
@@ -1484,9 +1490,10 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     "puppet_account_id": task_def.get("puppet_account_id"),
                     "should_use_sns": task_def.get("should_use_sns"),
                 }
-                create_launch_role_constraints_for_portfolio = portfoliomanagement_tasks.CreateLaunchRoleConstraintsForPortfolio(
+                create_launch_role_constraints_for_portfolio = portfoliomanagement_tasks.CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
                     **create_launch_role_constraints_for_portfolio_task_params,
+                    spoke_local_portfolio_name=self.spoke_local_portfolio_name,
                     sharing_mode=sharing_mode,
                     cache_invalidator=self.cache_invalidator,
                     product_generation_method=product_generation_method,

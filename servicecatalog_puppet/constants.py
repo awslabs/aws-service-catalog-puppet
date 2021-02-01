@@ -16,8 +16,18 @@ PROVISIONED = "provisioned"
 TERMINATED = "terminated"
 
 DEFAULT_TIMEOUT = 0
+PARAMETERS = "parameters"
+ACCOUNTS = "accounts"
+MAPPINGS = "mappings"
 LAUNCHES = "launches"
 SPOKE_LOCAL_PORTFOLIOS = "spoke-local-portfolios"
+LAMBDA_INVOCATIONS = "lambda-invocations"
+ACTIONS = "actions"
+
+LAUNCH = "launch"
+LAMBDA_INVOCATION = "lambda-invocation"
+SPOKE_LOCAL_PORTFOLIO = "spoke-local-portfolio"
+ACTION = "action"
 
 RESULTS_DIRECTORY = "results"
 
@@ -37,6 +47,7 @@ EVENTBRIDGE_MAX_EVENTS_PER_CALL = 10
 
 SPOKE_VERSION_SSM_PARAM_NAME = "service-catalog-puppet-spoke-version"
 PUPPET_VERSION_SSM_PARAM_NAME = "service-catalog-puppet-version"
+PUPPET_VERSION_INITIAL_SSM_PARAM_NAME = "service-catalog-puppet-version-initial"
 
 SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED = "shared"
 SPOKE_LOCAL_PORTFOLIO_STATUS_TERMINATED = "terminated"
@@ -72,3 +83,9 @@ CONFIG_IS_CACHING_ENABLED = "CONFIG_IS_CACHING_ENABLED"
 
 
 START_SHARED_SCHEDULER_COMMAND = "luigid --background --pidfile luigi.pid --logdir results/logs --state-path results/state"
+
+
+CONFIG_REGIONS = "regions"
+CONFIG_SHOULD_COLLECT_CLOUDFORMATION_EVENTS = "should_collect_cloudformation_events"
+CONFIG_SHOULD_USE_SHARED_SCHEDULER = "should_use_shared_scheduler"
+CONFIG_SHOULD_EXPLODE_MANIFEST = "should_explode_manifest"

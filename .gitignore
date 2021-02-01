@@ -22,3 +22,4 @@ config.yaml
 README.rst
 reports
 *.log
+exploded_results/

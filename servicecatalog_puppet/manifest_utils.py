@@ -10,6 +10,7 @@ from servicecatalog_puppet import config
 from servicecatalog_puppet.macros import macros
 from servicecatalog_puppet import constants
 
+import networkx as nx
 
 logger = logging.getLogger(__file__)
 
@@ -269,7 +270,7 @@ class Manifest(dict):
                     new_mapping.pop()
 
         if result is None:
-            raise Exception(f"Could not find: {''+'/'.join(mapping)}")
+            raise Exception(f"Could not find: {'' + '/'.join(mapping)}")
         return result
 
     def get_actions_from(
@@ -517,3 +518,62 @@ class Manifest(dict):
                             f"Unexpected regions of {regions} set for launch {launch_name}"
                         )
         return task_defs
+
+
+def create_minimal_manifest(manifest):
+    minimal_manifest = deepcopy(manifest)
+    # minimal_manifest[constants.ACCOUNTS] = dict()
+    minimal_manifest[constants.LAUNCHES] = dict()
+    minimal_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
+    minimal_manifest[constants.ACTIONS] = dict()
+    minimal_manifest[constants.LAMBDA_INVOCATIONS] = dict()
+    return minimal_manifest
+
+
+def explode(expanded_manifest):
+    sections = [
+        constants.LAUNCHES,
+        constants.SPOKE_LOCAL_PORTFOLIOS,
+        constants.ACTIONS,
+        constants.LAMBDA_INVOCATIONS,
+    ]
+
+    G = nx.Graph()
+
+    for section in sections:
+        for item_name, item_details in expanded_manifest.get(section, {}).items():
+            uid = f"{section}|{item_name}"
+            data = dict(section=section, item_name=item_name,)
+            data.update(item_details)
+            G.add_nodes_from(
+                [(uid, data),]
+            )
+
+    mapping = dict()
+    mapping[constants.LAUNCH] = constants.LAUNCHES
+    mapping[constants.SPOKE_LOCAL_PORTFOLIO] = constants.SPOKE_LOCAL_PORTFOLIOS
+    mapping[constants.ACTION] = constants.ACTIONS
+    mapping[constants.LAMBDA_INVOCATION] = constants.LAMBDA_INVOCATIONS
+
+    for section in sections:
+        for item_name, item_details in expanded_manifest.get(section, {}).items():
+            uid = f"{section}|{item_name}"
+            for d in item_details.get("depends_on", []):
+                if isinstance(d, str):
+                    G.add_edge(uid, f"{constants.LAUNCHES}|{d}")
+                else:
+                    G.add_edge(uid, f"{mapping.get(d.get('type'))}|{d.get('name')}")
+
+    S = [G.subgraph(c).copy() for c in nx.connected_components(G)]
+
+    exploded = list()
+
+    for s in S:
+        m = create_minimal_manifest(expanded_manifest)
+        for node in s.nodes(data=True):
+            data = deepcopy(node[1])
+            del data["section"]
+            del data["item_name"]
+            m[node[1].get("section")][node[1].get("item_name")] = data
+        exploded.append(m)
+    return exploded

@@ -7,6 +7,7 @@ from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow.provisioning import LaunchTask
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet import config
+from servicecatalog_puppet import constants
 from betterboto import client as betterboto_client
 
 
@@ -191,7 +192,7 @@ class LambdaInvocationDependenciesWrapperTask(
                 )
             else:
                 dependency_type = dependency.get("type", "launch")
-                if dependency_type == "launch":
+                if dependency_type == constants.LAUNCH:
                     dependencies.append(
                         LaunchTask(
                             launch_name=dependency.get("name"),
@@ -206,7 +207,7 @@ class LambdaInvocationDependenciesWrapperTask(
                             cache_invalidator=self.cache_invalidator,
                         )
                     )
-                elif dependency_type == "lambda-invocation":
+                elif dependency_type == constants.LAMBDA_INVOCATION:
                     dependencies.append(
                         LambdaInvocationTask(
                             lambda_invocation_name=dependency.get("name"),

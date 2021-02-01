@@ -3,6 +3,10 @@
 
 import click
 import yaml
+import glob
+import os
+import re
+import shutil
 
 from servicecatalog_puppet import core, config
 
@@ -61,16 +65,56 @@ def deploy(
                     )
                 )
             )
+        core.deploy(
+            f,
+            puppet_account_id,
+            executor_account_id,
+            single_account=single_account,
+            num_workers=num_workers,
+            execution_mode=execution_mode,
+            on_complete_url=on_complete_url,
+        )
+    else:
+        if config.get_should_explode_manifest(puppet_account_id):
+            click.echo("Using an exploded manifest")
+            exploded_files = f.name.replace("expanded.yaml", "exploded-*.yaml")
+            exploded_manifests = glob.glob(exploded_files)
+            for exploded_manifest in exploded_manifests:
+                click.echo(f"Created and running {exploded_manifest}")
+                uid = re.search('.*exploded-(.*).yaml', exploded_manifest).group(1)
+                open(f.name, 'w').write(
+                    open(exploded_manifest, 'r').read()
+                )
+                core.deploy(
+                    f,
+                    puppet_account_id,
+                    executor_account_id,
+                    single_account=single_account,
+                    num_workers=num_workers,
+                    execution_mode=execution_mode,
+                    on_complete_url=on_complete_url,
+                    running_exploded=True,
+                )
+                output = f"exploded_results{os.path.sep}{uid}"
+                os.makedirs(
+                    output
+                )
+                for d in ["results", "output", "data", "arghhh"]:
+                    if os.path.exists(d):
+                        shutil.move(
+                            d, f"{output}{os.path.sep}"
+                        )
 
-    core.deploy(
-        f,
-        puppet_account_id,
-        executor_account_id,
-        single_account=single_account,
-        num_workers=num_workers,
-        execution_mode=execution_mode,
-        on_complete_url=on_complete_url,
-    )
+        else:
+            core.deploy(
+                f,
+                puppet_account_id,
+                executor_account_id,
+                single_account=single_account,
+                num_workers=num_workers,
+                execution_mode=execution_mode,
+                on_complete_url=on_complete_url,
+            )
 
 
 @cli.command()
@@ -347,50 +391,32 @@ def bootstrap(
     puppet_role_path,
 ):
     puppet_account_id = config.get_puppet_account_id()
+
+    parameters = dict(
+        with_manual_approvals=with_manual_approvals,
+        puppet_account_id=puppet_account_id,
+        puppet_code_pipeline_role_permission_boundary=puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary=source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary=puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary=puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary=puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary=cloud_formation_deploy_role_permissions_boundary,
+        deploy_environment_compute_type=deploy_environment_compute_type,
+        deploy_num_workers=deploy_num_workers,
+        source_provider=source_provider,
+        poll_for_source_changes=poll_for_source_changes,
+        webhook_secret=webhook_secret,
+        puppet_role_name=puppet_role_name,
+        puppet_role_path=puppet_role_path,
+    )
+
     if source_provider == "CodeCommit":
-        core.bootstrap(
-            with_manual_approvals,
-            puppet_account_id,
-            puppet_code_pipeline_role_permission_boundary,
-            source_role_permissions_boundary,
-            puppet_generate_role_permission_boundary,
-            puppet_deploy_role_permission_boundary,
-            puppet_provisioning_role_permissions_boundary,
-            cloud_formation_deploy_role_permissions_boundary,
-            deploy_environment_compute_type,
-            deploy_num_workers,
-            source_provider,
-            None,
-            repository_name,
-            branch_name,
-            poll_for_source_changes,
-            webhook_secret,
-            puppet_role_name,
-            puppet_role_path,
-        )
+        parameters.update(dict(owner=None, repo=repository_name, branch=branch_name,))
     elif source_provider == "GitHub":
-        core.bootstrap(
-            with_manual_approvals,
-            puppet_account_id,
-            puppet_code_pipeline_role_permission_boundary,
-            source_role_permissions_boundary,
-            puppet_generate_role_permission_boundary,
-            puppet_deploy_role_permission_boundary,
-            puppet_provisioning_role_permissions_boundary,
-            cloud_formation_deploy_role_permissions_boundary,
-            deploy_environment_compute_type,
-            deploy_num_workers,
-            source_provider,
-            owner,
-            repo,
-            branch,
-            poll_for_source_changes,
-            webhook_secret,
-            puppet_role_name,
-            puppet_role_path,
-        )
+        parameters.update(dict(owner=owner, repo=repo, branch=branch,))
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")
+    core.bootstrap(**parameters)
 
 
 @cli.command()
@@ -420,6 +446,9 @@ def list_launches(expanded_manifest, format):
 @click.option("--single-account", default=None)
 def expand(f, single_account):
     core.expand(f, single_account)
+    puppet_account_id = config.get_puppet_account_id()
+    if config.get_should_explode_manifest(puppet_account_id):
+        core.explode(f)
 
 
 @cli.command()
