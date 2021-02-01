@@ -99,7 +99,7 @@ def deploy(
                 os.makedirs(
                     output
                 )
-                for d in ["results", "output", "data", "arghhh"]:
+                for d in ["results", "output", "data"]:
                     if os.path.exists(d):
                         shutil.move(
                             d, f"{output}{os.path.sep}"
