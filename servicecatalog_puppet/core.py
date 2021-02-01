@@ -1,6 +1,5 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-from copy import deepcopy
 from pathlib import Path
 
 import cfn_tools
@@ -633,7 +632,7 @@ def explode(f):
     expanded_manifest = manifest_utils.Manifest(expanded_manifest)
 
     exploded = manifest_utils.explode(expanded_manifest)
-    print(f"found {len(exploded)} graphs")
+    logger.info(f"found {len(exploded)} graphs")
     count = 0
     for mani in exploded:
         with open(original_name.replace(".yaml", f"-exploded-{count}.yaml"), "w") as f:
