@@ -1430,9 +1430,13 @@ class ShareAndAcceptPortfolioTask(
                     break
             if not was_accepted:
                 self.info(f"{self.uid}: accepting {self.portfolio_id}")
-                cross_account_servicecatalog.accept_portfolio_share(
-                    PortfolioId=self.portfolio_id,
-                )
+                portfolio_share_args = {
+                    'PortfolioId': self.portfolio_id
+                }
+                if self.sharing_mode == constants.SHARING_MODE_AWS_ORGANIZATIONS:
+                    portfolio_share_args['PortfolioShareType'] = 'AWS_ORGANIZATIONS'
+                
+                cross_account_servicecatalog.accept_portfolio_share(**portfolio_share_args)
 
             principals_for_portfolio = cross_account_servicecatalog.list_principals_for_portfolio_single_page(
                 PortfolioId=self.portfolio_id
