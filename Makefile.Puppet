@@ -61,3 +61,8 @@ deploy-spoke:
 ## @Puppet_commands Runs servicecatalog-puppet validate for a spoke
 validate:
 	poetry run servicecatalog-puppet validate ignored/src/ServiceCatalogPuppet/manifest.yaml
+
+## @Puppet_commands Runs servicecatalog-puppet --info list-launches
+list-launches:
+	time poetry run servicecatalog-puppet --info list-launches \
+		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml

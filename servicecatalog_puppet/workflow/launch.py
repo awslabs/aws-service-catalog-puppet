@@ -54,7 +54,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
             for launch_name, launch_details in self.manifest.get(
                 "launches", {}
             ).items():
-                if launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE:
+                if launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE and not self.is_dry_run:
                     tasks.append(
                         provisioning_tasks.LaunchInSpokeTask(
                             launch_name=launch_name,

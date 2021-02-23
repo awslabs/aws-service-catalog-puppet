@@ -430,6 +430,13 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
 
 class ProvisionProductDryRunTask(ProvisionProductTask):
+    def output(self):
+        return luigi.LocalTarget(self.output_location)
+
+    @property
+    def output_location(self):
+        return f"output/{self.uid}.{self.output_suffix}"
+
     def api_calls_used(self):
         return [
             f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
