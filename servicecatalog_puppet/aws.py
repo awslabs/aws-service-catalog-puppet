@@ -253,6 +253,7 @@ def provision_product_with_plan(
         ) in [
             "No updates are to be performed.",
             "The submitted information didn't contain changes. Submit different information to create a change set.",
+            "Call to CloudFormation CreateChangeSet threw exception.",
         ]:
             logger.warn(
                 f"{uid} :: Swallowing that plan {plan_status} due to {describe_provisioned_product_plan_response.get('ProvisionedProductPlanDetails').get('StatusMessage')}"
