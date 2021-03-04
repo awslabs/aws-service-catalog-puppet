@@ -248,6 +248,9 @@ def bootstrap_spokes_in_ou(
 @click.option("--webhook-secret")
 @click.option("--puppet-role-name", default="PuppetRole")
 @click.option("--puppet-role-path", default="/servicecatalog-puppet/")
+@click.option("--scm-connection-arn")
+@click.option("--scm-full-repository-id", default="ServiceCatalogFactory")
+@click.option("--scm-branch-name", default="main")
 def bootstrap_branch(
     branch_to_bootstrap,
     with_manual_approvals,
@@ -268,51 +271,45 @@ def bootstrap_branch(
     webhook_secret,
     puppet_role_name,
     puppet_role_path,
+        scm_connection_arn,
+        scm_full_repository_id,
+        scm_branch_name,
 ):
     puppet_account_id = config.get_puppet_account_id()
 
+    parameters = dict(
+        branch_to_bootstrap=branch_to_bootstrap,
+        puppet_account_id=puppet_account_id,
+        with_manual_approvals=with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary=puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary=source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary=puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary=puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary=puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary=cloud_formation_deploy_role_permissions_boundary,
+        deploy_num_workers=deploy_num_workers,
+
+        source_provider=source_provider,
+        owner =None,
+        repo=None,
+        branch=None,
+        poll_for_source_changes=None,
+        webhook_secret=None,
+
+        puppet_role_name=puppet_role_name,
+        puppet_role_path=puppet_role_path,
+    )
+
     if source_provider == "CodeCommit":
-        core.bootstrap_branch(
-            branch_to_bootstrap,
-            puppet_account_id,
-            with_manual_approvals,
-            puppet_code_pipeline_role_permission_boundary,
-            source_role_permissions_boundary,
-            puppet_generate_role_permission_boundary,
-            puppet_deploy_role_permission_boundary,
-            puppet_provisioning_role_permissions_boundary,
-            cloud_formation_deploy_role_permissions_boundary,
-            deploy_num_workers,
-            source_provider,
-            None,
-            repository_name,
-            branch_name,
-            poll_for_source_changes,
-            webhook_secret,
-            puppet_role_name,
-            puppet_role_path,
-        )
+        parameters.update(dict(repo=repository_name, branch=branch_name,poll_for_source_changes=poll_for_source_changes))
     elif source_provider == "GitHub":
-        core.bootstrap_branch(
-            branch_to_bootstrap,
-            puppet_account_id,
-            with_manual_approvals,
-            puppet_code_pipeline_role_permission_boundary,
-            source_role_permissions_boundary,
-            puppet_generate_role_permission_boundary,
-            puppet_deploy_role_permission_boundary,
-            puppet_provisioning_role_permissions_boundary,
-            cloud_formation_deploy_role_permissions_boundary,
-            deploy_num_workers,
-            source_provider,
-            owner,
-            repo,
-            branch,
-            poll_for_source_changes,
-            webhook_secret,
-        )
+        parameters.update(dict(owner=owner, repo=repo, branch=branch,poll_for_source_changes=poll_for_source_changes, webhook_secret=webhook_secret))
+    elif source_provider == "CodeStarSourceConnection":
+        parameters.update(dict(scm_connection_arn=scm_connection_arn, scm_full_repository_id=scm_full_repository_id, scm_branch_name=scm_branch_name))
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")
+
+    core.bootstrap_branch(**parameters)
 
 
 @cli.command()
@@ -363,6 +360,9 @@ def bootstrap_branch(
 @click.option("--webhook-secret")
 @click.option("--puppet-role-name", default="PuppetRole")
 @click.option("--puppet-role-path", default="/servicecatalog-puppet/")
+@click.option("--scm-connection-arn")
+@click.option("--scm-full-repository-id", default="ServiceCatalogFactory")
+@click.option("--scm-branch-name", default="main")
 def bootstrap(
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
@@ -383,6 +383,9 @@ def bootstrap(
     webhook_secret,
     puppet_role_name,
     puppet_role_path,
+        scm_connection_arn,
+        scm_full_repository_id,
+        scm_branch_name,
 ):
     puppet_account_id = config.get_puppet_account_id()
 
@@ -402,14 +405,24 @@ def bootstrap(
         webhook_secret=webhook_secret,
         puppet_role_name=puppet_role_name,
         puppet_role_path=puppet_role_path,
+
+        owner=None,
+        repo=None,
+        branch=None,
+        scm_connection_arn=None,
+        scm_full_repository_id=None,
+        scm_branch_name=None,
     )
 
     if source_provider == "CodeCommit":
-        parameters.update(dict(owner=None, repo=repository_name, branch=branch_name,))
+        parameters.update(dict(repo=repository_name, branch=branch_name,poll_for_source_changes=poll_for_source_changes))
     elif source_provider == "GitHub":
-        parameters.update(dict(owner=owner, repo=repo, branch=branch,))
+        parameters.update(dict(owner=owner, repo=repo, branch=branch,poll_for_source_changes=poll_for_source_changes, webhook_secret=webhook_secret))
+    elif source_provider == "CodeStarSourceConnection":
+        parameters.update(dict(scm_connection_arn=scm_connection_arn, scm_full_repository_id=scm_full_repository_id, scm_branch_name=scm_branch_name))
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")
+
     core.bootstrap(**parameters)
 
 

@@ -292,6 +292,9 @@ def _do_bootstrap(
     webhook_secret,
     puppet_role_name,
     puppet_role_path,
+    scm_connection_arn,
+    scm_full_repository_id,
+    scm_branch_name,
 ):
     click.echo("Starting bootstrap")
     should_use_eventbridge = config.get_should_use_eventbridge(
@@ -362,6 +365,17 @@ def _do_bootstrap(
                     "Branch": branch,
                     "PollForSourceChanges": poll_for_source_changes,
                     "SecretsManagerSecret": webhook_secret,
+                },
+            }
+        )
+    elif source_provider.lower() == "codestarsourceconnection":
+        source_args.update(
+            {
+                "Configuration": {
+                    "ConnectionArn": scm_connection_arn,
+                    "FullRepositoryId": scm_full_repository_id,
+                    "BranchName": scm_branch_name,
+                    "OutputArtifactFormat": "CODE_ZIP",
                 },
             }
         )
@@ -507,6 +521,9 @@ def bootstrap_branch(
     webhook_secret,
     puppet_role_name,
     puppet_role_path,
+        scm_connection_arn,
+        scm_full_repository_id,
+        scm_branch_name,
 ):
     _do_bootstrap(
         "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(
@@ -530,6 +547,9 @@ def bootstrap_branch(
         webhook_secret,
         puppet_role_name,
         puppet_role_path,
+        scm_connection_arn,
+        scm_full_repository_id,
+        scm_branch_name,
     )
 
 
@@ -552,6 +572,9 @@ def bootstrap(
     webhook_secret,
     puppet_role_name,
     puppet_role_path,
+        scm_connection_arn,
+        scm_full_repository_id,
+        scm_branch_name,
 ):
     _do_bootstrap(
         config.get_puppet_version(),
@@ -573,6 +596,9 @@ def bootstrap(
         webhook_secret,
         puppet_role_name,
         puppet_role_path,
+        scm_connection_arn,
+        scm_full_repository_id,
+        scm_branch_name,
     )
 
 
