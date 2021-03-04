@@ -521,9 +521,9 @@ def bootstrap_branch(
     webhook_secret,
     puppet_role_name,
     puppet_role_path,
-        scm_connection_arn,
-        scm_full_repository_id,
-        scm_branch_name,
+    scm_connection_arn,
+    scm_full_repository_id,
+    scm_branch_name,
 ):
     _do_bootstrap(
         "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(
@@ -572,9 +572,9 @@ def bootstrap(
     webhook_secret,
     puppet_role_name,
     puppet_role_path,
-        scm_connection_arn,
-        scm_full_repository_id,
-        scm_branch_name,
+    scm_connection_arn,
+    scm_full_repository_id,
+    scm_branch_name,
 ):
     _do_bootstrap(
         config.get_puppet_version(),

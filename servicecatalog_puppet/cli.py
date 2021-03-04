@@ -271,9 +271,9 @@ def bootstrap_branch(
     webhook_secret,
     puppet_role_name,
     puppet_role_path,
-        scm_connection_arn,
-        scm_full_repository_id,
-        scm_branch_name,
+    scm_connection_arn,
+    scm_full_repository_id,
+    scm_branch_name,
 ):
     puppet_account_id = config.get_puppet_account_id()
 
@@ -288,24 +288,42 @@ def bootstrap_branch(
         puppet_provisioning_role_permissions_boundary=puppet_provisioning_role_permissions_boundary,
         cloud_formation_deploy_role_permissions_boundary=cloud_formation_deploy_role_permissions_boundary,
         deploy_num_workers=deploy_num_workers,
-
         source_provider=source_provider,
-        owner =None,
+        owner=None,
         repo=None,
         branch=None,
         poll_for_source_changes=None,
         webhook_secret=None,
-
         puppet_role_name=puppet_role_name,
         puppet_role_path=puppet_role_path,
     )
 
     if source_provider == "CodeCommit":
-        parameters.update(dict(repo=repository_name, branch=branch_name,poll_for_source_changes=poll_for_source_changes))
+        parameters.update(
+            dict(
+                repo=repository_name,
+                branch=branch_name,
+                poll_for_source_changes=poll_for_source_changes,
+            )
+        )
     elif source_provider == "GitHub":
-        parameters.update(dict(owner=owner, repo=repo, branch=branch,poll_for_source_changes=poll_for_source_changes, webhook_secret=webhook_secret))
+        parameters.update(
+            dict(
+                owner=owner,
+                repo=repo,
+                branch=branch,
+                poll_for_source_changes=poll_for_source_changes,
+                webhook_secret=webhook_secret,
+            )
+        )
     elif source_provider == "CodeStarSourceConnection":
-        parameters.update(dict(scm_connection_arn=scm_connection_arn, scm_full_repository_id=scm_full_repository_id, scm_branch_name=scm_branch_name))
+        parameters.update(
+            dict(
+                scm_connection_arn=scm_connection_arn,
+                scm_full_repository_id=scm_full_repository_id,
+                scm_branch_name=scm_branch_name,
+            )
+        )
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")
 
@@ -383,9 +401,9 @@ def bootstrap(
     webhook_secret,
     puppet_role_name,
     puppet_role_path,
-        scm_connection_arn,
-        scm_full_repository_id,
-        scm_branch_name,
+    scm_connection_arn,
+    scm_full_repository_id,
+    scm_branch_name,
 ):
     puppet_account_id = config.get_puppet_account_id()
 
@@ -405,7 +423,6 @@ def bootstrap(
         webhook_secret=webhook_secret,
         puppet_role_name=puppet_role_name,
         puppet_role_path=puppet_role_path,
-
         owner=None,
         repo=None,
         branch=None,
@@ -415,11 +432,31 @@ def bootstrap(
     )
 
     if source_provider == "CodeCommit":
-        parameters.update(dict(repo=repository_name, branch=branch_name,poll_for_source_changes=poll_for_source_changes))
+        parameters.update(
+            dict(
+                repo=repository_name,
+                branch=branch_name,
+                poll_for_source_changes=poll_for_source_changes,
+            )
+        )
     elif source_provider == "GitHub":
-        parameters.update(dict(owner=owner, repo=repo, branch=branch,poll_for_source_changes=poll_for_source_changes, webhook_secret=webhook_secret))
+        parameters.update(
+            dict(
+                owner=owner,
+                repo=repo,
+                branch=branch,
+                poll_for_source_changes=poll_for_source_changes,
+                webhook_secret=webhook_secret,
+            )
+        )
     elif source_provider == "CodeStarSourceConnection":
-        parameters.update(dict(scm_connection_arn=scm_connection_arn, scm_full_repository_id=scm_full_repository_id, scm_branch_name=scm_branch_name))
+        parameters.update(
+            dict(
+                scm_connection_arn=scm_connection_arn,
+                scm_full_repository_id=scm_full_repository_id,
+                scm_branch_name=scm_branch_name,
+            )
+        )
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")
 
