@@ -35,6 +35,7 @@ from servicecatalog_puppet.workflow import (
 from servicecatalog_puppet import config
 from servicecatalog_puppet import manifest_utils
 from servicecatalog_puppet import aws
+from servicecatalog_puppet import templates
 
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import constants
@@ -315,12 +316,9 @@ def _do_bootstrap(
     ) as clients:
         click.echo("Creating {}-regional".format(constants.BOOTSTRAP_STACK_NAME))
         threads = []
-        template = asset_helpers.read_from_site_packages(
-            "{}.template.yaml".format(
-                "{}-regional".format(constants.BOOTSTRAP_STACK_NAME)
-            )
+        template = templates.get_regional_template(
+            puppet_version, os.environ.get("AWS_DEFAULT_REGION")
         )
-        template = Template(template).render(VERSION=puppet_version)
         args = {
             "StackName": "{}-regional".format(constants.BOOTSTRAP_STACK_NAME),
             "TemplateBody": template,
@@ -382,20 +380,16 @@ def _do_bootstrap(
 
     with betterboto_client.ClientContextManager("cloudformation") as cloudformation:
         click.echo("Creating {}".format(constants.BOOTSTRAP_STACK_NAME))
-        template = asset_helpers.read_from_site_packages(
-            "{}.template.yaml".format(constants.BOOTSTRAP_STACK_NAME)
-        )
-        template = Template(template).render(
-            VERSION=puppet_version,
-            ALL_REGIONS=all_regions,
-            Source=source_args,
-            is_caching_enabled=config.is_caching_enabled(
+        template = templates.get_bootstrap_template(
+            puppet_version,
+            all_regions,
+            source_args,
+            config.is_caching_enabled(
                 puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
             ),
+            with_manual_approvals,
         )
-        template = Template(template).render(
-            VERSION=puppet_version, ALL_REGIONS=all_regions, Source=source_args
-        )
+
         args = {
             "StackName": constants.BOOTSTRAP_STACK_NAME,
             "TemplateBody": template,

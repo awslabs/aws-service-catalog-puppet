@@ -583,7 +583,6 @@ Resources:
             Type: PARAMETER_STORE
             Value: !Ref PuppetRolePathParameter
 
-
       Source:
         Type: NO_SOURCE
         BuildSpec: !Sub |
