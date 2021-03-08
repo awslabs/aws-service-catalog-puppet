@@ -13,7 +13,7 @@ from troposphere import codebuild
 from awacs import iam as awscs_iam
 
 
-def get_regional_template(version: str, default_region_value) -> str:
+def get_regional_template(version: str, default_region_value) -> t.Template:
     description = f"""Bootstrap template used to bootstrap a region of ServiceCatalog-Puppet master
 {{"version": "{version}", "framework": "servicecatalog-puppet", "role": "bootstrap-master-region"}}"""
 
@@ -93,19 +93,18 @@ def get_regional_template(version: str, default_region_value) -> str:
         t.Output("RegionalProductTopic", Value=t.Ref(regional_product_topic))
     )
 
-    return template.to_yaml(clean_up=True)
+    return template
 
 
 def get_bootstrap_template(
     puppet_version, all_regions, source, is_caching_enabled, is_manual_approvals: bool
-) -> str:
+) -> t.Template:
     is_codecommit = source.get("Provider", "").lower() == "codecommit"
     is_github = source.get("Provider", "").lower() == "github"
     is_codestarsourceconnection = (
         source.get("Provider", "").lower() == "codestarsourceconnection"
     )
-
-    description = f"""Bootstrap template used to bootstrap a region of ServiceCatalog-Puppet master
+    description = f"""Bootstrap template used to bring up the main ServiceCatalog-Puppet AWS CodePipeline with dependencies
 {{"version": "{puppet_version}", "framework": "servicecatalog-puppet", "role": "bootstrap-master"}}"""
 
     template = t.Template(Description=description)
@@ -405,16 +404,162 @@ def get_bootstrap_template(
         )
     )
 
+    deploy_role = template.add_resource(
+        iam.Role(
+            "DeployRole",
+            RoleName="PuppetDeployRole",
+            AssumeRolePolicyDocument={
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": ["sts:AssumeRole"],
+                        "Effect": "Allow",
+                        "Principal": {"Service": ["codebuild.amazonaws.com"]},
+                    }
+                ],
+            },
+            ManagedPolicyArns=[
+                t.Sub("arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess")
+            ],
+            PermissionsBoundary=t.Ref(puppet_deploy_role_permission_boundary_parameter),
+            Path="/servicecatalog-puppet/",
+        )
+    )
+
+    num_workers_ssm_parameter = template.add_resource(
+        ssm.Parameter(
+            "NumWorkersSSMParameter",
+            Type="String",
+            Name="/servicecatalog-puppet/deploy/num-workers",
+            Value=t.Sub("${DeployNumWorkers}"),
+        )
+    )
+
     source_stage = {}
 
     if is_codecommit:
         code_repo = template.add_resource(
             codecommit.Repository(
                 "CodeRepo",
-                RepositoryName="foo",
+                RepositoryName=source.get("Configuration").get("RepositoryName"),
                 RepositoryDescription="Repo to store the servicecatalog puppet solution",
             )
         )
+
+        single_account_run_project_build_spec = dict(
+            version=0.2,
+            phases=dict(
+                install={
+                    "runtime-versions": dict(python="3.7"),
+                    "commands": [
+                        f"pip install {puppet_version}"
+                        if "http" in puppet_version
+                        else f"pip install aws-service-catalog-puppet=={puppet_version}",
+                    ],
+                },
+                pre_build={
+                    "commands": [
+                        "git clone --config 'credential.helper=!aws codecommit credential-helper $@' --config 'credential.UseHttpPath=true' ${GIT_REPO}",
+                        "servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml --single-account $SINGLE_ACCOUNT_ID",
+                    ]
+                },
+                build={
+                    "commands": [
+                        "servicecatalog-puppet --info deploy --num-workers ${NUM_WORKERS} manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID",
+                    ]
+                },
+            ),
+            artifacts=dict(
+                name="DeployProject",
+                files=[
+                    "ServiceCatalogPuppet/manifest.yaml",
+                    "ServiceCatalogPuppet/manifest-expanded.yaml",
+                    "results/*/*",
+                    "output/*/*",
+                    "exploded_results/*/*",
+                    "tasks.log",
+                ],
+            ),
+        )
+
+        single_account_run_project_args = dict(
+            Name="servicecatalog-puppet-single-account-run",
+            Description="Runs puppet for a single account - SINGLE_ACCOUNT_ID",
+            ServiceRole=t.GetAtt(deploy_role, "Arn"),
+            Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor":"Framework"}),
+            Artifacts=codebuild.Artifacts(Type="NO_ARTIFACTS",),
+            TimeoutInMinutes=480,
+            Environment=codebuild.Environment(
+                ComputeType=t.Ref(deploy_environment_compute_type_parameter),
+                Image="aws/codebuild/standard:4.0",
+                Type="LINUX_CONTAINER",
+                EnvironmentVariables=[
+                    {
+                        "Type": "PLAINTEXT",
+                        "Name": "SINGLE_ACCOUNT_ID",
+                        "Value": "CHANGE_ME",
+                    },
+                    {
+                        "Type": "PLAINTEXT",
+                        "Name": "GIT_REPO",
+                        "Value": t.GetAtt(code_repo, "CloneUrlHttp"),
+                    },
+                    {
+                        "Type": "PLAINTEXT",
+                        "Name": "PUPPET_ACCOUNT_ID",
+                        "Value": t.Ref("AWS::AccountId"),
+                    },
+                    {
+                        "Type": "PLAINTEXT",
+                        "Name": "PUPPET_REGION",
+                        "Value": t.Ref("AWS::Region"),
+                    },
+                    {
+                        "Type": "PARAMETER_STORE",
+                        "Name": "PARTITION",
+                        "Value": t.Ref(partition_parameter),
+                    },
+                    {
+                        "Type": "PARAMETER_STORE",
+                        "Name": "PUPPET_ROLE_NAME",
+                        "Value": t.Ref(puppet_role_name_parameter),
+                    },
+                    {
+                        "Type": "PARAMETER_STORE",
+                        "Name": "PUPPET_ROLE_PATH",
+                        "Value": t.Ref(puppet_role_path_parameter),
+                    },
+                ],
+            ),
+            Source=codebuild.Source(
+                Type="NO_SOURCE",
+                BuildSpec=yaml.safe_dump(single_account_run_project_build_spec),
+            ),
+        )
+
+        single_account_run_project = template.add_resource(
+            codebuild.Project(
+                'SingleAccountRunProject',
+                **single_account_run_project_args
+            )
+        )
+
+        single_account_run_project_build_spec['phases']['build']['commands'] = [
+            "servicecatalog-puppet --info deploy --on-complete-url $CALLBACK_URL ServiceCatalogPuppet/manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID"
+        ]
+        single_account_run_project_args['Name'] = "servicecatalog-puppet-single-account-run-with-callback"
+        single_account_run_project_args['Description'] = "Runs puppet for a single account - SINGLE_ACCOUNT_ID and then does a http put"
+        single_account_run_project_args['Source'] = codebuild.Source(
+            Type="NO_SOURCE",
+            BuildSpec=yaml.safe_dump(single_account_run_project_build_spec),
+        )
+        single_account_run_project_with_callback = template.add_resource(
+            codebuild.Project(
+                'SingleAccountRunWithCallbackProject',
+                **single_account_run_project_args
+            )
+        )
+
         source_stage = codepipeline.Stages(
             Name="Source",
             Actions=[
@@ -472,10 +617,125 @@ def get_bootstrap_template(
                 }
             ],
         )
+        single_account_run_project_build_spec = dict(
+            version=0.2,
+            phases=dict(
+                install={
+                    "runtime-versions": dict(python="3.7"),
+                    "commands": [
+                        f"pip install {puppet_version}"
+                        if "http" in puppet_version
+                        else f"pip install aws-service-catalog-puppet=={puppet_version}",
+                    ],
+                },
+                pre_build={
+                    "commands": [
+                        f"export URL=https://$(echo $PAT | jq -r .SecretToken)@github.com/{ source['Configuration']['Owner'] }/{ source['Configuration']['Repo'] }.git",
+                        "git clone $URL ServiceCatalogPuppet",
+                        f"cd ServiceCatalogPuppet && git checkout { source['Configuration']['Branch'] } && cd -"
+                        "servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml --single-account $SINGLE_ACCOUNT_ID",
+                    ]
+                },
+                build={
+                    "commands": [
+                        "servicecatalog-puppet --info deploy --num-workers ${NUM_WORKERS} manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID",
+                    ]
+                },
+            ),
+            artifacts=dict(
+                name="DeployProject",
+                files=[
+                    "ServiceCatalogPuppet/manifest.yaml",
+                    "ServiceCatalogPuppet/manifest-expanded.yaml",
+                    "results/*/*",
+                    "output/*/*",
+                    "exploded_results/*/*",
+                    "tasks.log",
+                ],
+            ),
+        )
+
+        single_account_run_project_args = dict(
+            Name="servicecatalog-puppet-single-account-run",
+            Description="Runs puppet for a single account - SINGLE_ACCOUNT_ID",
+            ServiceRole=t.GetAtt(deploy_role, "Arn"),
+            Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor":"Framework"}),
+            Artifacts=codebuild.Artifacts(Type="NO_ARTIFACTS",),
+            TimeoutInMinutes=480,
+            Environment=codebuild.Environment(
+                ComputeType=t.Ref(deploy_environment_compute_type_parameter),
+                Image="aws/codebuild/standard:4.0",
+                Type="LINUX_CONTAINER",
+                EnvironmentVariables=[
+                    {
+                        "Type": "PLAINTEXT",
+                        "Name": "SINGLE_ACCOUNT_ID",
+                        "Value": "CHANGE_ME",
+                    },
+                    {
+                        "Type": "SECRETS_MANAGER",
+                        "Name": "PAT",
+                        "Value": source['Configuration']['SecretsManagerSecret'],
+                    },
+                    {
+                        "Type": "PLAINTEXT",
+                        "Name": "PUPPET_ACCOUNT_ID",
+                        "Value": t.Ref("AWS::AccountId"),
+                    },
+                    {
+                        "Type": "PLAINTEXT",
+                        "Name": "PUPPET_REGION",
+                        "Value": t.Ref("AWS::Region"),
+                    },
+                    {
+                        "Type": "PARAMETER_STORE",
+                        "Name": "PARTITION",
+                        "Value": t.Ref(partition_parameter),
+                    },
+                    {
+                        "Type": "PARAMETER_STORE",
+                        "Name": "PUPPET_ROLE_NAME",
+                        "Value": t.Ref(puppet_role_name_parameter),
+                    },
+                    {
+                        "Type": "PARAMETER_STORE",
+                        "Name": "PUPPET_ROLE_PATH",
+                        "Value": t.Ref(puppet_role_path_parameter),
+                    },
+                ],
+            ),
+            Source=codebuild.Source(
+                Type="NO_SOURCE",
+                BuildSpec=yaml.safe_dump(single_account_run_project_build_spec),
+            ),
+        )
+
+        single_account_run_project = template.add_resource(
+            codebuild.Project(
+                'SingleAccountRunProject',
+                **single_account_run_project_args
+            )
+        )
+
+        single_account_run_project_build_spec['phases']['build']['commands'] = [
+            "servicecatalog-puppet --info deploy --on-complete-url $CALLBACK_URL ServiceCatalogPuppet/manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID"
+        ]
+        single_account_run_project_args['Name'] = "servicecatalog-puppet-single-account-run-with-callback"
+        single_account_run_project_args['Description'] = "Runs puppet for a single account - SINGLE_ACCOUNT_ID and then does a http put"
+        single_account_run_project_args['Source'] = codebuild.Source(
+            Type="NO_SOURCE",
+            BuildSpec=yaml.safe_dump(single_account_run_project_build_spec),
+        )
+        single_account_run_project_with_callback = template.add_resource(
+            codebuild.Project(
+                'SingleAccountRunWithCallbackProject',
+                **single_account_run_project_args
+            )
+        )
 
     if is_manual_approvals:
         deploy_stage = codepipeline.Stages(
-            Name="Source",
+            Name="Deploy",
             Actions=[
                 {
                     "InputArtifacts": [codepipeline.InputArtifacts(Name="Source")],
@@ -531,7 +791,7 @@ def get_bootstrap_template(
         )
     else:
         deploy_stage = codepipeline.Stages(
-            Name="Source",
+            Name="Deploy",
             Actions=[
                 codepipeline.Actions(
                     InputArtifacts=[codepipeline.InputArtifacts(Name="Source")],
@@ -606,37 +866,6 @@ def get_bootstrap_template(
             )
         )
 
-    deploy_role = template.add_resource(
-        iam.Role(
-            "DeployRole",
-            RoleName="PuppetDeployRole",
-            AssumeRolePolicyDocument={
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Action": ["sts:AssumeRole"],
-                        "Effect": "Allow",
-                        "Principal": {"Service": ["codebuild.amazonaws.com"]},
-                    }
-                ],
-            },
-            ManagedPolicyArns=[
-                t.Sub("arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess")
-            ],
-            PermissionsBoundary=t.Ref(puppet_deploy_role_permission_boundary_parameter),
-            Path="/servicecatalog-puppet/",
-        )
-    )
-
-    num_workers_ssm_parameter = template.add_resource(
-        ssm.Parameter(
-            "NumWorkersSSMParameter",
-            Type="String",
-            Name="/servicecatalog-puppet/deploy/num-workers",
-            Value=t.Sub("${DeployNumWorkers}"),
-        )
-    )
-
     deploy_project_build_spec = dict(
         version=0.2,
         phases=dict(
@@ -672,7 +901,7 @@ def get_bootstrap_template(
     deploy_project_args = dict(
         Name="servicecatalog-puppet-deploy",
         ServiceRole=t.GetAtt(deploy_role, "Arn"),
-        Tags=t.Tags(ServiceCatalogPuppetZZActor="Framework",),
+        Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor":"Framework"}),
         Artifacts=codebuild.Artifacts(Type="CODEPIPELINE",),
         TimeoutInMinutes=480,
         Environment=codebuild.Environment(
@@ -741,7 +970,7 @@ def get_bootstrap_template(
             "BootstrapProject",
             Name="servicecatalog-puppet-bootstrap-spokes-in-ou",
             ServiceRole=t.GetAtt("DeployRole", "Arn"),
-            Tags=t.Tags(ServiceCatalogPuppetZZActor="Framework",),
+            Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor":"Framework"}),
             Artifacts=codebuild.Artifacts(Type="NO_ARTIFACTS"),
             TimeoutInMinutes=60,
             Environment=codebuild.Environment(
@@ -770,7 +999,7 @@ def get_bootstrap_template(
         sqs.Queue(
             "CloudFormationEventsQueue",
             QueueName="servicecatalog-puppet-cloudformation-events",
-            Tags=t.Tags(ServiceCatalogPuppetZZActor="Framework",),
+            Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor":"Framework"}),
         )
     )
 
@@ -819,7 +1048,7 @@ def get_bootstrap_template(
                     )
                 ]
             ),
-            Tags=t.Tags(ServiceCatalogPuppetZZActor="Framework",),
+            Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor":"Framework"}),
             BucketName=t.Sub("sc-puppet-spoke-deploy-${AWS::AccountId}"),
             VersioningConfiguration=s3.VersioningConfiguration(Status="Enabled"),
         )
@@ -843,7 +1072,7 @@ def get_bootstrap_template(
                     )
                 ]
             ),
-            Tags=t.Tags(ServiceCatalogPuppetZZActor="Framework",),
+            Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor":"Framework"}),
             BucketName=t.Sub(
                 "sc-puppet-caching-bucket-${AWS::AccountId}-${AWS::Region}"
             ),
@@ -851,4 +1080,4 @@ def get_bootstrap_template(
         )
     )
 
-    return template.to_yaml(clean_up=True)
+    return template

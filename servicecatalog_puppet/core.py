@@ -318,7 +318,7 @@ def _do_bootstrap(
         threads = []
         template = templates.get_regional_template(
             puppet_version, os.environ.get("AWS_DEFAULT_REGION")
-        )
+        ).to_yaml(clean_up=True)
         args = {
             "StackName": "{}-regional".format(constants.BOOTSTRAP_STACK_NAME),
             "TemplateBody": template,
@@ -378,92 +378,92 @@ def _do_bootstrap(
             }
         )
 
+    template = templates.get_bootstrap_template(
+        puppet_version,
+        all_regions,
+        source_args,
+        config.is_caching_enabled(
+            puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
+        ),
+        with_manual_approvals,
+    ).to_yaml(clean_up=True)
+
+    args = {
+        "StackName": constants.BOOTSTRAP_STACK_NAME,
+        "TemplateBody": template,
+        "Capabilities": ["CAPABILITY_NAMED_IAM"],
+        "Parameters": [
+            {
+                "ParameterKey": "Version",
+                "ParameterValue": puppet_version,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "OrgIamRoleArn",
+                "ParameterValue": str(
+                    config.get_org_iam_role_arn(puppet_account_id)
+                ),
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "WithManualApprovals",
+                "ParameterValue": "Yes" if with_manual_approvals else "No",
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetCodePipelineRolePermissionBoundary",
+                "ParameterValue": puppet_code_pipeline_role_permission_boundary,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "SourceRolePermissionsBoundary",
+                "ParameterValue": source_role_permissions_boundary,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetGenerateRolePermissionBoundary",
+                "ParameterValue": puppet_generate_role_permission_boundary,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetDeployRolePermissionBoundary",
+                "ParameterValue": puppet_deploy_role_permission_boundary,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetProvisioningRolePermissionsBoundary",
+                "ParameterValue": puppet_provisioning_role_permissions_boundary,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "CloudFormationDeployRolePermissionsBoundary",
+                "ParameterValue": cloud_formation_deploy_role_permissions_boundary,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "DeployEnvironmentComputeType",
+                "ParameterValue": deploy_environment_compute_type,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "DeployNumWorkers",
+                "ParameterValue": str(deploy_num_workers),
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetRoleName",
+                "ParameterValue": puppet_role_name,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetRolePath",
+                "ParameterValue": puppet_role_path,
+                "UsePreviousValue": False,
+            },
+        ],
+    }
     with betterboto_client.ClientContextManager("cloudformation") as cloudformation:
         click.echo("Creating {}".format(constants.BOOTSTRAP_STACK_NAME))
-        template = templates.get_bootstrap_template(
-            puppet_version,
-            all_regions,
-            source_args,
-            config.is_caching_enabled(
-                puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-            ),
-            with_manual_approvals,
-        )
-
-        args = {
-            "StackName": constants.BOOTSTRAP_STACK_NAME,
-            "TemplateBody": template,
-            "Capabilities": ["CAPABILITY_NAMED_IAM"],
-            "Parameters": [
-                {
-                    "ParameterKey": "Version",
-                    "ParameterValue": puppet_version,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "OrgIamRoleArn",
-                    "ParameterValue": str(
-                        config.get_org_iam_role_arn(puppet_account_id)
-                    ),
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "WithManualApprovals",
-                    "ParameterValue": "Yes" if with_manual_approvals else "No",
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "PuppetCodePipelineRolePermissionBoundary",
-                    "ParameterValue": puppet_code_pipeline_role_permission_boundary,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "SourceRolePermissionsBoundary",
-                    "ParameterValue": source_role_permissions_boundary,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "PuppetGenerateRolePermissionBoundary",
-                    "ParameterValue": puppet_generate_role_permission_boundary,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "PuppetDeployRolePermissionBoundary",
-                    "ParameterValue": puppet_deploy_role_permission_boundary,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "PuppetProvisioningRolePermissionsBoundary",
-                    "ParameterValue": puppet_provisioning_role_permissions_boundary,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "CloudFormationDeployRolePermissionsBoundary",
-                    "ParameterValue": cloud_formation_deploy_role_permissions_boundary,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "DeployEnvironmentComputeType",
-                    "ParameterValue": deploy_environment_compute_type,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "DeployNumWorkers",
-                    "ParameterValue": str(deploy_num_workers),
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "PuppetRoleName",
-                    "ParameterValue": puppet_role_name,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "PuppetRolePath",
-                    "ParameterValue": puppet_role_path,
-                    "UsePreviousValue": False,
-                },
-            ],
-        }
         cloudformation.create_or_update(**args)
 
     click.echo("Finished creating {}.".format(constants.BOOTSTRAP_STACK_NAME))
