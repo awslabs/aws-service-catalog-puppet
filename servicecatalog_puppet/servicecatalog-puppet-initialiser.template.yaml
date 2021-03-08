@@ -282,12 +282,28 @@ Resources:
               r = urlopen(req)
               logger.info("Status message: {} {}".format(r.msg, r.getcode()))
 
+  # Force custom resource to execute on every Stack update operation by passing in all parameters
   StartInstall:
     Type: Custom::CustomResource
     DependsOn: InitialiserProject
     Properties:
       ServiceToken: !GetAtt StartInstallLambda.Arn
       ProjectName: !Ref InitialiserProject
+      DummyVar1: !Ref EnabledRegions
+      DummyVar2: !Ref ShouldCollectCloudformationEvents
+      DummyVar3: !Ref ShouldForwardEventsToEventbridge
+      DummyVar4: !Ref ShouldForwardFailuresToOpscenter
+      DummyVar5: !Ref PuppetCodePipelineRolePermissionBoundary
+      DummyVar6: !Ref SourceRolePermissionsBoundary
+      DummyVar7: !Ref PuppetGenerateRolePermissionBoundary
+      DummyVar8: !Ref PuppetDeployRolePermissionBoundary
+      DummyVar9: !Ref PuppetProvisioningRolePermissionsBoundary
+      DummyVar10: !Ref CloudFormationDeployRolePermissionsBoundary
+      DummyVar11: !Ref PuppetRolePermissionBoundary
+      DummyVar12: !Ref DeployEnvironmentComputeType
+      DummyVar13: !Ref DeployNumWorkers
+      DummyVar14: !Ref PuppetRoleName
+      DummyVar15: !Ref PuppetRolePath
 
 Outputs:
   ServiceCatalogPuppetRepoConsoleURL:
