@@ -1088,3 +1088,22 @@ def wait_for_cloudformation_in(iam_role_arns):
             except Exception as e:
                 logger.error("type error: " + str(e))
                 logger.error(traceback.format_exc())
+
+
+def is_a_parameter_override_execution() -> bool:
+    codepipeline_execution_id = os.getenv("EXECUTION_ID")
+    with betterboto_client.ClientContextManager('codepipeline') as codepipeline:
+        paginator = codepipeline.get_paginator("list_pipeline_executions")
+        pages = paginator.paginate(
+            pipelineName=constants.PIPELINE_NAME, PaginationConfig={"PageSize": 100,}
+        )
+        for page in pages:
+            for pipeline_execution_summary in page.get(
+                    "pipelineExecutionSummaries", []
+            ):
+                if codepipeline_execution_id == pipeline_execution_summary.get(
+                        "pipelineExecutionId"
+                ):
+                    trigger_detail = pipeline_execution_summary.get("trigger").get("triggerDetail")
+                    return trigger_detail == "ParameterisedSource"
+    return False

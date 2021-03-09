@@ -839,7 +839,7 @@ def get_template(
                 ],
             },
             pre_build={
-                "commands": ["servicecatalog-puppet --info expand manifest.yaml",]
+                "commands": ["servicecatalog-puppet --info expand --parameter-override CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml manifest.yaml",]
             },
             build={
                 "commands": [

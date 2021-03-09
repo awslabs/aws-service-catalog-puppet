@@ -491,8 +491,16 @@ def list_launches(expanded_manifest, format):
 @cli.command()
 @click.argument("f", type=click.File())
 @click.option("--single-account", default=None)
-def expand(f, single_account):
-    core.expand(f, single_account)
+@click.option("--parameter-override-file", type=click.File())
+@click.option("--parameter-override-forced/--no-parameter-override-forced", default=False)
+def expand(f, single_account, parameter_override_file, parameter_override_forced):
+    params = dict(single_account=single_account)
+    if parameter_override_forced or core.is_a_parameter_override_execution():
+        overrides = yaml.safe_load(parameter_override_file.read())
+        params.update(overrides)
+        click.echo(f"Overridden parameters {params}")
+
+    core.expand(f, **params)
     puppet_account_id = config.get_puppet_account_id()
     if config.get_should_explode_manifest(puppet_account_id):
         core.explode(f)
