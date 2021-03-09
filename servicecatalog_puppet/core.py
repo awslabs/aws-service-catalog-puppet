@@ -1,5 +1,6 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
+import io
 from pathlib import Path
 
 import cfn_tools
@@ -9,6 +10,7 @@ import terminaltables
 import shutil
 import json
 from threading import Thread
+import zipfile
 
 import pkg_resources
 import yaml
@@ -467,11 +469,15 @@ def _do_bootstrap(
         click.echo("Creating {}".format(constants.BOOTSTRAP_STACK_NAME))
         cloudformation.create_or_update(**args)
 
+    buff = io.BytesIO()
+    with zipfile.ZipFile(buff, mode='w', compression=zipfile.ZIP_DEFLATED) as z:
+        z.writestr('parameters.yaml', 'single_account: "000000000000"')
+
     with betterboto_client.ClientContextManager("s3") as s3:
         s3.put_object(
             Bucket=f"sc-puppet-parameterised-runs-{puppet_account_id}",
             Key="parameters.zip",
-            Body=b'PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+            Body=buff.getvalue(),
         )
 
     click.echo("Finished creating {}.".format(constants.BOOTSTRAP_STACK_NAME))
