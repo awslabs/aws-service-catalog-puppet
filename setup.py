@@ -5,7 +5,10 @@ package_dir = \
 {'': '.'}
 
 packages = \
-['servicecatalog_puppet', 'servicecatalog_puppet.workflow']
+['servicecatalog_puppet',
+ 'servicecatalog_puppet.template_builder',
+ 'servicecatalog_puppet.template_builder.hub',
+ 'servicecatalog_puppet.workflow']
 
 package_data = \
 {'': ['*'],
@@ -18,7 +21,8 @@ package_data = \
                            'templates/*']}
 
 install_requires = \
-['better-boto==0.35.0',
+['awacs>=1.0.2,<2.0.0',
+ 'better-boto==0.35.0',
  'boto3==1.16.56',
  'cfn-flip==1.2.3',
  'click==7.0',
@@ -30,7 +34,8 @@ install_requires = \
  'pykwalify==1.7.0',
  'pyyaml==5.1',
  'requests==2.22.0',
- 'terminaltables==3.1.0']
+ 'terminaltables==3.1.0',
+ 'troposphere>=2.6.3,<3.0.0']
 
 entry_points = \
 {'console_scripts': ['servicecatalog-puppet = servicecatalog_puppet.cli:cli']}

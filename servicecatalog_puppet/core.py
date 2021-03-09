@@ -35,7 +35,10 @@ from servicecatalog_puppet.workflow import (
 from servicecatalog_puppet import config
 from servicecatalog_puppet import manifest_utils
 from servicecatalog_puppet import aws
-from servicecatalog_puppet import templates
+from servicecatalog_puppet.template_builder.hub import bootstrap as hub_bootstrap
+from servicecatalog_puppet.template_builder.hub import (
+    bootstrap_region as hub_bootstrap_region,
+)
 
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import constants
@@ -316,7 +319,7 @@ def _do_bootstrap(
     ) as clients:
         click.echo("Creating {}-regional".format(constants.BOOTSTRAP_STACK_NAME))
         threads = []
-        template = templates.get_regional_template(
+        template = hub_bootstrap_region.get_template(
             puppet_version, os.environ.get("AWS_DEFAULT_REGION")
         ).to_yaml(clean_up=True)
         args = {
@@ -378,7 +381,7 @@ def _do_bootstrap(
             }
         )
 
-    template = templates.get_bootstrap_template(
+    template = hub_bootstrap.get_template(
         puppet_version,
         all_regions,
         source_args,
@@ -400,9 +403,7 @@ def _do_bootstrap(
             },
             {
                 "ParameterKey": "OrgIamRoleArn",
-                "ParameterValue": str(
-                    config.get_org_iam_role_arn(puppet_account_id)
-                ),
+                "ParameterValue": str(config.get_org_iam_role_arn(puppet_account_id)),
                 "UsePreviousValue": False,
             },
             {
@@ -465,6 +466,13 @@ def _do_bootstrap(
     with betterboto_client.ClientContextManager("cloudformation") as cloudformation:
         click.echo("Creating {}".format(constants.BOOTSTRAP_STACK_NAME))
         cloudformation.create_or_update(**args)
+
+    with betterboto_client.ClientContextManager("s3") as s3:
+        s3.put_object(
+            Bucket=f"sc-puppet-parameterised-runs-{puppet_account_id}",
+            Key="parameters.zip",
+            Body=b'PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+        )
 
     click.echo("Finished creating {}.".format(constants.BOOTSTRAP_STACK_NAME))
     if source_provider == "CodeCommit":

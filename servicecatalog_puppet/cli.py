@@ -296,6 +296,9 @@ def bootstrap_branch(
         webhook_secret=None,
         puppet_role_name=puppet_role_name,
         puppet_role_path=puppet_role_path,
+        scm_connection_arn=None,
+        scm_full_repository_id=None,
+        scm_branch_name=None,
     )
 
     if source_provider == "CodeCommit":
