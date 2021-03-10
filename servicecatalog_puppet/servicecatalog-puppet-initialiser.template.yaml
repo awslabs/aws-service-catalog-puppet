@@ -399,6 +399,14 @@ Resources:
           - !Ref ShouldCollectCloudformationEvents
           - !Ref ShouldForwardEventsToEventbridge
           - !Ref ShouldForwardFailuresToOpscenter
+          - !Ref SCMSourceProvider
+          - !Ref SCMRepositoryName
+          - !Ref SCMBranchName
+          - !Ref SCMShouldCreateRepo
+          - !Ref SCMConnectionArn
+          - !Ref SCMFullRepositoryId
+          - !Ref SCMBucketName
+          - !Ref SCMObjectKey
           - !Ref PuppetCodePipelineRolePermissionBoundary
           - !Ref SourceRolePermissionsBoundary
           - !Ref PuppetGenerateRolePermissionBoundary
@@ -410,8 +418,7 @@ Resources:
           - !Ref DeployNumWorkers
           - !Ref PuppetRoleName
           - !Ref PuppetRolePath
-
-
+          - !Ref Version
 Outputs:
   ServiceCatalogPuppetRepoConsoleURL:
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codecommit/repositories/ServiceCatalogPuppet/browse"
