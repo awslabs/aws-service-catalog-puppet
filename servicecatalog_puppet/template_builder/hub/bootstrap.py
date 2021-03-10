@@ -108,7 +108,7 @@ def get_template(
     puppet_role_name_parameter = template.add_parameter(
         t.Parameter("PuppetRoleName", Type="String", Default="PuppetRole")
     )
-    puppet_role_path_parameter = template.add_parameter(
+    puppet_role_path_template_parameter = template.add_parameter(
         t.Parameter("PuppetRolePath", Type="String", Default="/servicecatalog-puppet/")
     )
 
@@ -156,7 +156,7 @@ def get_template(
             "PuppetRolePathParameter",
             Type="String",
             Name="/servicecatalog-puppet/puppet-role/path",
-            Value=t.Ref(puppet_role_path_parameter),
+            Value=t.Ref(puppet_role_path_template_parameter),
         )
     )
     share_accept_function_role = template.add_resource(
@@ -168,7 +168,7 @@ def get_template(
                     "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
                 )
             ],
-            Path="/servicecatalog-puppet/",
+            Path=t.Ref(puppet_role_path_template_parameter),
             Policies=[
                 iam.Policy(
                     PolicyName="ServiceCatalogActions",
@@ -178,8 +178,7 @@ def get_template(
                             {
                                 "Action": ["sts:AssumeRole"],
                                 "Resource": {
-                                    "Fn::Sub": "arn:${AWS::Partition}:iam::*:role/servicecatalog-puppet/PuppetRole"
-                                    # TODO read puppet role path and nam
+                                    "Fn::Sub": "arn:${AWS::Partition}:iam::*:role${PuppetRolePath}${PuppetRoleName}"
                                 },
                                 "Effect": "Allow",
                             }
@@ -225,7 +224,7 @@ def get_template(
             PermissionsBoundary=t.Ref(
                 puppet_provisioning_role_permissions_boundary_parameter
             ),
-            Path="/servicecatalog-puppet/",  # TODO use puppet role path param
+            Path=t.Ref(puppet_role_path_template_parameter),
         )
     )
 
@@ -254,7 +253,7 @@ def get_template(
             PermissionsBoundary=t.Ref(
                 cloud_formation_deploy_role_permissions_boundary_parameter
             ),
-            Path="/servicecatalog-puppet/",  # TODO us puppet rol path param
+            Path=t.Ref(puppet_role_path_template_parameter),
         )
     )
 
@@ -278,7 +277,7 @@ def get_template(
             PermissionsBoundary=t.Ref(
                 puppet_code_pipeline_role_permission_boundary_parameter
             ),
-            Path="/servicecatalog-puppet/",
+            Path=t.Ref(puppet_role_path_template_parameter),
         )
     )
 
@@ -309,7 +308,7 @@ def get_template(
                 t.Sub("arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess")
             ],
             PermissionsBoundary=t.Ref(source_role_permissions_boundary_parameter),
-            Path="/servicecatalog-puppet/",
+            Path=t.Ref(puppet_role_path_template_parameter),
         )
     )
 
@@ -340,7 +339,7 @@ def get_template(
                 t.Sub("arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess")
             ],
             PermissionsBoundary=t.Ref(puppet_deploy_role_permission_boundary_parameter),
-            Path="/servicecatalog-puppet/",
+            Path=t.Ref(puppet_role_path_template_parameter),
         )
     )
 
