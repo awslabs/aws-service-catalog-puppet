@@ -384,9 +384,9 @@ def bootstrap_branch(
     show_default=True,
 )
 @click.option("--deploy_num_workers", default=10, type=click.INT, show_default=True)
-@click.option("--source-provider", default="CodeCommit")
-@click.option("--repository_name", default="ServiceCatalogPuppet")
-@click.option("--branch-name", default="master")
+@click.option("--source-provider", default="CodeCommit", envvar="SCM_SOURCE_PROVIDER")
+@click.option("--repository_name", default="ServiceCatalogPuppet", envvar="SCM_REPOSITORY_NAME")
+@click.option("--branch-name", default="master", envvar="SCM_BRANCH_NAME")
 @click.option("--owner")
 @click.option("--repo")
 @click.option("--branch")
@@ -394,12 +394,12 @@ def bootstrap_branch(
 @click.option("--webhook-secret")
 @click.option("--puppet-role-name", default="PuppetRole")
 @click.option("--puppet-role-path", default="/servicecatalog-puppet/")
-@click.option("--scm-connection-arn")
-@click.option("--scm-full-repository-id", default="ServiceCatalogFactory")
-@click.option("--scm-branch-name", default="main")
-@click.option("--scm-bucket-name")
-@click.option("--scm-object-key", default="ServiceCatalogPuppet.zip")
-@click.option("--scm-skip-creation-of-repo/--no-scm-skip-creation-of-repo", default=False)
+@click.option("--scm-connection-arn", envvar="SCM_CONNECTION_ARN")
+@click.option("--scm-full-repository-id", default="ServiceCatalogFactory", envvar="SCM_FULL_REPOSITORY_ID")
+@click.option("--scm-branch-name", default="main", envvar="SCM_BRANCH_NAME")
+@click.option("--scm-bucket-name", envvar="SCM_BUCKET_NAME")
+@click.option("--scm-object-key", default="ServiceCatalogPuppet.zip", envvar="SCM_OBJECT_KEY")
+@click.option("--scm-skip-creation-of-repo/--no-scm-skip-creation-of-repo", default=False, envvar="SCM_SHOULD_CREATE_REPO")
 def bootstrap(
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,

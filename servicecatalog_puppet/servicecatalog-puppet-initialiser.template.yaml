@@ -6,6 +6,57 @@ Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
   {"version": "0.91.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "General"
+        Parameters:
+          - EnabledRegions
+          - ShouldCollectCloudformationEvents
+          - ShouldForwardEventsToEventbridge
+          - ShouldForwardFailuresToOpscenter
+      - Label:
+          default: "Source Code Management"
+        Parameters:
+          - SCMSourceProvider
+      - Label:
+          default: "CodeCommit Only"
+        Parameters:
+          - SCMRepositoryName
+          - SCMBranchName
+          - SCMShouldCreateRepo
+      - Label:
+          default: "CodeStarSourceConnection Only"
+        Parameters:
+          - SCMConnectionArn
+          - SCMFullRepositoryId
+          - SCMBranchName
+      - Label:
+          default: "S3 Only"
+        Parameters:
+          - SCMBucketName
+          - SCMObjectKey
+          - SCMShouldCreateRepo
+      - Label:
+          default: "Permissions"
+        Parameters:
+          - PuppetCodePipelineRolePermissionBoundary
+          - SourceRolePermissionsBoundary
+          - PuppetGenerateRolePermissionBoundary
+          - PuppetDeployRolePermissionBoundary
+          - PuppetProvisioningRolePermissionsBoundary
+          - CloudFormationDeployRolePermissionsBoundary
+          - PuppetRolePermissionBoundary
+      - Label:
+          default: "Workflow"
+        Parameters:
+          - DeployEnvironmentComputeType
+          - DeployNumWorkers
+          - PuppetRoleName
+          - PuppetRolePath
+
+
 Parameters:
   EnabledRegions:
     Type: String
@@ -71,6 +122,42 @@ Parameters:
   PuppetRolePath:
     Type: String
     Default: /servicecatalog-puppet/
+  SCMSourceProvider:
+    Type: String
+    AllowedValues:
+      - CodeCommit
+      - S3
+      - CodeStarSourceConnection
+    Description: For Github.com, GitHub Enterprise and BitBucket Cloud support use CodeStarSourceConnection
+    Default: CodeCommit
+  SCMRepositoryName:
+    Type: String
+    Default: ServiceCatalogPuppet
+  SCMBranchName:
+    Type: String
+    Default: master
+  SCMConnectionArn:
+    Type: String
+    Description: The Arn of the CodeStar Connection already created in the account
+  SCMFullRepositoryId:
+    Type: String
+    Description: The full repository id for the git repo to use.  This varies based on which git provider you use
+  SCMBucketName:
+    Type: String
+  SCMObjectKey:
+    Type: String
+  SCMShouldCreateRepo:
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "true"
+
+
+Conditions:
+  IsCodeBuild: !Equals [!Ref SCMSourceProvider, "CodeCommit"]
+  IsCodeStarSourceConnection: !Equals [!Ref SCMSourceProvider, "CodeStarSourceConnection"]
+  IsS3: !Equals [!Ref SCMSourceProvider, "S3"]
 
 Resources:
   InitialiserRole:
@@ -106,59 +193,45 @@ Resources:
           - Name: ENABLED_REGIONS
             Type: PLAINTEXT
             Value: !Join [",", !Split [", ", !Ref EnabledRegions]]
-
           - Name: SHOULD_COLLECT_CLOUDFORMATION_EVENTS
             Type: PLAINTEXT
             Value: !Ref ShouldCollectCloudformationEvents
-
           - Name: SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE
             Type: PLAINTEXT
             Value: !Ref ShouldForwardEventsToEventbridge
-
           - Name: SHOULD_FORWARD_FAILURES_TO_OPSCENTER
             Type: PLAINTEXT
             Value: !Ref ShouldForwardFailuresToOpscenter
-
           - Name: PUPPET_ACCOUNT_ID
             Type: PLAINTEXT
             Value: !Ref AWS::AccountId
-
           - Name: PUPPET_CODE_PIPELINE_ROLE_PERMISSION_BOUNDARY
             Type: PLAINTEXT
             Value: !Ref PuppetCodePipelineRolePermissionBoundary
-
           - Name: SOURCE_ROLE_PERMISSIONS_BOUNDARY
             Type: PLAINTEXT
             Value: !Ref SourceRolePermissionsBoundary
-
           - Name: PUPPET_GENERATE_ROLE_PERMISSION_BOUNDARY
             Type: PLAINTEXT
             Value: !Ref PuppetGenerateRolePermissionBoundary
-
           - Name: PUPPET_DEPLOY_ROLE_PERMISSION_BOUNDARY
             Type: PLAINTEXT
             Value: !Ref PuppetDeployRolePermissionBoundary
-
           - Name: PUPPET_PROVISIONING_ROLE_PERMISSIONS_BOUNDARY
             Type: PLAINTEXT
             Value: !Ref PuppetProvisioningRolePermissionsBoundary
-
           - Name: CLOUD_FORMATION_DEPLOY_ROLE_PERMISSIONS_BOUNDARY
             Type: PLAINTEXT
             Value: !Ref CloudFormationDeployRolePermissionsBoundary
-
           - Name: PUPPET_ROLE_PERMISSION_BOUNDARY
             Type: PLAINTEXT
             Value: !Ref PuppetRolePermissionBoundary
-
           - Name: DEPLOY_ENVIRONMENT_COMPUTE_TYPE
             Type: PLAINTEXT
             Value: !Ref DeployEnvironmentComputeType
-
           - Name: DEPLOY_NUM_WORKERS
             Type: PLAINTEXT
             Value: !Ref DeployNumWorkers
-
           - Name: PARTITION
             Type: PLAINTEXT
             Value: !Ref AWS::Partition
@@ -168,7 +241,30 @@ Resources:
           - Name: PUPPET_ROLE_PATH
             Type: PLAINTEXT
             Value: !Ref PuppetRolePath
-
+          - Name: SCM_SOURCE_PROVIDER
+            Type: PLAINTEXT
+            Value: !Ref SCMSourceProvider
+          - Name: SCM_REPOSITORY_NAME
+            Type: PLAINTEXT
+            Value: !Ref SCMRepositoryName
+          - Name: SCM_BRANCH_NAME
+            Type: PLAINTEXT
+            Value: !Ref SCMBranchName
+          - Name: SCM_CONNECTION_ARN
+            Type: PLAINTEXT
+            Value: !Ref SCMConnectionArn
+          - Name: SCM_FULL_REPOSITORY_ID
+            Type: PLAINTEXT
+            Value: !Ref SCMFullRepositoryId
+          - Name: SCM_BUCKET_NAME
+            Type: PLAINTEXT
+            Value: !Ref SCMBucketName
+          - Name: SCM_OBJECT_KEY
+            Type: PLAINTEXT
+            Value: !Ref SCMObjectKey
+          - Name: SCM_SHOULD_CREATE_REPO
+            Type: PLAINTEXT
+            Value: !Ref SCMShouldCreateRepo
       Source:
         Type: NO_SOURCE
         BuildSpec: |
@@ -282,28 +378,30 @@ Resources:
               r = urlopen(req)
               logger.info("Status message: {} {}".format(r.msg, r.getcode()))
 
-  # Force custom resource to execute on every Stack update operation by passing in all parameters
   StartInstall:
     Type: Custom::CustomResource
     DependsOn: InitialiserProject
     Properties:
       ServiceToken: !GetAtt StartInstallLambda.Arn
       ProjectName: !Ref InitialiserProject
-      DummyVar1: !Ref EnabledRegions
-      DummyVar2: !Ref ShouldCollectCloudformationEvents
-      DummyVar3: !Ref ShouldForwardEventsToEventbridge
-      DummyVar4: !Ref ShouldForwardFailuresToOpscenter
-      DummyVar5: !Ref PuppetCodePipelineRolePermissionBoundary
-      DummyVar6: !Ref SourceRolePermissionsBoundary
-      DummyVar7: !Ref PuppetGenerateRolePermissionBoundary
-      DummyVar8: !Ref PuppetDeployRolePermissionBoundary
-      DummyVar9: !Ref PuppetProvisioningRolePermissionsBoundary
-      DummyVar10: !Ref CloudFormationDeployRolePermissionsBoundary
-      DummyVar11: !Ref PuppetRolePermissionBoundary
-      DummyVar12: !Ref DeployEnvironmentComputeType
-      DummyVar13: !Ref DeployNumWorkers
-      DummyVar14: !Ref PuppetRoleName
-      DummyVar15: !Ref PuppetRolePath
+      UpdateNonce: !Join
+        - ","
+        - - !Ref EnabledRegions
+          - !Ref ShouldCollectCloudformationEvents
+          - !Ref ShouldForwardEventsToEventbridge
+          - !Ref ShouldForwardFailuresToOpscenter
+          - !Ref PuppetCodePipelineRolePermissionBoundary
+          - !Ref SourceRolePermissionsBoundary
+          - !Ref PuppetGenerateRolePermissionBoundary
+          - !Ref PuppetDeployRolePermissionBoundary
+          - !Ref PuppetProvisioningRolePermissionsBoundary
+          - !Ref CloudFormationDeployRolePermissionsBoundary
+          - !Ref PuppetRolePermissionBoundary
+          - !Ref DeployEnvironmentComputeType
+          - !Ref DeployNumWorkers
+          - !Ref PuppetRoleName
+          - !Ref PuppetRolePath
+
 
 Outputs:
   ServiceCatalogPuppetRepoConsoleURL:
