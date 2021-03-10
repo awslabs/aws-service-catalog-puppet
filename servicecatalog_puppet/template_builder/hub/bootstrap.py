@@ -439,6 +439,7 @@ def get_template(
                     "CodeRepo",
                     RepositoryName=source.get("Configuration").get("RepositoryName"),
                     RepositoryDescription="Repo to store the servicecatalog puppet solution",
+                    DeletionPolicy="Retain"
                 )
             )
 
@@ -498,7 +499,7 @@ def get_template(
                 RunOrder=1,
                 RoleArn=t.GetAtt("SourceRole", "Arn"),
                 ActionTypeId=codepipeline.ActionTypeId(
-                    Category="Source", Owner="AWS", Version="1", Provider="CodeCommit",
+                    Category="Source", Owner="AWS", Version="1", Provider="CodeStarSourceConnection",
                 ),
                 OutputArtifacts=[codepipeline.OutputArtifacts(Name="Source")],
                 Configuration={

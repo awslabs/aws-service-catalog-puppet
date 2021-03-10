@@ -244,7 +244,7 @@ def bootstrap_spokes_in_ou(
 @click.option("--owner")
 @click.option("--repo")
 @click.option("--branch")
-@click.option("--poll-for-source-changes")
+@click.option("--poll-for-source-changes", default=True)
 @click.option("--webhook-secret")
 @click.option("--puppet-role-name", default="PuppetRole")
 @click.option("--puppet-role-path", default="/servicecatalog-puppet/")
@@ -253,7 +253,7 @@ def bootstrap_spokes_in_ou(
 @click.option("--scm-branch-name", default="main")
 @click.option("--scm-bucket-name")
 @click.option("--scm-object-key", default="ServiceCatalogPuppet.zip")
-@click.option("--scm-skip-creation-of-repo", default=False)
+@click.option("--scm-skip-creation-of-repo/--no-scm-skip-creation-of-repo", default=False)
 def bootstrap_branch(
     branch_to_bootstrap,
     with_manual_approvals,
@@ -285,8 +285,8 @@ def bootstrap_branch(
 
     parameters = dict(
         branch_to_bootstrap=branch_to_bootstrap,
-        puppet_account_id=puppet_account_id,
         with_manual_approvals=with_manual_approvals,
+        puppet_account_id=puppet_account_id,
         puppet_code_pipeline_role_permission_boundary=puppet_code_pipeline_role_permission_boundary,
         source_role_permissions_boundary=source_role_permissions_boundary,
         puppet_generate_role_permission_boundary=puppet_generate_role_permission_boundary,
@@ -390,7 +390,7 @@ def bootstrap_branch(
 @click.option("--owner")
 @click.option("--repo")
 @click.option("--branch")
-@click.option("--poll-for-source-changes")
+@click.option("--poll-for-source-changes", default=True)
 @click.option("--webhook-secret")
 @click.option("--puppet-role-name", default="PuppetRole")
 @click.option("--puppet-role-path", default="/servicecatalog-puppet/")
@@ -399,7 +399,7 @@ def bootstrap_branch(
 @click.option("--scm-branch-name", default="main")
 @click.option("--scm-bucket-name")
 @click.option("--scm-object-key", default="ServiceCatalogPuppet.zip")
-@click.option("--scm-skip-creation-of-repo", default=False)
+@click.option("--scm-skip-creation-of-repo/--no-scm-skip-creation-of-repo", default=False)
 def bootstrap(
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
@@ -441,13 +441,13 @@ def bootstrap(
         deploy_environment_compute_type=deploy_environment_compute_type,
         deploy_num_workers=deploy_num_workers,
         source_provider=source_provider,
+        owner=None,
+        repo=None,
+        branch=None,
         poll_for_source_changes=poll_for_source_changes,
         webhook_secret=webhook_secret,
         puppet_role_name=puppet_role_name,
         puppet_role_path=puppet_role_path,
-        owner=None,
-        repo=None,
-        branch=None,
         scm_connection_arn=None,
         scm_full_repository_id=None,
         scm_branch_name=None,
