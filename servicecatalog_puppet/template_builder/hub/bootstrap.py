@@ -444,15 +444,17 @@ def get_template(
             version=0.2,
             phases=dict(
                 install=install_spec,
-                pre_build={
-                    "commands": [
-                        "git clone --config 'credential.helper=!aws codecommit credential-helper $@' --config 'credential.UseHttpPath=true' ${GIT_REPO}",
-                        "servicecatalog-puppet --info expand ServiceCatalogPuppet/manifest.yaml --single-account $SINGLE_ACCOUNT_ID",
-                    ]
-                },
                 build={
                     "commands": [
-                        "servicecatalog-puppet --info deploy --num-workers ${NUM_WORKERS} manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID",
+                        'echo "single_account: ${SINGLE_ACCOUNT_ID}" > parameters.yaml',
+                        "cat parameters.yaml",
+                        "zip parameters.zip parameters.yaml",
+                        "aws s3 cp parameters.zip s3://sc-puppet-parameterised-runs-${PUPPET_ACCOUNT_ID}/parameters.zip",
+                    ]
+                },
+                post_build={
+                    "commands": [
+                        "servicecatalog-puppet wait-for-parameterised-run-to-complete",
                     ]
                 },
             ),
@@ -506,8 +508,8 @@ def get_template(
             )
         )
 
-        single_account_run_project_build_spec["phases"]["build"]["commands"] = [
-            "servicecatalog-puppet --info deploy --on-complete-url $CALLBACK_URL ServiceCatalogPuppet/manifest-expanded.yaml --single-account $SINGLE_ACCOUNT_ID"
+        single_account_run_project_build_spec["phases"]["post_build"]["commands"] = [
+            "servicecatalog-puppet wait-for-parameterised-run-to-complete --on-complete-url $CALLBACK_URL"
         ]
         single_account_run_project_args[
             "Name"
@@ -768,7 +770,7 @@ def get_template(
                     Configuration={
                         "ProjectName": t.Ref("DeployProject"),
                         "PrimarySource": "Source",
-                        "EnvironmentVariables": '[{"name":"EXECUTION_ID","value":"#{codepipeline.PipelineExecutionId}","type":"PLAINTEXT"}]'
+                        "EnvironmentVariables": '[{"name":"EXECUTION_ID","value":"#{codepipeline.PipelineExecutionId}","type":"PLAINTEXT"}]',
                     },
                     RunOrder=1,
                 ),

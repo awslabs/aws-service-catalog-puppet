@@ -492,7 +492,9 @@ def list_launches(expanded_manifest, format):
 @click.argument("f", type=click.File())
 @click.option("--single-account", default=None)
 @click.option("--parameter-override-file", type=click.File())
-@click.option("--parameter-override-forced/--no-parameter-override-forced", default=False)
+@click.option(
+    "--parameter-override-forced/--no-parameter-override-forced", default=False
+)
 def expand(f, single_account, parameter_override_file, parameter_override_forced):
     params = dict(single_account=single_account)
     if parameter_override_forced or core.is_a_parameter_override_execution():
@@ -638,6 +640,14 @@ def wait_for_code_build_in(iam_role_arns):
     core.wait_for_code_build_in(iam_role_arns)
     core.wait_for_cloudformation_in(iam_role_arns)
     click.echo("AWS CodeBuild is available")
+
+
+@cli.command()
+@click.option("--on-complete-url", default=None)
+def wait_for_parameterised_run_to_complete(on_complete_url):
+    click.echo("Starting to wait for parameterised run to complete")
+    succeeded = core.wait_for_parameterised_run_to_complete(on_complete_url)
+    click.echo(f"Finished: {'SUCCESS' if succeeded else 'FAILED'}")
 
 
 if __name__ == "__main__":
