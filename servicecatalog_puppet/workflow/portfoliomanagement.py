@@ -1430,13 +1430,13 @@ class ShareAndAcceptPortfolioTask(
                     break
             if not was_accepted:
                 self.info(f"{self.uid}: accepting {self.portfolio_id}")
-                portfolio_share_args = {
-                    'PortfolioId': self.portfolio_id
-                }
+                portfolio_share_args = {"PortfolioId": self.portfolio_id}
                 if self.sharing_mode == constants.SHARING_MODE_AWS_ORGANIZATIONS:
-                    portfolio_share_args['PortfolioShareType'] = 'AWS_ORGANIZATIONS'
-                
-                cross_account_servicecatalog.accept_portfolio_share(**portfolio_share_args)
+                    portfolio_share_args["PortfolioShareType"] = "AWS_ORGANIZATIONS"
+
+                cross_account_servicecatalog.accept_portfolio_share(
+                    **portfolio_share_args
+                )
 
             principals_for_portfolio = cross_account_servicecatalog.list_principals_for_portfolio_single_page(
                 PortfolioId=self.portfolio_id
@@ -1742,14 +1742,14 @@ class DeletePortfolio(PortfolioManagementTask):
                     general_tasks.DeleteCloudFormationStackTask(
                         account_id=self.account_id,
                         region=self.region,
-                        stack_name = f"associations-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}",
+                        stack_name=f"associations-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}",
                     )
                 )
                 requirements.append(
                     general_tasks.DeleteCloudFormationStackTask(
                         account_id=self.account_id,
                         region=self.region,
-                        stack_name = f"launch-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
+                        stack_name=f"launch-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}",
                     )
                 )
                 if not is_puppet_account:
