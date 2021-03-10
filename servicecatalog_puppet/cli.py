@@ -211,49 +211,61 @@ def bootstrap_spokes_in_ou(
     "--puppet-code-pipeline-role-permission-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="PUPPET_CODE_PIPELINE_ROLE_PERMISSION_BOUNDARY",
 )
 @click.option(
     "--source-role-permissions-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="SOURCE_ROLE_PERMISSIONS_BOUNDARY",
 )
 @click.option(
     "--puppet-generate-role-permission-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="PUPPET_GENERATE_ROLE_PERMISSION_BOUNDARY",
 )
 @click.option(
     "--puppet-deploy-role-permission-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="PUPPET_DEPLOY_ROLE_PERMISSION_BOUNDARY",
 )
 @click.option(
     "--puppet-provisioning-role-permissions-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="PUPPET_PROVISIONING_ROLE_PERMISSIONS_BOUNDARY",
 )
 @click.option(
     "--cloud-formation-deploy-role-permissions-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="CLOUD_FORMATION_DEPLOY_ROLE_PERMISSIONS_BOUNDARY",
 )
-@click.option("--deploy_num_workers", default=10, type=click.INT, show_default=True)
-@click.option("--source-provider", default="CodeCommit")
-@click.option("--repository_name", default="ServiceCatalogPuppet")
-@click.option("--branch-name", default="master")
+@click.option(
+    "--deploy_environment_compute_type",
+    default="BUILD_GENERAL1_SMALL",
+    show_default=True,
+    envvar="DEPLOY_ENVIRONMENT_COMPUTE_TYPE",
+)
+@click.option("--deploy_num_workers", default=10, type=click.INT, show_default=True, envvar="DEPLOY_NUM_WORKERS")
+@click.option("--source-provider", default="CodeCommit", envvar="SCM_SOURCE_PROVIDER")
+@click.option("--repository_name", default="ServiceCatalogPuppet", envvar="SCM_REPOSITORY_NAME")
+@click.option("--branch-name", default="master", envvar="SCM_BRANCH_NAME")
 @click.option("--owner")
 @click.option("--repo")
 @click.option("--branch")
 @click.option("--poll-for-source-changes", default=True)
 @click.option("--webhook-secret")
-@click.option("--puppet-role-name", default="PuppetRole")
-@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
-@click.option("--scm-connection-arn")
-@click.option("--scm-full-repository-id", default="ServiceCatalogFactory")
-@click.option("--scm-branch-name", default="main")
-@click.option("--scm-bucket-name")
-@click.option("--scm-object-key", default="ServiceCatalogPuppet.zip")
-@click.option("--scm-skip-creation-of-repo/--no-scm-skip-creation-of-repo", default=False)
+@click.option("--puppet-role-name", default="PuppetRole", envvar="PUPPET_ROLE_NAME")
+@click.option("--puppet-role-path", default="/servicecatalog-puppet/", envvar="PUPPET_ROLE_PATH")
+@click.option("--scm-connection-arn", envvar="SCM_CONNECTION_ARN")
+@click.option("--scm-full-repository-id", default="ServiceCatalogFactory", envvar="SCM_FULL_REPOSITORY_ID")
+@click.option("--scm-branch-name", default="main", envvar="SCM_BRANCH_NAME")
+@click.option("--scm-bucket-name", envvar="SCM_BUCKET_NAME")
+@click.option("--scm-object-key", default="ServiceCatalogPuppet.zip", envvar="SCM_OBJECT_KEY")
+@click.option("--scm-skip-creation-of-repo/--no-scm-skip-creation-of-repo", default=False, envvar="SCM_SHOULD_CREATE_REPO")
 def bootstrap_branch(
     branch_to_bootstrap,
     with_manual_approvals,
@@ -263,6 +275,7 @@ def bootstrap_branch(
     puppet_deploy_role_permission_boundary,
     puppet_provisioning_role_permissions_boundary,
     cloud_formation_deploy_role_permissions_boundary,
+    deploy_environment_compute_type,
     deploy_num_workers,
     source_provider,
     repository_name,
@@ -293,6 +306,7 @@ def bootstrap_branch(
         puppet_deploy_role_permission_boundary=puppet_deploy_role_permission_boundary,
         puppet_provisioning_role_permissions_boundary=puppet_provisioning_role_permissions_boundary,
         cloud_formation_deploy_role_permissions_boundary=cloud_formation_deploy_role_permissions_boundary,
+        deploy_environment_compute_type=deploy_environment_compute_type,
         deploy_num_workers=deploy_num_workers,
         source_provider=source_provider,
         owner=None,
@@ -352,38 +366,45 @@ def bootstrap_branch(
     "--puppet-code-pipeline-role-permission-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="PUPPET_CODE_PIPELINE_ROLE_PERMISSION_BOUNDARY",
 )
 @click.option(
     "--source-role-permissions-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="SOURCE_ROLE_PERMISSIONS_BOUNDARY",
 )
 @click.option(
     "--puppet-generate-role-permission-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="PUPPET_GENERATE_ROLE_PERMISSION_BOUNDARY",
 )
 @click.option(
     "--puppet-deploy-role-permission-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="PUPPET_DEPLOY_ROLE_PERMISSION_BOUNDARY",
 )
 @click.option(
     "--puppet-provisioning-role-permissions-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="PUPPET_PROVISIONING_ROLE_PERMISSIONS_BOUNDARY",
 )
 @click.option(
     "--cloud-formation-deploy-role-permissions-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="CLOUD_FORMATION_DEPLOY_ROLE_PERMISSIONS_BOUNDARY",
 )
 @click.option(
     "--deploy_environment_compute_type",
     default="BUILD_GENERAL1_SMALL",
     show_default=True,
+    envvar="DEPLOY_ENVIRONMENT_COMPUTE_TYPE",
 )
-@click.option("--deploy_num_workers", default=10, type=click.INT, show_default=True)
+@click.option("--deploy_num_workers", default=10, type=click.INT, show_default=True, envvar="DEPLOY_NUM_WORKERS")
 @click.option("--source-provider", default="CodeCommit", envvar="SCM_SOURCE_PROVIDER")
 @click.option("--repository_name", default="ServiceCatalogPuppet", envvar="SCM_REPOSITORY_NAME")
 @click.option("--branch-name", default="master", envvar="SCM_BRANCH_NAME")
@@ -392,8 +413,8 @@ def bootstrap_branch(
 @click.option("--branch")
 @click.option("--poll-for-source-changes", default=True)
 @click.option("--webhook-secret")
-@click.option("--puppet-role-name", default="PuppetRole")
-@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
+@click.option("--puppet-role-name", default="PuppetRole", envvar="PUPPET_ROLE_NAME")
+@click.option("--puppet-role-path", default="/servicecatalog-puppet/", envvar="PUPPET_ROLE_PATH")
 @click.option("--scm-connection-arn", envvar="SCM_CONNECTION_ARN")
 @click.option("--scm-full-repository-id", default="ServiceCatalogFactory", envvar="SCM_FULL_REPOSITORY_ID")
 @click.option("--scm-branch-name", default="main", envvar="SCM_BRANCH_NAME")
