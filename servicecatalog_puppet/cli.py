@@ -265,7 +265,7 @@ def bootstrap_spokes_in_ou(
 @click.option("--scm-branch-name", default="main", envvar="SCM_BRANCH_NAME")
 @click.option("--scm-bucket-name", envvar="SCM_BUCKET_NAME")
 @click.option("--scm-object-key", default="ServiceCatalogPuppet.zip", envvar="SCM_OBJECT_KEY")
-@click.option("--scm-skip-creation-of-repo/--no-scm-skip-creation-of-repo", default=False, envvar="SCM_SHOULD_CREATE_REPO")
+@click.option("--create-repo/--no-create-repo", default=False, envvar="SCM_SHOULD_CREATE_REPO")
 def bootstrap_branch(
     branch_to_bootstrap,
     with_manual_approvals,
@@ -292,7 +292,7 @@ def bootstrap_branch(
     scm_branch_name,
     scm_bucket_name,
     scm_object_key,
-    scm_skip_creation_of_repo,
+    create_repo,
 ):
     puppet_account_id = config.get_puppet_account_id()
 
@@ -321,7 +321,7 @@ def bootstrap_branch(
         scm_branch_name=None,
         scm_bucket_name=None,
         scm_object_key=None,
-        scm_skip_creation_of_repo=scm_skip_creation_of_repo,
+        scm_skip_creation_of_repo=not create_repo,
     )
 
     if source_provider == "CodeCommit":
@@ -420,7 +420,7 @@ def bootstrap_branch(
 @click.option("--scm-branch-name", default="main", envvar="SCM_BRANCH_NAME")
 @click.option("--scm-bucket-name", envvar="SCM_BUCKET_NAME")
 @click.option("--scm-object-key", default="ServiceCatalogPuppet.zip", envvar="SCM_OBJECT_KEY")
-@click.option("--scm-skip-creation-of-repo/--no-scm-skip-creation-of-repo", default=False, envvar="SCM_SHOULD_CREATE_REPO")
+@click.option("--create-repo/--no-create-repo", default=False, envvar="SCM_SHOULD_CREATE_REPO")
 def bootstrap(
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
@@ -446,7 +446,7 @@ def bootstrap(
     scm_branch_name,
     scm_bucket_name,
     scm_object_key,
-    scm_skip_creation_of_repo,
+    create_repo,
 ):
     puppet_account_id = config.get_puppet_account_id()
 
@@ -474,7 +474,7 @@ def bootstrap(
         scm_branch_name=None,
         scm_bucket_name=None,
         scm_object_key=None,
-        scm_skip_creation_of_repo=scm_skip_creation_of_repo,
+        scm_skip_creation_of_repo=not create_repo,
     )
 
     if source_provider == "CodeCommit":
