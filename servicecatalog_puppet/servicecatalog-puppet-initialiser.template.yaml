@@ -55,6 +55,10 @@ Metadata:
           - DeployNumWorkers
           - PuppetRoleName
           - PuppetRolePath
+      - Label:
+          default: "Advanced"
+        Parameters:
+          - Version
 
 
 Parameters:
@@ -152,7 +156,9 @@ Parameters:
       - "true"
       - "false"
     Default: "true"
-
+  Version:
+    Type: String
+    Default: aws-service-catalog-puppet
 
 Conditions:
   IsCodeBuild: !Equals [!Ref SCMSourceProvider, "CodeCommit"]
@@ -190,6 +196,9 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/standard:4.0
         EnvironmentVariables:
+          - Name: VERSION
+            Type: PLAINTEXT
+            Value: !Ref Version
           - Name: ENABLED_REGIONS
             Type: PLAINTEXT
             Value: !Join [",", !Split [", ", !Ref EnabledRegions]]
@@ -274,7 +283,7 @@ Resources:
               runtime-versions:
                 python: 3.7
               commands:
-                - pip install aws-service-catalog-puppet --upgrade
+                - pip install ${VERSION}
                 - servicecatalog-puppet --info set-regions ${ENABLED_REGIONS}
                 - servicecatalog-puppet set-config-value should_collect_cloudformation_events ${SHOULD_COLLECT_CLOUDFORMATION_EVENTS}
                 - servicecatalog-puppet set-config-value should_forward_events_to_eventbridge ${SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE}

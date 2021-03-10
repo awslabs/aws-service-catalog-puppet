@@ -452,7 +452,7 @@ def get_template(
                 ),
                 OutputArtifacts=[codepipeline.OutputArtifacts(Name="Source")],
                 Configuration={
-                    "RepositoryName": t.GetAtt("CodeRepo", "Name"),
+                    "RepositoryName": source.get("Configuration").get("RepositoryName"),
                     "BranchName": source.get("Configuration").get("BranchName"),
                     "PollForSourceChanges": source.get("Configuration").get(
                         "PollForSourceChanges", True
