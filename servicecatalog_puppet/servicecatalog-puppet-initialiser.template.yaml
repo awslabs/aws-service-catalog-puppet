@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.91.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.99.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -159,11 +159,6 @@ Parameters:
   Version:
     Type: String
     Default: aws-service-catalog-puppet
-
-Conditions:
-  IsCodeBuild: !Equals [!Ref SCMSourceProvider, "CodeCommit"]
-  IsCodeStarSourceConnection: !Equals [!Ref SCMSourceProvider, "CodeStarSourceConnection"]
-  IsS3: !Equals [!Ref SCMSourceProvider, "S3"]
 
 Resources:
   InitialiserRole:
