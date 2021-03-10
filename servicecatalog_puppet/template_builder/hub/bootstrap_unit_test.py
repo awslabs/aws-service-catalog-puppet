@@ -15,14 +15,15 @@ def test_codecommit_provider():
     )
     is_caching_enabled = False
     is_manual_approvals = False
+    scm_skip_creation_of_repo = False
 
     # exercise
     actual_result = bootstrap.get_template(
-        puppet_version, all_regions, source, is_caching_enabled, is_manual_approvals
+        puppet_version, all_regions, source, is_caching_enabled, is_manual_approvals, scm_skip_creation_of_repo
     )
 
     source_stage = actual_result.resources.get("Pipeline").Stages[0]
-    action = source_stage.Actions[0]
+    action = source_stage.Actions[1]
 
     # verify
     assert source_stage.Name == "Source"
