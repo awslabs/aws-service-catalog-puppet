@@ -21,6 +21,7 @@ def get_template(
     is_codestarsourceconnection = (
         source.get("Provider", "").lower() == "codestarsourceconnection"
     )
+    is_s3 = source.get("Provider", "").lower() == "s3"
     description = f"""Bootstrap template used to bring up the main ServiceCatalog-Puppet AWS CodePipeline with dependencies
 {{"version": "{puppet_version}", "framework": "servicecatalog-puppet", "role": "bootstrap-master"}}"""
 
@@ -507,6 +508,25 @@ def get_template(
                     "BranchName": source.get("Configuration").get("BranchName"),
                     "OutputArtifactFormat": source.get("Configuration").get(
                         "OutputArtifactFormat"
+                    ),
+                },
+                Name="Source",
+            )
+        )
+
+    if is_s3:
+        source_stage.Actions.append(
+            codepipeline.Actions(
+                RunOrder=1,
+                ActionTypeId=codepipeline.ActionTypeId(
+                    Category="Source", Owner="AWS", Version="1", Provider="S3",
+                ),
+                OutputArtifacts=[codepipeline.OutputArtifacts(Name="Source")],
+                Configuration={
+                    "S3Bucket": source.get("Configuration").get("S3Bucket"),
+                    "S3ObjectKey": source.get("Configuration").get("S3ObjectKey"),
+                    "PollForSourceChanges": source.get("Configuration").get(
+                        "PollForSourceChanges"
                     ),
                 },
                 Name="Source",

@@ -251,6 +251,9 @@ def bootstrap_spokes_in_ou(
 @click.option("--scm-connection-arn")
 @click.option("--scm-full-repository-id", default="ServiceCatalogFactory")
 @click.option("--scm-branch-name", default="main")
+@click.option("--scm-bucket-name")
+@click.option("--scm-object-key", default="ServiceCatalogPuppet.zip")
+@click.option("--scm-skip-creation-of-repo", default=False)
 def bootstrap_branch(
     branch_to_bootstrap,
     with_manual_approvals,
@@ -274,6 +277,9 @@ def bootstrap_branch(
     scm_connection_arn,
     scm_full_repository_id,
     scm_branch_name,
+    scm_bucket_name,
+    scm_object_key,
+    scm_skip_creation_of_repo,
 ):
     puppet_account_id = config.get_puppet_account_id()
 
@@ -299,6 +305,9 @@ def bootstrap_branch(
         scm_connection_arn=None,
         scm_full_repository_id=None,
         scm_branch_name=None,
+        scm_bucket_name=None,
+        scm_object_key=None,
+        scm_skip_creation_of_repo=scm_skip_creation_of_repo,
     )
 
     if source_provider == "CodeCommit":
@@ -326,6 +335,10 @@ def bootstrap_branch(
                 scm_full_repository_id=scm_full_repository_id,
                 scm_branch_name=scm_branch_name,
             )
+        )
+    elif source_provider == "S3":
+        parameters.update(
+            dict(scm_bucket_name=scm_bucket_name, scm_object_key=scm_object_key,)
         )
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")
@@ -384,6 +397,9 @@ def bootstrap_branch(
 @click.option("--scm-connection-arn")
 @click.option("--scm-full-repository-id", default="ServiceCatalogFactory")
 @click.option("--scm-branch-name", default="main")
+@click.option("--scm-bucket-name")
+@click.option("--scm-object-key", default="ServiceCatalogPuppet.zip")
+@click.option("--scm-skip-creation-of-repo", default=False)
 def bootstrap(
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
@@ -407,6 +423,9 @@ def bootstrap(
     scm_connection_arn,
     scm_full_repository_id,
     scm_branch_name,
+    scm_bucket_name,
+    scm_object_key,
+    scm_skip_creation_of_repo,
 ):
     puppet_account_id = config.get_puppet_account_id()
 
@@ -432,6 +451,9 @@ def bootstrap(
         scm_connection_arn=None,
         scm_full_repository_id=None,
         scm_branch_name=None,
+        scm_bucket_name=None,
+        scm_object_key=None,
+        scm_skip_creation_of_repo=scm_skip_creation_of_repo,
     )
 
     if source_provider == "CodeCommit":
@@ -459,6 +481,10 @@ def bootstrap(
                 scm_full_repository_id=scm_full_repository_id,
                 scm_branch_name=scm_branch_name,
             )
+        )
+    elif source_provider == "S3":
+        parameters.update(
+            dict(scm_bucket_name=scm_bucket_name, scm_object_key=scm_object_key,)
         )
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")

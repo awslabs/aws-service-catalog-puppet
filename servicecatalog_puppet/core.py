@@ -303,6 +303,9 @@ def _do_bootstrap(
     scm_connection_arn,
     scm_full_repository_id,
     scm_branch_name,
+    scm_bucket_name,
+    scm_object_key,
+    scm_skip_creation_of_repo,
 ):
     click.echo("Starting bootstrap")
     should_use_eventbridge = config.get_should_use_eventbridge(
@@ -381,6 +384,16 @@ def _do_bootstrap(
                     "FullRepositoryId": scm_full_repository_id,
                     "BranchName": scm_branch_name,
                     "OutputArtifactFormat": "CODE_ZIP",
+                },
+            }
+        )
+    elif source_provider.lower() == "s3":
+        source_args.update(
+            {
+                "Configuration": {
+                    "S3Bucket": scm_bucket_name,
+                    "S3ObjectKey": scm_object_key,
+                    "PollForSourceChanges": True,
                 },
             }
         )
@@ -534,6 +547,9 @@ def bootstrap_branch(
     scm_connection_arn,
     scm_full_repository_id,
     scm_branch_name,
+    scm_bucket_name,
+    scm_object_key,
+    scm_skip_creation_of_repo,
 ):
     _do_bootstrap(
         "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(
@@ -560,6 +576,9 @@ def bootstrap_branch(
         scm_connection_arn,
         scm_full_repository_id,
         scm_branch_name,
+        scm_bucket_name,
+        scm_object_key,
+        scm_skip_creation_of_repo,
     )
 
 
@@ -585,6 +604,9 @@ def bootstrap(
     scm_connection_arn,
     scm_full_repository_id,
     scm_branch_name,
+    scm_bucket_name,
+    scm_object_key,
+    scm_skip_creation_of_repo,
 ):
     _do_bootstrap(
         config.get_puppet_version(),
@@ -609,6 +631,9 @@ def bootstrap(
         scm_connection_arn,
         scm_full_repository_id,
         scm_branch_name,
+        scm_bucket_name,
+        scm_object_key,
+        scm_skip_creation_of_repo,
     )
 
 
