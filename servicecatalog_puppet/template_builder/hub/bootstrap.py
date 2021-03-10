@@ -14,7 +14,7 @@ from awacs import iam as awscs_iam
 
 
 def get_template(
-    puppet_version, all_regions, source, is_caching_enabled, is_manual_approvals: bool
+    puppet_version, all_regions, source, is_caching_enabled, is_manual_approvals: bool, scm_skip_creation_of_repo:bool
 ) -> t.Template:
     is_codecommit = source.get("Provider", "").lower() == "codecommit"
     is_github = source.get("Provider", "").lower() == "github"
@@ -433,13 +433,14 @@ def get_template(
     ]
 
     if is_codecommit:
-        code_repo = template.add_resource(
-            codecommit.Repository(
-                "CodeRepo",
-                RepositoryName=source.get("Configuration").get("RepositoryName"),
-                RepositoryDescription="Repo to store the servicecatalog puppet solution",
+        if not scm_skip_creation_of_repo:
+            template.add_resource(
+                codecommit.Repository(
+                    "CodeRepo",
+                    RepositoryName=source.get("Configuration").get("RepositoryName"),
+                    RepositoryDescription="Repo to store the servicecatalog puppet solution",
+                )
             )
-        )
 
         source_stage.Actions.append(
             codepipeline.Actions(
@@ -515,6 +516,32 @@ def get_template(
         )
 
     if is_s3:
+        bucket_name = source.get("Configuration").get("S3Bucket")
+        if not scm_skip_creation_of_repo:
+            template.add_resource(
+                s3.Bucket(
+                    bucket_name,
+                    PublicAccessBlockConfiguration=s3.PublicAccessBlockConfiguration(
+                        IgnorePublicAcls=True,
+                        BlockPublicPolicy=True,
+                        BlockPublicAcls=True,
+                        RestrictPublicBuckets=True,
+                    ),
+                    BucketEncryption=s3.BucketEncryption(
+                        ServerSideEncryptionConfiguration=[
+                            s3.ServerSideEncryptionRule(
+                                ServerSideEncryptionByDefault=s3.ServerSideEncryptionByDefault(
+                                    SSEAlgorithm="AES256"
+                                )
+                            )
+                        ]
+                    ),
+                    Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
+                    BucketName=bucket_name,
+                    VersioningConfiguration=s3.VersioningConfiguration(Status="Enabled"),
+                )
+            )
+
         source_stage.Actions.append(
             codepipeline.Actions(
                 RunOrder=1,
@@ -523,7 +550,7 @@ def get_template(
                 ),
                 OutputArtifacts=[codepipeline.OutputArtifacts(Name="Source")],
                 Configuration={
-                    "S3Bucket": source.get("Configuration").get("S3Bucket"),
+                    "S3Bucket": bucket_name,
                     "S3ObjectKey": source.get("Configuration").get("S3ObjectKey"),
                     "PollForSourceChanges": source.get("Configuration").get(
                         "PollForSourceChanges"

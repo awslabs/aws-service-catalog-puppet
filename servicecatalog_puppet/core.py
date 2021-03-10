@@ -406,6 +406,7 @@ def _do_bootstrap(
             puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
         ),
         with_manual_approvals,
+        scm_skip_creation_of_repo,
     ).to_yaml(clean_up=True)
 
     args = {
