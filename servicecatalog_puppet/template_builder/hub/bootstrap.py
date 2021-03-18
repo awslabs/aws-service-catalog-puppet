@@ -647,62 +647,62 @@ def get_template(
         deploy_stage = codepipeline.Stages(
             Name="Deploy",
             Actions=[
-                {
-                    "InputArtifacts": [
+                codepipeline.Actions(
+                    InputArtifacts= [
                         codepipeline.InputArtifacts(Name="Source"),
                         codepipeline.InputArtifacts(Name="ParameterisedSource"),
                     ],
-                    "Name": "DryRun",
-                    "ActionTypeId": codepipeline.ActionTypeId(
+                    Name= "DryRun",
+                    ActionTypeId= codepipeline.ActionTypeId(
                         Category="Build",
                         Owner="AWS",
                         Version="1",
                         Provider="CodeBuild",
                     ),
-                    "OutputArtifacts": [
+                    OutputArtifacts= [
                         codepipeline.OutputArtifacts(Name="DryRunProject")
                     ],
-                    "Configuration": {
+                    Configuration= {
                         "ProjectName": t.Ref("DryRunProject"),
                         "PrimarySource": "Source",
                     },
-                    "RunOrder": 1,
-                },
-                {
-                    "ActionTypeId": codepipeline.ActionTypeId(
+                    RunOrder= 1,
+                ),
+                codepipeline.Actions(
+                    ActionTypeId= codepipeline.ActionTypeId(
                         Category="Approval",
                         Owner="AWS",
                         Version="1",
                         Provider="Manual",
                     ),
-                    "Configuration": {
+                    Configuration= {
                         "NotificationArn": t.Ref("DryRunNotificationTopic"),
                         "CustomData": "Approve when you are happy with the dry run.",
                     },
-                    "Name": "DryRunApproval",
-                    "RunOrder": 2,
-                },
-                {
-                    "InputArtifacts": [
+                    Name= "DryRunApproval",
+                    RunOrder= 2,
+                ),
+                codepipeline.Actions(
+                    InputArtifacts= [
                         codepipeline.InputArtifacts(Name="Source"),
                         codepipeline.InputArtifacts(Name="ParameterisedSource"),
                     ],
-                    "Name": "Deploy",
-                    "ActionTypeId": codepipeline.ActionTypeId(
+                    Name= "Deploy",
+                    ActionTypeId= codepipeline.ActionTypeId(
                         Category="Build",
                         Owner="AWS",
                         Version="1",
                         Provider="CodeBuild",
                     ),
-                    "OutputArtifacts": [
+                    OutputArtifacts= [
                         codepipeline.OutputArtifacts(Name="DeployProject")
                     ],
-                    "Configuration": {
+                    Configuration= {
                         "ProjectName": t.Ref("DeployProject"),
                         "PrimarySource": "Source",
                     },
-                    "RunOrder": 3,
-                },
+                    RunOrder= 3,
+                ),
             ],
         )
     else:
