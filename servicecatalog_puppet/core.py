@@ -492,9 +492,12 @@ def _do_bootstrap(
 
     with betterboto_client.ClientContextManager("s3") as s3:
         try:
-            s3.head_object(Bucket=f"sc-puppet-parameterised-runs-{puppet_account_id}", Key="parameters.zip")
+            s3.head_object(
+                Bucket=f"sc-puppet-parameterised-runs-{puppet_account_id}",
+                Key="parameters.zip",
+            )
         except botocore.exceptions.ClientError as ex:
-            if ex.response['Error']['Code'] == '404':
+            if ex.response["Error"]["Code"] == "404":
                 s3.put_object(
                     Bucket=f"sc-puppet-parameterised-runs-{puppet_account_id}",
                     Key="parameters.zip",

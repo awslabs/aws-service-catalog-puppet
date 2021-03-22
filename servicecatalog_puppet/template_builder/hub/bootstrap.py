@@ -14,7 +14,12 @@ from awacs import iam as awscs_iam
 
 
 def get_template(
-    puppet_version, all_regions, source, is_caching_enabled, is_manual_approvals: bool, scm_skip_creation_of_repo:bool
+    puppet_version,
+    all_regions,
+    source,
+    is_caching_enabled,
+    is_manual_approvals: bool,
+    scm_skip_creation_of_repo: bool,
 ) -> t.Template:
     is_codecommit = source.get("Provider", "").lower() == "codecommit"
     is_github = source.get("Provider", "").lower() == "github"
@@ -432,15 +437,14 @@ def get_template(
     ]
 
     if is_codecommit:
-        if not scm_skip_creation_of_repo:
-            template.add_resource(
-                codecommit.Repository(
-                    "CodeRepo",
-                    RepositoryName=source.get("Configuration").get("RepositoryName"),
-                    RepositoryDescription="Repo to store the servicecatalog puppet solution",
-                    DeletionPolicy="Retain"
-                )
+        template.add_resource(
+            codecommit.Repository(
+                "CodeRepo",
+                RepositoryName=source.get("Configuration").get("RepositoryName"),
+                RepositoryDescription="Repo to store the servicecatalog puppet solution",
+                DeletionPolicy="Retain",
             )
+        )
 
         source_stage.Actions.append(
             codepipeline.Actions(
@@ -498,7 +502,10 @@ def get_template(
                 RunOrder=1,
                 RoleArn=t.GetAtt("SourceRole", "Arn"),
                 ActionTypeId=codepipeline.ActionTypeId(
-                    Category="Source", Owner="AWS", Version="1", Provider="CodeStarSourceConnection",
+                    Category="Source",
+                    Owner="AWS",
+                    Version="1",
+                    Provider="CodeStarSourceConnection",
                 ),
                 OutputArtifacts=[codepipeline.OutputArtifacts(Name="Source")],
                 Configuration={
@@ -536,9 +543,13 @@ def get_template(
                             )
                         ]
                     ),
-                    Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
+                    Tags=t.Tags.from_dict(
+                        **{"ServiceCatalogPuppet:Actor": "Framework"}
+                    ),
                     BucketName=bucket_name,
-                    VersioningConfiguration=s3.VersioningConfiguration(Status="Enabled"),
+                    VersioningConfiguration=s3.VersioningConfiguration(
+                        Status="Enabled"
+                    ),
                 )
             )
 
@@ -648,60 +659,60 @@ def get_template(
             Name="Deploy",
             Actions=[
                 codepipeline.Actions(
-                    InputArtifacts= [
+                    InputArtifacts=[
                         codepipeline.InputArtifacts(Name="Source"),
                         codepipeline.InputArtifacts(Name="ParameterisedSource"),
                     ],
-                    Name= "DryRun",
-                    ActionTypeId= codepipeline.ActionTypeId(
+                    Name="DryRun",
+                    ActionTypeId=codepipeline.ActionTypeId(
                         Category="Build",
                         Owner="AWS",
                         Version="1",
                         Provider="CodeBuild",
                     ),
-                    OutputArtifacts= [
+                    OutputArtifacts=[
                         codepipeline.OutputArtifacts(Name="DryRunProject")
                     ],
-                    Configuration= {
+                    Configuration={
                         "ProjectName": t.Ref("DryRunProject"),
                         "PrimarySource": "Source",
                     },
-                    RunOrder= 1,
+                    RunOrder=1,
                 ),
                 codepipeline.Actions(
-                    ActionTypeId= codepipeline.ActionTypeId(
+                    ActionTypeId=codepipeline.ActionTypeId(
                         Category="Approval",
                         Owner="AWS",
                         Version="1",
                         Provider="Manual",
                     ),
-                    Configuration= {
+                    Configuration={
                         "NotificationArn": t.Ref("DryRunNotificationTopic"),
                         "CustomData": "Approve when you are happy with the dry run.",
                     },
-                    Name= "DryRunApproval",
-                    RunOrder= 2,
+                    Name="DryRunApproval",
+                    RunOrder=2,
                 ),
                 codepipeline.Actions(
-                    InputArtifacts= [
+                    InputArtifacts=[
                         codepipeline.InputArtifacts(Name="Source"),
                         codepipeline.InputArtifacts(Name="ParameterisedSource"),
                     ],
-                    Name= "Deploy",
-                    ActionTypeId= codepipeline.ActionTypeId(
+                    Name="Deploy",
+                    ActionTypeId=codepipeline.ActionTypeId(
                         Category="Build",
                         Owner="AWS",
                         Version="1",
                         Provider="CodeBuild",
                     ),
-                    OutputArtifacts= [
+                    OutputArtifacts=[
                         codepipeline.OutputArtifacts(Name="DeployProject")
                     ],
-                    Configuration= {
+                    Configuration={
                         "ProjectName": t.Ref("DeployProject"),
                         "PrimarySource": "Source",
                     },
-                    RunOrder= 3,
+                    RunOrder=3,
                 ),
             ],
         )
@@ -852,7 +863,7 @@ def get_template(
     deploy_project_build_spec["phases"]["build"]["commands"] = [
         "servicecatalog-puppet --info dry-run manifest-expanded.yaml"
     ]
-    deploy_project_build_spec["artifacts"]["name"] = ["DryRunProject"]
+    deploy_project_build_spec["artifacts"]["name"] = "DryRunProject"
     deploy_project_args["Name"] = "servicecatalog-puppet-dryrun"
     deploy_project_args["Description"] = "dry run of servicecatalog-puppet-dryrun"
     deploy_project_args["Source"] = codebuild.Source(

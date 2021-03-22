@@ -19,7 +19,12 @@ def test_codecommit_provider():
 
     # exercise
     actual_result = bootstrap.get_template(
-        puppet_version, all_regions, source, is_caching_enabled, is_manual_approvals, scm_skip_creation_of_repo
+        puppet_version,
+        all_regions,
+        source,
+        is_caching_enabled,
+        is_manual_approvals,
+        scm_skip_creation_of_repo,
     )
 
     source_stage = actual_result.resources.get("Pipeline").Stages[0]
