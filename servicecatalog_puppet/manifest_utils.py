@@ -605,6 +605,7 @@ def isolate(expanded_manifest, subset):
             m[node.get("section")][node.get("item_name")] = data
 
     if subset.get("include_reverse_dependencies", False):
+        click.echo("Including reverse dependencies")
         for dependency in nx.edge_dfs(G, uid, orientation='reverse'):
             dependency_name, link, direction = dependency
             node = G.nodes.get(dependency_name)
