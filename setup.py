@@ -27,7 +27,7 @@ install_requires = \
  'cfn-flip==1.2.3',
  'click==7.0',
  'colorclass==2.2.0',
- 'jinja2==2.10.1',
+ 'jinja2==2.11.3',
  'luigi==3.0.2',
  'networkx>=2.5,<3.0',
  'psutil==5.7.0',
