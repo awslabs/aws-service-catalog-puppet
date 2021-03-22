@@ -249,9 +249,17 @@ def bootstrap_spokes_in_ou(
     show_default=True,
     envvar="DEPLOY_ENVIRONMENT_COMPUTE_TYPE",
 )
-@click.option("--deploy_num_workers", default=10, type=click.INT, show_default=True, envvar="DEPLOY_NUM_WORKERS")
+@click.option(
+    "--deploy_num_workers",
+    default=10,
+    type=click.INT,
+    show_default=True,
+    envvar="DEPLOY_NUM_WORKERS",
+)
 @click.option("--source-provider", default="CodeCommit", envvar="SCM_SOURCE_PROVIDER")
-@click.option("--repository_name", default="ServiceCatalogPuppet", envvar="SCM_REPOSITORY_NAME")
+@click.option(
+    "--repository_name", default="ServiceCatalogPuppet", envvar="SCM_REPOSITORY_NAME"
+)
 @click.option("--branch-name", default="master", envvar="SCM_BRANCH_NAME")
 @click.option("--owner")
 @click.option("--repo")
@@ -259,13 +267,23 @@ def bootstrap_spokes_in_ou(
 @click.option("--poll-for-source-changes", default=True)
 @click.option("--webhook-secret")
 @click.option("--puppet-role-name", default="PuppetRole", envvar="PUPPET_ROLE_NAME")
-@click.option("--puppet-role-path", default="/servicecatalog-puppet/", envvar="PUPPET_ROLE_PATH")
+@click.option(
+    "--puppet-role-path", default="/servicecatalog-puppet/", envvar="PUPPET_ROLE_PATH"
+)
 @click.option("--scm-connection-arn", envvar="SCM_CONNECTION_ARN")
-@click.option("--scm-full-repository-id", default="ServiceCatalogFactory", envvar="SCM_FULL_REPOSITORY_ID")
+@click.option(
+    "--scm-full-repository-id",
+    default="ServiceCatalogFactory",
+    envvar="SCM_FULL_REPOSITORY_ID",
+)
 @click.option("--scm-branch-name", default="main", envvar="SCM_BRANCH_NAME")
 @click.option("--scm-bucket-name", envvar="SCM_BUCKET_NAME")
-@click.option("--scm-object-key", default="ServiceCatalogPuppet.zip", envvar="SCM_OBJECT_KEY")
-@click.option("--create-repo/--no-create-repo", default=False, envvar="SCM_SHOULD_CREATE_REPO")
+@click.option(
+    "--scm-object-key", default="ServiceCatalogPuppet.zip", envvar="SCM_OBJECT_KEY"
+)
+@click.option(
+    "--create-repo/--no-create-repo", default=False, envvar="SCM_SHOULD_CREATE_REPO"
+)
 def bootstrap_branch(
     branch_to_bootstrap,
     with_manual_approvals,
@@ -404,9 +422,17 @@ def bootstrap_branch(
     show_default=True,
     envvar="DEPLOY_ENVIRONMENT_COMPUTE_TYPE",
 )
-@click.option("--deploy_num_workers", default=10, type=click.INT, show_default=True, envvar="DEPLOY_NUM_WORKERS")
+@click.option(
+    "--deploy_num_workers",
+    default=10,
+    type=click.INT,
+    show_default=True,
+    envvar="DEPLOY_NUM_WORKERS",
+)
 @click.option("--source-provider", default="CodeCommit", envvar="SCM_SOURCE_PROVIDER")
-@click.option("--repository_name", default="ServiceCatalogPuppet", envvar="SCM_REPOSITORY_NAME")
+@click.option(
+    "--repository_name", default="ServiceCatalogPuppet", envvar="SCM_REPOSITORY_NAME"
+)
 @click.option("--branch-name", default="master", envvar="SCM_BRANCH_NAME")
 @click.option("--owner")
 @click.option("--repo")
@@ -414,13 +440,23 @@ def bootstrap_branch(
 @click.option("--poll-for-source-changes", default=True)
 @click.option("--webhook-secret")
 @click.option("--puppet-role-name", default="PuppetRole", envvar="PUPPET_ROLE_NAME")
-@click.option("--puppet-role-path", default="/servicecatalog-puppet/", envvar="PUPPET_ROLE_PATH")
+@click.option(
+    "--puppet-role-path", default="/servicecatalog-puppet/", envvar="PUPPET_ROLE_PATH"
+)
 @click.option("--scm-connection-arn", envvar="SCM_CONNECTION_ARN")
-@click.option("--scm-full-repository-id", default="ServiceCatalogFactory", envvar="SCM_FULL_REPOSITORY_ID")
+@click.option(
+    "--scm-full-repository-id",
+    default="ServiceCatalogFactory",
+    envvar="SCM_FULL_REPOSITORY_ID",
+)
 @click.option("--scm-branch-name", default="main", envvar="SCM_BRANCH_NAME")
 @click.option("--scm-bucket-name", envvar="SCM_BUCKET_NAME")
-@click.option("--scm-object-key", default="ServiceCatalogPuppet.zip", envvar="SCM_OBJECT_KEY")
-@click.option("--create-repo/--no-create-repo", default=False, envvar="SCM_SHOULD_CREATE_REPO")
+@click.option(
+    "--scm-object-key", default="ServiceCatalogPuppet.zip", envvar="SCM_OBJECT_KEY"
+)
+@click.option(
+    "--create-repo/--no-create-repo", default=False, envvar="SCM_SHOULD_CREATE_REPO"
+)
 def bootstrap(
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
