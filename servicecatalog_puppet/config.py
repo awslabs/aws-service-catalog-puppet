@@ -235,7 +235,3 @@ def get_ssm_config_for_parameter(account_ssm_param, required_parameter_name):
             "name": account_ssm_param.get("name"),
             "parameter_name": required_parameter_name,
         }
-
-
-def get_puppet_version():
-    return pkg_resources.get_distribution("aws-service-catalog-puppet").version

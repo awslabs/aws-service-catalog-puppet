@@ -14,6 +14,7 @@ Welcome to aws-service-catalog-puppets's documentation!
    puppet/actions
    puppet/notifications
    puppet/caching
+   puppet/splitting
    puppet/upgrading
    puppet/faq
    puppet/kitchen_sink_example
