@@ -23,4 +23,4 @@ README.rst
 reports
 *.log
 exploded_results/
-parameters
+parameters.yaml
