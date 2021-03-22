@@ -1,6 +1,7 @@
 import configparser
 import os
 
+import click
 import yaml
 import logging
 import json
@@ -530,15 +531,13 @@ def create_minimal_manifest(manifest):
     return minimal_manifest
 
 
-def explode(expanded_manifest):
+def convert_to_graph(expanded_manifest, G):
     sections = [
         constants.LAUNCHES,
         constants.SPOKE_LOCAL_PORTFOLIOS,
         constants.ACTIONS,
         constants.LAMBDA_INVOCATIONS,
     ]
-
-    G = nx.Graph()
 
     for section in sections:
         for item_name, item_details in expanded_manifest.get(section, {}).items():
@@ -563,11 +562,14 @@ def explode(expanded_manifest):
                     G.add_edge(uid, f"{constants.LAUNCHES}|{d}")
                 else:
                     G.add_edge(uid, f"{mapping.get(d.get('type'))}|{d.get('name')}")
+    return G
+
+
+def explode(expanded_manifest):
+    G = convert_to_graph(expanded_manifest, nx.Graph())
 
     S = [G.subgraph(c).copy() for c in nx.connected_components(G)]
-
     exploded = list()
-
     for s in S:
         m = create_minimal_manifest(expanded_manifest)
         for node in s.nodes(data=True):
@@ -577,3 +579,38 @@ def explode(expanded_manifest):
             m[node[1].get("section")][node[1].get("item_name")] = data
         exploded.append(m)
     return exploded
+
+
+def isolate(expanded_manifest, subset):
+    section = subset['section']
+    name = subset['name']
+    uid = f"{section}|{name}"
+
+    m = create_minimal_manifest(expanded_manifest)
+    G = convert_to_graph(expanded_manifest, nx.DiGraph())
+    node = G.nodes.get(uid)
+    data = deepcopy(node)
+    del data["section"]
+    del data["item_name"]
+    m[node.get("section")][node.get("item_name")] = data
+
+    if subset.get("include_dependencies", False):
+        click.echo("Including dependencies")
+        for dependency in nx.edge_dfs(G, uid, orientation='original'):
+            link, dependency_name, direction = dependency
+            node = G.nodes.get(dependency_name)
+            data = deepcopy(node)
+            del data["section"]
+            del data["item_name"]
+            m[node.get("section")][node.get("item_name")] = data
+
+    if subset.get("include_reverse_dependencies", False):
+        for dependency in nx.edge_dfs(G, uid, orientation='reverse'):
+            dependency_name, link, direction = dependency
+            node = G.nodes.get(dependency_name)
+            data = deepcopy(node)
+            del data["section"]
+            del data["item_name"]
+            m[node.get("section")][node.get("item_name")] = data
+
+    return m
