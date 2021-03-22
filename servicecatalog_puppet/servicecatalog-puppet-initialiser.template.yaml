@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.99.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.100.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -17,23 +17,22 @@ Metadata:
           - ShouldForwardEventsToEventbridge
           - ShouldForwardFailuresToOpscenter
       - Label:
-          default: "Source Code Management"
+          default: "Source Code Management - choose which one of the following sources you will use:"
         Parameters:
           - SCMSourceProvider
       - Label:
-          default: "CodeCommit Only"
+          default: "Option 1: CodeCommit"
         Parameters:
           - SCMRepositoryName
           - SCMBranchName
-          - SCMShouldCreateRepo
       - Label:
-          default: "CodeStarSourceConnection Only"
+          default: "Option 2: CodeStarSourceConnection"
         Parameters:
           - SCMConnectionArn
           - SCMFullRepositoryId
           - SCMBranchName
       - Label:
-          default: "S3 Only"
+          default: "Option 3: S3"
         Parameters:
           - SCMBucketName
           - SCMObjectKey
@@ -56,7 +55,7 @@ Metadata:
           - PuppetRoleName
           - PuppetRolePath
       - Label:
-          default: "Advanced"
+          default: "Advanced (Do not change unless told to do so)"
         Parameters:
           - Version
 
