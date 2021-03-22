@@ -210,7 +210,6 @@ def graph(f):
 def _do_bootstrap_spoke(
     puppet_account_id,
     cloudformation,
-    puppet_version,
     permission_boundary,
     puppet_role_name,
     puppet_role_path,
@@ -218,7 +217,7 @@ def _do_bootstrap_spoke(
     template = asset_helpers.read_from_site_packages(
         "{}-spoke.template.yaml".format(constants.BOOTSTRAP_STACK_NAME)
     )
-    template = Template(template).render(VERSION=puppet_version)
+    template = Template(template).render(VERSION=constants.VERSION)
     args = {
         "StackName": "{}-spoke".format(constants.BOOTSTRAP_STACK_NAME),
         "TemplateBody": template,
@@ -235,7 +234,7 @@ def _do_bootstrap_spoke(
             },
             {
                 "ParameterKey": "Version",
-                "ParameterValue": puppet_version,
+                "ParameterValue": constants.VERSION,
                 "UsePreviousValue": False,
             },
             {
@@ -274,15 +273,13 @@ def bootstrap_spoke_as(
         _do_bootstrap_spoke(
             puppet_account_id,
             cloudformation,
-            config.get_puppet_version(),
             permission_boundary,
             puppet_role_name,
             puppet_role_path,
         )
 
 
-def _do_bootstrap(
-    puppet_version,
+def bootstrap(
     puppet_account_id,
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
@@ -328,7 +325,7 @@ def _do_bootstrap(
         click.echo("Creating {}-regional".format(constants.BOOTSTRAP_STACK_NAME))
         threads = []
         template = hub_bootstrap_region.get_template(
-            puppet_version, os.environ.get("AWS_DEFAULT_REGION")
+            constants.VERSION, os.environ.get("AWS_DEFAULT_REGION")
         ).to_yaml(clean_up=True)
         args = {
             "StackName": "{}-regional".format(constants.BOOTSTRAP_STACK_NAME),
@@ -337,7 +334,7 @@ def _do_bootstrap(
             "Parameters": [
                 {
                     "ParameterKey": "Version",
-                    "ParameterValue": puppet_version,
+                    "ParameterValue": constants.VERSION,
                     "UsePreviousValue": False,
                 },
                 {
@@ -363,7 +360,13 @@ def _do_bootstrap(
     source_args = {"Provider": source_provider}
     if source_provider == "CodeCommit":
         source_args.update(
-            {"Configuration": {"RepositoryName": repo, "BranchName": branch,},}
+            {
+                "Configuration": {
+                    "RepositoryName": repo,
+                    "BranchName": branch,
+                    "PollForSourceChanges": poll_for_source_changes,
+                },
+            }
         )
     elif source_provider == "GitHub":
         source_args.update(
@@ -385,6 +388,7 @@ def _do_bootstrap(
                     "FullRepositoryId": scm_full_repository_id,
                     "BranchName": scm_branch_name,
                     "OutputArtifactFormat": "CODE_ZIP",
+                    "DetectChanges": poll_for_source_changes,
                 },
             }
         )
@@ -394,13 +398,13 @@ def _do_bootstrap(
                 "Configuration": {
                     "S3Bucket": scm_bucket_name,
                     "S3ObjectKey": scm_object_key,
-                    "PollForSourceChanges": True,
+                    "PollForSourceChanges": poll_for_source_changes,
                 },
             }
         )
 
     template = hub_bootstrap.get_template(
-        puppet_version,
+        constants.VERSION,
         all_regions,
         source_args,
         config.is_caching_enabled(
@@ -417,7 +421,7 @@ def _do_bootstrap(
         "Parameters": [
             {
                 "ParameterKey": "Version",
-                "ParameterValue": puppet_version,
+                "ParameterValue": constants.VERSION,
                 "UsePreviousValue": False,
             },
             {
@@ -514,124 +518,10 @@ def bootstrap_spoke(
         _do_bootstrap_spoke(
             puppet_account_id,
             cloudformation,
-            config.get_puppet_version(),
             permission_boundary,
             puppet_role_name,
             puppet_role_path,
         )
-
-
-def bootstrap_branch(
-    branch_to_bootstrap,
-    puppet_account_id,
-    with_manual_approvals,
-    puppet_code_pipeline_role_permission_boundary,
-    source_role_permissions_boundary,
-    puppet_generate_role_permission_boundary,
-    puppet_deploy_role_permission_boundary,
-    puppet_provisioning_role_permissions_boundary,
-    cloud_formation_deploy_role_permissions_boundary,
-    deploy_environment_compute_type,
-    deploy_num_workers,
-    source_provider,
-    owner,
-    repo,
-    branch,
-    poll_for_source_changes,
-    webhook_secret,
-    puppet_role_name,
-    puppet_role_path,
-    scm_connection_arn,
-    scm_full_repository_id,
-    scm_branch_name,
-    scm_bucket_name,
-    scm_object_key,
-    scm_skip_creation_of_repo,
-):
-    _do_bootstrap(
-        "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(
-            branch_to_bootstrap
-        ),
-        puppet_account_id,
-        with_manual_approvals,
-        puppet_code_pipeline_role_permission_boundary,
-        source_role_permissions_boundary,
-        puppet_generate_role_permission_boundary,
-        puppet_deploy_role_permission_boundary,
-        puppet_provisioning_role_permissions_boundary,
-        cloud_formation_deploy_role_permissions_boundary,
-        deploy_environment_compute_type,
-        deploy_num_workers,
-        source_provider,
-        owner,
-        repo,
-        branch,
-        poll_for_source_changes,
-        webhook_secret,
-        puppet_role_name,
-        puppet_role_path,
-        scm_connection_arn,
-        scm_full_repository_id,
-        scm_branch_name,
-        scm_bucket_name,
-        scm_object_key,
-        scm_skip_creation_of_repo,
-    )
-
-
-def bootstrap(
-    with_manual_approvals,
-    puppet_account_id,
-    puppet_code_pipeline_role_permission_boundary,
-    source_role_permissions_boundary,
-    puppet_generate_role_permission_boundary,
-    puppet_deploy_role_permission_boundary,
-    puppet_provisioning_role_permissions_boundary,
-    cloud_formation_deploy_role_permissions_boundary,
-    deploy_environment_compute_type,
-    deploy_num_workers,
-    source_provider,
-    owner,
-    repo,
-    branch,
-    poll_for_source_changes,
-    webhook_secret,
-    puppet_role_name,
-    puppet_role_path,
-    scm_connection_arn,
-    scm_full_repository_id,
-    scm_branch_name,
-    scm_bucket_name,
-    scm_object_key,
-    scm_skip_creation_of_repo,
-):
-    _do_bootstrap(
-        config.get_puppet_version(),
-        puppet_account_id,
-        with_manual_approvals,
-        puppet_code_pipeline_role_permission_boundary,
-        source_role_permissions_boundary,
-        puppet_generate_role_permission_boundary,
-        puppet_deploy_role_permission_boundary,
-        puppet_provisioning_role_permissions_boundary,
-        cloud_formation_deploy_role_permissions_boundary,
-        deploy_environment_compute_type,
-        deploy_num_workers,
-        source_provider,
-        owner,
-        repo,
-        branch,
-        poll_for_source_changes,
-        webhook_secret,
-        puppet_role_name,
-        puppet_role_path,
-        scm_connection_arn,
-        scm_full_repository_id,
-        scm_branch_name,
-        scm_bucket_name,
-        scm_object_key,
-        scm_skip_creation_of_repo,
-    )
 
 
 def seed(complexity, p):
@@ -755,14 +645,13 @@ def set_org_iam_role_arn(org_iam_role_arn):
 def bootstrap_org_master(puppet_account_id):
     with betterboto_client.ClientContextManager("cloudformation",) as cloudformation:
         org_iam_role_arn = None
-        puppet_version = config.get_puppet_version()
         logger.info("Starting bootstrap of org master")
         stack_name = f"{constants.BOOTSTRAP_STACK_NAME}-org-master-{puppet_account_id}"
         template = asset_helpers.read_from_site_packages(
             f"{constants.BOOTSTRAP_STACK_NAME}-org-master.template.yaml"
         )
         template = Template(template).render(
-            VERSION=puppet_version, puppet_account_id=puppet_account_id
+            VERSION=constants.VERSION, puppet_account_id=puppet_account_id
         )
         args = {
             "StackName": stack_name,
@@ -775,7 +664,7 @@ def bootstrap_org_master(puppet_account_id):
                 },
                 {
                     "ParameterKey": "Version",
-                    "ParameterValue": puppet_version,
+                    "ParameterValue": constants.VERSION,
                     "UsePreviousValue": False,
                 },
             ],
