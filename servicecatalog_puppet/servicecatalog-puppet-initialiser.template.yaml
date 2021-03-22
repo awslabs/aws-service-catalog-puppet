@@ -157,6 +157,7 @@ Parameters:
       - "true"
       - "false"
     Default: "true"
+    Description: "Setting this to True means the tool creates the repo and manages it. Changing from True to False will cause already created repos to be deleted."
   Version:
     Type: String
     Default: aws-service-catalog-puppet

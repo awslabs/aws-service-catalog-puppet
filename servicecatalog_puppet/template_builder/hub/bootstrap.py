@@ -852,7 +852,7 @@ def get_template(
     deploy_project_build_spec["phases"]["build"]["commands"] = [
         "servicecatalog-puppet --info dry-run manifest-expanded.yaml"
     ]
-    deploy_project_build_spec["artifacts"]["name"] = ["DryRunProject"]
+    deploy_project_build_spec["artifacts"]["name"] = "DryRunProject"
     deploy_project_args["Name"] = "servicecatalog-puppet-dryrun"
     deploy_project_args["Description"] = "dry run of servicecatalog-puppet-dryrun"
     deploy_project_args["Source"] = codebuild.Source(
