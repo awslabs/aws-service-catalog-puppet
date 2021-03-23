@@ -751,18 +751,12 @@ def get_template(
             RoleArn=t.GetAtt("PipelineRole", "Arn"),
             Stages=[source_stage, deploy_stage,],
             Name=t.Sub("${AWS::StackName}-pipeline"),
-            ArtifactStores=[
-                codepipeline.ArtifactStoreMap(
-                    Region=region,
-                    ArtifactStore=codepipeline.ArtifactStore(
-                        Type="S3",
-                        Location=t.Sub(
-                            "sc-puppet-pipeline-artifacts-${AWS::AccountId}-" + region
-                        ),
-                    ),
-                )
-                for region in all_regions
-            ],
+            ArtifactStore=codepipeline.ArtifactStore(
+                Type="S3",
+                Location=t.Sub(
+                    "sc-puppet-pipeline-artifacts-${AWS::AccountId}-${AWS::Region}"
+                ),
+            ),
             RestartExecutionOnUpdate=True,
         )
     )
