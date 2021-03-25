@@ -285,7 +285,7 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
                 if need_to_provision:
                     self.info(
-                        f"about to provision with params: {json.dumps(params_to_use)}"
+                        f"about to provision with params: {json.dumps(tasks.unwrap(params_to_use))}"
                     )
 
                     if provisioned_product_id:
