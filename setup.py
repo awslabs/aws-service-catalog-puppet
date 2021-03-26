@@ -32,7 +32,7 @@ install_requires = \
  'networkx>=2.5,<3.0',
  'psutil==5.7.0',
  'pykwalify==1.7.0',
- 'pyyaml==5.1',
+ 'PyYAML>=5.4',
  'requests==2.22.0',
  'terminaltables==3.1.0',
  'troposphere>=2.6.3,<3.0.0']
