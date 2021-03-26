@@ -562,7 +562,9 @@ def expand(f, single_account, subset=None):
 
     if subset:
         click.echo(f"Filtering for subset: {subset}")
-        new_manifest = manifest_utils.isolate(manifest_utils.Manifest(new_manifest), subset)
+        new_manifest = manifest_utils.isolate(
+            manifest_utils.Manifest(new_manifest), subset
+        )
         new_manifest = json.loads(json.dumps(new_manifest))
 
     if new_manifest.get(constants.LAMBDA_INVOCATIONS) is None:
