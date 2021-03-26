@@ -582,8 +582,8 @@ def explode(expanded_manifest):
 
 
 def isolate(expanded_manifest, subset):
-    section = subset['section']
-    name = subset['name']
+    section = subset["section"]
+    name = subset["name"]
     uid = f"{section}|{name}"
 
     m = create_minimal_manifest(expanded_manifest)
@@ -596,7 +596,7 @@ def isolate(expanded_manifest, subset):
 
     if subset.get("include_dependencies", False):
         click.echo("Including dependencies")
-        for dependency in nx.edge_dfs(G, uid, orientation='original'):
+        for dependency in nx.edge_dfs(G, uid, orientation="original"):
             link, dependency_name, direction = dependency
             node = G.nodes.get(dependency_name)
             data = deepcopy(node)
@@ -606,7 +606,7 @@ def isolate(expanded_manifest, subset):
 
     if subset.get("include_reverse_dependencies", False):
         click.echo("Including reverse dependencies")
-        for dependency in nx.edge_dfs(G, uid, orientation='reverse'):
+        for dependency in nx.edge_dfs(G, uid, orientation="reverse"):
             dependency_name, link, direction = dependency
             node = G.nodes.get(dependency_name)
             data = deepcopy(node)
