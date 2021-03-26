@@ -41,7 +41,7 @@ to = {format = "poetry", path = "pyproject.toml"}
 [tool.poetry.dependencies]
 python = ">=3.7,<4" 
 requests = "==2.22.0"
-pyyaml = "==5.1"
+pyyaml = "==5.4"
 jinja2 = "==2.11.3"
 click = "==7.0"
 boto3 = "1.16.56"
