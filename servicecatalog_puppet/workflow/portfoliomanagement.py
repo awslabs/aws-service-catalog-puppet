@@ -6,7 +6,7 @@ import time
 from functools import lru_cache
 
 import luigi
-from betterboto import client as betterboto_client
+# from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
@@ -121,12 +121,7 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
         ]
 
     def run(self):
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            config.get_puppet_role_arn(self.account_id),
-            f"{self.account_id}-{self.region}",
-            region_name=self.region,
-        ) as cross_account_servicecatalog:
+        with self.hub_regional_client('servicecatalog') as cross_account_servicecatalog:
             version_id = aws.get_version_id_for(
                 cross_account_servicecatalog, self.product_id, self.version,
             )
@@ -169,13 +164,7 @@ class SearchProductsAsAdminTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        role = config.get_puppet_role_arn(self.account_id)
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            role,
-            f"sc-{self.account_id}-{self.region}",
-            region_name=self.region,
-        ) as spoke_service_catalog:
+        with self.spoke_regional_client('servicecatalog') as spoke_service_catalog:
             results = spoke_service_catalog.search_products_as_admin_single_page(
                 PortfolioId=self.portfolio_id,
             )
@@ -281,12 +270,7 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
 
     @lru_cache()
     def get_portfolio(self):
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            config.get_puppet_role_arn(self.account_id),
-            f"{self.account_id}-{self.region}",
-            region_name=self.region,
-        ) as cross_account_servicecatalog:
+        with self.hub_regional_client("servicecatalog") as cross_account_servicecatalog:
             result = None
             response = (
                 cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
@@ -389,13 +373,7 @@ class ProvisionActionTask(PortfolioManagementTask):
             {"name": param_name, "value": param_details, "type": "PLAINTEXT"}
             for param_name, param_details in all_params.items()
         ]
-        role = config.get_puppet_role_arn(self.account_id)
-        with betterboto_client.CrossAccountClientContextManager(
-            "codebuild",
-            role,
-            f"sc-{self.region}-{self.account_id}",
-            region_name=self.region,
-        ) as codebuild:
+        with self.spoke_regional_client("codebuild") as codebuild:
             build = codebuild.start_build_and_wait_for_completion(
                 projectName=self.project_name,
                 environmentVariablesOverride=environment_variables_override,
@@ -457,15 +435,9 @@ class CreateSpokeLocalPortfolioTask(
         ]
 
     def run(self):
-        role = config.get_puppet_role_arn(self.account_id)
         with self.input().get("puppet_portfolio").open("r") as f:
             portfolio_details = json.loads(f.read())
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            role,
-            f"sc-{self.account_id}-{self.region}",
-            region_name=self.region,
-        ) as spoke_service_catalog:
+        with self.spoke_regional_client("servicecatalog") as spoke_service_catalog:
             spoke_portfolio = aws.ensure_portfolio(
                 spoke_service_catalog,
                 self.portfolio,
@@ -539,12 +511,7 @@ class CreateAssociationsForSpokeLocalPortfolioTask(PortfolioManagementTask):
         )
 
         role = config.get_puppet_role_arn(self.account_id)
-        with betterboto_client.CrossAccountClientContextManager(
-            "cloudformation",
-            role,
-            f"cfn-{self.account_id}-{self.region}",
-            region_name=self.region,
-        ) as cloudformation:
+        with self.spoke_regional_client("cloudformation") as cloudformation:
             template = config.env.get_template("associations.template.yaml.j2").render(
                 portfolio={
                     "DisplayName": self.portfolio,
@@ -606,9 +573,7 @@ class GetProductsAndProvisioningArtifactsTask(PortfolioManagementTask):
 
     def run(self):
         product_and_artifact_details = []
-        with betterboto_client.ClientContextManager(
-            "servicecatalog", region_name=self.region
-        ) as service_catalog:
+        with self.hub_regional_client('servicecatalog') as service_catalog:
             response = self.load_from_input("search_products_as_admin")
             for product_view_detail in response.get("ProductViewDetails", []):
                 product_view_summary = product_view_detail.get("ProductViewSummary")
@@ -734,13 +699,7 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                     "CopyOptions": ["CopyTags",],
                 }
 
-                role = config.get_puppet_role_arn(self.account_id)
-                with betterboto_client.CrossAccountClientContextManager(
-                    "servicecatalog",
-                    role,
-                    f"sc-{self.account_id}-{self.region}",
-                    region_name=self.region,
-                ) as spoke_service_catalog:
+                with self.spoke_regional_client("servicecatalog") as spoke_service_catalog:
                     p = None
                     try:
                         p = spoke_service_catalog.search_products_as_admin_single_page(
@@ -980,13 +939,7 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
 
         self.info(f"Starting product import with targets {hub_product_to_import_list}")
 
-        role = config.get_puppet_role_arn(self.account_id)
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            role,
-            f"sc-{self.account_id}-{self.region}",
-            region_name=self.region,
-        ) as spoke_service_catalog:
+        with self.spoke_regional_client("servicecatalog") as spoke_service_catalog:
 
             while True:
                 self.info(f"Generating product list for portfolio {portfolio_id}")
@@ -1114,12 +1067,7 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
 
         product_name_to_id_dict = dependency_output.get("products")
         role = config.get_puppet_role_arn(self.account_id)
-        with betterboto_client.CrossAccountClientContextManager(
-            "cloudformation",
-            role,
-            f"cfn-{self.account_id}-{self.region}",
-            region_name=self.region,
-        ) as cloudformation:
+        with self.spoke_regional_client("cloudformation") as cloudformation:
             new_launch_constraints = self.generate_new_launch_constraints(
                 portfolio_id, product_name_to_id_dict, role
             )
@@ -1162,12 +1110,7 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
                         "products"
                     )
                 elif isinstance(launch_constraint.get("products"), str):
-                    with betterboto_client.CrossAccountClientContextManager(
-                        "servicecatalog",
-                        role,
-                        f"sc-{self.account_id}-{self.region}",
-                        region_name=self.region,
-                    ) as service_catalog:
+                    with self.spoke_regional_client("servicecatalog") as service_catalog:
                         response = service_catalog.search_products_as_admin_single_page(
                             PortfolioId=portfolio_id
                         )
@@ -1261,10 +1204,7 @@ class SharePortfolioTask(PortfolioManagementTask):
             f.write("{}")
 
         self.info(f"{self.uid}: checking {self.portfolio_id} with {self.account_id}")
-
-        with betterboto_client.ClientContextManager(
-            "servicecatalog", region_name=self.region
-        ) as servicecatalog:
+        with self.hub_regional_client("servicecatalog") as servicecatalog:
             account_ids = servicecatalog.list_portfolio_access_single_page(
                 PortfolioId=self.portfolio_id, PageSize=20,
             ).get("AccountIds")
@@ -1305,12 +1245,7 @@ class SharePortfolioViaOrgsTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            config.get_puppet_role_arn(self.puppet_account_id),
-            f"{self.puppet_account_id}-{self.region}-{config.get_puppet_role_name()}",
-            region_name=self.region,
-        ) as servicecatalog:
+        with self.hub_regional_client("servicecatalog") as servicecatalog:
             portfolio_share_token = servicecatalog.create_portfolio_share(
                 PortfolioId=self.portfolio_id,
                 OrganizationNode=dict(
@@ -1414,12 +1349,7 @@ class ShareAndAcceptPortfolioTask(
         ]
 
     def run(self):
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            config.get_puppet_role_arn(self.account_id),
-            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
-            region_name=self.region,
-        ) as cross_account_servicecatalog:
+        with self.hub_regional_client("servicecatalog") as cross_account_servicecatalog:
             was_accepted = False
             accepted_portfolio_shares = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page().get(
                 "PortfolioDetails"
@@ -1492,9 +1422,7 @@ class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):
             f.write("{}")
 
         self.info(f"Creating the association for portfolio {self.portfolio_id}")
-        with betterboto_client.ClientContextManager(
-            "servicecatalog", region_name=self.region
-        ) as servicecatalog:
+        with self.hub_regional_client("servicecatalog") as servicecatalog:
             servicecatalog.associate_principal_with_portfolio(
                 PortfolioId=self.portfolio_id,
                 PrincipalARN=config.get_puppet_role_arn(self.account_id),
@@ -1568,12 +1496,7 @@ class DisassociateProductFromPortfolio(PortfolioManagementTask):
         }
 
     def run(self):
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            config.get_puppet_role_arn(self.account_id),
-            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
-            region_name=self.region,
-        ) as servicecatalog:
+        with self.spoke_regional_client("servicecatalog") as servicecatalog:
             results = servicecatalog.disassociate_product_from_portfolio(
                 PortfolioId=self.portfolio_id, ProductId=self.product_id,
             )
@@ -1600,12 +1523,7 @@ class DisassociateProductsFromPortfolio(PortfolioManagementTask):
     def requires(self):
         disassociates = list()
         requirements = dict(disassociates=disassociates)
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            config.get_puppet_role_arn(self.account_id),
-            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
-            region_name=self.region,
-        ) as servicecatalog:
+        with self.spoke_regional_client("servicecatalog") as servicecatalog:
             results = servicecatalog.search_products_as_admin_single_page(
                 PortfolioId=self.portfolio_id
             )
@@ -1645,12 +1563,7 @@ class DeleteLocalPortfolio(PortfolioManagementTask):
         }
 
     def run(self):
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            config.get_puppet_role_arn(self.account_id),
-            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
-            region_name=self.region,
-        ) as servicecatalog:
+        with self.spoke_regional_client("servicecatalog") as servicecatalog:
             servicecatalog.delete_portfolio(Id=self.portfolio_id)
             self.write_output(self.params_for_results_display())
 
@@ -1675,12 +1588,7 @@ class DeletePortfolioShare(PortfolioManagementTask):
         ]
 
     def run(self):
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            config.get_puppet_role_arn(self.account_id),
-            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
-            region_name=self.region,
-        ) as servicecatalog:
+        with self.spoke_regional_client("servicecatalog") as servicecatalog:
             self.info(
                 f"About to delete the portfolio share for: {self.portfolio} account: {self.account_id}"
             )
@@ -1691,12 +1599,7 @@ class DeletePortfolioShare(PortfolioManagementTask):
                     portfolio_id = portfolio_detail.get("Id")
                     break
         if portfolio_id:
-            with betterboto_client.CrossAccountClientContextManager(
-                "servicecatalog",
-                config.get_puppet_role_arn(self.puppet_account_id),
-                f"{self.puppet_account_id}-{self.region}-{config.get_puppet_role_name()}",
-                region_name=self.region,
-            ) as servicecatalog:
+            with self.hub_regional_client("servicecatalog") as servicecatalog:
                 servicecatalog.delete_portfolio_share(
                     PortfolioId=portfolio_id, AccountId=self.account_id,
                 )
@@ -1722,12 +1625,7 @@ class DeletePortfolio(PortfolioManagementTask):
     def requires(self):
         requirements = list()
         is_puppet_account = self.account_id == self.puppet_account_id
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            config.get_puppet_role_arn(self.account_id),
-            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
-            region_name=self.region,
-        ) as servicecatalog:
+        with self.spoke_regional_client("servicecatalog") as servicecatalog:
             result = None
             self.info("Checking portfolios for a match")
             response = servicecatalog.list_portfolios_single_page()

@@ -8,7 +8,6 @@ from servicecatalog_puppet.workflow.provisioning import LaunchTask
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
-from betterboto import client as betterboto_client
 
 
 class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
@@ -110,12 +109,7 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
 
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)
-        with betterboto_client.CrossAccountClientContextManager(
-            "lambda",
-            config.get_puppet_role_arn(self.puppet_account_id),
-            f"sc-{home_region}-{self.puppet_account_id}",
-            region_name=home_region,
-        ) as lambda_client:
+        with self.hub_regional_client('lambda', region_name=home_region) as lambda_client:
             payload = dict(
                 account_id=self.account_id,
                 region=self.region,
