@@ -121,7 +121,7 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
         ]
 
     def run(self):
-        with self.hub_regional_client('servicecatalog') as cross_account_servicecatalog:
+        with self.spoke_regional_client('servicecatalog') as cross_account_servicecatalog:
             version_id = aws.get_version_id_for(
                 cross_account_servicecatalog, self.product_id, self.version,
             )
@@ -270,7 +270,7 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
 
     @lru_cache()
     def get_portfolio(self):
-        with self.hub_regional_client("servicecatalog") as cross_account_servicecatalog:
+        with self.spoke_regional_client("servicecatalog") as cross_account_servicecatalog:
             result = None
             response = (
                 cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
@@ -1349,7 +1349,7 @@ class ShareAndAcceptPortfolioTask(
         ]
 
     def run(self):
-        with self.hub_regional_client("servicecatalog") as cross_account_servicecatalog:
+        with self.spoke_regional_client("servicecatalog") as cross_account_servicecatalog:
             was_accepted = False
             accepted_portfolio_shares = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page().get(
                 "PortfolioDetails"
