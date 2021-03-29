@@ -585,7 +585,8 @@ def get_template(
             },
             post_build={
                 "commands": [
-                    "servicecatalog-puppet wait-for-parameterised-run-to-complete",
+                    "servicecatalog-puppet wait-for-parameterised-run-to-complete | tee puppet-results.txt",
+                    "grep "SUCCESS" puppet-results.txt",
                 ]
             },
         ),
@@ -633,7 +634,8 @@ def get_template(
     )
 
     single_account_run_project_build_spec["phases"]["post_build"]["commands"] = [
-        "servicecatalog-puppet wait-for-parameterised-run-to-complete --on-complete-url $CALLBACK_URL"
+        "servicecatalog-puppet wait-for-parameterised-run-to-complete --on-complete-url $CALLBACK_URL | tee puppet-results.txt",
+        "grep "SUCCESS" puppet-results.txt"
     ]
     single_account_run_project_args[
         "Name"
