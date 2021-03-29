@@ -3,7 +3,6 @@ import os
 from functools import lru_cache
 
 import luigi
-# from betterboto import client as betterboto_client
 from servicecatalog_puppet.workflow import generate as generate_tasks
 
 from servicecatalog_puppet import manifest_utils_for_launches

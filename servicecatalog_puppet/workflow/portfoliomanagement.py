@@ -6,7 +6,6 @@ import time
 from functools import lru_cache
 
 import luigi
-# from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
