@@ -1,4 +1,5 @@
 import os
+import pkg_resources
 
 PREFIX = "SC-P--"
 BOOTSTRAP_STACK_NAME = "servicecatalog-puppet"
@@ -89,3 +90,8 @@ CONFIG_REGIONS = "regions"
 CONFIG_SHOULD_COLLECT_CLOUDFORMATION_EVENTS = "should_collect_cloudformation_events"
 CONFIG_SHOULD_USE_SHARED_SCHEDULER = "should_use_shared_scheduler"
 CONFIG_SHOULD_EXPLODE_MANIFEST = "should_explode_manifest"
+
+
+PUBLISHED_VERSION = pkg_resources.require("aws-service-catalog-puppet")[0].version
+VERSION_OVERRIDE = "SCP_VERSION_OVERRIDE"
+VERSION = os.getenv(VERSION_OVERRIDE, PUBLISHED_VERSION)

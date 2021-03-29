@@ -8,7 +8,7 @@ import os
 import re
 import shutil
 
-from servicecatalog_puppet import core, config
+from servicecatalog_puppet import core, config, constants
 
 
 @click.group()
@@ -81,10 +81,8 @@ def deploy(
             exploded_manifests = glob.glob(exploded_files)
             for exploded_manifest in exploded_manifests:
                 click.echo(f"Created and running {exploded_manifest}")
-                uid = re.search('.*exploded-(.*).yaml', exploded_manifest).group(1)
-                open(f.name, 'w').write(
-                    open(exploded_manifest, 'r').read()
-                )
+                uid = re.search(".*exploded-(.*).yaml", exploded_manifest).group(1)
+                open(f.name, "w").write(open(exploded_manifest, "r").read())
                 core.deploy(
                     f,
                     puppet_account_id,
@@ -96,14 +94,10 @@ def deploy(
                     running_exploded=True,
                 )
                 output = f"exploded_results{os.path.sep}{uid}"
-                os.makedirs(
-                    output
-                )
+                os.makedirs(output)
                 for d in ["results", "output", "data"]:
                     if os.path.exists(d):
-                        shutil.move(
-                            d, f"{output}{os.path.sep}"
-                        )
+                        shutil.move(d, f"{output}{os.path.sep}")
 
         else:
             core.deploy(
@@ -211,164 +205,84 @@ def bootstrap_spokes_in_ou(
 
 
 @cli.command()
-@click.argument("branch-to-bootstrap")
 @click.option("--with-manual-approvals/--with-no-manual-approvals", default=False)
 @click.option(
     "--puppet-code-pipeline-role-permission-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="PUPPET_CODE_PIPELINE_ROLE_PERMISSION_BOUNDARY",
 )
 @click.option(
     "--source-role-permissions-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="SOURCE_ROLE_PERMISSIONS_BOUNDARY",
 )
 @click.option(
     "--puppet-generate-role-permission-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="PUPPET_GENERATE_ROLE_PERMISSION_BOUNDARY",
 )
 @click.option(
     "--puppet-deploy-role-permission-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="PUPPET_DEPLOY_ROLE_PERMISSION_BOUNDARY",
 )
 @click.option(
     "--puppet-provisioning-role-permissions-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
+    envvar="PUPPET_PROVISIONING_ROLE_PERMISSIONS_BOUNDARY",
 )
 @click.option(
     "--cloud-formation-deploy-role-permissions-boundary",
     default="arn:aws:iam::aws:policy/AdministratorAccess",
     show_default=True,
-)
-@click.option("--deploy_num_workers", default=10, type=click.INT, show_default=True)
-@click.option("--source-provider", default="CodeCommit")
-@click.option("--repository_name", default="ServiceCatalogPuppet")
-@click.option("--branch-name", default="master")
-@click.option("--owner")
-@click.option("--repo")
-@click.option("--branch")
-@click.option("--poll-for-source-changes")
-@click.option("--webhook-secret")
-@click.option("--puppet-role-name", default="PuppetRole")
-@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
-def bootstrap_branch(
-    branch_to_bootstrap,
-    with_manual_approvals,
-    puppet_code_pipeline_role_permission_boundary,
-    source_role_permissions_boundary,
-    puppet_generate_role_permission_boundary,
-    puppet_deploy_role_permission_boundary,
-    puppet_provisioning_role_permissions_boundary,
-    cloud_formation_deploy_role_permissions_boundary,
-    deploy_num_workers,
-    source_provider,
-    repository_name,
-    branch_name,
-    owner,
-    repo,
-    branch,
-    poll_for_source_changes,
-    webhook_secret,
-    puppet_role_name,
-    puppet_role_path,
-):
-    puppet_account_id = config.get_puppet_account_id()
-
-    if source_provider == "CodeCommit":
-        core.bootstrap_branch(
-            branch_to_bootstrap,
-            puppet_account_id,
-            with_manual_approvals,
-            puppet_code_pipeline_role_permission_boundary,
-            source_role_permissions_boundary,
-            puppet_generate_role_permission_boundary,
-            puppet_deploy_role_permission_boundary,
-            puppet_provisioning_role_permissions_boundary,
-            cloud_formation_deploy_role_permissions_boundary,
-            deploy_num_workers,
-            source_provider,
-            None,
-            repository_name,
-            branch_name,
-            poll_for_source_changes,
-            webhook_secret,
-            puppet_role_name,
-            puppet_role_path,
-        )
-    elif source_provider == "GitHub":
-        core.bootstrap_branch(
-            branch_to_bootstrap,
-            puppet_account_id,
-            with_manual_approvals,
-            puppet_code_pipeline_role_permission_boundary,
-            source_role_permissions_boundary,
-            puppet_generate_role_permission_boundary,
-            puppet_deploy_role_permission_boundary,
-            puppet_provisioning_role_permissions_boundary,
-            cloud_formation_deploy_role_permissions_boundary,
-            deploy_num_workers,
-            source_provider,
-            owner,
-            repo,
-            branch,
-            poll_for_source_changes,
-            webhook_secret,
-        )
-    else:
-        raise Exception(f"Unsupported source provider: {source_provider}")
-
-
-@cli.command()
-@click.option("--with-manual-approvals/--with-no-manual-approvals", default=False)
-@click.option(
-    "--puppet-code-pipeline-role-permission-boundary",
-    default="arn:aws:iam::aws:policy/AdministratorAccess",
-    show_default=True,
-)
-@click.option(
-    "--source-role-permissions-boundary",
-    default="arn:aws:iam::aws:policy/AdministratorAccess",
-    show_default=True,
-)
-@click.option(
-    "--puppet-generate-role-permission-boundary",
-    default="arn:aws:iam::aws:policy/AdministratorAccess",
-    show_default=True,
-)
-@click.option(
-    "--puppet-deploy-role-permission-boundary",
-    default="arn:aws:iam::aws:policy/AdministratorAccess",
-    show_default=True,
-)
-@click.option(
-    "--puppet-provisioning-role-permissions-boundary",
-    default="arn:aws:iam::aws:policy/AdministratorAccess",
-    show_default=True,
-)
-@click.option(
-    "--cloud-formation-deploy-role-permissions-boundary",
-    default="arn:aws:iam::aws:policy/AdministratorAccess",
-    show_default=True,
+    envvar="CLOUD_FORMATION_DEPLOY_ROLE_PERMISSIONS_BOUNDARY",
 )
 @click.option(
     "--deploy_environment_compute_type",
     default="BUILD_GENERAL1_SMALL",
     show_default=True,
+    envvar="DEPLOY_ENVIRONMENT_COMPUTE_TYPE",
 )
-@click.option("--deploy_num_workers", default=10, type=click.INT, show_default=True)
-@click.option("--source-provider", default="CodeCommit")
-@click.option("--repository_name", default="ServiceCatalogPuppet")
-@click.option("--branch-name", default="master")
+@click.option(
+    "--deploy_num_workers",
+    default=10,
+    type=click.INT,
+    show_default=True,
+    envvar="DEPLOY_NUM_WORKERS",
+)
+@click.option("--source-provider", default="CodeCommit", envvar="SCM_SOURCE_PROVIDER")
+@click.option(
+    "--repository_name", default="ServiceCatalogPuppet", envvar="SCM_REPOSITORY_NAME"
+)
+@click.option("--branch-name", default="master", envvar="SCM_BRANCH_NAME")
 @click.option("--owner")
 @click.option("--repo")
 @click.option("--branch")
-@click.option("--poll-for-source-changes")
+@click.option("--poll-for-source-changes/--no-poll-for-source-changes", default=True)
 @click.option("--webhook-secret")
-@click.option("--puppet-role-name", default="PuppetRole")
-@click.option("--puppet-role-path", default="/servicecatalog-puppet/")
+@click.option("--puppet-role-name", default="PuppetRole", envvar="PUPPET_ROLE_NAME")
+@click.option(
+    "--puppet-role-path", default="/servicecatalog-puppet/", envvar="PUPPET_ROLE_PATH"
+)
+@click.option("--scm-connection-arn", envvar="SCM_CONNECTION_ARN")
+@click.option(
+    "--scm-full-repository-id",
+    default="ServiceCatalogFactory",
+    envvar="SCM_FULL_REPOSITORY_ID",
+)
+@click.option("--scm-branch-name", default="main", envvar="SCM_BRANCH_NAME")
+@click.option("--scm-bucket-name", envvar="SCM_BUCKET_NAME")
+@click.option(
+    "--scm-object-key", default="ServiceCatalogPuppet.zip", envvar="SCM_OBJECT_KEY"
+)
+@click.option(
+    "--create-repo/--no-create-repo", default=False, envvar="SCM_SHOULD_CREATE_REPO"
+)
 def bootstrap(
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
@@ -389,6 +303,12 @@ def bootstrap(
     webhook_secret,
     puppet_role_name,
     puppet_role_path,
+    scm_connection_arn,
+    scm_full_repository_id,
+    scm_branch_name,
+    scm_bucket_name,
+    scm_object_key,
+    create_repo,
 ):
     puppet_account_id = config.get_puppet_account_id()
 
@@ -404,18 +324,41 @@ def bootstrap(
         deploy_environment_compute_type=deploy_environment_compute_type,
         deploy_num_workers=deploy_num_workers,
         source_provider=source_provider,
+        owner=None,
+        repo=None,
+        branch=None,
         poll_for_source_changes=poll_for_source_changes,
         webhook_secret=webhook_secret,
         puppet_role_name=puppet_role_name,
         puppet_role_path=puppet_role_path,
+        scm_connection_arn=None,
+        scm_full_repository_id=None,
+        scm_branch_name=None,
+        scm_bucket_name=None,
+        scm_object_key=None,
+        scm_skip_creation_of_repo=not create_repo,
     )
-
     if source_provider == "CodeCommit":
-        parameters.update(dict(owner=None, repo=repository_name, branch=branch_name,))
+        parameters.update(dict(repo=repository_name, branch=branch_name,))
     elif source_provider == "GitHub":
-        parameters.update(dict(owner=owner, repo=repo, branch=branch,))
+        parameters.update(
+            dict(owner=owner, repo=repo, branch=branch, webhook_secret=webhook_secret,)
+        )
+    elif source_provider == "CodeStarSourceConnection":
+        parameters.update(
+            dict(
+                scm_connection_arn=scm_connection_arn,
+                scm_full_repository_id=scm_full_repository_id,
+                scm_branch_name=scm_branch_name,
+            )
+        )
+    elif source_provider == "S3":
+        parameters.update(
+            dict(scm_bucket_name=scm_bucket_name, scm_object_key=scm_object_key,)
+        )
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")
+
     core.bootstrap(**parameters)
 
 
@@ -444,8 +387,18 @@ def list_launches(expanded_manifest, format):
 @cli.command()
 @click.argument("f", type=click.File())
 @click.option("--single-account", default=None)
-def expand(f, single_account):
-    core.expand(f, single_account)
+@click.option("--parameter-override-file", type=click.File())
+@click.option(
+    "--parameter-override-forced/--no-parameter-override-forced", default=False
+)
+def expand(f, single_account, parameter_override_file, parameter_override_forced):
+    params = dict(single_account=single_account)
+    if parameter_override_forced or core.is_a_parameter_override_execution():
+        overrides = dict(**yaml.safe_load(parameter_override_file.read()))
+        params.update(overrides)
+        click.echo(f"Overridden parameters {params}")
+
+    core.expand(f, **params)
     puppet_account_id = config.get_puppet_account_id()
     if config.get_should_explode_manifest(puppet_account_id):
         core.explode(f)
@@ -583,6 +536,14 @@ def wait_for_code_build_in(iam_role_arns):
     core.wait_for_code_build_in(iam_role_arns)
     core.wait_for_cloudformation_in(iam_role_arns)
     click.echo("AWS CodeBuild is available")
+
+
+@cli.command()
+@click.option("--on-complete-url", default=None)
+def wait_for_parameterised_run_to_complete(on_complete_url):
+    click.echo("Starting to wait for parameterised run to complete")
+    succeeded = core.wait_for_parameterised_run_to_complete(on_complete_url)
+    click.echo(f"Finished: {'SUCCESS' if succeeded else 'FAILED'}")
 
 
 if __name__ == "__main__":

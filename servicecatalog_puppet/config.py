@@ -36,13 +36,17 @@ def get_config(puppet_account_id, default_region=None):
 
 @functools.lru_cache(maxsize=32)
 def get_regions(puppet_account_id, default_region=None):
-    logger.info(f"getting {constants.CONFIG_REGIONS},  default_region: {default_region}")
+    logger.info(
+        f"getting {constants.CONFIG_REGIONS},  default_region: {default_region}"
+    )
     return get_config(puppet_account_id, default_region).get(constants.CONFIG_REGIONS)
 
 
 @functools.lru_cache(maxsize=32)
 def get_should_use_sns(puppet_account_id, default_region=None):
-    logger.info(f"getting {constants.CONFIG_SHOULD_COLLECT_CLOUDFORMATION_EVENTS},  default_region: {default_region}")
+    logger.info(
+        f"getting {constants.CONFIG_SHOULD_COLLECT_CLOUDFORMATION_EVENTS},  default_region: {default_region}"
+    )
     return get_config(puppet_account_id, default_region).get(
         constants.CONFIG_SHOULD_COLLECT_CLOUDFORMATION_EVENTS, True
     )
@@ -231,7 +235,3 @@ def get_ssm_config_for_parameter(account_ssm_param, required_parameter_name):
             "name": account_ssm_param.get("name"),
             "parameter_name": required_parameter_name,
         }
-
-
-def get_puppet_version():
-    return pkg_resources.get_distribution("aws-service-catalog-puppet").version

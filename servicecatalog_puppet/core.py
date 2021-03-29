@@ -1,5 +1,8 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
+import io
+import time
+import urllib
 from pathlib import Path
 
 import cfn_tools
@@ -9,6 +12,7 @@ import terminaltables
 import shutil
 import json
 from threading import Thread
+import zipfile
 
 import pkg_resources
 import yaml
@@ -35,11 +39,16 @@ from servicecatalog_puppet.workflow import (
 from servicecatalog_puppet import config
 from servicecatalog_puppet import manifest_utils
 from servicecatalog_puppet import aws
+from servicecatalog_puppet.template_builder.hub import bootstrap as hub_bootstrap
+from servicecatalog_puppet.template_builder.hub import (
+    bootstrap_region as hub_bootstrap_region,
+)
 
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import constants
 
 import traceback
+import botocore
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -201,7 +210,6 @@ def graph(f):
 def _do_bootstrap_spoke(
     puppet_account_id,
     cloudformation,
-    puppet_version,
     permission_boundary,
     puppet_role_name,
     puppet_role_path,
@@ -209,7 +217,7 @@ def _do_bootstrap_spoke(
     template = asset_helpers.read_from_site_packages(
         "{}-spoke.template.yaml".format(constants.BOOTSTRAP_STACK_NAME)
     )
-    template = Template(template).render(VERSION=puppet_version)
+    template = Template(template).render(VERSION=constants.VERSION)
     args = {
         "StackName": "{}-spoke".format(constants.BOOTSTRAP_STACK_NAME),
         "TemplateBody": template,
@@ -226,7 +234,7 @@ def _do_bootstrap_spoke(
             },
             {
                 "ParameterKey": "Version",
-                "ParameterValue": puppet_version,
+                "ParameterValue": constants.VERSION,
                 "UsePreviousValue": False,
             },
             {
@@ -265,15 +273,13 @@ def bootstrap_spoke_as(
         _do_bootstrap_spoke(
             puppet_account_id,
             cloudformation,
-            config.get_puppet_version(),
             permission_boundary,
             puppet_role_name,
             puppet_role_path,
         )
 
 
-def _do_bootstrap(
-    puppet_version,
+def bootstrap(
     puppet_account_id,
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
@@ -292,6 +298,12 @@ def _do_bootstrap(
     webhook_secret,
     puppet_role_name,
     puppet_role_path,
+    scm_connection_arn,
+    scm_full_repository_id,
+    scm_branch_name,
+    scm_bucket_name,
+    scm_object_key,
+    scm_skip_creation_of_repo,
 ):
     click.echo("Starting bootstrap")
     should_use_eventbridge = config.get_should_use_eventbridge(
@@ -312,12 +324,9 @@ def _do_bootstrap(
     ) as clients:
         click.echo("Creating {}-regional".format(constants.BOOTSTRAP_STACK_NAME))
         threads = []
-        template = asset_helpers.read_from_site_packages(
-            "{}.template.yaml".format(
-                "{}-regional".format(constants.BOOTSTRAP_STACK_NAME)
-            )
-        )
-        template = Template(template).render(VERSION=puppet_version)
+        template = hub_bootstrap_region.get_template(
+            constants.VERSION, os.environ.get("AWS_DEFAULT_REGION")
+        ).to_yaml(clean_up=True)
         args = {
             "StackName": "{}-regional".format(constants.BOOTSTRAP_STACK_NAME),
             "TemplateBody": template,
@@ -325,7 +334,7 @@ def _do_bootstrap(
             "Parameters": [
                 {
                     "ParameterKey": "Version",
-                    "ParameterValue": puppet_version,
+                    "ParameterValue": constants.VERSION,
                     "UsePreviousValue": False,
                 },
                 {
@@ -351,7 +360,13 @@ def _do_bootstrap(
     source_args = {"Provider": source_provider}
     if source_provider == "CodeCommit":
         source_args.update(
-            {"Configuration": {"RepositoryName": repo, "BranchName": branch,},}
+            {
+                "Configuration": {
+                    "RepositoryName": repo,
+                    "BranchName": branch,
+                    "PollForSourceChanges": poll_for_source_changes,
+                },
+            }
         )
     elif source_provider == "GitHub":
         source_args.update(
@@ -365,113 +380,135 @@ def _do_bootstrap(
                 },
             }
         )
+    elif source_provider.lower() == "codestarsourceconnection":
+        source_args.update(
+            {
+                "Configuration": {
+                    "ConnectionArn": scm_connection_arn,
+                    "FullRepositoryId": scm_full_repository_id,
+                    "BranchName": scm_branch_name,
+                    "OutputArtifactFormat": "CODE_ZIP",
+                    "DetectChanges": poll_for_source_changes,
+                },
+            }
+        )
+    elif source_provider.lower() == "s3":
+        source_args.update(
+            {
+                "Configuration": {
+                    "S3Bucket": scm_bucket_name,
+                    "S3ObjectKey": scm_object_key,
+                    "PollForSourceChanges": poll_for_source_changes,
+                },
+            }
+        )
 
+    template = hub_bootstrap.get_template(
+        constants.VERSION,
+        all_regions,
+        source_args,
+        config.is_caching_enabled(
+            puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
+        ),
+        with_manual_approvals,
+        scm_skip_creation_of_repo,
+    ).to_yaml(clean_up=True)
+
+    args = {
+        "StackName": constants.BOOTSTRAP_STACK_NAME,
+        "TemplateBody": template,
+        "Capabilities": ["CAPABILITY_NAMED_IAM"],
+        "Parameters": [
+            {
+                "ParameterKey": "Version",
+                "ParameterValue": constants.VERSION,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "OrgIamRoleArn",
+                "ParameterValue": str(config.get_org_iam_role_arn(puppet_account_id)),
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "WithManualApprovals",
+                "ParameterValue": "Yes" if with_manual_approvals else "No",
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetCodePipelineRolePermissionBoundary",
+                "ParameterValue": puppet_code_pipeline_role_permission_boundary,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "SourceRolePermissionsBoundary",
+                "ParameterValue": source_role_permissions_boundary,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetGenerateRolePermissionBoundary",
+                "ParameterValue": puppet_generate_role_permission_boundary,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetDeployRolePermissionBoundary",
+                "ParameterValue": puppet_deploy_role_permission_boundary,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetProvisioningRolePermissionsBoundary",
+                "ParameterValue": puppet_provisioning_role_permissions_boundary,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "CloudFormationDeployRolePermissionsBoundary",
+                "ParameterValue": cloud_formation_deploy_role_permissions_boundary,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "DeployEnvironmentComputeType",
+                "ParameterValue": deploy_environment_compute_type,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "DeployNumWorkers",
+                "ParameterValue": str(deploy_num_workers),
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetRoleName",
+                "ParameterValue": puppet_role_name,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "PuppetRolePath",
+                "ParameterValue": puppet_role_path,
+                "UsePreviousValue": False,
+            },
+        ],
+    }
     with betterboto_client.ClientContextManager("cloudformation") as cloudformation:
         click.echo("Creating {}".format(constants.BOOTSTRAP_STACK_NAME))
-        template = asset_helpers.read_from_site_packages(
-            "{}.template.yaml".format(constants.BOOTSTRAP_STACK_NAME)
-        )
-        template = Template(template).render(
-            VERSION=puppet_version,
-            ALL_REGIONS=all_regions,
-            Source=source_args,
-            is_caching_enabled=config.is_caching_enabled(
-                puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-            ),
-        )
-        template = Template(template).render(
-            VERSION=puppet_version, ALL_REGIONS=all_regions, Source=source_args
-        )
-        args = {
-            "StackName": constants.BOOTSTRAP_STACK_NAME,
-            "TemplateBody": template,
-            "Capabilities": ["CAPABILITY_NAMED_IAM"],
-            "Parameters": [
-                {
-                    "ParameterKey": "Version",
-                    "ParameterValue": puppet_version,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "OrgIamRoleArn",
-                    "ParameterValue": str(
-                        config.get_org_iam_role_arn(puppet_account_id)
-                    ),
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "WithManualApprovals",
-                    "ParameterValue": "Yes" if with_manual_approvals else "No",
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "PuppetCodePipelineRolePermissionBoundary",
-                    "ParameterValue": puppet_code_pipeline_role_permission_boundary,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "SourceRolePermissionsBoundary",
-                    "ParameterValue": source_role_permissions_boundary,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "PuppetGenerateRolePermissionBoundary",
-                    "ParameterValue": puppet_generate_role_permission_boundary,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "PuppetDeployRolePermissionBoundary",
-                    "ParameterValue": puppet_deploy_role_permission_boundary,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "PuppetProvisioningRolePermissionsBoundary",
-                    "ParameterValue": puppet_provisioning_role_permissions_boundary,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "CloudFormationDeployRolePermissionsBoundary",
-                    "ParameterValue": cloud_formation_deploy_role_permissions_boundary,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "DeployEnvironmentComputeType",
-                    "ParameterValue": deploy_environment_compute_type,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "DeployNumWorkers",
-                    "ParameterValue": str(deploy_num_workers),
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "PuppetRoleName",
-                    "ParameterValue": puppet_role_name,
-                    "UsePreviousValue": False,
-                },
-                {
-                    "ParameterKey": "PuppetRolePath",
-                    "ParameterValue": puppet_role_path,
-                    "UsePreviousValue": False,
-                },
-            ],
-        }
         cloudformation.create_or_update(**args)
 
-    click.echo("Finished creating {}.".format(constants.BOOTSTRAP_STACK_NAME))
-    if source_provider == "CodeCommit":
-        with betterboto_client.ClientContextManager("codecommit") as codecommit:
-            response = codecommit.get_repository(repositoryName=repo)
-            clone_url = response.get("repositoryMetadata").get("cloneUrlHttp")
-            clone_command = (
-                "git clone --config 'credential.helper=!aws codecommit credential-helper $@' "
-                "--config 'credential.UseHttpPath=true' {}".format(clone_url)
+    buff = io.BytesIO()
+    with zipfile.ZipFile(buff, mode="w", compression=zipfile.ZIP_DEFLATED) as z:
+        z.writestr("parameters.yaml", 'single_account: "000000000000"')
+
+    with betterboto_client.ClientContextManager("s3") as s3:
+        try:
+            s3.head_object(
+                Bucket=f"sc-puppet-parameterised-runs-{puppet_account_id}",
+                Key="parameters.zip",
             )
-            click.echo(
-                "You need to clone your newly created repo now and will then need to seed it: \n{}".format(
-                    clone_command
+        except botocore.exceptions.ClientError as ex:
+            if ex.response["Error"]["Code"] == "404":
+                s3.put_object(
+                    Bucket=f"sc-puppet-parameterised-runs-{puppet_account_id}",
+                    Key="parameters.zip",
+                    Body=buff.getvalue(),
                 )
-            )
+
+    click.echo("Finished creating {}.".format(constants.BOOTSTRAP_STACK_NAME))
 
 
 def bootstrap_spoke(
@@ -481,99 +518,10 @@ def bootstrap_spoke(
         _do_bootstrap_spoke(
             puppet_account_id,
             cloudformation,
-            config.get_puppet_version(),
             permission_boundary,
             puppet_role_name,
             puppet_role_path,
         )
-
-
-def bootstrap_branch(
-    branch_to_bootstrap,
-    puppet_account_id,
-    with_manual_approvals,
-    puppet_code_pipeline_role_permission_boundary,
-    source_role_permissions_boundary,
-    puppet_generate_role_permission_boundary,
-    puppet_deploy_role_permission_boundary,
-    puppet_provisioning_role_permissions_boundary,
-    cloud_formation_deploy_role_permissions_boundary,
-    deploy_num_workers,
-    source_provider,
-    owner,
-    repo,
-    branch,
-    poll_for_source_changes,
-    webhook_secret,
-    puppet_role_name,
-    puppet_role_path,
-):
-    _do_bootstrap(
-        "https://github.com/awslabs/aws-service-catalog-puppet/archive/{}.zip".format(
-            branch_to_bootstrap
-        ),
-        puppet_account_id,
-        with_manual_approvals,
-        puppet_code_pipeline_role_permission_boundary,
-        source_role_permissions_boundary,
-        puppet_generate_role_permission_boundary,
-        puppet_deploy_role_permission_boundary,
-        puppet_provisioning_role_permissions_boundary,
-        cloud_formation_deploy_role_permissions_boundary,
-        constants.DEPLOY_ENVIRONMENT_COMPUTE_TYPE_DEFAULT,
-        deploy_num_workers,
-        source_provider,
-        owner,
-        repo,
-        branch,
-        poll_for_source_changes,
-        webhook_secret,
-        puppet_role_name,
-        puppet_role_path,
-    )
-
-
-def bootstrap(
-    with_manual_approvals,
-    puppet_account_id,
-    puppet_code_pipeline_role_permission_boundary,
-    source_role_permissions_boundary,
-    puppet_generate_role_permission_boundary,
-    puppet_deploy_role_permission_boundary,
-    puppet_provisioning_role_permissions_boundary,
-    cloud_formation_deploy_role_permissions_boundary,
-    deploy_environment_compute_type,
-    deploy_num_workers,
-    source_provider,
-    owner,
-    repo,
-    branch,
-    poll_for_source_changes,
-    webhook_secret,
-    puppet_role_name,
-    puppet_role_path,
-):
-    _do_bootstrap(
-        config.get_puppet_version(),
-        puppet_account_id,
-        with_manual_approvals,
-        puppet_code_pipeline_role_permission_boundary,
-        source_role_permissions_boundary,
-        puppet_generate_role_permission_boundary,
-        puppet_deploy_role_permission_boundary,
-        puppet_provisioning_role_permissions_boundary,
-        cloud_formation_deploy_role_permissions_boundary,
-        deploy_environment_compute_type,
-        deploy_num_workers,
-        source_provider,
-        owner,
-        repo,
-        branch,
-        poll_for_source_changes,
-        webhook_secret,
-        puppet_role_name,
-        puppet_role_path,
-    )
 
 
 def seed(complexity, p):
@@ -586,7 +534,7 @@ def seed(complexity, p):
     )
 
 
-def expand(f, single_account):
+def expand(f, single_account, subset=None):
     click.echo("Expanding")
     puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f, puppet_account_id)
@@ -611,6 +559,13 @@ def expand(f, single_account):
                 break
 
         click.echo("Filtered")
+
+    if subset:
+        click.echo(f"Filtering for subset: {subset}")
+        new_manifest = manifest_utils.isolate(
+            manifest_utils.Manifest(new_manifest), subset
+        )
+        new_manifest = json.loads(json.dumps(new_manifest))
 
     if new_manifest.get(constants.LAMBDA_INVOCATIONS) is None:
         new_manifest[constants.LAMBDA_INVOCATIONS] = dict()
@@ -697,14 +652,13 @@ def set_org_iam_role_arn(org_iam_role_arn):
 def bootstrap_org_master(puppet_account_id):
     with betterboto_client.ClientContextManager("cloudformation",) as cloudformation:
         org_iam_role_arn = None
-        puppet_version = config.get_puppet_version()
         logger.info("Starting bootstrap of org master")
         stack_name = f"{constants.BOOTSTRAP_STACK_NAME}-org-master-{puppet_account_id}"
         template = asset_helpers.read_from_site_packages(
             f"{constants.BOOTSTRAP_STACK_NAME}-org-master.template.yaml"
         )
         template = Template(template).render(
-            VERSION=puppet_version, puppet_account_id=puppet_account_id
+            VERSION=constants.VERSION, puppet_account_id=puppet_account_id
         )
         args = {
             "StackName": stack_name,
@@ -717,7 +671,7 @@ def bootstrap_org_master(puppet_account_id):
                 },
                 {
                     "ParameterKey": "Version",
-                    "ParameterValue": puppet_version,
+                    "ParameterValue": constants.VERSION,
                     "UsePreviousValue": False,
                 },
             ],
@@ -1060,3 +1014,141 @@ def wait_for_cloudformation_in(iam_role_arns):
             except Exception as e:
                 logger.error("type error: " + str(e))
                 logger.error(traceback.format_exc())
+
+
+def is_a_parameter_override_execution() -> bool:
+    codepipeline_execution_id = os.getenv("EXECUTION_ID")
+    with betterboto_client.ClientContextManager("codepipeline") as codepipeline:
+        paginator = codepipeline.get_paginator("list_pipeline_executions")
+        pages = paginator.paginate(
+            pipelineName=constants.PIPELINE_NAME, PaginationConfig={"PageSize": 100,}
+        )
+        for page in pages:
+            for pipeline_execution_summary in page.get(
+                "pipelineExecutionSummaries", []
+            ):
+                if codepipeline_execution_id == pipeline_execution_summary.get(
+                    "pipelineExecutionId"
+                ):
+                    trigger_detail = pipeline_execution_summary.get("trigger").get(
+                        "triggerDetail"
+                    )
+                    return trigger_detail == "ParameterisedSource"
+    return False
+
+
+def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
+    with betterboto_client.ClientContextManager("s3") as s3:
+        paginator = s3.get_paginator("list_object_versions")
+        pages = paginator.paginate(
+            Bucket=f"sc-puppet-parameterised-runs-{config.get_puppet_account_id()}",
+        )
+        for page in pages:
+            for version in page.get("Versions", []):
+                if version.get("Key") == "parameters.zip" and version.get("IsLatest"):
+                    parameters_file_version_id = version.get("VersionId")
+                    while True:
+                        time.sleep(5)
+                        with betterboto_client.ClientContextManager(
+                            "codepipeline"
+                        ) as codepipeline:
+                            click.echo(
+                                f"looking for execution for {parameters_file_version_id}"
+                            )
+                            paginator = codepipeline.get_paginator(
+                                "list_pipeline_executions"
+                            )
+                            pages = paginator.paginate(
+                                pipelineName=constants.PIPELINE_NAME,
+                                PaginationConfig={"PageSize": 100,},
+                            )
+                            for page in pages:
+                                for pipeline_execution_summary in page.get(
+                                    "pipelineExecutionSummaries", []
+                                ):
+                                    if (
+                                        pipeline_execution_summary.get("trigger").get(
+                                            "triggerDetail"
+                                        )
+                                        == "ParameterisedSource"
+                                    ):
+                                        for s in pipeline_execution_summary.get(
+                                            "sourceRevisions", []
+                                        ):
+                                            if (
+                                                s.get("actionName")
+                                                == "ParameterisedSource"
+                                                and s.get("revisionId")
+                                                == parameters_file_version_id
+                                            ):
+                                                pipeline_execution_id = pipeline_execution_summary.get(
+                                                    "pipelineExecutionId"
+                                                )
+                                                click.echo(
+                                                    f"Found execution id {pipeline_execution_id}"
+                                                )
+                                                while True:
+                                                    time.sleep(10)
+                                                    pipelineExecution = codepipeline.get_pipeline_execution(
+                                                        pipelineName=constants.PIPELINE_NAME,
+                                                        pipelineExecutionId=pipeline_execution_id,
+                                                    ).get(
+                                                        "pipelineExecution"
+                                                    )
+                                                    status = pipelineExecution.get(
+                                                        "status"
+                                                    )
+                                                    click.echo(
+                                                        f"Current status: {status}"
+                                                    )
+                                                    if status in [
+                                                        "Cancelled",
+                                                        "Stopped",
+                                                        "Succeeded",
+                                                        "Superseded",
+                                                        "Failed",
+                                                    ]:
+                                                        succeeded = status in [
+                                                            "Succeeded"
+                                                        ]
+                                                        if on_complete_url:
+                                                            logger.info(
+                                                                f"About to post results"
+                                                            )
+                                                            if succeeded:
+                                                                result = dict(
+                                                                    Status="SUCCESS",
+                                                                    Reason=f"All tasks run with success: {pipeline_execution_id}",
+                                                                    UniqueId=pipeline_execution_id.replace(
+                                                                        ":", ""
+                                                                    ).replace(
+                                                                        "-", ""
+                                                                    ),
+                                                                    Data=f"{pipeline_execution_id}",
+                                                                )
+                                                            else:
+                                                                result = dict(
+                                                                    Status="FAILURE",
+                                                                    Reason=f"All tasks did not run with success: {pipeline_execution_id}",
+                                                                    UniqueId=pipeline_execution_id.replace(
+                                                                        ":", ""
+                                                                    ).replace(
+                                                                        "-", ""
+                                                                    ),
+                                                                    Data=f"{pipeline_execution_id}",
+                                                                )
+                                                            req = urllib.request.Request(
+                                                                url=on_complete_url,
+                                                                data=json.dumps(
+                                                                    result
+                                                                ).encode(),
+                                                                method="PUT",
+                                                            )
+                                                            with urllib.request.urlopen(
+                                                                req
+                                                            ) as f:
+                                                                pass
+                                                            logger.info(f.status)
+                                                            logger.info(f.reason)
+
+                                                        return succeeded

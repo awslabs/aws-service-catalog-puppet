@@ -41,7 +41,7 @@ class GeneratePoliciesTemplate(tasks.PuppetTask):
             )
         rendered = config.env.get_template("policies.template.yaml.j2").render(
             sharing_policies=self.sharing_policies,
-            VERSION=config.get_puppet_version(),
+            VERSION=constants.VERSION,
             HOME_REGION=self.region,
         )
         with self.output().open("w") as output_file:
