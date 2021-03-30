@@ -1,3 +1,4 @@
+from unittest import skip
 from . import tasks_unit_tests_helper
 
 
@@ -28,7 +29,9 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.InvokeLambdaTask(
             lambda_invocation_name=self.lambda_invocation_name, region=self.region, account_id=self.account_id, function_name=self.function_name, qualifier=self.qualifier, invocation_type=self.invocation_type, puppet_account_id=self.puppet_account_id, parameters=self.parameters, launch_parameters=self.launch_parameters, manifest_parameters=self.manifest_parameters, account_parameters=self.account_parameters, manifest_file_path=self.manifest_file_path, should_use_sns=self.should_use_sns, should_use_product_plans=self.should_use_product_plans, include_expanded_from=self.include_expanded_from, single_account=self.single_account, is_dry_run=self.is_dry_run, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -48,6 +51,24 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class LambdaInvocationDependenciesWrapperTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     lambda_invocation_name = "lambda_invocation_name"
     manifest_file_path = "manifest_file_path"
@@ -65,7 +86,9 @@ class LambdaInvocationDependenciesWrapperTaskTest(tasks_unit_tests_helper.Puppet
         
         self.sut = self.module.LambdaInvocationDependenciesWrapperTask(
             lambda_invocation_name=self.lambda_invocation_name, manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, should_use_sns=self.should_use_sns, should_use_product_plans=self.should_use_product_plans, include_expanded_from=self.include_expanded_from, single_account=self.single_account, is_dry_run=self.is_dry_run, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -81,6 +104,24 @@ class LambdaInvocationDependenciesWrapperTaskTest(tasks_unit_tests_helper.Puppet
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     lambda_invocation_name = "lambda_invocation_name"
@@ -99,7 +140,9 @@ class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.LambdaInvocationTask(
             lambda_invocation_name=self.lambda_invocation_name, manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, should_use_sns=self.should_use_sns, should_use_product_plans=self.should_use_product_plans, include_expanded_from=self.include_expanded_from, single_account=self.single_account, is_dry_run=self.is_dry_run, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -115,6 +158,24 @@ class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -133,7 +194,9 @@ class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTes
         
         self.sut = self.module.LambdaInvocationsSectionTask(
             manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, should_use_sns=self.should_use_sns, should_use_product_plans=self.should_use_product_plans, include_expanded_from=self.include_expanded_from, single_account=self.single_account, is_dry_run=self.is_dry_run, execution_mode=self.execution_mode, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -148,4 +211,22 @@ class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTes
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     

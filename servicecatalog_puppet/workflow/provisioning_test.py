@@ -1,3 +1,4 @@
+from unittest import skip
 from . import tasks_unit_tests_helper
 
 
@@ -11,7 +12,9 @@ class ProvisioningTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.ProvisioningTask(
             manifest_file_path=self.manifest_file_path        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
 class ProvisioningArtifactParametersTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -31,7 +34,9 @@ class ProvisioningArtifactParametersTaskTest(tasks_unit_tests_helper.PuppetTaskU
         
         self.sut = self.module.ProvisioningArtifactParametersTask(
             manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, portfolio=self.portfolio, portfolio_id=self.portfolio_id, product=self.product, product_id=self.product_id, version=self.version, version_id=self.version_id, account_id=self.account_id, region=self.region        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -66,6 +71,15 @@ class ProvisioningArtifactParametersTaskTest(tasks_unit_tests_helper.PuppetTaskU
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     launch_name = "launch_name"
@@ -98,7 +112,9 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.ProvisionProductTask(
             manifest_file_path=self.manifest_file_path, launch_name=self.launch_name, portfolio=self.portfolio, portfolio_id=self.portfolio_id, product=self.product, product_id=self.product_id, version=self.version, version_id=self.version_id, region=self.region, account_id=self.account_id, puppet_account_id=self.puppet_account_id, parameters=self.parameters, ssm_param_inputs=self.ssm_param_inputs, launch_parameters=self.launch_parameters, manifest_parameters=self.manifest_parameters, account_parameters=self.account_parameters, retry_count=self.retry_count, worker_timeout=self.worker_timeout, ssm_param_outputs=self.ssm_param_outputs, should_use_sns=self.should_use_sns, should_use_product_plans=self.should_use_product_plans, requested_priority=self.requested_priority, execution=self.execution, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -121,6 +137,15 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
     
     def test_api_calls_used(self):
         # setup
@@ -148,6 +173,15 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class ProvisionProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -181,7 +215,9 @@ class ProvisionProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
         
         self.sut = self.module.ProvisionProductDryRunTask(
             manifest_file_path=self.manifest_file_path, launch_name=self.launch_name, portfolio=self.portfolio, portfolio_id=self.portfolio_id, product=self.product, product_id=self.product_id, version=self.version, version_id=self.version_id, region=self.region, account_id=self.account_id, puppet_account_id=self.puppet_account_id, parameters=self.parameters, ssm_param_inputs=self.ssm_param_inputs, launch_parameters=self.launch_parameters, manifest_parameters=self.manifest_parameters, account_parameters=self.account_parameters, retry_count=self.retry_count, worker_timeout=self.worker_timeout, ssm_param_outputs=self.ssm_param_outputs, should_use_sns=self.should_use_sns, should_use_product_plans=self.should_use_product_plans, requested_priority=self.requested_priority, execution=self.execution, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_api_calls_used(self):
         # setup
@@ -199,6 +235,15 @@ class ProvisionProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class TerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -225,7 +270,9 @@ class TerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.TerminateProductTask(
             manifest_file_path=self.manifest_file_path, launch_name=self.launch_name, portfolio=self.portfolio, portfolio_id=self.portfolio_id, product=self.product, product_id=self.product_id, version=self.version, version_id=self.version_id, account_id=self.account_id, region=self.region, puppet_account_id=self.puppet_account_id, retry_count=self.retry_count, ssm_param_outputs=self.ssm_param_outputs, worker_timeout=self.worker_timeout, parameters=self.parameters, ssm_param_inputs=self.ssm_param_inputs, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -263,6 +310,15 @@ class TerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class TerminateProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     launch_name = "launch_name"
@@ -288,7 +344,9 @@ class TerminateProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
         
         self.sut = self.module.TerminateProductDryRunTask(
             manifest_file_path=self.manifest_file_path, launch_name=self.launch_name, portfolio=self.portfolio, portfolio_id=self.portfolio_id, product=self.product, product_id=self.product_id, version=self.version, version_id=self.version_id, account_id=self.account_id, region=self.region, puppet_account_id=self.puppet_account_id, retry_count=self.retry_count, ssm_param_outputs=self.ssm_param_outputs, worker_timeout=self.worker_timeout, parameters=self.parameters, ssm_param_inputs=self.ssm_param_inputs, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -324,6 +382,15 @@ class TerminateProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class ResetProvisionedProductOwnerTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     launch_name = "launch_name"
@@ -336,7 +403,9 @@ class ResetProvisionedProductOwnerTaskTest(tasks_unit_tests_helper.PuppetTaskUni
         
         self.sut = self.module.ResetProvisionedProductOwnerTask(
             manifest_file_path=self.manifest_file_path, launch_name=self.launch_name, account_id=self.account_id, region=self.region        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -365,6 +434,15 @@ class ResetProvisionedProductOwnerTaskTest(tasks_unit_tests_helper.PuppetTaskUni
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class RunDeployInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
@@ -381,7 +459,9 @@ class RunDeployInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.RunDeployInSpokeTask(
             manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, account_id=self.account_id, home_region=self.home_region, regions=self.regions, should_collect_cloudformation_events=self.should_collect_cloudformation_events, should_forward_events_to_eventbridge=self.should_forward_events_to_eventbridge, should_forward_failures_to_opscenter=self.should_forward_failures_to_opscenter        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -396,6 +476,15 @@ class RunDeployInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -414,7 +503,9 @@ class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.LaunchInSpokeTask(
             manifest_file_path=self.manifest_file_path, launch_name=self.launch_name, puppet_account_id=self.puppet_account_id, should_use_sns=self.should_use_sns, should_use_product_plans=self.should_use_product_plans, include_expanded_from=self.include_expanded_from, single_account=self.single_account, is_dry_run=self.is_dry_run, execution_mode=self.execution_mode        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -427,6 +518,24 @@ class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class LaunchTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -446,7 +555,9 @@ class LaunchTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.LaunchTask(
             manifest_file_path=self.manifest_file_path, launch_name=self.launch_name, puppet_account_id=self.puppet_account_id, should_use_sns=self.should_use_sns, should_use_product_plans=self.should_use_product_plans, include_expanded_from=self.include_expanded_from, single_account=self.single_account, is_dry_run=self.is_dry_run, execution_mode=self.execution_mode, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -461,6 +572,24 @@ class LaunchTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class SpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -481,7 +610,9 @@ class SpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.SpokeLocalPortfolioTask(
             manifest_file_path=self.manifest_file_path, spoke_local_portfolio_name=self.spoke_local_portfolio_name, puppet_account_id=self.puppet_account_id, should_use_sns=self.should_use_sns, should_use_product_plans=self.should_use_product_plans, include_expanded_from=self.include_expanded_from, single_account=self.single_account, is_dry_run=self.is_dry_run, depends_on=self.depends_on, sharing_mode=self.sharing_mode, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -496,4 +627,22 @@ class SpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     

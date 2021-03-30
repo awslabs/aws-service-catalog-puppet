@@ -1,47 +1,35 @@
 import unittest
-import json
+from unittest.mock import MagicMock
+
+
+def mocked_client():
+    context_handler_mock = MagicMock()
+    client_mock = MagicMock()
+    context_handler_mock.return_value.__enter__.return_value = client_mock
+    return client_mock, context_handler_mock
 
 
 class PuppetTaskUnitTest(unittest.TestCase):
-    expectations = None
+    def wire_up_mocks(self):
+        self.spoke_client_mock, self.sut.spoke_client = mocked_client()
+        (
+            self.spoke_regional_client_mock,
+            self.sut.spoke_regional_client,
+        ) = mocked_client()
 
-    def setUp(self) -> None:
-        self.expectations = list()
+        self.hub_client_mock, self.sut.hub_client = mocked_client()
+        self.hub_regional_client_mock, self.sut.hub_regional_client = mocked_client()
 
-    def expect_call(self, mock, client_details, api_call, api_kwargs, return_value):
-        f = mock.CrossAccountClientContextManager().__enter__()
-        f.configure_mock(**{f"{api_call}.return_value": return_value})
-        self.expectations.append((client_details, api_call, api_kwargs))
+        self.sut.write_output = MagicMock()
+        self.sut.input = MagicMock()
 
-    def verify(self, mock):
-        index = 0
-        OFFSET = 2 * len(self.expectations)
-        mock_calls = mock.CrossAccountClientContextManager.mock_calls
-        for expected in self.expectations:
-            ignored, client_args, client_kwargs = mock_calls[OFFSET + (index * 4)]
-            kwargs, expected_api_call, expected_api_kwargs = expected
-            expected_args = (
-                kwargs.get("service"),
-                kwargs.get("role"),
-                kwargs.get("session"),
-            )
-            self.assertEqual(expected_args, client_args, "Client args were not found")
-            for arg_name, arg_value in client_kwargs.items():
-                self.assertEqual(kwargs.get(arg_name), arg_value, "kwargs do not match")
-            api_call, api_args, api_kwargs = mock_calls[
-                OFFSET + (index * 4) + 2
-            ]  # TODO may break on multiples
-            api_call = api_call.split(".")[-1]
-            self.assertEqual(expected_api_call, api_call, "API call didn't match")
-            self.assertEqual(expected_api_kwargs, api_kwargs, "API kwargs didn't match")
-            index += 1
+    def assert_spoke_regional_client_called_with(
+        self, client_used, function_name_called, function_parameters
+    ):
+        self.sut.spoke_regional_client.assert_called_once_with(client_used)
 
-        self.assertEqual(
-            OFFSET + (4 * len(self.expectations)),
-            len(mock_calls),
-            "fewer or too many API calls were made",
-        )
+        function_called = getattr(self.spoke_regional_client_mock, function_name_called)
+        function_called.assert_called_once_with(**function_parameters)
 
-    def verify_output(self, expected):
-        actual = self.sut.output().open().read()
-        self.assertEqual(json.dumps(expected, indent=4, default=str,), actual)
+    def assert_output(self, expected_output):
+        self.sut.write_output.assert_called_once_with(expected_output)

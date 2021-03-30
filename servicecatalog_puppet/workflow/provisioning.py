@@ -343,7 +343,9 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     self.info(
                         f"Running in execution mode: {self.execution}, checking for SSM outputs"
                     )
-                    with self.spoke_regional_client("cloudformation") as spoke_cloudformation:
+                    with self.spoke_regional_client(
+                        "cloudformation"
+                    ) as spoke_cloudformation:
                         stack_details = aws.get_stack_output_for(
                             spoke_cloudformation,
                             f"SC-{self.account_id}-{provisioned_product_id}",

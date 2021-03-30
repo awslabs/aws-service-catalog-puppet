@@ -1,3 +1,4 @@
+from unittest import skip
 from . import tasks_unit_tests_helper
 
 
@@ -15,7 +16,9 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.GeneratePoliciesTemplate(
             puppet_account_id=self.puppet_account_id, manifest_file_path=self.manifest_file_path, region=self.region, sharing_policies=self.sharing_policies, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -32,6 +35,15 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class EnsureEventBridgeEventBusTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     region = "region"
@@ -42,7 +54,9 @@ class EnsureEventBridgeEventBusTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
         
         self.sut = self.module.EnsureEventBridgeEventBusTask(
             puppet_account_id=self.puppet_account_id, region=self.region        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -70,6 +84,15 @@ class EnsureEventBridgeEventBusTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     manifest_file_path = "manifest_file_path"
@@ -84,7 +107,9 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.GeneratePolicies(
             puppet_account_id=self.puppet_account_id, manifest_file_path=self.manifest_file_path, region=self.region, sharing_policies=self.sharing_policies, should_use_sns=self.should_use_sns, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -102,6 +127,15 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
     def test_api_calls_used(self):
         # setup
         expected_result = {
@@ -113,6 +147,15 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class GenerateSharesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
@@ -127,7 +170,9 @@ class GenerateSharesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.GenerateSharesTask(
             puppet_account_id=self.puppet_account_id, manifest_file_path=self.manifest_file_path, should_use_sns=self.should_use_sns, section=self.section, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -143,4 +188,22 @@ class GenerateSharesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     

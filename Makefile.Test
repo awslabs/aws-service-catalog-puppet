@@ -57,7 +57,7 @@ endef
 export MANIFEST
 
 unit-tests: ## runs unit tests for the project
-	poetry run pytest -vv -k unit -k _test --junit-xml=reports/junit/junit.xml --cov=./servicecatalog_puppet --cov-branch
+	poetry run nose2 --pretty-assert --verbose --coverage-report html --coverage-report term -C
 
 test-factory-install:
 	@echo "Installing factory"

@@ -110,7 +110,7 @@ class GeneratePolicies(tasks.PuppetTask):
 
     def run(self):
         template = self.read_from_input("template")
-        with self.hub_regional_client('cloudformation') as cloudformation:
+        with self.hub_regional_client("cloudformation") as cloudformation:
             self.info(template)
             cloudformation.create_or_update(
                 ShouldUseChangeSets=False,

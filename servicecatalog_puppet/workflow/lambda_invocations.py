@@ -109,7 +109,9 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
 
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)
-        with self.hub_regional_client('lambda', region_name=home_region) as lambda_client:
+        with self.hub_regional_client(
+            "lambda", region_name=home_region
+        ) as lambda_client:
             payload = dict(
                 account_id=self.account_id,
                 region=self.region,

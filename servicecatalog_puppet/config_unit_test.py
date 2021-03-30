@@ -4,12 +4,12 @@ import yaml
 from pytest import fixture
 import pytest
 
-from . import constants
+from servicecatalog_puppet import constants
 
 
 @fixture
 def sut():
-    from . import config
+    from servicecatalog_puppet import config
 
     return config
 

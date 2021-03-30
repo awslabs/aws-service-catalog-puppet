@@ -120,7 +120,9 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
         ]
 
     def run(self):
-        with self.spoke_regional_client('servicecatalog') as cross_account_servicecatalog:
+        with self.spoke_regional_client(
+            "servicecatalog"
+        ) as cross_account_servicecatalog:
             version_id = aws.get_version_id_for(
                 cross_account_servicecatalog, self.product_id, self.version,
             )
@@ -163,7 +165,7 @@ class SearchProductsAsAdminTask(PortfolioManagementTask):
         ]
 
     def run(self):
-        with self.spoke_regional_client('servicecatalog') as spoke_service_catalog:
+        with self.spoke_regional_client("servicecatalog") as spoke_service_catalog:
             results = spoke_service_catalog.search_products_as_admin_single_page(
                 PortfolioId=self.portfolio_id,
             )
@@ -269,7 +271,9 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
 
     @lru_cache()
     def get_portfolio(self):
-        with self.spoke_regional_client("servicecatalog") as cross_account_servicecatalog:
+        with self.spoke_regional_client(
+            "servicecatalog"
+        ) as cross_account_servicecatalog:
             result = None
             response = (
                 cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
@@ -572,7 +576,7 @@ class GetProductsAndProvisioningArtifactsTask(PortfolioManagementTask):
 
     def run(self):
         product_and_artifact_details = []
-        with self.hub_regional_client('servicecatalog') as service_catalog:
+        with self.hub_regional_client("servicecatalog") as service_catalog:
             response = self.load_from_input("search_products_as_admin")
             for product_view_detail in response.get("ProductViewDetails", []):
                 product_view_summary = product_view_detail.get("ProductViewSummary")
@@ -698,7 +702,9 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                     "CopyOptions": ["CopyTags",],
                 }
 
-                with self.spoke_regional_client("servicecatalog") as spoke_service_catalog:
+                with self.spoke_regional_client(
+                    "servicecatalog"
+                ) as spoke_service_catalog:
                     p = None
                     try:
                         p = spoke_service_catalog.search_products_as_admin_single_page(
@@ -1109,7 +1115,9 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
                         "products"
                     )
                 elif isinstance(launch_constraint.get("products"), str):
-                    with self.spoke_regional_client("servicecatalog") as service_catalog:
+                    with self.spoke_regional_client(
+                        "servicecatalog"
+                    ) as service_catalog:
                         response = service_catalog.search_products_as_admin_single_page(
                             PortfolioId=portfolio_id
                         )
@@ -1348,7 +1356,9 @@ class ShareAndAcceptPortfolioTask(
         ]
 
     def run(self):
-        with self.spoke_regional_client("servicecatalog") as cross_account_servicecatalog:
+        with self.spoke_regional_client(
+            "servicecatalog"
+        ) as cross_account_servicecatalog:
             was_accepted = False
             accepted_portfolio_shares = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page().get(
                 "PortfolioDetails"

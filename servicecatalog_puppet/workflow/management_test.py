@@ -1,3 +1,4 @@
+from unittest import skip
 from . import tasks_unit_tests_helper
 
 
@@ -17,7 +18,9 @@ class BootstrapSpokeAsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.BootstrapSpokeAsTask(
             puppet_account_id=self.puppet_account_id, account_id=self.account_id, iam_role_arns=self.iam_role_arns, role_name=self.role_name, permission_boundary=self.permission_boundary, puppet_role_name=self.puppet_role_name, puppet_role_path=self.puppet_role_path        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -30,4 +33,13 @@ class BootstrapSpokeAsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     

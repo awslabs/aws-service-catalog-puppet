@@ -31,33 +31,33 @@ def unwrap(what):
 class PuppetTask(luigi.Task):
     def spoke_client(self, service):
         return betterboto_client.CrossAccountClientContextManager(
-                service,
-                config.get_puppet_role_arn(self.account_id),
-                f"{self.account_id}-{config.get_puppet_role_name()}",
+            service,
+            config.get_puppet_role_arn(self.account_id),
+            f"{self.account_id}-{config.get_puppet_role_name()}",
         )
 
     def spoke_regional_client(self, service):
         return betterboto_client.CrossAccountClientContextManager(
-                service,
-                config.get_puppet_role_arn(self.account_id),
-                f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
-                region_name=self.region,
+            service,
+            config.get_puppet_role_arn(self.account_id),
+            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
+            region_name=self.region,
         )
 
     def hub_client(self, service):
         return betterboto_client.CrossAccountClientContextManager(
-                service,
-                config.get_puppet_role_arn(self.puppet_account_id),
-                f"{self.puppet_account_id}-{config.get_puppet_role_name()}",
+            service,
+            config.get_puppet_role_arn(self.puppet_account_id),
+            f"{self.puppet_account_id}-{config.get_puppet_role_name()}",
         )
 
     def hub_regional_client(self, service, region_name=None):
         region = region_name or self.region
         return betterboto_client.CrossAccountClientContextManager(
-                service,
-                config.get_puppet_role_arn(self.puppet_account_id),
-                f"{self.puppet_account_id}-{region}-{config.get_puppet_role_name()}",
-                region_name=region,
+            service,
+            config.get_puppet_role_arn(self.puppet_account_id),
+            f"{self.puppet_account_id}-{region}-{config.get_puppet_role_name()}",
+            region_name=region,
         )
 
     def read_from_input(self, input_name):

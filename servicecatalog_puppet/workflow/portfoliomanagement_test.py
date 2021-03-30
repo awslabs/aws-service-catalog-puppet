@@ -1,3 +1,4 @@
+from unittest import skip
 from . import tasks_unit_tests_helper
 
 
@@ -11,7 +12,9 @@ class PortfolioManagementTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.PortfolioManagementTask(
             manifest_file_path=self.manifest_file_path        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
 class GetVersionDetailsByNamesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -29,7 +32,9 @@ class GetVersionDetailsByNamesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.GetVersionDetailsByNames(
             manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, portfolio=self.portfolio, product=self.product, version=self.version, account_id=self.account_id, region=self.region, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -49,6 +54,15 @@ class GetVersionDetailsByNamesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class GetVersionIdByVersionNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
@@ -67,7 +81,9 @@ class GetVersionIdByVersionNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.GetVersionIdByVersionName(
             manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, portfolio=self.portfolio, portfolio_id=self.portfolio_id, product=self.product, product_id=self.product_id, version=self.version, account_id=self.account_id, region=self.region, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -101,6 +117,15 @@ class GetVersionIdByVersionNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class SearchProductsAsAdminTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
@@ -116,7 +141,9 @@ class SearchProductsAsAdminTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.SearchProductsAsAdminTask(
             manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, portfolio=self.portfolio, portfolio_id=self.portfolio_id, account_id=self.account_id, region=self.region, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -147,6 +174,15 @@ class SearchProductsAsAdminTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class GetProductIdByProductNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
@@ -163,7 +199,9 @@ class GetProductIdByProductNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.GetProductIdByProductName(
             manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, portfolio=self.portfolio, portfolio_id=self.portfolio_id, product=self.product, account_id=self.account_id, region=self.region, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -183,6 +221,24 @@ class GetProductIdByProductNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class GetPortfolioByPortfolioNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
@@ -197,7 +253,9 @@ class GetPortfolioByPortfolioNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest
         
         self.sut = self.module.GetPortfolioByPortfolioName(
             manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, portfolio=self.portfolio, account_id=self.account_id, region=self.region, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -228,6 +286,15 @@ class GetPortfolioByPortfolioNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class ProvisionActionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
@@ -248,7 +315,9 @@ class ProvisionActionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.ProvisionActionTask(
             manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, source=self.source, phase=self.phase, source_type=self.source_type, type=self.type, name=self.name, project_name=self.project_name, account_id=self.account_id, region=self.region, parameters=self.parameters, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -270,6 +339,15 @@ class ProvisionActionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
     def test_api_calls_used(self):
         # setup
         expected_result = [
@@ -281,6 +359,15 @@ class ProvisionActionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class CreateSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -299,7 +386,9 @@ class CreateSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
         
         self.sut = self.module.CreateSpokeLocalPortfolioTask(
             manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, account_id=self.account_id, region=self.region, portfolio=self.portfolio, portfolio_id=self.portfolio_id, organization=self.organization, sharing_mode=self.sharing_mode, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -319,6 +408,15 @@ class CreateSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
     def test_api_calls_used(self):
         # setup
         expected_result = [
@@ -331,6 +429,15 @@ class CreateSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class CreateAssociationsForSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -352,7 +459,9 @@ class CreateAssociationsForSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.P
         
         self.sut = self.module.CreateAssociationsForSpokeLocalPortfolioTask(
             manifest_file_path=self.manifest_file_path, spoke_local_portfolio_name=self.spoke_local_portfolio_name, account_id=self.account_id, region=self.region, portfolio=self.portfolio, portfolio_id=self.portfolio_id, puppet_account_id=self.puppet_account_id, organization=self.organization, associations=self.associations, should_use_sns=self.should_use_sns, sharing_mode=self.sharing_mode, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -373,6 +482,15 @@ class CreateAssociationsForSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.P
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
     def test_api_calls_used(self):
         # setup
         expected_result = [
@@ -385,6 +503,15 @@ class CreateAssociationsForSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.P
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class GetProductsAndProvisioningArtifactsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -400,7 +527,9 @@ class GetProductsAndProvisioningArtifactsTaskTest(tasks_unit_tests_helper.Puppet
         
         self.sut = self.module.GetProductsAndProvisioningArtifactsTask(
             manifest_file_path=self.manifest_file_path, region=self.region, portfolio=self.portfolio, portfolio_id=self.portfolio_id, puppet_account_id=self.puppet_account_id, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -418,6 +547,15 @@ class GetProductsAndProvisioningArtifactsTaskTest(tasks_unit_tests_helper.Puppet
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
     def test_api_calls_used(self):
         # setup
         expected_result = [
@@ -429,6 +567,15 @@ class GetProductsAndProvisioningArtifactsTaskTest(tasks_unit_tests_helper.Puppet
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class CopyIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -448,7 +595,9 @@ class CopyIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnit
         
         self.sut = self.module.CopyIntoSpokeLocalPortfolioTask(
             manifest_file_path=self.manifest_file_path, spoke_local_portfolio_name=self.spoke_local_portfolio_name, account_id=self.account_id, region=self.region, portfolio=self.portfolio, portfolio_id=self.portfolio_id, organization=self.organization, puppet_account_id=self.puppet_account_id, sharing_mode=self.sharing_mode, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -469,6 +618,15 @@ class CopyIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnit
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
     def test_api_calls_used(self):
         # setup
         expected_result = [
@@ -485,6 +643,15 @@ class CopyIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnit
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class ImportIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -504,7 +671,9 @@ class ImportIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUn
         
         self.sut = self.module.ImportIntoSpokeLocalPortfolioTask(
             manifest_file_path=self.manifest_file_path, spoke_local_portfolio_name=self.spoke_local_portfolio_name, account_id=self.account_id, region=self.region, portfolio=self.portfolio, portfolio_id=self.portfolio_id, organization=self.organization, puppet_account_id=self.puppet_account_id, sharing_mode=self.sharing_mode, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -525,6 +694,15 @@ class ImportIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUn
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
     def test_api_calls_used(self):
         # setup
         expected_result = [
@@ -538,6 +716,15 @@ class ImportIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUn
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -560,7 +747,9 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTaskTest(tasks_unit_tests
         
         self.sut = self.module.CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(
             manifest_file_path=self.manifest_file_path, spoke_local_portfolio_name=self.spoke_local_portfolio_name, account_id=self.account_id, region=self.region, portfolio=self.portfolio, portfolio_id=self.portfolio_id, puppet_account_id=self.puppet_account_id, organization=self.organization, product_generation_method=self.product_generation_method, launch_constraints=self.launch_constraints, should_use_sns=self.should_use_sns, sharing_mode=self.sharing_mode, cache_invalidator=self.cache_invalidator        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -578,6 +767,15 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTaskTest(tasks_unit_tests
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
     def test_api_calls_used(self):
         # setup
         expected_result = [
@@ -593,6 +791,15 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTaskTest(tasks_unit_tests
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class RequestPolicyTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     type = "type"
@@ -606,7 +813,9 @@ class RequestPolicyTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.RequestPolicyTask(
             manifest_file_path=self.manifest_file_path, type=self.type, region=self.region, account_id=self.account_id, organization=self.organization        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -620,6 +829,15 @@ class RequestPolicyTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     
 class SharePortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -635,7 +853,9 @@ class SharePortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.SharePortfolioTask(
             manifest_file_path=self.manifest_file_path, account_id=self.account_id, region=self.region, portfolio=self.portfolio, portfolio_id=self.portfolio_id, puppet_account_id=self.puppet_account_id        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -665,6 +885,15 @@ class SharePortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     region = "region"
@@ -679,7 +908,9 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.SharePortfolioViaOrgsTask(
             manifest_file_path=self.manifest_file_path, region=self.region, portfolio=self.portfolio, portfolio_id=self.portfolio_id, puppet_account_id=self.puppet_account_id, ou_to_share_with=self.ou_to_share_with        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -709,6 +940,15 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class ShareAndAcceptPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     account_id = "account_id"
@@ -724,7 +964,9 @@ class ShareAndAcceptPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
         
         self.sut = self.module.ShareAndAcceptPortfolioTask(
             manifest_file_path=self.manifest_file_path, account_id=self.account_id, region=self.region, portfolio=self.portfolio, portfolio_id=self.portfolio_id, puppet_account_id=self.puppet_account_id, sharing_mode=self.sharing_mode        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -743,6 +985,15 @@ class ShareAndAcceptPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
     def test_api_calls_used(self):
         # setup
         expected_result = [
@@ -758,6 +1009,15 @@ class ShareAndAcceptPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class CreateAssociationsInPythonForPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
@@ -772,7 +1032,9 @@ class CreateAssociationsInPythonForPortfolioTaskTest(tasks_unit_tests_helper.Pup
         
         self.sut = self.module.CreateAssociationsInPythonForPortfolioTask(
             manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, account_id=self.account_id, region=self.region, portfolio=self.portfolio, portfolio_id=self.portfolio_id        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -802,6 +1064,15 @@ class CreateAssociationsInPythonForPortfolioTaskTest(tasks_unit_tests_helper.Pup
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class CreateShareForAccountLaunchRegionTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
@@ -817,7 +1088,9 @@ class CreateShareForAccountLaunchRegionTest(tasks_unit_tests_helper.PuppetTaskUn
         
         self.sut = self.module.CreateShareForAccountLaunchRegion(
             manifest_file_path=self.manifest_file_path, puppet_account_id=self.puppet_account_id, account_id=self.account_id, region=self.region, portfolio=self.portfolio, portfolio_id=self.portfolio_id, sharing_mode=self.sharing_mode        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -836,6 +1109,24 @@ class CreateShareForAccountLaunchRegionTest(tasks_unit_tests_helper.PuppetTaskUn
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class DisassociateProductFromPortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     account_id = "account_id"
@@ -849,7 +1140,9 @@ class DisassociateProductFromPortfolioTest(tasks_unit_tests_helper.PuppetTaskUni
         
         self.sut = self.module.DisassociateProductFromPortfolio(
             manifest_file_path=self.manifest_file_path, account_id=self.account_id, region=self.region, portfolio_id=self.portfolio_id, product_id=self.product_id        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -878,6 +1171,15 @@ class DisassociateProductFromPortfolioTest(tasks_unit_tests_helper.PuppetTaskUni
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class DisassociateProductsFromPortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     account_id = "account_id"
@@ -890,7 +1192,9 @@ class DisassociateProductsFromPortfolioTest(tasks_unit_tests_helper.PuppetTaskUn
         
         self.sut = self.module.DisassociateProductsFromPortfolio(
             manifest_file_path=self.manifest_file_path, account_id=self.account_id, region=self.region, portfolio_id=self.portfolio_id        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -918,6 +1222,24 @@ class DisassociateProductsFromPortfolioTest(tasks_unit_tests_helper.PuppetTaskUn
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class DeleteLocalPortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     account_id = "account_id"
@@ -930,7 +1252,9 @@ class DeleteLocalPortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.DeleteLocalPortfolio(
             manifest_file_path=self.manifest_file_path, account_id=self.account_id, region=self.region, portfolio_id=self.portfolio_id        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -958,6 +1282,15 @@ class DeleteLocalPortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class DeletePortfolioShareTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     account_id = "account_id"
@@ -971,7 +1304,9 @@ class DeletePortfolioShareTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.DeletePortfolioShare(
             manifest_file_path=self.manifest_file_path, account_id=self.account_id, region=self.region, portfolio=self.portfolio, puppet_account_id=self.puppet_account_id        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -1000,6 +1335,15 @@ class DeletePortfolioShareTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
     
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    
 class DeletePortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     spoke_local_portfolio_name = "spoke_local_portfolio_name"
@@ -1015,7 +1359,9 @@ class DeletePortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.DeletePortfolio(
             manifest_file_path=self.manifest_file_path, spoke_local_portfolio_name=self.spoke_local_portfolio_name, account_id=self.account_id, region=self.region, portfolio=self.portfolio, product_generation_method=self.product_generation_method, puppet_account_id=self.puppet_account_id        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 
     def test_params_for_results_display(self):
         # setup
@@ -1031,4 +1377,22 @@ class DeletePortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         # verify
         self.assertEqual(expected_result, actual_result)
+    
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
     

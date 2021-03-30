@@ -26,7 +26,8 @@ ignored = [
     "get_task_defs",
 ]
 
-HEADER = """from . import tasks_unit_tests_helper
+HEADER = """from unittest import skip
+from . import tasks_unit_tests_helper
 
 
 """
@@ -136,28 +137,30 @@ def handle_api_calls_used(f, output):
     """)
 
 
-# def handle_requires(f, output, mod, classes):
-#     returns = list(f.iter_return_stmts())
-#     if len(returns) != 1:
-#         return
-#
-#     expected = returns[0].get_code()
-#     if "if " in expected:
-#         return
-#
-#     open(output, 'a+').write(f"""
-#     def test_requires(self):
-#         # setup
-#         from servicecatalog_puppet.workflow.{mod} import {", ".join(classes)}
-#
-# {expected.replace("return", "expected_result =")}
-#
-#         # exercise
-#         actual_result = self.sut.requires()
-#
-#         # verify
-#         self.assertEqual(expected_result, actual_result)
-#     """)
+def handle_requires(f, output, mod, classes):
+    open(output, 'a+').write(f"""
+    @skip
+    def test_requires(self):
+        # setup
+        # exercise
+        actual_result = self.sut.requires()
+
+        # verify
+        raise NotImplementedError()
+    """)
+
+
+def handle_run(f, output, mod, classes):
+    open(output, 'a+').write(f"""
+    @skip
+    def test_run(self):
+        # setup
+        # exercise
+        actual_result = self.sut.run()
+
+        # verify
+        raise NotImplementedError()
+    """)
 
 
 def handle(c, output, mod, classes):
@@ -166,17 +169,30 @@ def handle(c, output, mod, classes):
         if name == "params_for_results_display":
             handle_params_for_results_display(f, output)
         elif name == "requires":
-            pass
-            # handle_requires(f, output, mod, classes)
+            handle_requires(f, output, mod, classes)
         elif name == "api_calls_used":
             handle_api_calls_used(f, output)
         elif name == "run":
-            pass
+            handle_run(f, output, mod, classes)
         elif name in ignored:
             pass
         else:
             raise Exception(f"unhandled: {name}")
 
+def handle_function(f, output, mod, classes):
+    name = f.name.value
+    if name == "params_for_results_display":
+        handle_params_for_results_display(f, output)
+    elif name == "requires":
+        handle_requires(f, output, mod, classes)
+    elif name == "api_calls_used":
+        handle_api_calls_used(f, output)
+    elif name == "run":
+        handle_run(f, output, mod, classes)
+    elif name in ignored:
+        pass
+    else:
+        raise Exception(f"unhandled: {name}")
 
 def get_initial_args_for(c):
     supers = c.get_super_arglist().get_code()
@@ -241,6 +257,7 @@ def get_initial_args_for(c):
 for input in glob.glob("servicecatalog_puppet/workflow/*.py", recursive=True):
     if input.endswith("_tests.py") or input.endswith("_test.py") or input.endswith("tasks_unit_tests_helper.py") or input.endswith("__init__.py"):
         continue
+    mod = input.split('/')[-1].replace('.py', '')
     print(f"Starting {input}")
     output = input.replace(".py", "_test.py")
     open(output, 'w+').write(HEADER)
@@ -255,7 +272,7 @@ for input in glob.glob("servicecatalog_puppet/workflow/*.py", recursive=True):
         if c.name.value in ["PuppetTask", "ManifestMixen"]:
             continue
 
-        # if c.name.value not in ["LambdaInvocationsSectionTask"]:
+        # if c.name.value not in ["DeleteCloudFormationStackTask"]:
         #     continue
 
         open(output, "a+").write(f"""
@@ -269,6 +286,9 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
             else:
                 open(output, "a+").write(f"    {p} = {params.get(p)}\n")
         for child in suite.children:
+            # if isinstance(child, tree.Function):
+                # handle_function(child, output, mod, classes)
+                # print(child.name.value)
             if isinstance(child, tree.PythonNode):
                 if child.type == "simple_stmt":
                     parameter = child.children[0]
@@ -301,7 +321,7 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
                         else:
                             raise Exception(f"cannot handle {type(parameter_value)}")
 
-        mod = input.split('/')[-1].replace('.py', '')
+
         open(output, "a+").write(f"""
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import {mod}
@@ -309,7 +329,9 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
         
         self.sut = self.module.{c.name.value}(
             {", ".join([f"{p}=self.{p}" for p in params.keys()])}        
-        )    
+        )
+        
+        self.wire_up_mocks()    
 """)
         handle(c, output, mod, classes)
     # raise Exception("endin")
