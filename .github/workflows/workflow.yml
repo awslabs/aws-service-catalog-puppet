@@ -1,23 +1,27 @@
 name: CodeCov
 on: [push, pull_request]
 jobs:
-  run:
-    runs-on: ubuntu-latest
-    env:
-      OS: ubuntu-latest
-      PYTHON: '3.7'
+  ci:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.7, 3.8, 3.9]
+        poetry-version: [1.1.0]
+        os: [ubuntu-18.04]
+    runs-on: ${{ matrix.os }}
     steps:
-    - name: checkout
-      uses: actions/checkout@v2
-
-    - name: Setup Python
-      uses: actions/setup-python@master
-      with:
-        python-version: 3.7
-    - name: Install
-      run: make install
-    - name: run tests
-      run: make unit-tests
-    - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v1
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run image
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: ${{ matrix.poetry-version }}
+      - name: Install
+        run: make install
+      - name: run tests
+        run: make unit-tests
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v1
 
