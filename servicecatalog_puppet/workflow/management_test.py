@@ -2,7 +2,6 @@ from unittest import skip
 from . import tasks_unit_tests_helper
 
 
-
 class BootstrapSpokeAsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     account_id = "account_id"
@@ -14,26 +13,33 @@ class BootstrapSpokeAsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import management
+
         self.module = management
-        
+
         self.sut = self.module.BootstrapSpokeAsTask(
-            puppet_account_id=self.puppet_account_id, account_id=self.account_id, iam_role_arns=self.iam_role_arns, role_name=self.role_name, permission_boundary=self.permission_boundary, puppet_role_name=self.puppet_role_name, puppet_role_path=self.puppet_role_path        
+            puppet_account_id=self.puppet_account_id,
+            account_id=self.account_id,
+            iam_role_arns=self.iam_role_arns,
+            role_name=self.role_name,
+            permission_boundary=self.permission_boundary,
+            puppet_role_name=self.puppet_role_name,
+            puppet_role_path=self.puppet_role_path,
         )
-        
-        self.wire_up_mocks()    
+
+        self.wire_up_mocks()
 
     def test_params_for_results_display(self):
         # setup
         expected_result = {
             "account_id": self.account_id,
-        }        
-    
+        }
+
         # exercise
         actual_result = self.sut.params_for_results_display()
-        
+
         # verify
         self.assertEqual(expected_result, actual_result)
-    
+
     @skip
     def test_run(self):
         # setup
@@ -42,4 +48,3 @@ class BootstrapSpokeAsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         # verify
         raise NotImplementedError()
-    

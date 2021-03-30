@@ -59,6 +59,9 @@ export MANIFEST
 unit-tests: ## runs unit tests for the project
 	poetry run nose2 --pretty-assert --verbose --coverage-report html --coverage-report term -C
 
+unit-test-watcher: ## runs unit tests for the project
+	find servicecatalog_puppet -name '*.py' | entr poetry run nose2 --pretty-assert --verbose
+
 test-factory-install:
 	@echo "Installing factory"
 	aws cloudformation create-stack \

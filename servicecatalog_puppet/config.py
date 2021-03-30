@@ -1,7 +1,6 @@
 import functools
 import os
 
-import pkg_resources
 import yaml
 from betterboto import client as betterboto_client
 from jinja2 import Environment, FileSystemLoader
