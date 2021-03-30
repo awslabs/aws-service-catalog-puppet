@@ -8,7 +8,7 @@ import os
 import re
 import shutil
 
-from servicecatalog_puppet import core, config, constants
+from servicecatalog_puppet import core, config
 
 
 @click.group()
