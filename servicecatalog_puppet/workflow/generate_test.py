@@ -1,6 +1,8 @@
 from unittest import skip
 from unittest.mock import MagicMock
 
+from cfn_tools import load_yaml, dump_yaml
+
 from . import tasks_unit_tests_helper
 
 
@@ -8,7 +10,7 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     manifest_file_path = "manifest_file_path"
     region = "region"
-    sharing_policies = dict(accounts=["01234567890",], organizations=["ou-0932u0jsdj"],)
+    sharing_policies = dict(accounts=["01234567890", ], organizations=["ou-0932u0jsdj"], )
     cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
@@ -50,9 +52,69 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.sut.run()
 
         # verify
-        mocked_output().open().__enter__().write.assert_called_with(
-            '# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.\n# SPDX-License-Identifier: Apache-2.0\nAWSTemplateFormatVersion: \'2010-09-09\'\nDescription: |\n  Shares for puppet\n  {"version": "0.101.3", "framework": "servicecatalog-puppet", "role": "policies"}\n\nConditions:\n  NoOpCondition: !Equals [ true, false]\n  RunningInHomeRegion: !Equals [ !Ref "AWS::Region", region ]\n\nResources:\n  NoOpResource:\n    Type: AWS::S3::Bucket\n    Description: Resource to ensure that template contains a resource even when there are no shares\n    Condition: NoOpCondition\n\n\n  \n  TopicPolicies:\n    Type: AWS::SNS::TopicPolicy\n    Properties:\n      Topics:\n        - !Sub "arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:servicecatalog-puppet-cloudformation-regional-events"\n      PolicyDocument:\n        Id: MyTopicPolicy\n        Version: \'2012-10-17\'\n        Statement: \n          - Sid: "ShareFor01234567890"\n            Effect: Allow\n            Principal:\n              AWS: !Sub "arn:${AWS::Partition}:iam::01234567890:root"\n            Action: sns:Publish\n            Resource: "*"\n        \n          - Sid: OrganizationalShareForou-0932u0jsdj\n            Action:\n              - sns:Publish\n            Effect: "Allow"\n            Resource: "*"\n            Principal: "*"\n            Condition:\n              StringEquals:\n                aws:PrincipalOrgID: ou-0932u0jsdj\n  \n\n  \n  BucketPolicies:\n    Type: AWS::S3::BucketPolicy\n    Properties:\n      Bucket: !Sub "sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}"\n      PolicyDocument:\n        Statement:\n          - Sid: ShareFor01234567890\n            Action:\n              - "s3:Get*"\n              - "s3:List*"\n            Effect: "Allow"\n            Resource:\n              - !Sub "arn:${AWS::Partition}:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"\n              - !Sub "arn:${AWS::Partition}:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}"\n            Principal:\n              AWS: !Sub "arn:${AWS::Partition}:iam::01234567890:root"\n        \n          - Sid: OrganizationalShareForou-0932u0jsdj\n            Action:\n              - "s3:Get*"\n              - "s3:List*"\n            Effect: "Allow"\n            Resource:\n              - !Sub "arn:${AWS::Partition}:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}/*"\n              - !Sub "arn:${AWS::Partition}:s3:::sc-factory-artifacts-${AWS::AccountId}-${AWS::Region}"\n            Principal: "*"\n            Condition:\n              StringEquals:\n                aws:PrincipalOrgID: ou-0932u0jsdj\n  \n\n  \n  \n  \n  EventBusPolicy01234567890:\n    Type: AWS::Events::EventBusPolicy\n    Condition: RunningInHomeRegion\n    Properties:\n      EventBusName: "servicecatalog-puppet-event-bus"\n      Action: "events:PutEvents"\n      Principal: "01234567890"\n      StatementId: "AllowSpokesAccounts01234567890"\n  \n  \n\n  \n  EventBusPolicyou0932u0jsdj:\n    Type: AWS::Events::EventBusPolicy\n    Condition: RunningInHomeRegion\n    Properties:\n      EventBusName: "servicecatalog-puppet-event-bus"\n      Action: "events:PutEvents"\n      Principal: "*"\n      StatementId: "AllowSpokesOrgsou-0932u0jsdj"\n      Condition:\n        Type: "StringEquals"\n        Key: "aws:PrincipalOrgID"\n        Value: "ou-0932u0jsdj"\n  \n  '
+        template = load_yaml(mocked_output().open().__enter__().write.mock_calls[0][1][0])
+        found = 0
+        statements = template.get("Resources").get("TopicPolicies").get("Properties").get("PolicyDocument").get(
+            "Statement", [])
+        for statement in statements:
+            if statement.get("Sid") == "ShareFor01234567890":
+                found += 1
+                self.assertEqual("Fn::Sub: arn:${AWS::Partition}:iam::01234567890:root",
+                                 dump_yaml(statement.get("Principal").get("AWS")).strip())
+
+            if statement.get("Sid") == "OrganizationalShareForou-0932u0jsdj":
+                found += 1
+                self.assertEqual("ou-0932u0jsdj",
+                                 statement.get("Condition").get("StringEquals").get("aws:PrincipalOrgID"))
+
+        statements = template.get("Resources").get("BucketPolicies").get("Properties").get("PolicyDocument").get(
+            "Statement", [])
+        for statement in statements:
+            if statement.get("Sid") == "ShareFor01234567890":
+                found += 1
+                self.assertEqual("Fn::Sub: arn:${AWS::Partition}:iam::01234567890:root",
+                                 dump_yaml(statement.get("Principal").get("AWS")).strip())
+
+            if statement.get("Sid") == "OrganizationalShareForou-0932u0jsdj":
+                found += 1
+                self.assertEqual("ou-0932u0jsdj",
+                                 statement.get("Condition").get("StringEquals").get("aws:PrincipalOrgID"))
+
+        self.assertDictEqual(
+            dict(
+                Type="AWS::Events::EventBusPolicy",
+                Condition="RunningInHomeRegion",
+                Properties=dict(
+                    EventBusName="servicecatalog-puppet-event-bus",
+                    Action="events:PutEvents",
+                    Principal="01234567890",
+                    StatementId="AllowSpokesAccounts01234567890",
+
+                )
+            ),
+            template.get("Resources").get(f"EventBusPolicy01234567890")
         )
+
+        self.assertDictEqual(
+            dict(
+                Type="AWS::Events::EventBusPolicy",
+                Condition="RunningInHomeRegion",
+                Properties=dict(
+                    EventBusName="servicecatalog-puppet-event-bus",
+                    Action="events:PutEvents",
+                    Principal="*",
+                    StatementId="AllowSpokesOrgsou-0932u0jsdj",
+                    Condition=dict(
+                        Type="StringEquals",
+                        Key="aws:PrincipalOrgID",
+                        Value="ou-0932u0jsdj",
+                    )
+                )
+            ),
+            template.get("Resources").get(f"EventBusPolicyou0932u0jsdj")
+        )
+
+        self.assertEqual(4, found)
 
 
 class EnsureEventBridgeEventBusTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
