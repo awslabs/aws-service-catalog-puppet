@@ -9,9 +9,11 @@ class DeleteCloudFormationStackTask(tasks.PuppetTask):
     stack_name = luigi.Parameter()
 
     def params_for_results_display(self):
-        return dict(
-            stack_name=self.stack_name, account_id=self.account_id, region=self.region
-        )
+        return {
+            "stack_name": self.stack_name,
+            "account_id": self.account_id,
+            "region": self.region,
+        }
 
     def api_calls_used(self):
         return {
