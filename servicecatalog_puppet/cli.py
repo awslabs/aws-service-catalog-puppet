@@ -4,7 +4,7 @@
 import click
 import yaml
 import glob
-import os
+import os, sys
 import re
 import shutil
 
@@ -543,7 +543,12 @@ def wait_for_code_build_in(iam_role_arns):
 def wait_for_parameterised_run_to_complete(on_complete_url):
     click.echo("Starting to wait for parameterised run to complete")
     succeeded = core.wait_for_parameterised_run_to_complete(on_complete_url)
-    click.echo(f"Finished: {'SUCCESS' if succeeded else 'FAILED'}")
+    if succeeded:
+        click.echo(f"Finished: 'SUCCESS'")
+        sys.exit(0)
+    else:
+        click.echo(f"Finished: 'FAILED'")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
