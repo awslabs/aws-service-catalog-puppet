@@ -24,3 +24,5 @@ reports
 *.log
 exploded_results/
 parameters.yaml
+htmlcov/
+coverage.xml

@@ -1,22 +1,24 @@
-from . import tasks_unit_tests
+from unittest import skip
+from . import tasks_unit_tests_helper
 
 
-class LaunchSectionTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
-    puppet_account_id = "01234567890"
-    manifest_file_path = "tcvyuiho"
-
+class SectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
+    manifest_file_path = "manifest_file_path"
+    puppet_account_id = "puppet_account_id"
     should_use_sns = False
-    should_use_product_plans = True
-    include_expanded_from = True
-    single_account = None
+    should_use_product_plans = False
+    include_expanded_from = False
+    single_account = "single_account"
     is_dry_run = False
-    execution_mode = "hub"
-    cache_invalidator = "foo"
+    execution_mode = "execution_mode"
+    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
-        from . import launch
+        from servicecatalog_puppet.workflow import manifest
 
-        self.sut = launch.LaunchSectionTask(
+        self.module = manifest
+
+        self.sut = self.module.SectionTask(
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
             should_use_sns=self.should_use_sns,
@@ -28,10 +30,18 @@ class LaunchSectionTaskTest(tasks_unit_tests.PuppetTaskUnitTest):
             cache_invalidator=self.cache_invalidator,
         )
 
+        self.wire_up_mocks()
+
     def test_params_for_results_display(self):
+        # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
             "cache_invalidator": self.cache_invalidator,
         }
-        self.assertEqual(expected_result, self.sut.params_for_results_display())
+
+        # exercise
+        actual_result = self.sut.params_for_results_display()
+
+        # verify
+        self.assertEqual(expected_result, actual_result)

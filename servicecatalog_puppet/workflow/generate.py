@@ -11,7 +11,6 @@ from servicecatalog_puppet.workflow import (
 )
 from servicecatalog_puppet.workflow import general as general_tasks
 from servicecatalog_puppet.workflow import tasks
-from betterboto import client as betterboto_client
 
 
 class GeneratePoliciesTemplate(tasks.PuppetTask):
@@ -65,12 +64,7 @@ class EnsureEventBridgeEventBusTask(tasks.PuppetTask):
         }
 
     def run(self):
-        with betterboto_client.CrossAccountClientContextManager(
-            "events",
-            config.get_puppet_role_arn(self.puppet_account_id),
-            f"events-{self.puppet_account_id}-{self.region}",
-            region_name=self.region,
-        ) as events:
+        with self.hub_regional_client("events") as events:
             created = False
             try:
                 events.describe_event_bus(Name=constants.EVENT_BUS_NAME)
@@ -116,12 +110,7 @@ class GeneratePolicies(tasks.PuppetTask):
 
     def run(self):
         template = self.read_from_input("template")
-        with betterboto_client.CrossAccountClientContextManager(
-            "cloudformation",
-            config.get_puppet_role_arn(self.puppet_account_id),
-            f"cf-{self.puppet_account_id}-{self.region}",
-            region_name=self.region,
-        ) as cloudformation:
+        with self.hub_regional_client("cloudformation") as cloudformation:
             self.info(template)
             cloudformation.create_or_update(
                 ShouldUseChangeSets=False,

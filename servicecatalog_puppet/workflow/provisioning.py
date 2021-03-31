@@ -3,7 +3,6 @@ import os
 from functools import lru_cache
 
 import luigi
-from betterboto import client as betterboto_client
 from servicecatalog_puppet.workflow import generate as generate_tasks
 
 from servicecatalog_puppet import manifest_utils_for_launches
@@ -58,12 +57,7 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
         ]
 
     def run(self):
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            config.get_puppet_role_arn(self.account_id),
-            f"{self.account_id}-{self.region}-sc",
-            region_name=self.region,
-        ) as service_catalog:
+        with self.spoke_regional_client("servicecatalog") as service_catalog:
             self.info(
                 f"getting path for {self.product_id} of portfolio: {self.portfolio}"
             )
@@ -216,13 +210,7 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
         all_params = self.get_all_params()
 
-        role = config.get_puppet_role_arn(self.account_id)
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            role,
-            f"sc-{self.region}-{self.account_id}",
-            region_name=self.region,
-        ) as service_catalog:
+        with self.spoke_regional_client("servicecatalog") as service_catalog:
             path_id = aws.get_path_for_product(
                 service_catalog, self.product_id, self.portfolio
             )
@@ -241,16 +229,11 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 f"pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}"
             )
 
-            with betterboto_client.CrossAccountClientContextManager(
-                "cloudformation",
-                role,
-                f"cfn-{self.region}-{self.account_id}",
-                region_name=self.region,
-            ) as cloudformation:
+            with self.spoke_regional_client("cloudformation") as cloudformation:
                 need_to_provision = True
 
                 self.info(
-                    f"running as {role},checking {self.product_id} {self.version_id} {path_id} in {self.account_id} {self.region}"
+                    f"running ,checking {self.product_id} {self.version_id} {path_id} in {self.account_id} {self.region}"
                 )
 
                 with self.input().get("provisioning_artifact_parameters").open(
@@ -360,11 +343,8 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     self.info(
                         f"Running in execution mode: {self.execution}, checking for SSM outputs"
                     )
-                    with betterboto_client.CrossAccountClientContextManager(
-                        "cloudformation",
-                        role,
-                        f"cfn-{self.region}-{self.account_id}",
-                        region_name=self.region,
+                    with self.spoke_regional_client(
+                        "cloudformation"
                     ) as spoke_cloudformation:
                         stack_details = aws.get_stack_output_for(
                             spoke_cloudformation,
@@ -375,7 +355,7 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         self.info(
                             f"writing SSM Param: {ssm_param_output.get('stack_output')}"
                         )
-                        with betterboto_client.ClientContextManager("ssm") as ssm:
+                        with self.hub_client("ssm") as ssm:
                             found_match = False
                             # TODO push into another task
                             for output in stack_details.get("Outputs", []):
@@ -451,14 +431,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
         self.info(f"starting deploy try {self.try_count} of {self.retry_count}")
 
         all_params = self.get_all_params()
-
-        role = config.get_puppet_role_arn(self.account_id)
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            role,
-            f"sc-{self.region}-{self.account_id}",
-            region_name=self.region,
-        ) as service_catalog:
+        with self.spoke_regional_client("servicecatalog") as service_catalog:
             self.info(f"looking for previous failures")
             path_id = aws.get_path_for_product(
                 service_catalog, self.product_id, self.portfolio
@@ -496,14 +469,9 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                     provisioning_artifact_id, service_catalog
                 )
 
-                with betterboto_client.CrossAccountClientContextManager(
-                    "cloudformation",
-                    role,
-                    f"cfn-{self.region}-{self.account_id}",
-                    region_name=self.region,
-                ) as cloudformation:
+                with self.spoke_regional_client("cloudformation") as cloudformation:
                     self.info(
-                        f"running as {role},checking {self.product_id} {self.version_id} {path_id} in {self.account_id} {self.region}"
+                        f"checking {self.product_id} {self.version_id} {path_id} in {self.account_id} {self.region}"
                     )
 
                     with self.input().get("provisioning_artifact_parameters").open(
@@ -643,13 +611,7 @@ class TerminateProductTask(ProvisioningTask):
     def run(self):
         self.info(f"starting terminate try {self.try_count} of {self.retry_count}")
 
-        role = config.get_puppet_role_arn(self.account_id)
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            role,
-            f"sc-{self.region}-{self.account_id}",
-            region_name=self.region,
-        ) as service_catalog:
+        with self.spoke_regional_client("servicecatalog") as service_catalog:
             self.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures"
             )
@@ -666,7 +628,7 @@ class TerminateProductTask(ProvisioningTask):
                 self.info(
                     f"[{self.launch_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
                 )
-                with betterboto_client.ClientContextManager("ssm") as ssm:
+                with self.hub_client("ssm") as ssm:
                     try:
                         # todo push into another task
                         ssm.delete_parameter(Name=param_name,)
@@ -753,13 +715,7 @@ class TerminateProductDryRunTask(ProvisioningTask):
             f"starting dry run terminate try {self.try_count} of {self.retry_count}"
         )
 
-        role = config.get_puppet_role_arn(self.account_id)
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            role,
-            f"sc-{self.region}-{self.account_id}",
-            region_name=self.region,
-        ) as service_catalog:
+        with self.spoke_regional_client("servicecatalog") as service_catalog:
             self.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures"
             )
@@ -818,12 +774,7 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
     def run(self):
         self.info(f"starting ResetProvisionedProductOwnerTask")
 
-        with betterboto_client.CrossAccountClientContextManager(
-            "servicecatalog",
-            config.get_puppet_role_arn(self.account_id),
-            f"sc-{self.region}-{self.account_id}",
-            region_name=self.region,
-        ) as service_catalog:
+        with self.spoke_regional_client("servicecatalog") as service_catalog:
             self.info(f"Checking if existing provisioned product exists")
             all_results = service_catalog.scan_provisioned_products_single_page(
                 AccessLevelFilter={"Key": "Account", "Value": "self"},
@@ -862,11 +813,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
         }
 
     def run(self):
-        with betterboto_client.CrossAccountClientContextManager(
-            "s3",
-            config.get_puppet_role_arn(self.puppet_account_id),
-            f"s3-{self.puppet_account_id}",
-        ) as s3:
+        with self.hub_client("s3") as s3:
             bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
             key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
             s3.put_object(
@@ -877,14 +824,10 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
                 Params={"Bucket": bucket, "Key": key},
                 ExpiresIn=60 * 60 * 24,
             )
-        with betterboto_client.ClientContextManager("ssm") as ssm:
+        with self.hub_client("ssm") as ssm:
             response = ssm.get_parameter(Name="service-catalog-puppet-version")
             version = response.get("Parameter").get("Value")
-        with betterboto_client.CrossAccountClientContextManager(
-            "codebuild",
-            config.get_puppet_role_arn(self.account_id),
-            f"codebuild-{self.account_id}",
-        ) as codebuild:
+        with self.spoke_client("codebuild") as codebuild:
             response = codebuild.start_build(
                 projectName=constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME,
                 environmentVariablesOverride=[
