@@ -55,7 +55,7 @@ def test_get_config_with_a_default_region(mocked_betterboto_client):
     assert {"region_name": fake_home_region} == kwargs
 
 
-with such.A('get_config') as it: #TODO
+with such.A('get_config') as it:
     @it.should('work')
     @params(
         ("get_regions", "regions", ["eu-west-1", "eu-west-3",]),
@@ -85,39 +85,6 @@ with such.A('get_config') as it: #TODO
             assert args == ("", default_region,)
             assert kwargs == {}
     it.createTests(globals())
-
-#
-
-# @pytest.mark.parametrize(
-#     "method_to_call,key,expected_result",
-#     [
-#         ("get_regions", "regions", ["eu-west-1", "eu-west-3",]),
-#         ("get_should_use_sns", "should_collect_cloudformation_events", True),
-#         ("get_should_use_eventbridge", "should_forward_events_to_eventbridge", True),
-#         (
-#             "get_should_forward_failures_to_opscenter",
-#             "should_forward_failures_to_opscenter",
-#             True,
-#         ),
-#         ("get_should_use_product_plans", "should_use_product_plans", True),
-#     ],
-# )
-# def test_get_some_config(method_to_call, key, expected_result):
-#     # setup
-#     from servicecatalog_puppet import config as sut
-#     default_region = "eu-west-10"
-#     mocked_get_config = mocker.patch.object(sut, "get_config")
-#     mocked_get_config.return_value = {key: expected_result}
-#
-#     # exercise
-#     f = getattr(sut, method_to_call)
-#     actual_result = f("", default_region)
-#
-#     # verify
-#     args, kwargs = mocked_get_config.call_args
-#     assert expected_result == actual_result
-#     assert args == ("", default_region,)
-#     assert kwargs == {}
 
 
 @mocker.patch("servicecatalog_puppet.config.betterboto_client.CrossAccountClientContextManager")
