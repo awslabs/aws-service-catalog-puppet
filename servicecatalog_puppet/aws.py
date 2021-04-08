@@ -53,11 +53,11 @@ def terminate_if_status_is_not_available(
     for r in response.get("ProvisionedProducts", []):
         if r.get("Name") == provisioned_product_name:
             current_status = r.get("Status")
+            logger.info(f"{prefix} :: current status is {current_status}")
             if current_status in ["AVAILABLE", "TAINTED"]:
                 provisioned_product_id = r.get("Id")
                 provisioning_artifact_id = r.get("ProvisioningArtifactId")
             elif current_status in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
-                logger.info(f"{prefix} :: current status is {current_status}")
                 while True:
                     status = (
                         service_catalog.describe_provisioned_product(Id=r.get("Id"))
@@ -80,7 +80,7 @@ def terminate_if_status_is_not_available(
                     f"{prefix} :: terminating as its status is {r.get('Status')}"
                 )
                 terminate_provisioned_product(prefix, service_catalog, r.get("Id"))
-    logger.info(f"{prefix} :: Finished waiting for termination")
+    logger.info(f"{prefix} :: Finished terminate_if_status_is_not_available")
     return provisioned_product_id, provisioning_artifact_id
 
 
