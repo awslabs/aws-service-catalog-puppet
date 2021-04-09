@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from functools import lru_cache
 
 import luigi
@@ -64,13 +65,27 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
             path_id = aws.get_path_for_product(
                 service_catalog, self.product_id, self.portfolio
             )
-            provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
-                ProductId=self.product_id,
-                ProvisioningArtifactId=self.version_id,
-                PathId=path_id,
-            ).get(
-                "ProvisioningArtifactParameters", []
-            )
+            provisioning_artifact_parameters = None
+            retries = 3
+            while retries > 0:
+                try:
+                    provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
+                        ProductId=self.product_id,
+                        ProvisioningArtifactId=self.version_id,
+                        PathId=path_id,
+                    ).get(
+                        "ProvisioningArtifactParameters", []
+                    )
+                    retries = 0
+                    break
+                except service_catalog.exceptions.ClientError as ex:
+                    if "S3 error: Access Denied" in str(ex):
+                        self.info("Swallowing S3 error: Access Denied")
+                    else:
+                        raise ex
+                    time.sleep(3)
+                    retries -= 1
+
             self.write_output(
                 provisioning_artifact_parameters
                 if isinstance(provisioning_artifact_parameters, list)
