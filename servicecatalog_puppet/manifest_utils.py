@@ -160,6 +160,28 @@ def expand_manifest(manifest, client):
     return new_manifest
 
 
+def rewrite_depends_on(manifest):
+    sections = [
+        (constants.LAUNCH, constants.LAUNCHES),
+        (constants.SPOKE_LOCAL_PORTFOLIO, constants.SPOKE_LOCAL_PORTFOLIOS),
+        (constants.LAMBDA_INVOCATION, constants.LAMBDA_INVOCATIONS),
+        (constants.ACTION, constants.ACTIONS),
+    ]
+    for section_item_name, section_name in sections:
+        for item, details in manifest.get(section_name, {}).items():
+            for i in range (len(details.get("depends_on", []))):
+                if isinstance(details["depends_on"][i], str):
+                    manifest[section_name][item]["depends_on"][i] = dict(
+                        name=details["depends_on"][i],
+                        type='launch',
+                    )
+                if isinstance(details["depends_on"][i], dict):
+                    if details["depends_on"][i].get(constants.AFFINITY) is None:
+                        details["depends_on"][i][constants.AFFINITY] = details["depends_on"][i]['type']
+        print(manifest.get(section_name))
+    return manifest
+
+
 def expand_path(account, client):
     ou = client.convert_path_to_ou(account.get("ou"))
     account["ou"] = ou

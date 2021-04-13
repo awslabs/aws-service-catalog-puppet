@@ -1,6 +1,5 @@
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
-from servicecatalog_puppet.workflow import generate as generate_tasks
 from servicecatalog_puppet import constants
 
 

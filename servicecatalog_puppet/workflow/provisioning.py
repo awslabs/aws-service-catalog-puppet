@@ -1138,10 +1138,12 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             )
 
         for dependency in launch.get("depends_on", []):
-            if isinstance(dependency, str):
+            dependency_name = dependency.get("name")
+            dependency_type = dependency.get("type")
+            if dependency_type == constants.LAUNCH:
                 dependencies.append(
                     self.__class__(
-                        launch_name=dependency,
+                        launch_name=dependency_name,
                         manifest_file_path=self.manifest_file_path,
                         puppet_account_id=self.puppet_account_id,
                         should_use_product_plans=self.should_use_product_plans,
@@ -1151,37 +1153,22 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         cache_invalidator=self.cache_invalidator,
                     )
                 )
-            else:
-                dependency_type = dependency.get("type", "launch")
-                if dependency_type == "launch":
-                    dependencies.append(
-                        self.__class__(
-                            launch_name=dependency,
-                            manifest_file_path=self.manifest_file_path,
-                            puppet_account_id=self.puppet_account_id,
-                            should_use_product_plans=self.should_use_product_plans,
-                            include_expanded_from=self.include_expanded_from,
-                            single_account=self.single_account,
-                            execution_mode=self.execution_mode,
-                            cache_invalidator=self.cache_invalidator,
-                        )
-                    )
-                elif dependency_type == "lambda-invocation":
-                    from servicecatalog_puppet.workflow.lambda_invocations import (
-                        LambdaInvocationTask,
-                    )
+            elif dependency_type == constants.LAMBDA_INVOCATION:
+                from servicecatalog_puppet.workflow.lambda_invocations import (
+                    LambdaInvocationTask,
+                )
 
-                    dependencies.append(
-                        LambdaInvocationTask(
-                            lambda_invocation_name=dependency.get("name"),
-                            manifest_file_path=self.manifest_file_path,
-                            puppet_account_id=self.puppet_account_id,
-                            should_use_product_plans=self.should_use_product_plans,
-                            include_expanded_from=self.include_expanded_from,
-                            single_account=self.single_account,
-                            cache_invalidator=self.cache_invalidator,
-                        )
+                dependencies.append(
+                    LambdaInvocationTask(
+                        lambda_invocation_name=dependency_name,
+                        manifest_file_path=self.manifest_file_path,
+                        puppet_account_id=self.puppet_account_id,
+                        should_use_product_plans=self.should_use_product_plans,
+                        include_expanded_from=self.include_expanded_from,
+                        single_account=self.single_account,
+                        cache_invalidator=self.cache_invalidator,
                     )
+                )
 
         return requirements
 
@@ -1267,19 +1254,23 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
     def requires(self):
         self.info("requires")
-        dependencies = [
-            LaunchTask(
-                launch_name=dependency,
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                should_use_product_plans=self.should_use_product_plans,
-                include_expanded_from=self.include_expanded_from,
-                single_account=self.single_account,
-                execution_mode="hub",
-                cache_invalidator=self.cache_invalidator,
-            )
-            for dependency in self.depends_on
-        ]
+        dependencies = []
+        for dependency in self.depends_on:
+            if dependency.get("type") == constants.LAUNCH:
+                dependencies.append(
+                    LaunchTask(
+                        launch_name=dependency.get("name"),
+                        manifest_file_path=self.manifest_file_path,
+                        puppet_account_id=self.puppet_account_id,
+                        should_use_product_plans=self.should_use_product_plans,
+                        include_expanded_from=self.include_expanded_from,
+                        single_account=self.single_account,
+                        execution_mode="hub",
+                        cache_invalidator=self.cache_invalidator,
+                    )
+                )
+            else:
+                raise Exception(f"dependency of {dependency.get('type')} is not supported for spoke-local-portfolios")
         self.info(f"dependencies are {dependencies}")
 
         task_defs = self.get_task_defs()

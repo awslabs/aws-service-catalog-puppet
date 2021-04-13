@@ -30,6 +30,8 @@ LAMBDA_INVOCATION = "lambda-invocation"
 SPOKE_LOCAL_PORTFOLIO = "spoke-local-portfolio"
 ACTION = "action"
 
+AFFINITY = "affinity"
+
 RESULTS_DIRECTORY = "results"
 
 NO_CHANGE = "NO_CHANGE"

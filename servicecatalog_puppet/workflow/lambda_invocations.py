@@ -164,7 +164,8 @@ class LambdaInvocationDependenciesWrapperTask(
         )
 
         dependencies = list()
-        for dependency in lambda_invocation.get("depends_on", []):
+        for dependency in lambda_invocation.get("depends_on", []): #TODO fix - dependencies will always be a dict now
+            raise Exception("FIX ME")
             if isinstance(dependency, str):
                 dependencies.append(
                     LaunchTask(

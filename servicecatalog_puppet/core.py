@@ -551,15 +551,20 @@ def expand(f, single_account, subset=None):
 
         click.echo("Filtered")
 
+    new_manifest = manifest_utils.rewrite_depends_on(new_manifest)
+
     if subset:
         click.echo(f"Filtering for subset: {subset}")
         new_manifest = manifest_utils.isolate(
             manifest_utils.Manifest(new_manifest), subset
         )
-        new_manifest = json.loads(json.dumps(new_manifest))
+
+    new_manifest = json.loads(json.dumps(new_manifest))
 
     if new_manifest.get(constants.LAMBDA_INVOCATIONS) is None:
         new_manifest[constants.LAMBDA_INVOCATIONS] = dict()
+
+
 
     new_name = f.name.replace(".yaml", "-expanded.yaml")
     logger.info("Writing new manifest: {}".format(new_name))
