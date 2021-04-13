@@ -23,16 +23,108 @@ class ProvisioningTask(tasks.PuppetTask):
     manifest_file_path = luigi.Parameter()
 
 
+class ListLaunchPathsTask(ProvisioningTask):
+    puppet_account_id = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    product_id = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    cache_invalidator = luigi.Parameter()
+
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
+        ]
+
+    def params_for_results_display(self):
+        return {
+            "manifest_file_path": self.manifest_file_path,
+            "puppet_account_id": self.puppet_account_id,
+            "portfolio": self.portfolio,
+            "product_id": self.product_id,
+            "account_id": self.account_id,
+            "region": self.region,
+        }
+
+    def run(self):
+        with self.hub_regional_client("servicecatalog") as service_catalog:
+            self.info(f"Getting path for product {self.product_id}")
+            response = service_catalog.list_launch_paths(ProductId=self.product_id)
+            if len(response.get("LaunchPathSummaries")) == 1:
+                path_id = response.get("LaunchPathSummaries")[0].get("Id")
+                self.info(
+                    f"There is only one path: {path_id} for product: {self.product_id}"
+                )
+                self.write_output(response.get("LaunchPathSummaries")[0])
+            else:
+                for launch_path_summary in response.get("LaunchPathSummaries", []):
+                    name = launch_path_summary.get("Name")
+                    if name == self.portfolio:
+                        path_id = launch_path_summary.get("Id")
+                        self.info(f"Got path: {path_id} for product: {self.product_id}")
+                        self.write_output(launch_path_summary)
+        raise Exception("Could not find a launch path")
+
+
+class GetPathForProductTask(ProvisioningTask):  # TODO delete me
+    puppet_account_id = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+    region = luigi.Parameter()
+
+    cache_invalidator = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "manifest_file_path": self.manifest_file_path,
+            "puppet_account_id": self.puppet_account_id,
+            "portfolio": self.portfolio,
+            "product": self.product,
+            "version": self.version,
+            "region": self.region,
+        }
+
+    def requires(self):
+        return dict(
+            details=portfoliomanagement_tasks.GetVersionDetailsByNames(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                portfolio=self.portfolio,
+                product=self.product,
+                version=self.version,
+                account_id=self.puppet_account_id,
+                region=self.region,
+                cache_invalidator=self.cache_invalidator,
+            )
+        )
+
+    def run(self):
+        detail = self.load_from_input("details")
+        product_details = detail.get("product_details")
+        product_id = product_details.get("ProductId")
+        # t = yield ListLaunchPathsTask(
+        #     manifest_file_path=self.manifest_file_path,
+        #     puppet_account_id=self.puppet_account_id,
+        #     portfolio=self.portfolio,
+        #     product_id=product_id,
+        #     account_id=self.puppet_account_id,
+        #     region=self.region,
+        #     cache_invalidator=self.cache_invalidator,
+        # )
+        # self.write_output(json.loads(t.open("r").read()))
+        self.write_output({})
+
+
 class ProvisioningArtifactParametersTask(ProvisioningTask):
     puppet_account_id = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     product = luigi.Parameter()
-    product_id = luigi.Parameter()
     version = luigi.Parameter()
-    version_id = luigi.Parameter()
-    account_id = luigi.Parameter()
     region = luigi.Parameter()
+
+    cache_invalidator = luigi.Parameter()
 
     @property
     def retry_count(self):
@@ -42,37 +134,57 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
         return {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "product": self.product,
-            "product_id": self.product_id,
             "version": self.version,
-            "version_id": self.version_id,
-            "account_id": self.account_id,
             "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
         return [
-            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioning_parameters_{self.account_id}_{self.region}",
+            f"servicecatalog.list_launch_paths_{self.puppet_account_id}_{self.region}",
+            f"servicecatalog.describe_provisioning_parameters_{self.puppet_account_id}_{self.region}",
         ]
 
+    def requires(self):
+        return dict(
+            details=portfoliomanagement_tasks.GetVersionDetailsByNames(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                portfolio=self.portfolio,
+                product=self.product,
+                version=self.version,
+                account_id=self.puppet_account_id,
+                region=self.region,
+                cache_invalidator=self.cache_invalidator,
+            ),
+            associations=portfoliomanagement_tasks.CreateAssociationsInPythonForPortfolioTask(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                account_id=self.puppet_account_id,
+                region=self.region,
+                portfolio=self.portfolio,
+                cache_invalidator=self.cache_invalidator,
+            ),
+        )
+
     def run(self):
-        with self.spoke_regional_client("servicecatalog") as service_catalog:
-            self.info(
-                f"getting path for {self.product_id} of portfolio: {self.portfolio}"
-            )
-            path_id = aws.get_path_for_product(
-                service_catalog, self.product_id, self.portfolio
-            )
+        with self.hub_regional_client("servicecatalog") as service_catalog:
+            self.info(f"getting path for {self.product} of portfolio: {self.portfolio}")
+            # path_id = aws.get_path_for_product(
+            #     service_catalog, self.product_id, self.portfolio
+            # )
+            details = self.load_from_input("details")
+            product_id = details.get("product_details").get("ProductId")
+            version_id = details.get("version_details").get("Id")
             provisioning_artifact_parameters = None
             retries = 3
             while retries > 0:
                 try:
                     provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
-                        ProductId=self.product_id,
-                        ProvisioningArtifactId=self.version_id,
-                        PathId=path_id,
+                        ProductId=product_id,
+                        ProvisioningArtifactId=version_id,
+                        PathName=self.portfolio,
                     ).get(
                         "ProvisioningArtifactParameters", []
                     )
@@ -96,11 +208,8 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
 class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     launch_name = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     product = luigi.Parameter()
-    product_id = luigi.Parameter()
     version = luigi.Parameter()
-    version_id = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
 
@@ -133,11 +242,8 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "product": self.product,
-            "product_id": self.product_id,
             "version": self.version,
-            "version_id": self.version_id,
             "execution": self.execution,
             "cache_invalidator": self.cache_invalidator,
         }
@@ -181,19 +287,26 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 portfolio=self.portfolio,
-                portfolio_id=self.portfolio_id,
                 product=self.product,
-                product_id=self.product_id,
                 version=self.version,
-                version_id=self.version_id,
-                account_id=self.account_id,  # TODO switch this to puppet_account_id but need to first ensure there is an association for the puppet user and then resolve CreateAssociationsInPythonForPortfolioTask differences
                 region=self.region,
+                cache_invalidator=self.cache_invalidator,
+            ),
+            "details": portfoliomanagement_tasks.GetVersionDetailsByNames(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                account_id=self.account_id,
+                portfolio=self.portfolio,
+                product=self.product,
+                version=self.version,
+                region=self.region,
+                cache_invalidator=self.cache_invalidator,
             ),
         }
 
     def api_calls_used(self):
         return {
-            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
+            # f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
             f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
             f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
             f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
@@ -212,6 +325,10 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         }
 
     def run(self):
+        details = self.load_from_input("details")
+        product_id = details.get("product_details").get("ProductId")
+        version_id = details.get("version_details").get("Id")
+
         ssm_params = dict()
         task_output = dict(
             **self.params_for_results_display(),
@@ -226,9 +343,7 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         all_params = self.get_all_params()
 
         with self.spoke_regional_client("servicecatalog") as service_catalog:
-            path_id = aws.get_path_for_product(
-                service_catalog, self.product_id, self.portfolio
-            )
+            path_name = self.portfolio
 
             (
                 provisioned_product_id,
@@ -236,7 +351,7 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             ) = aws.terminate_if_status_is_not_available(
                 service_catalog,
                 self.launch_name,
-                self.product_id,
+                product_id,
                 self.account_id,
                 self.region,
             )
@@ -248,7 +363,7 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 need_to_provision = True
 
                 self.info(
-                    f"running ,checking {self.product_id} {self.version_id} {path_id} in {self.account_id} {self.region}"
+                    f"running ,checking {product_id} {version_id} {path_name} in {self.account_id} {self.region}"
                 )
 
                 with self.input().get("provisioning_artifact_parameters").open(
@@ -263,7 +378,7 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         param_name, p.get("DefaultValue")
                     )
 
-                if provisioning_artifact_id == self.version_id:
+                if provisioning_artifact_id == version_id:
                     self.info(f"found previous good provision")
                     if provisioned_product_id:
                         self.info(f"checking params for diffs")
@@ -309,13 +424,14 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
                     if provisioned_product_id:
                         if self.should_use_product_plans:
+                            path_id = "FIXME"  # TODO fix me
                             provisioned_product_id = aws.provision_product_with_plan(
                                 service_catalog,
                                 self.launch_name,
                                 self.account_id,
                                 self.region,
-                                self.product_id,
-                                self.version_id,
+                                product_id,
+                                version_id,
                                 self.puppet_account_id,
                                 path_id,
                                 params_to_use,
@@ -328,10 +444,10 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                                 self.launch_name,
                                 self.account_id,
                                 self.region,
-                                self.product_id,
-                                self.version_id,
+                                product_id,
+                                version_id,
                                 self.puppet_account_id,
-                                path_id,
+                                path_name,
                                 params_to_use,
                                 self.version,
                                 self.execution,
@@ -343,10 +459,10 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                             self.launch_name,
                             self.account_id,
                             self.region,
-                            self.product_id,
-                            self.version_id,
+                            product_id,
+                            version_id,
                             self.puppet_account_id,
-                            path_id,
+                            path_name,
                             params_to_use,
                             self.version,
                             self.should_use_sns,
@@ -443,14 +559,16 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
         ]
 
     def run(self):
+        details = self.load_from_input("details")
+        product_id = details.get("product_details").get("ProductId")
+        version_id = details.get("version_details").get("Id")
+
         self.info(f"starting deploy try {self.try_count} of {self.retry_count}")
 
         all_params = self.get_all_params()
         with self.spoke_regional_client("servicecatalog") as service_catalog:
             self.info(f"looking for previous failures")
-            path_id = aws.get_path_for_product(
-                service_catalog, self.product_id, self.portfolio
-            )
+            path_name = self.portfolio
 
             response = service_catalog.scan_provisioned_products_single_page(
                 AccessLevelFilter={"Key": "Account", "Value": "self"},
@@ -481,12 +599,12 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                     f"pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}"
                 )
                 current_version_details = self.get_current_version(
-                    provisioning_artifact_id, service_catalog
+                    provisioning_artifact_id, service_catalog, product_id
                 )
 
                 with self.spoke_regional_client("cloudformation") as cloudformation:
                     self.info(
-                        f"checking {self.product_id} {self.version_id} {path_id} in {self.account_id} {self.region}"
+                        f"checking {product_id} {version_id} {path_name} in {self.account_id} {self.region}"
                     )
 
                     with self.input().get("provisioning_artifact_parameters").open(
@@ -501,7 +619,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                             param_name, p.get("DefaultValue")
                         )
 
-                    if provisioning_artifact_id == self.version_id:
+                    if provisioning_artifact_id == version_id:
                         self.info(f"found previous good provision")
                         if provisioned_product_id:
                             self.info(f"checking params for diffs")
@@ -547,9 +665,11 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                             notes="Version change",
                         )
 
-    def get_current_version(self, provisioning_artifact_id, service_catalog):
+    def get_current_version(
+        self, provisioning_artifact_id, product_id, service_catalog
+    ):
         return service_catalog.describe_provisioning_artifact(
-            ProvisioningArtifactId=provisioning_artifact_id, ProductId=self.product_id,
+            ProvisioningArtifactId=provisioning_artifact_id, ProductId=product_id,
         ).get("ProvisioningArtifactDetail")
 
     def write_result(
@@ -892,6 +1012,7 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     single_account = luigi.Parameter()
     is_dry_run = luigi.BoolParameter()
     execution_mode = luigi.Parameter()
+    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -901,9 +1022,6 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     def generate_tasks(self, task_defs, manifest):
         self.info("generate_provisions")
         provisions = []
-        accounts_by_id = dict()
-        for a in manifest.get("accounts"):
-            accounts_by_id[a.get("account_id")] = a
 
         for task_def in task_defs:
             if self.single_account == "None" or self.single_account is None:
@@ -965,6 +1083,7 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         return provisions
 
     def requires(self):
+        requirements = dict()
         configuration = manifest_utils_for_launches.get_configuration_from_launch(
             self.manifest, self.launch_name
         )
@@ -977,9 +1096,7 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         launch_tasks_def = self.manifest.get_task_defs_from_details(
             self.puppet_account_id, False, self.launch_name, configuration, "launches"
         )
-        requirements = dict(
-            launches=self.generate_tasks(launch_tasks_def, self.manifest)
-        )
+        requirements["launches"] = self.generate_tasks(launch_tasks_def, self.manifest)
         return requirements
 
     def run(self):
@@ -1012,8 +1129,6 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         for a in manifest.get("accounts"):
             accounts_by_id[a.get("account_id")] = a
 
-        version_details = self.input().get("version_details")
-
         for task_def in task_defs:
             if self.single_account == "None" or self.single_account is None:
                 pass
@@ -1025,36 +1140,6 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             del task_def["depends_on"]
             task_def["is_dry_run"] = self.is_dry_run
 
-            puppet_account_id = task_def.get("puppet_account_id")
-            portfolio = task_def.get("portfolio")
-            product = task_def.get("product")
-            version = task_def.get("version")
-            account_id = task_def.get("account_id")
-            region = task_def.get("region")
-
-            d = json.loads(
-                version_details[
-                    "_".join(
-                        [
-                            str(puppet_account_id),
-                            portfolio,
-                            product,
-                            version,
-                            str(account_id),
-                            region,
-                        ]
-                    )
-                ]
-                .open("r")
-                .read()
-            )
-
-            version_id = d.get("version_details").get("version_id")
-
-            product_id = d.get("product_details").get("product_id")
-
-            portfolio_id = d.get("portfolio_details").get("portfolio_id")
-
             if task_status == constants.PROVISIONED:
                 provisioning_parameters = dict()
 
@@ -1063,9 +1148,6 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
                 provisioning_parameters.update(
                     dict(
-                        version_id=version_id,
-                        product_id=product_id,
-                        portfolio_id=portfolio_id,
                         cache_invalidator=self.cache_invalidator,
                         manifest_file_path=self.manifest_file_path,
                     )
@@ -1085,9 +1167,6 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
                     terminating_parameters.update(
                         dict(
-                            version_id=version_id,
-                            product_id=product_id,
-                            portfolio_id=portfolio_id,
                             cache_invalidator=self.cache_invalidator,
                             manifest_file_path=self.manifest_file_path,
                         )
@@ -1110,18 +1189,17 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             raise Exception(self.launch_name)
 
         dependencies = list()
-        version_details = dict()
-        requirements = dict(
-            dependencies=dependencies,
-            version_details=version_details,
-            generate_shares=generate_tasks.GenerateSharesTask(
+
+        requirements = dict(dependencies=dependencies,)
+
+        if not self.is_dry_run:
+            requirements["generate_shares"] = generate_tasks.GenerateSharesTask(
                 puppet_account_id=self.puppet_account_id,
                 manifest_file_path=self.manifest_file_path,
                 should_use_sns=self.should_use_sns,
                 section=constants.LAUNCHES,
                 cache_invalidator=self.cache_invalidator,
-            ),
-        )
+            )
 
         for dependency in launch.get("depends_on", []):
             if isinstance(dependency, str):
@@ -1174,43 +1252,6 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                             cache_invalidator=self.cache_invalidator,
                         )
                     )
-
-        launch_tasks_defs = self.get_launch_tasks_defs()
-        for task_def in launch_tasks_defs:
-            if self.single_account == "None" or self.single_account is None:
-                pass
-            else:
-                if task_def.get("account_id") != self.single_account:
-                    continue
-
-            puppet_account_id = task_def.get("puppet_account_id")
-            portfolio = task_def.get("portfolio")
-            product = task_def.get("product")
-            version = task_def.get("version")
-            account_id = task_def.get("account_id")
-            region = task_def.get("region")
-
-            version_details[
-                "_".join(
-                    [
-                        str(puppet_account_id),
-                        portfolio,
-                        product,
-                        version,
-                        str(account_id),
-                        region,
-                    ]
-                )
-            ] = portfoliomanagement_tasks.GetVersionDetailsByNames(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=puppet_account_id,
-                portfolio=portfolio,
-                product=product,
-                version=version,
-                account_id=puppet_account_id,
-                region=region,
-                cache_invalidator=self.cache_invalidator,
-            )
 
         return requirements
 
@@ -1342,7 +1383,8 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             )
 
         self.info("requires:about to return")
-        return dict(dependencies=dependencies, portfolio_ids=portfolio_ids,)
+
+        return dict(dependencies=dependencies, portfolio_ids=portfolio_ids)
 
     def generate_tasks(self, task_defs):
         self.info("generate_tasks in")

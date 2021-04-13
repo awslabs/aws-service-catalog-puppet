@@ -3,7 +3,6 @@ from servicecatalog_puppet import constants, config
 from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
 
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
-from servicecatalog_puppet.workflow import generate as generate_tasks
 
 
 class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
@@ -16,20 +15,8 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
 
     def requires(self):
         requirements = dict()
-        if self.execution_mode == "hub":
-            requirements["generate_shares"] = generate_tasks.GenerateSharesTask(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                should_use_sns=self.should_use_sns,
-                section=constants.SPOKE_LOCAL_PORTFOLIOS,
-                cache_invalidator=self.cache_invalidator,
-            )
-        return requirements
-
-    def run(self):
-        if self.execution_mode == "hub" and not self.is_dry_run:
-            self.info("Generating sharing tasks")
-            yield [
+        if self.execution_mode == constants.EXECUTION_MODE_HUB and not self.is_dry_run:
+            requirements["spoke_local_portfolio_tasks"] = [
                 provisioning_tasks.SpokeLocalPortfolioTask(
                     spoke_local_portfolio_name=spoke_local_portfolio_name,
                     manifest_file_path=self.manifest_file_path,
@@ -51,4 +38,7 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
                 ).items()
             ]
 
+        return requirements
+
+    def run(self):
         self.write_output(self.manifest.get("spoke-local-portfolios"))

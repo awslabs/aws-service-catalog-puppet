@@ -13,24 +13,9 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
         }
 
     def requires(self):
-        requirements = list()
-
-        if self.execution_mode == "hub":
-            requirements.append(
-                generate_tasks.GenerateSharesTask(
-                    puppet_account_id=self.puppet_account_id,
-                    manifest_file_path=self.manifest_file_path,
-                    should_use_sns=self.should_use_sns,
-                    section=constants.LAUNCHES,
-                    cache_invalidator=self.cache_invalidator,
-                )
-            )
-
-        return requirements
-
-    def run(self):
         self.info(f"Launching and execution mode is: {self.execution_mode}")
         tasks = list()
+        requirements = dict(tasks=tasks)
         if self.execution_mode == constants.EXECUTION_MODE_SPOKE:
             for launch_name, launch_details in self.manifest.get(
                 "launches", {}
@@ -69,6 +54,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                             single_account=self.single_account,
                             is_dry_run=self.is_dry_run,
                             execution_mode=self.execution_mode,
+                            cache_invalidator=self.cache_invalidator,
                         )
                     )
                 else:
@@ -86,5 +72,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                             cache_invalidator=self.cache_invalidator,
                         )
                     )
-        yield tasks
+        return requirements
+
+    def run(self):
         self.write_output(self.manifest.get("launches", {}))
