@@ -67,56 +67,6 @@ class ListLaunchPathsTask(ProvisioningTask):
         raise Exception("Could not find a launch path")
 
 
-class GetPathForProductTask(ProvisioningTask):  # TODO delete me
-    puppet_account_id = luigi.Parameter()
-    portfolio = luigi.Parameter()
-    product = luigi.Parameter()
-    version = luigi.Parameter()
-    region = luigi.Parameter()
-
-    cache_invalidator = luigi.Parameter()
-
-    def params_for_results_display(self):
-        return {
-            "manifest_file_path": self.manifest_file_path,
-            "puppet_account_id": self.puppet_account_id,
-            "portfolio": self.portfolio,
-            "product": self.product,
-            "version": self.version,
-            "region": self.region,
-        }
-
-    def requires(self):
-        return dict(
-            details=portfoliomanagement_tasks.GetVersionDetailsByNames(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                portfolio=self.portfolio,
-                product=self.product,
-                version=self.version,
-                account_id=self.puppet_account_id,
-                region=self.region,
-                cache_invalidator=self.cache_invalidator,
-            )
-        )
-
-    def run(self):
-        detail = self.load_from_input("details")
-        product_details = detail.get("product_details")
-        product_id = product_details.get("ProductId")
-        # t = yield ListLaunchPathsTask(
-        #     manifest_file_path=self.manifest_file_path,
-        #     puppet_account_id=self.puppet_account_id,
-        #     portfolio=self.portfolio,
-        #     product_id=product_id,
-        #     account_id=self.puppet_account_id,
-        #     region=self.region,
-        #     cache_invalidator=self.cache_invalidator,
-        # )
-        # self.write_output(json.loads(t.open("r").read()))
-        self.write_output({})
-
-
 class ProvisioningArtifactParametersTask(ProvisioningTask):
     puppet_account_id = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -1369,27 +1319,9 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         first_task_def = task_defs[0]
         # portfolio = first_task_def.get("portfolio")
         tasks = []
-        portfolio_ids = self.input().get("portfolio_ids")
 
         for task_def in task_defs:
             self.info("generate_tasks main loop iteration 1")
-            p = (
-                portfolio_ids[
-                    "_".join(
-                        [
-                            str(self.puppet_account_id),
-                            task_def.get("portfolio"),
-                            str(task_def.get("account_id")),
-                            task_def.get("region"),
-                        ]
-                    )
-                ]
-                .open("r")
-                .read()
-            )
-            p = json.loads(p)
-            portfolio_id = p.get("portfolio_id")
-
             product_generation_method = task_def.get(
                 "product_generation_method", "copy"
             )
@@ -1423,7 +1355,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     region=task_def.get("region"),
                     portfolio=task_def.get("portfolio"),
                     organization=task_def.get("organization"),
-                    portfolio_id=portfolio_id,
                     sharing_mode=sharing_mode,
                     cache_invalidator=self.cache_invalidator,
                 )
@@ -1439,7 +1370,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 region=task_def.get("region"),
                 portfolio=task_def.get("portfolio"),
                 organization=task_def.get("organization"),
-                portfolio_id=portfolio_id,
             )
 
             if len(task_def.get("associations", [])) > 0:

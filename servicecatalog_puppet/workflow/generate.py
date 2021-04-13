@@ -142,12 +142,8 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
         }
 
     def requires(self):
-        portfolios = dict()
         requirements = dict(
-            deletes=list(),
-            ensure_event_buses=list(),
-            generate_policies=list(),
-            portfolios=portfolios,
+            deletes=list(), ensure_event_buses=list(), generate_policies=list(),
         )
         for region_name, accounts in self.manifest.get_accounts_by_region().items():
             requirements["deletes"].append(
@@ -178,35 +174,6 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                 )
             )
 
-        for (
-            region_name,
-            shares_by_portfolio_account,
-        ) in self.manifest.get_shares_by_region_portfolio_account(
-            self.puppet_account_id, self.section
-        ).items():
-            for (
-                portfolio_name,
-                shares_by_account,
-            ) in shares_by_portfolio_account.items():
-                for account_id, share in shares_by_account.items():
-                    i = "_".join(
-                        [
-                            str(self.puppet_account_id),
-                            portfolio_name,
-                            str(account_id),
-                            region_name,
-                        ]
-                    )
-                    portfolios[
-                        i
-                    ] = portfoliomanagement_tasks.GetPortfolioByPortfolioName(
-                        manifest_file_path=self.manifest_file_path,
-                        puppet_account_id=self.puppet_account_id,
-                        portfolio=portfolio_name,
-                        account_id=self.puppet_account_id,
-                        region=region_name,
-                        cache_invalidator=self.cache_invalidator,
-                    )
         return requirements
 
     def run(self):
@@ -222,22 +189,6 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                 shares_by_account,
             ) in shares_by_portfolio_account.items():
                 for account_id, share in shares_by_account.items():
-                    i = "_".join(
-                        [
-                            str(self.puppet_account_id),
-                            portfolio_name,
-                            str(account_id),
-                            region_name,
-                        ]
-                    )
-                    portfolio_input = self.input().get("portfolios").get(i)
-
-                    if portfolio_input is None:
-                        raise Exception(
-                            f"failed to get portfolios details for {i} in {self.input().get('portfolios')}"
-                        )
-
-                    portfolio = json.loads(portfolio_input.open("r").read())
 
                     tasks.append(
                         portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
@@ -246,7 +197,6 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                             account_id=account_id,
                             region=region_name,
                             portfolio=portfolio_name,
-                            portfolio_id=portfolio.get("portfolio_id"),
                             cache_invalidator=self.cache_invalidator,
                             sharing_mode=share.get(self.section).get(
                                 "sharing_mode",
