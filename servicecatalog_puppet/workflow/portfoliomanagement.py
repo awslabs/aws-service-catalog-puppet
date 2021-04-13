@@ -69,13 +69,13 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
                 region=self.region,
                 cache_invalidator=self.cache_invalidator,
             )
-            requirements["generate_shares"] = generate_tasks.GenerateSharesTask(
-                puppet_account_id=self.puppet_account_id,
-                manifest_file_path=self.manifest_file_path,
-                should_use_sns=False,  # TODO
-                section=constants.LAUNCHES,
-                cache_invalidator=self.cache_invalidator,
-            )
+            if not self.is_dry_run:
+                requirements["generate_shares"] = generate_tasks.GenerateSharesTask(
+                    puppet_account_id=self.puppet_account_id,
+                    manifest_file_path=self.manifest_file_path,
+                    section=constants.LAUNCHES,
+                    cache_invalidator=self.cache_invalidator,
+                )
         return requirements
 
     def run(self):
@@ -510,7 +510,7 @@ class CreateSpokeLocalPortfolioTask(
                 account_id=self.account_id,
                 region=self.region,
                 sharing_mode=self.sharing_mode,
-                cache_invalidator =self.cache_invalidator,
+                cache_invalidator=self.cache_invalidator,
             ),
             "puppet_portfolio": GetPortfolioByPortfolioName(
                 manifest_file_path=self.manifest_file_path,
@@ -551,8 +551,6 @@ class CreateAssociationsForSpokeLocalPortfolioTask(PortfolioManagementTask):
     organization = luigi.Parameter()
 
     associations = luigi.ListParameter(default=[])
-
-    should_use_sns = luigi.Parameter(significant=False, default=False)
 
     sharing_mode = luigi.Parameter()
 
@@ -604,7 +602,6 @@ class CreateAssociationsForSpokeLocalPortfolioTask(PortfolioManagementTask):
             stack_name=f"associations-for-portfolio-{portfolio_id}",
         )
 
-        role = config.get_puppet_role_arn(self.account_id)
         with self.spoke_regional_client("cloudformation") as cloudformation:
             template = config.env.get_template("associations.template.yaml.j2").render(
                 portfolio={
@@ -1099,7 +1096,6 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
     organization = luigi.Parameter()
     product_generation_method = luigi.Parameter()
     launch_constraints = luigi.DictParameter()
-    should_use_sns = luigi.Parameter(default=False, significant=False)
 
     sharing_mode = luigi.Parameter()
     cache_invalidator = luigi.Parameter()
@@ -1613,8 +1609,7 @@ class CreateShareForAccountLaunchRegion(PortfolioManagementTask):
                 account_id=self.account_id,
                 region=self.region,
                 portfolio=self.portfolio,
-
-                cache_invalidator = self.cache_invalidator,
+                cache_invalidator=self.cache_invalidator,
             )
         else:
             return ShareAndAcceptPortfolioTask(

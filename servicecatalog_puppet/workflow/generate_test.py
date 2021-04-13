@@ -200,7 +200,6 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     region = "region"
     sharing_policies = {}
-    should_use_sns = False
     cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
@@ -213,7 +212,6 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             region=self.region,
             sharing_policies=self.sharing_policies,
-            should_use_sns=self.should_use_sns,
             cache_invalidator=self.cache_invalidator,
         )
 
@@ -225,7 +223,6 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "manifest_file_path": self.manifest_file_path,
             "puppet_account_id": self.puppet_account_id,
             "region": self.region,
-            "should_use_sns": self.should_use_sns,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -280,7 +277,6 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 class GenerateSharesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     manifest_file_path = "manifest_file_path"
-    should_use_sns = False
     section = "section"
     cache_invalidator = "cache_invalidator"
 
@@ -292,7 +288,6 @@ class GenerateSharesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.sut = self.module.GenerateSharesTask(
             puppet_account_id=self.puppet_account_id,
             manifest_file_path=self.manifest_file_path,
-            should_use_sns=self.should_use_sns,
             section=self.section,
             cache_invalidator=self.cache_invalidator,
         )

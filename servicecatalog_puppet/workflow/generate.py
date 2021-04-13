@@ -79,7 +79,6 @@ class GeneratePolicies(tasks.PuppetTask):
     manifest_file_path = luigi.Parameter()
     region = luigi.Parameter()
     sharing_policies = luigi.DictParameter()
-    should_use_sns = luigi.BoolParameter()
 
     cache_invalidator = luigi.Parameter()
 
@@ -88,7 +87,6 @@ class GeneratePolicies(tasks.PuppetTask):
             "manifest_file_path": self.manifest_file_path,
             "puppet_account_id": self.puppet_account_id,
             "region": self.region,
-            "should_use_sns": self.should_use_sns,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -132,7 +130,6 @@ class GeneratePolicies(tasks.PuppetTask):
 class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
     puppet_account_id = luigi.Parameter()
     manifest_file_path = luigi.Parameter()
-    should_use_sns = luigi.BoolParameter()
     section = luigi.Parameter()
     cache_invalidator = luigi.Parameter()
 
@@ -177,7 +174,6 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                     manifest_file_path=self.manifest_file_path,
                     region=region_name,
                     sharing_policies=sharing_policies,
-                    should_use_sns=self.should_use_sns,
                     cache_invalidator=self.cache_invalidator,
                 )
             )

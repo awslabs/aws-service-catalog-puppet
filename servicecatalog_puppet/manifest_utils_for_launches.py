@@ -39,7 +39,6 @@ def generate_launch_tasks(
     should_use_product_plans,
     include_expanded_from=False,
     single_account=None,
-    is_dry_run=False,
     execution_mode="hub",
 ):
     logger.info(f"m.generate_launch_tasks execution_mode is {execution_mode}")
@@ -50,11 +49,9 @@ def generate_launch_tasks(
                 launch_name=launch_name,
                 manifest=manifest,
                 puppet_account_id=puppet_account_id,
-                should_use_sns=should_use_sns,
                 should_use_product_plans=should_use_product_plans,
                 include_expanded_from=include_expanded_from,
                 single_account=single_account,
-                is_dry_run=is_dry_run,
                 execution_mode=execution_mode,
             )
             for launch_name, launch_details in manifest.get("launches", {}).items()
@@ -66,11 +63,9 @@ def generate_launch_tasks(
                 launch_name=launch_name,
                 manifest=manifest,
                 puppet_account_id=puppet_account_id,
-                should_use_sns=should_use_sns,
                 should_use_product_plans=should_use_product_plans,
                 include_expanded_from=include_expanded_from,
                 single_account=single_account,
-                is_dry_run=is_dry_run,
                 execution_mode=execution_mode,
             )
             for launch_name, launch_details in manifest.get("launches", {}).items()

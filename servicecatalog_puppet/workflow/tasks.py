@@ -29,6 +29,14 @@ def unwrap(what):
 
 
 class PuppetTask(luigi.Task):
+    @property
+    def is_dry_run(self):
+        return os.environ.get("SCT_IS_DRY_RUN", "False") == "True"
+
+    @property
+    def should_use_sns(self):
+        return os.environ.get("SCT_SHOULD_USE_SNS", "False") == "True"
+
     def spoke_client(self, service):
         return betterboto_client.CrossAccountClientContextManager(
             service,

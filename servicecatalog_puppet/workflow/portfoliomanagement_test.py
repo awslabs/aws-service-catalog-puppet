@@ -584,7 +584,6 @@ class CreateAssociationsForSpokeLocalPortfolioTaskTest(
     puppet_account_id = "puppet_account_id"
     organization = "organization"
     associations = []
-    should_use_sns = "False"
     sharing_mode = "sharing_mode"
     cache_invalidator = "cache_invalidator"
 
@@ -603,7 +602,6 @@ class CreateAssociationsForSpokeLocalPortfolioTaskTest(
             puppet_account_id=self.puppet_account_id,
             organization=self.organization,
             associations=self.associations,
-            should_use_sns=self.should_use_sns,
             sharing_mode=self.sharing_mode,
             cache_invalidator=self.cache_invalidator,
         )
@@ -918,7 +916,6 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTaskTest(
     organization = "organization"
     product_generation_method = "product_generation_method"
     launch_constraints = {}
-    should_use_sns = "False"
     sharing_mode = "sharing_mode"
     cache_invalidator = "cache_invalidator"
 
@@ -938,7 +935,6 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTaskTest(
             organization=self.organization,
             product_generation_method=self.product_generation_method,
             launch_constraints=self.launch_constraints,
-            should_use_sns=self.should_use_sns,
             sharing_mode=self.sharing_mode,
             cache_invalidator=self.cache_invalidator,
         )

@@ -16,11 +16,9 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_parameters = {}
     account_parameters = {}
     manifest_file_path = "manifest_file_path"
-    should_use_sns = False
     should_use_product_plans = False
     include_expanded_from = False
     single_account = "single_account"
-    is_dry_run = False
     cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
@@ -41,11 +39,9 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_parameters=self.manifest_parameters,
             account_parameters=self.account_parameters,
             manifest_file_path=self.manifest_file_path,
-            should_use_sns=self.should_use_sns,
             should_use_product_plans=self.should_use_product_plans,
             include_expanded_from=self.include_expanded_from,
             single_account=self.single_account,
-            is_dry_run=self.is_dry_run,
             cache_invalidator=self.cache_invalidator,
         )
 
@@ -122,11 +118,9 @@ class LambdaInvocationDependenciesWrapperTaskTest(
     lambda_invocation_name = "lambda_invocation_name"
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
-    should_use_sns = False
     should_use_product_plans = False
     include_expanded_from = False
     single_account = "single_account"
-    is_dry_run = False
     cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
@@ -138,11 +132,9 @@ class LambdaInvocationDependenciesWrapperTaskTest(
             lambda_invocation_name=self.lambda_invocation_name,
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
-            should_use_sns=self.should_use_sns,
             should_use_product_plans=self.should_use_product_plans,
             include_expanded_from=self.include_expanded_from,
             single_account=self.single_account,
-            is_dry_run=self.is_dry_run,
             cache_invalidator=self.cache_invalidator,
         )
 
@@ -189,7 +181,6 @@ class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     should_use_product_plans = False
     include_expanded_from = False
     single_account = "single_account"
-    is_dry_run = False
     cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
@@ -201,11 +192,9 @@ class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             lambda_invocation_name=self.lambda_invocation_name,
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
-            should_use_sns=self.should_use_sns,
             should_use_product_plans=self.should_use_product_plans,
             include_expanded_from=self.include_expanded_from,
             single_account=self.single_account,
-            is_dry_run=self.is_dry_run,
             cache_invalidator=self.cache_invalidator,
         )
 
@@ -247,11 +236,9 @@ class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
-    should_use_sns = False
     should_use_product_plans = False
     include_expanded_from = False
     single_account = "single_account"
-    is_dry_run = False
     execution_mode = "execution_mode"
     cache_invalidator = "cache_invalidator"
 
@@ -263,11 +250,9 @@ class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTes
         self.sut = self.module.LambdaInvocationsSectionTask(
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
-            should_use_sns=self.should_use_sns,
             should_use_product_plans=self.should_use_product_plans,
             include_expanded_from=self.include_expanded_from,
             single_account=self.single_account,
-            is_dry_run=self.is_dry_run,
             execution_mode=self.execution_mode,
             cache_invalidator=self.cache_invalidator,
         )

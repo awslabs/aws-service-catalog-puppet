@@ -225,7 +225,6 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     retry_count = luigi.IntParameter(default=1, significant=False)
     worker_timeout = luigi.IntParameter(default=0, significant=False)
     ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
-    should_use_sns = luigi.BoolParameter(significant=False, default=False)
     should_use_product_plans = luigi.BoolParameter(significant=False, default=False)
     requested_priority = luigi.IntParameter(significant=False, default=0)
 
@@ -436,7 +435,6 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                                 path_id,
                                 params_to_use,
                                 self.version,
-                                self.should_use_sns,
                             )
                         else:
                             provisioned_product_id = aws.update_provisioned_product(
@@ -465,7 +463,6 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                             path_name,
                             params_to_use,
                             self.version,
-                            self.should_use_sns,
                             self.execution,
                         )
 
@@ -599,7 +596,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                     f"pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}"
                 )
                 current_version_details = self.get_current_version(
-                    provisioning_artifact_id, service_catalog, product_id
+                    provisioning_artifact_id, product_id, service_catalog
                 )
 
                 with self.spoke_regional_client("cloudformation") as cloudformation:
@@ -1006,11 +1003,9 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
 class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
-    should_use_sns = luigi.BoolParameter()
     should_use_product_plans = luigi.BoolParameter()
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
-    is_dry_run = luigi.BoolParameter()
     execution_mode = luigi.Parameter()
     cache_invalidator = luigi.Parameter()
 
@@ -1032,16 +1027,13 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             task_status = task_def.get("status")
             del task_def["status"]
             del task_def["depends_on"]
-            task_def["is_dry_run"] = self.is_dry_run
             run_deploy_in_spoke_task_params = dict(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 account_id=task_def.get("account_id"),
                 home_region=config.get_home_region(self.puppet_account_id),
                 regions=config.get_regions(self.puppet_account_id),
-                should_collect_cloudformation_events=config.get_should_use_sns(
-                    self.puppet_account_id
-                ),
+                should_collect_cloudformation_events=self.should_use_sns,
                 should_forward_events_to_eventbridge=config.get_should_use_eventbridge(
                     self.puppet_account_id
                 ),
@@ -1088,9 +1080,7 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             self.manifest, self.launch_name
         )
         configuration["single_account"] = self.single_account
-        configuration["is_dry_run"] = self.is_dry_run
         configuration["puppet_account_id"] = self.puppet_account_id
-        configuration["should_use_sns"] = self.should_use_sns
         configuration["should_use_product_plans"] = self.should_use_product_plans
 
         launch_tasks_def = self.manifest.get_task_defs_from_details(
@@ -1107,11 +1097,9 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
-    should_use_sns = luigi.BoolParameter()
     should_use_product_plans = luigi.BoolParameter()
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
-    is_dry_run = luigi.BoolParameter()
     execution_mode = luigi.Parameter()
     cache_invalidator = luigi.Parameter()
 
@@ -1138,7 +1126,6 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             task_status = task_def.get("status")
             del task_def["status"]
             del task_def["depends_on"]
-            task_def["is_dry_run"] = self.is_dry_run
 
             if task_status == constants.PROVISIONED:
                 provisioning_parameters = dict()
@@ -1196,7 +1183,6 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             requirements["generate_shares"] = generate_tasks.GenerateSharesTask(
                 puppet_account_id=self.puppet_account_id,
                 manifest_file_path=self.manifest_file_path,
-                should_use_sns=self.should_use_sns,
                 section=constants.LAUNCHES,
                 cache_invalidator=self.cache_invalidator,
             )
@@ -1208,11 +1194,9 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         launch_name=dependency,
                         manifest_file_path=self.manifest_file_path,
                         puppet_account_id=self.puppet_account_id,
-                        should_use_sns=self.should_use_sns,
                         should_use_product_plans=self.should_use_product_plans,
                         include_expanded_from=self.include_expanded_from,
                         single_account=self.single_account,
-                        is_dry_run=self.is_dry_run,
                         execution_mode=self.execution_mode,
                         cache_invalidator=self.cache_invalidator,
                     )
@@ -1225,11 +1209,9 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                             launch_name=dependency,
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,
-                            should_use_sns=self.should_use_sns,
                             should_use_product_plans=self.should_use_product_plans,
                             include_expanded_from=self.include_expanded_from,
                             single_account=self.single_account,
-                            is_dry_run=self.is_dry_run,
                             execution_mode=self.execution_mode,
                             cache_invalidator=self.cache_invalidator,
                         )
@@ -1244,11 +1226,9 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                             lambda_invocation_name=dependency.get("name"),
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,
-                            should_use_sns=self.should_use_sns,
                             should_use_product_plans=self.should_use_product_plans,
                             include_expanded_from=self.include_expanded_from,
                             single_account=self.single_account,
-                            is_dry_run=self.is_dry_run,
                             cache_invalidator=self.cache_invalidator,
                         )
                     )
@@ -1265,9 +1245,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             self.manifest, self.launch_name
         )
         configuration["single_account"] = self.single_account
-        configuration["is_dry_run"] = self.is_dry_run
         configuration["puppet_account_id"] = self.puppet_account_id
-        configuration["should_use_sns"] = self.should_use_sns
         configuration["should_use_product_plans"] = self.should_use_product_plans
 
         configuration["execution"] = launch.get("execution")
@@ -1323,11 +1301,9 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     spoke_local_portfolio_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
-    should_use_sns = luigi.BoolParameter()
     should_use_product_plans = luigi.BoolParameter()
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
-    is_dry_run = luigi.BoolParameter()
     depends_on = luigi.ListParameter()
     sharing_mode = luigi.Parameter()
     cache_invalidator = luigi.Parameter()
@@ -1346,11 +1322,9 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 launch_name=dependency,
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
-                should_use_sns=self.should_use_sns,
                 should_use_product_plans=self.should_use_product_plans,
                 include_expanded_from=self.include_expanded_from,
                 single_account=self.single_account,
-                is_dry_run=self.is_dry_run,
                 execution_mode="hub",
                 cache_invalidator=self.cache_invalidator,
             )
@@ -1363,7 +1337,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
         self.info("requires:about to iter")
         for task_def in task_defs:
-            # if task_def.get("status") == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED:  # Dodgy if
             portfolio_ids[
                 "_".join(
                     [
@@ -1477,7 +1450,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     cache_invalidator=self.cache_invalidator,
                     associations=task_def.get("associations"),
                     puppet_account_id=task_def.get("puppet_account_id"),
-                    should_use_sns=task_def.get("should_use_sns"),
                 )
                 tasks.append(create_associations_for_portfolio_task)
 
@@ -1506,7 +1478,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 create_launch_role_constraints_for_portfolio_task_params = {
                     "launch_constraints": launch_constraints,
                     "puppet_account_id": task_def.get("puppet_account_id"),
-                    "should_use_sns": task_def.get("should_use_sns"),
                 }
                 create_launch_role_constraints_for_portfolio = portfoliomanagement_tasks.CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
@@ -1545,9 +1516,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 "product_generation_method", "copy"
             ),
             "single_account": self.single_account,
-            "is_dry_run": self.is_dry_run,
             "puppet_account_id": self.puppet_account_id,
-            "should_use_sns": self.should_use_sns,
             "should_use_product_plans": self.should_use_product_plans,
         }
         configuration.update(

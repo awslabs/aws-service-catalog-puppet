@@ -30,11 +30,9 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
     all_params = []
 
     manifest_file_path = luigi.Parameter()
-    should_use_sns = luigi.BoolParameter()
     should_use_product_plans = luigi.BoolParameter()
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
-    is_dry_run = luigi.BoolParameter()
 
     cache_invalidator = luigi.Parameter()
 
@@ -83,11 +81,9 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
                 lambda_invocation_name=self.lambda_invocation_name,
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
-                should_use_sns=self.should_use_sns,
                 should_use_product_plans=self.should_use_product_plans,
                 include_expanded_from=self.include_expanded_from,
                 single_account=self.single_account,
-                is_dry_run=self.is_dry_run,
                 cache_invalidator=self.cache_invalidator,
             ),
         )
@@ -149,11 +145,9 @@ class LambdaInvocationDependenciesWrapperTask(
     manifest_file_path = luigi.Parameter()
 
     puppet_account_id = luigi.Parameter()
-    should_use_sns = luigi.BoolParameter()
     should_use_product_plans = luigi.BoolParameter()
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
-    is_dry_run = luigi.BoolParameter()
     cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
@@ -177,11 +171,9 @@ class LambdaInvocationDependenciesWrapperTask(
                         launch_name=dependency,
                         manifest_file_path=self.manifest_file_path,
                         puppet_account_id=self.puppet_account_id,
-                        should_use_sns=self.should_use_sns,
                         should_use_product_plans=self.should_use_product_plans,
                         include_expanded_from=self.include_expanded_from,
                         single_account=self.single_account,
-                        is_dry_run=self.is_dry_run,
                         execution_mode="hub",
                         cache_invalidator=self.cache_invalidator,
                     )
@@ -194,11 +186,9 @@ class LambdaInvocationDependenciesWrapperTask(
                             launch_name=dependency.get("name"),
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,
-                            should_use_sns=self.should_use_sns,
                             should_use_product_plans=self.should_use_product_plans,
                             include_expanded_from=self.include_expanded_from,
                             single_account=self.single_account,
-                            is_dry_run=self.is_dry_run,
                             execution_mode="hub",
                             cache_invalidator=self.cache_invalidator,
                         )
@@ -209,11 +199,9 @@ class LambdaInvocationDependenciesWrapperTask(
                             lambda_invocation_name=dependency.get("name"),
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,
-                            should_use_sns=self.should_use_sns,
                             should_use_product_plans=self.should_use_product_plans,
                             include_expanded_from=self.include_expanded_from,
                             single_account=self.single_account,
-                            is_dry_run=self.is_dry_run,
                             cache_invalidator=self.cache_invalidator,
                         )
                     )
@@ -228,11 +216,9 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
     manifest_file_path = luigi.Parameter()
 
     puppet_account_id = luigi.Parameter()
-    should_use_sns = luigi.BoolParameter()
     should_use_product_plans = luigi.BoolParameter()
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
-    is_dry_run = luigi.BoolParameter()
 
     cache_invalidator = luigi.Parameter()
 
@@ -271,11 +257,9 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
 
         wrapper_params = dict(
             manifest_file_path=self.manifest_file_path,
-            should_use_sns=self.should_use_sns,
             should_use_product_plans=self.should_use_product_plans,
             include_expanded_from=self.include_expanded_from,
             single_account=self.single_account,
-            is_dry_run=self.is_dry_run,
         )
 
         for task_def in task_defs:
@@ -309,11 +293,9 @@ class LambdaInvocationsSectionTask(manifest_tasks.SectionTask):
                     lambda_invocation_name=lambda_invocation_name,
                     manifest_file_path=self.manifest_file_path,
                     puppet_account_id=self.puppet_account_id,
-                    should_use_sns=self.should_use_sns,
                     should_use_product_plans=self.should_use_product_plans,
                     include_expanded_from=self.include_expanded_from,
                     single_account=self.single_account,
-                    is_dry_run=self.is_dry_run,
                     cache_invalidator=self.cache_invalidator,
                 )
                 for lambda_invocation_name, lambda_invocation in self.manifest.get(

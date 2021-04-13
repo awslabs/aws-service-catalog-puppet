@@ -105,13 +105,9 @@ def generate_tasks(
     puppet_account_id,
     executor_account_id,
     single_account=None,
-    is_dry_run=False,
     execution_mode="hub",
     cache_invalidator="now",
 ):
-    should_use_sns = config.get_should_use_sns(
-        puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-    )
     should_use_product_plans = config.get_should_use_product_plans(
         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
     )
@@ -120,33 +116,27 @@ def generate_tasks(
         launch_tasks.LaunchSectionTask(
             manifest_file_path=f.name,
             puppet_account_id=puppet_account_id,
-            should_use_sns=should_use_sns,
             should_use_product_plans=should_use_product_plans,
             include_expanded_from=False,
             single_account=single_account,
-            is_dry_run=is_dry_run,
             execution_mode=execution_mode,
             cache_invalidator=cache_invalidator,
         ),
         spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
             manifest_file_path=f.name,
             puppet_account_id=puppet_account_id,
-            should_use_sns=should_use_sns,
             should_use_product_plans=should_use_product_plans,
             include_expanded_from=False,
             single_account=single_account,
-            is_dry_run=is_dry_run,
             execution_mode=execution_mode,
             cache_invalidator=cache_invalidator,
         ),
         lambda_invocations_tasks.LambdaInvocationsSectionTask(
             manifest_file_path=f.name,
             puppet_account_id=puppet_account_id,
-            should_use_sns=should_use_sns,
             should_use_product_plans=should_use_product_plans,
             include_expanded_from=False,
             single_account=single_account,
-            is_dry_run=is_dry_run,
             execution_mode=execution_mode,
             cache_invalidator=cache_invalidator,
         ),
@@ -166,13 +156,14 @@ def deploy(
     running_exploded=False,
 ):
     cache_invalidator = str(datetime.now())
+    os.environ["SCT_IS_DRY_RUN"] = str(is_dry_run)
+    os.environ["SCT_SHOULD_USE_SNS"] = str(config.get_should_use_sns(puppet_account_id))
 
     tasks_to_run = generate_tasks(
         f,
         puppet_account_id,
         executor_account_id,
         single_account,
-        is_dry_run,
         execution_mode,
         cache_invalidator,
     )
