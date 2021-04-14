@@ -9,7 +9,6 @@ class SectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     include_expanded_from = False
     single_account = "single_account"
     execution_mode = "execution_mode"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import manifest
@@ -23,7 +22,6 @@ class SectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             include_expanded_from=self.include_expanded_from,
             single_account=self.single_account,
             execution_mode=self.execution_mode,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()

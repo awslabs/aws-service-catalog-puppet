@@ -30,8 +30,6 @@ class ListLaunchPathsTask(ProvisioningTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
 
-    cache_invalidator = luigi.Parameter()
-
     def api_calls_used(self):
         return [
             f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
@@ -74,8 +72,6 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
     version = luigi.Parameter()
     region = luigi.Parameter()
 
-    cache_invalidator = luigi.Parameter()
-
     @property
     def retry_count(self):
         return 5
@@ -106,7 +102,6 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
                 version=self.version,
                 account_id=self.puppet_account_id,
                 region=self.region,
-                cache_invalidator=self.cache_invalidator,
             ),
             associations=portfoliomanagement_tasks.CreateAssociationsInPythonForPortfolioTask(
                 manifest_file_path=self.manifest_file_path,
@@ -114,7 +109,6 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
                 account_id=self.puppet_account_id,
                 region=self.region,
                 portfolio=self.portfolio,
-                cache_invalidator=self.cache_invalidator,
             ),
         )
 
@@ -180,8 +174,6 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
     execution = luigi.Parameter()
 
-    cache_invalidator = luigi.Parameter()
-
     try_count = 1
     all_params = []
 
@@ -226,7 +218,6 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     region=param_details.get("ssm").get(
                         "region", config.get_home_region(self.puppet_account_id)
                     ),
-                    cache_invalidator=self.cache_invalidator,
                 )
         self.all_params = all_params
 
@@ -239,7 +230,6 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 product=self.product,
                 version=self.version,
                 region=self.region,
-                cache_invalidator=self.cache_invalidator,
             ),
             "details": portfoliomanagement_tasks.GetVersionDetailsByNames(
                 manifest_file_path=self.manifest_file_path,
@@ -249,7 +239,6 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 product=self.product,
                 version=self.version,
                 region=self.region,
-                cache_invalidator=self.cache_invalidator,
             ),
         }
 
@@ -666,8 +655,6 @@ class TerminateProductTask(ProvisioningTask):
 
     # dependencies = luigi.ListParameter(default=[])
 
-    cache_invalidator = luigi.Parameter()
-
     def params_for_results_display(self):
         return {
             "launch_name": self.launch_name,
@@ -751,8 +738,6 @@ class TerminateProductDryRunTask(ProvisioningTask):
 
     parameters = luigi.ListParameter(default=[])
     ssm_param_inputs = luigi.ListParameter(default=[])
-
-    cache_invalidator = luigi.Parameter()
 
     try_count = 1
 
@@ -957,7 +942,6 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
     execution_mode = luigi.Parameter()
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -1051,7 +1035,6 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
     execution_mode = luigi.Parameter()
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -1084,10 +1067,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     provisioning_parameters[p] = task_def.get(p)
 
                 provisioning_parameters.update(
-                    dict(
-                        cache_invalidator=self.cache_invalidator,
-                        manifest_file_path=self.manifest_file_path,
-                    )
+                    dict(manifest_file_path=self.manifest_file_path,)
                 )
 
                 if self.is_dry_run:
@@ -1103,10 +1083,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     terminating_parameters[p] = task_def.get(p)
 
                     terminating_parameters.update(
-                        dict(
-                            cache_invalidator=self.cache_invalidator,
-                            manifest_file_path=self.manifest_file_path,
-                        )
+                        dict(manifest_file_path=self.manifest_file_path,)
                     )
 
                 if self.is_dry_run:
@@ -1134,7 +1111,6 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 puppet_account_id=self.puppet_account_id,
                 manifest_file_path=self.manifest_file_path,
                 section=constants.LAUNCHES,
-                cache_invalidator=self.cache_invalidator,
             )
 
         for dependency in launch.get("depends_on", []):
@@ -1150,7 +1126,6 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         include_expanded_from=self.include_expanded_from,
                         single_account=self.single_account,
                         execution_mode=self.execution_mode,
-                        cache_invalidator=self.cache_invalidator,
                     )
                 )
             elif dependency_type == constants.LAMBDA_INVOCATION:
@@ -1166,7 +1141,6 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         should_use_product_plans=self.should_use_product_plans,
                         include_expanded_from=self.include_expanded_from,
                         single_account=self.single_account,
-                        cache_invalidator=self.cache_invalidator,
                     )
                 )
 
@@ -1202,10 +1176,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         )
         yield [
             portfoliomanagement_tasks.ProvisionActionTask(
-                self.manifest_file_path,
-                **p,
-                puppet_account_id=self.puppet_account_id,
-                cache_invalidator=self.cache_invalidator,
+                self.manifest_file_path, **p, puppet_account_id=self.puppet_account_id,
             )
             for p in pre_actions
         ]
@@ -1222,10 +1193,7 @@ class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         )
         yield [
             portfoliomanagement_tasks.ProvisionActionTask(
-                self.manifest_file_path,
-                **p,
-                puppet_account_id=self.puppet_account_id,
-                cache_invalidator=self.cache_invalidator,
+                self.manifest_file_path, **p, puppet_account_id=self.puppet_account_id,
             )
             for p in post_actions
         ]
@@ -1243,7 +1211,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     single_account = luigi.Parameter()
     depends_on = luigi.ListParameter()
     sharing_mode = luigi.Parameter()
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -1266,11 +1233,12 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         include_expanded_from=self.include_expanded_from,
                         single_account=self.single_account,
                         execution_mode="hub",
-                        cache_invalidator=self.cache_invalidator,
                     )
                 )
             else:
-                raise Exception(f"dependency of {dependency.get('type')} is not supported for spoke-local-portfolios")
+                raise Exception(
+                    f"dependency of {dependency.get('type')} is not supported for spoke-local-portfolios"
+                )
         self.info(f"dependencies are {dependencies}")
 
         task_defs = self.get_task_defs()
@@ -1293,7 +1261,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 portfolio=task_def.get("portfolio"),
                 account_id=self.puppet_account_id,
                 region=task_def.get("region"),
-                cache_invalidator=self.cache_invalidator,
             )
 
         self.info("requires:about to return")
@@ -1347,7 +1314,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     portfolio=task_def.get("portfolio"),
                     organization=task_def.get("organization"),
                     sharing_mode=sharing_mode,
-                    cache_invalidator=self.cache_invalidator,
                 )
 
                 create_spoke_local_portfolio_task = portfoliomanagement_tasks.CreateSpokeLocalPortfolioTask(
@@ -1368,7 +1334,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     **create_spoke_local_portfolio_task_as_dependency_params,
                     spoke_local_portfolio_name=self.spoke_local_portfolio_name,
                     sharing_mode=sharing_mode,
-                    cache_invalidator=self.cache_invalidator,
                     associations=task_def.get("associations"),
                     puppet_account_id=task_def.get("puppet_account_id"),
                 )
@@ -1381,7 +1346,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     **create_spoke_local_portfolio_task_as_dependency_params,
                     spoke_local_portfolio_name=self.spoke_local_portfolio_name,
                     sharing_mode=sharing_mode,
-                    cache_invalidator=self.cache_invalidator,
                     puppet_account_id=task_def.get("puppet_account_id"),
                 )
                 tasks.append(import_into_spoke_local_portfolio_task)
@@ -1390,7 +1354,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     **create_spoke_local_portfolio_task_as_dependency_params,
                     spoke_local_portfolio_name=self.spoke_local_portfolio_name,
                     sharing_mode=sharing_mode,
-                    cache_invalidator=self.cache_invalidator,
                     puppet_account_id=task_def.get("puppet_account_id"),
                 )
                 tasks.append(copy_into_spoke_local_portfolio_task)
@@ -1405,7 +1368,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                     **create_launch_role_constraints_for_portfolio_task_params,
                     spoke_local_portfolio_name=self.spoke_local_portfolio_name,
                     sharing_mode=sharing_mode,
-                    cache_invalidator=self.cache_invalidator,
                     product_generation_method=product_generation_method,
                 )
                 tasks.append(create_launch_role_constraints_for_portfolio)
@@ -1473,9 +1435,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         self.info(f"starting pre actions")
         yield [
             portfoliomanagement_tasks.ProvisionActionTask(
-                **p,
-                puppet_account_id=self.puppet_account_id,
-                cache_invalidator=self.cache_invalidator,
+                **p, puppet_account_id=self.puppet_account_id,
             )
             for p in pre_actions
         ]
@@ -1488,9 +1448,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         self.info(f"{self.uid} starting post actions")
         yield [
             portfoliomanagement_tasks.ProvisionActionTask(
-                **p,
-                puppet_account_id=self.puppet_account_id,
-                cache_invalidator=self.cache_invalidator,
+                **p, puppet_account_id=self.puppet_account_id,
             )
             for p in post_actions
         ]

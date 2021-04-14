@@ -26,7 +26,6 @@ class ProvisioningArtifactParametersTaskTest(
     product = "product"
     version = "version"
     region = "region"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import provisioning
@@ -40,7 +39,6 @@ class ProvisioningArtifactParametersTaskTest(
             product=self.product,
             version=self.version,
             region=self.region,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -105,7 +103,6 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     should_use_product_plans = False
     requested_priority = 1
     execution = "execution"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import provisioning
@@ -132,7 +129,6 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             should_use_product_plans=self.should_use_product_plans,
             requested_priority=self.requested_priority,
             execution=self.execution,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -222,7 +218,6 @@ class ProvisionProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
     should_use_product_plans = False
     requested_priority = 1
     execution = "execution"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import provisioning
@@ -249,7 +244,6 @@ class ProvisionProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
             should_use_product_plans=self.should_use_product_plans,
             requested_priority=self.requested_priority,
             execution=self.execution,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -298,7 +292,6 @@ class TerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     worker_timeout = 3
     parameters = {}
     ssm_param_inputs = []
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import provisioning
@@ -322,7 +315,6 @@ class TerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             worker_timeout=self.worker_timeout,
             parameters=self.parameters,
             ssm_param_inputs=self.ssm_param_inputs,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -390,7 +382,6 @@ class TerminateProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
     worker_timeout = 3
     parameters = {}
     ssm_param_inputs = []
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import provisioning
@@ -414,7 +405,6 @@ class TerminateProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
             worker_timeout=self.worker_timeout,
             parameters=self.parameters,
             ssm_param_inputs=self.ssm_param_inputs,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -580,7 +570,6 @@ class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     include_expanded_from = False
     single_account = "single_account"
     execution_mode = "execution_mode"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import provisioning
@@ -595,7 +584,6 @@ class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             include_expanded_from=self.include_expanded_from,
             single_account=self.single_account,
             execution_mode=self.execution_mode,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -639,7 +627,6 @@ class LaunchTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     include_expanded_from = False
     single_account = "single_account"
     execution_mode = "execution_mode"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import provisioning
@@ -654,7 +641,6 @@ class LaunchTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             include_expanded_from=self.include_expanded_from,
             single_account=self.single_account,
             execution_mode=self.execution_mode,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -702,7 +688,6 @@ class SpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     single_account = "single_account"
     depends_on = []
     sharing_mode = "sharing_mode"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import provisioning
@@ -718,7 +703,6 @@ class SpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             single_account=self.single_account,
             depends_on=self.depends_on,
             sharing_mode=self.sharing_mode,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()

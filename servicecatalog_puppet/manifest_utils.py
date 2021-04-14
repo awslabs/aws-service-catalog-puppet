@@ -169,15 +169,16 @@ def rewrite_depends_on(manifest):
     ]
     for section_item_name, section_name in sections:
         for item, details in manifest.get(section_name, {}).items():
-            for i in range (len(details.get("depends_on", []))):
+            for i in range(len(details.get("depends_on", []))):
                 if isinstance(details["depends_on"][i], str):
                     manifest[section_name][item]["depends_on"][i] = dict(
-                        name=details["depends_on"][i],
-                        type='launch',
+                        name=details["depends_on"][i], type="launch",
                     )
                 if isinstance(details["depends_on"][i], dict):
                     if details["depends_on"][i].get(constants.AFFINITY) is None:
-                        details["depends_on"][i][constants.AFFINITY] = details["depends_on"][i]['type']
+                        details["depends_on"][i][constants.AFFINITY] = details[
+                            "depends_on"
+                        ][i]["type"]
         print(manifest.get(section_name))
     return manifest
 

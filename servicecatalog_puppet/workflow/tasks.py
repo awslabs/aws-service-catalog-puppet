@@ -30,6 +30,10 @@ def unwrap(what):
 
 class PuppetTask(luigi.Task):
     @property
+    def cache_invalidator(self):
+        return os.environ.get("SCT_CACHE_INVALIDATOR", "NOW")
+
+    @property
     def is_dry_run(self):
         return os.environ.get("SCT_IS_DRY_RUN", "False") == "True"
 
@@ -157,8 +161,6 @@ class GetSSMParamTask(PuppetTask):
     parameter_name = luigi.Parameter()
     name = luigi.Parameter()
     region = luigi.Parameter(default=None)
-
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {

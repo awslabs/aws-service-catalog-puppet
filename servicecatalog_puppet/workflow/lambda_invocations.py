@@ -34,8 +34,6 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
 
-    cache_invalidator = luigi.Parameter()
-
     def params_for_results_display(self):
         return {
             "lambda_invocation_name": self.lambda_invocation_name,
@@ -71,7 +69,6 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
                     region=param_details.get("ssm").get(
                         "region", config.get_home_region(self.puppet_account_id)
                     ),
-                    cache_invalidator=self.cache_invalidator,
                 )
         self.all_params = all_params
 
@@ -84,7 +81,6 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
                 should_use_product_plans=self.should_use_product_plans,
                 include_expanded_from=self.include_expanded_from,
                 single_account=self.single_account,
-                cache_invalidator=self.cache_invalidator,
             ),
         )
 
@@ -148,7 +144,6 @@ class LambdaInvocationDependenciesWrapperTask(
     should_use_product_plans = luigi.BoolParameter()
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -164,7 +159,9 @@ class LambdaInvocationDependenciesWrapperTask(
         )
 
         dependencies = list()
-        for dependency in lambda_invocation.get("depends_on", []): #TODO fix - dependencies will always be a dict now
+        for dependency in lambda_invocation.get(
+            "depends_on", []
+        ):  # TODO fix - dependencies will always be a dict now
             raise Exception("FIX ME")
             if isinstance(dependency, str):
                 dependencies.append(
@@ -176,7 +173,6 @@ class LambdaInvocationDependenciesWrapperTask(
                         include_expanded_from=self.include_expanded_from,
                         single_account=self.single_account,
                         execution_mode="hub",
-                        cache_invalidator=self.cache_invalidator,
                     )
                 )
             else:
@@ -191,7 +187,6 @@ class LambdaInvocationDependenciesWrapperTask(
                             include_expanded_from=self.include_expanded_from,
                             single_account=self.single_account,
                             execution_mode="hub",
-                            cache_invalidator=self.cache_invalidator,
                         )
                     )
                 elif dependency_type == constants.LAMBDA_INVOCATION:
@@ -203,7 +198,6 @@ class LambdaInvocationDependenciesWrapperTask(
                             should_use_product_plans=self.should_use_product_plans,
                             include_expanded_from=self.include_expanded_from,
                             single_account=self.single_account,
-                            cache_invalidator=self.cache_invalidator,
                         )
                     )
         return dependencies
@@ -220,8 +214,6 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
     should_use_product_plans = luigi.BoolParameter()
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
-
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -297,7 +289,6 @@ class LambdaInvocationsSectionTask(manifest_tasks.SectionTask):
                     should_use_product_plans=self.should_use_product_plans,
                     include_expanded_from=self.include_expanded_from,
                     single_account=self.single_account,
-                    cache_invalidator=self.cache_invalidator,
                 )
                 for lambda_invocation_name, lambda_invocation in self.manifest.get(
                     "lambda-invocations", {}

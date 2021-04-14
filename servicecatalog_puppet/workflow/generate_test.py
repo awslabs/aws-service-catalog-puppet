@@ -11,7 +11,6 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     region = "region"
     sharing_policies = dict(accounts=["01234567890",], organizations=["ou-0932u0jsdj"],)
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import generate
@@ -23,7 +22,6 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             region=self.region,
             sharing_policies=self.sharing_policies,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -200,7 +198,6 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     region = "region"
     sharing_policies = {}
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import generate
@@ -212,7 +209,6 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             region=self.region,
             sharing_policies=self.sharing_policies,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -278,7 +274,6 @@ class GenerateSharesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     manifest_file_path = "manifest_file_path"
     section = "section"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import generate
@@ -289,7 +284,6 @@ class GenerateSharesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             puppet_account_id=self.puppet_account_id,
             manifest_file_path=self.manifest_file_path,
             section=self.section,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()

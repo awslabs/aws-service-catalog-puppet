@@ -19,8 +19,6 @@ class GeneratePoliciesTemplate(tasks.PuppetTask):
     region = luigi.Parameter()
     sharing_policies = luigi.DictParameter()
 
-    cache_invalidator = luigi.Parameter()
-
     @property
     def output_suffix(self):
         return "template.yaml"
@@ -80,8 +78,6 @@ class GeneratePolicies(tasks.PuppetTask):
     region = luigi.Parameter()
     sharing_policies = luigi.DictParameter()
 
-    cache_invalidator = luigi.Parameter()
-
     def params_for_results_display(self):
         return {
             "manifest_file_path": self.manifest_file_path,
@@ -97,7 +93,6 @@ class GeneratePolicies(tasks.PuppetTask):
                 manifest_file_path=self.manifest_file_path,
                 region=self.region,
                 sharing_policies=self.sharing_policies,
-                cache_invalidator=self.cache_invalidator,
             ),
         }
 
@@ -131,7 +126,6 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
     puppet_account_id = luigi.Parameter()
     manifest_file_path = luigi.Parameter()
     section = luigi.Parameter()
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -170,7 +164,6 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                     manifest_file_path=self.manifest_file_path,
                     region=region_name,
                     sharing_policies=sharing_policies,
-                    cache_invalidator=self.cache_invalidator,
                 )
             )
 
@@ -197,7 +190,6 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                             account_id=account_id,
                             region=region_name,
                             portfolio=portfolio_name,
-                            cache_invalidator=self.cache_invalidator,
                             sharing_mode=share.get(self.section).get(
                                 "sharing_mode",
                                 config.get_global_sharing_mode_default(

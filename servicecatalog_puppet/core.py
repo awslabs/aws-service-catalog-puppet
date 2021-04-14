@@ -72,6 +72,8 @@ def reset_provisioned_product_owner(f):
     current_account_id = puppet_account_id
     manifest = manifest_utils.load(f, puppet_account_id)
 
+    os.environ["SCT_CACHE_INVALIDATOR"] = str(datetime.now())
+
     task_defs = manifest_utils_for_launches.generate_launch_tasks(
         manifest, puppet_account_id, False, False
     )
@@ -88,14 +90,11 @@ def reset_provisioned_product_owner(f):
                 )
             )
 
-    cache_invalidator = str(datetime.now())
-
     runner.run_tasks(
         puppet_account_id,
         current_account_id,
         tasks_to_run,
         10,
-        cache_invalidator=cache_invalidator,
         on_complete_url=None,
     )
 
@@ -106,7 +105,6 @@ def generate_tasks(
     executor_account_id,
     single_account=None,
     execution_mode="hub",
-    cache_invalidator="now",
 ):
     should_use_product_plans = config.get_should_use_product_plans(
         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
@@ -120,7 +118,6 @@ def generate_tasks(
             include_expanded_from=False,
             single_account=single_account,
             execution_mode=execution_mode,
-            cache_invalidator=cache_invalidator,
         ),
         spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
             manifest_file_path=f.name,
@@ -129,7 +126,6 @@ def generate_tasks(
             include_expanded_from=False,
             single_account=single_account,
             execution_mode=execution_mode,
-            cache_invalidator=cache_invalidator,
         ),
         lambda_invocations_tasks.LambdaInvocationsSectionTask(
             manifest_file_path=f.name,
@@ -138,7 +134,6 @@ def generate_tasks(
             include_expanded_from=False,
             single_account=single_account,
             execution_mode=execution_mode,
-            cache_invalidator=cache_invalidator,
         ),
     ]
 
@@ -155,7 +150,7 @@ def deploy(
     on_complete_url=None,
     running_exploded=False,
 ):
-    cache_invalidator = str(datetime.now())
+    os.environ["SCT_CACHE_INVALIDATOR"] = str(datetime.now())
     os.environ["SCT_IS_DRY_RUN"] = str(is_dry_run)
     os.environ["SCT_SHOULD_USE_SNS"] = str(config.get_should_use_sns(puppet_account_id))
 
@@ -165,7 +160,6 @@ def deploy(
         executor_account_id,
         single_account,
         execution_mode,
-        cache_invalidator,
     )
     runner.run_tasks(
         puppet_account_id,
@@ -175,7 +169,6 @@ def deploy(
         is_dry_run,
         is_list_launches,
         execution_mode,
-        cache_invalidator,
         on_complete_url,
         running_exploded,
     )
@@ -563,8 +556,6 @@ def expand(f, single_account, subset=None):
 
     if new_manifest.get(constants.LAMBDA_INVOCATIONS) is None:
         new_manifest[constants.LAMBDA_INVOCATIONS] = dict()
-
-
 
     new_name = f.name.replace(".yaml", "-expanded.yaml")
     logger.info("Writing new manifest: {}".format(new_name))

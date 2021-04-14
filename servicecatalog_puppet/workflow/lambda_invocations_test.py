@@ -19,7 +19,6 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     should_use_product_plans = False
     include_expanded_from = False
     single_account = "single_account"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import lambda_invocations
@@ -42,7 +41,6 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             should_use_product_plans=self.should_use_product_plans,
             include_expanded_from=self.include_expanded_from,
             single_account=self.single_account,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -121,7 +119,6 @@ class LambdaInvocationDependenciesWrapperTaskTest(
     should_use_product_plans = False
     include_expanded_from = False
     single_account = "single_account"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import lambda_invocations
@@ -135,7 +132,6 @@ class LambdaInvocationDependenciesWrapperTaskTest(
             should_use_product_plans=self.should_use_product_plans,
             include_expanded_from=self.include_expanded_from,
             single_account=self.single_account,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -181,7 +177,6 @@ class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     should_use_product_plans = False
     include_expanded_from = False
     single_account = "single_account"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import lambda_invocations
@@ -195,7 +190,6 @@ class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             should_use_product_plans=self.should_use_product_plans,
             include_expanded_from=self.include_expanded_from,
             single_account=self.single_account,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -240,7 +234,6 @@ class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTes
     include_expanded_from = False
     single_account = "single_account"
     execution_mode = "execution_mode"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import lambda_invocations
@@ -254,7 +247,6 @@ class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTes
             include_expanded_from=self.include_expanded_from,
             single_account=self.single_account,
             execution_mode=self.execution_mode,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()

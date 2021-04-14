@@ -29,7 +29,6 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
                         "sharing_mode",
                         config.get_global_sharing_mode_default(self.puppet_account_id),
                     ),
-                    cache_invalidator=self.cache_invalidator,
                 )
                 for spoke_local_portfolio_name, spoke_local_portfolio in self.manifest.get(
                     "spoke-local-portfolios", {}

@@ -32,7 +32,6 @@ def run_tasks(
     is_dry_run=False,
     is_list_launches=None,
     execution_mode="hub",
-    cache_invalidator="now",
     on_complete_url=None,
     running_exploded=False,
 ):
@@ -104,6 +103,8 @@ def run_tasks(
         LuigiStatusCode.NOT_RUN: 4,
         LuigiStatusCode.MISSING_EXT: 5,
     }
+
+    cache_invalidator = os.environ.get("SCT_CACHE_INVALIDATOR")
 
     if is_list_launches:
         if is_list_launches == "table":

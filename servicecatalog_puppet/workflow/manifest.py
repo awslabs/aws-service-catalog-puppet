@@ -25,7 +25,6 @@ class SectionTask(tasks.PuppetTask, ManifestMixen):
     include_expanded_from = luigi.BoolParameter()
     single_account = luigi.Parameter()
     execution_mode = luigi.Parameter()
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {

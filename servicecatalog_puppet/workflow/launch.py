@@ -29,7 +29,6 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                             include_expanded_from=self.include_expanded_from,
                             single_account=self.single_account,
                             execution_mode=self.execution_mode,
-                            cache_invalidator=self.cache_invalidator,
                         )
                     )
         else:
@@ -49,7 +48,6 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                             include_expanded_from=self.include_expanded_from,
                             single_account=self.single_account,
                             execution_mode=self.execution_mode,
-                            cache_invalidator=self.cache_invalidator,
                         )
                     )
                 else:
@@ -62,7 +60,6 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                             include_expanded_from=self.include_expanded_from,
                             single_account=self.single_account,
                             execution_mode=self.execution_mode,
-                            cache_invalidator=self.cache_invalidator,
                         )
                     )
         return requirements
