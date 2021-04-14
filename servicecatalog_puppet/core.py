@@ -95,45 +95,24 @@ def reset_provisioned_product_owner(f):
         current_account_id,
         tasks_to_run,
         10,
+        execution_mode="hub",
         on_complete_url=None,
     )
 
 
 def generate_tasks(
-    f,
-    puppet_account_id,
-    executor_account_id,
-    single_account=None,
-    execution_mode="hub",
+    f, puppet_account_id, executor_account_id,
 ):
-    should_use_product_plans = config.get_should_use_product_plans(
-        puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-    )
 
     return [
         launch_tasks.LaunchSectionTask(
-            manifest_file_path=f.name,
-            puppet_account_id=puppet_account_id,
-            should_use_product_plans=should_use_product_plans,
-            include_expanded_from=False,
-            single_account=single_account,
-            execution_mode=execution_mode,
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
         spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
-            manifest_file_path=f.name,
-            puppet_account_id=puppet_account_id,
-            should_use_product_plans=should_use_product_plans,
-            include_expanded_from=False,
-            single_account=single_account,
-            execution_mode=execution_mode,
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
         lambda_invocations_tasks.LambdaInvocationsSectionTask(
-            manifest_file_path=f.name,
-            puppet_account_id=puppet_account_id,
-            should_use_product_plans=should_use_product_plans,
-            include_expanded_from=False,
-            single_account=single_account,
-            execution_mode=execution_mode,
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
     ]
 
@@ -151,16 +130,17 @@ def deploy(
     running_exploded=False,
 ):
     os.environ["SCT_CACHE_INVALIDATOR"] = str(datetime.now())
+    os.environ["SCT_EXECUTION_MODE"] = str(execution_mode)
+    os.environ["SCT_SINGLE_ACCOUNT"] = str(single_account)
     os.environ["SCT_IS_DRY_RUN"] = str(is_dry_run)
     os.environ["SCT_SHOULD_USE_SNS"] = str(config.get_should_use_sns(puppet_account_id))
-
-    tasks_to_run = generate_tasks(
-        f,
-        puppet_account_id,
-        executor_account_id,
-        single_account,
-        execution_mode,
+    os.environ["SCT_SHOULD_USE_PRODUCT_PLANS"] = str(
+        config.get_should_use_product_plans(
+            puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
+        )
     )
+
+    tasks_to_run = generate_tasks(f, puppet_account_id, executor_account_id,)
     runner.run_tasks(
         puppet_account_id,
         executor_account_id,

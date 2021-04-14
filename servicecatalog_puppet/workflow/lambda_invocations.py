@@ -30,9 +30,6 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
     all_params = []
 
     manifest_file_path = luigi.Parameter()
-    should_use_product_plans = luigi.BoolParameter()
-    include_expanded_from = luigi.BoolParameter()
-    single_account = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -78,9 +75,6 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
                 lambda_invocation_name=self.lambda_invocation_name,
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
-                should_use_product_plans=self.should_use_product_plans,
-                include_expanded_from=self.include_expanded_from,
-                single_account=self.single_account,
             ),
         )
 
@@ -141,9 +135,6 @@ class LambdaInvocationDependenciesWrapperTask(
     manifest_file_path = luigi.Parameter()
 
     puppet_account_id = luigi.Parameter()
-    should_use_product_plans = luigi.BoolParameter()
-    include_expanded_from = luigi.BoolParameter()
-    single_account = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -169,10 +160,6 @@ class LambdaInvocationDependenciesWrapperTask(
                         launch_name=dependency,
                         manifest_file_path=self.manifest_file_path,
                         puppet_account_id=self.puppet_account_id,
-                        should_use_product_plans=self.should_use_product_plans,
-                        include_expanded_from=self.include_expanded_from,
-                        single_account=self.single_account,
-                        execution_mode="hub",
                     )
                 )
             else:
@@ -183,10 +170,6 @@ class LambdaInvocationDependenciesWrapperTask(
                             launch_name=dependency.get("name"),
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,
-                            should_use_product_plans=self.should_use_product_plans,
-                            include_expanded_from=self.include_expanded_from,
-                            single_account=self.single_account,
-                            execution_mode="hub",
                         )
                     )
                 elif dependency_type == constants.LAMBDA_INVOCATION:
@@ -195,9 +178,6 @@ class LambdaInvocationDependenciesWrapperTask(
                             lambda_invocation_name=dependency.get("name"),
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,
-                            should_use_product_plans=self.should_use_product_plans,
-                            include_expanded_from=self.include_expanded_from,
-                            single_account=self.single_account,
                         )
                     )
         return dependencies
@@ -211,9 +191,6 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
     manifest_file_path = luigi.Parameter()
 
     puppet_account_id = luigi.Parameter()
-    should_use_product_plans = luigi.BoolParameter()
-    include_expanded_from = luigi.BoolParameter()
-    single_account = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -248,12 +225,7 @@ class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMix
             "manifest_parameters": self.manifest.get("parameters", {}),
         }
 
-        wrapper_params = dict(
-            manifest_file_path=self.manifest_file_path,
-            should_use_product_plans=self.should_use_product_plans,
-            include_expanded_from=self.include_expanded_from,
-            single_account=self.single_account,
-        )
+        wrapper_params = dict(manifest_file_path=self.manifest_file_path,)
 
         for task_def in task_defs:
             task_def_parameters = {
@@ -286,9 +258,6 @@ class LambdaInvocationsSectionTask(manifest_tasks.SectionTask):
                     lambda_invocation_name=lambda_invocation_name,
                     manifest_file_path=self.manifest_file_path,
                     puppet_account_id=self.puppet_account_id,
-                    should_use_product_plans=self.should_use_product_plans,
-                    include_expanded_from=self.include_expanded_from,
-                    single_account=self.single_account,
                 )
                 for lambda_invocation_name, lambda_invocation in self.manifest.get(
                     "lambda-invocations", {}

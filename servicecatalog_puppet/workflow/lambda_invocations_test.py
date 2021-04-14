@@ -16,9 +16,6 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_parameters = {}
     account_parameters = {}
     manifest_file_path = "manifest_file_path"
-    should_use_product_plans = False
-    include_expanded_from = False
-    single_account = "single_account"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import lambda_invocations
@@ -38,9 +35,6 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_parameters=self.manifest_parameters,
             account_parameters=self.account_parameters,
             manifest_file_path=self.manifest_file_path,
-            should_use_product_plans=self.should_use_product_plans,
-            include_expanded_from=self.include_expanded_from,
-            single_account=self.single_account,
         )
 
         self.wire_up_mocks()
@@ -116,9 +110,6 @@ class LambdaInvocationDependenciesWrapperTaskTest(
     lambda_invocation_name = "lambda_invocation_name"
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
-    should_use_product_plans = False
-    include_expanded_from = False
-    single_account = "single_account"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import lambda_invocations
@@ -129,9 +120,6 @@ class LambdaInvocationDependenciesWrapperTaskTest(
             lambda_invocation_name=self.lambda_invocation_name,
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
-            should_use_product_plans=self.should_use_product_plans,
-            include_expanded_from=self.include_expanded_from,
-            single_account=self.single_account,
         )
 
         self.wire_up_mocks()
@@ -174,9 +162,6 @@ class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
     should_use_sns = False
-    should_use_product_plans = False
-    include_expanded_from = False
-    single_account = "single_account"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import lambda_invocations
@@ -187,9 +172,6 @@ class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             lambda_invocation_name=self.lambda_invocation_name,
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
-            should_use_product_plans=self.should_use_product_plans,
-            include_expanded_from=self.include_expanded_from,
-            single_account=self.single_account,
         )
 
         self.wire_up_mocks()
@@ -230,10 +212,6 @@ class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
-    should_use_product_plans = False
-    include_expanded_from = False
-    single_account = "single_account"
-    execution_mode = "execution_mode"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import lambda_invocations
@@ -243,10 +221,6 @@ class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTes
         self.sut = self.module.LambdaInvocationsSectionTask(
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
-            should_use_product_plans=self.should_use_product_plans,
-            include_expanded_from=self.include_expanded_from,
-            single_account=self.single_account,
-            execution_mode=self.execution_mode,
         )
 
         self.wire_up_mocks()

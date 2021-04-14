@@ -159,7 +159,6 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
     puppet_account_id = luigi.Parameter()
 
-    parameters = luigi.ListParameter(default=[], significant=False)
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
     launch_parameters = luigi.DictParameter(default={}, significant=False)
@@ -169,7 +168,6 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     retry_count = luigi.IntParameter(default=1, significant=False)
     worker_timeout = luigi.IntParameter(default=0, significant=False)
     ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
-    should_use_product_plans = luigi.BoolParameter(significant=False, default=False)
     requested_priority = luigi.IntParameter(significant=False, default=0)
 
     execution = luigi.Parameter()
@@ -221,7 +219,51 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                 )
         self.all_params = all_params
 
-        return {
+        these_dependencies = list()
+        launch = self.manifest.get(constants.LAUNCHES).get(self.launch_name)
+        for depends_on in launch.get("depends_on", []):
+            if depends_on.get("type") == constants.LAUNCH:
+                if depends_on.get(constants.AFFINITY) == "launch":
+                    these_dependencies.append(
+                        LaunchTask(
+                            manifest_file_path=self.manifest_file_path,
+                            launch_name=depends_on.get("name"),
+                            puppet_account_id=self.puppet_account_id,
+                        )
+                    )
+                if depends_on.get(constants.AFFINITY) == "account":
+                    these_dependencies.append(
+                        LaunchTaskForAccount(
+                            manifest_file_path=self.manifest_file_path,
+                            launch_name=depends_on.get("name"),
+                            puppet_account_id=self.puppet_account_id,
+                            status=constants.PROVISIONED,
+                            account_id=self.account_id,
+                        )
+                    )
+                if depends_on.get(constants.AFFINITY) == "region":
+                    these_dependencies.append(
+                        LaunchTaskForRegion(
+                            manifest_file_path=self.manifest_file_path,
+                            launch_name=depends_on.get("name"),
+                            puppet_account_id=self.puppet_account_id,
+                            status=constants.PROVISIONED,
+                            region=self.region,
+                        )
+                    )
+                if depends_on.get(constants.AFFINITY) == "account-and-region":
+                    these_dependencies.append(
+                        LaunchTaskForAccountAndRegion(
+                            manifest_file_path=self.manifest_file_path,
+                            launch_name=depends_on.get("name"),
+                            puppet_account_id=self.puppet_account_id,
+                            status=constants.PROVISIONED,
+                            account_id=self.account_id,
+                            region=self.region,
+                        )
+                    )
+
+        requirements = {
             "ssm_params": ssm_params,
             "provisioning_artifact_parameters": ProvisioningArtifactParametersTask(
                 manifest_file_path=self.manifest_file_path,
@@ -234,13 +276,15 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             "details": portfoliomanagement_tasks.GetVersionDetailsByNames(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
-                account_id=self.account_id,
+                account_id=self.puppet_account_id,
                 portfolio=self.portfolio,
                 product=self.product,
                 version=self.version,
                 region=self.region,
             ),
         }
+
+        return requirements
 
     def api_calls_used(self):
         return {
@@ -402,10 +446,11 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                             path_name,
                             params_to_use,
                             self.version,
+                            self.should_use_sns,
                             self.execution,
                         )
 
-                self.info(f"self.execution_mode is {self.execution}")
+                self.info(f"self.execution is {self.execution}")
                 if self.execution == constants.EXECUTION_MODE_HUB:
                     self.info(
                         f"Running in execution mode: {self.execution}, checking for SSM outputs"
@@ -938,10 +983,6 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
 class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
-    should_use_product_plans = luigi.BoolParameter()
-    include_expanded_from = luigi.BoolParameter()
-    single_account = luigi.Parameter()
-    execution_mode = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -953,7 +994,7 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         provisions = []
 
         for task_def in task_defs:
-            if self.single_account == "None" or self.single_account is None:
+            if self.single_account == "None":
                 pass
             else:
                 if task_def.get("account_id") != self.single_account:
@@ -1013,9 +1054,7 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         configuration = manifest_utils_for_launches.get_configuration_from_launch(
             self.manifest, self.launch_name
         )
-        configuration["single_account"] = self.single_account
         configuration["puppet_account_id"] = self.puppet_account_id
-        configuration["should_use_product_plans"] = self.should_use_product_plans
 
         launch_tasks_def = self.manifest.get_task_defs_from_details(
             self.puppet_account_id, False, self.launch_name, configuration, "launches"
@@ -1028,187 +1067,197 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
         self.write_output(self.params_for_results_display())
 
 
-class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
+class LaunchTaskFor(ProvisioningTask, manifest_tasks.ManifestMixen):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
-    should_use_product_plans = luigi.BoolParameter()
-    include_expanded_from = luigi.BoolParameter()
-    single_account = luigi.Parameter()
-    execution_mode = luigi.Parameter()
+
+    status = luigi.Parameter()
+
+    def get_klass_for_provisioning(self):
+        if self.is_dry_run:
+            if self.status == constants.PROVISIONED:
+                return ProvisionProductDryRunTask
+            elif self.status == constants.TERMINATED:
+                return TerminateProductDryRunTask
+            else:
+                raise Exception(f"Unknown status: {self.status}")
+        else:
+            if self.status == constants.PROVISIONED:
+                return ProvisionProductTask
+            elif self.status == constants.TERMINATED:
+                return TerminateProductTask
+            else:
+                raise Exception(f"Unknown status: {self.status}")
+
+    def run(self):
+        self.write_output(self.params_for_results_display())
+
+
+class LaunchTaskForRegion(LaunchTaskFor):
+    region = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "launch_name": self.launch_name,
-            "execution_mode": self.execution_mode,
+            "region": self.region,
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def generate_provisions(self, task_defs, manifest):
-        self.info("generate_provisions")
-        provisions = []
-        accounts_by_id = dict()
-        for a in manifest.get("accounts"):
-            accounts_by_id[a.get("account_id")] = a
-
-        for task_def in task_defs:
-            if self.single_account == "None" or self.single_account is None:
-                pass
-            else:
-                if task_def.get("account_id") != self.single_account:
-                    continue
-            task_status = task_def.get("status")
-            del task_def["status"]
-            del task_def["depends_on"]
-
-            if task_status == constants.PROVISIONED:
-                provisioning_parameters = dict()
-
-                for p in ProvisionProductTask.get_param_names(include_significant=True):
-                    provisioning_parameters[p] = task_def.get(p)
-
-                provisioning_parameters.update(
-                    dict(manifest_file_path=self.manifest_file_path,)
-                )
-
-                if self.is_dry_run:
-                    provisions.append(
-                        ProvisionProductDryRunTask(**provisioning_parameters)
-                    )
-                else:
-                    provisions.append(ProvisionProductTask(**provisioning_parameters))
-
-            elif task_status == constants.TERMINATED:
-                terminating_parameters = dict()
-                for p in TerminateProductTask.get_param_names(include_significant=True):
-                    terminating_parameters[p] = task_def.get(p)
-
-                    terminating_parameters.update(
-                        dict(manifest_file_path=self.manifest_file_path,)
-                    )
-
-                if self.is_dry_run:
-                    provisions.append(
-                        TerminateProductDryRunTask(**terminating_parameters)
-                    )
-                else:
-                    provisions.append(TerminateProductTask(**terminating_parameters))
-            else:
-                raise Exception(f"Unsupported status of {task_status}")
-        return provisions
-
     def requires(self):
-        launch = self.manifest.get("launches", {}).get(self.launch_name)
-
-        if not launch:
-            raise Exception(self.launch_name)
-
         dependencies = list()
+        these_dependencies = list()
+        requirements = dict(
+            dependencies=dependencies, these_dependencies=these_dependencies,
+        )
 
-        requirements = dict(dependencies=dependencies,)
+        klass = self.get_klass_for_provisioning()
 
-        if not self.is_dry_run:
-            requirements["generate_shares"] = generate_tasks.GenerateSharesTask(
-                puppet_account_id=self.puppet_account_id,
-                manifest_file_path=self.manifest_file_path,
-                section=constants.LAUNCHES,
+        for task in self.manifest.get_provisioning_tasks_for_launch_and_region(
+            self.puppet_account_id, self.launch_name, self.region
+        ):
+            dependencies.append(
+                klass(**task, manifest_file_path=self.manifest_file_path)
             )
 
-        for dependency in launch.get("depends_on", []):
-            dependency_name = dependency.get("name")
-            dependency_type = dependency.get("type")
-            if dependency_type == constants.LAUNCH:
-                dependencies.append(
-                    self.__class__(
-                        launch_name=dependency_name,
-                        manifest_file_path=self.manifest_file_path,
-                        puppet_account_id=self.puppet_account_id,
-                        should_use_product_plans=self.should_use_product_plans,
-                        include_expanded_from=self.include_expanded_from,
-                        single_account=self.single_account,
-                        execution_mode=self.execution_mode,
+        launch = self.manifest.get(constants.LAUNCHES).get(self.launch_name)
+        for depends_on in launch.get("depends_on", []):
+            if depends_on.get("type") == constants.LAUNCH:
+                if depends_on.get(constants.AFFINITY) == "region":
+                    these_dependencies.append(
+                        self.__class__(
+                            manifest_file_path=self.manifest_file_path,
+                            launch_name=depends_on.get("name"),
+                            puppet_account_id=self.puppet_account_id,
+                            status=self.status,
+                            region=self.region,
+                        )
                     )
-                )
-            elif dependency_type == constants.LAMBDA_INVOCATION:
-                from servicecatalog_puppet.workflow.lambda_invocations import (
-                    LambdaInvocationTask,
-                )
 
-                dependencies.append(
-                    LambdaInvocationTask(
-                        lambda_invocation_name=dependency_name,
-                        manifest_file_path=self.manifest_file_path,
-                        puppet_account_id=self.puppet_account_id,
-                        should_use_product_plans=self.should_use_product_plans,
-                        include_expanded_from=self.include_expanded_from,
-                        single_account=self.single_account,
+        return requirements
+
+
+class LaunchTaskForAccount(LaunchTaskFor):
+    account_id = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "launch_name": self.launch_name,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def requires(self):
+        dependencies = list()
+        requirements = dict(dependencies=dependencies,)
+
+        klass = self.get_klass_for_provisioning()
+
+        for task in self.manifest.get_provisioning_tasks_for_launch_and_account(
+            self.puppet_account_id, self.launch_name, self.account_id
+        ):
+            dependencies.append(
+                klass(**task, manifest_file_path=self.manifest_file_path)
+            )
+
+        return requirements
+
+
+class LaunchTaskForAccountAndRegion(LaunchTaskFor):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "launch_name": self.launch_name,
+            "account_id": self.account_id,
+            "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def requires(self):
+        dependencies = list()
+        requirements = dict(dependencies=dependencies)
+
+        klass = self.get_klass_for_provisioning()
+
+        for (
+            task
+        ) in self.manifest.get_provisioning_tasks_for_launch_and_account_and_region(
+            self.puppet_account_id, self.launch_name, self.account_id, self.region,
+        ):
+            dependencies.append(
+                klass(**task, manifest_file_path=self.manifest_file_path)
+            )
+
+        return requirements
+
+
+class LaunchTask(ProvisioningTask, manifest_tasks.ManifestMixen):
+    launch_name = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "launch_name": self.launch_name,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def requires(self):
+        regional_dependencies = list()
+        account_dependencies = list()
+        account_and_region_dependencies = list()
+        requirements = dict(
+            regional_launches=regional_dependencies,
+            account_launches=account_dependencies,
+            account_and_region_dependencies=account_and_region_dependencies,
+        )
+        status = (
+            self.manifest.get(constants.LAUNCHES)
+            .get(self.launch_name)
+            .get("status", constants.PROVISIONED)
+        )
+        for region in self.manifest.get_regions_used_for_section_item(
+            self.puppet_account_id, constants.LAUNCHES, self.launch_name
+        ):
+            regional_dependencies.append(
+                LaunchTaskForRegion(**self.param_kwargs, region=region, status=status,)
+            )
+
+        for account_id in self.manifest.get_account_ids_used_for_section_item(
+            self.puppet_account_id, constants.LAUNCHES, self.launch_name
+        ):
+            account_dependencies.append(
+                LaunchTaskForAccount(
+                    **self.param_kwargs, account_id=account_id, status=status,
+                )
+            )
+
+        for (
+            account_id,
+            regions,
+        ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+            self.puppet_account_id, constants.LAUNCHES, self.launch_name
+        ).items():
+            for region in regions:
+                account_and_region_dependencies.append(
+                    LaunchTaskForAccountAndRegion(
+                        **self.param_kwargs,
+                        account_id=account_id,
+                        region=region,
+                        status=status,
                     )
                 )
 
         return requirements
 
-    @lru_cache()
-    def get_launch_tasks_defs(self):
-        launch = self.manifest.get("launches").get(self.launch_name)
-        if not launch:
-            raise Exception(self.launch_name)
-
-        configuration = manifest_utils_for_launches.get_configuration_from_launch(
-            self.manifest, self.launch_name
-        )
-        configuration["single_account"] = self.single_account
-        configuration["puppet_account_id"] = self.puppet_account_id
-        configuration["should_use_product_plans"] = self.should_use_product_plans
-
-        configuration["execution"] = launch.get("execution")
-
-        launch_tasks_def = self.manifest.get_task_defs_from_details(
-            self.puppet_account_id, False, self.launch_name, configuration, "launches"
-        )
-        return launch_tasks_def
-
     def run(self):
-        self.info("started")
-        launch_tasks_def = self.get_launch_tasks_defs()
-
-        self.info(f"{self.uid} starting pre actions")
-        pre_actions = self.manifest.get_actions_from(
-            self.launch_name, "pre", "launches"
-        )
-        yield [
-            portfoliomanagement_tasks.ProvisionActionTask(
-                self.manifest_file_path, **p, puppet_account_id=self.puppet_account_id,
-            )
-            for p in pre_actions
-        ]
-        self.info(f"{self.uid} finished pre actions")
-
-        self.info(f"{self.uid} starting launches")
-        ls = self.generate_provisions(launch_tasks_def, self.manifest)
-        yield ls
-        self.info(f"{self.uid} finished launches")
-
-        self.info(f"{self.uid} starting post actions")
-        post_actions = self.manifest.get_actions_from(
-            self.launch_name, "post", "launches"
-        )
-        yield [
-            portfoliomanagement_tasks.ProvisionActionTask(
-                self.manifest_file_path, **p, puppet_account_id=self.puppet_account_id,
-            )
-            for p in post_actions
-        ]
-        self.info(f"{self.uid} finished post actions")
-
-        self.write_output(dict(**self.params_for_results_display(), skipped=False))
-        self.info("Finished")
+        self.write_output(self.params_for_results_display())
 
 
 class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     spoke_local_portfolio_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
-    should_use_product_plans = luigi.BoolParameter()
-    include_expanded_from = luigi.BoolParameter()
-    single_account = luigi.Parameter()
+
     depends_on = luigi.ListParameter()
     sharing_mode = luigi.Parameter()
 
@@ -1229,10 +1278,6 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
                         launch_name=dependency.get("name"),
                         manifest_file_path=self.manifest_file_path,
                         puppet_account_id=self.puppet_account_id,
-                        should_use_product_plans=self.should_use_product_plans,
-                        include_expanded_from=self.include_expanded_from,
-                        single_account=self.single_account,
-                        execution_mode="hub",
                     )
                 )
             else:
@@ -1398,9 +1443,7 @@ class SpokeLocalPortfolioTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             "product_generation_method": spoke_local_portfolio_details.get(
                 "product_generation_method", "copy"
             ),
-            "single_account": self.single_account,
             "puppet_account_id": self.puppet_account_id,
-            "should_use_product_plans": self.should_use_product_plans,
         }
         configuration.update(
             manifest_utils.get_configuration_overrides(

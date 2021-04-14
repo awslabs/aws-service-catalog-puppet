@@ -92,7 +92,6 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     region = "region"
     account_id = "account_id"
     puppet_account_id = "puppet_account_id"
-    parameters = {}
     ssm_param_inputs = []
     launch_parameters = {}
     manifest_parameters = {}
@@ -100,7 +99,7 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     retry_count = 1
     worker_timeout = 3
     ssm_param_outputs = []
-    should_use_product_plans = False
+
     requested_priority = 1
     execution = "execution"
 
@@ -118,7 +117,6 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             region=self.region,
             account_id=self.account_id,
             puppet_account_id=self.puppet_account_id,
-            parameters=self.parameters,
             ssm_param_inputs=self.ssm_param_inputs,
             launch_parameters=self.launch_parameters,
             manifest_parameters=self.manifest_parameters,
@@ -126,7 +124,6 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             retry_count=self.retry_count,
             worker_timeout=self.worker_timeout,
             ssm_param_outputs=self.ssm_param_outputs,
-            should_use_product_plans=self.should_use_product_plans,
             requested_priority=self.requested_priority,
             execution=self.execution,
         )
@@ -206,7 +203,6 @@ class ProvisionProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
     region = "region"
     account_id = "account_id"
     puppet_account_id = "puppet_account_id"
-    parameters = {}
     ssm_param_inputs = []
     launch_parameters = {}
     manifest_parameters = {}
@@ -215,7 +211,7 @@ class ProvisionProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
     worker_timeout = 3
     ssm_param_outputs = []
     should_use_sns = False
-    should_use_product_plans = False
+
     requested_priority = 1
     execution = "execution"
 
@@ -233,7 +229,6 @@ class ProvisionProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
             region=self.region,
             account_id=self.account_id,
             puppet_account_id=self.puppet_account_id,
-            parameters=self.parameters,
             ssm_param_inputs=self.ssm_param_inputs,
             launch_parameters=self.launch_parameters,
             manifest_parameters=self.manifest_parameters,
@@ -241,7 +236,6 @@ class ProvisionProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
             retry_count=self.retry_count,
             worker_timeout=self.worker_timeout,
             ssm_param_outputs=self.ssm_param_outputs,
-            should_use_product_plans=self.should_use_product_plans,
             requested_priority=self.requested_priority,
             execution=self.execution,
         )
@@ -566,10 +560,6 @@ class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     launch_name = "launch_name"
     puppet_account_id = "puppet_account_id"
-    should_use_product_plans = False
-    include_expanded_from = False
-    single_account = "single_account"
-    execution_mode = "execution_mode"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import provisioning
@@ -580,10 +570,6 @@ class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             launch_name=self.launch_name,
             puppet_account_id=self.puppet_account_id,
-            should_use_product_plans=self.should_use_product_plans,
-            include_expanded_from=self.include_expanded_from,
-            single_account=self.single_account,
-            execution_mode=self.execution_mode,
         )
 
         self.wire_up_mocks()
@@ -623,10 +609,6 @@ class LaunchTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     launch_name = "launch_name"
     puppet_account_id = "puppet_account_id"
-    should_use_product_plans = False
-    include_expanded_from = False
-    single_account = "single_account"
-    execution_mode = "execution_mode"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import provisioning
@@ -637,10 +619,6 @@ class LaunchTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             launch_name=self.launch_name,
             puppet_account_id=self.puppet_account_id,
-            should_use_product_plans=self.should_use_product_plans,
-            include_expanded_from=self.include_expanded_from,
-            single_account=self.single_account,
-            execution_mode=self.execution_mode,
         )
 
         self.wire_up_mocks()
@@ -649,7 +627,6 @@ class LaunchTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # setup
         expected_result = {
             "launch_name": self.launch_name,
-            "execution_mode": self.execution_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -683,9 +660,7 @@ class SpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     spoke_local_portfolio_name = "spoke_local_portfolio_name"
     puppet_account_id = "puppet_account_id"
     should_use_sns = False
-    should_use_product_plans = False
-    include_expanded_from = False
-    single_account = "single_account"
+
     depends_on = []
     sharing_mode = "sharing_mode"
 
@@ -698,9 +673,6 @@ class SpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             spoke_local_portfolio_name=self.spoke_local_portfolio_name,
             puppet_account_id=self.puppet_account_id,
-            should_use_product_plans=self.should_use_product_plans,
-            include_expanded_from=self.include_expanded_from,
-            single_account=self.single_account,
             depends_on=self.depends_on,
             sharing_mode=self.sharing_mode,
         )

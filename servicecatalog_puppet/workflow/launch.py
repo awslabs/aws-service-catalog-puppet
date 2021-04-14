@@ -25,10 +25,6 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                             launch_name=launch_name,
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,
-                            should_use_product_plans=self.should_use_product_plans,
-                            include_expanded_from=self.include_expanded_from,
-                            single_account=self.single_account,
-                            execution_mode=self.execution_mode,
                         )
                     )
         else:
@@ -44,10 +40,6 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                             launch_name=launch_name,
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,
-                            should_use_product_plans=self.should_use_product_plans,
-                            include_expanded_from=self.include_expanded_from,
-                            single_account=self.single_account,
-                            execution_mode=self.execution_mode,
                         )
                     )
                 else:
@@ -56,10 +48,6 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                             launch_name=launch_name,
                             manifest_file_path=self.manifest_file_path,
                             puppet_account_id=self.puppet_account_id,
-                            should_use_product_plans=self.should_use_product_plans,
-                            include_expanded_from=self.include_expanded_from,
-                            single_account=self.single_account,
-                            execution_mode=self.execution_mode,
                         )
                     )
         return requirements

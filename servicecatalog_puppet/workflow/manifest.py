@@ -21,10 +21,6 @@ class ManifestMixen(object):
 class SectionTask(tasks.PuppetTask, ManifestMixen):
     manifest_file_path = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
-    should_use_product_plans = luigi.BoolParameter()
-    include_expanded_from = luigi.BoolParameter()
-    single_account = luigi.Parameter()
-    execution_mode = luigi.Parameter()
 
     def params_for_results_display(self):
         return {

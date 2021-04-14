@@ -12,6 +12,7 @@ from servicecatalog_puppet.macros import macros
 from servicecatalog_puppet import constants
 
 import networkx as nx
+import functools
 
 logger = logging.getLogger(__file__)
 
@@ -266,6 +267,237 @@ def get_from_dict(d, path):
 
 
 class Manifest(dict):
+    def get_tasks_for_launch(self, puppet_account_id, launch_name):
+        accounts = self.get(constants.ACCOUNTS)
+        section = self.get(constants.LAUNCHES)
+        provisioning_tasks = list()
+        item = section[launch_name]
+        deploy_to = "deploy_to"
+
+        common_parameters = dict(
+            puppet_account_id=puppet_account_id,
+            launch_name=launch_name,
+            launch_parameters=item.get("parameters", {}),
+            manifest_parameters=self.get("parameters", {}),
+            ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
+        )
+        for p in [
+            "portfolio",
+            "product",
+            "version",
+            "execution",
+            "requested_priority",
+            "execution",
+        ]:
+            if item.get(p):
+                common_parameters[p] = item.get(p)
+
+        tags = item.get(deploy_to).get("tags", [])
+        for tag in tags:
+            tag_name = tag.get("tag")
+            regions = tag.get("regions")
+            for account in accounts:
+                account_id = str(account.get("account_id"))
+                additional_parameters = dict(
+                    account_id=account_id,
+                    account_parameters=account.get("parameters", {}),
+                )
+                if tag_name in account.get("tags"):
+                    if isinstance(regions, str):
+                        if regions in [
+                            "enabled",
+                            "regions_enabled",
+                            "enabled_regions",
+                        ]:
+                            for region_enabled in account.get("regions_enabled"):
+                                provisioning_tasks.append(
+                                    dict(
+                                        **common_parameters,
+                                        **additional_parameters,
+                                        region=region_enabled,
+                                    )
+                                )
+                        elif regions == "default_region":
+                            provisioning_tasks.append(
+                                dict(
+                                    **common_parameters,
+                                    **additional_parameters,
+                                    region=account.get("default_region"),
+                                )
+                            )
+                        elif regions == "all":
+                            all_regions = config.get_regions(puppet_account_id)
+                            for region_enabled in all_regions:
+                                provisioning_tasks.append(
+                                    dict(
+                                        **common_parameters,
+                                        **additional_parameters,
+                                        region=region_enabled,
+                                    )
+                                )
+
+                        else:
+                            raise Exception(
+                                f"Unsupported regions {regions} setting for {constants.LAUNCHES}: {launch_name}"
+                            )
+                    elif isinstance(regions, list):
+                        for region_ in regions:
+                            provisioning_tasks.append(
+                                dict(
+                                    **common_parameters,
+                                    **additional_parameters,
+                                    region=region_,
+                                )
+                            )
+                    elif isinstance(regions, tuple):
+                        for region_ in regions:
+                            provisioning_tasks.append(
+                                dict(
+                                    **common_parameters,
+                                    **additional_parameters,
+                                    region=region_,
+                                )
+                            )
+
+                    else:
+                        raise Exception(
+                            f"Unsupported regions {regions} setting for {constants.LAUNCHES}: {launch_name}"
+                        )
+
+        for account_to_deploy_to in item.get(deploy_to).get("accounts", []):
+            account_id_of_account_to_deploy_to = account_to_deploy_to.get("account_id")
+            regions = account_to_deploy_to.get("regions")
+
+            account = self.get_account(account_id_of_account_to_deploy_to)
+            account_id = account_id_of_account_to_deploy_to
+            additional_parameters = dict(
+                account_id=account_id, account_parameters=account.get("parameters", {}),
+            )
+
+            if isinstance(regions, str):
+                if regions in [
+                    "enabled",
+                    "regions_enabled",
+                    "enabled_regions",
+                ]:
+                    for region_enabled in account.get("regions_enabled"):
+                        provisioning_tasks.append(
+                            dict(
+                                **common_parameters,
+                                **additional_parameters,
+                                region=region_enabled,
+                            )
+                        )
+                elif regions == "default_region":
+                    provisioning_tasks.append(
+                        dict(
+                            **common_parameters,
+                            **additional_parameters,
+                            region=account.get("default_region"),
+                        )
+                    )
+                elif regions == "all":
+                    all_regions = config.get_regions(puppet_account_id)
+                    for region_enabled in all_regions:
+                        provisioning_tasks.append(
+                            dict(
+                                **common_parameters,
+                                **additional_parameters,
+                                region=region_enabled,
+                            )
+                        )
+
+                else:
+                    raise Exception(
+                        f"Unsupported regions {regions} setting for {constants.LAUNCHES}: {launch_name}"
+                    )
+            elif isinstance(regions, list):
+                for region_ in regions:
+                    provisioning_tasks.append(
+                        dict(
+                            **common_parameters,
+                            **additional_parameters,
+                            region=region_,
+                        )
+                    )
+            elif isinstance(regions, tuple):
+                for region_ in regions:
+                    provisioning_tasks.append(
+                        dict(
+                            **common_parameters,
+                            **additional_parameters,
+                            region=region_,
+                        )
+                    )
+
+            else:
+                raise Exception(
+                    f"Unsupported regions {regions} setting for {constants.LAUNCHES}: {launch_name}"
+                )
+        return provisioning_tasks
+
+    def get_provisioning_tasks_for_launch_and_region(
+        self, puppet_account_id, launch_name, region
+    ):
+        return [
+            task
+            for task in self.get_tasks_for_launch(puppet_account_id, launch_name)
+            if task.get("region") == region
+        ]
+
+    def get_provisioning_tasks_for_launch_and_account(
+        self, puppet_account_id, launch_name, account_id
+    ):
+        return [
+            task
+            for task in self.get_tasks_for_launch(puppet_account_id, launch_name)
+            if task.get("account_id") == account_id
+        ]
+
+    def get_provisioning_tasks_for_launch_and_account_and_region(
+        self, puppet_account_id, launch_name, account_id, region
+    ):
+        return [
+            task
+            for task in self.get_tasks_for_launch(puppet_account_id, launch_name)
+            if task.get("account_id") == account_id and task.get("region") == region
+        ]
+
+    def get_regions_used_for_section_item(
+        self, puppet_account_id, section_name, item_name
+    ):
+        if section_name == constants.LAUNCHES:
+            return list(
+                set(
+                    task.get("region")
+                    for task in self.get_tasks_for_launch(puppet_account_id, item_name)
+                )
+            )
+
+    def get_account_ids_used_for_section_item(
+        self, puppet_account_id, section_name, item_name
+    ):
+        if section_name == constants.LAUNCHES:
+            return list(
+                set(
+                    task.get("account_id")
+                    for task in self.get_tasks_for_launch(puppet_account_id, item_name)
+                )
+            )
+
+    def get_account_ids_and_regions_used_for_section_item(
+        self, puppet_account_id, section_name, item_name
+    ):
+        if section_name == constants.LAUNCHES:
+            result = dict()
+            for task in self.get_tasks_for_launch(puppet_account_id, item_name):
+                if result.get(task.get("account_id")) is None:
+                    result[task.get("account_id")] = list()
+                result[task.get("account_id")].append(task.get("region"))
+            for account_id in result.keys():
+                result[account_id] = list(set(result[account_id]))
+            return result
+
     def get_mapping(self, mapping, account_id, region):
         manifest_mappings = self.get("mappings")
         new_mapping = []
@@ -318,7 +550,7 @@ class Manifest(dict):
 
     def get_account(self, account_id):
         for account in self.get("accounts"):
-            if account.get("account_id") == account_id:
+            if account.get("account_id") == str(account_id):
                 return account
         raise Exception(f"Could not find account: {account_id}")
 
@@ -365,15 +597,11 @@ class Manifest(dict):
     def get_shares_by_region_portfolio_account(self, puppet_account_id, section):
         shares_by_region_portfolio_account = {}
         configuration = {}
-        include_expanded_from = False
+
         for launch_name, launch_details in self.get(section, {}).items():
             portfolio = launch_details.get("portfolio")
             tasks = self.get_task_defs_from_details(
-                puppet_account_id,
-                include_expanded_from,
-                launch_name,
-                configuration,
-                section,
+                puppet_account_id, launch_name, configuration, section,
             )
             for task in tasks:
                 account_id = task.get("account_id")
@@ -406,7 +634,6 @@ class Manifest(dict):
     def get_task_defs_from_details(
         self,
         puppet_account_id,
-        include_expanded_from,
         launch_name,
         configuration,
         launch_or_spoke_local_portfolio,
@@ -430,13 +657,6 @@ class Manifest(dict):
                     if tag == tag_list_item.get("tag"):
                         tag_account_def = deepcopy(configuration)
                         tag_account_def["account_id"] = account.get("account_id")
-                        if include_expanded_from:
-                            tag_account_def["expanded_from"] = account.get(
-                                "expanded_from"
-                            )
-                            tag_account_def["organization"] = account.get(
-                                "organization"
-                            )
                         tag_account_def["account_parameters"] = account.get(
                             "parameters", {}
                         )
@@ -488,13 +708,6 @@ class Manifest(dict):
                 if account.get("account_id") == account_list_item.get("account_id"):
                     account_account_def = deepcopy(configuration)
                     account_account_def["account_id"] = account.get("account_id")
-                    if include_expanded_from:
-                        account_account_def["expanded_from"] = account.get(
-                            "expanded_from"
-                        )
-                        account_account_def["organization"] = account.get(
-                            "organization"
-                        )
                     account_account_def["account_parameters"] = account.get(
                         "parameters", {}
                     )

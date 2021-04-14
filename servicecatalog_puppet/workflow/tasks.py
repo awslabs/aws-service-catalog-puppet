@@ -30,6 +30,18 @@ def unwrap(what):
 
 class PuppetTask(luigi.Task):
     @property
+    def execution_mode(self):
+        return os.environ.get("SCT_EXECUTION_MODE", constants.EXECUTION_MODE_HUB)
+
+    @property
+    def single_account(self):
+        return os.environ.get("SCT_SINGLE_ACCOUNT", "None")
+
+    @property
+    def should_use_product_plans(self):
+        return os.environ.get("SCT_SHOULD_USE_PRODUCT_PLANS", "True") == "True"
+
+    @property
     def cache_invalidator(self):
         return os.environ.get("SCT_CACHE_INVALIDATOR", "NOW")
 

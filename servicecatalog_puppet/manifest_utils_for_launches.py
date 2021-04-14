@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__file__)
 
 
-def get_configuration_from_launch(manifest, launch_name):
+def get_configuration_from_launch(manifest, launch_name):  # TODO EPF
     launch_details = manifest.get("launches").get(launch_name)
     configuration = {
         "status": launch_details.get("status", constants.PROVISIONED),
@@ -29,45 +29,3 @@ def get_configuration_from_launch(manifest, launch_name):
     }
     configuration.update(get_configuration_overrides(manifest, launch_details))
     return configuration
-
-
-# TODO - delete?
-def generate_launch_tasks(
-    manifest,
-    puppet_account_id,
-    should_use_sns,
-    should_use_product_plans,
-    include_expanded_from=False,
-    single_account=None,
-    execution_mode="hub",
-):
-    logger.info(f"m.generate_launch_tasks execution_mode is {execution_mode}")
-    logger.info(f"execution_mode {execution_mode}")
-    if execution_mode == constants.EXECUTION_MODE_SPOKE:
-        return [
-            provisioning.LaunchTask(
-                launch_name=launch_name,
-                manifest=manifest,
-                puppet_account_id=puppet_account_id,
-                should_use_product_plans=should_use_product_plans,
-                include_expanded_from=include_expanded_from,
-                single_account=single_account,
-                execution_mode=execution_mode,
-            )
-            for launch_name, launch_details in manifest.get("launches", {}).items()
-            if launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE
-        ]
-    else:
-        return [
-            provisioning.LaunchTask(
-                launch_name=launch_name,
-                manifest=manifest,
-                puppet_account_id=puppet_account_id,
-                should_use_product_plans=should_use_product_plans,
-                include_expanded_from=include_expanded_from,
-                single_account=single_account,
-                execution_mode=execution_mode,
-            )
-            for launch_name, launch_details in manifest.get("launches", {}).items()
-            if launch_details.get("execution") != constants.EXECUTION_MODE_SPOKE
-        ]
