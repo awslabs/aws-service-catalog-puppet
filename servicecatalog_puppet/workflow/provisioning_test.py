@@ -23,13 +23,10 @@ class ProvisioningArtifactParametersTaskTest(
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     product = "product"
-    product_id = "product_id"
     version = "version"
-    version_id = "version_id"
-    account_id = "account_id"
     region = "region"
+    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import provisioning
@@ -40,13 +37,10 @@ class ProvisioningArtifactParametersTaskTest(
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             product=self.product,
-            product_id=self.product_id,
             version=self.version,
-            version_id=self.version_id,
-            account_id=self.account_id,
             region=self.region,
+            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -56,13 +50,10 @@ class ProvisioningArtifactParametersTaskTest(
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "product": self.product,
-            "product_id": self.product_id,
             "version": self.version,
-            "version_id": self.version_id,
-            "account_id": self.account_id,
             "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise
@@ -74,8 +65,8 @@ class ProvisioningArtifactParametersTaskTest(
     def test_api_calls_used(self):
         # setup
         expected_result = [
-            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioning_parameters_{self.account_id}_{self.region}",
+            f"servicecatalog.list_launch_paths_{self.puppet_account_id}_{self.region}",
+            f"servicecatalog.describe_provisioning_parameters_{self.puppet_account_id}_{self.region}",
         ]
 
         # exercise
@@ -98,11 +89,8 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     launch_name = "launch_name"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     product = "product"
-    product_id = "product_id"
     version = "version"
-    version_id = "version_id"
     region = "region"
     account_id = "account_id"
     puppet_account_id = "puppet_account_id"
@@ -128,11 +116,8 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             launch_name=self.launch_name,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             product=self.product,
-            product_id=self.product_id,
             version=self.version,
-            version_id=self.version_id,
             region=self.region,
             account_id=self.account_id,
             puppet_account_id=self.puppet_account_id,
@@ -159,11 +144,8 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "product": self.product,
-            "product_id": self.product_id,
             "version": self.version,
-            "version_id": self.version_id,
             "execution": self.execution,
             "cache_invalidator": self.cache_invalidator,
         }
@@ -186,7 +168,6 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_api_calls_used(self):
         # setup
         expected_result = {
-            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
             f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
             f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
             f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
@@ -224,11 +205,8 @@ class ProvisionProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
     manifest_file_path = "manifest_file_path"
     launch_name = "launch_name"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     product = "product"
-    product_id = "product_id"
     version = "version"
-    version_id = "version_id"
     region = "region"
     account_id = "account_id"
     puppet_account_id = "puppet_account_id"
@@ -255,11 +233,8 @@ class ProvisionProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
             manifest_file_path=self.manifest_file_path,
             launch_name=self.launch_name,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             product=self.product,
-            product_id=self.product_id,
             version=self.version,
-            version_id=self.version_id,
             region=self.region,
             account_id=self.account_id,
             puppet_account_id=self.puppet_account_id,
@@ -605,6 +580,7 @@ class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     include_expanded_from = False
     single_account = "single_account"
     execution_mode = "execution_mode"
+    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import provisioning
@@ -619,6 +595,7 @@ class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             include_expanded_from=self.include_expanded_from,
             single_account=self.single_account,
             execution_mode=self.execution_mode,
+            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()

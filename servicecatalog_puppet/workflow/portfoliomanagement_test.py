@@ -77,9 +77,7 @@ class GetVersionIdByVersionNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     product = "product"
-    product_id = "product_id"
     version = "version"
     account_id = "account_id"
     region = "region"
@@ -94,9 +92,7 @@ class GetVersionIdByVersionNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             product=self.product,
-            product_id=self.product_id,
             version=self.version,
             account_id=self.account_id,
             region=self.region,
@@ -110,10 +106,8 @@ class GetVersionIdByVersionNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "product": self.product,
-            "product_id": self.product_id,
             "version": self.version,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
@@ -151,7 +145,6 @@ class SearchProductsAsAdminTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     account_id = "account_id"
     region = "region"
     cache_invalidator = "cache_invalidator"
@@ -165,7 +158,6 @@ class SearchProductsAsAdminTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             account_id=self.account_id,
             region=self.region,
             cache_invalidator=self.cache_invalidator,
@@ -178,7 +170,6 @@ class SearchProductsAsAdminTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
@@ -215,8 +206,8 @@ class SearchProductsAsAdminTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 class DescribeProductAsAdminTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
-    portfolio_id = "portfolio_id"
     product = "product"
+    portfolio = "portfolio"
     account_id = "account_id"
     region = "region"
     cache_invalidator = "cache_invalidator"
@@ -229,8 +220,8 @@ class DescribeProductAsAdminTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
         self.sut = self.module.DescribeProductAsAdminTask(
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
-            portfolio_id=self.portfolio_id,
             product=self.product,
+            portfolio=self.portfolio,
             account_id=self.account_id,
             region=self.region,
             cache_invalidator=self.cache_invalidator,
@@ -242,9 +233,9 @@ class DescribeProductAsAdminTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
         # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
-            "portfolio_id": self.portfolio_id,
-            "product": self.product,
+            "portfolio": self.portfolio,
             "region": self.region,
+            "product": self.product,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
@@ -281,7 +272,6 @@ class GetProductIdByProductNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     product = "product"
     account_id = "account_id"
     region = "region"
@@ -296,7 +286,6 @@ class GetProductIdByProductNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             product=self.product,
             account_id=self.account_id,
             region=self.region,
@@ -310,7 +299,6 @@ class GetProductIdByProductNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "product": self.product,
             "account_id": self.account_id,
@@ -498,7 +486,6 @@ class CreateSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
     account_id = "account_id"
     region = "region"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     organization = "organization"
     sharing_mode = "sharing_mode"
     cache_invalidator = "cache_invalidator"
@@ -514,7 +501,6 @@ class CreateSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
             account_id=self.account_id,
             region=self.region,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             organization=self.organization,
             sharing_mode=self.sharing_mode,
             cache_invalidator=self.cache_invalidator,
@@ -527,7 +513,6 @@ class CreateSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
             "sharing_mode": self.sharing_mode,
@@ -580,7 +565,6 @@ class CreateAssociationsForSpokeLocalPortfolioTaskTest(
     account_id = "account_id"
     region = "region"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     puppet_account_id = "puppet_account_id"
     organization = "organization"
     associations = []
@@ -598,7 +582,6 @@ class CreateAssociationsForSpokeLocalPortfolioTaskTest(
             account_id=self.account_id,
             region=self.region,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             puppet_account_id=self.puppet_account_id,
             organization=self.organization,
             associations=self.associations,
@@ -614,7 +597,6 @@ class CreateAssociationsForSpokeLocalPortfolioTaskTest(
             "puppet_account_id": self.puppet_account_id,
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
             "sharing_mode": self.sharing_mode,
@@ -665,7 +647,6 @@ class GetProductsAndProvisioningArtifactsTaskTest(
     manifest_file_path = "manifest_file_path"
     region = "region"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     puppet_account_id = "puppet_account_id"
     cache_invalidator = "cache_invalidator"
 
@@ -678,7 +659,6 @@ class GetProductsAndProvisioningArtifactsTaskTest(
             manifest_file_path=self.manifest_file_path,
             region=self.region,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             puppet_account_id=self.puppet_account_id,
             cache_invalidator=self.cache_invalidator,
         )
@@ -690,7 +670,6 @@ class GetProductsAndProvisioningArtifactsTaskTest(
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
         }
@@ -738,7 +717,6 @@ class CopyIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnit
     account_id = "account_id"
     region = "region"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     organization = "organization"
     puppet_account_id = "puppet_account_id"
     sharing_mode = "sharing_mode"
@@ -755,7 +733,6 @@ class CopyIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnit
             account_id=self.account_id,
             region=self.region,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             organization=self.organization,
             puppet_account_id=self.puppet_account_id,
             sharing_mode=self.sharing_mode,
@@ -770,7 +747,6 @@ class CopyIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnit
             "puppet_account_id": self.puppet_account_id,
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
             "sharing_mode": self.sharing_mode,
@@ -825,7 +801,6 @@ class ImportIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUn
     account_id = "account_id"
     region = "region"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     organization = "organization"
     puppet_account_id = "puppet_account_id"
     sharing_mode = "sharing_mode"
@@ -842,7 +817,6 @@ class ImportIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUn
             account_id=self.account_id,
             region=self.region,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             organization=self.organization,
             puppet_account_id=self.puppet_account_id,
             sharing_mode=self.sharing_mode,
@@ -857,7 +831,6 @@ class ImportIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUn
             "puppet_account_id": self.puppet_account_id,
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
             "sharing_mode": self.sharing_mode,
@@ -911,7 +884,6 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTaskTest(
     account_id = "account_id"
     region = "region"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     puppet_account_id = "puppet_account_id"
     organization = "organization"
     product_generation_method = "product_generation_method"
@@ -930,7 +902,6 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTaskTest(
             account_id=self.account_id,
             region=self.region,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             puppet_account_id=self.puppet_account_id,
             organization=self.organization,
             product_generation_method=self.product_generation_method,
@@ -946,7 +917,6 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTaskTest(
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
         }
@@ -1041,8 +1011,8 @@ class SharePortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     account_id = "account_id"
     region = "region"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     puppet_account_id = "puppet_account_id"
+    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import portfoliomanagement
@@ -1054,8 +1024,8 @@ class SharePortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             account_id=self.account_id,
             region=self.region,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             puppet_account_id=self.puppet_account_id,
+            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -1064,7 +1034,6 @@ class SharePortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # setup
         expected_result = {
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
         }
@@ -1165,9 +1134,9 @@ class ShareAndAcceptPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
     account_id = "account_id"
     region = "region"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     puppet_account_id = "puppet_account_id"
     sharing_mode = "sharing_mode"
+    cache_invalidator="cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import portfoliomanagement
@@ -1179,9 +1148,9 @@ class ShareAndAcceptPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
             account_id=self.account_id,
             region=self.region,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             puppet_account_id=self.puppet_account_id,
             sharing_mode=self.sharing_mode,
+            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -1191,7 +1160,6 @@ class ShareAndAcceptPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
             "sharing_mode": self.sharing_mode,
@@ -1245,7 +1213,7 @@ class CreateAssociationsInPythonForPortfolioTaskTest(
     account_id = "account_id"
     region = "region"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
+    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import portfoliomanagement
@@ -1258,7 +1226,7 @@ class CreateAssociationsInPythonForPortfolioTaskTest(
             account_id=self.account_id,
             region=self.region,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
+            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -1268,7 +1236,6 @@ class CreateAssociationsInPythonForPortfolioTaskTest(
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
         }
@@ -1307,8 +1274,8 @@ class CreateShareForAccountLaunchRegionTest(tasks_unit_tests_helper.PuppetTaskUn
     account_id = "account_id"
     region = "region"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     sharing_mode = "sharing_mode"
+    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import portfoliomanagement
@@ -1321,8 +1288,8 @@ class CreateShareForAccountLaunchRegionTest(tasks_unit_tests_helper.PuppetTaskUn
             account_id=self.account_id,
             region=self.region,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             sharing_mode=self.sharing_mode,
+            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -1332,7 +1299,6 @@ class CreateShareForAccountLaunchRegionTest(tasks_unit_tests_helper.PuppetTaskUn
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
             "sharing_mode": self.sharing_mode,
