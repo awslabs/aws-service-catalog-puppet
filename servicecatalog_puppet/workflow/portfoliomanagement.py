@@ -1,23 +1,19 @@
 import json
-
 import os
 import re
 import time
 from functools import lru_cache
 
 import luigi
+import yaml
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import utils
-
-from servicecatalog_puppet.workflow import tasks, general as general_tasks
-
-from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow import generate as generate_tasks
-
-import yaml
+from servicecatalog_puppet.workflow import manifest as manifest_tasks
+from servicecatalog_puppet.workflow import tasks, general as general_tasks
 
 
 class PortfolioManagementTask(tasks.PuppetTask):

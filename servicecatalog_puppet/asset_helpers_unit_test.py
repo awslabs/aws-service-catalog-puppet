@@ -1,9 +1,8 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-from unittest.mock import call
-from unittest import mock as mocker
-
 import os
+from unittest import mock as mocker
+from unittest.mock import call
 
 
 def test_resolve_from_site_packages():

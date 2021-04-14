@@ -1,12 +1,12 @@
 import logging
-import time
 import os
+import time
 
 import click
 import yaml
+from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import config, constants
-from betterboto import client as betterboto_client
 
 logger = logging.getLogger(__file__)
 

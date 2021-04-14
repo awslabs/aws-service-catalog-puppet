@@ -4,19 +4,17 @@ import time
 from functools import lru_cache
 
 import luigi
-from servicecatalog_puppet.workflow import generate as generate_tasks
 
-from servicecatalog_puppet import manifest_utils_for_launches
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
-
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import manifest_utils
-from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet import manifest_utils_for_launches
+from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow import (
     portfoliomanagement as portfoliomanagement_tasks,
 )
-from servicecatalog_puppet.workflow import manifest as manifest_tasks
+from servicecatalog_puppet.workflow import tasks
 
 
 class ProvisioningTask(tasks.PuppetTask):

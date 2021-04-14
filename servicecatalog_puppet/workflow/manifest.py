@@ -4,7 +4,6 @@ import luigi
 import yaml
 
 from servicecatalog_puppet import manifest_utils
-
 from servicecatalog_puppet.workflow import tasks
 
 

@@ -1,18 +1,16 @@
 import configparser
-import os
-
-import click
-import yaml
-import logging
 import json
+import logging
+import os
 from copy import deepcopy
 
-from servicecatalog_puppet import config
-from servicecatalog_puppet.macros import macros
-from servicecatalog_puppet import constants
-
+import click
 import networkx as nx
-import functools
+import yaml
+
+from servicecatalog_puppet import config
+from servicecatalog_puppet import constants
+from servicecatalog_puppet.macros import macros
 
 logger = logging.getLogger(__file__)
 

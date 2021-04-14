@@ -1,54 +1,49 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 import io
-import time
-import urllib
-from pathlib import Path
-
-import cfn_tools
-import requests
-import terminaltables
-
-import shutil
 import json
-from threading import Thread
-import zipfile
-
-import pkg_resources
-import yaml
 import logging
 import os
-import click
+import shutil
+import time
+import traceback
+import urllib
+import zipfile
 from datetime import datetime
+from pathlib import Path
+from threading import Thread
 
+import botocore
+import cfn_tools
+import click
+import pkg_resources
+import requests
+import terminaltables
+import yaml
+from betterboto import client as betterboto_client
 from jinja2 import Template
 from pykwalify.core import Core
-from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import manifest_utils_for_launches
-from servicecatalog_puppet.workflow import management as management_tasks
-from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
-from servicecatalog_puppet.workflow import runner as runner
-from servicecatalog_puppet.workflow import launch as launch_tasks
-from servicecatalog_puppet.workflow import (
-    lambda_invocations as lambda_invocations_tasks,
-)
-from servicecatalog_puppet.workflow import (
-    spoke_local_portfolios as spoke_local_portfolios_tasks,
-)
-from servicecatalog_puppet import config
-from servicecatalog_puppet import manifest_utils
+from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import aws
+from servicecatalog_puppet import config
+from servicecatalog_puppet import constants
+from servicecatalog_puppet import manifest_utils
+from servicecatalog_puppet import manifest_utils_for_launches
 from servicecatalog_puppet.template_builder.hub import bootstrap as hub_bootstrap
 from servicecatalog_puppet.template_builder.hub import (
     bootstrap_region as hub_bootstrap_region,
 )
-
-from servicecatalog_puppet import asset_helpers
-from servicecatalog_puppet import constants
-
-import traceback
-import botocore
+from servicecatalog_puppet.workflow import (
+    lambda_invocations as lambda_invocations_tasks,
+)
+from servicecatalog_puppet.workflow import launch as launch_tasks
+from servicecatalog_puppet.workflow import management as management_tasks
+from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
+from servicecatalog_puppet.workflow import runner as runner
+from servicecatalog_puppet.workflow import (
+    spoke_local_portfolios as spoke_local_portfolios_tasks,
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

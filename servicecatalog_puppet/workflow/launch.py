@@ -1,6 +1,6 @@
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
-from servicecatalog_puppet import constants
 
 
 class LaunchSectionTask(manifest_tasks.SectionTask):

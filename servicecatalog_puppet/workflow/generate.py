@@ -4,12 +4,11 @@ from functools import lru_cache
 import luigi
 
 from servicecatalog_puppet import config, constants
-
+from servicecatalog_puppet.workflow import general as general_tasks
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow import (
     portfoliomanagement as portfoliomanagement_tasks,
 )
-from servicecatalog_puppet.workflow import general as general_tasks
 from servicecatalog_puppet.workflow import tasks
 
 

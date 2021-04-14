@@ -2,12 +2,12 @@ import json
 
 import luigi
 
-from servicecatalog_puppet.workflow import tasks as workflow_tasks
-from servicecatalog_puppet.workflow import manifest as manifest_tasks
-from servicecatalog_puppet.workflow.provisioning import LaunchTask
-from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow import manifest as manifest_tasks
+from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet.workflow import tasks as workflow_tasks
+from servicecatalog_puppet.workflow.provisioning import LaunchTask
 
 
 class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):

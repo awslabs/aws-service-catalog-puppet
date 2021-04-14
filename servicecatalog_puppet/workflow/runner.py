@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import sys
 import time
@@ -17,8 +18,6 @@ from luigi import LuigiStatusCode
 
 from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow import tasks
-
-import logging
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

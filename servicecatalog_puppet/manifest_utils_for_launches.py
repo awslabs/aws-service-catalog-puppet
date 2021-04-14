@@ -1,8 +1,7 @@
+import logging
+
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.manifest_utils import get_configuration_overrides
-from servicecatalog_puppet.workflow import provisioning
-
-import logging
 
 logger = logging.getLogger(__file__)
 

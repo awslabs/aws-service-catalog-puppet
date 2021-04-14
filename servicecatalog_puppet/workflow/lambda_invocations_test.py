@@ -1,5 +1,6 @@
-from unittest import skip, mock
 import json
+from unittest import skip, mock
+
 from . import tasks_unit_tests_helper
 
 

@@ -1,10 +1,11 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
+from unittest import mock as mocker
+
 import yaml
 from nose2.tools import such, params
 
 from servicecatalog_puppet import constants
-from unittest import mock as mocker
 
 
 @mocker.patch("servicecatalog_puppet.config.get_home_region")

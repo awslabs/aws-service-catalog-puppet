@@ -1,17 +1,17 @@
 import json
+import logging
+import math
 import os
 import traceback
 from pathlib import Path
 
 import luigi
+import psutil
 from betterboto import client as betterboto_client
-from luigi.contrib import s3
 from luigi import format
+from luigi.contrib import s3
 
 from servicecatalog_puppet import constants, config
-import psutil
-import logging
-import math
 
 logger = logging.getLogger("tasks")
 logger.setLevel(logging.INFO)

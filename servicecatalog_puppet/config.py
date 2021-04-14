@@ -1,4 +1,5 @@
 import functools
+import logging
 import os
 
 import yaml
@@ -7,8 +8,6 @@ from jinja2 import Environment, FileSystemLoader
 
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import constants
-
-import logging
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
