@@ -12,7 +12,6 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     qualifier = "qualifier"
     invocation_type = "RequestResponse"
     puppet_account_id = "puppet_account_id"
-    parameters = {}
     launch_parameters = {}
     manifest_parameters = {}
     account_parameters = {}
@@ -31,7 +30,6 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             qualifier=self.qualifier,
             invocation_type=self.invocation_type,
             puppet_account_id=self.puppet_account_id,
-            parameters=self.parameters,
             launch_parameters=self.launch_parameters,
             manifest_parameters=self.manifest_parameters,
             account_parameters=self.account_parameters,
@@ -71,6 +69,7 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_run(self, get_home_region_mock):
         # setup
         get_home_region_mock.return_value = "eu-west-0"
+        self.sut.all_params = dict()
         payload = dict(
             account_id=self.account_id,
             region=self.region,
@@ -103,59 +102,6 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
                 response=response,
             )
         )
-
-
-class LambdaInvocationDependenciesWrapperTaskTest(
-    tasks_unit_tests_helper.PuppetTaskUnitTest
-):
-    lambda_invocation_name = "lambda_invocation_name"
-    manifest_file_path = "manifest_file_path"
-    puppet_account_id = "puppet_account_id"
-
-    def setUp(self) -> None:
-        from servicecatalog_puppet.workflow import lambda_invocations
-
-        self.module = lambda_invocations
-
-        self.sut = self.module.LambdaInvocationDependenciesWrapperTask(
-            lambda_invocation_name=self.lambda_invocation_name,
-            manifest_file_path=self.manifest_file_path,
-            puppet_account_id=self.puppet_account_id,
-        )
-
-        self.wire_up_mocks()
-
-    def test_params_for_results_display(self):
-        # setup
-        expected_result = {
-            "puppet_account_id": self.puppet_account_id,
-            "manifest_file_path": self.manifest_file_path,
-            "lambda_invocation_name": self.lambda_invocation_name,
-            "cache_invalidator": self.cache_invalidator,
-        }
-
-        # exercise
-        actual_result = self.sut.params_for_results_display()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
-
-    @skip
-    def test_requires(self):
-        # setup
-        # exercise
-        actual_result = self.sut.requires()
-
-        # verify
-        raise NotImplementedError()
-
-    def test_run(self):
-        # setup
-        # exercise
-        self.sut.run()
-
-        # verify
-        self.assert_output(self.sut.params_for_results_display())
 
 
 class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):

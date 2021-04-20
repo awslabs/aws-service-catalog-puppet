@@ -7,7 +7,14 @@ from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow import tasks as workflow_tasks
-from servicecatalog_puppet.workflow.provisioning import LaunchTask
+
+
+class LambdaInvocationBaseTask(workflow_tasks.PuppetTask):
+    manifest_file_path = luigi.Parameter()
+
+    @property
+    def section_name(self):
+        return constants.LAMBDA_INVOCATIONS
 
 
 class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
@@ -20,8 +27,6 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
     invocation_type = luigi.Parameter()
 
     puppet_account_id = luigi.Parameter()
-
-    parameters = luigi.DictParameter()
 
     launch_parameters = luigi.DictParameter()
     manifest_parameters = luigi.DictParameter()
@@ -71,16 +76,12 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
 
         return dict(
             ssm_params=ssm_params,
-            dependencies=LambdaInvocationDependenciesWrapperTask(
-                lambda_invocation_name=self.lambda_invocation_name,
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-            ),
         )
 
     def get_all_params(self):
-        all_params = dict()
-        for param_name, param_details in self.parameters.items():
+        all_params = {}
+        self.info(f"collecting all_params")
+        for param_name, param_details in self.all_params.items():
             if param_details.get("ssm"):
                 with self.input().get("ssm_params").get(param_name).open() as f:
                     all_params[param_name] = json.loads(f.read()).get("Value")
@@ -91,6 +92,7 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
                     param_details.get("mapping"), self.account_id, self.region
                 )
 
+        self.info(f"finished collecting all_params: {all_params}")
         return all_params
 
     def run(self):
@@ -128,122 +130,163 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
                 self.write_output(output)
 
 
-class LambdaInvocationDependenciesWrapperTask(
-    workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen
-):
+class LambdaInvocationForTask(LambdaInvocationBaseTask, manifest_tasks.ManifestMixen):
     lambda_invocation_name = luigi.Parameter()
-    manifest_file_path = luigi.Parameter()
-
     puppet_account_id = luigi.Parameter()
 
-    def params_for_results_display(self):
-        return {
-            "puppet_account_id": self.puppet_account_id,
-            "manifest_file_path": self.manifest_file_path,
-            "lambda_invocation_name": self.lambda_invocation_name,
-            "cache_invalidator": self.cache_invalidator,
-        }
-
-    def requires(self):
-        lambda_invocation = self.manifest.get("lambda-invocations").get(
-            self.lambda_invocation_name
-        )
-
-        dependencies = list()
-        for dependency in lambda_invocation.get(
-            "depends_on", []
-        ):  # TODO fix - dependencies will always be a dict now
-            raise Exception("FIX ME")
-            if isinstance(dependency, str):
-                dependencies.append(
-                    LaunchTask(
-                        launch_name=dependency,
-                        manifest_file_path=self.manifest_file_path,
-                        puppet_account_id=self.puppet_account_id,
-                    )
-                )
-            else:
-                dependency_type = dependency.get("type", "launch")
-                if dependency_type == constants.LAUNCH:
-                    dependencies.append(
-                        LaunchTask(
-                            launch_name=dependency.get("name"),
-                            manifest_file_path=self.manifest_file_path,
-                            puppet_account_id=self.puppet_account_id,
-                        )
-                    )
-                elif dependency_type == constants.LAMBDA_INVOCATION:
-                    dependencies.append(
-                        LambdaInvocationTask(
-                            lambda_invocation_name=dependency.get("name"),
-                            manifest_file_path=self.manifest_file_path,
-                            puppet_account_id=self.puppet_account_id,
-                        )
-                    )
-        return dependencies
+    def get_klass_for_provisioning(self):
+        return InvokeLambdaTask
 
     def run(self):
         self.write_output(self.params_for_results_display())
 
 
-class LambdaInvocationTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
-    lambda_invocation_name = luigi.Parameter()
-    manifest_file_path = luigi.Parameter()
-
-    puppet_account_id = luigi.Parameter()
+class LambdaInvocationForRegionTask(LambdaInvocationForTask):
+    region = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
-            "puppet_account_id": self.puppet_account_id,
-            "manifest_file_path": self.manifest_file_path,
             "lambda_invocation_name": self.lambda_invocation_name,
+            "region": self.region,
             "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
-        requirements = list()
-        lambda_invocation = self.manifest.get("lambda-invocations").get(
-            self.lambda_invocation_name
+        dependencies = list()
+        these_dependencies = list()
+        requirements = dict(
+            dependencies=dependencies, these_dependencies=these_dependencies,
         )
 
-        task_defs = self.manifest.get_task_defs_from_details(
-            self.puppet_account_id,
-            True,
-            self.lambda_invocation_name,
-            {},
-            "lambda-invocations",
-        )
+        klass = self.get_klass_for_provisioning()
 
-        common_params = {
+        for task in self.manifest.get_tasks_for_launch_and_region(
+                self.puppet_account_id, self.section_name, self.lambda_invocation_name, self.region
+        ):
+            dependencies.append(
+                klass(**task, manifest_file_path=self.manifest_file_path)
+            )
+
+
+        return requirements
+
+
+class LambdaInvocationForAccountTask(LambdaInvocationForTask):
+    account_id = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
             "lambda_invocation_name": self.lambda_invocation_name,
-            "function_name": lambda_invocation.get("function_name"),
-            "qualifier": lambda_invocation.get("qualifier", "$LATEST"),
-            "invocation_type": lambda_invocation.get("invocation_type"),
-            "puppet_account_id": self.puppet_account_id,
-            "parameters": lambda_invocation.get("parameters", {}),
-            "launch_parameters": lambda_invocation.get("parameters", {}),
-            "manifest_parameters": self.manifest.get("parameters", {}),
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
-        wrapper_params = dict(manifest_file_path=self.manifest_file_path,)
+    def requires(self):
+        dependencies = list()
+        requirements = dict(dependencies=dependencies,)
 
-        for task_def in task_defs:
-            task_def_parameters = {
-                "account_id": task_def.get("account_id"),
-                "region": task_def.get("region"),
-                "account_parameters": task_def.get("account_parameters"),
-                "cache_invalidator": self.cache_invalidator,
-            }
-            task_def_parameters.update(common_params)
-            task_def_parameters.update(wrapper_params)
-            requirements.append(InvokeLambdaTask(**task_def_parameters))
+        klass = self.get_klass_for_provisioning()
+
+        for task in self.manifest.get_tasks_for_launch_and_region(
+                self.puppet_account_id, self.section_name, self.lambda_invocation_name, self.account_id
+        ):
+            dependencies.append(
+                klass(**task, manifest_file_path=self.manifest_file_path)
+            )
+
+        return requirements
+
+
+class LambdaInvocationForAccountAndRegionTask(LambdaInvocationForTask):
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "lambda_invocation_name": self.lambda_invocation_name,
+            "account_id": self.account_id,
+            "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def requires(self):
+        dependencies = list()
+        requirements = dict(dependencies=dependencies)
+
+        klass = self.get_klass_for_provisioning()
+
+        for (
+                task
+        ) in self.manifest.get_tasks_for_launch_and_account_and_region(
+            self.puppet_account_id, self.section_name, self.lambda_invocation_name, self.account_id, self.region,
+        ):
+            dependencies.append(
+                klass(**task, manifest_file_path=self.manifest_file_path)
+            )
+
+        return requirements
+
+
+class ExecuteLambda: pass
+
+
+class LambdaInvocationTask(LambdaInvocationForTask):
+
+    def params_for_results_display(self):
+        return {
+            "lambda_invocation_name": self.lambda_invocation_name,
+            "manifest_file_path": self.manifest_file_path,
+            "puppet_account_id": self.puppet_account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def requires(self):
+        regional_dependencies = list()
+        account_dependencies = list()
+        account_and_region_dependencies = list()
+        requirements = dict(
+            regional_launches=regional_dependencies,
+            account_launches=account_dependencies,
+            account_and_region_dependencies=account_and_region_dependencies,
+        )
+        for region in self.manifest.get_regions_used_for_section_item(
+                self.puppet_account_id, self.section_name, self.lambda_invocation_name
+        ):
+            regional_dependencies.append(
+                LambdaInvocationForRegionTask(**self.param_kwargs, region=region, )
+            )
+
+        for account_id in self.manifest.get_account_ids_used_for_section_item(
+                self.puppet_account_id, self.section_name, self.lambda_invocation_name
+        ):
+            account_dependencies.append(
+                LambdaInvocationForAccountTask(
+                    **self.param_kwargs, account_id=account_id,
+                )
+            )
+
+        for (
+                account_id,
+                regions,
+        ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+            self.puppet_account_id, self.section_name, self.lambda_invocation_name
+        ).items():
+            for region in regions:
+                account_and_region_dependencies.append(
+                    LambdaInvocationForAccountAndRegionTask(
+                        **self.param_kwargs,
+                        account_id=account_id,
+                        region=region,
+                    )
+                )
+
         return requirements
 
     def run(self):
         self.write_output(self.params_for_results_display())
 
 
-class LambdaInvocationsSectionTask(manifest_tasks.SectionTask):
+class LambdaInvocationsSectionTask(LambdaInvocationBaseTask, manifest_tasks.SectionTask):
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -260,7 +303,7 @@ class LambdaInvocationsSectionTask(manifest_tasks.SectionTask):
                     puppet_account_id=self.puppet_account_id,
                 )
                 for lambda_invocation_name, lambda_invocation in self.manifest.get(
-                    "lambda-invocations", {}
+                    self.section_name, {}
                 ).items()
             ]
         )
@@ -268,3 +311,5 @@ class LambdaInvocationsSectionTask(manifest_tasks.SectionTask):
 
     def run(self):
         self.write_output(self.manifest.get("lambda-invocations"))
+
+

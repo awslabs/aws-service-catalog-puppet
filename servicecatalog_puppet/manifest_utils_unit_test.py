@@ -39,6 +39,13 @@ class TestManifest(unittest.TestCase):
         "version": "version_a",
         "deploy_to": {"tags": [{"regions": "default_region", "tag": "group:A"}]},
     }
+    assertion_a = {
+        "assert_for": {"tags": [{"regions": "default_region", "tag": "group:A"}]},
+    }
+    spoke_local_portfolio_a = {
+        "portfolio": "portfolio_a",
+        "deploy_to": {"tags": [{"regions": "default_region", "tag": "group:A"}]},
+    }
     launch_b = {
         "portfolio": "portfolio_b",
         "product": "product_b",
@@ -56,6 +63,12 @@ class TestManifest(unittest.TestCase):
     launches = dict(
         launches=dict(launch_a=launch_a, launch_b=launch_b, launch_c=launch_c)
     )
+    assertions = dict(
+        assertions=dict(assertion_a=assertion_a)
+    )
+    spoke_local_portfolios = {
+        "spoke-local-portfolios": dict(spoke_local_portfolio_a=spoke_local_portfolio_a)
+    }
     puppet_account_id = "0123456789010"
 
     def setUp(self):
@@ -87,15 +100,48 @@ class TestManifest(unittest.TestCase):
                 "puppet_account_id": puppet_account_id,
                 "region": region,
                 "ssm_param_outputs": [],
+                "requested_priority": 0,
                 "version": "version_a",
             }
         ]
 
         # exercise
-        actual_results = self.sut.get_provisioning_tasks_for_launch_and_region(
-            puppet_account_id, item_name, region
+        actual_results = self.sut.get_tasks_for_launch_and_region(
+            puppet_account_id, section_name, item_name, region
         )
 
+        # verify
+        self.assertListEqual(expected_result, actual_results)
+
+    def test_get_provisioning_tasks_for_spoke_local_portfolios_and_region_for_tags(self):
+        # setup
+        puppet_account_id = "pppppppppppp"
+        section_name = "spoke-local-portfolios"
+        item_name = "spoke_local_portfolio_a"
+        region = "eu-west-1"
+        self.sut.update(deepcopy(self.accounts))
+        self.sut.update(deepcopy(self.launches))
+        self.sut.update(deepcopy(self.spoke_local_portfolios))
+        expected_result = [
+            {
+                "account_id": "012345678910",
+                "spoke_local_portfolio_name": item_name,
+                "portfolio": "portfolio_a",
+                "puppet_account_id": puppet_account_id,
+                "region": region,
+                "associations": [],
+                "launch_constraints": [],
+                "organization": "",
+                "product_generation_method": "copy",
+                "sharing_mode": "ACCOUNT",
+            }
+        ]
+
+        # exercise
+        actual_results = self.sut.get_tasks_for_launch_and_region(
+            puppet_account_id, section_name, item_name, region
+        )
+        
         # verify
         self.assertListEqual(expected_result, actual_results)
 
@@ -123,13 +169,41 @@ class TestManifest(unittest.TestCase):
                 "puppet_account_id": puppet_account_id,
                 "region": region,
                 "ssm_param_outputs": [],
+                "requested_priority": 0,
                 "version": "version_a",
             }
         ]
 
         # exercise
-        actual_results = self.sut.get_provisioning_tasks_for_launch_and_region(
-            puppet_account_id, item_name, region
+        actual_results = self.sut.get_tasks_for_launch_and_region(
+            puppet_account_id, section_name, item_name, region
+        )
+
+        # verify
+        self.assertListEqual(expected_result, actual_results)
+
+    def test_get_assertion_tasks_for_launch_and_region_for_accounts(self):
+        # setup
+        puppet_account_id = "pppppppppppp"
+        section_name = "assertions"
+        item_name = "assertion_a"
+        region = "eu-west-1"
+        self.sut.update(deepcopy(self.accounts))
+        self.sut.update(deepcopy(self.assertions))
+
+        expected_result = [
+            {
+                "account_id": "012345678910",
+                "assertion_name": item_name,
+                "puppet_account_id": puppet_account_id,
+                "region": region,
+                "requested_priority": 0,
+            }
+        ]
+
+        # exercise
+        actual_results = self.sut.get_tasks_for_launch_and_region(
+            puppet_account_id, section_name, item_name, region
         )
 
         # verify

@@ -24,6 +24,7 @@ from betterboto import client as betterboto_client
 from jinja2 import Template
 from pykwalify.core import Core
 
+
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
@@ -35,15 +36,14 @@ from servicecatalog_puppet.template_builder.hub import (
     bootstrap_region as hub_bootstrap_region,
 )
 from servicecatalog_puppet.workflow import (
-    lambda_invocations as lambda_invocations_tasks,
-)
-from servicecatalog_puppet.workflow import launch as launch_tasks
-from servicecatalog_puppet.workflow import management as management_tasks
-from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
-from servicecatalog_puppet.workflow import runner as runner
-from servicecatalog_puppet.workflow import (
+    launch as launch_tasks,
     spoke_local_portfolios as spoke_local_portfolios_tasks,
+    lambda_invocations as lambda_invocations_tasks,
+    codebuild_runs as codebuild_runs_tasks,
+    assertions as assertions_tasks,
 )
+from servicecatalog_puppet.workflow import management as management_tasks
+from servicecatalog_puppet.workflow import runner as runner
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -78,7 +78,7 @@ def reset_provisioned_product_owner(f):
         task_status = task.get("status")
         if task_status == constants.PROVISIONED:
             tasks_to_run.append(
-                provisioning_tasks.ResetProvisionedProductOwnerTask(
+                workflow.launch.ResetProvisionedProductOwnerTask(
                     launch_name=task.get("launch_name"),
                     account_id=task.get("account_id"),
                     region=task.get("region"),
@@ -107,6 +107,12 @@ def generate_tasks(
             manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
         lambda_invocations_tasks.LambdaInvocationsSectionTask(
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        ),
+        codebuild_runs_tasks.CodeBuildRunsSectionTask(
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        ),
+        assertions_tasks.AssertionsSectionTask(
             manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
     ]

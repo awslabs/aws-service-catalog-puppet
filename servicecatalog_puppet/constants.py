@@ -24,6 +24,10 @@ MAPPINGS = "mappings"
 LAUNCHES = "launches"
 SPOKE_LOCAL_PORTFOLIOS = "spoke-local-portfolios"
 LAMBDA_INVOCATIONS = "lambda-invocations"
+ASSERTIONS = "assertions"
+ASSERTION = "assertion"
+CODE_BUILD_RUNS = "code-build-runs"
+CODE_BUILD_RUN = "code-build-run"
 ACTIONS = "actions"
 
 LAUNCH = "launch"
@@ -98,3 +102,7 @@ CONFIG_SHOULD_EXPLODE_MANIFEST = "should_explode_manifest"
 PUBLISHED_VERSION = pkg_resources.require("aws-service-catalog-puppet")[0].version
 VERSION_OVERRIDE = "SCP_VERSION_OVERRIDE"
 VERSION = os.getenv(VERSION_OVERRIDE, PUBLISHED_VERSION)
+
+
+
+PRODUCT_GENERATION_METHOD_DEFAULT = "copy"
