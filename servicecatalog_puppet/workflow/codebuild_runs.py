@@ -31,10 +31,10 @@ class ExecuteCodeBuildRunTask(CodeBuildRunBaseTask, manifest_tasks.ManifestMixen
 
     def params_for_results_display(self):
         return {
-            "code_build_run_name": self.code_build_run_name,
             "puppet_account_id": self.puppet_account_id,
-            "account_id": self.account_id,
+            "code_build_run_name": self.code_build_run_name,
             "region": self.region,
+            "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -51,6 +51,13 @@ class CodeBuildRunForTask(CodeBuildRunBaseTask, manifest_tasks.ManifestMixen):
     code_build_run_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "code_build_run_name": self.code_build_run_name,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
     def get_klass_for_provisioning(self):
         return ExecuteCodeBuildRunTask
 
@@ -63,6 +70,7 @@ class CodeBuildRunForRegionTask(CodeBuildRunForTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "code_build_run_name": self.code_build_run_name,
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
@@ -92,6 +100,7 @@ class CodeBuildRunForAccountTask(CodeBuildRunForTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "code_build_run_name": self.code_build_run_name,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
@@ -119,9 +128,10 @@ class CodeBuildRunForAccountAndRegionTask(CodeBuildRunForTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "code_build_run_name": self.code_build_run_name,
-            "account_id": self.account_id,
             "region": self.region,
+            "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -149,9 +159,8 @@ class CodeBuildRunTask(CodeBuildRunForTask):
 
     def params_for_results_display(self):
         return {
-            "code_build_run_name": self.code_build_run_name,
-            "manifest_file_path": self.manifest_file_path,
             "puppet_account_id": self.puppet_account_id,
+            "code_build_run_name": self.code_build_run_name,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -207,7 +216,6 @@ class CodeBuildRunsSectionTask(CodeBuildRunBaseTask, manifest_tasks.SectionTask)
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "manifest_file_path": self.manifest_file_path,
             "cache_invalidator": self.cache_invalidator,
         }
 

@@ -38,12 +38,10 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "lambda_invocation_name": self.lambda_invocation_name,
-            "account_id": self.account_id,
             "region": self.region,
-            "function_name": self.function_name,
-            "qualifier": self.qualifier,
-            "invocation_type": self.invocation_type,
+            "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -134,6 +132,13 @@ class LambdaInvocationForTask(LambdaInvocationBaseTask, manifest_tasks.ManifestM
     lambda_invocation_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "lambda_invocation_name": self.lambda_invocation_name,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
     def get_klass_for_provisioning(self):
         return InvokeLambdaTask
 
@@ -146,6 +151,7 @@ class LambdaInvocationForRegionTask(LambdaInvocationForTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "lambda_invocation_name": self.lambda_invocation_name,
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
@@ -176,6 +182,7 @@ class LambdaInvocationForAccountTask(LambdaInvocationForTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "lambda_invocation_name": self.lambda_invocation_name,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
@@ -203,9 +210,10 @@ class LambdaInvocationForAccountAndRegionTask(LambdaInvocationForTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "lambda_invocation_name": self.lambda_invocation_name,
-            "account_id": self.account_id,
             "region": self.region,
+            "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -227,16 +235,12 @@ class LambdaInvocationForAccountAndRegionTask(LambdaInvocationForTask):
         return requirements
 
 
-class ExecuteLambda: pass
-
-
 class LambdaInvocationTask(LambdaInvocationForTask):
 
     def params_for_results_display(self):
         return {
-            "lambda_invocation_name": self.lambda_invocation_name,
-            "manifest_file_path": self.manifest_file_path,
             "puppet_account_id": self.puppet_account_id,
+            "lambda_invocation_name": self.lambda_invocation_name,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -290,7 +294,6 @@ class LambdaInvocationsSectionTask(LambdaInvocationBaseTask, manifest_tasks.Sect
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "manifest_file_path": self.manifest_file_path,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -311,5 +314,3 @@ class LambdaInvocationsSectionTask(LambdaInvocationBaseTask, manifest_tasks.Sect
 
     def run(self):
         self.write_output(self.manifest.get("lambda-invocations"))
-
-

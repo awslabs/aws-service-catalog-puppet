@@ -128,8 +128,8 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
 
     def params_for_results_display(self):
         return {
-            "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
+            "puppet_account_id": self.puppet_account_id,
             "section": self.section,
             "cache_invalidator": self.cache_invalidator,
         }

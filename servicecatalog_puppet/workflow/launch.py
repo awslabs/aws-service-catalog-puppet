@@ -15,7 +15,6 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "manifest_file_path": self.manifest_file_path,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -90,12 +89,12 @@ class ListLaunchPathsTask(ProvisioningTask):
 
     def params_for_results_display(self):
         return {
-            "manifest_file_path": self.manifest_file_path,
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
+            "region": self.region,
             "product_id": self.product_id,
             "account_id": self.account_id,
-            "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):
@@ -133,9 +132,9 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
         return {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
+            "region": self.region,
             "product": self.product,
             "version": self.version,
-            "region": self.region,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -164,7 +163,7 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
             ),
         )
 
-    def run(self):
+    def run(self): #TODO change to yield for caching benefit
         with self.hub_regional_client("servicecatalog") as service_catalog:
             self.info(f"getting path for {self.product} of portfolio: {self.portfolio}")
             details = self.load_from_input("details")
@@ -209,7 +208,6 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, depen
     product = luigi.Parameter()
     version = luigi.Parameter()
 
-
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
     launch_parameters = luigi.DictParameter(default={}, significant=False)
@@ -226,16 +224,12 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, depen
     try_count = 1
     all_params = []
 
-
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
-            "portfolio": self.portfolio,
-            "product": self.product,
-            "version": self.version,
-            "execution": self.execution,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -315,11 +309,7 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, depen
             # f"ssm.put_parameter_and_wait_{self.region}",
         }
 
-    # TODO remove / delete / destroy
     def run(self):
-        self.write_output(self.params_for_results_display())
-
-    def run2(self):
         details = self.load_from_input("details")
         product_id = details.get("product_details").get("ProductId")
         version_id = details.get("version_details").get("Id")
@@ -715,15 +705,18 @@ class TerminateProductTask(ProvisioningTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
+
             "portfolio": self.portfolio,
             "portfolio_id": self.portfolio_id,
             "product": self.product,
             "product_id": self.product_id,
             "version": self.version,
             "version_id": self.version_id,
+
             "cache_invalidator": self.cache_invalidator,
         }
 

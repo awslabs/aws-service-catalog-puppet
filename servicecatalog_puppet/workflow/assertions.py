@@ -16,14 +16,12 @@ class AssertionBaseTask(workflow_tasks.PuppetTask):
         return constants.ASSERTIONS
 
 
-class AssertTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
+class AssertTask(AssertionBaseTask, manifest_tasks.ManifestMixen):
     assertion_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
 
     puppet_account_id = luigi.Parameter()
-
-    manifest_file_path = luigi.Parameter()
 
     expected = luigi.DictParameter()
     actual = luigi.DictParameter()
@@ -32,10 +30,10 @@ class AssertTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
 
     def params_for_results_display(self):
         return {
-            "assertion_name": self.assertion_name,
             "puppet_account_id": self.puppet_account_id,
-            "account_id": self.account_id,
+            "assertion_name": self.assertion_name,
             "region": self.region,
+            "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -67,6 +65,13 @@ class AssertionForTask(AssertionBaseTask, manifest_tasks.ManifestMixen):
     assertion_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "assertion_name": self.assertion_name,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
     def get_klass_for_provisioning(self):
         return AssertTask
 
@@ -79,6 +84,7 @@ class AssertionForRegionTask(AssertionForTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "assertion_name": self.assertion_name,
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
@@ -108,6 +114,7 @@ class AssertionForAccountTask(AssertionForTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "assertion_name": self.assertion_name,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
@@ -135,9 +142,10 @@ class AssertionForAccountAndRegionTask(AssertionForTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "assertion_name": self.assertion_name,
-            "account_id": self.account_id,
             "region": self.region,
+            "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -159,16 +167,12 @@ class AssertionForAccountAndRegionTask(AssertionForTask):
         return requirements
 
 
-class ExecuteLambda: pass
-
-
 class AssertionTask(AssertionForTask):
 
     def params_for_results_display(self):
         return {
-            "assertion_name": self.assertion_name,
-            "manifest_file_path": self.manifest_file_path,
             "puppet_account_id": self.puppet_account_id,
+            "assertion_name": self.assertion_name,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -222,7 +226,6 @@ class AssertionsSectionTask(AssertionBaseTask, manifest_tasks.SectionTask):
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "manifest_file_path": self.manifest_file_path,
             "cache_invalidator": self.cache_invalidator,
         }
 
