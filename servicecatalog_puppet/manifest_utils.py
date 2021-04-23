@@ -7,6 +7,7 @@ from copy import deepcopy
 import click
 import networkx as nx
 import yaml
+from deepmerge import always_merger
 
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
@@ -27,7 +28,7 @@ def load(f, puppet_account_id):
     manifest.update(yaml.safe_load(f.read()))
     d = os.path.dirname(os.path.abspath(f.name))
 
-    extendable = ["parameters", "launches", "spoke-local-portfolios"]
+    extendable = ["parameters", constants.LAUNCHES, constants.SPOKE_LOCAL_PORTFOLIOS, constants.ACTIONS, constants.LAMBDA_INVOCATIONS]
     for t in extendable:
         t_path = f"{d}{os.path.sep}{t}"
         if os.path.exists(t_path):
@@ -41,6 +42,12 @@ def load(f, puppet_account_id):
                 ext = yaml.safe_load(file.read())
                 for t in extendable:
                     manifest[t].update(ext.get(t, {}))
+
+    if os.path.exists(f"{d}{os.path.sep}capabilities"):
+        for f in os.listdir(f"{d}{os.path.sep}capabilities"):
+            with open(f"{d}{os.path.sep}capabilities{os.path.sep}{f}", "r") as file:
+                ext = yaml.safe_load(file.read())
+                always_merger.merge(manifest, ext)
 
     for config_file in [
         manifest_name.replace(".yaml", ".properties"),
