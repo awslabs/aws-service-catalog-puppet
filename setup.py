@@ -11,14 +11,7 @@ packages = \
  'servicecatalog_puppet.workflow']
 
 package_data = \
-{'': ['*'],
- 'servicecatalog_puppet': ['data/account-vending/*',
-                           'data/manifest_utils/*',
-                           'data/manifest_utils/accounts/*',
-                           'data/manifest_utils/tags/*',
-                           'data/manifest_utils_for_spoke_local_portfolios/*',
-                           'manifests/*',
-                           'templates/*']}
+{'': ['*'], 'servicecatalog_puppet': ['manifests/*', 'templates/*']}
 
 install_requires = \
 ['awacs>=1.0.2,<2.0.0',
@@ -27,7 +20,10 @@ install_requires = \
  'cfn-flip==1.2.3',
  'click==7.0',
  'colorclass==2.2.0',
+ 'deepdiff>=5.3.0,<6.0.0',
+ 'deepmerge>=0.2.1,<0.3.0',
  'jinja2==2.11.3',
+ 'jmespath>=0.10.0,<0.11.0',
  'luigi==3.0.2',
  'networkx>=2.5,<3.0',
  'psutil==5.7.0',
