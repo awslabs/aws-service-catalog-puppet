@@ -13,7 +13,7 @@ class DependenciesMixin(object):
 
         if isinstance(self, codebuild_runs.ExecuteCodeBuildRunTask):
             item_name = self.code_build_run_name
-        elif isinstance(self, launch.ProvisionProductTask):
+        elif isinstance(self, launch.ProvisioningTask):
             item_name = self.launch_name
         elif isinstance(self, spoke_local_portfolios.SharePortfolioWithSpokeTask):
             item_name = self.spoke_local_portfolio_name

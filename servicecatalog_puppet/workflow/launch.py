@@ -677,31 +677,31 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
             )
 
 
-class TerminateProductTask(ProvisioningTask):
+class TerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
     launch_name = luigi.Parameter()
-    portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
-    product = luigi.Parameter()
-    product_id = luigi.Parameter()
-    version = luigi.Parameter()
-    version_id = luigi.Parameter()
-
-    account_id = luigi.Parameter()
-    region = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
-    retry_count = luigi.IntParameter(default=1)
+    region = luigi.Parameter()
+    account_id = luigi.Parameter()
 
-    ssm_param_outputs = luigi.ListParameter(default=[])
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
 
+    ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
+
+    launch_parameters = luigi.DictParameter(default={}, significant=False)
+    manifest_parameters = luigi.DictParameter(default={}, significant=False)
+    account_parameters = luigi.DictParameter(default={}, significant=False)
+
+    retry_count = luigi.IntParameter(default=1, significant=False)
     worker_timeout = luigi.IntParameter(default=0, significant=False)
+    ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
+    requested_priority = luigi.IntParameter(significant=False, default=0)
+
+    execution = luigi.Parameter()
 
     try_count = 1
-
-    parameters = luigi.ListParameter(default=[])
-    ssm_param_inputs = luigi.ListParameter(default=[])
-
-    # dependencies = luigi.ListParameter(default=[])
 
     def params_for_results_display(self):
         return {
@@ -709,16 +709,24 @@ class TerminateProductTask(ProvisioningTask):
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
-
-            "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
-            "product": self.product,
-            "product_id": self.product_id,
-            "version": self.version,
-            "version_id": self.version_id,
-
             "cache_invalidator": self.cache_invalidator,
         }
+
+    def requires(self):
+        requirements = {
+            "details": portfoliomanagement_tasks.GetVersionDetailsByNames(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                account_id=self.puppet_account_id,
+                portfolio=self.portfolio,
+                product=self.product,
+                version=self.version,
+                region=self.region,
+            ),
+            "section_dependencies": self.get_section_dependencies()
+        }
+
+        return requirements
 
     def api_calls_used(self):
         return [
@@ -794,15 +802,10 @@ class TerminateProductDryRunTask(ProvisioningTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
-            "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
-            "product": self.product,
-            "product_id": self.product_id,
-            "version": self.version,
-            "version_id": self.version_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -884,9 +887,9 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
 
     def params_for_results_display(self):
         return {
-            "manifest_file_path": self.manifest_file_path,
             "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):
@@ -951,7 +954,9 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "launch_name": self.launch_name,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def generate_tasks(self, task_defs, manifest):
@@ -1036,6 +1041,13 @@ class LaunchForTask(ProvisioningTask, manifest_tasks.ManifestMixen):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "launch_name": self.launch_name,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
     def get_klass_for_provisioning(self):
         if self.is_dry_run:
             if self.status == constants.PROVISIONED:
@@ -1061,6 +1073,7 @@ class LaunchForRegionTask(LaunchForTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "launch_name": self.launch_name,
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
@@ -1103,6 +1116,7 @@ class LaunchForAccountTask(LaunchForTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
@@ -1159,7 +1173,6 @@ class LaunchTask(LaunchForTask):
     def params_for_results_display(self):
         return {
             "launch_name": self.launch_name,
-            "puppet_account_id": self.puppet_account_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -1219,6 +1232,7 @@ class ResetProvisionedProductOwnerTask(ProvisioningTask):
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):

@@ -389,6 +389,7 @@ class ProvisionActionTask(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "type": self.type,
             "source": self.source,
             "phase": self.phase,
@@ -469,7 +470,6 @@ class CreateSpokeLocalPortfolioTask(
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -530,7 +530,6 @@ class CreateAssociationsForSpokeLocalPortfolioTask(PortfolioManagementTask):
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -671,7 +670,6 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -914,7 +912,6 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -1042,6 +1039,7 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
+            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
@@ -1182,8 +1180,11 @@ class RequestPolicyTask(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
+            "type": self.type,
             "account_id": self.account_id,
             "region": self.region,
+            "cache_invalidator": self.cache_invalidator
         }
 
     def run(self):
@@ -1212,9 +1213,11 @@ class SharePortfolioTask(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -1272,6 +1275,7 @@ class SharePortfolioViaOrgsTask(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
             "portfolio_id": self.portfolio_id,
             "region": self.region,
@@ -1334,7 +1338,7 @@ class ShareAndAcceptPortfolioTask(
             "sharing_mode": self.sharing_mode,
         }
 
-    def requires(self):  # TODO fix self.portfolio_id no longer exists
+    def requires(self):
         requirements = dict(
             portfolio=GetPortfolioByPortfolioName(
                 manifest_file_path=self.manifest_file_path,
@@ -1486,11 +1490,7 @@ class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-        }
-
-    def api_calls_used(self):
-        return {
-            f"servicecatalog.associate_principal_with_portfolio_{self.region}": 1,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -1535,7 +1535,7 @@ class CreateShareForAccountLaunchRegion(PortfolioManagementTask):
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "sharing_mode": self.sharing_mode,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -1569,6 +1569,7 @@ class DisassociateProductFromPortfolio(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio_id": self.portfolio_id,
@@ -1595,6 +1596,7 @@ class DisassociateProductsFromPortfolio(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio_id": self.portfolio_id,
@@ -1637,6 +1639,7 @@ class DeleteLocalPortfolio(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio_id": self.portfolio_id,
@@ -1661,6 +1664,7 @@ class DeletePortfolioShare(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
@@ -1701,6 +1705,7 @@ class DeletePortfolio(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "account_id": self.account_id,
             "region": self.region,
@@ -1767,6 +1772,3 @@ class DeletePortfolio(PortfolioManagementTask):
 
     def run(self):
         self.write_output(self.params_for_results_display())
-
-
-#

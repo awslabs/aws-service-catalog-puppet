@@ -15,6 +15,7 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
         }
 
