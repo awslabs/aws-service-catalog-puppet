@@ -738,13 +738,15 @@ class TerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
 
     def run(self):
         self.info(f"starting terminate try {self.try_count} of {self.retry_count}")
+        details = self.load_from_input("details")
+        product_id = details.get("product_details").get("ProductId")
 
         with self.spoke_regional_client("servicecatalog") as service_catalog:
             self.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures"
             )
             provisioned_product_id, provisioning_artifact_id = aws.ensure_is_terminated(
-                service_catalog, self.launch_name, self.product_id
+                service_catalog, self.launch_name, product_id
             )
             log_output = self.to_str_params()
             log_output.update(
