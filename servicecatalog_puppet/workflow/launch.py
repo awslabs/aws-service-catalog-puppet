@@ -223,6 +223,77 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, depen
     execution = luigi.Parameter()
 
     try_count = 1
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "launch_name": self.launch_name,
+            "account_id": self.account_id,
+            "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def requires(self):
+        requirements = {
+            "section_dependencies": self.get_section_dependencies()
+        }
+
+        return requirements
+
+    def run(self):
+        yield DoProvisionProductTask(
+            manifest_file_path=self.manifest_file_path,
+
+            launch_name=self.launch_name,
+            puppet_account_id=self.puppet_account_id,
+
+            region=self.region,
+            account_id=self.account_id,
+
+            portfolio=self.portfolio,
+            product=self.product,
+            version=self.version,
+
+            ssm_param_inputs=self.ssm_param_inputs,
+
+            launch_parameters=self.launch_parameters,
+            manifest_parameters=self.manifest_parameters,
+            account_parameters=self.account_parameters,
+
+            retry_count=self.retry_count,
+            worker_timeout=self.worker_timeout,
+            ssm_param_outputs=self.ssm_param_outputs,
+            requested_priority=self.requested_priority,
+
+            execution=self.execution,
+        )
+
+
+class DoProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin):
+    launch_name = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+
+    region = luigi.Parameter()
+    account_id = luigi.Parameter()
+
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+
+    ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
+
+    launch_parameters = luigi.DictParameter(default={}, significant=False)
+    manifest_parameters = luigi.DictParameter(default={}, significant=False)
+    account_parameters = luigi.DictParameter(default={}, significant=False)
+
+    retry_count = luigi.IntParameter(default=1, significant=False)
+    worker_timeout = luigi.IntParameter(default=0, significant=False)
+    ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
+    requested_priority = luigi.IntParameter(significant=False, default=0)
+
+    execution = luigi.Parameter()
+
+    try_count = 1
     all_params = []
 
     def params_for_results_display(self):
@@ -285,33 +356,9 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, depen
                 version=self.version,
                 region=self.region,
             ),
-            "section_dependencies": self.get_section_dependencies()
         }
-
-        # if self.product == "VPC":
-        #     raise Exception(requirements)
 
         return requirements
-
-    def api_calls_used(self):
-        return {
-            # f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
-            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_record_{self.account_id}_{self.region}",
-            f"cloudformation.get_template_summary_{self.account_id}_{self.region}",
-            f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
-            f"servicecatalog.list_provisioned_product_plans_single_page_{self.account_id}_{self.region}",
-            f"servicecatalog.delete_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.create_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.execute_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.update_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.provision_product_{self.account_id}_{self.region}",
-            # f"ssm.put_parameter_and_wait_{self.region}",
-        }
 
     def get_all_params(self):
         all_params = {}
@@ -330,35 +377,26 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, depen
         self.info(f"finished collecting all_params: {all_params}")
         return all_params
 
-    def run(self):
-        yield ProvisionProductTask(
-            manifest_file_path=self.manifest_file_path,
+    def api_calls_used(self):
+        return [
+            # f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
+            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
+            f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
+            f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
+            f"servicecatalog.describe_record_{self.account_id}_{self.region}",
+            f"cloudformation.get_template_summary_{self.account_id}_{self.region}",
+            f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
+            f"servicecatalog.list_provisioned_product_plans_single_page_{self.account_id}_{self.region}",
+            f"servicecatalog.delete_provisioned_product_plan_{self.account_id}_{self.region}",
+            f"servicecatalog.create_provisioned_product_plan_{self.account_id}_{self.region}",
+            f"servicecatalog.describe_provisioned_product_plan_{self.account_id}_{self.region}",
+            f"servicecatalog.execute_provisioned_product_plan_{self.account_id}_{self.region}",
+            f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
+            f"servicecatalog.update_provisioned_product_{self.account_id}_{self.region}",
+            f"servicecatalog.provision_product_{self.account_id}_{self.region}",
+            # f"ssm.put_parameter_and_wait_{self.region}",
+        ]
 
-            launch_name=self.launch_name,
-            puppet_account_id=self.puppet_account_id,
-
-            region=self.region,
-            account_id=self.account_id,
-
-            portfolio=self.portfolio,
-            product=self.product,
-            version=self.version,
-
-            ssm_param_inputs=self.ssm_param_inputs,
-
-            launch_parameters=self.launch_parameters,
-            manifest_parameters=self.manifest_parameters,
-            account_parameters=self.account_parameters,
-
-            retry_count=self.retry_count,
-            worker_timeout=self.worker_timeout,
-            ssm_param_outputs=self.ssm_param_outputs,
-            requested_priority=self.requested_priority,
-            execution=self.execution,
-        )
-
-
-class DoProvisionProductTask(ProvisionProductTask):
     def run(self):
         details = self.load_from_input("details")
         product_id = details.get("product_details").get("ProductId")
