@@ -13,11 +13,14 @@ class DependenciesMixin(object):
 
         these_dependencies = list()
 
-        these_dependencies.append(generate.GenerateSharesTask(
-            puppet_account_id=self.puppet_account_id,
-            manifest_file_path=self.manifest_file_path,
-            section=self.section_name,
-        ))
+        if self.section_name in [constants.SPOKE_LOCAL_PORTFOLIOS, constants.LAUNCHES]:
+            these_dependencies.append(
+                generate.GenerateSharesTask(
+                    puppet_account_id=self.puppet_account_id,
+                    manifest_file_path=self.manifest_file_path,
+                    section=self.section_name,
+                )
+            )
 
         if isinstance(self, codebuild_runs.ExecuteCodeBuildRunTask):
             item_name = self.code_build_run_name
@@ -25,7 +28,7 @@ class DependenciesMixin(object):
             item_name = self.launch_name
         elif isinstance(self, spoke_local_portfolios.SharePortfolioWithSpokeTask):
             item_name = self.spoke_local_portfolio_name
-        elif isinstance(self, assertions.AssertionTask):
+        elif isinstance(self, assertions.AssertTask):
             item_name = self.assertion_name
         elif isinstance(self, lambda_invocations.InvokeLambdaTask):
             item_name = self.lambda_invocation_name

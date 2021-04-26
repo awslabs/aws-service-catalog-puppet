@@ -44,6 +44,54 @@ class ExecuteCodeBuildRunTask(CodeBuildRunBaseTask, manifest_tasks.ManifestMixen
         )
 
     def run(self):
+        yield DoExecuteCodeBuildRunTask(
+            manifest_file_path=self.manifest_file_path,
+
+            code_build_run_name=self.code_build_run_name,
+            puppet_account_id=self.puppet_account_id,
+
+            region=self.region,
+            account_id=self.account_id,
+
+            ssm_param_inputs=self.ssm_param_inputs,
+
+            launch_parameters=self.launch_parameters,
+            manifest_parameters=self.manifest_parameters,
+            account_parameters=self.account_parameters,
+
+            project_name=self.project_name,
+            requested_priority=self.requested_priority,
+
+        )
+        self.write_output(self.params_for_results_display())
+
+
+class DoExecuteCodeBuildRunTask(CodeBuildRunBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin):
+    code_build_run_name = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+
+    region = luigi.Parameter()
+    account_id = luigi.Parameter()
+
+    ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
+
+    launch_parameters = luigi.DictParameter(default={}, significant=False)
+    manifest_parameters = luigi.DictParameter(default={}, significant=False)
+    account_parameters = luigi.DictParameter(default={}, significant=False)
+
+    project_name = luigi.Parameter()
+    requested_priority = luigi.IntParameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "code_build_run_name": self.code_build_run_name,
+            "region": self.region,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def run(self):
         self.write_output(self.params_for_results_display())
 
 
@@ -108,7 +156,7 @@ class CodeBuildRunForAccountTask(CodeBuildRunForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies,)
+        requirements = dict(dependencies=dependencies, )
 
         klass = self.get_klass_for_provisioning()
 
@@ -177,7 +225,6 @@ class CodeBuildRunTask(CodeBuildRunForTask):
         for region in self.manifest.get_regions_used_for_section_item(
                 self.puppet_account_id, self.section_name, self.code_build_run_name
         ):
-
             regional_dependencies.append(
                 CodeBuildRunForRegionTask(**self.param_kwargs, region=region, )
             )
@@ -236,4 +283,3 @@ class CodeBuildRunsSectionTask(CodeBuildRunBaseTask, manifest_tasks.SectionTask)
 
     def run(self):
         self.write_output(self.manifest.get(self.section_name))
-

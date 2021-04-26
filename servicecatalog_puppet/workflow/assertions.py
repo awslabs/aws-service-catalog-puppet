@@ -6,6 +6,7 @@ from deepmerge import always_merger
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow import tasks as workflow_tasks
+from servicecatalog_puppet.workflow import dependency
 
 
 class AssertionBaseTask(workflow_tasks.PuppetTask):
@@ -16,7 +17,52 @@ class AssertionBaseTask(workflow_tasks.PuppetTask):
         return constants.ASSERTIONS
 
 
-class AssertTask(AssertionBaseTask, manifest_tasks.ManifestMixen):
+class AssertTask(AssertionBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin):
+    assertion_name = luigi.Parameter()
+    region = luigi.Parameter()
+    account_id = luigi.Parameter()
+
+    puppet_account_id = luigi.Parameter()
+
+    expected = luigi.DictParameter()
+    actual = luigi.DictParameter()
+
+    requested_priority = luigi.IntParameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "assertion_name": self.assertion_name,
+            "region": self.region,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def requires(self):
+        requirements = {
+            "section_dependencies": self.get_section_dependencies()
+        }
+        return requirements
+
+    def run(self):
+        yield DoAssertTask(
+            manifest_file_path=self.manifest_file_path,
+
+            assertion_name=self.assertion_name,
+            region=self.region,
+            account_id=self.account_id,
+
+            puppet_account_id=self.puppet_account_id,
+
+            expected=self.expected,
+            actual=self.actual,
+
+            requested_priority=self.requested_priority,
+        )
+        self.write_output(self.params_for_results_display())
+
+
+class DoAssertTask(AssertionBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin):
     assertion_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()

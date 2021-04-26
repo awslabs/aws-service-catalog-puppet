@@ -6,6 +6,7 @@ from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks as workflow_tasks
 
 
@@ -16,8 +17,69 @@ class LambdaInvocationBaseTask(workflow_tasks.PuppetTask):
     def section_name(self):
         return constants.LAMBDA_INVOCATIONS
 
+    # def requires(self):
+    #     requirements = {
+    #         "section_dependencies": self.get_section_dependencies()
+    #     }
+    #     return requirements
 
-class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
+
+class InvokeLambdaTask(LambdaInvocationBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin):
+    lambda_invocation_name = luigi.Parameter()
+    region = luigi.Parameter()
+    account_id = luigi.Parameter()
+
+    function_name = luigi.Parameter()
+    qualifier = luigi.Parameter()
+    invocation_type = luigi.Parameter()
+
+    puppet_account_id = luigi.Parameter()
+
+    launch_parameters = luigi.DictParameter()
+    manifest_parameters = luigi.DictParameter()
+    account_parameters = luigi.DictParameter()
+
+    all_params = []
+
+    manifest_file_path = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "lambda_invocation_name": self.lambda_invocation_name,
+            "region": self.region,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def requires(self):
+        requirements = {
+            "section_dependencies": self.get_section_dependencies()
+        }
+        return requirements
+
+    def run(self):
+        yield DoInvokeLambdaTask(
+            lambda_invocation_name=self.lambda_invocation_name,
+            region=self.region,
+            account_id=self.account_id,
+
+            function_name=self.function_name,
+            qualifier=self.qualifier,
+            invocation_type=self.invocation_type,
+
+            puppet_account_id=self.puppet_account_id,
+
+            launch_parameters=self.launch_parameters,
+            manifest_parameters=self.manifest_parameters,
+            account_parameters=self.account_parameters,
+
+            manifest_file_path=self.manifest_file_path,
+        )
+        self.write_output(self.params_for_results_display())
+
+
+class DoInvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
     lambda_invocation_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -96,7 +158,7 @@ class InvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)
         with self.hub_regional_client(
-            "lambda", region_name=home_region
+                "lambda", region_name=home_region
         ) as lambda_client:
             payload = dict(
                 account_id=self.account_id,
@@ -173,7 +235,6 @@ class LambdaInvocationForRegionTask(LambdaInvocationForTask):
                 klass(**task, manifest_file_path=self.manifest_file_path)
             )
 
-
         return requirements
 
 
@@ -190,7 +251,7 @@ class LambdaInvocationForAccountTask(LambdaInvocationForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies,)
+        requirements = dict(dependencies=dependencies, )
 
         klass = self.get_klass_for_provisioning()
 
