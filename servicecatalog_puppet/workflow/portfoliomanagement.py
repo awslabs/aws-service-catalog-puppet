@@ -318,29 +318,7 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
             f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
         ]
 
-    def complete(self):
-        target_created = super().complete()
-        if target_created:
-            t = self.output().open("r").read()
-            j = json.loads(t)
-            result = self.get_portfolio()
-            if j.get("portfolio_id") == result.get("Id"):
-                return True
-            else:
-                self.write_output(
-                    {
-                        "portfolio_name": self.portfolio,
-                        "portfolio_id": result.get("Id"),
-                        "provider_name": result.get("ProviderName"),
-                        "description": result.get("Description"),
-                    }
-                )
-                return True
-        else:
-            return False
-
-    @lru_cache()
-    def get_portfolio(self):
+    def run(self):
         with self.spoke_regional_client(
             "servicecatalog"
         ) as cross_account_servicecatalog:
@@ -361,10 +339,6 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
                         break
 
             assert result is not None, "Could not find portfolio"
-            return result
-
-    def run(self):
-        result = self.get_portfolio()
         self.write_output(
             {
                 "portfolio_name": self.portfolio,
