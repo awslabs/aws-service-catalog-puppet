@@ -1221,7 +1221,7 @@ class SharePortfolioTask(PortfolioManagementTask):
         path = f"{p}/{self.account_id}.json"
         with open(path, "w") as f:
             f.write("{}")
-
+        
         self.info(f"{self.uid}: checking {portfolio_id} with {self.account_id}")
         with self.hub_regional_client("servicecatalog") as servicecatalog:
             account_ids = servicecatalog.list_portfolio_access_single_page(

@@ -9,7 +9,15 @@ class DependenciesMixin(object):
         from servicecatalog_puppet.workflow import assertions
         from servicecatalog_puppet.workflow import lambda_invocations
 
+        from servicecatalog_puppet.workflow import generate
+
         these_dependencies = list()
+
+        these_dependencies.append(generate.GenerateSharesTask(
+            puppet_account_id=self.puppet_account_id,
+            manifest_file_path=self.manifest_file_path,
+            section=self.section_name,
+        ))
 
         if isinstance(self, codebuild_runs.ExecuteCodeBuildRunTask):
             item_name = self.code_build_run_name
