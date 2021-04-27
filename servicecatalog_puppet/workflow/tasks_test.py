@@ -1,4 +1,5 @@
 from unittest import skip
+
 from . import tasks_unit_tests_helper
 
 
@@ -6,7 +7,6 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     parameter_name = "parameter_name"
     name = "name"
     region = "region"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import tasks
@@ -14,10 +14,7 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.module = tasks
 
         self.sut = self.module.GetSSMParamTask(
-            parameter_name=self.parameter_name,
-            name=self.name,
-            region=self.region,
-            cache_invalidator=self.cache_invalidator,
+            parameter_name=self.parameter_name, name=self.name, region=self.region,
         )
 
         self.wire_up_mocks()

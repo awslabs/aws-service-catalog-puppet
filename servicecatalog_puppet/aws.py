@@ -1,12 +1,12 @@
 import logging
-import time
 import os
+import time
 
 import click
 import yaml
+from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import config, constants
-from betterboto import client as betterboto_client
 
 logger = logging.getLogger(__file__)
 
@@ -283,7 +283,7 @@ def provision_product(
     product_id,
     provisioning_artifact_id,
     puppet_account_id,
-    path_id,
+    path_name,
     params,
     version,
     should_use_sns,
@@ -304,7 +304,7 @@ def provision_product(
         service_catalog.provision_product(
             ProductId=product_id,
             ProvisioningArtifactId=provisioning_artifact_id,
-            PathId=path_id,
+            PathName=path_name,
             ProvisionedProductName=launch_name,
             ProvisioningParameters=provisioning_parameters,
             Tags=[
@@ -355,7 +355,7 @@ def update_provisioned_product(
     product_id,
     provisioning_artifact_id,
     puppet_account_id,
-    path_id,
+    path_name,
     params,
     version,
     execution,
@@ -370,7 +370,7 @@ def update_provisioned_product(
         service_catalog.update_provisioned_product(
             ProductId=product_id,
             ProvisioningArtifactId=provisioning_artifact_id,
-            PathId=path_id,
+            PathName=path_name,
             ProvisionedProductName=launch_name,
             ProvisioningParameters=provisioning_parameters,
         )

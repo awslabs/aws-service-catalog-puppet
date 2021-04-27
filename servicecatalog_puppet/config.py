@@ -1,4 +1,5 @@
 import functools
+import logging
 import os
 
 import yaml
@@ -7,8 +8,6 @@ from jinja2 import Environment, FileSystemLoader
 
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import constants
-
-import logging
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -221,7 +220,6 @@ def get_current_account_id():
         return sts.get_caller_identity().get("Account")
 
 
-# TODO - not used?
 def get_ssm_config_for_parameter(account_ssm_param, required_parameter_name):
     if account_ssm_param.get("region") is not None:
         return {

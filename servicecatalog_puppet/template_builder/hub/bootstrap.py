@@ -1,16 +1,14 @@
-import yaml
-
 import troposphere as t
-
-from troposphere import ssm
+import yaml
+from awacs import iam as awscs_iam
+from troposphere import codebuild
+from troposphere import codecommit
+from troposphere import codepipeline
+from troposphere import iam
 from troposphere import s3
 from troposphere import sns
-from troposphere import codepipeline
 from troposphere import sqs
-from troposphere import iam
-from troposphere import codecommit
-from troposphere import codebuild
-from awacs import iam as awscs_iam
+from troposphere import ssm
 
 
 def get_template(

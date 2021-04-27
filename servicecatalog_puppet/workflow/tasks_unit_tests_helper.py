@@ -24,6 +24,8 @@ class FakeInput(object):
 
 
 class PuppetTaskUnitTest(unittest.TestCase):
+    cache_invalidator = "NOW"
+
     def wire_up_mocks(self):
         self.spoke_client_mock, self.sut.spoke_client = mocked_client()
         (

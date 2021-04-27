@@ -1,17 +1,18 @@
 import json
+import logging
+import math
 import os
 import traceback
 from pathlib import Path
 
 import luigi
+import psutil
 from betterboto import client as betterboto_client
-from luigi.contrib import s3
 from luigi import format
+from luigi.contrib import s3
+from deepmerge import always_merger
 
 from servicecatalog_puppet import constants, config
-import psutil
-import logging
-import math
 
 logger = logging.getLogger("tasks")
 logger.setLevel(logging.INFO)
@@ -29,6 +30,30 @@ def unwrap(what):
 
 
 class PuppetTask(luigi.Task):
+    @property
+    def execution_mode(self):
+        return os.environ.get("SCT_EXECUTION_MODE", constants.EXECUTION_MODE_HUB)
+
+    @property
+    def single_account(self):
+        return os.environ.get("SCT_SINGLE_ACCOUNT", "None")
+
+    @property
+    def should_use_product_plans(self):
+        return os.environ.get("SCT_SHOULD_USE_PRODUCT_PLANS", "True") == "True"
+
+    @property
+    def cache_invalidator(self):
+        return os.environ.get("SCT_CACHE_INVALIDATOR", "NOW")
+
+    @property
+    def is_dry_run(self):
+        return os.environ.get("SCT_IS_DRY_RUN", "False") == "True"
+
+    @property
+    def should_use_sns(self):
+        return os.environ.get("SCT_SHOULD_USE_SNS", "False") == "True"
+
     def spoke_client(self, service):
         return betterboto_client.CrossAccountClientContextManager(
             service,
@@ -90,13 +115,21 @@ class PuppetTask(luigi.Task):
     def output_location(self):
         puppet_account_id = config.get_puppet_account_id()
         path = f"output/{self.uid}.{self.output_suffix}"
-        if config.is_caching_enabled(puppet_account_id):
+        should_use_s3_target_if_caching_is_on = (
+            "cache_invalidator" not in self.params_for_results_display().keys()
+        )
+        if should_use_s3_target_if_caching_is_on and config.is_caching_enabled(
+            puppet_account_id
+        ):
             return f"s3://sc-puppet-caching-bucket-{config.get_puppet_account_id()}-{config.get_home_region(puppet_account_id)}/{path}"
         else:
             return path
 
     def output(self):
-        if config.is_caching_enabled(config.get_puppet_account_id()):
+        should_use_s3_target_if_caching_is_on = (
+                "cache_invalidator" not in self.params_for_results_display().keys()
+        )
+        if should_use_s3_target_if_caching_is_on and config.is_caching_enabled(config.get_puppet_account_id()):
             return s3.S3Target(self.output_location, format=format.UTF8)
         else:
             return luigi.LocalTarget(self.output_location)
@@ -112,9 +145,12 @@ class PuppetTask(luigi.Task):
     def params_for_results_display(self):
         return {}
 
-    def write_output(self, content):
+    def write_output(self, content, skip_json_dump=False):
         with self.output().open("w") as f:
-            f.write(json.dumps(content, indent=4, default=str,))
+            if skip_json_dump:
+                f.write(content)
+            else:
+                f.write(json.dumps(content, indent=4, default=str,))
 
     @property
     def node_id(self):
@@ -150,8 +186,6 @@ class GetSSMParamTask(PuppetTask):
     name = luigi.Parameter()
     region = luigi.Parameter(default=None)
 
-    cache_invalidator = luigi.Parameter()
-
     def params_for_results_display(self):
         return {
             "parameter_name": self.parameter_name,
@@ -179,6 +213,59 @@ class GetSSMParamTask(PuppetTask):
                 )
             except ssm.exceptions.ParameterNotFound as e:
                 raise e
+
+
+class PuppetTaskWithParameters(PuppetTask):
+    def get_all_of_the_params(self):
+        all_params = dict()
+        always_merger.merge(all_params, unwrap(self.manifest_parameters))
+        always_merger.merge(all_params, unwrap(self.launch_parameters))
+        always_merger.merge(all_params, unwrap(self.account_parameters))
+        return all_params
+
+    def get_ssm_parameters(self):
+        ssm_params = dict()
+
+        all_params = self.get_all_of_the_params()
+
+        for param_name, param_details in all_params.items():
+            if param_details.get("ssm"):
+                if param_details.get("default"):
+                    del param_details["default"]
+                ssm_parameter_name = param_details.get("ssm").get("name")
+                ssm_parameter_name = ssm_parameter_name.replace(
+                    "${AWS::Region}", self.region
+                )
+                ssm_parameter_name = ssm_parameter_name.replace(
+                    "${AWS::AccountId}", self.account_id
+                )
+                ssm_params[param_name] = GetSSMParamTask(
+                    parameter_name=param_name,
+                    name=ssm_parameter_name,
+                    region=param_details.get("ssm").get(
+                        "region", config.get_home_region(self.puppet_account_id)
+                    ),
+                )
+
+        return ssm_params
+
+    def get_parameter_values(self):
+        all_params = {}
+        self.info(f"collecting all_params")
+        p = self.get_all_of_the_params()
+        for param_name, param_details in p.items():
+            if param_details.get("ssm"):
+                with self.input().get("ssm_params").get(param_name).open() as f:
+                    all_params[param_name] = json.loads(f.read()).get("Value")
+            if param_details.get("default"):
+                all_params[param_name] = param_details.get("default")
+            if param_details.get("mapping"):
+                all_params[param_name] = self.manifest.get_mapping(
+                    param_details.get("mapping"), self.account_id, self.region
+                )
+
+        self.info(f"finished collecting all_params: {all_params}")
+        return all_params
 
 
 def record_event(event_type, task, extra_event_data=None):

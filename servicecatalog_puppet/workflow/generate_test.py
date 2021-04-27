@@ -10,8 +10,7 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     manifest_file_path = "manifest_file_path"
     region = "region"
-    sharing_policies = dict(accounts=["01234567890", ], organizations=["ou-0932u0jsdj"], )
-    cache_invalidator = "cache_invalidator"
+    sharing_policies = dict(accounts=["01234567890",], organizations=["ou-0932u0jsdj"],)
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import generate
@@ -23,7 +22,6 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             region=self.region,
             sharing_policies=self.sharing_policies,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -52,33 +50,57 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.sut.run()
 
         # verify
-        template = load_yaml(mocked_output().open().__enter__().write.mock_calls[0][1][0])
+        template = load_yaml(
+            mocked_output().open().__enter__().write.mock_calls[0][1][0]
+        )
         found = 0
-        statements = template.get("Resources").get("TopicPolicies").get("Properties").get("PolicyDocument").get(
-            "Statement", [])
+        statements = (
+            template.get("Resources")
+            .get("TopicPolicies")
+            .get("Properties")
+            .get("PolicyDocument")
+            .get("Statement", [])
+        )
         for statement in statements:
             if statement.get("Sid") == "ShareFor01234567890":
                 found += 1
-                self.assertEqual("Fn::Sub: arn:${AWS::Partition}:iam::01234567890:root",
-                                 dump_yaml(statement.get("Principal").get("AWS")).strip())
+                self.assertEqual(
+                    "Fn::Sub: arn:${AWS::Partition}:iam::01234567890:root",
+                    dump_yaml(statement.get("Principal").get("AWS")).strip(),
+                )
 
             if statement.get("Sid") == "OrganizationalShareForou-0932u0jsdj":
                 found += 1
-                self.assertEqual("ou-0932u0jsdj",
-                                 statement.get("Condition").get("StringEquals").get("aws:PrincipalOrgID"))
+                self.assertEqual(
+                    "ou-0932u0jsdj",
+                    statement.get("Condition")
+                    .get("StringEquals")
+                    .get("aws:PrincipalOrgID"),
+                )
 
-        statements = template.get("Resources").get("BucketPolicies").get("Properties").get("PolicyDocument").get(
-            "Statement", [])
+        statements = (
+            template.get("Resources")
+            .get("BucketPolicies")
+            .get("Properties")
+            .get("PolicyDocument")
+            .get("Statement", [])
+        )
         for statement in statements:
             if statement.get("Sid") == "ShareFor01234567890":
                 found += 1
-                self.assertEqual("Fn::Sub: arn:${AWS::Partition}:iam::01234567890:root",
-                                 dump_yaml(statement.get("Principal").get("AWS")).strip())
+                self.assertEqual(
+                    "Fn::Sub: arn:${AWS::Partition}:iam::01234567890:root",
+                    dump_yaml(statement.get("Principal").get("AWS")).strip(),
+                )
 
             if statement.get("Sid") == "OrganizationalShareForou-0932u0jsdj":
                 found += 1
-                self.assertEqual("ou-0932u0jsdj",
-                                 statement.get("Condition").get("StringEquals").get("aws:PrincipalOrgID"))
+                self.assertEqual(
+                    "ou-0932u0jsdj",
+                    statement.get("Condition")
+                    .get("StringEquals")
+                    .get("aws:PrincipalOrgID"),
+                )
 
         self.assertDictEqual(
             dict(
@@ -89,10 +111,9 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
                     Action="events:PutEvents",
                     Principal="01234567890",
                     StatementId="AllowSpokesAccounts01234567890",
-
-                )
+                ),
             ),
-            template.get("Resources").get(f"EventBusPolicy01234567890")
+            template.get("Resources").get(f"EventBusPolicy01234567890"),
         )
 
         self.assertDictEqual(
@@ -108,10 +129,10 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
                         Type="StringEquals",
                         Key="aws:PrincipalOrgID",
                         Value="ou-0932u0jsdj",
-                    )
-                )
+                    ),
+                ),
             ),
-            template.get("Resources").get(f"EventBusPolicyou0932u0jsdj")
+            template.get("Resources").get(f"EventBusPolicyou0932u0jsdj"),
         )
 
         self.assertEqual(4, found)
@@ -177,8 +198,6 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     region = "region"
     sharing_policies = {}
-    should_use_sns = False
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import generate
@@ -190,8 +209,6 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             region=self.region,
             sharing_policies=self.sharing_policies,
-            should_use_sns=self.should_use_sns,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()
@@ -202,7 +219,6 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "manifest_file_path": self.manifest_file_path,
             "puppet_account_id": self.puppet_account_id,
             "region": self.region,
-            "should_use_sns": self.should_use_sns,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -257,9 +273,7 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 class GenerateSharesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     manifest_file_path = "manifest_file_path"
-    should_use_sns = False
     section = "section"
-    cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import generate
@@ -269,9 +283,7 @@ class GenerateSharesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.sut = self.module.GenerateSharesTask(
             puppet_account_id=self.puppet_account_id,
             manifest_file_path=self.manifest_file_path,
-            should_use_sns=self.should_use_sns,
             section=self.section,
-            cache_invalidator=self.cache_invalidator,
         )
 
         self.wire_up_mocks()

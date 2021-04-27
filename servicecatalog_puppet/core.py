@@ -1,54 +1,49 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 import io
-import time
-import urllib
-from pathlib import Path
-
-import cfn_tools
-import requests
-import terminaltables
-
-import shutil
 import json
-from threading import Thread
-import zipfile
-
-import pkg_resources
-import yaml
 import logging
 import os
-import click
+import shutil
+import time
+import traceback
+import urllib
+import zipfile
 from datetime import datetime
+from pathlib import Path
+from threading import Thread
 
+import botocore
+import cfn_tools
+import click
+import pkg_resources
+import requests
+import terminaltables
+import yaml
+from betterboto import client as betterboto_client
 from jinja2 import Template
 from pykwalify.core import Core
-from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import manifest_utils_for_launches
-from servicecatalog_puppet.workflow import management as management_tasks
-from servicecatalog_puppet.workflow import provisioning as provisioning_tasks
-from servicecatalog_puppet.workflow import runner as runner
-from servicecatalog_puppet.workflow import launch as launch_tasks
-from servicecatalog_puppet.workflow import (
-    lambda_invocations as lambda_invocations_tasks,
-)
-from servicecatalog_puppet.workflow import (
-    spoke_local_portfolios as spoke_local_portfolios_tasks,
-)
-from servicecatalog_puppet import config
-from servicecatalog_puppet import manifest_utils
+
+from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import aws
+from servicecatalog_puppet import config
+from servicecatalog_puppet import constants
+from servicecatalog_puppet import manifest_utils
+from servicecatalog_puppet import manifest_utils_for_launches
 from servicecatalog_puppet.template_builder.hub import bootstrap as hub_bootstrap
 from servicecatalog_puppet.template_builder.hub import (
     bootstrap_region as hub_bootstrap_region,
 )
-
-from servicecatalog_puppet import asset_helpers
-from servicecatalog_puppet import constants
-
-import traceback
-import botocore
+from servicecatalog_puppet.workflow import (
+    launch as launch_tasks,
+    spoke_local_portfolios as spoke_local_portfolios_tasks,
+    lambda_invocations as lambda_invocations_tasks,
+    codebuild_runs as codebuild_runs_tasks,
+    assertions as assertions_tasks,
+)
+from servicecatalog_puppet.workflow import management as management_tasks
+from servicecatalog_puppet.workflow import runner as runner
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -72,6 +67,8 @@ def reset_provisioned_product_owner(f):
     current_account_id = puppet_account_id
     manifest = manifest_utils.load(f, puppet_account_id)
 
+    os.environ["SCT_CACHE_INVALIDATOR"] = str(datetime.now())
+
     task_defs = manifest_utils_for_launches.generate_launch_tasks(
         manifest, puppet_account_id, False, False
     )
@@ -81,74 +78,42 @@ def reset_provisioned_product_owner(f):
         task_status = task.get("status")
         if task_status == constants.PROVISIONED:
             tasks_to_run.append(
-                provisioning_tasks.ResetProvisionedProductOwnerTask(
+                workflow.launch.ResetProvisionedProductOwnerTask(
                     launch_name=task.get("launch_name"),
                     account_id=task.get("account_id"),
                     region=task.get("region"),
                 )
             )
 
-    cache_invalidator = str(datetime.now())
-
     runner.run_tasks(
         puppet_account_id,
         current_account_id,
         tasks_to_run,
         10,
-        cache_invalidator=cache_invalidator,
+        execution_mode="hub",
         on_complete_url=None,
     )
 
 
 def generate_tasks(
-    f,
-    puppet_account_id,
-    executor_account_id,
-    single_account=None,
-    is_dry_run=False,
-    execution_mode="hub",
-    cache_invalidator="now",
+    f, puppet_account_id, executor_account_id,
 ):
-    should_use_sns = config.get_should_use_sns(
-        puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-    )
-    should_use_product_plans = config.get_should_use_product_plans(
-        puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-    )
 
     return [
         launch_tasks.LaunchSectionTask(
-            manifest_file_path=f.name,
-            puppet_account_id=puppet_account_id,
-            should_use_sns=should_use_sns,
-            should_use_product_plans=should_use_product_plans,
-            include_expanded_from=False,
-            single_account=single_account,
-            is_dry_run=is_dry_run,
-            execution_mode=execution_mode,
-            cache_invalidator=cache_invalidator,
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
         spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
-            manifest_file_path=f.name,
-            puppet_account_id=puppet_account_id,
-            should_use_sns=should_use_sns,
-            should_use_product_plans=should_use_product_plans,
-            include_expanded_from=False,
-            single_account=single_account,
-            is_dry_run=is_dry_run,
-            execution_mode=execution_mode,
-            cache_invalidator=cache_invalidator,
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
         lambda_invocations_tasks.LambdaInvocationsSectionTask(
-            manifest_file_path=f.name,
-            puppet_account_id=puppet_account_id,
-            should_use_sns=should_use_sns,
-            should_use_product_plans=should_use_product_plans,
-            include_expanded_from=False,
-            single_account=single_account,
-            is_dry_run=is_dry_run,
-            execution_mode=execution_mode,
-            cache_invalidator=cache_invalidator,
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        ),
+        codebuild_runs_tasks.CodeBuildRunsSectionTask(
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        ),
+        assertions_tasks.AssertionsSectionTask(
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
     ]
 
@@ -165,17 +130,18 @@ def deploy(
     on_complete_url=None,
     running_exploded=False,
 ):
-    cache_invalidator = str(datetime.now())
-
-    tasks_to_run = generate_tasks(
-        f,
-        puppet_account_id,
-        executor_account_id,
-        single_account,
-        is_dry_run,
-        execution_mode,
-        cache_invalidator,
+    os.environ["SCT_CACHE_INVALIDATOR"] = str(datetime.now())
+    os.environ["SCT_EXECUTION_MODE"] = str(execution_mode)
+    os.environ["SCT_SINGLE_ACCOUNT"] = str(single_account)
+    os.environ["SCT_IS_DRY_RUN"] = str(is_dry_run)
+    os.environ["SCT_SHOULD_USE_SNS"] = str(config.get_should_use_sns(puppet_account_id))
+    os.environ["SCT_SHOULD_USE_PRODUCT_PLANS"] = str(
+        config.get_should_use_product_plans(
+            puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
+        )
     )
+
+    tasks_to_run = generate_tasks(f, puppet_account_id, executor_account_id,)
     runner.run_tasks(
         puppet_account_id,
         executor_account_id,
@@ -184,7 +150,6 @@ def deploy(
         is_dry_run,
         is_list_launches,
         execution_mode,
-        cache_invalidator,
         on_complete_url,
         running_exploded,
     )
@@ -560,12 +525,15 @@ def expand(f, single_account, subset=None):
 
         click.echo("Filtered")
 
+    new_manifest = manifest_utils.rewrite_depends_on(new_manifest)
+
     if subset:
         click.echo(f"Filtering for subset: {subset}")
         new_manifest = manifest_utils.isolate(
             manifest_utils.Manifest(new_manifest), subset
         )
-        new_manifest = json.loads(json.dumps(new_manifest))
+
+    new_manifest = json.loads(json.dumps(new_manifest))
 
     if new_manifest.get(constants.LAMBDA_INVOCATIONS) is None:
         new_manifest[constants.LAMBDA_INVOCATIONS] = dict()
@@ -1099,7 +1067,7 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                                                         "status"
                                                     )
                                                     click.echo(
-                                                        f"Current status: {status}"
+                                                        f"Current status (A): {status}"
                                                     )
                                                     if status in [
                                                         "Cancelled",

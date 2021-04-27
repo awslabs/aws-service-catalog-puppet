@@ -4,12 +4,11 @@ from functools import lru_cache
 import luigi
 
 from servicecatalog_puppet import config, constants
-
+from servicecatalog_puppet.workflow import general as general_tasks
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow import (
     portfoliomanagement as portfoliomanagement_tasks,
 )
-from servicecatalog_puppet.workflow import general as general_tasks
 from servicecatalog_puppet.workflow import tasks
 
 
@@ -18,8 +17,6 @@ class GeneratePoliciesTemplate(tasks.PuppetTask):
     manifest_file_path = luigi.Parameter()
     region = luigi.Parameter()
     sharing_policies = luigi.DictParameter()
-
-    cache_invalidator = luigi.Parameter()
 
     @property
     def output_suffix(self):
@@ -79,16 +76,12 @@ class GeneratePolicies(tasks.PuppetTask):
     manifest_file_path = luigi.Parameter()
     region = luigi.Parameter()
     sharing_policies = luigi.DictParameter()
-    should_use_sns = luigi.BoolParameter()
-
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "manifest_file_path": self.manifest_file_path,
             "puppet_account_id": self.puppet_account_id,
             "region": self.region,
-            "should_use_sns": self.should_use_sns,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -99,7 +92,6 @@ class GeneratePolicies(tasks.PuppetTask):
                 manifest_file_path=self.manifest_file_path,
                 region=self.region,
                 sharing_policies=self.sharing_policies,
-                cache_invalidator=self.cache_invalidator,
             ),
         }
 
@@ -132,25 +124,19 @@ class GeneratePolicies(tasks.PuppetTask):
 class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
     puppet_account_id = luigi.Parameter()
     manifest_file_path = luigi.Parameter()
-    should_use_sns = luigi.BoolParameter()
     section = luigi.Parameter()
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
-            "puppet_account_id": self.puppet_account_id,
             "manifest_file_path": self.manifest_file_path,
+            "puppet_account_id": self.puppet_account_id,
             "section": self.section,
             "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
-        portfolios = dict()
         requirements = dict(
-            deletes=list(),
-            ensure_event_buses=list(),
-            generate_policies=list(),
-            portfolios=portfolios,
+            deletes=list(), ensure_event_buses=list(), generate_policies=list(),
         )
         for region_name, accounts in self.manifest.get_accounts_by_region().items():
             requirements["deletes"].append(
@@ -158,6 +144,7 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                     account_id=self.puppet_account_id,
                     region=region_name,
                     stack_name="servicecatalog-puppet-shares",
+                    nonce=self.cache_invalidator,
                 )
             )
 
@@ -177,40 +164,9 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                     manifest_file_path=self.manifest_file_path,
                     region=region_name,
                     sharing_policies=sharing_policies,
-                    should_use_sns=self.should_use_sns,
-                    cache_invalidator=self.cache_invalidator,
                 )
             )
 
-        for (
-            region_name,
-            shares_by_portfolio_account,
-        ) in self.manifest.get_shares_by_region_portfolio_account(
-            self.puppet_account_id, self.section
-        ).items():
-            for (
-                portfolio_name,
-                shares_by_account,
-            ) in shares_by_portfolio_account.items():
-                for account_id, share in shares_by_account.items():
-                    i = "_".join(
-                        [
-                            str(self.puppet_account_id),
-                            portfolio_name,
-                            str(account_id),
-                            region_name,
-                        ]
-                    )
-                    portfolios[
-                        i
-                    ] = portfoliomanagement_tasks.GetPortfolioByPortfolioName(
-                        manifest_file_path=self.manifest_file_path,
-                        puppet_account_id=self.puppet_account_id,
-                        portfolio=portfolio_name,
-                        account_id=self.puppet_account_id,
-                        region=region_name,
-                        cache_invalidator=self.cache_invalidator,
-                    )
         return requirements
 
     def run(self):
@@ -226,22 +182,6 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                 shares_by_account,
             ) in shares_by_portfolio_account.items():
                 for account_id, share in shares_by_account.items():
-                    i = "_".join(
-                        [
-                            str(self.puppet_account_id),
-                            portfolio_name,
-                            str(account_id),
-                            region_name,
-                        ]
-                    )
-                    portfolio_input = self.input().get("portfolios").get(i)
-
-                    if portfolio_input is None:
-                        raise Exception(
-                            f"failed to get portfolios details for {i} in {self.input().get('portfolios')}"
-                        )
-
-                    portfolio = json.loads(portfolio_input.open("r").read())
 
                     tasks.append(
                         portfoliomanagement_tasks.CreateShareForAccountLaunchRegion(
@@ -250,7 +190,6 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                             account_id=account_id,
                             region=region_name,
                             portfolio=portfolio_name,
-                            portfolio_id=portfolio.get("portfolio_id"),
                             sharing_mode=share.get(self.section).get(
                                 "sharing_mode",
                                 config.get_global_sharing_mode_default(

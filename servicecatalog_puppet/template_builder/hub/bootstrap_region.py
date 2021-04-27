@@ -1,8 +1,7 @@
 import troposphere as t
-
-from troposphere import ssm
 from troposphere import s3
 from troposphere import sns
+from troposphere import ssm
 
 
 def get_template(version: str, default_region_value) -> t.Template:

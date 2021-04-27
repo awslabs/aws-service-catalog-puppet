@@ -1,164 +1,160 @@
-import json
-
 import luigi
 
-from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow import tasks as workflow_tasks
+from servicecatalog_puppet.workflow import tasks as workflow_tasks, dependency
 
 
-class LambdaInvocationBaseTask(workflow_tasks.PuppetTask):
+class CodeBuildRunBaseTask(workflow_tasks.PuppetTaskWithParameters):
     manifest_file_path = luigi.Parameter()
 
     @property
     def section_name(self):
-        return constants.LAMBDA_INVOCATIONS
+        return constants.CODE_BUILD_RUNS
 
 
-class InvokeLambdaTask(
-    LambdaInvocationBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin
+class ExecuteCodeBuildRunTask(
+    CodeBuildRunBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin
 ):
-    lambda_invocation_name = luigi.Parameter()
+    code_build_run_name = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+
     region = luigi.Parameter()
     account_id = luigi.Parameter()
 
-    function_name = luigi.Parameter()
-    qualifier = luigi.Parameter()
-    invocation_type = luigi.Parameter()
+    ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
-    puppet_account_id = luigi.Parameter()
+    launch_parameters = luigi.DictParameter(default={}, significant=False)
+    manifest_parameters = luigi.DictParameter(default={}, significant=False)
+    account_parameters = luigi.DictParameter(default={}, significant=False)
 
-    launch_parameters = luigi.DictParameter()
-    manifest_parameters = luigi.DictParameter()
-    account_parameters = luigi.DictParameter()
-
-    all_params = []
-
-    manifest_file_path = luigi.Parameter()
+    project_name = luigi.Parameter()
+    requested_priority = luigi.IntParameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "lambda_invocation_name": self.lambda_invocation_name,
+            "code_build_run_name": self.code_build_run_name,
             "region": self.region,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
-        requirements = {"section_dependencies": self.get_section_dependencies()}
-        return requirements
+        return dict(section_dependencies=self.get_section_dependencies())
 
     def run(self):
-        yield DoInvokeLambdaTask(
-            lambda_invocation_name=self.lambda_invocation_name,
+        yield DoExecuteCodeBuildRunTask(
+            manifest_file_path=self.manifest_file_path,
+            code_build_run_name=self.code_build_run_name,
+            puppet_account_id=self.puppet_account_id,
             region=self.region,
             account_id=self.account_id,
-            function_name=self.function_name,
-            qualifier=self.qualifier,
-            invocation_type=self.invocation_type,
-            puppet_account_id=self.puppet_account_id,
+            ssm_param_inputs=self.ssm_param_inputs,
             launch_parameters=self.launch_parameters,
             manifest_parameters=self.manifest_parameters,
             account_parameters=self.account_parameters,
-            manifest_file_path=self.manifest_file_path,
+            project_name=self.project_name,
+            requested_priority=self.requested_priority,
         )
         self.write_output(self.params_for_results_display())
 
 
-class DoInvokeLambdaTask(
-    workflow_tasks.PuppetTaskWithParameters, manifest_tasks.ManifestMixen
+class DoExecuteCodeBuildRunTask(
+    CodeBuildRunBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin
 ):
-    lambda_invocation_name = luigi.Parameter()
+    code_build_run_name = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+
     region = luigi.Parameter()
     account_id = luigi.Parameter()
 
-    function_name = luigi.Parameter()
-    qualifier = luigi.Parameter()
-    invocation_type = luigi.Parameter()
+    ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
-    puppet_account_id = luigi.Parameter()
+    launch_parameters = luigi.DictParameter(default={}, significant=False)
+    manifest_parameters = luigi.DictParameter(default={}, significant=False)
+    account_parameters = luigi.DictParameter(default={}, significant=False)
 
-    launch_parameters = luigi.DictParameter()
-    manifest_parameters = luigi.DictParameter()
-    account_parameters = luigi.DictParameter()
-
-    manifest_file_path = luigi.Parameter()
+    project_name = luigi.Parameter()
+    requested_priority = luigi.IntParameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "lambda_invocation_name": self.lambda_invocation_name,
+            "code_build_run_name": self.code_build_run_name,
             "region": self.region,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
+    def api_calls_used(self):
+        return [
+            f"codebuild.start_build_{self.puppet_account_id}_{self.project_name}",
+            f"codebuild.batch_get_projects_{self.puppet_account_id}_{self.project_name}",
+        ]
+
     def requires(self):
-        return dict(ssm_params=self.get_ssm_parameters(),)
+        requirements = {
+            "ssm_params": self.get_ssm_parameters(),
+        }
+        return requirements
 
     def run(self):
-        home_region = config.get_home_region(self.puppet_account_id)
-        with self.hub_regional_client(
-            "lambda", region_name=home_region
-        ) as lambda_client:
-            payload = dict(
-                account_id=self.account_id,
-                region=self.region,
-                parameters=self.get_parameter_values(),
-            )
-            response = lambda_client.invoke(
-                FunctionName=self.function_name,
-                InvocationType=self.invocation_type,
-                Payload=json.dumps(payload),
-                Qualifier=self.qualifier,
-            )
-        success_results = dict(RequestResponse=200, Event=202, DryRun=204)
+        with self.hub_client("codebuild") as codebuild:
+            provided_parameters = self.get_parameter_values()
+            parameters_to_use = list()
 
-        if success_results.get(self.invocation_type) != response.get("StatusCode"):
-            raise Exception(
-                f"{self.lambda_invocation_name} failed for {self.account_id}, {self.region}"
+            projects = codebuild.batch_get_projects(names=[self.project_name]).get(
+                "projects", []
             )
-        else:
-            if response.get("FunctionError"):
-                error_payload = response.get("Payload").read()
-                raise Exception(error_payload)
-            else:
-                output = dict(
-                    **self.params_for_results_display(),
-                    payload=payload,
-                    response=response,
-                )
-                self.write_output(output)
+            for project in projects:
+                if project.get("name") == self.project_name:
+                    for environment_variable in project.get("environment", {}).get(
+                        "environmentVariables", []
+                    ):
+                        if environment_variable.get("type") == "PLAINTEXT":
+                            n = environment_variable.get("name")
+                            if provided_parameters.get(n):
+                                parameters_to_use.append(
+                                    dict(
+                                        name=n,
+                                        value=provided_parameters.get(n),
+                                        type="PLAINTEXT",
+                                    )
+                                )
+
+            codebuild.start_build_and_wait_for_completion(
+                projectName=self.project_name,
+                environmentVariablesOverride=parameters_to_use,
+            )
+        self.write_output(self.params_for_results_display())
 
 
-class LambdaInvocationForTask(LambdaInvocationBaseTask, manifest_tasks.ManifestMixen):
-    lambda_invocation_name = luigi.Parameter()
+class CodeBuildRunForTask(CodeBuildRunBaseTask, manifest_tasks.ManifestMixen):
+    code_build_run_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "lambda_invocation_name": self.lambda_invocation_name,
+            "code_build_run_name": self.code_build_run_name,
             "cache_invalidator": self.cache_invalidator,
         }
 
     def get_klass_for_provisioning(self):
-        return InvokeLambdaTask
+        return ExecuteCodeBuildRunTask
 
     def run(self):
         self.write_output(self.params_for_results_display())
 
 
-class LambdaInvocationForRegionTask(LambdaInvocationForTask):
+class CodeBuildRunForRegionTask(CodeBuildRunForTask):
     region = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "lambda_invocation_name": self.lambda_invocation_name,
+            "code_build_run_name": self.code_build_run_name,
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
         }
@@ -175,7 +171,7 @@ class LambdaInvocationForRegionTask(LambdaInvocationForTask):
         for task in self.manifest.get_tasks_for_launch_and_region(
             self.puppet_account_id,
             self.section_name,
-            self.lambda_invocation_name,
+            self.code_build_run_name,
             self.region,
         ):
             dependencies.append(
@@ -185,13 +181,13 @@ class LambdaInvocationForRegionTask(LambdaInvocationForTask):
         return requirements
 
 
-class LambdaInvocationForAccountTask(LambdaInvocationForTask):
+class CodeBuildRunForAccountTask(CodeBuildRunForTask):
     account_id = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "lambda_invocation_name": self.lambda_invocation_name,
+            "code_build_run_name": self.code_build_run_name,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
@@ -202,10 +198,10 @@ class LambdaInvocationForAccountTask(LambdaInvocationForTask):
 
         klass = self.get_klass_for_provisioning()
 
-        for task in self.manifest.get_tasks_for_launch_and_region(
+        for task in self.manifest.get_tasks_for_launch_and_account(
             self.puppet_account_id,
             self.section_name,
-            self.lambda_invocation_name,
+            self.code_build_run_name,
             self.account_id,
         ):
             dependencies.append(
@@ -215,14 +211,14 @@ class LambdaInvocationForAccountTask(LambdaInvocationForTask):
         return requirements
 
 
-class LambdaInvocationForAccountAndRegionTask(LambdaInvocationForTask):
+class CodeBuildRunForAccountAndRegionTask(CodeBuildRunForTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "lambda_invocation_name": self.lambda_invocation_name,
+            "code_build_run_name": self.code_build_run_name,
             "region": self.region,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
@@ -237,7 +233,7 @@ class LambdaInvocationForAccountAndRegionTask(LambdaInvocationForTask):
         for task in self.manifest.get_tasks_for_launch_and_account_and_region(
             self.puppet_account_id,
             self.section_name,
-            self.lambda_invocation_name,
+            self.code_build_run_name,
             self.account_id,
             self.region,
         ):
@@ -248,11 +244,14 @@ class LambdaInvocationForAccountAndRegionTask(LambdaInvocationForTask):
         return requirements
 
 
-class LambdaInvocationTask(LambdaInvocationForTask):
+class CodeBuildRunTask(CodeBuildRunForTask):
+    code_build_run_name = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "lambda_invocation_name": self.lambda_invocation_name,
+            "code_build_run_name": self.code_build_run_name,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -265,31 +264,30 @@ class LambdaInvocationTask(LambdaInvocationForTask):
             account_launches=account_dependencies,
             account_and_region_dependencies=account_and_region_dependencies,
         )
+
         for region in self.manifest.get_regions_used_for_section_item(
-            self.puppet_account_id, self.section_name, self.lambda_invocation_name
+            self.puppet_account_id, self.section_name, self.code_build_run_name
         ):
             regional_dependencies.append(
-                LambdaInvocationForRegionTask(**self.param_kwargs, region=region,)
+                CodeBuildRunForRegionTask(**self.param_kwargs, region=region,)
             )
 
         for account_id in self.manifest.get_account_ids_used_for_section_item(
-            self.puppet_account_id, self.section_name, self.lambda_invocation_name
+            self.puppet_account_id, self.section_name, self.code_build_run_name
         ):
             account_dependencies.append(
-                LambdaInvocationForAccountTask(
-                    **self.param_kwargs, account_id=account_id,
-                )
+                CodeBuildRunForAccountTask(**self.param_kwargs, account_id=account_id,)
             )
 
         for (
             account_id,
             regions,
         ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-            self.puppet_account_id, self.section_name, self.lambda_invocation_name
+            self.puppet_account_id, self.section_name, self.code_build_run_name
         ).items():
             for region in regions:
                 account_and_region_dependencies.append(
-                    LambdaInvocationForAccountAndRegionTask(
+                    CodeBuildRunForAccountAndRegionTask(
                         **self.param_kwargs, account_id=account_id, region=region,
                     )
                 )
@@ -300,9 +298,7 @@ class LambdaInvocationTask(LambdaInvocationForTask):
         self.write_output(self.params_for_results_display())
 
 
-class LambdaInvocationsSectionTask(
-    LambdaInvocationBaseTask, manifest_tasks.SectionTask
-):
+class CodeBuildRunsSectionTask(CodeBuildRunBaseTask, manifest_tasks.SectionTask):
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -312,12 +308,12 @@ class LambdaInvocationsSectionTask(
     def requires(self):
         requirements = dict(
             invocations=[
-                LambdaInvocationTask(
-                    lambda_invocation_name=lambda_invocation_name,
+                CodeBuildRunTask(
+                    code_build_run_name=code_build_run_name,
                     manifest_file_path=self.manifest_file_path,
                     puppet_account_id=self.puppet_account_id,
                 )
-                for lambda_invocation_name, lambda_invocation in self.manifest.get(
+                for code_build_run_name, code_build_run in self.manifest.get(
                     self.section_name, {}
                 ).items()
             ]
@@ -325,4 +321,4 @@ class LambdaInvocationsSectionTask(
         return requirements
 
     def run(self):
-        self.write_output(self.manifest.get("lambda-invocations"))
+        self.write_output(self.manifest.get(self.section_name))

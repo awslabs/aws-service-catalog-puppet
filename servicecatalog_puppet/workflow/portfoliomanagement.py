@@ -1,22 +1,18 @@
 import json
-
 import os
 import re
 import time
-from functools import lru_cache
 
 import luigi
+import yaml
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import utils
-
-from servicecatalog_puppet.workflow import tasks, general as general_tasks
-
+from servicecatalog_puppet.workflow import generate as generate_tasks
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
-
-import yaml
+from servicecatalog_puppet.workflow import tasks, general as general_tasks
 
 
 class PortfolioManagementTask(tasks.PuppetTask):
@@ -31,8 +27,6 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
 
-    cache_invalidator = luigi.Parameter()
-
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -44,71 +38,81 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def run(self):
-        portfolio_details = yield GetPortfolioByPortfolioName(
-            manifest_file_path=self.manifest_file_path,
-            puppet_account_id=self.puppet_account_id,
-            portfolio=self.portfolio,
-            account_id=self.account_id,
-            region=self.region,
-            cache_invalidator=self.cache_invalidator,
-        )
-        portfolio_details = json.loads(portfolio_details.open("r").read())
+    def requires(self):
+        requirements = dict()
 
-        product_details = yield GetProductIdByProductName(
-            manifest_file_path=self.manifest_file_path,
-            puppet_account_id=self.puppet_account_id,
-            portfolio=self.portfolio,
-            portfolio_id=portfolio_details.get("portfolio_id"),
-            product=self.product,
-            account_id=self.account_id,
-            region=self.region,
-            cache_invalidator=self.cache_invalidator,
-        )
-        product_details = json.loads(product_details.open("r").read())
-
-        version_details = yield GetVersionIdByVersionName(
-            manifest_file_path=self.manifest_file_path,
-            puppet_account_id=self.puppet_account_id,
-            portfolio=self.portfolio,
-            portfolio_id=portfolio_details.get("portfolio_id"),
-            product=self.product,
-            product_id=product_details.get("product_id"),
-            version=self.version,
-            account_id=self.account_id,
-            region=self.region,
-            cache_invalidator=self.cache_invalidator,
-        )
-        version_details = json.loads(version_details.open("r").read())
-
-        self.write_output(
-            dict(
-                portfolio_details=portfolio_details,
-                product_details=product_details,
-                version_details=version_details,
+        if self.account_id == self.puppet_account_id:
+            requirements["details"] = DescribeProductAsAdminTask(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                portfolio=self.portfolio,
+                product=self.product,
+                account_id=self.account_id,
+                region=self.region,
             )
+        else:
+            requirements["details"] = GetVersionIdByVersionName(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                portfolio=self.portfolio,
+                product=self.product,
+                version=self.version,
+                account_id=self.account_id,
+                region=self.region,
+            )
+            if not self.is_dry_run:
+                requirements["generate_shares"] = generate_tasks.GenerateSharesTask(
+                    puppet_account_id=self.puppet_account_id,
+                    manifest_file_path=self.manifest_file_path,
+                    section=constants.LAUNCHES,
+                )
+        return requirements
+
+    def run(self):
+        details = self.load_from_input("details")
+
+        if self.account_id == self.puppet_account_id:
+            for provisioning_artifact_summary in details.get(
+                "ProvisioningArtifactSummaries"
+            ):
+                if provisioning_artifact_summary.get("Name") == self.version:
+                    self.write_output(
+                        dict(
+                            product_details=details.get("ProductViewDetail").get(
+                                "ProductViewSummary"
+                            ),
+                            version_details=provisioning_artifact_summary,
+                        )
+                    )
+                    return
+        else:
+            self.write_output(
+                dict(
+                    product_details=dict(ProductId=details.get("product_id")),
+                    version_details=dict(Id=details.get("version_id")),
+                )
+            )
+            return
+
+        raise Exception(
+            f"Could not find version: {self.version} of: {self.product} in: {self.portfolio}"
         )
 
 
 class GetVersionIdByVersionName(PortfolioManagementTask):
     puppet_account_id = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     product = luigi.Parameter()
-    product_id = luigi.Parameter()
     version = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "product": self.product,
-            "product_id": self.product_id,
             "version": self.version,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
@@ -119,13 +123,32 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
             f"servicecatalog.list_provisioning_artifacts_{self.account_id}_{self.region}",
         ]
 
-    def run(self):
-        with self.spoke_regional_client(
-            "servicecatalog"
-        ) as cross_account_servicecatalog:
-            version_id = aws.get_version_id_for(
-                cross_account_servicecatalog, self.product_id, self.version,
+    def requires(self):
+        return dict(
+            product=GetProductIdByProductName(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                portfolio=self.portfolio,
+                product=self.product,
+                account_id=self.account_id,
+                region=self.region,
             )
+        )
+
+    def run(self):
+        details = self.load_from_input("product")
+        product_id = details.get("product_id")
+        with self.spoke_regional_client("servicecatalog") as servicecatalog:
+            version_id = None
+            response = servicecatalog.list_provisioning_artifacts_single_page(
+                ProductId=product_id
+            )
+            for provisioning_artifact_detail in response.get(
+                "ProvisioningArtifactDetails"
+            ):
+                if provisioning_artifact_detail.get("Name") == self.version:
+                    version_id = provisioning_artifact_detail.get("Id")
+            assert version_id is not None, "Did not find version looking for"
             with self.output().open("w") as f:
                 f.write(
                     json.dumps(
@@ -133,7 +156,7 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
                             "version_name": self.version,
                             "version_id": version_id,
                             "product_name": self.product,
-                            "product_id": self.product_id,
+                            "product_id": product_id,
                         },
                         indent=4,
                         default=str,
@@ -144,20 +167,28 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
 class SearchProductsAsAdminTask(PortfolioManagementTask):
     puppet_account_id = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
+
+    def requires(self):
+        return dict(
+            portfolio=GetPortfolioByPortfolioName(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                portfolio=self.portfolio,
+                account_id=self.account_id,
+                region=self.region,
+            )
+        )
 
     def api_calls_used(self):
         return [
@@ -165,28 +196,70 @@ class SearchProductsAsAdminTask(PortfolioManagementTask):
         ]
 
     def run(self):
+        portfolio_details = self.load_from_input("portfolio")
         with self.spoke_regional_client("servicecatalog") as spoke_service_catalog:
             results = spoke_service_catalog.search_products_as_admin_single_page(
-                PortfolioId=self.portfolio_id,
+                PortfolioId=portfolio_details.get("portfolio_id"),
             )
             self.write_output(results)
 
 
-class GetProductIdByProductName(PortfolioManagementTask):
+class DescribeProductAsAdminTask(PortfolioManagementTask):
     puppet_account_id = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     product = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
 
-    cache_invalidator = luigi.Parameter()
+    def requires(self):
+        return dict(
+            portfolio=GetPortfolioByPortfolioName(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                portfolio=self.portfolio,
+                account_id=self.account_id,
+                region=self.region,
+            )
+        )
+
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.describe_product_as_admin_{self.account_id}_{self.region}"
+        ]
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
+            "region": self.region,
+            "product": self.product,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def run(self):
+        portfolio_details = self.load_from_input("portfolio")
+
+        with self.spoke_regional_client("servicecatalog") as service_catalog:
+            response = service_catalog.describe_product_as_admin(
+                Name=self.product,
+                SourcePortfolioId=portfolio_details.get("portfolio_id"),
+            )
+            response["portfolio_details"] = portfolio_details
+            self.write_output(response)
+
+
+class GetProductIdByProductName(PortfolioManagementTask):
+    puppet_account_id = luigi.Parameter()
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "portfolio": self.portfolio,
             "region": self.region,
             "product": self.product,
             "account_id": self.account_id,
@@ -199,10 +272,8 @@ class GetProductIdByProductName(PortfolioManagementTask):
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 portfolio=self.portfolio,
-                portfolio_id=self.portfolio_id,
                 account_id=self.account_id,
                 region=self.region,
-                cache_invalidator=self.cache_invalidator,
             ),
         }
 
@@ -221,7 +292,6 @@ class GetProductIdByProductName(PortfolioManagementTask):
                 "product_name": self.product,
                 "product_id": product_id,
                 "portfolio_name": self.portfolio,
-                "portfolio_id": self.portfolio_id,
             }
         )
 
@@ -231,7 +301,6 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
     portfolio = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -248,29 +317,7 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
             f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
         ]
 
-    def complete(self):
-        target_created = super().complete()
-        if target_created:
-            t = self.output().open("r").read()
-            j = json.loads(t)
-            result = self.get_portfolio()
-            if j.get("portfolio_id") == result.get("Id"):
-                return True
-            else:
-                self.write_output(
-                    {
-                        "portfolio_name": self.portfolio,
-                        "portfolio_id": result.get("Id"),
-                        "provider_name": result.get("ProviderName"),
-                        "description": result.get("Description"),
-                    }
-                )
-                return True
-        else:
-            return False
-
-    @lru_cache()
-    def get_portfolio(self):
+    def run(self):
         with self.spoke_regional_client(
             "servicecatalog"
         ) as cross_account_servicecatalog:
@@ -291,10 +338,6 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
                         break
 
             assert result is not None, "Could not find portfolio"
-            return result
-
-    def run(self):
-        result = self.get_portfolio()
         self.write_output(
             {
                 "portfolio_name": self.portfolio,
@@ -317,10 +360,9 @@ class ProvisionActionTask(PortfolioManagementTask):
     region = luigi.Parameter()
     parameters = luigi.DictParameter(default={})
 
-    cache_invalidator = luigi.Parameter()
-
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "type": self.type,
             "source": self.source,
             "phase": self.phase,
@@ -351,7 +393,6 @@ class ProvisionActionTask(PortfolioManagementTask):
                     region=param_details.get("ssm").get(
                         "region", config.get_home_region(self.puppet_account_id)
                     ),
-                    cache_invalidator=self.cache_invalidator,
                 )
         return {
             "ssm_params": ssm_params,
@@ -393,20 +434,15 @@ class CreateSpokeLocalPortfolioTask(
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     organization = luigi.Parameter(significant=False)
     sharing_mode = luigi.Parameter()
-
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
-            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -416,7 +452,6 @@ class CreateSpokeLocalPortfolioTask(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 portfolio=self.portfolio,
-                portfolio_id=self.portfolio_id,
                 account_id=self.account_id,
                 region=self.region,
                 sharing_mode=self.sharing_mode,
@@ -427,7 +462,6 @@ class CreateSpokeLocalPortfolioTask(
                 portfolio=self.portfolio,
                 account_id=self.puppet_account_id,
                 region=self.region,
-                cache_invalidator=self.cache_invalidator,
             ),
         }
 
@@ -455,27 +489,20 @@ class CreateAssociationsForSpokeLocalPortfolioTask(PortfolioManagementTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     organization = luigi.Parameter()
 
     associations = luigi.ListParameter(default=[])
 
-    should_use_sns = luigi.Parameter(significant=False, default=False)
-
     sharing_mode = luigi.Parameter()
-
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
-            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -487,10 +514,8 @@ class CreateAssociationsForSpokeLocalPortfolioTask(PortfolioManagementTask):
                 account_id=self.account_id,
                 region=self.region,
                 portfolio=self.portfolio,
-                portfolio_id=self.portfolio_id,
                 organization=self.organization,
                 sharing_mode=self.sharing_mode,
-                cache_invalidator=self.cache_invalidator,
             ),
         }
 
@@ -511,9 +536,9 @@ class CreateAssociationsForSpokeLocalPortfolioTask(PortfolioManagementTask):
             account_id=self.account_id,
             region=self.region,
             stack_name=f"associations-for-portfolio-{portfolio_id}",
+            nonce="forever",
         )
 
-        role = config.get_puppet_role_arn(self.account_id)
         with self.spoke_regional_client("cloudformation") as cloudformation:
             template = config.env.get_template("associations.template.yaml.j2").render(
                 portfolio={
@@ -542,16 +567,12 @@ class CreateAssociationsForSpokeLocalPortfolioTask(PortfolioManagementTask):
 class GetProductsAndProvisioningArtifactsTask(PortfolioManagementTask):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
-
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
         }
@@ -562,10 +583,8 @@ class GetProductsAndProvisioningArtifactsTask(PortfolioManagementTask):
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 portfolio=self.portfolio,
-                portfolio_id=self.portfolio_id,
                 region=self.region,
                 account_id=self.puppet_account_id,
-                cache_invalidator=self.cache_invalidator,
             )
         }
 
@@ -613,23 +632,18 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     organization = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
     sharing_mode = luigi.Parameter()
-
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
-            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -640,19 +654,15 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 account_id=self.account_id,
                 region=self.region,
                 portfolio=self.portfolio,
-                portfolio_id=self.portfolio_id,
                 organization=self.organization,
                 puppet_account_id=self.puppet_account_id,
                 sharing_mode=self.sharing_mode,
-                cache_invalidator=self.cache_invalidator,
             ),
             "products_and_provisioning_artifacts": GetProductsAndProvisioningArtifactsTask(
                 manifest_file_path=self.manifest_file_path,
                 region=self.region,
                 portfolio=self.portfolio,
-                portfolio_id=self.portfolio_id,
                 puppet_account_id=self.puppet_account_id,
-                cache_invalidator=self.cache_invalidator,
             ),
         }
 
@@ -864,23 +874,18 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     organization = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
     sharing_mode = luigi.Parameter()
-
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
-            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -892,18 +897,14 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 account_id=self.account_id,
                 region=self.region,
                 portfolio=self.portfolio,
-                portfolio_id=self.portfolio_id,
                 organization=self.organization,
                 sharing_mode=self.sharing_mode,
-                cache_invalidator=self.cache_invalidator,
             ),
             "products_and_provisioning_artifacts": GetProductsAndProvisioningArtifactsTask(
                 manifest_file_path=self.manifest_file_path,
                 region=self.region,
                 portfolio=self.portfolio,
-                portfolio_id=self.portfolio_id,
                 puppet_account_id=self.puppet_account_id,
-                cache_invalidator=self.cache_invalidator,
             ),
             "hub_portfolio": GetPortfolioByPortfolioName(
                 manifest_file_path=self.manifest_file_path,
@@ -911,7 +912,6 @@ class ImportIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 portfolio=self.portfolio,
                 account_id=self.puppet_account_id,
                 region=self.region,
-                cache_invalidator=self.cache_invalidator,
             ),
         }
 
@@ -1003,23 +1003,21 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     organization = luigi.Parameter()
     product_generation_method = luigi.Parameter()
     launch_constraints = luigi.DictParameter()
-    should_use_sns = luigi.Parameter(default=False, significant=False)
 
     sharing_mode = luigi.Parameter()
-    cache_invalidator = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
+            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -1036,11 +1034,9 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
                 account_id=self.account_id,
                 region=self.region,
                 portfolio=self.portfolio,
-                portfolio_id=self.portfolio_id,
                 organization=self.organization,
                 puppet_account_id=self.puppet_account_id,
                 sharing_mode=self.sharing_mode,
-                cache_invalidator=self.cache_invalidator,
             ),
         )
 
@@ -1062,19 +1058,20 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
                 account_id=self.account_id,
                 region=self.region,
                 stack_name=f"launch-constraints-for-portfolio-{portfolio_id}",
+                nonce="forever",
             ),
             general_tasks.DeleteCloudFormationStackTask(
                 account_id=self.account_id,
                 region=self.region,
                 stack_name=f"launch-constraints-v2-for-portfolio-{portfolio_id}",
+                nonce="forever",
             ),
         ]
 
         product_name_to_id_dict = dependency_output.get("products")
-        role = config.get_puppet_role_arn(self.account_id)
         with self.spoke_regional_client("cloudformation") as cloudformation:
             new_launch_constraints = self.generate_new_launch_constraints(
-                portfolio_id, product_name_to_id_dict, role
+                portfolio_id, product_name_to_id_dict
             )
 
             template = config.env.get_template(
@@ -1100,9 +1097,7 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
             )[0]
             self.write_output(result)
 
-    def generate_new_launch_constraints(
-        self, portfolio_id, product_name_to_id_dict, role
-    ):
+    def generate_new_launch_constraints(self, portfolio_id, product_name_to_id_dict):
         new_launch_constraints = []
         for launch_constraint in self.launch_constraints:
             new_launch_constraint = {
@@ -1159,8 +1154,10 @@ class RequestPolicyTask(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "type": self.type,
             "account_id": self.account_id,
             "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):
@@ -1185,16 +1182,27 @@ class SharePortfolioTask(PortfolioManagementTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
+
+    def requires(self):
+        return dict(
+            portfolio=GetPortfolioByPortfolioName(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                portfolio=self.portfolio,
+                account_id=self.puppet_account_id,
+                region=self.region,
+            )
+        )
 
     def api_calls_used(self):
         return [
@@ -1203,6 +1211,9 @@ class SharePortfolioTask(PortfolioManagementTask):
         ]
 
     def run(self):
+        portfolio = self.load_from_input("portfolio")
+        portfolio_id = portfolio.get("portfolio_id")
+
         p = f"data/shares/{self.region}/{self.portfolio}/"
         if not os.path.exists(p):
             os.makedirs(p, exist_ok=True)
@@ -1210,22 +1221,20 @@ class SharePortfolioTask(PortfolioManagementTask):
         with open(path, "w") as f:
             f.write("{}")
 
-        self.info(f"{self.uid}: checking {self.portfolio_id} with {self.account_id}")
+        self.info(f"{self.uid}: checking {portfolio_id} with {self.account_id}")
         with self.hub_regional_client("servicecatalog") as servicecatalog:
             account_ids = servicecatalog.list_portfolio_access_single_page(
-                PortfolioId=self.portfolio_id, PageSize=20,
+                PortfolioId=portfolio_id, PageSize=20,
             ).get("AccountIds")
 
             if self.account_id in account_ids:
                 self.info(
-                    f"{self.uid}: not sharing {self.portfolio_id} with {self.account_id} as was previously shared"
+                    f"{self.uid}: not sharing {portfolio_id} with {self.account_id} as was previously shared"
                 )
             else:
-                self.info(
-                    f"{self.uid}: sharing {self.portfolio_id} with {self.account_id}"
-                )
+                self.info(f"{self.uid}: sharing {portfolio_id} with {self.account_id}")
                 servicecatalog.create_portfolio_share(
-                    PortfolioId=self.portfolio_id, AccountId=self.account_id,
+                    PortfolioId=portfolio_id, AccountId=self.account_id,
                 )
         self.write_output(self.param_kwargs)
 
@@ -1233,14 +1242,13 @@ class SharePortfolioTask(PortfolioManagementTask):
 class SharePortfolioViaOrgsTask(PortfolioManagementTask):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     ou_to_share_with = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "ou_to_share_with": self.ou_to_share_with,
         }
@@ -1251,10 +1259,22 @@ class SharePortfolioViaOrgsTask(PortfolioManagementTask):
             f"servicecatalog.describe_portfolio_share_status",
         ]
 
+    def requires(self):
+        return dict(
+            portfolio=GetPortfolioByPortfolioName(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                portfolio=self.portfolio,
+                account_id=self.puppet_account_id,
+                region=self.region,
+            )
+        )
+
     def run(self):
+        portfolio_id = self.load_from_input("portfolio").get("portfolio_id")
         with self.hub_regional_client("servicecatalog") as servicecatalog:
             portfolio_share_token = servicecatalog.create_portfolio_share(
-                PortfolioId=self.portfolio_id,
+                PortfolioId=portfolio_id,
                 OrganizationNode=dict(
                     Type="ORGANIZATIONAL_UNIT", Value=self.ou_to_share_with
                 ),
@@ -1289,7 +1309,6 @@ class ShareAndAcceptPortfolioTask(
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     sharing_mode = luigi.Parameter()
 
@@ -1297,14 +1316,21 @@ class ShareAndAcceptPortfolioTask(
         return {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "account_id": self.account_id,
             "sharing_mode": self.sharing_mode,
         }
 
     def requires(self):
-
+        requirements = dict(
+            portfolio=GetPortfolioByPortfolioName(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                portfolio=self.portfolio,
+                account_id=self.puppet_account_id,
+                region=self.region,
+            )
+        )
         if self.sharing_mode == constants.SHARING_MODE_AWS_ORGANIZATIONS:
             ou_to_share_with = self.manifest.get_account(self.account_id).get(
                 "expanded_from"
@@ -1313,39 +1339,31 @@ class ShareAndAcceptPortfolioTask(
                 self.warning(
                     f"Sharing {self.portfolio} with {self.account_id} not using orgs as there is no OU set for it"
                 )
-                return {
-                    "share": SharePortfolioTask(
-                        manifest_file_path=self.manifest_file_path,
-                        portfolio=self.portfolio,
-                        portfolio_id=self.portfolio_id,
-                        account_id=self.account_id,
-                        region=self.region,
-                        puppet_account_id=self.puppet_account_id,
-                    ),
-                }
-            else:
-                return {
-                    "share": SharePortfolioViaOrgsTask(
-                        manifest_file_path=self.manifest_file_path,
-                        portfolio=self.portfolio,
-                        portfolio_id=self.portfolio_id,
-                        region=self.region,
-                        puppet_account_id=self.puppet_account_id,
-                        ou_to_share_with=ou_to_share_with,
-                    ),
-                }
-
-        else:
-            return {
-                "share": SharePortfolioTask(
+                requirements["share"] = SharePortfolioTask(
                     manifest_file_path=self.manifest_file_path,
                     portfolio=self.portfolio,
-                    portfolio_id=self.portfolio_id,
                     account_id=self.account_id,
                     region=self.region,
                     puppet_account_id=self.puppet_account_id,
-                ),
-            }
+                )
+            else:
+                requirements["share"] = SharePortfolioViaOrgsTask(
+                    manifest_file_path=self.manifest_file_path,
+                    portfolio=self.portfolio,
+                    region=self.region,
+                    puppet_account_id=self.puppet_account_id,
+                    ou_to_share_with=ou_to_share_with,
+                )
+
+        else:
+            requirements["share"] = SharePortfolioTask(
+                manifest_file_path=self.manifest_file_path,
+                portfolio=self.portfolio,
+                account_id=self.account_id,
+                region=self.region,
+                puppet_account_id=self.puppet_account_id,
+            )
+        return requirements
 
     def api_calls_used(self):
         return [
@@ -1356,29 +1374,29 @@ class ShareAndAcceptPortfolioTask(
         ]
 
     def run(self):
+        portfolio = self.load_from_input("portfolio")
+        portfolio_id = portfolio.get("portfolio_id")
+
         with self.spoke_regional_client(
             "servicecatalog"
         ) as cross_account_servicecatalog:
-            was_accepted = False
-            accepted_portfolio_shares = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page().get(
-                "PortfolioDetails"
-            )
-            for accepted_portfolio_share in accepted_portfolio_shares:
-                if accepted_portfolio_share.get("Id") == self.portfolio_id:
-                    was_accepted = True
-                    break
-            if not was_accepted:
-                self.info(f"{self.uid}: accepting {self.portfolio_id}")
-                portfolio_share_args = {"PortfolioId": self.portfolio_id}
-                if self.sharing_mode == constants.SHARING_MODE_AWS_ORGANIZATIONS:
-                    portfolio_share_args["PortfolioShareType"] = "AWS_ORGANIZATIONS"
-
-                cross_account_servicecatalog.accept_portfolio_share(
-                    **portfolio_share_args
+            if self.sharing_mode != constants.SHARING_MODE_AWS_ORGANIZATIONS:
+                was_accepted = False
+                accepted_portfolio_shares = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page().get(
+                    "PortfolioDetails"
                 )
+                for accepted_portfolio_share in accepted_portfolio_shares:
+                    if accepted_portfolio_share.get("Id") == portfolio_id:
+                        was_accepted = True
+                        break
+                if not was_accepted:
+                    self.info(f"{self.uid}: accepting {portfolio_id}")
+                    cross_account_servicecatalog.accept_portfolio_share(
+                        PortfolioId=portfolio_id
+                    )
 
             principals_for_portfolio = cross_account_servicecatalog.list_principals_for_portfolio_single_page(
-                PortfolioId=self.portfolio_id
+                PortfolioId=portfolio_id
             ).get(
                 "Principals"
             )
@@ -1393,7 +1411,7 @@ class ShareAndAcceptPortfolioTask(
 
             if not principal_was_associated:
                 cross_account_servicecatalog.associate_principal_with_portfolio(
-                    PortfolioId=self.portfolio_id,
+                    PortfolioId=portfolio_id,
                     PrincipalARN=principal_to_associate,
                     PrincipalType="IAM",
                 )
@@ -1401,7 +1419,7 @@ class ShareAndAcceptPortfolioTask(
         self.write_output(self.param_kwargs)
 
 
-class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):
+class AssociatePrincipalWithPortfolioTask(PortfolioManagementTask):
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
@@ -1440,6 +1458,47 @@ class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):
         self.write_output(self.param_kwargs)
 
 
+class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):
+    puppet_account_id = luigi.Parameter()
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    portfolio = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "portfolio": self.portfolio,
+            "region": self.region,
+            "account_id": self.account_id,
+        }
+
+    def requires(self):
+        return dict(
+            portfolio=GetPortfolioByPortfolioName(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                portfolio=self.portfolio,
+                account_id=self.account_id,
+                region=self.region,
+            )
+        )
+
+    def run(self):
+        portfolio_details = self.load_from_input("portfolio")
+        portfolio_id = portfolio_details.get("portfolio_id")
+
+        yield AssociatePrincipalWithPortfolioTask(
+            manifest_file_path=self.manifest_file_path,
+            puppet_account_id=self.puppet_account_id,
+            account_id=self.account_id,
+            region=self.region,
+            portfolio=self.portfolio,
+            portfolio_id=portfolio_id,
+        )
+
+        self.write_output(self.param_kwargs)
+
+
 class CreateShareForAccountLaunchRegion(PortfolioManagementTask):
     """for the given account_id and launch and region create the shares"""
 
@@ -1447,17 +1506,15 @@ class CreateShareForAccountLaunchRegion(PortfolioManagementTask):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     sharing_mode = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
-            "account_id": self.account_id,
             "sharing_mode": self.sharing_mode,
+            "account_id": self.account_id,
         }
 
     def requires(self):
@@ -1468,7 +1525,6 @@ class CreateShareForAccountLaunchRegion(PortfolioManagementTask):
                 account_id=self.account_id,
                 region=self.region,
                 portfolio=self.portfolio,
-                portfolio_id=self.portfolio_id,
             )
         else:
             return ShareAndAcceptPortfolioTask(
@@ -1476,7 +1532,6 @@ class CreateShareForAccountLaunchRegion(PortfolioManagementTask):
                 account_id=self.account_id,
                 region=self.region,
                 portfolio=self.portfolio,
-                portfolio_id=self.portfolio_id,
                 puppet_account_id=self.puppet_account_id,
                 sharing_mode=self.sharing_mode,
             )
@@ -1497,6 +1552,7 @@ class DisassociateProductFromPortfolio(PortfolioManagementTask):
             "region": self.region,
             "portfolio_id": self.portfolio_id,
             "product_id": self.product_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
@@ -1522,6 +1578,7 @@ class DisassociateProductsFromPortfolio(PortfolioManagementTask):
             "account_id": self.account_id,
             "region": self.region,
             "portfolio_id": self.portfolio_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
@@ -1564,6 +1621,7 @@ class DeleteLocalPortfolio(PortfolioManagementTask):
             "account_id": self.account_id,
             "region": self.region,
             "portfolio_id": self.portfolio_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
@@ -1585,9 +1643,11 @@ class DeletePortfolioShare(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
@@ -1625,14 +1685,36 @@ class DeletePortfolio(PortfolioManagementTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
+            "cache_invalidator": self.cache_invalidator,
         }
 
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.list_portfolios_single_page_{self.account_id}_{self.region}",
+        ]
+
     def requires(self):
-        requirements = list()
+        return [
+            general_tasks.DeleteCloudFormationStackTask(
+                account_id=self.account_id,
+                region=self.region,
+                stack_name=f"associations-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}",
+                nonce=self.cache_invalidator,
+            ),
+            general_tasks.DeleteCloudFormationStackTask(
+                account_id=self.account_id,
+                region=self.region,
+                stack_name=f"launch-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}",
+                nonce=self.cache_invalidator,
+            ),
+        ]
+
+    def run(self):
         is_puppet_account = self.account_id == self.puppet_account_id
         with self.spoke_regional_client("servicecatalog") as servicecatalog:
             result = None
@@ -1645,52 +1727,27 @@ class DeletePortfolio(PortfolioManagementTask):
                     break
             if result:
                 portfolio_id = result.get("Id")
-                requirements.append(
-                    general_tasks.DeleteCloudFormationStackTask(
-                        account_id=self.account_id,
-                        region=self.region,
-                        stack_name=f"associations-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}",
-                    )
-                )
-                requirements.append(
-                    general_tasks.DeleteCloudFormationStackTask(
-                        account_id=self.account_id,
-                        region=self.region,
-                        stack_name=f"launch-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}",
-                    )
-                )
+
                 if not is_puppet_account:
-                    requirements.append(
-                        DisassociateProductsFromPortfolio(
-                            account_id=self.account_id,
-                            region=self.region,
-                            portfolio_id=portfolio_id,
-                            manifest_file_path=self.manifest_file_path,
-                        )
+                    yield DisassociateProductsFromPortfolio(
+                        account_id=self.account_id,
+                        region=self.region,
+                        portfolio_id=portfolio_id,
+                        manifest_file_path=self.manifest_file_path,
                     )
-                    requirements.append(
-                        DeleteLocalPortfolio(
-                            account_id=self.account_id,
-                            region=self.region,
-                            portfolio_id=portfolio_id,
-                            manifest_file_path=self.manifest_file_path,
-                        )
+                    yield DeleteLocalPortfolio(
+                        account_id=self.account_id,
+                        region=self.region,
+                        portfolio_id=portfolio_id,
+                        manifest_file_path=self.manifest_file_path,
                     )
 
             if not is_puppet_account:
-                requirements.append(
-                    DeletePortfolioShare(
-                        account_id=self.account_id,
-                        region=self.region,
-                        portfolio=self.portfolio,
-                        puppet_account_id=self.puppet_account_id,
-                        manifest_file_path=self.manifest_file_path,
-                    )
+                yield DeletePortfolioShare(
+                    account_id=self.account_id,
+                    region=self.region,
+                    portfolio=self.portfolio,
+                    puppet_account_id=self.puppet_account_id,
+                    manifest_file_path=self.manifest_file_path,
                 )
-        return requirements
-
-    def run(self):
         self.write_output(self.params_for_results_display())
-
-
-#

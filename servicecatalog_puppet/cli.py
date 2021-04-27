@@ -1,12 +1,14 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-import click
-import yaml
 import glob
-import os, sys
+import os
 import re
 import shutil
+import sys
+
+import click
+import yaml
 
 from servicecatalog_puppet import core, config
 
