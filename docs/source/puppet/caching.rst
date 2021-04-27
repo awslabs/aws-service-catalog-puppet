@@ -27,21 +27,10 @@ You can enable the caching of the following tasks:
 * DeleteCloudFormationStackTask
 * EnsureEventBridgeEventBusTask
 * BootstrapSpokeAsTask
-* CreateLaunchRoleConstraintsForPortfolio
-* RequestPolicyTask
-* SharePortfolioTask
 * ShareAndAcceptPortfolioTask
 * CreateAssociationsInPythonForPortfolioTask
 * CreateShareForAccountLaunchRegion
-* DisassociateProductFromPortfolio
-* DisassociateProductsFromPortfolio
-* DeleteLocalPortfolio
-* DeletePortfolioShare
-* DeletePortfolio
-* ProvisioningArtifactParametersTask
-* ResetProvisionedProductOwnerTask
-* RunDeployInSpokeTask
-* LaunchInSpokeTask
+* DoDescribeProvisioningParameters
 
 .. warning::
 
