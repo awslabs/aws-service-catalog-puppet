@@ -67,8 +67,8 @@ class SpokeLocalPortfolioForTask(
     def get_klass_for_provisioning(self):
         if self.status == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED:
             return SharePortfolioWithSpokeTask
-        # elif self.status == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_TERMINATED:
-        #     return TerminatePortfolioInSpokeTask
+        elif self.status == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_TERMINATED:
+            return TerminatePortfolioInSpokeTask
         else:
             raise Exception(f"Unknown status: {self.status}")
 
@@ -211,6 +211,95 @@ class SpokeLocalPortfolioTask(SpokeLocalPortfolioForTask):
         return requirements
 
     def run(self):
+        self.write_output(self.params_for_results_display())
+
+
+class DoTerminatePortfolioInSpokeTask(
+    SpokeLocalPortfolioBaseTask,
+    manifest_tasks.ManifestMixen,
+    dependency.DependenciesMixin,
+):
+    manifest_file_path = luigi.Parameter()
+    spoke_local_portfolio_name = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+    sharing_mode = luigi.Parameter()
+
+    product_generation_method = luigi.Parameter()
+    organization = luigi.Parameter()
+    associations = luigi.ListParameter()
+    launch_constraints = luigi.DictParameter()
+    portfolio = luigi.Parameter()
+    region = luigi.Parameter()
+    account_id = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def requires(self):
+        return portfoliomanagement_tasks.DeletePortfolio(
+            manifest_file_path=self.manifest_file_path,
+            spoke_local_portfolio_name=self.spoke_local_portfolio_name,
+            account_id=self.account_id,
+            region=self.region,
+            portfolio=self.portfolio,
+            product_generation_method=self.product_generation_method,
+            puppet_account_id=self.puppet_account_id,
+        )
+
+    def run(self):
+        self.write_output(self.params_for_results_display())
+
+
+class TerminatePortfolioInSpokeTask(
+    SpokeLocalPortfolioBaseTask,
+    manifest_tasks.ManifestMixen,
+    dependency.DependenciesMixin,
+):
+    manifest_file_path = luigi.Parameter()
+    spoke_local_portfolio_name = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+    sharing_mode = luigi.Parameter()
+
+    product_generation_method = luigi.Parameter()
+    organization = luigi.Parameter()
+    associations = luigi.ListParameter()
+    launch_constraints = luigi.DictParameter()
+    portfolio = luigi.Parameter()
+    region = luigi.Parameter()
+    account_id = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+            "account_id": self.account_id,
+            "region": self.region,
+            "portfolio": self.portfolio,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def requires(self):
+        return dict(section_dependencies=self.get_section_dependencies())
+
+    def run(self):
+        yield DoTerminatePortfolioInSpokeTask(
+            manifest_file_path=self.manifest_file_path,
+            spoke_local_portfolio_name=self.spoke_local_portfolio_name,
+            puppet_account_id=self.puppet_account_id,
+            sharing_mode=self.sharing_mode,
+            product_generation_method=self.product_generation_method,
+            organization=self.organization,
+            associations=self.associations,
+            launch_constraints=self.launch_constraints,
+            portfolio=self.portfolio,
+            region=self.region,
+            account_id=self.account_id,
+        )
         self.write_output(self.params_for_results_display())
 
 

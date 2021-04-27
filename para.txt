@@ -1,0 +1,959 @@
+servicecatalog_puppet/workflow/lambda_invocations.py:48:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-49-        return {
+servicecatalog_puppet/workflow/lambda_invocations.py-50-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/lambda_invocations.py-51-            "lambda_invocation_name": self.lambda_invocation_name,
+servicecatalog_puppet/workflow/lambda_invocations.py-52-            "region": self.region,
+servicecatalog_puppet/workflow/lambda_invocations.py-53-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/lambda_invocations.py-54-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/lambda_invocations.py-55-        }
+servicecatalog_puppet/workflow/lambda_invocations.py-56-
+servicecatalog_puppet/workflow/lambda_invocations.py-57-    def requires(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-58-        requirements = {"section_dependencies": self.get_section_dependencies()}
+--
+servicecatalog_puppet/workflow/lambda_invocations.py:97:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-98-        return {
+servicecatalog_puppet/workflow/lambda_invocations.py-99-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/lambda_invocations.py-100-            "lambda_invocation_name": self.lambda_invocation_name,
+servicecatalog_puppet/workflow/lambda_invocations.py-101-            "region": self.region,
+servicecatalog_puppet/workflow/lambda_invocations.py-102-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/lambda_invocations.py-103-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/lambda_invocations.py-104-        }
+servicecatalog_puppet/workflow/lambda_invocations.py-105-
+servicecatalog_puppet/workflow/lambda_invocations.py-106-    def requires(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-107-        return dict(ssm_params=self.get_ssm_parameters(),)
+--
+servicecatalog_puppet/workflow/lambda_invocations.py:148:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-149-        return {
+servicecatalog_puppet/workflow/lambda_invocations.py-150-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/lambda_invocations.py-151-            "lambda_invocation_name": self.lambda_invocation_name,
+servicecatalog_puppet/workflow/lambda_invocations.py-152-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/lambda_invocations.py-153-        }
+servicecatalog_puppet/workflow/lambda_invocations.py-154-
+servicecatalog_puppet/workflow/lambda_invocations.py-155-    def get_klass_for_provisioning(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-156-        return InvokeLambdaTask
+servicecatalog_puppet/workflow/lambda_invocations.py-157-
+servicecatalog_puppet/workflow/lambda_invocations.py-158-    def run(self):
+--
+servicecatalog_puppet/workflow/lambda_invocations.py:165:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-166-        return {
+servicecatalog_puppet/workflow/lambda_invocations.py-167-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/lambda_invocations.py-168-            "lambda_invocation_name": self.lambda_invocation_name,
+servicecatalog_puppet/workflow/lambda_invocations.py-169-            "region": self.region,
+servicecatalog_puppet/workflow/lambda_invocations.py-170-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/lambda_invocations.py-171-        }
+servicecatalog_puppet/workflow/lambda_invocations.py-172-
+servicecatalog_puppet/workflow/lambda_invocations.py-173-    def requires(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-174-        dependencies = list()
+servicecatalog_puppet/workflow/lambda_invocations.py-175-        these_dependencies = list()
+--
+servicecatalog_puppet/workflow/lambda_invocations.py:198:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-199-        return {
+servicecatalog_puppet/workflow/lambda_invocations.py-200-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/lambda_invocations.py-201-            "lambda_invocation_name": self.lambda_invocation_name,
+servicecatalog_puppet/workflow/lambda_invocations.py-202-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/lambda_invocations.py-203-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/lambda_invocations.py-204-        }
+servicecatalog_puppet/workflow/lambda_invocations.py-205-
+servicecatalog_puppet/workflow/lambda_invocations.py-206-    def requires(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-207-        dependencies = list()
+servicecatalog_puppet/workflow/lambda_invocations.py-208-        requirements = dict(dependencies=dependencies,)
+--
+servicecatalog_puppet/workflow/lambda_invocations.py:229:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-230-        return {
+servicecatalog_puppet/workflow/lambda_invocations.py-231-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/lambda_invocations.py-232-            "lambda_invocation_name": self.lambda_invocation_name,
+servicecatalog_puppet/workflow/lambda_invocations.py-233-            "region": self.region,
+servicecatalog_puppet/workflow/lambda_invocations.py-234-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/lambda_invocations.py-235-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/lambda_invocations.py-236-        }
+servicecatalog_puppet/workflow/lambda_invocations.py-237-
+servicecatalog_puppet/workflow/lambda_invocations.py-238-    def requires(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-239-        dependencies = list()
+--
+servicecatalog_puppet/workflow/lambda_invocations.py:259:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-260-        return {
+servicecatalog_puppet/workflow/lambda_invocations.py-261-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/lambda_invocations.py-262-            "lambda_invocation_name": self.lambda_invocation_name,
+servicecatalog_puppet/workflow/lambda_invocations.py-263-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/lambda_invocations.py-264-        }
+servicecatalog_puppet/workflow/lambda_invocations.py-265-
+servicecatalog_puppet/workflow/lambda_invocations.py-266-    def requires(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-267-        regional_dependencies = list()
+servicecatalog_puppet/workflow/lambda_invocations.py-268-        account_dependencies = list()
+servicecatalog_puppet/workflow/lambda_invocations.py-269-        account_and_region_dependencies = list()
+--
+servicecatalog_puppet/workflow/lambda_invocations.py:313:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-314-        return {
+servicecatalog_puppet/workflow/lambda_invocations.py-315-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/lambda_invocations.py-316-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/lambda_invocations.py-317-        }
+servicecatalog_puppet/workflow/lambda_invocations.py-318-
+servicecatalog_puppet/workflow/lambda_invocations.py-319-    def requires(self):
+servicecatalog_puppet/workflow/lambda_invocations.py-320-        requirements = dict(
+servicecatalog_puppet/workflow/lambda_invocations.py-321-            invocations=[
+servicecatalog_puppet/workflow/lambda_invocations.py-322-                LambdaInvocationTask(
+servicecatalog_puppet/workflow/lambda_invocations.py-323-                    lambda_invocation_name=lambda_invocation_name,
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:30:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-31-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-32-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-33-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-34-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-35-            "product": self.product,
+servicecatalog_puppet/workflow/portfoliomanagement.py-36-            "version": self.version,
+servicecatalog_puppet/workflow/portfoliomanagement.py-37-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-38-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-39-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-40-
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:110:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-111-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-112-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-113-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-114-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-115-            "product": self.product,
+servicecatalog_puppet/workflow/portfoliomanagement.py-116-            "version": self.version,
+servicecatalog_puppet/workflow/portfoliomanagement.py-117-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-118-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-119-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-120-
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:173:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-174-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-175-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-176-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-177-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-178-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-179-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-180-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-181-
+servicecatalog_puppet/workflow/portfoliomanagement.py-182-    def requires(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-183-        return dict(
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:230:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-231-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-232-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-233-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-234-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-235-            "product": self.product,
+servicecatalog_puppet/workflow/portfoliomanagement.py-236-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-237-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-238-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-239-
+servicecatalog_puppet/workflow/portfoliomanagement.py-240-    def run(self):
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:259:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-260-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-261-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-262-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-263-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-264-            "product": self.product,
+servicecatalog_puppet/workflow/portfoliomanagement.py-265-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-266-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-267-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-268-
+servicecatalog_puppet/workflow/portfoliomanagement.py-269-    def requires(self):
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:305:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-306-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-307-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-308-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-309-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-310-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-311-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-312-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-313-
+servicecatalog_puppet/workflow/portfoliomanagement.py-314-    def api_calls_used(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-315-        return [
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:363:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-364-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-365-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-366-            "type": self.type,
+servicecatalog_puppet/workflow/portfoliomanagement.py-367-            "source": self.source,
+servicecatalog_puppet/workflow/portfoliomanagement.py-368-            "phase": self.phase,
+servicecatalog_puppet/workflow/portfoliomanagement.py-369-            "source_type": self.source_type,
+servicecatalog_puppet/workflow/portfoliomanagement.py-370-            "name": self.name,
+servicecatalog_puppet/workflow/portfoliomanagement.py-371-            "project_name": self.project_name,
+servicecatalog_puppet/workflow/portfoliomanagement.py-372-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-373-            "region": self.region,
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:440:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-441-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-442-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-443-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-444-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-445-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-446-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-447-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-448-
+servicecatalog_puppet/workflow/portfoliomanagement.py-449-    def requires(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-450-        return {
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:499:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-500-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-501-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-502-            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+servicecatalog_puppet/workflow/portfoliomanagement.py-503-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-504-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-505-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-506-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-507-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-508-
+servicecatalog_puppet/workflow/portfoliomanagement.py-509-    def requires(self):
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:571:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-572-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-573-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-574-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-575-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-576-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-577-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-578-
+servicecatalog_puppet/workflow/portfoliomanagement.py-579-    def requires(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-580-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-581-            "search_products_as_admin": SearchProductsAsAdminTask(
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:639:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-640-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-641-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-642-            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+servicecatalog_puppet/workflow/portfoliomanagement.py-643-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-644-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-645-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-646-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-647-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-648-
+servicecatalog_puppet/workflow/portfoliomanagement.py-649-    def requires(self):
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:881:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-882-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-883-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-884-            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+servicecatalog_puppet/workflow/portfoliomanagement.py-885-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-886-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-887-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-888-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-889-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-890-
+servicecatalog_puppet/workflow/portfoliomanagement.py-891-    def requires(self):
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:1012:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1013-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1014-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1015-            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1016-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1017-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1018-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1019-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-1020-
+servicecatalog_puppet/workflow/portfoliomanagement.py-1021-    def requires(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1022-        create_spoke_local_portfolio_task_klass = (
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:1153:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1154-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1155-            "type": self.type,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1156-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1157-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1158-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1159-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-1160-
+servicecatalog_puppet/workflow/portfoliomanagement.py-1161-    def run(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1162-        if self.organization is not None:
+servicecatalog_puppet/workflow/portfoliomanagement.py-1163-            p = f"data/{self.type}/{self.region}/organizations/"
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:1185:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1186-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1187-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1188-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1189-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1190-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1191-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1192-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-1193-
+servicecatalog_puppet/workflow/portfoliomanagement.py-1194-    def requires(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1195-        return dict(
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:1247:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1248-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1249-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1250-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1251-            "portfolio_id": self.portfolio_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1252-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1253-            "ou_to_share_with": self.ou_to_share_with,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1254-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-1255-
+servicecatalog_puppet/workflow/portfoliomanagement.py-1256-    def api_calls_used(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1257-        return [
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:1303:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1304-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1305-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1306-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1307-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1308-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1309-            "sharing_mode": self.sharing_mode,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1310-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-1311-
+servicecatalog_puppet/workflow/portfoliomanagement.py-1312-    def requires(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1313-        requirements = dict(
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:1420:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1421-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1422-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1423-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1424-            "portfolio_id": self.portfolio_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1425-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1426-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1427-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-1428-
+servicecatalog_puppet/workflow/portfoliomanagement.py-1429-    def api_calls_used(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1430-        return {
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:1458:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1459-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1460-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1461-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1462-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1463-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1464-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1465-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-1466-
+servicecatalog_puppet/workflow/portfoliomanagement.py-1467-    def requires(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1468-        return dict(
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:1503:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1504-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1505-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1506-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1507-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1508-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1509-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1510-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-1511-
+servicecatalog_puppet/workflow/portfoliomanagement.py-1512-    def requires(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1513-        if self.account_id == self.puppet_account_id:
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:1541:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1542-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1543-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1544-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1545-            "portfolio_id": self.portfolio_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1546-            "product_id": self.product_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1547-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-1548-
+servicecatalog_puppet/workflow/portfoliomanagement.py-1549-    def api_calls_used(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1550-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1551-            f"servicecatalog.disassociate_product_from_portfolio_{self.account_id}_{self.region}_{self.portfolio_id}_{self.product_id}": 1,
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:1567:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1568-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1569-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1570-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1571-            "portfolio_id": self.portfolio_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1572-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-1573-
+servicecatalog_puppet/workflow/portfoliomanagement.py-1574-    def api_calls_used(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1575-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1576-            f"servicecatalog.search_products_as_admin_single_page_{self.account_id}_{self.region}_{self.portfolio_id}": 1,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1577-        }
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:1609:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1610-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1611-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1612-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1613-            "portfolio_id": self.portfolio_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1614-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-1615-
+servicecatalog_puppet/workflow/portfoliomanagement.py-1616-    def api_calls_used(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1617-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1618-            f"servicecatalog.delete_portfolio_{self.account_id}_{self.region}_{self.portfolio_id}": 1,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1619-        }
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:1633:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1634-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1635-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1636-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1637-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1638-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1639-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-1640-
+servicecatalog_puppet/workflow/portfoliomanagement.py-1641-    def api_calls_used(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1642-        return [
+servicecatalog_puppet/workflow/portfoliomanagement.py-1643-            f"servicecatalog.list_accepted_portfolio_shares_single_page{self.account_id}_{self.region}",
+--
+servicecatalog_puppet/workflow/portfoliomanagement.py:1674:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1675-        return {
+servicecatalog_puppet/workflow/portfoliomanagement.py-1676-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1677-            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1678-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1679-            "region": self.region,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1680-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/portfoliomanagement.py-1681-        }
+servicecatalog_puppet/workflow/portfoliomanagement.py-1682-
+servicecatalog_puppet/workflow/portfoliomanagement.py-1683-    def api_calls_used(self):
+servicecatalog_puppet/workflow/portfoliomanagement.py-1684-        return [
+--
+servicecatalog_puppet/workflow/tasks.py:137:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/tasks.py-138-        return {}
+servicecatalog_puppet/workflow/tasks.py-139-
+servicecatalog_puppet/workflow/tasks.py-140-    def write_output(self, content):
+servicecatalog_puppet/workflow/tasks.py-141-        with self.output().open("w") as f:
+servicecatalog_puppet/workflow/tasks.py-142-            f.write(json.dumps(content, indent=4, default=str,))
+servicecatalog_puppet/workflow/tasks.py-143-
+servicecatalog_puppet/workflow/tasks.py-144-    @property
+servicecatalog_puppet/workflow/tasks.py-145-    def node_id(self):
+servicecatalog_puppet/workflow/tasks.py-146-        values = [str(v) for v in self.params_for_results_display().values()]
+servicecatalog_puppet/workflow/tasks.py-147-        return "/".join(values)
+--
+servicecatalog_puppet/workflow/tasks.py:178:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/tasks.py-179-        return {
+servicecatalog_puppet/workflow/tasks.py-180-            "parameter_name": self.parameter_name,
+servicecatalog_puppet/workflow/tasks.py-181-            "name": self.name,
+servicecatalog_puppet/workflow/tasks.py-182-            "region": self.region,
+servicecatalog_puppet/workflow/tasks.py-183-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/tasks.py-184-        }
+servicecatalog_puppet/workflow/tasks.py-185-
+servicecatalog_puppet/workflow/tasks.py-186-    def api_calls_used(self):
+servicecatalog_puppet/workflow/tasks.py-187-        return ["ssm.get_parameter"]
+servicecatalog_puppet/workflow/tasks.py-188-
+--
+servicecatalog_puppet/workflow/manifest.py:24:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/manifest.py-25-        return {
+servicecatalog_puppet/workflow/manifest.py-26-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/manifest.py-27-            "manifest_file_path": self.manifest_file_path,
+servicecatalog_puppet/workflow/manifest.py-28-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/manifest.py-29-        }
+servicecatalog_puppet/workflow/manifest.py-30-
+servicecatalog_puppet/workflow/manifest.py-31-    @property
+servicecatalog_puppet/workflow/manifest.py-32-    @lru_cache()
+servicecatalog_puppet/workflow/manifest.py-33-    def manifest(self):
+servicecatalog_puppet/workflow/manifest.py-34-        content = open(self.manifest_file_path, "r").read()
+--
+servicecatalog_puppet/workflow/generate.py:25:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/generate.py-26-        return {
+servicecatalog_puppet/workflow/generate.py-27-            "manifest_file_path": self.manifest_file_path,
+servicecatalog_puppet/workflow/generate.py-28-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/generate.py-29-            "region": self.region,
+servicecatalog_puppet/workflow/generate.py-30-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/generate.py-31-        }
+servicecatalog_puppet/workflow/generate.py-32-
+servicecatalog_puppet/workflow/generate.py-33-    def run(self):
+servicecatalog_puppet/workflow/generate.py-34-        if len(self.sharing_policies.get("accounts")) > 50:
+servicecatalog_puppet/workflow/generate.py-35-            self.warning(
+--
+servicecatalog_puppet/workflow/generate.py:51:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/generate.py-52-        return {
+servicecatalog_puppet/workflow/generate.py-53-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/generate.py-54-            "region": self.region,
+servicecatalog_puppet/workflow/generate.py-55-        }
+servicecatalog_puppet/workflow/generate.py-56-
+servicecatalog_puppet/workflow/generate.py-57-    def api_calls_used(self):
+servicecatalog_puppet/workflow/generate.py-58-        return {
+servicecatalog_puppet/workflow/generate.py-59-            f"events.describe_event_bus_{self.puppet_account_id}_{self.region}": 1,
+servicecatalog_puppet/workflow/generate.py-60-            f"events.create_event_bus_{self.puppet_account_id}_{self.region}": 1,
+servicecatalog_puppet/workflow/generate.py-61-        }
+--
+servicecatalog_puppet/workflow/generate.py:80:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/generate.py-81-        return {
+servicecatalog_puppet/workflow/generate.py-82-            "manifest_file_path": self.manifest_file_path,
+servicecatalog_puppet/workflow/generate.py-83-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/generate.py-84-            "region": self.region,
+servicecatalog_puppet/workflow/generate.py-85-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/generate.py-86-        }
+servicecatalog_puppet/workflow/generate.py-87-
+servicecatalog_puppet/workflow/generate.py-88-    def requires(self):
+servicecatalog_puppet/workflow/generate.py-89-        return {
+servicecatalog_puppet/workflow/generate.py-90-            "template": GeneratePoliciesTemplate(
+--
+servicecatalog_puppet/workflow/generate.py:129:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/generate.py-130-        return {
+servicecatalog_puppet/workflow/generate.py-131-            "manifest_file_path": self.manifest_file_path,
+servicecatalog_puppet/workflow/generate.py-132-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/generate.py-133-            "section": self.section,
+servicecatalog_puppet/workflow/generate.py-134-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/generate.py-135-        }
+servicecatalog_puppet/workflow/generate.py-136-
+servicecatalog_puppet/workflow/generate.py-137-    def requires(self):
+servicecatalog_puppet/workflow/generate.py-138-        requirements = dict(
+servicecatalog_puppet/workflow/generate.py-139-            deletes=list(), ensure_event_buses=list(), generate_policies=list(),
+--
+servicecatalog_puppet/workflow/assertions.py:34:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/assertions.py-35-        return {
+servicecatalog_puppet/workflow/assertions.py-36-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/assertions.py-37-            "assertion_name": self.assertion_name,
+servicecatalog_puppet/workflow/assertions.py-38-            "region": self.region,
+servicecatalog_puppet/workflow/assertions.py-39-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/assertions.py-40-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/assertions.py-41-        }
+servicecatalog_puppet/workflow/assertions.py-42-
+servicecatalog_puppet/workflow/assertions.py-43-    def requires(self):
+servicecatalog_puppet/workflow/assertions.py-44-        requirements = {"section_dependencies": self.get_section_dependencies()}
+--
+servicecatalog_puppet/workflow/assertions.py:75:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/assertions.py-76-        return {
+servicecatalog_puppet/workflow/assertions.py-77-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/assertions.py-78-            "assertion_name": self.assertion_name,
+servicecatalog_puppet/workflow/assertions.py-79-            "region": self.region,
+servicecatalog_puppet/workflow/assertions.py-80-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/assertions.py-81-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/assertions.py-82-        }
+servicecatalog_puppet/workflow/assertions.py-83-
+servicecatalog_puppet/workflow/assertions.py-84-    def run(self):
+servicecatalog_puppet/workflow/assertions.py-85-        config = self.actual.get("config")
+--
+servicecatalog_puppet/workflow/assertions.py:112:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/assertions.py-113-        return {
+servicecatalog_puppet/workflow/assertions.py-114-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/assertions.py-115-            "assertion_name": self.assertion_name,
+servicecatalog_puppet/workflow/assertions.py-116-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/assertions.py-117-        }
+servicecatalog_puppet/workflow/assertions.py-118-
+servicecatalog_puppet/workflow/assertions.py-119-    def get_klass_for_provisioning(self):
+servicecatalog_puppet/workflow/assertions.py-120-        return AssertTask
+servicecatalog_puppet/workflow/assertions.py-121-
+servicecatalog_puppet/workflow/assertions.py-122-    def run(self):
+--
+servicecatalog_puppet/workflow/assertions.py:129:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/assertions.py-130-        return {
+servicecatalog_puppet/workflow/assertions.py-131-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/assertions.py-132-            "assertion_name": self.assertion_name,
+servicecatalog_puppet/workflow/assertions.py-133-            "region": self.region,
+servicecatalog_puppet/workflow/assertions.py-134-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/assertions.py-135-        }
+servicecatalog_puppet/workflow/assertions.py-136-
+servicecatalog_puppet/workflow/assertions.py-137-    def requires(self):
+servicecatalog_puppet/workflow/assertions.py-138-        dependencies = list()
+servicecatalog_puppet/workflow/assertions.py-139-        these_dependencies = list()
+--
+servicecatalog_puppet/workflow/assertions.py:159:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/assertions.py-160-        return {
+servicecatalog_puppet/workflow/assertions.py-161-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/assertions.py-162-            "assertion_name": self.assertion_name,
+servicecatalog_puppet/workflow/assertions.py-163-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/assertions.py-164-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/assertions.py-165-        }
+servicecatalog_puppet/workflow/assertions.py-166-
+servicecatalog_puppet/workflow/assertions.py-167-    def requires(self):
+servicecatalog_puppet/workflow/assertions.py-168-        dependencies = list()
+servicecatalog_puppet/workflow/assertions.py-169-        requirements = dict(dependencies=dependencies,)
+--
+servicecatalog_puppet/workflow/assertions.py:190:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/assertions.py-191-        return {
+servicecatalog_puppet/workflow/assertions.py-192-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/assertions.py-193-            "assertion_name": self.assertion_name,
+servicecatalog_puppet/workflow/assertions.py-194-            "region": self.region,
+servicecatalog_puppet/workflow/assertions.py-195-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/assertions.py-196-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/assertions.py-197-        }
+servicecatalog_puppet/workflow/assertions.py-198-
+servicecatalog_puppet/workflow/assertions.py-199-    def requires(self):
+servicecatalog_puppet/workflow/assertions.py-200-        dependencies = list()
+--
+servicecatalog_puppet/workflow/assertions.py:220:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/assertions.py-221-        return {
+servicecatalog_puppet/workflow/assertions.py-222-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/assertions.py-223-            "assertion_name": self.assertion_name,
+servicecatalog_puppet/workflow/assertions.py-224-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/assertions.py-225-        }
+servicecatalog_puppet/workflow/assertions.py-226-
+servicecatalog_puppet/workflow/assertions.py-227-    def requires(self):
+servicecatalog_puppet/workflow/assertions.py-228-        regional_dependencies = list()
+servicecatalog_puppet/workflow/assertions.py-229-        account_dependencies = list()
+servicecatalog_puppet/workflow/assertions.py-230-        account_and_region_dependencies = list()
+--
+servicecatalog_puppet/workflow/assertions.py:270:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/assertions.py-271-        return {
+servicecatalog_puppet/workflow/assertions.py-272-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/assertions.py-273-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/assertions.py-274-        }
+servicecatalog_puppet/workflow/assertions.py-275-
+servicecatalog_puppet/workflow/assertions.py-276-    def requires(self):
+servicecatalog_puppet/workflow/assertions.py-277-        requirements = dict(
+servicecatalog_puppet/workflow/assertions.py-278-            invocations=[
+servicecatalog_puppet/workflow/assertions.py-279-                AssertionTask(
+servicecatalog_puppet/workflow/assertions.py-280-                    assertion_name=assertion_name,
+--
+servicecatalog_puppet/workflow/launch.py:20:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-21-        return {
+servicecatalog_puppet/workflow/launch.py-22-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/launch.py-23-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-24-        }
+servicecatalog_puppet/workflow/launch.py-25-
+servicecatalog_puppet/workflow/launch.py-26-    def requires(self):
+servicecatalog_puppet/workflow/launch.py-27-        self.info(f"Launching and execution mode is: {self.execution_mode}")
+servicecatalog_puppet/workflow/launch.py-28-        tasks = list()
+servicecatalog_puppet/workflow/launch.py-29-        requirements = dict(tasks=tasks)
+servicecatalog_puppet/workflow/launch.py-30-        if self.execution_mode == constants.EXECUTION_MODE_SPOKE:
+--
+servicecatalog_puppet/workflow/launch.py:99:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-100-        return {
+servicecatalog_puppet/workflow/launch.py-101-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/launch.py-102-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/launch.py-103-            "region": self.region,
+servicecatalog_puppet/workflow/launch.py-104-            "product_id": self.product_id,
+servicecatalog_puppet/workflow/launch.py-105-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/launch.py-106-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-107-        }
+servicecatalog_puppet/workflow/launch.py-108-
+servicecatalog_puppet/workflow/launch.py-109-    def run(self):
+--
+servicecatalog_puppet/workflow/launch.py:140:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-141-        return {
+servicecatalog_puppet/workflow/launch.py-142-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/launch.py-143-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/launch.py-144-            "region": self.region,
+servicecatalog_puppet/workflow/launch.py-145-            "product": self.product,
+servicecatalog_puppet/workflow/launch.py-146-            "version": self.version,
+servicecatalog_puppet/workflow/launch.py-147-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-148-        }
+servicecatalog_puppet/workflow/launch.py-149-
+servicecatalog_puppet/workflow/launch.py-150-    def api_calls_used(self):
+--
+servicecatalog_puppet/workflow/launch.py:237:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-238-        return {
+servicecatalog_puppet/workflow/launch.py-239-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/launch.py-240-            "launch_name": self.launch_name,
+servicecatalog_puppet/workflow/launch.py-241-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/launch.py-242-            "region": self.region,
+servicecatalog_puppet/workflow/launch.py-243-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-244-        }
+servicecatalog_puppet/workflow/launch.py-245-
+servicecatalog_puppet/workflow/launch.py-246-    def requires(self):
+servicecatalog_puppet/workflow/launch.py-247-        requirements = {"section_dependencies": self.get_section_dependencies()}
+--
+servicecatalog_puppet/workflow/launch.py:301:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-302-        return {
+servicecatalog_puppet/workflow/launch.py-303-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/launch.py-304-            "launch_name": self.launch_name,
+servicecatalog_puppet/workflow/launch.py-305-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/launch.py-306-            "region": self.region,
+servicecatalog_puppet/workflow/launch.py-307-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-308-        }
+servicecatalog_puppet/workflow/launch.py-309-
+servicecatalog_puppet/workflow/launch.py-310-    @property
+servicecatalog_puppet/workflow/launch.py-311-    def priority(self):
+--
+servicecatalog_puppet/workflow/launch.py:731:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-732-        return {
+servicecatalog_puppet/workflow/launch.py-733-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/launch.py-734-            "launch_name": self.launch_name,
+servicecatalog_puppet/workflow/launch.py-735-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/launch.py-736-            "region": self.region,
+servicecatalog_puppet/workflow/launch.py-737-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-738-        }
+servicecatalog_puppet/workflow/launch.py-739-
+servicecatalog_puppet/workflow/launch.py-740-    def requires(self):
+servicecatalog_puppet/workflow/launch.py-741-        requirements = {"section_dependencies": self.get_section_dependencies()}
+--
+servicecatalog_puppet/workflow/launch.py:794:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-795-        return {
+servicecatalog_puppet/workflow/launch.py-796-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/launch.py-797-            "launch_name": self.launch_name,
+servicecatalog_puppet/workflow/launch.py-798-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/launch.py-799-            "region": self.region,
+servicecatalog_puppet/workflow/launch.py-800-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-801-        }
+servicecatalog_puppet/workflow/launch.py-802-
+servicecatalog_puppet/workflow/launch.py-803-    def requires(self):
+servicecatalog_puppet/workflow/launch.py-804-        requirements = {
+--
+servicecatalog_puppet/workflow/launch.py:892:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-893-        return {
+servicecatalog_puppet/workflow/launch.py-894-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/launch.py-895-            "launch_name": self.launch_name,
+servicecatalog_puppet/workflow/launch.py-896-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/launch.py-897-            "region": self.region,
+servicecatalog_puppet/workflow/launch.py-898-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-899-        }
+servicecatalog_puppet/workflow/launch.py-900-
+servicecatalog_puppet/workflow/launch.py-901-    def write_result(self, current_version, new_version, effect, notes=""):
+servicecatalog_puppet/workflow/launch.py-902-        with self.output().open("w") as f:
+--
+servicecatalog_puppet/workflow/launch.py:977:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-978-        return {
+servicecatalog_puppet/workflow/launch.py-979-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/launch.py-980-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/launch.py-981-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-982-        }
+servicecatalog_puppet/workflow/launch.py-983-
+servicecatalog_puppet/workflow/launch.py-984-    def run(self):
+servicecatalog_puppet/workflow/launch.py-985-        with self.hub_client("s3") as s3:
+servicecatalog_puppet/workflow/launch.py-986-            bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
+servicecatalog_puppet/workflow/launch.py-987-            key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
+--
+servicecatalog_puppet/workflow/launch.py:1044:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-1045-        return {
+servicecatalog_puppet/workflow/launch.py-1046-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/launch.py-1047-            "launch_name": self.launch_name,
+servicecatalog_puppet/workflow/launch.py-1048-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-1049-        }
+servicecatalog_puppet/workflow/launch.py-1050-
+servicecatalog_puppet/workflow/launch.py-1051-    def generate_tasks(self, task_defs, manifest):
+servicecatalog_puppet/workflow/launch.py-1052-        self.info("generate_provisions")
+servicecatalog_puppet/workflow/launch.py-1053-        provisions = []
+servicecatalog_puppet/workflow/launch.py-1054-
+--
+servicecatalog_puppet/workflow/launch.py:1133:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-1134-        return {
+servicecatalog_puppet/workflow/launch.py-1135-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/launch.py-1136-            "launch_name": self.launch_name,
+servicecatalog_puppet/workflow/launch.py-1137-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-1138-        }
+servicecatalog_puppet/workflow/launch.py-1139-
+servicecatalog_puppet/workflow/launch.py-1140-    def get_klass_for_provisioning(self):
+servicecatalog_puppet/workflow/launch.py-1141-        if self.is_dry_run:
+servicecatalog_puppet/workflow/launch.py-1142-            if self.status == constants.PROVISIONED:
+servicecatalog_puppet/workflow/launch.py-1143-                return ProvisionProductDryRunTask
+--
+servicecatalog_puppet/workflow/launch.py:1163:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-1164-        return {
+servicecatalog_puppet/workflow/launch.py-1165-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/launch.py-1166-            "launch_name": self.launch_name,
+servicecatalog_puppet/workflow/launch.py-1167-            "region": self.region,
+servicecatalog_puppet/workflow/launch.py-1168-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-1169-        }
+servicecatalog_puppet/workflow/launch.py-1170-
+servicecatalog_puppet/workflow/launch.py-1171-    def requires(self):
+servicecatalog_puppet/workflow/launch.py-1172-        dependencies = list()
+servicecatalog_puppet/workflow/launch.py-1173-        these_dependencies = list()
+--
+servicecatalog_puppet/workflow/launch.py:1206:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-1207-        return {
+servicecatalog_puppet/workflow/launch.py-1208-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/launch.py-1209-            "launch_name": self.launch_name,
+servicecatalog_puppet/workflow/launch.py-1210-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/launch.py-1211-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-1212-        }
+servicecatalog_puppet/workflow/launch.py-1213-
+servicecatalog_puppet/workflow/launch.py-1214-    def requires(self):
+servicecatalog_puppet/workflow/launch.py-1215-        dependencies = list()
+servicecatalog_puppet/workflow/launch.py-1216-        requirements = dict(dependencies=dependencies,)
+--
+servicecatalog_puppet/workflow/launch.py:1235:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-1236-        return {
+servicecatalog_puppet/workflow/launch.py-1237-            "launch_name": self.launch_name,
+servicecatalog_puppet/workflow/launch.py-1238-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/launch.py-1239-            "region": self.region,
+servicecatalog_puppet/workflow/launch.py-1240-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-1241-        }
+servicecatalog_puppet/workflow/launch.py-1242-
+servicecatalog_puppet/workflow/launch.py-1243-    def requires(self):
+servicecatalog_puppet/workflow/launch.py-1244-        dependencies = list()
+servicecatalog_puppet/workflow/launch.py-1245-        requirements = dict(dependencies=dependencies)
+--
+servicecatalog_puppet/workflow/launch.py:1264:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-1265-        return {
+servicecatalog_puppet/workflow/launch.py-1266-            "launch_name": self.launch_name,
+servicecatalog_puppet/workflow/launch.py-1267-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-1268-        }
+servicecatalog_puppet/workflow/launch.py-1269-
+servicecatalog_puppet/workflow/launch.py-1270-    def requires(self):
+servicecatalog_puppet/workflow/launch.py-1271-        regional_dependencies = list()
+servicecatalog_puppet/workflow/launch.py-1272-        account_dependencies = list()
+servicecatalog_puppet/workflow/launch.py-1273-        account_and_region_dependencies = list()
+servicecatalog_puppet/workflow/launch.py-1274-        requirements = dict(
+--
+servicecatalog_puppet/workflow/launch.py:1317:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/launch.py-1318-        return {
+servicecatalog_puppet/workflow/launch.py-1319-            "launch_name": self.launch_name,
+servicecatalog_puppet/workflow/launch.py-1320-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/launch.py-1321-            "region": self.region,
+servicecatalog_puppet/workflow/launch.py-1322-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/launch.py-1323-        }
+servicecatalog_puppet/workflow/launch.py-1324-
+servicecatalog_puppet/workflow/launch.py-1325-    def api_calls_used(self):
+servicecatalog_puppet/workflow/launch.py-1326-        return [
+servicecatalog_puppet/workflow/launch.py-1327-            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
+--
+servicecatalog_puppet/workflow/management.py:16:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/management.py-17-        return {
+servicecatalog_puppet/workflow/management.py-18-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/management.py-19-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/management.py-20-        }
+servicecatalog_puppet/workflow/management.py-21-
+servicecatalog_puppet/workflow/management.py-22-    def run(self):
+servicecatalog_puppet/workflow/management.py-23-        partition = config.get_partition()
+servicecatalog_puppet/workflow/management.py-24-        iam_role_arns_to_use = [iam_role_arn for iam_role_arn in self.iam_role_arns]
+servicecatalog_puppet/workflow/management.py-25-        iam_role_arns_to_use.append(
+servicecatalog_puppet/workflow/management.py-26-            f"arn:{partition}:iam::{self.account_id}:role/{self.role_name}"
+--
+servicecatalog_puppet/workflow/codebuild_runs.py:34:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-35-        return {
+servicecatalog_puppet/workflow/codebuild_runs.py-36-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/codebuild_runs.py-37-            "code_build_run_name": self.code_build_run_name,
+servicecatalog_puppet/workflow/codebuild_runs.py-38-            "region": self.region,
+servicecatalog_puppet/workflow/codebuild_runs.py-39-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/codebuild_runs.py-40-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/codebuild_runs.py-41-        }
+servicecatalog_puppet/workflow/codebuild_runs.py-42-
+servicecatalog_puppet/workflow/codebuild_runs.py-43-    def requires(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-44-        return dict(section_dependencies=self.get_section_dependencies())
+--
+servicecatalog_puppet/workflow/codebuild_runs.py:81:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-82-        return {
+servicecatalog_puppet/workflow/codebuild_runs.py-83-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/codebuild_runs.py-84-            "code_build_run_name": self.code_build_run_name,
+servicecatalog_puppet/workflow/codebuild_runs.py-85-            "region": self.region,
+servicecatalog_puppet/workflow/codebuild_runs.py-86-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/codebuild_runs.py-87-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/codebuild_runs.py-88-        }
+servicecatalog_puppet/workflow/codebuild_runs.py-89-
+servicecatalog_puppet/workflow/codebuild_runs.py-90-    def api_calls_used(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-91-        return [
+--
+servicecatalog_puppet/workflow/codebuild_runs.py:137:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-138-        return {
+servicecatalog_puppet/workflow/codebuild_runs.py-139-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/codebuild_runs.py-140-            "code_build_run_name": self.code_build_run_name,
+servicecatalog_puppet/workflow/codebuild_runs.py-141-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/codebuild_runs.py-142-        }
+servicecatalog_puppet/workflow/codebuild_runs.py-143-
+servicecatalog_puppet/workflow/codebuild_runs.py-144-    def get_klass_for_provisioning(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-145-        return ExecuteCodeBuildRunTask
+servicecatalog_puppet/workflow/codebuild_runs.py-146-
+servicecatalog_puppet/workflow/codebuild_runs.py-147-    def run(self):
+--
+servicecatalog_puppet/workflow/codebuild_runs.py:154:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-155-        return {
+servicecatalog_puppet/workflow/codebuild_runs.py-156-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/codebuild_runs.py-157-            "code_build_run_name": self.code_build_run_name,
+servicecatalog_puppet/workflow/codebuild_runs.py-158-            "region": self.region,
+servicecatalog_puppet/workflow/codebuild_runs.py-159-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/codebuild_runs.py-160-        }
+servicecatalog_puppet/workflow/codebuild_runs.py-161-
+servicecatalog_puppet/workflow/codebuild_runs.py-162-    def requires(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-163-        dependencies = list()
+servicecatalog_puppet/workflow/codebuild_runs.py-164-        these_dependencies = list()
+--
+servicecatalog_puppet/workflow/codebuild_runs.py:187:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-188-        return {
+servicecatalog_puppet/workflow/codebuild_runs.py-189-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/codebuild_runs.py-190-            "code_build_run_name": self.code_build_run_name,
+servicecatalog_puppet/workflow/codebuild_runs.py-191-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/codebuild_runs.py-192-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/codebuild_runs.py-193-        }
+servicecatalog_puppet/workflow/codebuild_runs.py-194-
+servicecatalog_puppet/workflow/codebuild_runs.py-195-    def requires(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-196-        dependencies = list()
+servicecatalog_puppet/workflow/codebuild_runs.py-197-        requirements = dict(dependencies=dependencies,)
+--
+servicecatalog_puppet/workflow/codebuild_runs.py:218:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-219-        return {
+servicecatalog_puppet/workflow/codebuild_runs.py-220-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/codebuild_runs.py-221-            "code_build_run_name": self.code_build_run_name,
+servicecatalog_puppet/workflow/codebuild_runs.py-222-            "region": self.region,
+servicecatalog_puppet/workflow/codebuild_runs.py-223-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/codebuild_runs.py-224-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/codebuild_runs.py-225-        }
+servicecatalog_puppet/workflow/codebuild_runs.py-226-
+servicecatalog_puppet/workflow/codebuild_runs.py-227-    def requires(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-228-        dependencies = list()
+--
+servicecatalog_puppet/workflow/codebuild_runs.py:251:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-252-        return {
+servicecatalog_puppet/workflow/codebuild_runs.py-253-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/codebuild_runs.py-254-            "code_build_run_name": self.code_build_run_name,
+servicecatalog_puppet/workflow/codebuild_runs.py-255-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/codebuild_runs.py-256-        }
+servicecatalog_puppet/workflow/codebuild_runs.py-257-
+servicecatalog_puppet/workflow/codebuild_runs.py-258-    def requires(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-259-        regional_dependencies = list()
+servicecatalog_puppet/workflow/codebuild_runs.py-260-        account_dependencies = list()
+servicecatalog_puppet/workflow/codebuild_runs.py-261-        account_and_region_dependencies = list()
+--
+servicecatalog_puppet/workflow/codebuild_runs.py:302:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-303-        return {
+servicecatalog_puppet/workflow/codebuild_runs.py-304-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/codebuild_runs.py-305-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/codebuild_runs.py-306-        }
+servicecatalog_puppet/workflow/codebuild_runs.py-307-
+servicecatalog_puppet/workflow/codebuild_runs.py-308-    def requires(self):
+servicecatalog_puppet/workflow/codebuild_runs.py-309-        requirements = dict(
+servicecatalog_puppet/workflow/codebuild_runs.py-310-            invocations=[
+servicecatalog_puppet/workflow/codebuild_runs.py-311-                CodeBuildRunTask(
+servicecatalog_puppet/workflow/codebuild_runs.py-312-                    code_build_run_name=code_build_run_name,
+--
+servicecatalog_puppet/workflow/spoke_local_portfolios.py:29:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-30-        return {
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-31-            "puppet_account_id": self.puppet_account_id,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-32-            "manifest_file_path": self.manifest_file_path,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-33-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-34-        }
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-35-
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-36-    def should_run(self):
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-37-        return (
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-38-            self.execution_mode == constants.EXECUTION_MODE_HUB and not self.is_dry_run
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-39-        )
+--
+servicecatalog_puppet/workflow/spoke_local_portfolios.py:166:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-167-        return {
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-168-            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-169-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-170-        }
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-171-
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-172-    def requires(self):
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-173-        regional_dependencies = list()
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-174-        account_dependencies = list()
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-175-        account_and_region_dependencies = list()
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-176-        requirements = dict(
+--
+servicecatalog_puppet/workflow/spoke_local_portfolios.py:235:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-236-        return {
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-237-            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-238-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-239-            "region": self.region,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-240-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-241-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-242-        }
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-243-
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-244-    def requires(self):
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-245-        return portfoliomanagement_tasks.DeletePortfolio(
+--
+servicecatalog_puppet/workflow/spoke_local_portfolios.py:277:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-278-        return {
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-279-            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-280-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-281-            "region": self.region,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-282-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-283-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-284-        }
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-285-
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-286-    def requires(self):
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-287-        return dict(section_dependencies=self.get_section_dependencies())
+--
+servicecatalog_puppet/workflow/spoke_local_portfolios.py:324:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-325-        return {
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-326-            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-327-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-328-            "region": self.region,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-329-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-330-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-331-        }
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-332-
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-333-    def requires(self):
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-334-        return dict(section_dependencies=self.get_section_dependencies())
+--
+servicecatalog_puppet/workflow/spoke_local_portfolios.py:371:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-372-        return {
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-373-            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-374-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-375-            "region": self.region,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-376-            "portfolio": self.portfolio,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-377-            "cache_invalidator": self.cache_invalidator,
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-378-        }
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-379-
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-380-    def requires(self):
+servicecatalog_puppet/workflow/spoke_local_portfolios.py-381-        tasks = list()
+--
+servicecatalog_puppet/workflow/general.py:11:    def params_for_results_display(self):
+servicecatalog_puppet/workflow/general.py-12-        return {
+servicecatalog_puppet/workflow/general.py-13-            "stack_name": self.stack_name,
+servicecatalog_puppet/workflow/general.py-14-            "account_id": self.account_id,
+servicecatalog_puppet/workflow/general.py-15-            "region": self.region,
+servicecatalog_puppet/workflow/general.py-16-        }
+servicecatalog_puppet/workflow/general.py-17-
+servicecatalog_puppet/workflow/general.py-18-    def api_calls_used(self):
+servicecatalog_puppet/workflow/general.py-19-        return {
+servicecatalog_puppet/workflow/general.py-20-            f"cloudformation.describe_stacks_single_page_{self.account_id}_{self.region}": 1,
+servicecatalog_puppet/workflow/general.py-21-            f"cloudformation.delete_stack_{self.account_id}_{self.region}": 1,

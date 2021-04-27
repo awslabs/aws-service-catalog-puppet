@@ -26,7 +26,7 @@ class DependenciesMixin(object):
             item_name = self.code_build_run_name
         elif isinstance(self, launch.ProvisioningTask):
             item_name = self.launch_name
-        elif isinstance(self, spoke_local_portfolios.SharePortfolioWithSpokeTask):
+        elif isinstance(self, spoke_local_portfolios.SpokeLocalPortfolioBaseTask):
             item_name = self.spoke_local_portfolio_name
         elif isinstance(self, assertions.AssertTask):
             item_name = self.assertion_name
