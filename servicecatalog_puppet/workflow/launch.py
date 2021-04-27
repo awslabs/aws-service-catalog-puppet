@@ -182,7 +182,7 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
             portfolio=self.portfolio,
         )
         self.write_output(
-            result
+            result.open('r').read(), skip_json_dump=True,
         )
 
 
