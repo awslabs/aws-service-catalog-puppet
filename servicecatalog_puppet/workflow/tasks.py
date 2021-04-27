@@ -116,7 +116,7 @@ class PuppetTask(luigi.Task):
         puppet_account_id = config.get_puppet_account_id()
         path = f"output/{self.uid}.{self.output_suffix}"
         should_use_s3_target_if_caching_is_on = (
-            "cache_invalidator" in self.params_for_results_display().keys()
+            "cache_invalidator" not in self.params_for_results_display().keys()
         )
         if should_use_s3_target_if_caching_is_on and config.is_caching_enabled(
             puppet_account_id
@@ -127,7 +127,7 @@ class PuppetTask(luigi.Task):
 
     def output(self):
         should_use_s3_target_if_caching_is_on = (
-                "cache_invalidator" in self.params_for_results_display().keys()
+                "cache_invalidator" not in self.params_for_results_display().keys()
         )
         if should_use_s3_target_if_caching_is_on and config.is_caching_enabled(config.get_puppet_account_id()):
             return s3.S3Target(self.output_location, format=format.UTF8)
