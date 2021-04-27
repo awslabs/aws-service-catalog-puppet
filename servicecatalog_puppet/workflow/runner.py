@@ -81,7 +81,7 @@ def run_tasks(
             puppet_account_id
         )
 
-    build_params = dict(detailed_summary=True, workers=num_workers, log_level="WARNING",)
+    build_params = dict(detailed_summary=True, workers=num_workers, log_level="INFO",)
 
     if should_use_shared_scheduler:
         os.system(constants.START_SHARED_SCHEDULER_COMMAND)
