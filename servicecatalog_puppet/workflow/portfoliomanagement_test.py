@@ -1047,7 +1047,6 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     region = "region"
     portfolio = "portfolio"
-    portfolio_id = "portfolio_id"
     puppet_account_id = "puppet_account_id"
     ou_to_share_with = "ou_to_share_with"
 
@@ -1060,7 +1059,6 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             region=self.region,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             puppet_account_id=self.puppet_account_id,
             ou_to_share_with=self.ou_to_share_with,
         )
@@ -1072,7 +1070,6 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "ou_to_share_with": self.ou_to_share_with,
         }
