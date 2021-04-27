@@ -363,8 +363,7 @@ class DoProvisionProductTask(
         return requirements
 
     def api_calls_used(self):
-        return [
-            # f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
+        apis = [
             f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
             f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
             f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
@@ -381,6 +380,11 @@ class DoProvisionProductTask(
             f"servicecatalog.provision_product_{self.account_id}_{self.region}",
             # f"ssm.put_parameter_and_wait_{self.region}",
         ]
+        if self.should_use_product_plans:
+            apis.append(
+                f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
+            )
+        return apis
 
     def run(self):
         details = self.load_from_input("details")
@@ -478,7 +482,7 @@ class DoProvisionProductTask(
 
                     if provisioned_product_id:
                         if self.should_use_product_plans:
-                            path_id = "FIXME"  # TODO fix me
+                            path_id = aws.get_path_for_product(service_catalog, product_id, self.portfolio)
                             provisioned_product_id = aws.provision_product_with_plan(
                                 service_catalog,
                                 self.launch_name,
