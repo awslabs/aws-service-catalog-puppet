@@ -419,6 +419,7 @@ class ProvisionActionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_params_for_results_display(self):
         # setup
         expected_result = {
+            "puppet_account_id": self.puppet_account_id,
             "type": self.type,
             "source": self.source,
             "phase": self.phase,
@@ -500,7 +501,6 @@ class CreateSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -582,7 +582,6 @@ class CreateAssociationsForSpokeLocalPortfolioTaskTest(
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -728,7 +727,6 @@ class CopyIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnit
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -810,7 +808,6 @@ class ImportIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUn
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -891,9 +888,11 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTaskTest(
         # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
+            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise
@@ -961,8 +960,10 @@ class RequestPolicyTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_params_for_results_display(self):
         # setup
         expected_result = {
+            "type": self.type,
             "account_id": self.account_id,
             "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise
@@ -1006,9 +1007,11 @@ class SharePortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_params_for_results_display(self):
         # setup
         expected_result = {
+            "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise
@@ -1067,6 +1070,7 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_params_for_results_display(self):
         # setup
         expected_result = {
+            "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
             "portfolio_id": self.portfolio_id,
             "region": self.region,
@@ -1218,9 +1222,7 @@ class CreateAssociationsInPythonForPortfolioTaskTest(
 
     def test_api_calls_used(self):
         # setup
-        expected_result = {
-            f"servicecatalog.associate_principal_with_portfolio_{self.region}": 1,
-        }
+        expected_result = []
 
         # exercise
         actual_result = self.sut.api_calls_used()
@@ -1325,6 +1327,7 @@ class DisassociateProductFromPortfolioTest(tasks_unit_tests_helper.PuppetTaskUni
             "region": self.region,
             "portfolio_id": self.portfolio_id,
             "product_id": self.product_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise
@@ -1390,6 +1393,7 @@ class DisassociateProductsFromPortfolioTest(tasks_unit_tests_helper.PuppetTaskUn
             "account_id": self.account_id,
             "region": self.region,
             "portfolio_id": self.portfolio_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise
@@ -1454,6 +1458,7 @@ class DeleteLocalPortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "account_id": self.account_id,
             "region": self.region,
             "portfolio_id": self.portfolio_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise
@@ -1511,9 +1516,11 @@ class DeletePortfolioShareTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_params_for_results_display(self):
         # setup
         expected_result = {
+            "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
+            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise
@@ -1574,10 +1581,12 @@ class DeletePortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_params_for_results_display(self):
         # setup
         expected_result = {
+            "puppet_account_id": self.puppet_account_id,
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
+            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise
@@ -1595,10 +1604,10 @@ class DeletePortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         raise NotImplementedError()
 
+    @skip
     def test_run(self):
         # setup
         # exercise
         self.sut.run()
-
         # verify
-        self.assert_output(self.sut.params_for_results_display())
+        raise NotImplementedError()

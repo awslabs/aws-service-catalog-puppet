@@ -23,7 +23,6 @@ class LaunchSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
-            "manifest_file_path": self.manifest_file_path,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -31,7 +30,7 @@ class LaunchSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         actual_result = self.sut.params_for_results_display()
 
         # verify
-        self.assertEqual(expected_result, actual_result)
+        self.assertDictEqual(expected_result, actual_result)
 
     @skip
     def test_requires(self):
@@ -113,8 +112,6 @@ class ProvisioningArtifactParametersTaskTest(
     def test_api_calls_used(self):
         # setup
         expected_result = [
-            f"servicecatalog.list_launch_paths_{self.puppet_account_id}_{self.region}",
-            f"servicecatalog.describe_provisioning_parameters_{self.puppet_account_id}_{self.region}",
         ]
 
         # exercise
@@ -133,7 +130,7 @@ class ProvisioningArtifactParametersTaskTest(
         raise NotImplementedError()
 
 
-class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
+class DoProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     launch_name = "launch_name"
     portfolio = "portfolio"
@@ -158,7 +155,7 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         self.module = launch
 
-        self.sut = self.module.ProvisionProductTask(
+        self.sut = self.module.DoProvisionProductTask(
             manifest_file_path=self.manifest_file_path,
             launch_name=self.launch_name,
             portfolio=self.portfolio,
@@ -183,13 +180,10 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_params_for_results_display(self):
         # setup
         expected_result = {
+            "puppet_account_id": self.puppet_account_id,
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
-            "portfolio": self.portfolio,
-            "product": self.product,
-            "version": self.version,
-            "execution": self.execution,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -197,7 +191,7 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         actual_result = self.sut.params_for_results_display()
 
         # verify
-        self.assertEqual(expected_result, actual_result)
+        self.assertDictEqual(expected_result, actual_result)
 
     @skip
     def test_requires(self):
@@ -210,7 +204,7 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
     def test_api_calls_used(self):
         # setup
-        expected_result = {
+        expected_result = [
             f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
             f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
             f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
@@ -225,8 +219,9 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
             f"servicecatalog.update_provisioned_product_{self.account_id}_{self.region}",
             f"servicecatalog.provision_product_{self.account_id}_{self.region}",
-            # f"ssm.put_parameter_and_wait_{self.region}",
-        }
+            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
+
+        ]
 
         # exercise
         actual_result = self.sut.api_calls_used()
@@ -336,6 +331,7 @@ class TerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     worker_timeout = 3
     parameters = {}
     ssm_param_inputs = []
+    execution = "execution"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import launch
@@ -346,19 +342,16 @@ class TerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             launch_name=self.launch_name,
             portfolio=self.portfolio,
-            portfolio_id=self.portfolio_id,
             product=self.product,
-            product_id=self.product_id,
             version=self.version,
-            version_id=self.version_id,
             account_id=self.account_id,
             region=self.region,
             puppet_account_id=self.puppet_account_id,
             retry_count=self.retry_count,
             ssm_param_outputs=self.ssm_param_outputs,
             worker_timeout=self.worker_timeout,
-            parameters=self.parameters,
             ssm_param_inputs=self.ssm_param_inputs,
+            execution=self.execution,
         )
 
         self.wire_up_mocks()
@@ -366,15 +359,10 @@ class TerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_params_for_results_display(self):
         # setup
         expected_result = {
+            "puppet_account_id": self.puppet_account_id,
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
-            "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
-            "product": self.product,
-            "product_id": self.product_id,
-            "version": self.version,
-            "version_id": self.version_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -387,10 +375,6 @@ class TerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_api_calls_used(self):
         # setup
         expected_result = [
-            f"servicecatalog.scan_provisioned_products_single_page{self.account_id}_{self.region}",
-            f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_record_{self.account_id}_{self.region}",
-            # f"ssm.delete_parameter_{self.region}": 1,
         ]
 
         # exercise
@@ -456,15 +440,10 @@ class TerminateProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
     def test_params_for_results_display(self):
         # setup
         expected_result = {
+            "puppet_account_id": self.puppet_account_id,
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
-            "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
-            "product": self.product,
-            "product_id": self.product_id,
-            "version": self.version,
-            "version_id": self.version_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -472,7 +451,7 @@ class TerminateProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
         actual_result = self.sut.params_for_results_display()
 
         # verify
-        self.assertEqual(expected_result, actual_result)
+        self.assertDictEqual(expected_result, actual_result)
 
     def test_api_calls_used(self):
         # setup
@@ -523,13 +502,14 @@ class ResetProvisionedProductOwnerTaskTest(tasks_unit_tests_helper.PuppetTaskUni
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise
         actual_result = self.sut.params_for_results_display()
 
         # verify
-        self.assertEqual(expected_result, actual_result)
+        self.assertDictEqual(expected_result, actual_result)
 
     def test_api_calls_used(self):
         # setup
@@ -585,16 +565,16 @@ class RunDeployInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_params_for_results_display(self):
         # setup
         expected_result = {
-            "manifest_file_path": self.manifest_file_path,
             "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
+            "cache_invalidator": "NOW",
         }
 
         # exercise
         actual_result = self.sut.params_for_results_display()
 
         # verify
-        self.assertEqual(expected_result, actual_result)
+        self.assertDictEqual(expected_result, actual_result)
 
     @skip
     def test_run(self):
@@ -627,7 +607,9 @@ class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_params_for_results_display(self):
         # setup
         expected_result = {
+            "puppet_account_id": self.puppet_account_id,
             "launch_name": self.launch_name,
+            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise
@@ -676,8 +658,8 @@ class LaunchTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_params_for_results_display(self):
         # setup
         expected_result = {
-            "launch_name": self.launch_name,
             "puppet_account_id": self.puppet_account_id,
+            "launch_name": self.launch_name,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -685,7 +667,7 @@ class LaunchTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         actual_result = self.sut.params_for_results_display()
 
         # verify
-        self.assertEqual(expected_result, actual_result)
+        self.assertDictEqual(expected_result, actual_result)
 
     @skip
     def test_requires(self):

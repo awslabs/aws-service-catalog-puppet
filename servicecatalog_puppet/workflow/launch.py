@@ -1294,6 +1294,7 @@ class LaunchForAccountAndRegionTask(LaunchForTask):
 class LaunchTask(LaunchForTask):
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "launch_name": self.launch_name,
             "cache_invalidator": self.cache_invalidator,
         }

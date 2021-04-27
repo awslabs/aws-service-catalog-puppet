@@ -69,7 +69,6 @@ class SpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             spoke_local_portfolio_name=self.spoke_local_portfolio_name,
             puppet_account_id=self.puppet_account_id,
-            sharing_mode=self.sharing_mode,
         )
 
         self.wire_up_mocks()
@@ -78,7 +77,6 @@ class SpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # setup
         expected_result = {
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
-            "sharing_mode": self.sharing_mode,
             "cache_invalidator": self.cache_invalidator,
         }
 

@@ -40,6 +40,8 @@ class TestManifest(unittest.TestCase):
         "deploy_to": {"tags": [{"regions": "default_region", "tag": "group:A"}]},
     }
     assertion_a = {
+        "expected": {"foo": "bar"},
+        "actual": {"bar": "foo"},
         "assert_for": {"tags": [{"regions": "default_region", "tag": "group:A"}]},
     }
     spoke_local_portfolio_a = {
@@ -198,6 +200,8 @@ class TestManifest(unittest.TestCase):
                 "puppet_account_id": puppet_account_id,
                 "region": region,
                 "requested_priority": 0,
+                "expected": {"foo": "bar"},
+                "actual": {"bar": "foo"},
             }
         ]
 

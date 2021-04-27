@@ -4,7 +4,7 @@ from unittest import skip, mock
 from . import tasks_unit_tests_helper
 
 
-class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
+class DoInvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     lambda_invocation_name = "lambda_invocation_name"
     region = "region"
     account_id = "account_id"
@@ -22,7 +22,7 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         self.module = lambda_invocations
 
-        self.sut = self.module.InvokeLambdaTask(
+        self.sut = self.module.DoInvokeLambdaTask(
             lambda_invocation_name=self.lambda_invocation_name,
             region=self.region,
             account_id=self.account_id,
@@ -41,12 +41,10 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_params_for_results_display(self):
         # setup
         expected_result = {
+            "puppet_account_id": self.puppet_account_id,
             "lambda_invocation_name": self.lambda_invocation_name,
-            "account_id": self.account_id,
             "region": self.region,
-            "function_name": self.function_name,
-            "qualifier": self.qualifier,
-            "invocation_type": self.invocation_type,
+            "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -73,7 +71,7 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         payload = dict(
             account_id=self.account_id,
             region=self.region,
-            parameters=self.sut.get_all_params(),
+            parameters=self.sut.get_parameter_values(),
         )
         response = dict(StatusCode=200)
         self.inject_hub_regional_client_called_with_response(
@@ -127,7 +125,6 @@ class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
-            "manifest_file_path": self.manifest_file_path,
             "lambda_invocation_name": self.lambda_invocation_name,
             "cache_invalidator": self.cache_invalidator,
         }
@@ -176,7 +173,6 @@ class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTes
         # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
-            "manifest_file_path": self.manifest_file_path,
             "cache_invalidator": self.cache_invalidator,
         }
 
