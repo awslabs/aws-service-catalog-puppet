@@ -144,6 +144,7 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
                     account_id=self.puppet_account_id,
                     region=region_name,
                     stack_name="servicecatalog-puppet-shares",
+                    nonce=self.cache_invalidator,
                 )
             )
 

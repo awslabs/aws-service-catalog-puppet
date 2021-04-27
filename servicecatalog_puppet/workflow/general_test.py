@@ -5,6 +5,7 @@ class DeleteCloudFormationStackTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
     account_id = "account_id"
     region = "region"
     stack_name = "stack_name"
+    nonce = "nonce"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import general
@@ -12,7 +13,7 @@ class DeleteCloudFormationStackTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
         self.module = general
 
         self.sut = self.module.DeleteCloudFormationStackTask(
-            account_id=self.account_id, region=self.region, stack_name=self.stack_name
+            account_id=self.account_id, region=self.region, stack_name=self.stack_name, nonce=self.nonce
         )
 
         self.wire_up_mocks()
@@ -23,6 +24,7 @@ class DeleteCloudFormationStackTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
             "stack_name": self.stack_name,
             "account_id": self.account_id,
             "region": self.region,
+            "nonce": self.nonce,
         }
 
         # exercise

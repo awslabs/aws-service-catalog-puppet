@@ -147,11 +147,6 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.describe_provisioning_parameters_{self.puppet_account_id}_{self.region}",
-        ]
-
     def requires(self):
         return dict(
             details=portfoliomanagement_tasks.GetVersionDetailsByNames(
@@ -172,19 +167,51 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
             ),
         )
 
-    def run(self):  # TODO change to yield for caching benefit
+    def run(self):
+        details = self.load_from_input("details")
+        product_id = details.get("product_details").get("ProductId")
+        version_id = details.get("version_details").get("Id")
+        result = yield DoDescribeProvisioningParameters(
+            product_id=product_id,
+            version_id=version_id,
+            portfolio=self.portfolio,
+        )
+        self.write_output(
+            result
+        )
+
+
+class DoDescribeProvisioningParameters(ProvisioningTask):
+    puppet_account_id = luigi.Parameter()
+    region = luigi.Parameter()
+    product_id = luigi.Parameter()
+    version_id = luigi.Parameter()
+    portfolio = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "portfolio": self.portfolio,
+            "region": self.region,
+            "product_id": self.product_id,
+            "version_id": self.version_id,
+        }
+
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.describe_provisioning_parameters_{self.puppet_account_id}_{self.region}",
+        ]
+
+    def run(self):
         with self.hub_regional_client("servicecatalog") as service_catalog:
-            self.info(f"getting path for {self.product} of portfolio: {self.portfolio}")
-            details = self.load_from_input("details")
-            product_id = details.get("product_details").get("ProductId")
-            version_id = details.get("version_details").get("Id")
+
             provisioning_artifact_parameters = None
             retries = 3
             while retries > 0:
                 try:
                     provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
-                        ProductId=product_id,
-                        ProvisioningArtifactId=version_id,
+                        ProductId=self.product_id,
+                        ProvisioningArtifactId=self.version_id,
                         PathName=self.portfolio,
                     ).get(
                         "ProvisioningArtifactParameters", []

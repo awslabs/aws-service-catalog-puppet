@@ -536,6 +536,7 @@ class CreateAssociationsForSpokeLocalPortfolioTask(PortfolioManagementTask):
             account_id=self.account_id,
             region=self.region,
             stack_name=f"associations-for-portfolio-{portfolio_id}",
+            nonce="forever",
         )
 
         with self.spoke_regional_client("cloudformation") as cloudformation:
@@ -1016,6 +1017,7 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -1056,11 +1058,13 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
                 account_id=self.account_id,
                 region=self.region,
                 stack_name=f"launch-constraints-for-portfolio-{portfolio_id}",
+                nonce="forever",
             ),
             general_tasks.DeleteCloudFormationStackTask(
                 account_id=self.account_id,
                 region=self.region,
                 stack_name=f"launch-constraints-v2-for-portfolio-{portfolio_id}",
+                nonce="forever",
             ),
         ]
 
@@ -1461,7 +1465,6 @@ class CreateAssociationsInPythonForPortfolioTask(PortfolioManagementTask):
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -1505,8 +1508,8 @@ class CreateShareForAccountLaunchRegion(PortfolioManagementTask):
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
             "region": self.region,
+            "sharing_mode": self.sharing_mode,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
@@ -1696,11 +1699,13 @@ class DeletePortfolio(PortfolioManagementTask):
                 account_id=self.account_id,
                 region=self.region,
                 stack_name=f"associations-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}",
+                nonce=self.cache_invalidator,
             ),
             general_tasks.DeleteCloudFormationStackTask(
                 account_id=self.account_id,
                 region=self.region,
                 stack_name=f"launch-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}",
+                nonce=self.cache_invalidator,
             ),
         ]
 

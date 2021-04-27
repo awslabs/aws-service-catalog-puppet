@@ -5,7 +5,6 @@ import luigi
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
-from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks as workflow_tasks
 
@@ -16,12 +15,6 @@ class LambdaInvocationBaseTask(workflow_tasks.PuppetTask):
     @property
     def section_name(self):
         return constants.LAMBDA_INVOCATIONS
-
-    # def requires(self):
-    #     requirements = {
-    #         "section_dependencies": self.get_section_dependencies()
-    #     }
-    #     return requirements
 
 
 class InvokeLambdaTask(
