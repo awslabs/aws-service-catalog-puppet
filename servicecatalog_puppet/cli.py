@@ -24,7 +24,7 @@ def cli(info, info_line_numbers):
 @cli.command()
 @click.argument("f", type=click.File())
 @click.option("--single-account", default=None)
-@click.option("--num-workers", default=30)
+@click.option("--num-workers", default=10)
 @click.option("--execution-mode", default="hub")
 @click.option("--puppet-account-id", default=None)
 @click.option("--home-region", default=None)
