@@ -1544,6 +1544,7 @@ class DisassociateProductFromPortfolio(PortfolioManagementTask):
             "region": self.region,
             "portfolio_id": self.portfolio_id,
             "product_id": self.product_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
@@ -1569,6 +1570,7 @@ class DisassociateProductsFromPortfolio(PortfolioManagementTask):
             "account_id": self.account_id,
             "region": self.region,
             "portfolio_id": self.portfolio_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
@@ -1611,6 +1613,7 @@ class DeleteLocalPortfolio(PortfolioManagementTask):
             "account_id": self.account_id,
             "region": self.region,
             "portfolio_id": self.portfolio_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
@@ -1636,6 +1639,7 @@ class DeletePortfolioShare(PortfolioManagementTask):
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
@@ -1678,6 +1682,7 @@ class DeletePortfolio(PortfolioManagementTask):
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def api_calls_used(self):
