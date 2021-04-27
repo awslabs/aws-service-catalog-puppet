@@ -172,6 +172,11 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
         product_id = details.get("product_details").get("ProductId")
         version_id = details.get("version_details").get("Id")
         result = yield DoDescribeProvisioningParameters(
+            manifest_file_path = self.manifest_file_path,
+
+            puppet_account_id=self.puppet_account_id,
+            region=self.region,
+
             product_id=product_id,
             version_id=version_id,
             portfolio=self.portfolio,
