@@ -111,8 +111,7 @@ class ProvisioningArtifactParametersTaskTest(
 
     def test_api_calls_used(self):
         # setup
-        expected_result = [
-        ]
+        expected_result = []
 
         # exercise
         actual_result = self.sut.api_calls_used()
@@ -220,7 +219,6 @@ class DoProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             f"servicecatalog.update_provisioned_product_{self.account_id}_{self.region}",
             f"servicecatalog.provision_product_{self.account_id}_{self.region}",
             f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
-
         ]
 
         # exercise
@@ -374,8 +372,7 @@ class TerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
     def test_api_calls_used(self):
         # setup
-        expected_result = [
-        ]
+        expected_result = []
 
         # exercise
         actual_result = self.sut.api_calls_used()

@@ -73,7 +73,7 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
 
         if self.account_id == self.puppet_account_id:
             for provisioning_artifact_summary in details.get(
-                    "ProvisioningArtifactSummaries"
+                "ProvisioningArtifactSummaries"
             ):
                 if provisioning_artifact_summary.get("Name") == self.version:
                     self.write_output(
@@ -144,7 +144,7 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
                 ProductId=product_id
             )
             for provisioning_artifact_detail in response.get(
-                    "ProvisioningArtifactDetails"
+                "ProvisioningArtifactDetails"
             ):
                 if provisioning_artifact_detail.get("Name") == self.version:
                     version_id = provisioning_artifact_detail.get("Id")
@@ -319,7 +319,7 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
 
     def run(self):
         with self.spoke_regional_client(
-                "servicecatalog"
+            "servicecatalog"
         ) as cross_account_servicecatalog:
             result = None
             response = (
@@ -558,7 +558,7 @@ class CreateAssociationsForSpokeLocalPortfolioTask(PortfolioManagementTask):
                 if self.should_use_sns
                 else [],
             )
-            result = cloudformation.describe_stacks(StackName=stack_name, ).get(
+            result = cloudformation.describe_stacks(StackName=stack_name,).get(
                 "Stacks"
             )[0]
             self.write_output(result)
@@ -614,11 +614,11 @@ class GetProductsAndProvisioningArtifactsTask(PortfolioManagementTask):
                     "ProvisioningArtifactDetails", []
                 )
                 for (
-                        hub_provisioning_artifact_detail
+                    hub_provisioning_artifact_detail
                 ) in hub_provisioning_artifact_details:
                     if (
-                            hub_provisioning_artifact_detail.get("Type")
-                            == "CLOUD_FORMATION_TEMPLATE"
+                        hub_provisioning_artifact_detail.get("Type")
+                        == "CLOUD_FORMATION_TEMPLATE"
                     ):
                         provisioning_artifact_details.append(
                             hub_provisioning_artifact_detail
@@ -692,11 +692,11 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 hub_product_name = product_view_summary.get("Name")
 
                 for hub_provisioning_artifact_detail in product_view_summary.get(
-                        "provisioning_artifact_details", []
+                    "provisioning_artifact_details", []
                 ):
                     if (
-                            hub_provisioning_artifact_detail.get("Type")
-                            == "CLOUD_FORMATION_TEMPLATE"
+                        hub_provisioning_artifact_detail.get("Type")
+                        == "CLOUD_FORMATION_TEMPLATE"
                     ):
                         product_versions_that_should_be_copied[
                             f"{hub_provisioning_artifact_detail.get('Name')}"
@@ -709,11 +709,11 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 hub_product_arn = product_view_summary.get("ProductARN")
                 copy_args = {
                     "SourceProductArn": hub_product_arn,
-                    "CopyOptions": ["CopyTags", ],
+                    "CopyOptions": ["CopyTags",],
                 }
 
                 with self.spoke_regional_client(
-                        "servicecatalog"
+                    "servicecatalog"
                 ) as spoke_service_catalog:
                     p = None
                     try:
@@ -741,16 +741,16 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                                     "ProvisioningArtifactDetails"
                                 )
                                 for (
-                                        provisioning_artifact_detail
+                                    provisioning_artifact_detail
                                 ) in spoke_provisioning_artifact_details:
                                     id_to_delete = (
                                         f"{provisioning_artifact_detail.get('Name')}"
                                     )
                                     if (
-                                            product_versions_that_should_be_copied.get(
-                                                id_to_delete, None
-                                            )
-                                            is not None
+                                        product_versions_that_should_be_copied.get(
+                                            id_to_delete, None
+                                        )
+                                        is not None
                                     ):
                                         self.info(
                                             f"{hub_product_name} :: Going to skip {spoke_product_id} {provisioning_artifact_detail.get('Name')}"
@@ -830,18 +830,18 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                         "ProvisioningArtifactDetails", []
                     )
                     for (
-                            version_name,
-                            version_details,
+                        version_name,
+                        version_details,
                     ) in product_versions_that_should_be_updated.items():
                         self.info(
                             f"{version_name} is active: {version_details.get('Active')} in hub"
                         )
                         for (
-                                spoke_provisioning_artifact_detail
+                            spoke_provisioning_artifact_detail
                         ) in spoke_provisioning_artifact_details:
                             if (
-                                    spoke_provisioning_artifact_detail.get("Name")
-                                    == version_name
+                                spoke_provisioning_artifact_detail.get("Name")
+                                == version_name
                             ):
                                 self.info(
                                     f"Updating active of {version_name}/{spoke_provisioning_artifact_detail.get('Id')} "
@@ -1077,7 +1077,7 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
             template = config.env.get_template(
                 "launch_role_constraints.template.yaml.j2"
             ).render(
-                portfolio={"DisplayName": self.portfolio, },
+                portfolio={"DisplayName": self.portfolio,},
                 portfolio_id=portfolio_id,
                 launch_constraints=new_launch_constraints,
                 product_name_to_id_dict=product_name_to_id_dict,
@@ -1092,14 +1092,12 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
                 if self.should_use_sns
                 else [],
             )
-            result = cloudformation.describe_stacks(StackName=stack_name, ).get(
+            result = cloudformation.describe_stacks(StackName=stack_name,).get(
                 "Stacks"
             )[0]
             self.write_output(result)
 
-    def generate_new_launch_constraints(
-            self, portfolio_id, product_name_to_id_dict
-    ):
+    def generate_new_launch_constraints(self, portfolio_id, product_name_to_id_dict):
         new_launch_constraints = []
         for launch_constraint in self.launch_constraints:
             new_launch_constraint = {
@@ -1113,13 +1111,13 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
                     )
                 elif isinstance(launch_constraint.get("products"), str):
                     with self.spoke_regional_client(
-                            "servicecatalog"
+                        "servicecatalog"
                     ) as service_catalog:
                         response = service_catalog.search_products_as_admin_single_page(
                             PortfolioId=portfolio_id
                         )
                         for product_view_details in response.get(
-                                "ProductViewDetails", []
+                            "ProductViewDetails", []
                         ):
                             product_view_summary = product_view_details.get(
                                 "ProductViewSummary"
@@ -1128,8 +1126,8 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
                                 product_view_summary.get("Name")
                             ] = product_view_summary.get("ProductId")
                             if re.match(
-                                    launch_constraint.get("products"),
-                                    product_view_summary.get("Name"),
+                                launch_constraint.get("products"),
+                                product_view_summary.get("Name"),
                             ):
                                 new_launch_constraint["products"].append(
                                     product_view_summary.get("Name")
@@ -1175,7 +1173,7 @@ class RequestPolicyTask(PortfolioManagementTask):
             path = f"{p}/{self.account_id}.json"
 
         f = open(path, "w")
-        f.write(json.dumps(self.param_kwargs, indent=4, default=str, ))
+        f.write(json.dumps(self.param_kwargs, indent=4, default=str,))
         f.close()
         self.write_output(self.param_kwargs)
 
@@ -1273,7 +1271,7 @@ class SharePortfolioViaOrgsTask(PortfolioManagementTask):
         )
 
     def run(self):
-        portfolio_id = self.load_from_input('portfolio').get("portfolio_id")
+        portfolio_id = self.load_from_input("portfolio").get("portfolio_id")
         with self.hub_regional_client("servicecatalog") as servicecatalog:
             portfolio_share_token = servicecatalog.create_portfolio_share(
                 PortfolioId=portfolio_id,
@@ -1380,7 +1378,7 @@ class ShareAndAcceptPortfolioTask(
         portfolio_id = portfolio.get("portfolio_id")
 
         with self.spoke_regional_client(
-                "servicecatalog"
+            "servicecatalog"
         ) as cross_account_servicecatalog:
             if self.sharing_mode != constants.SHARING_MODE_AWS_ORGANIZATIONS:
                 was_accepted = False
@@ -1406,8 +1404,8 @@ class ShareAndAcceptPortfolioTask(
             principal_to_associate = config.get_puppet_role_arn(self.account_id)
             for principal_for_portfolio in principals_for_portfolio:
                 if (
-                        principal_for_portfolio.get("PrincipalARN")
-                        == principal_to_associate
+                    principal_for_portfolio.get("PrincipalARN")
+                    == principal_to_associate
                 ):
                     principal_was_associated = True
 

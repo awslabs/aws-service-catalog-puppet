@@ -14,7 +14,7 @@ class DeleteCloudFormationStackTask(tasks.PuppetTask):
             "stack_name": self.stack_name,
             "account_id": self.account_id,
             "region": self.region,
-            "nonce": self.nonce
+            "nonce": self.nonce,
         }
 
     def api_calls_used(self):

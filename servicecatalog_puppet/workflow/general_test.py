@@ -13,7 +13,10 @@ class DeleteCloudFormationStackTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
         self.module = general
 
         self.sut = self.module.DeleteCloudFormationStackTask(
-            account_id=self.account_id, region=self.region, stack_name=self.stack_name, nonce=self.nonce
+            account_id=self.account_id,
+            region=self.region,
+            stack_name=self.stack_name,
+            nonce=self.nonce,
         )
 
         self.wire_up_mocks()

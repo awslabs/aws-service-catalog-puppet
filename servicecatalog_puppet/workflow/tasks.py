@@ -115,7 +115,12 @@ class PuppetTask(luigi.Task):
     def output_location(self):
         puppet_account_id = config.get_puppet_account_id()
         path = f"output/{self.uid}.{self.output_suffix}"
-        if config.is_caching_enabled(puppet_account_id):
+        should_use_s3_target_if_caching_is_on = (
+            "cache_invalidator" in self.params_for_results_display().keys()
+        )
+        if should_use_s3_target_if_caching_is_on and config.is_caching_enabled(
+            puppet_account_id
+        ):
             return f"s3://sc-puppet-caching-bucket-{config.get_puppet_account_id()}-{config.get_home_region(puppet_account_id)}/{path}"
         else:
             return path
