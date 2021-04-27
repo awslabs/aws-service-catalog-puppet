@@ -64,7 +64,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
         self.write_output(self.manifest.get("launches", {}))
 
 
-class ProvisioningTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
+class ProvisioningTask(tasks.PuppetTaskWithParameters, manifest_tasks.ManifestMixen):
     manifest_file_path = luigi.Parameter()
 
     @property
@@ -294,7 +294,6 @@ class DoProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, dep
     execution = luigi.Parameter()
 
     try_count = 1
-    all_params = []
 
     def params_for_results_display(self):
         return {
@@ -309,36 +308,10 @@ class DoProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, dep
     def priority(self):
         return self.requested_priority
 
+
     def requires(self):
-        all_params = {}
-        all_params.update(self.manifest_parameters)
-        all_params.update(self.launch_parameters)
-        all_params.update(self.account_parameters)
-
-        ssm_params = {}
-
-        for param_name, param_details in all_params.items():
-            if param_details.get("ssm"):
-                if param_details.get("default"):
-                    del param_details["default"]
-                ssm_parameter_name = param_details.get("ssm").get("name")
-                ssm_parameter_name = ssm_parameter_name.replace(
-                    "${AWS::Region}", self.region
-                )
-                ssm_parameter_name = ssm_parameter_name.replace(
-                    "${AWS::AccountId}", self.account_id
-                )
-                ssm_params[param_name] = tasks.GetSSMParamTask(
-                    parameter_name=param_name,
-                    name=ssm_parameter_name,
-                    region=param_details.get("ssm").get(
-                        "region", config.get_home_region(self.puppet_account_id)
-                    ),
-                )
-        self.all_params = all_params
-
         requirements = {
-            "ssm_params": ssm_params,
+            "ssm_params": self.get_ssm_parameters(),
             "provisioning_artifact_parameters": ProvisioningArtifactParametersTask(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
@@ -359,23 +332,6 @@ class DoProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, dep
         }
 
         return requirements
-
-    def get_all_params(self):
-        all_params = {}
-        self.info(f"collecting all_params")
-        for param_name, param_details in self.all_params.items():
-            if param_details.get("ssm"):
-                with self.input().get("ssm_params").get(param_name).open() as f:
-                    all_params[param_name] = json.loads(f.read()).get("Value")
-            if param_details.get("default"):
-                all_params[param_name] = param_details.get("default")
-            if param_details.get("mapping"):
-                all_params[param_name] = self.manifest.get_mapping(
-                    param_details.get("mapping"), self.account_id, self.region
-                )
-
-        self.info(f"finished collecting all_params: {all_params}")
-        return all_params
 
     def api_calls_used(self):
         return [
@@ -402,18 +358,14 @@ class DoProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, dep
         product_id = details.get("product_details").get("ProductId")
         version_id = details.get("version_details").get("Id")
 
-        ssm_params = dict()
         task_output = dict(
             **self.params_for_results_display(),
             account_parameters=tasks.unwrap(self.account_parameters),
             launch_parameters=tasks.unwrap(self.launch_parameters),
             manifest_parameters=tasks.unwrap(self.manifest_parameters),
-            ssm_params=ssm_params,
         )
-        for k, v in self.input().get("ssm_params").items():
-            ssm_params[k] = json.loads(v.open("r").read())
 
-        all_params = self.get_all_params()
+        all_params = self.get_parameter_values()
 
         with self.spoke_regional_client("servicecatalog") as service_catalog:
             path_name = self.portfolio
@@ -620,7 +572,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
 
         self.info(f"starting deploy try {self.try_count} of {self.retry_count}")
 
-        all_params = self.get_all_params()
+        all_params = self.get_param_values()
         with self.spoke_regional_client("servicecatalog") as service_catalog:
             self.info(f"looking for previous failures")
             path_name = self.portfolio

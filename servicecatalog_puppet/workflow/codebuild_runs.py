@@ -5,7 +5,7 @@ from servicecatalog_puppet.workflow import manifest as manifest_tasks
 from servicecatalog_puppet.workflow import tasks as workflow_tasks, dependency
 
 
-class CodeBuildRunBaseTask(workflow_tasks.PuppetTask):
+class CodeBuildRunBaseTask(workflow_tasks.PuppetTaskWithParameters):
     manifest_file_path = luigi.Parameter()
 
     @property
@@ -91,7 +91,41 @@ class DoExecuteCodeBuildRunTask(CodeBuildRunBaseTask, manifest_tasks.ManifestMix
             "cache_invalidator": self.cache_invalidator,
         }
 
+    def api_calls_used(self):
+        return [
+            f"codebuild.start_build_{self.puppet_account_id}_{self.project_name}",
+            f"codebuild.batch_get_projects_{self.puppet_account_id}_{self.project_name}",
+        ]
+
+    def requires(self):
+        requirements = {
+            "ssm_params": self.get_ssm_parameters(),
+        }
+        return requirements
+
     def run(self):
+        with self.hub_client('codebuild') as codebuild:
+            provided_parameters = self.get_parameter_values()
+            parameters_to_use = list()
+
+            projects = codebuild.batch_get_projects(names=[self.project_name]).get("projects", [])
+            for project in projects:
+                if project.get("name") == self.project_name:
+                    for environment_variable in project.get("environment", {}).get("environmentVariables", []):
+                        if environment_variable.get("type") == "PLAINTEXT":
+                            n = environment_variable.get("name")
+                            if provided_parameters.get(n):
+                                parameters_to_use.append(
+                                    dict(
+                                        name=n,
+                                        value=provided_parameters.get(n),
+                                        type='PLAINTEXT',
+                                    )
+                                )
+
+            codebuild.start_build_and_wait_for_completion(
+                projectName=self.project_name, environmentVariablesOverride=parameters_to_use
+            )
         self.write_output(self.params_for_results_display())
 
 

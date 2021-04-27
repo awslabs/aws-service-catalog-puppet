@@ -275,7 +275,6 @@ def get_from_dict(d, path):
 class Manifest(dict):
     def get_tasks_for(self, puppet_account_id, section_name, item_name):
         accounts = self.get(constants.ACCOUNTS)
-        print(f"looking in {section_name}")
         section = self.get(section_name)
         provisioning_tasks = list()
         item = section[item_name]

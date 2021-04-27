@@ -79,7 +79,7 @@ class InvokeLambdaTask(LambdaInvocationBaseTask, manifest_tasks.ManifestMixen, d
         self.write_output(self.params_for_results_display())
 
 
-class DoInvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen):
+class DoInvokeLambdaTask(workflow_tasks.PuppetTaskWithParameters, manifest_tasks.ManifestMixen):
     lambda_invocation_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -94,8 +94,6 @@ class DoInvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen
     manifest_parameters = luigi.DictParameter()
     account_parameters = luigi.DictParameter()
 
-    all_params = []
-
     manifest_file_path = luigi.Parameter()
 
     def params_for_results_display(self):
@@ -108,52 +106,9 @@ class DoInvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen
         }
 
     def requires(self):
-        all_params = dict()
-        all_params.update(self.manifest_parameters)
-        all_params.update(self.launch_parameters)
-        all_params.update(self.account_parameters)
-
-        ssm_params = dict()
-        for param_name, param_details in all_params.items():
-            if param_details.get("ssm"):
-                if param_details.get("default"):
-                    del param_details["default"]
-                ssm_parameter_name = param_details.get("ssm").get("name")
-                ssm_parameter_name = ssm_parameter_name.replace(
-                    "${AWS::Region}", self.region
-                )
-                ssm_parameter_name = ssm_parameter_name.replace(
-                    "${AWS::AccountId}", self.account_id
-                )
-                ssm_params[param_name] = tasks.GetSSMParamTask(
-                    parameter_name=param_name,
-                    name=ssm_parameter_name,
-                    region=param_details.get("ssm").get(
-                        "region", config.get_home_region(self.puppet_account_id)
-                    ),
-                )
-        self.all_params = all_params
-
         return dict(
-            ssm_params=ssm_params,
+            ssm_params=self.get_ssm_parameters(),
         )
-
-    def get_all_params(self):
-        all_params = {}
-        self.info(f"collecting all_params")
-        for param_name, param_details in self.all_params.items():
-            if param_details.get("ssm"):
-                with self.input().get("ssm_params").get(param_name).open() as f:
-                    all_params[param_name] = json.loads(f.read()).get("Value")
-            if param_details.get("default"):
-                all_params[param_name] = param_details.get("default")
-            if param_details.get("mapping"):
-                all_params[param_name] = self.manifest.get_mapping(
-                    param_details.get("mapping"), self.account_id, self.region
-                )
-
-        self.info(f"finished collecting all_params: {all_params}")
-        return all_params
 
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)
@@ -163,7 +118,7 @@ class DoInvokeLambdaTask(workflow_tasks.PuppetTask, manifest_tasks.ManifestMixen
             payload = dict(
                 account_id=self.account_id,
                 region=self.region,
-                parameters=self.get_all_params(),
+                parameters=self.get_parameter_values(),
             )
             response = lambda_client.invoke(
                 FunctionName=self.function_name,
