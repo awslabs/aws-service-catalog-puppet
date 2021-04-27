@@ -1382,23 +1382,20 @@ class ShareAndAcceptPortfolioTask(
         with self.spoke_regional_client(
                 "servicecatalog"
         ) as cross_account_servicecatalog:
-            was_accepted = False
-            accepted_portfolio_shares = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page().get(
-                "PortfolioDetails"
-            )
-            for accepted_portfolio_share in accepted_portfolio_shares:
-                if accepted_portfolio_share.get("Id") == portfolio_id:
-                    was_accepted = True
-                    break
-            if not was_accepted:
-                self.info(f"{self.uid}: accepting {portfolio_id}")
-                portfolio_share_args = {"PortfolioId": portfolio_id}
-                if self.sharing_mode == constants.SHARING_MODE_AWS_ORGANIZATIONS:
-                    portfolio_share_args["PortfolioShareType"] = "AWS_ORGANIZATIONS"
-
-                cross_account_servicecatalog.accept_portfolio_share(
-                    **portfolio_share_args
+            if self.sharing_mode != constants.SHARING_MODE_AWS_ORGANIZATIONS:
+                was_accepted = False
+                accepted_portfolio_shares = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page().get(
+                    "PortfolioDetails"
                 )
+                for accepted_portfolio_share in accepted_portfolio_shares:
+                    if accepted_portfolio_share.get("Id") == portfolio_id:
+                        was_accepted = True
+                        break
+                if not was_accepted:
+                    self.info(f"{self.uid}: accepting {portfolio_id}")
+                    cross_account_servicecatalog.accept_portfolio_share(
+                        PortfolioId=portfolio_id
+                    )
 
             principals_for_portfolio = cross_account_servicecatalog.list_principals_for_portfolio_single_page(
                 PortfolioId=portfolio_id
