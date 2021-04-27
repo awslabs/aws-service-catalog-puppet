@@ -1148,7 +1148,7 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
         return new_launch_constraints
 
 
-class RequestPolicyTask(PortfolioManagementTask):  # TODO do I need the data dir still?
+class RequestPolicyTask(PortfolioManagementTask):
     type = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()

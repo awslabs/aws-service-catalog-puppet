@@ -6,7 +6,7 @@ from servicecatalog_puppet.manifest_utils import get_configuration_overrides
 logger = logging.getLogger(__file__)
 
 
-def get_configuration_from_launch(manifest, launch_name):  # TODO EPF
+def get_configuration_from_launch(manifest, launch_name):
     launch_details = manifest.get("launches").get(launch_name)
     configuration = {
         "status": launch_details.get("status", constants.PROVISIONED),
