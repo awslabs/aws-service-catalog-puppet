@@ -1067,7 +1067,7 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                                                         "status"
                                                     )
                                                     click.echo(
-                                                        f"Current status: {status}"
+                                                        f"Current status (A): {status}"
                                                     )
                                                     if status in [
                                                         "Cancelled",

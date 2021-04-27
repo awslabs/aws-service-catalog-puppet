@@ -1148,7 +1148,7 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
         return new_launch_constraints
 
 
-class RequestPolicyTask(PortfolioManagementTask): #TODO do I need the data dir still?
+class RequestPolicyTask(PortfolioManagementTask):  # TODO do I need the data dir still?
     type = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -1244,7 +1244,6 @@ class SharePortfolioTask(PortfolioManagementTask):
 class SharePortfolioViaOrgsTask(PortfolioManagementTask):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     ou_to_share_with = luigi.Parameter()
 
@@ -1252,7 +1251,6 @@ class SharePortfolioViaOrgsTask(PortfolioManagementTask):
         return {
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
-            "portfolio_id": self.portfolio_id,
             "region": self.region,
             "ou_to_share_with": self.ou_to_share_with,
         }
@@ -1263,10 +1261,22 @@ class SharePortfolioViaOrgsTask(PortfolioManagementTask):
             f"servicecatalog.describe_portfolio_share_status",
         ]
 
+    def requires(self):
+        return dict(
+            portfolio=GetPortfolioByPortfolioName(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                portfolio=self.portfolio,
+                account_id=self.puppet_account_id,
+                region=self.region,
+            )
+        )
+
     def run(self):
+        portfolio_id = self.load_from_input('portfolio').get("portfolio_id")
         with self.hub_regional_client("servicecatalog") as servicecatalog:
             portfolio_share_token = servicecatalog.create_portfolio_share(
-                PortfolioId=self.portfolio_id,
+                PortfolioId=portfolio_id,
                 OrganizationNode=dict(
                     Type="ORGANIZATIONAL_UNIT", Value=self.ou_to_share_with
                 ),
@@ -1725,16 +1735,16 @@ class DeletePortfolio(PortfolioManagementTask):
 
                 if not is_puppet_account:
                     yield DisassociateProductsFromPortfolio(
-                            account_id=self.account_id,
-                            region=self.region,
-                            portfolio_id=portfolio_id,
-                            manifest_file_path=self.manifest_file_path,
+                        account_id=self.account_id,
+                        region=self.region,
+                        portfolio_id=portfolio_id,
+                        manifest_file_path=self.manifest_file_path,
                     )
                     yield DeleteLocalPortfolio(
-                            account_id=self.account_id,
-                            region=self.region,
-                            portfolio_id=portfolio_id,
-                            manifest_file_path=self.manifest_file_path,
+                        account_id=self.account_id,
+                        region=self.region,
+                        portfolio_id=portfolio_id,
+                        manifest_file_path=self.manifest_file_path,
                     )
 
             if not is_puppet_account:
