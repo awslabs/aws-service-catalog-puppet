@@ -33,7 +33,9 @@ class DependenciesMixin(object):
         elif isinstance(self, lambda_invocations.InvokeLambdaTask):
             item_name = self.lambda_invocation_name
 
-        dependencies = self.manifest.get(self.section_name).get(item_name).get("depends_on", [])
+        dependencies = (
+            self.manifest.get(self.section_name).get(item_name).get("depends_on", [])
+        )
 
         common_args = dict(
             manifest_file_path=self.manifest_file_path,
@@ -45,8 +47,7 @@ class DependenciesMixin(object):
                 if depends_on.get(constants.AFFINITY) == constants.LAUNCH:
                     these_dependencies.append(
                         launch.LaunchTask(
-                            **common_args,
-                            launch_name=depends_on.get("name"),
+                            **common_args, launch_name=depends_on.get("name"),
                         )
                     )
                 if depends_on.get(constants.AFFINITY) == "account":
@@ -76,7 +77,10 @@ class DependenciesMixin(object):
                     )
 
             elif depends_on.get("type") == constants.SPOKE_LOCAL_PORTFOLIO:
-                if depends_on.get(constants.AFFINITY) == constants.SPOKE_LOCAL_PORTFOLIO:
+                if (
+                    depends_on.get(constants.AFFINITY)
+                    == constants.SPOKE_LOCAL_PORTFOLIO
+                ):
                     these_dependencies.append(
                         spoke_local_portfolios.SpokeLocalPortfolioTask(
                             **common_args,
@@ -113,8 +117,7 @@ class DependenciesMixin(object):
                 if depends_on.get(constants.AFFINITY) == constants.ASSERTION:
                     these_dependencies.append(
                         assertions.AssertionTask(
-                            **common_args,
-                            assertion_name=depends_on.get("name"),
+                            **common_args, assertion_name=depends_on.get("name"),
                         )
                     )
                 if depends_on.get(constants.AFFINITY) == "account":
@@ -147,8 +150,7 @@ class DependenciesMixin(object):
                 if depends_on.get(constants.AFFINITY) == constants.CODE_BUILD_RUN:
                     these_dependencies.append(
                         codebuild_runs.CodeBuildRunTask(
-                            **common_args,
-                            code_build_run_name=depends_on.get("name"),
+                            **common_args, code_build_run_name=depends_on.get("name"),
                         )
                     )
                 if depends_on.get(constants.AFFINITY) == "account":

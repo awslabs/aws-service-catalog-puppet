@@ -8,8 +8,12 @@ from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
 from servicecatalog_puppet import manifest_utils_for_launches
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow import tasks, portfoliomanagement as portfoliomanagement_tasks, \
-    manifest as manifest_tasks, dependency
+from servicecatalog_puppet.workflow import (
+    tasks,
+    portfoliomanagement as portfoliomanagement_tasks,
+    manifest as manifest_tasks,
+    dependency,
+)
 
 
 class LaunchSectionTask(manifest_tasks.SectionTask):
@@ -25,7 +29,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
         requirements = dict(tasks=tasks)
         if self.execution_mode == constants.EXECUTION_MODE_SPOKE:
             for launch_name, launch_details in self.manifest.get(
-                    "launches", {}
+                "launches", {}
             ).items():
                 if launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE:
                     tasks.append(
@@ -37,11 +41,11 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                     )
         else:
             for launch_name, launch_details in self.manifest.get(
-                    "launches", {}
+                "launches", {}
             ).items():
                 if (
-                        launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE
-                        and not self.is_dry_run
+                    launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE
+                    and not self.is_dry_run
                 ):
                     tasks.append(
                         LaunchInSpokeTask(
@@ -69,7 +73,11 @@ class ProvisioningTask(tasks.PuppetTaskWithParameters, manifest_tasks.ManifestMi
 
     @property
     def status(self):
-        return self.manifest.get(constants.LAUNCHES).get(self.launch_name).get("status", constants.PROVISIONED)
+        return (
+            self.manifest.get(constants.LAUNCHES)
+            .get(self.launch_name)
+            .get("status", constants.PROVISIONED)
+        )
 
     @property
     def section_name(self):
@@ -198,7 +206,9 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
             )
 
 
-class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin):
+class ProvisionProductTask(
+    ProvisioningTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin
+):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -234,42 +244,35 @@ class ProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, depen
         }
 
     def requires(self):
-        requirements = {
-            "section_dependencies": self.get_section_dependencies()
-        }
+        requirements = {"section_dependencies": self.get_section_dependencies()}
         return requirements
 
     def run(self):
         yield DoProvisionProductTask(
             manifest_file_path=self.manifest_file_path,
-
             launch_name=self.launch_name,
             puppet_account_id=self.puppet_account_id,
-
             region=self.region,
             account_id=self.account_id,
-
             portfolio=self.portfolio,
             product=self.product,
             version=self.version,
-
             ssm_param_inputs=self.ssm_param_inputs,
-
             launch_parameters=self.launch_parameters,
             manifest_parameters=self.manifest_parameters,
             account_parameters=self.account_parameters,
-
             retry_count=self.retry_count,
             worker_timeout=self.worker_timeout,
             ssm_param_outputs=self.ssm_param_outputs,
             requested_priority=self.requested_priority,
-
             execution=self.execution,
         )
         self.write_output(self.params_for_results_display())
 
 
-class DoProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin):
+class DoProvisionProductTask(
+    ProvisioningTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin
+):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -307,7 +310,6 @@ class DoProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, dep
     @property
     def priority(self):
         return self.requested_priority
-
 
     def requires(self):
         requirements = {
@@ -392,7 +394,7 @@ class DoProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, dep
                 )
 
                 with self.input().get("provisioning_artifact_parameters").open(
-                        "r"
+                    "r"
                 ) as f:
                     provisioning_artifact_parameters = json.loads(f.read())
 
@@ -499,7 +501,7 @@ class DoProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, dep
                         f"Running in execution mode: {self.execution}, checking for SSM outputs"
                     )
                     with self.spoke_regional_client(
-                            "cloudformation"
+                        "cloudformation"
                     ) as spoke_cloudformation:
                         stack_details = aws.get_stack_output_for(
                             spoke_cloudformation,
@@ -515,7 +517,7 @@ class DoProvisionProductTask(ProvisioningTask, manifest_tasks.ManifestMixen, dep
                             # TODO push into another task
                             for output in stack_details.get("Outputs", []):
                                 if output.get("OutputKey") == ssm_param_output.get(
-                                        "stack_output"
+                                    "stack_output"
                                 ):
                                     ssm_parameter_name = ssm_param_output.get(
                                         "param_name"
@@ -615,7 +617,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                     )
 
                     with self.input().get("provisioning_artifact_parameters").open(
-                            "r"
+                        "r"
                     ) as f:
                         provisioning_artifact_parameters = json.loads(f.read())
 
@@ -673,14 +675,14 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                         )
 
     def get_current_version(
-            self, provisioning_artifact_id, product_id, service_catalog
+        self, provisioning_artifact_id, product_id, service_catalog
     ):
         return service_catalog.describe_provisioning_artifact(
             ProvisioningArtifactId=provisioning_artifact_id, ProductId=product_id,
         ).get("ProvisioningArtifactDetail")
 
     def write_result(
-            self, current_version, new_version, effect, current_status, active, notes=""
+        self, current_version, new_version, effect, current_status, active, notes=""
     ):
         with self.output().open("w") as f:
             f.write(
@@ -736,37 +738,28 @@ class TerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
         }
 
     def requires(self):
-        requirements = {
-            "section_dependencies": self.get_section_dependencies()
-        }
+        requirements = {"section_dependencies": self.get_section_dependencies()}
 
         return requirements
 
     def run(self):
         yield DoTerminateProductTask(
             manifest_file_path=self.manifest_file_path,
-
             launch_name=self.launch_name,
             puppet_account_id=self.puppet_account_id,
-
             region=self.region,
             account_id=self.account_id,
-
             portfolio=self.portfolio,
             product=self.product,
             version=self.version,
-
             ssm_param_inputs=self.ssm_param_inputs,
-
             launch_parameters=self.launch_parameters,
             manifest_parameters=self.manifest_parameters,
             account_parameters=self.account_parameters,
-
             retry_count=self.retry_count,
             worker_timeout=self.worker_timeout,
             ssm_param_outputs=self.ssm_param_outputs,
             requested_priority=self.requested_priority,
-
             execution=self.execution,
         )
         self.write_output(self.params_for_results_display())
@@ -844,7 +837,7 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
             )
             log_output = self.to_str_params()
             log_output.update(
-                {"provisioned_product_id": provisioned_product_id, }
+                {"provisioned_product_id": provisioned_product_id,}
             )
 
             for ssm_param_output in self.ssm_param_outputs:
@@ -855,7 +848,7 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
                 with self.hub_client("ssm") as ssm:
                     try:
                         # todo push into another task
-                        ssm.delete_parameter(Name=param_name, )
+                        ssm.delete_parameter(Name=param_name,)
                         self.info(
                             f"[{self.launch_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
                         )
@@ -865,7 +858,7 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
                         )
 
             with self.output().open("w") as f:
-                f.write(json.dumps(log_output, indent=4, default=str, ))
+                f.write(json.dumps(log_output, indent=4, default=str,))
 
             self.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: finished terminating"
@@ -950,8 +943,8 @@ class TerminateProductDryRunTask(ProvisioningTask):
                         ProvisioningArtifactId=r.get("ProvisioningArtifactId"),
                         ProductId=self.product_id,
                     )
-                        .get("ProvisioningArtifactDetail")
-                        .get("Name")
+                    .get("ProvisioningArtifactDetail")
+                    .get("Name")
                 )
 
                 if r.get("Status") != "TERMINATED":
@@ -1185,7 +1178,7 @@ class LaunchForRegionTask(LaunchForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-                self.puppet_account_id, self.section_name, self.launch_name, self.region
+            self.puppet_account_id, self.section_name, self.launch_name, self.region
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -1220,7 +1213,7 @@ class LaunchForAccountTask(LaunchForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies, )
+        requirements = dict(dependencies=dependencies,)
 
         klass = self.get_klass_for_provisioning()
 
@@ -1253,10 +1246,12 @@ class LaunchForAccountAndRegionTask(LaunchForTask):
 
         klass = self.get_klass_for_provisioning()
 
-        for (
-                task
-        ) in self.manifest.get_tasks_for_launch_and_account_and_region(
-            self.puppet_account_id, self.section_name, self.launch_name, self.account_id, self.region,
+        for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+            self.puppet_account_id,
+            self.section_name,
+            self.launch_name,
+            self.account_id,
+            self.region,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -1282,33 +1277,29 @@ class LaunchTask(LaunchForTask):
             account_and_region_dependencies=account_and_region_dependencies,
         )
         for region in self.manifest.get_regions_used_for_section_item(
-                self.puppet_account_id, constants.LAUNCHES, self.launch_name
+            self.puppet_account_id, constants.LAUNCHES, self.launch_name
         ):
             regional_dependencies.append(
-                LaunchForRegionTask(**self.param_kwargs, region=region, )
+                LaunchForRegionTask(**self.param_kwargs, region=region,)
             )
 
         for account_id in self.manifest.get_account_ids_used_for_section_item(
-                self.puppet_account_id, constants.LAUNCHES, self.launch_name
+            self.puppet_account_id, constants.LAUNCHES, self.launch_name
         ):
             account_dependencies.append(
-                LaunchForAccountTask(
-                    **self.param_kwargs, account_id=account_id,
-                )
+                LaunchForAccountTask(**self.param_kwargs, account_id=account_id,)
             )
 
         for (
-                account_id,
-                regions,
+            account_id,
+            regions,
         ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
             self.puppet_account_id, constants.LAUNCHES, self.launch_name
         ).items():
             for region in regions:
                 account_and_region_dependencies.append(
                     LaunchForAccountAndRegionTask(
-                        **self.param_kwargs,
-                        account_id=account_id,
-                        region=region,
+                        **self.param_kwargs, account_id=account_id, region=region,
                     )
                 )
 

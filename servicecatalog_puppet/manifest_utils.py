@@ -28,7 +28,13 @@ def load(f, puppet_account_id):
     manifest.update(yaml.safe_load(f.read()))
     d = os.path.dirname(os.path.abspath(f.name))
 
-    extendable = ["parameters", constants.LAUNCHES, constants.SPOKE_LOCAL_PORTFOLIOS, constants.ACTIONS, constants.LAMBDA_INVOCATIONS]
+    extendable = [
+        "parameters",
+        constants.LAUNCHES,
+        constants.SPOKE_LOCAL_PORTFOLIOS,
+        constants.ACTIONS,
+        constants.LAMBDA_INVOCATIONS,
+    ]
     for t in extendable:
         t_path = f"{d}{os.path.sep}{t}"
         if os.path.exists(t_path):
@@ -113,9 +119,9 @@ def expand_manifest(manifest, client):
         account_id = account.get("account_id")
         if account.get("append") or account.get("overwrite"):
             if (
-                    account.get("default_region")
-                    or account.get("regions_enabled")
-                    or account.get("tags")
+                account.get("default_region")
+                or account.get("regions_enabled")
+                or account.get("tags")
             ):
                 raise Exception(
                     f"{account_id}: If using append or overwrite you cannot set default_region, regions_enabled or tags"
@@ -153,7 +159,7 @@ def expand_manifest(manifest, client):
 
     for launch_name, launch_details in new_manifest.get(constants.LAUNCHES, {}).items():
         for parameter_name, parameter_details in launch_details.get(
-                "parameters", {}
+            "parameters", {}
         ).items():
             if parameter_details.get("macro"):
                 macro_to_run = macros.get(parameter_details.get("macro").get("method"))
@@ -287,7 +293,10 @@ class Manifest(dict):
             "assertions": "assert_for",
         }.get(section_name)
 
-        if section_name == constants.SPOKE_LOCAL_PORTFOLIOS and item.get(deploy_to) is None:
+        if (
+            section_name == constants.SPOKE_LOCAL_PORTFOLIOS
+            and item.get(deploy_to) is None
+        ):
             deploy_to = "deploy_to"
 
         common_parameters = {
@@ -306,8 +315,10 @@ class Manifest(dict):
             "spoke-local-portfolios": dict(
                 puppet_account_id=puppet_account_id,
                 spoke_local_portfolio_name=item_name,
-                product_generation_method=item.get("product_generation_method",
-                                                   constants.PRODUCT_GENERATION_METHOD_DEFAULT),
+                product_generation_method=item.get(
+                    "product_generation_method",
+                    constants.PRODUCT_GENERATION_METHOD_DEFAULT,
+                ),
                 organization=item.get("organization", ""),
                 sharing_mode=item.get("sharing_mode", constants.SHARING_MODE_DEFAULT),
                 associations=item.get("associations", list()),
@@ -351,12 +362,8 @@ class Manifest(dict):
                         account_id=account_id,
                         account_parameters=account.get("parameters", {}),
                     ),
-                    "spoke-local-portfolios": dict(
-                        account_id=account_id,
-                    ),
-                    "assertions": dict(
-                        account_id=account_id,
-                    ),
+                    "spoke-local-portfolios": dict(account_id=account_id,),
+                    "assertions": dict(account_id=account_id,),
                     "lambda-invocations": dict(
                         account_id=account_id,
                         account_parameters=account.get("parameters", {}),
@@ -439,12 +446,8 @@ class Manifest(dict):
                     account_id=account_id,
                     account_parameters=account.get("parameters", {}),
                 ),
-                "spoke-local-portfolios": dict(
-                    account_id=account_id,
-                ),
-                "assertions": dict(
-                    account_id=account_id,
-                ),
+                "spoke-local-portfolios": dict(account_id=account_id,),
+                "assertions": dict(account_id=account_id,),
                 "lambda-invocations": dict(
                     account_id=account_id,
                     account_parameters=account.get("parameters", {}),
@@ -518,7 +521,7 @@ class Manifest(dict):
         return provisioning_tasks
 
     def get_tasks_for_launch_and_region(
-            self, puppet_account_id, section_name, launch_name, region
+        self, puppet_account_id, section_name, launch_name, region
     ):
         return [
             task
@@ -527,7 +530,7 @@ class Manifest(dict):
         ]
 
     def get_tasks_for_launch_and_account(
-            self, puppet_account_id, section_nam, launch_name, account_id
+        self, puppet_account_id, section_nam, launch_name, account_id
     ):
         return [
             task
@@ -536,7 +539,7 @@ class Manifest(dict):
         ]
 
     def get_tasks_for_launch_and_account_and_region(
-            self, puppet_account_id, section_name, launch_name, account_id, region
+        self, puppet_account_id, section_name, launch_name, account_id, region
     ):
         return [
             task
@@ -545,27 +548,31 @@ class Manifest(dict):
         ]
 
     def get_regions_used_for_section_item(
-            self, puppet_account_id, section_name, item_name
+        self, puppet_account_id, section_name, item_name
     ):
         return list(
             set(
                 task.get("region")
-                for task in self.get_tasks_for(puppet_account_id, section_name, item_name)
+                for task in self.get_tasks_for(
+                    puppet_account_id, section_name, item_name
+                )
             )
         )
 
     def get_account_ids_used_for_section_item(
-            self, puppet_account_id, section_name, item_name
+        self, puppet_account_id, section_name, item_name
     ):
         return list(
             set(
                 task.get("account_id")
-                for task in self.get_tasks_for(puppet_account_id, section_name, item_name)
+                for task in self.get_tasks_for(
+                    puppet_account_id, section_name, item_name
+                )
             )
         )
 
     def get_account_ids_and_regions_used_for_section_item(
-            self, puppet_account_id, section_name, item_name
+        self, puppet_account_id, section_name, item_name
     ):
         result = dict()
         for task in self.get_tasks_for(puppet_account_id, section_name, item_name):
@@ -608,7 +615,7 @@ class Manifest(dict):
         return result
 
     def get_actions_from(
-            self, launch_name, pre_or_post, launch_or_spoke_local_portfolio
+        self, launch_name, pre_or_post, launch_or_spoke_local_portfolio
     ):
         logger.info(
             f"get_actions_from for {launch_or_spoke_local_portfolio}.{launch_name}"
@@ -643,9 +650,9 @@ class Manifest(dict):
             account_regions.append(account.get("default_region"))
 
             enabled_regions = (
-                    account.get("enabled", [])
-                    + account.get("regions_enabled", [])
-                    + account.get("enabled_regions", [])
+                account.get("enabled", [])
+                + account.get("regions_enabled", [])
+                + account.get("enabled_regions", [])
             )
             if len(enabled_regions) == 0:
                 raise Exception(
@@ -659,8 +666,8 @@ class Manifest(dict):
                 if account.get("organization", "") != "":
                     organization = account.get("organization")
                     if (
-                            organization
-                            not in sharing_policies_by_region[r]["organizations"]
+                        organization
+                        not in sharing_policies_by_region[r]["organizations"]
                     ):
                         sharing_policies_by_region[r]["organizations"].append(
                             organization
@@ -710,11 +717,11 @@ class Manifest(dict):
         return accounts_by_region
 
     def get_task_defs_from_details(
-            self,
-            puppet_account_id,
-            launch_name,
-            configuration,
-            launch_or_spoke_local_portfolio,
+        self,
+        puppet_account_id,
+        launch_name,
+        configuration,
+        launch_or_spoke_local_portfolio,
     ):
         launch_details = self.get(launch_or_spoke_local_portfolio).get(launch_name)
         accounts = self.get("accounts")
@@ -856,10 +863,10 @@ def convert_to_graph(expanded_manifest, G):
     for section in sections:
         for item_name, item_details in expanded_manifest.get(section, {}).items():
             uid = f"{section}|{item_name}"
-            data = dict(section=section, item_name=item_name, )
+            data = dict(section=section, item_name=item_name,)
             data.update(item_details)
             G.add_nodes_from(
-                [(uid, data), ]
+                [(uid, data),]
             )
 
     mapping = dict()

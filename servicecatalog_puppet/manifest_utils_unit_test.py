@@ -63,9 +63,7 @@ class TestManifest(unittest.TestCase):
     launches = dict(
         launches=dict(launch_a=launch_a, launch_b=launch_b, launch_c=launch_c)
     )
-    assertions = dict(
-        assertions=dict(assertion_a=assertion_a)
-    )
+    assertions = dict(assertions=dict(assertion_a=assertion_a))
     spoke_local_portfolios = {
         "spoke-local-portfolios": dict(spoke_local_portfolio_a=spoke_local_portfolio_a)
     }
@@ -113,7 +111,9 @@ class TestManifest(unittest.TestCase):
         # verify
         self.assertListEqual(expected_result, actual_results)
 
-    def test_get_provisioning_tasks_for_spoke_local_portfolios_and_region_for_tags(self):
+    def test_get_provisioning_tasks_for_spoke_local_portfolios_and_region_for_tags(
+        self,
+    ):
         # setup
         puppet_account_id = "pppppppppppp"
         section_name = "spoke-local-portfolios"
@@ -141,7 +141,7 @@ class TestManifest(unittest.TestCase):
         actual_results = self.sut.get_tasks_for_launch_and_region(
             puppet_account_id, section_name, item_name, region
         )
-        
+
         # verify
         self.assertListEqual(expected_result, actual_results)
 

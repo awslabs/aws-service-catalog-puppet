@@ -17,7 +17,9 @@ class AssertionBaseTask(workflow_tasks.PuppetTask):
         return constants.ASSERTIONS
 
 
-class AssertTask(AssertionBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin):
+class AssertTask(
+    AssertionBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin
+):
     assertion_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -39,30 +41,26 @@ class AssertTask(AssertionBaseTask, manifest_tasks.ManifestMixen, dependency.Dep
         }
 
     def requires(self):
-        requirements = {
-            "section_dependencies": self.get_section_dependencies()
-        }
+        requirements = {"section_dependencies": self.get_section_dependencies()}
         return requirements
 
     def run(self):
         yield DoAssertTask(
             manifest_file_path=self.manifest_file_path,
-
             assertion_name=self.assertion_name,
             region=self.region,
             account_id=self.account_id,
-
             puppet_account_id=self.puppet_account_id,
-
             expected=self.expected,
             actual=self.actual,
-
             requested_priority=self.requested_priority,
         )
         self.write_output(self.params_for_results_display())
 
 
-class DoAssertTask(AssertionBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin):
+class DoAssertTask(
+    AssertionBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin
+):
     assertion_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -146,7 +144,7 @@ class AssertionForRegionTask(AssertionForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-                self.puppet_account_id, self.section_name, self.assertion_name, self.region
+            self.puppet_account_id, self.section_name, self.assertion_name, self.region
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -168,12 +166,15 @@ class AssertionForAccountTask(AssertionForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies, )
+        requirements = dict(dependencies=dependencies,)
 
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_account(
-                self.puppet_account_id, self.section_name, self.assertion_name, self.account_id
+            self.puppet_account_id,
+            self.section_name,
+            self.assertion_name,
+            self.account_id,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -201,10 +202,12 @@ class AssertionForAccountAndRegionTask(AssertionForTask):
 
         klass = self.get_klass_for_provisioning()
 
-        for (
-                task
-        ) in self.manifest.get_tasks_for_launch_and_account_and_region(
-            self.puppet_account_id, self.section_name, self.assertion_name, self.account_id, self.region,
+        for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+            self.puppet_account_id,
+            self.section_name,
+            self.assertion_name,
+            self.account_id,
+            self.region,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -214,7 +217,6 @@ class AssertionForAccountAndRegionTask(AssertionForTask):
 
 
 class AssertionTask(AssertionForTask):
-
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -232,33 +234,29 @@ class AssertionTask(AssertionForTask):
             account_and_region_dependencies=account_and_region_dependencies,
         )
         for region in self.manifest.get_regions_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.assertion_name
+            self.puppet_account_id, self.section_name, self.assertion_name
         ):
             regional_dependencies.append(
-                AssertionForRegionTask(**self.param_kwargs, region=region, )
+                AssertionForRegionTask(**self.param_kwargs, region=region,)
             )
 
         for account_id in self.manifest.get_account_ids_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.assertion_name
+            self.puppet_account_id, self.section_name, self.assertion_name
         ):
             account_dependencies.append(
-                AssertionForAccountTask(
-                    **self.param_kwargs, account_id=account_id,
-                )
+                AssertionForAccountTask(**self.param_kwargs, account_id=account_id,)
             )
 
         for (
-                account_id,
-                regions,
+            account_id,
+            regions,
         ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
             self.puppet_account_id, self.section_name, self.assertion_name
         ).items():
             for region in regions:
                 account_and_region_dependencies.append(
                     AssertionForAccountAndRegionTask(
-                        **self.param_kwargs,
-                        account_id=account_id,
-                        region=region,
+                        **self.param_kwargs, account_id=account_id, region=region,
                     )
                 )
 

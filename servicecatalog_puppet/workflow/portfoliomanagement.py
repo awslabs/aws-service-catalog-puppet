@@ -1158,7 +1158,7 @@ class RequestPolicyTask(PortfolioManagementTask):
             "type": self.type,
             "account_id": self.account_id,
             "region": self.region,
-            "cache_invalidator": self.cache_invalidator
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):

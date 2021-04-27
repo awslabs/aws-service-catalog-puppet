@@ -3,7 +3,10 @@ import luigi
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import manifest as manifest_tasks
-from servicecatalog_puppet.workflow import dependency, portfoliomanagement as portfoliomanagement_tasks
+from servicecatalog_puppet.workflow import (
+    dependency,
+    portfoliomanagement as portfoliomanagement_tasks,
+)
 
 
 class SpokeLocalPortfolioBaseTask(tasks.PuppetTask):
@@ -11,8 +14,11 @@ class SpokeLocalPortfolioBaseTask(tasks.PuppetTask):
 
     @property
     def status(self):
-        return self.manifest.get(self.section_name).get(self.spoke_local_portfolio_name).get("status",
-                                                                                             constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED)
+        return (
+            self.manifest.get(self.section_name)
+            .get(self.spoke_local_portfolio_name)
+            .get("status", constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED)
+        )
 
     @property
     def section_name(self):
@@ -28,7 +34,9 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
         }
 
     def should_run(self):
-        return self.execution_mode == constants.EXECUTION_MODE_HUB and not self.is_dry_run
+        return (
+            self.execution_mode == constants.EXECUTION_MODE_HUB and not self.is_dry_run
+        )
 
     def requires(self):
         requirements = dict()
@@ -50,7 +58,9 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
         self.write_output(self.manifest.get("spoke-local-portfolios"))
 
 
-class SpokeLocalPortfolioForTask(SpokeLocalPortfolioBaseTask, manifest_tasks.ManifestMixen):
+class SpokeLocalPortfolioForTask(
+    SpokeLocalPortfolioBaseTask, manifest_tasks.ManifestMixen
+):
     spoke_local_portfolio_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -79,13 +89,18 @@ class SpokeLocalPortfolioForRegionTask(SpokeLocalPortfolioForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-                self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name, self.region
+            self.puppet_account_id,
+            self.section_name,
+            self.spoke_local_portfolio_name,
+            self.region,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
             )
 
-        spoke_portfolio = self.manifest.get(self.section_name).get(self.spoke_local_portfolio_name)
+        spoke_portfolio = self.manifest.get(self.section_name).get(
+            self.spoke_local_portfolio_name
+        )
         for depends_on in spoke_portfolio.get("depends_on", []):
             if depends_on.get("type") == constants.SPOKE_LOCAL_PORTFOLIO:
                 if depends_on.get(constants.AFFINITY) == "region":
@@ -106,12 +121,15 @@ class SpokeLocalPortfolioForAccountTask(SpokeLocalPortfolioForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies, )
+        requirements = dict(dependencies=dependencies,)
 
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-                self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name, self.account_id
+            self.puppet_account_id,
+            self.section_name,
+            self.spoke_local_portfolio_name,
+            self.account_id,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -130,10 +148,12 @@ class SpokeLocalPortfolioForAccountAndRegionTask(SpokeLocalPortfolioForTask):
 
         klass = self.get_klass_for_provisioning()
 
-        for (
-                task
-        ) in self.manifest.get_tasks_for_launch_and_account_and_region(
-            self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name, self.account_id, self.region,
+        for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+            self.puppet_account_id,
+            self.section_name,
+            self.spoke_local_portfolio_name,
+            self.account_id,
+            self.region,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -143,7 +163,6 @@ class SpokeLocalPortfolioForAccountAndRegionTask(SpokeLocalPortfolioForTask):
 
 
 class SpokeLocalPortfolioTask(SpokeLocalPortfolioForTask):
-
     def params_for_results_display(self):
         return {
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
@@ -161,14 +180,14 @@ class SpokeLocalPortfolioTask(SpokeLocalPortfolioForTask):
         )
 
         for region in self.manifest.get_regions_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name
+            self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name
         ):
             regional_dependencies.append(
-                SpokeLocalPortfolioForRegionTask(**self.param_kwargs, region=region, )
+                SpokeLocalPortfolioForRegionTask(**self.param_kwargs, region=region,)
             )
 
         for account_id in self.manifest.get_account_ids_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name
+            self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name
         ):
             account_dependencies.append(
                 SpokeLocalPortfolioForAccountTask(
@@ -177,17 +196,15 @@ class SpokeLocalPortfolioTask(SpokeLocalPortfolioForTask):
             )
 
         for (
-                account_id,
-                regions,
+            account_id,
+            regions,
         ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
             self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name
         ).items():
             for region in regions:
                 account_and_region_dependencies.append(
                     SpokeLocalPortfolioForAccountAndRegionTask(
-                        **self.param_kwargs,
-                        account_id=account_id,
-                        region=region,
+                        **self.param_kwargs, account_id=account_id, region=region,
                     )
                 )
 
@@ -197,8 +214,11 @@ class SpokeLocalPortfolioTask(SpokeLocalPortfolioForTask):
         self.write_output(self.params_for_results_display())
 
 
-class SharePortfolioWithSpokeTask(SpokeLocalPortfolioBaseTask, manifest_tasks.ManifestMixen,
-                                  dependency.DependenciesMixin):
+class SharePortfolioWithSpokeTask(
+    SpokeLocalPortfolioBaseTask,
+    manifest_tasks.ManifestMixen,
+    dependency.DependenciesMixin,
+):
     manifest_file_path = luigi.Parameter()
     spoke_local_portfolio_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -222,9 +242,7 @@ class SharePortfolioWithSpokeTask(SpokeLocalPortfolioBaseTask, manifest_tasks.Ma
         }
 
     def requires(self):
-        return dict(
-            section_dependencies=self.get_section_dependencies()
-        )
+        return dict(section_dependencies=self.get_section_dependencies())
 
     def run(self):
         yield DoSharePortfolioWithSpokeTask(
@@ -232,7 +250,6 @@ class SharePortfolioWithSpokeTask(SpokeLocalPortfolioBaseTask, manifest_tasks.Ma
             spoke_local_portfolio_name=self.spoke_local_portfolio_name,
             puppet_account_id=self.puppet_account_id,
             sharing_mode=self.sharing_mode,
-
             product_generation_method=self.product_generation_method,
             organization=self.organization,
             associations=self.associations,
@@ -244,8 +261,11 @@ class SharePortfolioWithSpokeTask(SpokeLocalPortfolioBaseTask, manifest_tasks.Ma
         self.write_output(self.params_for_results_display())
 
 
-class DoSharePortfolioWithSpokeTask(SpokeLocalPortfolioBaseTask, manifest_tasks.ManifestMixen,
-                                    dependency.DependenciesMixin):
+class DoSharePortfolioWithSpokeTask(
+    SpokeLocalPortfolioBaseTask,
+    manifest_tasks.ManifestMixen,
+    dependency.DependenciesMixin,
+):
     manifest_file_path = luigi.Parameter()
     spoke_local_portfolio_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -271,16 +291,15 @@ class DoSharePortfolioWithSpokeTask(SpokeLocalPortfolioBaseTask, manifest_tasks.
     def requires(self):
         tasks = list()
         organization = self.manifest.get_account(self.account_id).get("organization")
-        task_def = self.manifest.get(self.section_name).get(self.spoke_local_portfolio_name)
+        task_def = self.manifest.get(self.section_name).get(
+            self.spoke_local_portfolio_name
+        )
         product_generation_method = task_def.get(
             "product_generation_method", constants.PRODUCT_GENERATION_METHOD_DEFAULT
         )
         sharing_mode = task_def.get("sharing_mode", constants.SHARING_MODE_DEFAULT)
 
-        if (
-            task_def.get("status")
-            == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_TERMINATED
-        ):
+        if task_def.get("status") == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_TERMINATED:
             tasks.append(
                 portfoliomanagement_tasks.DeletePortfolio(
                     manifest_file_path=self.manifest_file_path,
@@ -292,9 +311,7 @@ class DoSharePortfolioWithSpokeTask(SpokeLocalPortfolioBaseTask, manifest_tasks.
                     puppet_account_id=self.puppet_account_id,
                 )
             )
-        elif (
-            task_def.get("status") == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED
-        ):
+        elif task_def.get("status") == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED:
 
             create_spoke_local_portfolio_task_params = dict(
                 manifest_file_path=self.manifest_file_path,
@@ -350,7 +367,7 @@ class DoSharePortfolioWithSpokeTask(SpokeLocalPortfolioBaseTask, manifest_tasks.
 
         if len(launch_constraints) > 0:
             create_launch_role_constraints_for_portfolio_task_params = dict(
-                launch_constraints= launch_constraints,
+                launch_constraints=launch_constraints,
                 puppet_account_id=self.puppet_account_id,
             )
             create_launch_role_constraints_for_portfolio = portfoliomanagement_tasks.CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(

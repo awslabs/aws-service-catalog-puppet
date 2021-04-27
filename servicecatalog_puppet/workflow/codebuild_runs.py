@@ -13,7 +13,9 @@ class CodeBuildRunBaseTask(workflow_tasks.PuppetTaskWithParameters):
         return constants.CODE_BUILD_RUNS
 
 
-class ExecuteCodeBuildRunTask(CodeBuildRunBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin):
+class ExecuteCodeBuildRunTask(
+    CodeBuildRunBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin
+):
     code_build_run_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -39,34 +41,28 @@ class ExecuteCodeBuildRunTask(CodeBuildRunBaseTask, manifest_tasks.ManifestMixen
         }
 
     def requires(self):
-        return dict(
-            section_dependencies=self.get_section_dependencies()
-        )
+        return dict(section_dependencies=self.get_section_dependencies())
 
     def run(self):
         yield DoExecuteCodeBuildRunTask(
             manifest_file_path=self.manifest_file_path,
-
             code_build_run_name=self.code_build_run_name,
             puppet_account_id=self.puppet_account_id,
-
             region=self.region,
             account_id=self.account_id,
-
             ssm_param_inputs=self.ssm_param_inputs,
-
             launch_parameters=self.launch_parameters,
             manifest_parameters=self.manifest_parameters,
             account_parameters=self.account_parameters,
-
             project_name=self.project_name,
             requested_priority=self.requested_priority,
-
         )
         self.write_output(self.params_for_results_display())
 
 
-class DoExecuteCodeBuildRunTask(CodeBuildRunBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin):
+class DoExecuteCodeBuildRunTask(
+    CodeBuildRunBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin
+):
     code_build_run_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -104,14 +100,18 @@ class DoExecuteCodeBuildRunTask(CodeBuildRunBaseTask, manifest_tasks.ManifestMix
         return requirements
 
     def run(self):
-        with self.hub_client('codebuild') as codebuild:
+        with self.hub_client("codebuild") as codebuild:
             provided_parameters = self.get_parameter_values()
             parameters_to_use = list()
 
-            projects = codebuild.batch_get_projects(names=[self.project_name]).get("projects", [])
+            projects = codebuild.batch_get_projects(names=[self.project_name]).get(
+                "projects", []
+            )
             for project in projects:
                 if project.get("name") == self.project_name:
-                    for environment_variable in project.get("environment", {}).get("environmentVariables", []):
+                    for environment_variable in project.get("environment", {}).get(
+                        "environmentVariables", []
+                    ):
                         if environment_variable.get("type") == "PLAINTEXT":
                             n = environment_variable.get("name")
                             if provided_parameters.get(n):
@@ -119,12 +119,13 @@ class DoExecuteCodeBuildRunTask(CodeBuildRunBaseTask, manifest_tasks.ManifestMix
                                     dict(
                                         name=n,
                                         value=provided_parameters.get(n),
-                                        type='PLAINTEXT',
+                                        type="PLAINTEXT",
                                     )
                                 )
 
             codebuild.start_build_and_wait_for_completion(
-                projectName=self.project_name, environmentVariablesOverride=parameters_to_use
+                projectName=self.project_name,
+                environmentVariablesOverride=parameters_to_use,
             )
         self.write_output(self.params_for_results_display())
 
@@ -168,7 +169,10 @@ class CodeBuildRunForRegionTask(CodeBuildRunForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-                self.puppet_account_id, self.section_name, self.code_build_run_name, self.region
+            self.puppet_account_id,
+            self.section_name,
+            self.code_build_run_name,
+            self.region,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -190,12 +194,15 @@ class CodeBuildRunForAccountTask(CodeBuildRunForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies, )
+        requirements = dict(dependencies=dependencies,)
 
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_account(
-                self.puppet_account_id, self.section_name, self.code_build_run_name, self.account_id
+            self.puppet_account_id,
+            self.section_name,
+            self.code_build_run_name,
+            self.account_id,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -223,10 +230,12 @@ class CodeBuildRunForAccountAndRegionTask(CodeBuildRunForTask):
 
         klass = self.get_klass_for_provisioning()
 
-        for (
-                task
-        ) in self.manifest.get_tasks_for_launch_and_account_and_region(
-            self.puppet_account_id, self.section_name, self.code_build_run_name, self.account_id, self.region,
+        for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+            self.puppet_account_id,
+            self.section_name,
+            self.code_build_run_name,
+            self.account_id,
+            self.region,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -257,33 +266,29 @@ class CodeBuildRunTask(CodeBuildRunForTask):
         )
 
         for region in self.manifest.get_regions_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.code_build_run_name
+            self.puppet_account_id, self.section_name, self.code_build_run_name
         ):
             regional_dependencies.append(
-                CodeBuildRunForRegionTask(**self.param_kwargs, region=region, )
+                CodeBuildRunForRegionTask(**self.param_kwargs, region=region,)
             )
 
         for account_id in self.manifest.get_account_ids_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.code_build_run_name
+            self.puppet_account_id, self.section_name, self.code_build_run_name
         ):
             account_dependencies.append(
-                CodeBuildRunForAccountTask(
-                    **self.param_kwargs, account_id=account_id,
-                )
+                CodeBuildRunForAccountTask(**self.param_kwargs, account_id=account_id,)
             )
 
         for (
-                account_id,
-                regions,
+            account_id,
+            regions,
         ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
             self.puppet_account_id, self.section_name, self.code_build_run_name
         ).items():
             for region in regions:
                 account_and_region_dependencies.append(
                     CodeBuildRunForAccountAndRegionTask(
-                        **self.param_kwargs,
-                        account_id=account_id,
-                        region=region,
+                        **self.param_kwargs, account_id=account_id, region=region,
                     )
                 )
 

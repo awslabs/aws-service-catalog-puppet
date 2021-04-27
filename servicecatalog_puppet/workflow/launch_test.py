@@ -52,7 +52,6 @@ class LaunchSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         raise NotImplementedError()
 
 
-
 class ProvisioningTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
 
@@ -705,4 +704,3 @@ class LaunchTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         # verify
         raise NotImplementedError()
-

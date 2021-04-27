@@ -24,7 +24,9 @@ class LambdaInvocationBaseTask(workflow_tasks.PuppetTask):
     #     return requirements
 
 
-class InvokeLambdaTask(LambdaInvocationBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin):
+class InvokeLambdaTask(
+    LambdaInvocationBaseTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin
+):
     lambda_invocation_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -53,9 +55,7 @@ class InvokeLambdaTask(LambdaInvocationBaseTask, manifest_tasks.ManifestMixen, d
         }
 
     def requires(self):
-        requirements = {
-            "section_dependencies": self.get_section_dependencies()
-        }
+        requirements = {"section_dependencies": self.get_section_dependencies()}
         return requirements
 
     def run(self):
@@ -63,23 +63,21 @@ class InvokeLambdaTask(LambdaInvocationBaseTask, manifest_tasks.ManifestMixen, d
             lambda_invocation_name=self.lambda_invocation_name,
             region=self.region,
             account_id=self.account_id,
-
             function_name=self.function_name,
             qualifier=self.qualifier,
             invocation_type=self.invocation_type,
-
             puppet_account_id=self.puppet_account_id,
-
             launch_parameters=self.launch_parameters,
             manifest_parameters=self.manifest_parameters,
             account_parameters=self.account_parameters,
-
             manifest_file_path=self.manifest_file_path,
         )
         self.write_output(self.params_for_results_display())
 
 
-class DoInvokeLambdaTask(workflow_tasks.PuppetTaskWithParameters, manifest_tasks.ManifestMixen):
+class DoInvokeLambdaTask(
+    workflow_tasks.PuppetTaskWithParameters, manifest_tasks.ManifestMixen
+):
     lambda_invocation_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -106,14 +104,12 @@ class DoInvokeLambdaTask(workflow_tasks.PuppetTaskWithParameters, manifest_tasks
         }
 
     def requires(self):
-        return dict(
-            ssm_params=self.get_ssm_parameters(),
-        )
+        return dict(ssm_params=self.get_ssm_parameters(),)
 
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)
         with self.hub_regional_client(
-                "lambda", region_name=home_region
+            "lambda", region_name=home_region
         ) as lambda_client:
             payload = dict(
                 account_id=self.account_id,
@@ -184,7 +180,10 @@ class LambdaInvocationForRegionTask(LambdaInvocationForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-                self.puppet_account_id, self.section_name, self.lambda_invocation_name, self.region
+            self.puppet_account_id,
+            self.section_name,
+            self.lambda_invocation_name,
+            self.region,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -206,12 +205,15 @@ class LambdaInvocationForAccountTask(LambdaInvocationForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies, )
+        requirements = dict(dependencies=dependencies,)
 
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-                self.puppet_account_id, self.section_name, self.lambda_invocation_name, self.account_id
+            self.puppet_account_id,
+            self.section_name,
+            self.lambda_invocation_name,
+            self.account_id,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -239,10 +241,12 @@ class LambdaInvocationForAccountAndRegionTask(LambdaInvocationForTask):
 
         klass = self.get_klass_for_provisioning()
 
-        for (
-                task
-        ) in self.manifest.get_tasks_for_launch_and_account_and_region(
-            self.puppet_account_id, self.section_name, self.lambda_invocation_name, self.account_id, self.region,
+        for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+            self.puppet_account_id,
+            self.section_name,
+            self.lambda_invocation_name,
+            self.account_id,
+            self.region,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -252,7 +256,6 @@ class LambdaInvocationForAccountAndRegionTask(LambdaInvocationForTask):
 
 
 class LambdaInvocationTask(LambdaInvocationForTask):
-
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -270,14 +273,14 @@ class LambdaInvocationTask(LambdaInvocationForTask):
             account_and_region_dependencies=account_and_region_dependencies,
         )
         for region in self.manifest.get_regions_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.lambda_invocation_name
+            self.puppet_account_id, self.section_name, self.lambda_invocation_name
         ):
             regional_dependencies.append(
-                LambdaInvocationForRegionTask(**self.param_kwargs, region=region, )
+                LambdaInvocationForRegionTask(**self.param_kwargs, region=region,)
             )
 
         for account_id in self.manifest.get_account_ids_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.lambda_invocation_name
+            self.puppet_account_id, self.section_name, self.lambda_invocation_name
         ):
             account_dependencies.append(
                 LambdaInvocationForAccountTask(
@@ -286,17 +289,15 @@ class LambdaInvocationTask(LambdaInvocationForTask):
             )
 
         for (
-                account_id,
-                regions,
+            account_id,
+            regions,
         ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
             self.puppet_account_id, self.section_name, self.lambda_invocation_name
         ).items():
             for region in regions:
                 account_and_region_dependencies.append(
                     LambdaInvocationForAccountAndRegionTask(
-                        **self.param_kwargs,
-                        account_id=account_id,
-                        region=region,
+                        **self.param_kwargs, account_id=account_id, region=region,
                     )
                 )
 
@@ -306,7 +307,9 @@ class LambdaInvocationTask(LambdaInvocationForTask):
         self.write_output(self.params_for_results_display())
 
 
-class LambdaInvocationsSectionTask(LambdaInvocationBaseTask, manifest_tasks.SectionTask):
+class LambdaInvocationsSectionTask(
+    LambdaInvocationBaseTask, manifest_tasks.SectionTask
+):
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
