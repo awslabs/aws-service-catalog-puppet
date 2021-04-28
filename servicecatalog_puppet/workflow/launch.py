@@ -499,6 +499,7 @@ class DoProvisionProductTask(
                                 path_id,
                                 params_to_use,
                                 self.version,
+                                self.should_use_sns,
                             )
                         else:
                             provisioned_product_id = aws.update_provisioned_product(
