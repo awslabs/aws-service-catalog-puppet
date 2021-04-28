@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.100.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.103.1", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -161,7 +161,17 @@ Parameters:
     Type: String
     Default: aws-service-catalog-puppet
 
+
 Resources:
+  InitialiserVersionParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: service-catalog-puppet-initialiser-version
+      Type: String
+      Value: '0.103.1--zzz' #InitialiserVersion
+      Tags:
+        "ServiceCatalogPuppet:Actor": "Framework"
+
   InitialiserRole:
     Type: AWS::IAM::Role
     Properties:
@@ -414,6 +424,7 @@ Resources:
           - !Ref DeployNumWorkers
           - !Ref PuppetRoleName
           - !Ref PuppetRolePath
+          - !GetAtt InitialiserVersionParam.Value
           - !Ref Version
 Outputs:
   ServiceCatalogPuppetRepoConsoleURL:
@@ -422,3 +433,5 @@ Outputs:
     Value: !Sub "ssh://git-codecommit.${AWS::Region}.amazonaws.com/v1/repos/ServiceCatalogPuppet"
   ServiceCatalogPuppetRepoCloneURLHTTPS:
     Value: !Sub "https://git-codecommit.${AWS::Region}.amazonaws.com/v1/repos/ServiceCatalogPuppet"
+  InitialiserVersion:
+    Value: !GetAtt InitialiserVersionParam.Value

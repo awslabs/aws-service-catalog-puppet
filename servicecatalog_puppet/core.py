@@ -518,7 +518,7 @@ def expand(f, single_account, subset=None):
         click.echo(f"Filtering for single account: {single_account}")
 
         for account in new_manifest.get("accounts", []):
-            if account.get("account_id") == single_account:
+            if str(account.get("account_id")) == str(single_account):
                 click.echo(f"Found single account: {single_account}")
                 new_manifest["accounts"] = [account]
                 break
