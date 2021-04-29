@@ -586,7 +586,7 @@ class DoProvisionProductTask(
                 self.info("finished")
 
 
-class ProvisionProductDryRunTask(ProvisionProductTask):
+class ProvisionProductDryRunTask(DoProvisionProductTask):
     def output(self):
         return luigi.LocalTarget(self.output_location)
 
@@ -611,7 +611,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
 
         self.info(f"starting deploy try {self.try_count} of {self.retry_count}")
 
-        all_params = self.get_param_values()
+        all_params = self.get_parameter_values()
         with self.spoke_regional_client("servicecatalog") as service_catalog:
             self.info(f"looking for previous failures")
             path_name = self.portfolio

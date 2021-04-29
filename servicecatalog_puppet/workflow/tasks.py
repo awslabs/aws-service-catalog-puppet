@@ -154,7 +154,7 @@ class PuppetTask(luigi.Task):
 
     @property
     def node_id(self):
-        values = [str(v) for v in self.params_for_results_display().values()]
+        values = [self.__class__.__name__.replace("Task", "")] + [str(v) for v in self.params_for_results_display().values()]
         return "/".join(values)
 
     def graph_node(self):
@@ -164,21 +164,6 @@ class PuppetTask(luigi.Task):
             task_description += f"<br/>{param}: {value}"
         label = f"<b>{task_friendly_name}</b>{task_description}"
         return f'"{self.node_id}" [fillcolor=lawngreen style=filled label= < {label} >]'
-
-    def get_lines(self, haystack):
-        lines = []
-        if isinstance(haystack, list):
-            for i in haystack:
-                lines += self.get_lines(i)
-        elif isinstance(haystack, dict):
-            for i in haystack.values():
-                lines += self.get_lines(i)
-        else:
-            lines.append(f'"{self.node_id}" -> "{haystack.node_id}"')
-        return lines
-
-    def get_graph_lines(self):
-        return self.get_lines(self.requires())
 
 
 class GetSSMParamTask(PuppetTask):

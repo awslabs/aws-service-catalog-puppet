@@ -36,6 +36,7 @@ from servicecatalog_puppet.template_builder.hub import (
     bootstrap_region as hub_bootstrap_region,
 )
 from servicecatalog_puppet.workflow import (
+    tasks as puppet_tasks,
     launch as launch_tasks,
     spoke_local_portfolios as spoke_local_portfolios_tasks,
     lambda_invocations as lambda_invocations_tasks,
@@ -155,14 +156,68 @@ def deploy(
     )
 
 
+def graph_nodes(what):
+    nodes = []
+    if isinstance(what, puppet_tasks.PuppetTask):
+        nodes.append(what.graph_node())
+        nodes += graph_nodes(what.requires())
+    elif isinstance(what, list):
+        for i in what:
+            nodes += graph_nodes(i)
+    elif isinstance(what, dict):
+        for i in what.values():
+            nodes += graph_nodes(i)
+    else:
+        raise Exception(f"unknown {type(what)}")
+    return nodes
+
+
+def graph_lines(task, dependency):
+    nodes = []
+    if isinstance(dependency, puppet_tasks.PuppetTask):
+        nodes.append(
+            f'"{task.node_id}" -> "{dependency.node_id}"'
+        )
+        # nodes += graph_lines(task, task.requires())
+    elif isinstance(dependency, list):
+        for i in dependency:
+            nodes += graph_lines(task, i)
+    elif isinstance(dependency, dict):
+        for i in dependency.values():
+            nodes += graph_lines(task, i)
+    else:
+        raise Exception(f"unknown {type(dependency)}")
+    return nodes
+
+
 def graph(f):
     current_account_id = puppet_account_id = config.get_puppet_account_id()
     tasks_to_run = generate_tasks(f, puppet_account_id, current_account_id)
     lines = []
     nodes = []
     for task in tasks_to_run:
-        nodes.append(task.graph_node())
-        lines += task.get_graph_lines()
+        nodes += graph_nodes(task)
+
+        what = task.requires()
+        if isinstance(what, puppet_tasks.PuppetTask):
+            lines.append(
+                f'"{task.node_id}" -> "{what.node_id}"'
+            )
+        elif isinstance(what, list):
+            for item in what:
+                lines += graph_lines(task, item)
+        elif isinstance(what, dict):
+            for item in what.values():
+                lines += graph_lines(task, item)
+        else:
+            raise Exception(f"unknown {type(what)}")
+
+
+
+
+
+        # nodes.append(task.graph_node())
+        # lines += task.get_graph_lines()
     click.echo("digraph G {\n")
     click.echo("node [shape=record fontname=Arial];")
     for node in nodes:
