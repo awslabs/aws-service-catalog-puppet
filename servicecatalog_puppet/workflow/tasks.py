@@ -299,7 +299,7 @@ def on_task_success(task):
     to_string = f"{task_name}: "
     for name, value in task.param_kwargs.items():
         to_string += f"{name}={value}, "
-    print(f"{to_string} started")
+    logger.info(f"{to_string} started")
     record_event("start", task)
 
 
