@@ -60,6 +60,7 @@ def run_tasks(
     entries = []
 
     for result_type in [
+        "start",
         "failure",
         "success",
         "timeout",
@@ -353,6 +354,7 @@ def run_tasks(
 
 def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
     for result_type in [
+        "start",
         "failure",
         "success",
         "timeout",
