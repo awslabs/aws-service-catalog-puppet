@@ -81,7 +81,7 @@ def run_tasks(
             puppet_account_id
         )
 
-    build_params = dict(detailed_summary=True, workers=num_workers, log_level="INFO",)
+    build_params = dict(detailed_summary=True, workers=num_workers, log_level=os.environ.get("LUIGI_LOG_LEVEL", constants.LUIGI_DEFAULT_LOG_LEVEL),)
 
     if should_use_shared_scheduler:
         os.system(constants.START_SHARED_SCHEDULER_COMMAND)
@@ -367,7 +367,7 @@ def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
         local_scheduler=True,
         detailed_summary=True,
         workers=num_workers,
-        log_level="INFO",
+        log_level=os.environ.get("LUIGI_LOG_LEVEL", constants.LUIGI_DEFAULT_LOG_LEVEL),
     )
 
     for filename in glob("results/failure/*.json"):

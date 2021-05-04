@@ -123,6 +123,20 @@ class DoExecuteCodeBuildRunTask(
                                     )
                                 )
 
+            parameters_to_use.append(
+                dict(
+                    name='TARGET_ACCOUNT_ID',
+                    value=self.account_id,
+                    type="PLAINTEXT",
+                )
+            )
+            parameters_to_use.append(
+                dict(
+                    name='TARGET_REGION',
+                    value=self.region,
+                    type="PLAINTEXT",
+                )
+            )
             codebuild.start_build_and_wait_for_completion(
                 projectName=self.project_name,
                 environmentVariablesOverride=parameters_to_use,
