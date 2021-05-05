@@ -1271,6 +1271,7 @@ class LaunchForAccountAndRegionTask(LaunchForTask):
 
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,

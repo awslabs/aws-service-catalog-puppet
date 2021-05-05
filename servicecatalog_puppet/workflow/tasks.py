@@ -293,6 +293,16 @@ def print_stats():
     )
 
 
+@luigi.Task.event_handler(luigi.Event.START)
+def on_task_success(task):
+    task_name = task.__class__.__name__
+    to_string = f"{task_name}: "
+    for name, value in task.param_kwargs.items():
+        to_string += f"{name}={value}, "
+    logger.info(f"{to_string} started")
+    record_event("start", task)
+
+
 @luigi.Task.event_handler(luigi.Event.SUCCESS)
 def on_task_success(task):
     print_stats()
