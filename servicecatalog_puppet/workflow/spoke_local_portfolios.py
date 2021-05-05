@@ -64,6 +64,9 @@ class SpokeLocalPortfolioForTask(
     spoke_local_portfolio_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
+    def params_for_results_display(self):
+        raise NotImplementedError()
+
     def get_klass_for_provisioning(self):
         if self.status == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED:
             return SharePortfolioWithSpokeTask
@@ -78,6 +81,14 @@ class SpokeLocalPortfolioForTask(
 
 class SpokeLocalPortfolioForRegionTask(SpokeLocalPortfolioForTask):
     region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+            "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
+        }
 
     def requires(self):
         dependencies = list()
@@ -119,6 +130,14 @@ class SpokeLocalPortfolioForRegionTask(SpokeLocalPortfolioForTask):
 class SpokeLocalPortfolioForAccountTask(SpokeLocalPortfolioForTask):
     account_id = luigi.Parameter()
 
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
     def requires(self):
         dependencies = list()
         requirements = dict(dependencies=dependencies,)
@@ -141,6 +160,15 @@ class SpokeLocalPortfolioForAccountTask(SpokeLocalPortfolioForTask):
 class SpokeLocalPortfolioForAccountAndRegionTask(SpokeLocalPortfolioForTask):
     region = luigi.Parameter()
     account_id = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
+            "region": self.region,
+            "account_id": self.account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
 
     def requires(self):
         dependencies = list()
@@ -165,6 +193,7 @@ class SpokeLocalPortfolioForAccountAndRegionTask(SpokeLocalPortfolioForTask):
 class SpokeLocalPortfolioTask(SpokeLocalPortfolioForTask):
     def params_for_results_display(self):
         return {
+            "puppet_account_id": self.puppet_account_id,
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "cache_invalidator": self.cache_invalidator,
         }
