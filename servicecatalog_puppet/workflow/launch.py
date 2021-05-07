@@ -29,7 +29,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
         requirements = dict(tasks=tasks)
         if self.execution_mode == constants.EXECUTION_MODE_SPOKE:
             for launch_name, launch_details in self.manifest.get(
-                "launches", {}
+                    "launches", {}
             ).items():
                 if launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE:
                     tasks.append(
@@ -41,7 +41,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                     )
         else:
             for launch_name, launch_details in self.manifest.get(
-                "launches", {}
+                    "launches", {}
             ).items():
                 tasks.append(
                     LaunchTask(
@@ -63,8 +63,8 @@ class ProvisioningTask(tasks.PuppetTaskWithParameters, manifest_tasks.ManifestMi
     def status(self):
         return (
             self.manifest.get(constants.LAUNCHES)
-            .get(self.launch_name)
-            .get("status", constants.PROVISIONED)
+                .get(self.launch_name)
+                .get("status", constants.PROVISIONED)
         )
 
     @property
@@ -136,24 +136,26 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
         }
 
     def requires(self):
-        return dict(
+        required = dict(
             details=portfoliomanagement_tasks.GetVersionDetailsByNames(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 portfolio=self.portfolio,
                 product=self.product,
                 version=self.version,
-                account_id=self.puppet_account_id,
+                account_id=self.single_account if self.execution_mode == constants.EXECUTION_MODE_SPOKE else self.puppet_account_id,
                 region=self.region,
             ),
-            associations=portfoliomanagement_tasks.CreateAssociationsInPythonForPortfolioTask(
+        )
+        if self.execution_mode != constants.EXECUTION_MODE_SPOKE:
+            required['associations'] = portfoliomanagement_tasks.CreateAssociationsInPythonForPortfolioTask(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 account_id=self.puppet_account_id,
                 region=self.region,
                 portfolio=self.portfolio,
-            ),
-        )
+            )
+        return required
 
     def run(self):
         details = self.load_from_input("details")
@@ -161,7 +163,7 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
         version_id = details.get("version_details").get("Id")
         result = yield DoDescribeProvisioningParameters(
             manifest_file_path=self.manifest_file_path,
-            puppet_account_id=self.puppet_account_id,
+            puppet_account_id=self.single_account if self.execution_mode == constants.EXECUTION_MODE_SPOKE else self.puppet_account_id,
             region=self.region,
             product_id=product_id,
             version_id=version_id,
@@ -373,7 +375,7 @@ class DoProvisionProductTask(
             "details": portfoliomanagement_tasks.GetVersionDetailsByNames(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
-                account_id=self.puppet_account_id,
+                account_id=self.single_account if self.execution_mode == constants.EXECUTION_MODE_SPOKE else self.puppet_account_id,
                 portfolio=self.portfolio,
                 product=self.product,
                 version=self.version,
@@ -446,7 +448,7 @@ class DoProvisionProductTask(
                 )
 
                 with self.input().get("provisioning_artifact_parameters").open(
-                    "r"
+                        "r"
                 ) as f:
                     provisioning_artifact_parameters = json.loads(f.read())
 
@@ -556,7 +558,7 @@ class DoProvisionProductTask(
                         f"Running in execution mode: {self.execution}, checking for SSM outputs"
                     )
                     with self.spoke_regional_client(
-                        "cloudformation"
+                            "cloudformation"
                     ) as spoke_cloudformation:
                         stack_details = aws.get_stack_output_for(
                             spoke_cloudformation,
@@ -572,7 +574,7 @@ class DoProvisionProductTask(
                             # TODO push into another task
                             for output in stack_details.get("Outputs", []):
                                 if output.get("OutputKey") == ssm_param_output.get(
-                                    "stack_output"
+                                        "stack_output"
                                 ):
                                     ssm_parameter_name = ssm_param_output.get(
                                         "param_name"
@@ -672,7 +674,7 @@ class ProvisionProductDryRunTask(DoProvisionProductTask):
                     )
 
                     with self.input().get("provisioning_artifact_parameters").open(
-                        "r"
+                            "r"
                     ) as f:
                         provisioning_artifact_parameters = json.loads(f.read())
 
@@ -730,14 +732,14 @@ class ProvisionProductDryRunTask(DoProvisionProductTask):
                         )
 
     def get_current_version(
-        self, provisioning_artifact_id, product_id, service_catalog
+            self, provisioning_artifact_id, product_id, service_catalog
     ):
         return service_catalog.describe_provisioning_artifact(
             ProvisioningArtifactId=provisioning_artifact_id, ProductId=product_id,
         ).get("ProvisioningArtifactDetail")
 
     def write_result(
-        self, current_version, new_version, effect, current_status, active, notes=""
+            self, current_version, new_version, effect, current_status, active, notes=""
     ):
         with self.output().open("w") as f:
             f.write(
@@ -860,7 +862,7 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
             "details": portfoliomanagement_tasks.GetVersionDetailsByNames(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
-                account_id=self.puppet_account_id,
+                account_id=self.single_account if self.execution_mode == constants.EXECUTION_MODE_SPOKE else self.puppet_account_id,
                 portfolio=self.portfolio,
                 product=self.product,
                 version=self.version,
@@ -892,7 +894,7 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
             )
             log_output = self.to_str_params()
             log_output.update(
-                {"provisioned_product_id": provisioned_product_id,}
+                {"provisioned_product_id": provisioned_product_id, }
             )
 
             for ssm_param_output in self.ssm_param_outputs:
@@ -903,7 +905,7 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
                 with self.hub_client("ssm") as ssm:
                     try:
                         # todo push into another task
-                        ssm.delete_parameter(Name=param_name,)
+                        ssm.delete_parameter(Name=param_name, )
                         self.info(
                             f"[{self.launch_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
                         )
@@ -913,7 +915,7 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
                         )
 
             with self.output().open("w") as f:
-                f.write(json.dumps(log_output, indent=4, default=str,))
+                f.write(json.dumps(log_output, indent=4, default=str, ))
 
             self.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: finished terminating"
@@ -998,8 +1000,8 @@ class TerminateProductDryRunTask(ProvisioningTask):
                         ProvisioningArtifactId=r.get("ProvisioningArtifactId"),
                         ProductId=self.product_id,
                     )
-                    .get("ProvisioningArtifactDetail")
-                    .get("Name")
+                        .get("ProvisioningArtifactDetail")
+                        .get("Name")
                 )
 
                 if r.get("Status") != "TERMINATED":
@@ -1037,16 +1039,15 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
         }
 
     def run(self):
-        home_region=config.get_home_region(self.puppet_account_id)
-        regions=config.get_regions(self.puppet_account_id)
-        should_collect_cloudformation_events=self.should_use_sns
-        should_forward_events_to_eventbridge=config.get_should_use_eventbridge(
+        home_region = config.get_home_region(self.puppet_account_id)
+        regions = config.get_regions(self.puppet_account_id)
+        should_collect_cloudformation_events = self.should_use_sns
+        should_forward_events_to_eventbridge = config.get_should_use_eventbridge(
             self.puppet_account_id
         )
-        should_forward_failures_to_opscenter=config.get_should_forward_failures_to_opscenter(
+        should_forward_failures_to_opscenter = config.get_should_forward_failures_to_opscenter(
             self.puppet_account_id
         )
-
 
         with self.hub_client("s3") as s3:
             bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
@@ -1244,7 +1245,7 @@ class LaunchForRegionTask(LaunchForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-            self.puppet_account_id, self.section_name, self.launch_name, self.region
+                self.puppet_account_id, self.section_name, self.launch_name, self.region, single_account=self.single_account,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -1279,12 +1280,12 @@ class LaunchForAccountTask(LaunchForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies,)
+        requirements = dict(dependencies=dependencies, )
 
         klass = self.get_klass_for_provisioning()
 
         account_launch_tasks = self.manifest.get_tasks_for_launch_and_account(
-            self.puppet_account_id, self.section_name, self.launch_name, self.account_id
+            self.puppet_account_id, self.section_name, self.launch_name, self.account_id, single_account=self.single_account,
         )
         for task in account_launch_tasks:
             dependencies.append(
@@ -1314,11 +1315,12 @@ class LaunchForAccountAndRegionTask(LaunchForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_account_and_region(
-            self.puppet_account_id,
-            self.section_name,
-            self.launch_name,
-            self.account_id,
-            self.region,
+                self.puppet_account_id,
+                self.section_name,
+                self.launch_name,
+                self.account_id,
+                self.region,
+                single_account=self.single_account,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -1345,22 +1347,22 @@ class LaunchTask(LaunchForTask):
             account_and_region_dependencies=account_and_region_dependencies,
         )
         for region in self.manifest.get_regions_used_for_section_item(
-            self.puppet_account_id, constants.LAUNCHES, self.launch_name
+                self.puppet_account_id, constants.LAUNCHES, self.launch_name
         ):
             regional_dependencies.append(
-                LaunchForRegionTask(**self.param_kwargs, region=region,)
+                LaunchForRegionTask(**self.param_kwargs, region=region, )
             )
 
         for account_id in self.manifest.get_account_ids_used_for_section_item(
-            self.puppet_account_id, constants.LAUNCHES, self.launch_name
+                self.puppet_account_id, constants.LAUNCHES, self.launch_name
         ):
             account_dependencies.append(
-                LaunchForAccountTask(**self.param_kwargs, account_id=account_id,)
+                LaunchForAccountTask(**self.param_kwargs, account_id=account_id, )
             )
 
         for (
-            account_id,
-            regions,
+                account_id,
+                regions,
         ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
             self.puppet_account_id, constants.LAUNCHES, self.launch_name
         ).items():
