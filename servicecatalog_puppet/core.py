@@ -97,26 +97,32 @@ def reset_provisioned_product_owner(f):
 
 
 def generate_tasks(
-    f, puppet_account_id, executor_account_id,
+    f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
 ):
-
-    return [
+    tasks = list()
+    tasks.append(
         launch_tasks.LaunchSectionTask(
             manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        lambda_invocations_tasks.LambdaInvocationsSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        codebuild_runs_tasks.CodeBuildRunsSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        assertions_tasks.AssertionsSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-    ]
+        )
+    )
+    if not (execution_mode == constants.EXECUTION_MODE_SPOKE or is_dry_run):
+        pass
+    else:
+        tasks += [
+            spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
+                manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+            ),
+            lambda_invocations_tasks.LambdaInvocationsSectionTask(
+                manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+            ),
+            codebuild_runs_tasks.CodeBuildRunsSectionTask(
+                manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+            ),
+            assertions_tasks.AssertionsSectionTask(
+                manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+            ),
+        ]
+    return tasks
 
 
 def deploy(
@@ -142,7 +148,7 @@ def deploy(
         )
     )
 
-    tasks_to_run = generate_tasks(f, puppet_account_id, executor_account_id,)
+    tasks_to_run = generate_tasks(f, puppet_account_id, executor_account_id, execution_mode, is_dry_run)
     runner.run_tasks(
         puppet_account_id,
         executor_account_id,

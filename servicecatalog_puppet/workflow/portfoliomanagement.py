@@ -60,7 +60,7 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
                 account_id=self.account_id,
                 region=self.region,
             )
-            if not self.is_dry_run:
+            if not (self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run):
                 requirements["generate_shares"] = generate_tasks.GenerateSharesTask(
                     puppet_account_id=self.puppet_account_id,
                     manifest_file_path=self.manifest_file_path,

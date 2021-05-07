@@ -14,13 +14,14 @@ class DependenciesMixin(object):
         these_dependencies = list()
 
         if self.section_name in [constants.SPOKE_LOCAL_PORTFOLIOS, constants.LAUNCHES]:
-            these_dependencies.append(
-                generate.GenerateSharesTask(
-                    puppet_account_id=self.puppet_account_id,
-                    manifest_file_path=self.manifest_file_path,
-                    section=self.section_name,
+            if not (self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run):
+                these_dependencies.append(
+                    generate.GenerateSharesTask(
+                        puppet_account_id=self.puppet_account_id,
+                        manifest_file_path=self.manifest_file_path,
+                        section=self.section_name,
+                    )
                 )
-            )
 
         if isinstance(self, codebuild_runs.ExecuteCodeBuildRunTask):
             item_name = self.code_build_run_name
