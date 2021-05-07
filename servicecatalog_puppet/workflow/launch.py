@@ -43,25 +43,13 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
             for launch_name, launch_details in self.manifest.get(
                 "launches", {}
             ).items():
-                if (
-                    launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE
-                    and not self.is_dry_run
-                ):
-                    tasks.append(
-                        LaunchInSpokeTask(
-                            launch_name=launch_name,
-                            manifest_file_path=self.manifest_file_path,
-                            puppet_account_id=self.puppet_account_id,
-                        )
+                tasks.append(
+                    LaunchTask(
+                        launch_name=launch_name,
+                        manifest_file_path=self.manifest_file_path,
+                        puppet_account_id=self.puppet_account_id,
                     )
-                else:
-                    tasks.append(
-                        LaunchTask(
-                            launch_name=launch_name,
-                            manifest_file_path=self.manifest_file_path,
-                            puppet_account_id=self.puppet_account_id,
-                        )
-                    )
+                )
         return requirements
 
     def run(self):
@@ -278,25 +266,55 @@ class ProvisionProductTask(
         return requirements
 
     def run(self):
-        yield DoProvisionProductTask(
-            manifest_file_path=self.manifest_file_path,
-            launch_name=self.launch_name,
-            puppet_account_id=self.puppet_account_id,
-            region=self.region,
-            account_id=self.account_id,
-            portfolio=self.portfolio,
-            product=self.product,
-            version=self.version,
-            ssm_param_inputs=self.ssm_param_inputs,
-            launch_parameters=self.launch_parameters,
-            manifest_parameters=self.manifest_parameters,
-            account_parameters=self.account_parameters,
-            retry_count=self.retry_count,
-            worker_timeout=self.worker_timeout,
-            ssm_param_outputs=self.ssm_param_outputs,
-            requested_priority=self.requested_priority,
-            execution=self.execution,
-        )
+        if self.execution_mode == constants.EXECUTION_MODE_SPOKE:
+            if self.execution == constants.EXECUTION_MODE_SPOKE:
+                yield DoProvisionProductTask(
+                    manifest_file_path=self.manifest_file_path,
+                    launch_name=self.launch_name,
+                    puppet_account_id=self.puppet_account_id,
+                    region=self.region,
+                    account_id=self.account_id,
+                    portfolio=self.portfolio,
+                    product=self.product,
+                    version=self.version,
+                    ssm_param_inputs=self.ssm_param_inputs,
+                    launch_parameters=self.launch_parameters,
+                    manifest_parameters=self.manifest_parameters,
+                    account_parameters=self.account_parameters,
+                    retry_count=self.retry_count,
+                    worker_timeout=self.worker_timeout,
+                    ssm_param_outputs=self.ssm_param_outputs,
+                    requested_priority=self.requested_priority,
+                    execution=self.execution,
+                )
+
+        else:
+            if self.execution == constants.EXECUTION_MODE_SPOKE:
+                yield RunDeployInSpokeTask(
+                    manifest_file_path=self.manifest_file_path,
+                    puppet_account_id=self.puppet_account_id,
+                    account_id=self.account_id,
+                )
+            else:
+                yield DoProvisionProductTask(
+                    manifest_file_path=self.manifest_file_path,
+                    launch_name=self.launch_name,
+                    puppet_account_id=self.puppet_account_id,
+                    region=self.region,
+                    account_id=self.account_id,
+                    portfolio=self.portfolio,
+                    product=self.product,
+                    version=self.version,
+                    ssm_param_inputs=self.ssm_param_inputs,
+                    launch_parameters=self.launch_parameters,
+                    manifest_parameters=self.manifest_parameters,
+                    account_parameters=self.account_parameters,
+                    retry_count=self.retry_count,
+                    worker_timeout=self.worker_timeout,
+                    ssm_param_outputs=self.ssm_param_outputs,
+                    requested_priority=self.requested_priority,
+                    execution=self.execution,
+                )
         self.write_output(self.params_for_results_display())
 
 
@@ -1005,11 +1023,11 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
 
-    home_region = luigi.Parameter()
-    regions = luigi.ListParameter()
-    should_collect_cloudformation_events = luigi.BoolParameter()
-    should_forward_events_to_eventbridge = luigi.BoolParameter()
-    should_forward_failures_to_opscenter = luigi.BoolParameter()
+    # home_region = luigi.Parameter()
+    # regions = luigi.ListParameter()
+    # should_collect_cloudformation_events = luigi.BoolParameter()
+    # should_forward_events_to_eventbridge = luigi.BoolParameter()
+    # should_forward_failures_to_opscenter = luigi.BoolParameter()
 
     def params_for_results_display(self):
         return {
@@ -1019,6 +1037,17 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
         }
 
     def run(self):
+        home_region=config.get_home_region(self.puppet_account_id)
+        regions=config.get_regions(self.puppet_account_id)
+        should_collect_cloudformation_events=self.should_use_sns
+        should_forward_events_to_eventbridge=config.get_should_use_eventbridge(
+            self.puppet_account_id
+        )
+        should_forward_failures_to_opscenter=config.get_should_forward_failures_to_opscenter(
+            self.puppet_account_id
+        )
+
+
         with self.hub_client("s3") as s3:
             bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
             key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
@@ -1046,27 +1075,27 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
                     },
                     {
                         "name": "HOME_REGION",
-                        "value": self.home_region,
+                        "value": home_region,
                         "type": "PLAINTEXT",
                     },
                     {
                         "name": "REGIONS",
-                        "value": ",".join(self.regions),
+                        "value": ",".join(regions),
                         "type": "PLAINTEXT",
                     },
                     {
                         "name": "SHOULD_COLLECT_CLOUDFORMATION_EVENTS",
-                        "value": str(self.should_collect_cloudformation_events),
+                        "value": str(should_collect_cloudformation_events),
                         "type": "PLAINTEXT",
                     },
                     {
                         "name": "SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE",
-                        "value": str(self.should_forward_events_to_eventbridge),
+                        "value": str(should_forward_events_to_eventbridge),
                         "type": "PLAINTEXT",
                     },
                     {
                         "name": "SHOULD_FORWARD_FAILURES_TO_OPSCENTER",
-                        "value": str(self.should_forward_failures_to_opscenter),
+                        "value": str(should_forward_failures_to_opscenter),
                         "type": "PLAINTEXT",
                     },
                 ],
