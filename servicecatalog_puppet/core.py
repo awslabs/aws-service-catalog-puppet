@@ -144,9 +144,6 @@ def deploy(
             puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
         )
     )
-
-    if single_account is None:
-        man
     tasks_to_run = generate_tasks(f, puppet_account_id, executor_account_id, execution_mode, is_dry_run)
     runner.run_tasks(
         puppet_account_id,
