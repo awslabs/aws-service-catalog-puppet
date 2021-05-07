@@ -14,7 +14,9 @@ class DependenciesMixin(object):
         these_dependencies = list()
 
         if self.section_name in [constants.SPOKE_LOCAL_PORTFOLIOS, constants.LAUNCHES]:
-            if not (self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run):
+            if not (
+                self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run
+            ):
                 these_dependencies.append(
                     generate.GenerateSharesTask(
                         puppet_account_id=self.puppet_account_id,

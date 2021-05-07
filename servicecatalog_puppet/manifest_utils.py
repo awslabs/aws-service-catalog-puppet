@@ -279,7 +279,9 @@ def get_from_dict(d, path):
 
 
 class Manifest(dict):
-    def get_tasks_for(self, puppet_account_id, section_name, item_name, single_account="None"):
+    def get_tasks_for(
+        self, puppet_account_id, section_name, item_name, single_account="None"
+    ):
         accounts = self.get(constants.ACCOUNTS)
         section = self.get(section_name)
         provisioning_tasks = list()
@@ -525,29 +527,60 @@ class Manifest(dict):
         return provisioning_tasks
 
     def get_tasks_for_launch_and_region(
-        self, puppet_account_id, section_name, launch_name, region, single_account="None"
+        self,
+        puppet_account_id,
+        section_name,
+        launch_name,
+        region,
+        single_account="None",
     ):
         return [
             task
-            for task in self.get_tasks_for(puppet_account_id, section_name, launch_name, single_account=single_account)
+            for task in self.get_tasks_for(
+                puppet_account_id,
+                section_name,
+                launch_name,
+                single_account=single_account,
+            )
             if task.get("region") == region
         ]
 
     def get_tasks_for_launch_and_account(
-        self, puppet_account_id, section_nam, launch_name, account_id, single_account="None"
+        self,
+        puppet_account_id,
+        section_nam,
+        launch_name,
+        account_id,
+        single_account="None",
     ):
         return [
             task
-            for task in self.get_tasks_for(puppet_account_id, section_nam, launch_name, single_account=single_account)
+            for task in self.get_tasks_for(
+                puppet_account_id,
+                section_nam,
+                launch_name,
+                single_account=single_account,
+            )
             if task.get("account_id") == account_id
         ]
 
     def get_tasks_for_launch_and_account_and_region(
-        self, puppet_account_id, section_name, launch_name, account_id, region, single_account="None"
+        self,
+        puppet_account_id,
+        section_name,
+        launch_name,
+        account_id,
+        region,
+        single_account="None",
     ):
         return [
             task
-            for task in self.get_tasks_for(puppet_account_id, section_name, launch_name, single_account=single_account)
+            for task in self.get_tasks_for(
+                puppet_account_id,
+                section_name,
+                launch_name,
+                single_account=single_account,
+            )
             if task.get("account_id") == account_id and task.get("region") == region
         ]
 

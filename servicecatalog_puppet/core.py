@@ -96,7 +96,7 @@ def reset_provisioned_product_owner(f):
 
 
 def generate_tasks(
-        f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
+    f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
 ):
     tasks = [
         launch_tasks.LaunchSectionTask(
@@ -123,16 +123,16 @@ def generate_tasks(
 
 
 def deploy(
-        f,
-        puppet_account_id,
-        executor_account_id,
-        single_account=None,
-        num_workers=10,
-        is_dry_run=False,
-        is_list_launches=False,
-        execution_mode="hub",
-        on_complete_url=None,
-        running_exploded=False,
+    f,
+    puppet_account_id,
+    executor_account_id,
+    single_account=None,
+    num_workers=10,
+    is_dry_run=False,
+    is_list_launches=False,
+    execution_mode="hub",
+    on_complete_url=None,
+    running_exploded=False,
 ):
     os.environ["SCT_CACHE_INVALIDATOR"] = str(datetime.now())
     os.environ["SCT_EXECUTION_MODE"] = str(execution_mode)
@@ -144,7 +144,9 @@ def deploy(
             puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
         )
     )
-    tasks_to_run = generate_tasks(f, puppet_account_id, executor_account_id, execution_mode, is_dry_run)
+    tasks_to_run = generate_tasks(
+        f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
+    )
     runner.run_tasks(
         puppet_account_id,
         executor_account_id,
@@ -177,9 +179,7 @@ def graph_nodes(what):
 def graph_lines(task, dependency):
     nodes = []
     if isinstance(dependency, puppet_tasks.PuppetTask):
-        nodes.append(
-            f'"{task.node_id}" -> "{dependency.node_id}"'
-        )
+        nodes.append(f'"{task.node_id}" -> "{dependency.node_id}"')
         # nodes += graph_lines(task, task.requires())
     elif isinstance(dependency, list):
         for i in dependency:
@@ -202,9 +202,7 @@ def graph(f):
 
         what = task.requires()
         if isinstance(what, puppet_tasks.PuppetTask):
-            lines.append(
-                f'"{task.node_id}" -> "{what.node_id}"'
-            )
+            lines.append(f'"{task.node_id}" -> "{what.node_id}"')
         elif isinstance(what, list):
             for item in what:
                 lines += graph_lines(task, item)
@@ -226,11 +224,11 @@ def graph(f):
 
 
 def _do_bootstrap_spoke(
-        puppet_account_id,
-        cloudformation,
-        permission_boundary,
-        puppet_role_name,
-        puppet_role_path,
+    puppet_account_id,
+    cloudformation,
+    permission_boundary,
+    puppet_role_name,
+    puppet_role_path,
 ):
     template = asset_helpers.read_from_site_packages(
         "{}-spoke.template.yaml".format(constants.BOOTSTRAP_STACK_NAME)
@@ -266,18 +264,18 @@ def _do_bootstrap_spoke(
                 "UsePreviousValue": False,
             },
         ],
-        "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework", }],
+        "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}],
     }
     cloudformation.create_or_update(**args)
     logger.info("Finished bootstrap of spoke")
 
 
 def bootstrap_spoke_as(
-        puppet_account_id,
-        iam_role_arns,
-        permission_boundary,
-        puppet_role_name,
-        puppet_role_path,
+    puppet_account_id,
+    iam_role_arns,
+    permission_boundary,
+    puppet_role_name,
+    puppet_role_path,
 ):
     cross_accounts = []
     index = 0
@@ -286,7 +284,7 @@ def bootstrap_spoke_as(
         index += 1
 
     with betterboto_client.CrossMultipleAccountsClientContextManager(
-            "cloudformation", cross_accounts
+        "cloudformation", cross_accounts
     ) as cloudformation:
         _do_bootstrap_spoke(
             puppet_account_id,
@@ -298,30 +296,30 @@ def bootstrap_spoke_as(
 
 
 def bootstrap(
-        puppet_account_id,
-        with_manual_approvals,
-        puppet_code_pipeline_role_permission_boundary,
-        source_role_permissions_boundary,
-        puppet_generate_role_permission_boundary,
-        puppet_deploy_role_permission_boundary,
-        puppet_provisioning_role_permissions_boundary,
-        cloud_formation_deploy_role_permissions_boundary,
-        deploy_environment_compute_type,
-        deploy_num_workers,
-        source_provider,
-        owner,
-        repo,
-        branch,
-        poll_for_source_changes,
-        webhook_secret,
-        puppet_role_name,
-        puppet_role_path,
-        scm_connection_arn,
-        scm_full_repository_id,
-        scm_branch_name,
-        scm_bucket_name,
-        scm_object_key,
-        scm_skip_creation_of_repo,
+    puppet_account_id,
+    with_manual_approvals,
+    puppet_code_pipeline_role_permission_boundary,
+    source_role_permissions_boundary,
+    puppet_generate_role_permission_boundary,
+    puppet_deploy_role_permission_boundary,
+    puppet_provisioning_role_permissions_boundary,
+    cloud_formation_deploy_role_permissions_boundary,
+    deploy_environment_compute_type,
+    deploy_num_workers,
+    source_provider,
+    owner,
+    repo,
+    branch,
+    poll_for_source_changes,
+    webhook_secret,
+    puppet_role_name,
+    puppet_role_path,
+    scm_connection_arn,
+    scm_full_repository_id,
+    scm_branch_name,
+    scm_bucket_name,
+    scm_object_key,
+    scm_skip_creation_of_repo,
 ):
     click.echo("Starting bootstrap")
     should_use_eventbridge = config.get_should_use_eventbridge(
@@ -332,13 +330,13 @@ def bootstrap(
             try:
                 events.describe_event_bus(Name=constants.EVENT_BUS_NAME)
             except events.exceptions.ResourceNotFoundException:
-                events.create_event_bus(Name=constants.EVENT_BUS_NAME, )
+                events.create_event_bus(Name=constants.EVENT_BUS_NAME,)
 
     all_regions = config.get_regions(
         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
     )
     with betterboto_client.MultiRegionClientContextManager(
-            "cloudformation", all_regions
+        "cloudformation", all_regions
     ) as clients:
         click.echo("Creating {}-regional".format(constants.BOOTSTRAP_STACK_NAME))
         threads = []
@@ -361,7 +359,7 @@ def bootstrap(
                     "UsePreviousValue": False,
                 },
             ],
-            "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework", }],
+            "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}],
         }
         for client_region, client in clients.items():
             process = Thread(
@@ -530,7 +528,7 @@ def bootstrap(
 
 
 def bootstrap_spoke(
-        puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path
+    puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path
 ):
     with betterboto_client.ClientContextManager("cloudformation") as cloudformation:
         _do_bootstrap_spoke(
@@ -563,7 +561,7 @@ def expand(f, single_account, subset=None):
     else:
         click.echo("Expanding using role: {}".format(org_iam_role_arn))
         with betterboto_client.CrossAccountClientContextManager(
-                "organizations", org_iam_role_arn, "org-iam-role"
+            "organizations", org_iam_role_arn, "org-iam-role"
         ) as client:
             new_manifest = manifest_utils.expand_manifest(manifest, client)
     click.echo("Expanded")
@@ -645,7 +643,7 @@ def version():
             )
         )
         response = ssm.get_parameter(Name="service-catalog-puppet-version")
-        click.echo("stack version: {}".format(response.get("Parameter").get("Value"), ))
+        click.echo("stack version: {}".format(response.get("Parameter").get("Value"),))
 
 
 def upload_config(config):
@@ -671,7 +669,7 @@ def set_org_iam_role_arn(org_iam_role_arn):
 
 
 def bootstrap_org_master(puppet_account_id):
-    with betterboto_client.ClientContextManager("cloudformation", ) as cloudformation:
+    with betterboto_client.ClientContextManager("cloudformation",) as cloudformation:
         org_iam_role_arn = None
         logger.info("Starting bootstrap of org master")
         stack_name = f"{constants.BOOTSTRAP_STACK_NAME}-org-master-{puppet_account_id}"
@@ -696,7 +694,7 @@ def bootstrap_org_master(puppet_account_id):
                     "UsePreviousValue": False,
                 },
             ],
-            "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework", }],
+            "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}],
         }
         cloudformation.create_or_update(**args)
         response = cloudformation.describe_stacks(StackName=stack_name)
@@ -742,7 +740,7 @@ def list_resources():
         template = cfn_tools.load_yaml(template_contents)
         click.echo(f"## Resources for stack: {file.name.split('.')[0]}")
         table_data = [
-            ["Logical Name", "Resource Type", "Name", ],
+            ["Logical Name", "Resource Type", "Name",],
         ]
         table = terminaltables.AsciiTable(table_data)
         for logical_name, resource in template.get("Resources").items():
@@ -803,8 +801,8 @@ def save_manifest(manifest):
                 repositoryName=constants.SERVICE_CATALOG_PUPPET_REPO_NAME,
                 branchName="master",
             )
-                .get("branch")
-                .get("commitId")
+            .get("branch")
+            .get("commitId")
         )
         codecommit.put_file(
             repositoryName=constants.SERVICE_CATALOG_PUPPET_REPO_NAME,
@@ -850,7 +848,7 @@ def remove_from_launches(launch_name):
 
 def set_config_value(name, value):
     with betterboto_client.ClientContextManager(
-            "ssm", region_name=constants.HOME_REGION
+        "ssm", region_name=constants.HOME_REGION
     ) as ssm:
         try:
             response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME)
@@ -868,7 +866,7 @@ def set_config_value(name, value):
 
 def set_named_config_value(name, value):
     with betterboto_client.ClientContextManager(
-            "ssm", region_name=constants.HOME_REGION
+        "ssm", region_name=constants.HOME_REGION
     ) as ssm:
         ssm.put_parameter(
             Name=name, Type="String", Value=value, Overwrite=True,
@@ -877,13 +875,13 @@ def set_named_config_value(name, value):
 
 
 def bootstrap_spokes_in_ou(
-        ou_path_or_id,
-        role_name,
-        iam_role_arns,
-        permission_boundary,
-        num_workers,
-        puppet_role_name,
-        puppet_role_path,
+    ou_path_or_id,
+    role_name,
+    iam_role_arns,
+    permission_boundary,
+    num_workers,
+    puppet_role_name,
+    puppet_role_path,
 ):
     puppet_account_id = config.get_puppet_account_id()
     org_iam_role_arn = config.get_org_iam_role_arn(puppet_account_id)
@@ -892,7 +890,7 @@ def bootstrap_spokes_in_ou(
     else:
         click.echo("Expanding using role: {}".format(org_iam_role_arn))
         with betterboto_client.CrossAccountClientContextManager(
-                "organizations", org_iam_role_arn, "org-iam-role"
+            "organizations", org_iam_role_arn, "org-iam-role"
         ) as client:
             tasks = []
             if ou_path_or_id.startswith("/"):
@@ -920,18 +918,18 @@ def bootstrap_spokes_in_ou(
 def handle_action_execution_detail(puppet_account_id, action_execution_detail):
     action_type_id = action_execution_detail.get("input").get("actionTypeId")
     if (
-            action_type_id.get("category") == "Build"
-            and action_type_id.get("owner") == "AWS"
-            and action_type_id.get("provider") == "CodeBuild"
+        action_type_id.get("category") == "Build"
+        and action_type_id.get("owner") == "AWS"
+        and action_type_id.get("provider") == "CodeBuild"
     ):
         external_execution_id = (
             action_execution_detail.get("output")
-                .get("executionResult")
-                .get("externalExecutionId")
+            .get("executionResult")
+            .get("externalExecutionId")
         )
 
         with betterboto_client.ClientContextManager(
-                "codebuild", region_name=config.get_home_region(puppet_account_id)
+            "codebuild", region_name=config.get_home_region(puppet_account_id)
         ) as codebuild:
             builds = codebuild.batch_get_builds(ids=[external_execution_id]).get(
                 "builds"
@@ -939,11 +937,11 @@ def handle_action_execution_detail(puppet_account_id, action_execution_detail):
             build = builds[0]
             log_details = build.get("logs")
             with betterboto_client.ClientContextManager(
-                    "logs", region_name=config.get_home_region(puppet_account_id)
+                "logs", region_name=config.get_home_region(puppet_account_id)
             ) as logs:
                 with open(
-                        f"log-{action_execution_detail.get('input').get('configuration').get('ProjectName')}.log",
-                        "w",
+                    f"log-{action_execution_detail.get('input').get('configuration').get('ProjectName')}.log",
+                    "w",
                 ) as f:
                     params = {
                         "logGroupName": log_details.get("groupName"),
@@ -970,7 +968,7 @@ def handle_action_execution_detail(puppet_account_id, action_execution_detail):
 
 def export_puppet_pipeline_logs(execution_id, puppet_account_id):
     with betterboto_client.ClientContextManager(
-            "codepipeline", region_name=config.get_home_region(puppet_account_id)
+        "codepipeline", region_name=config.get_home_region(puppet_account_id)
     ) as codepipeline:
         action_execution_details = codepipeline.list_action_executions(
             pipelineName=constants.PIPELINE_NAME,
@@ -983,14 +981,14 @@ def export_puppet_pipeline_logs(execution_id, puppet_account_id):
 
 def uninstall(puppet_account_id):
     with betterboto_client.ClientContextManager(
-            "cloudformation", region_name=config.get_home_region(puppet_account_id)
+        "cloudformation", region_name=config.get_home_region(puppet_account_id)
     ) as cloudformation:
         cloudformation.ensure_deleted(StackName=constants.BOOTSTRAP_STACK_NAME)
 
 
 def release_spoke(puppet_account_id):
     with betterboto_client.ClientContextManager(
-            "cloudformation", region_name=config.get_home_region(puppet_account_id)
+        "cloudformation", region_name=config.get_home_region(puppet_account_id)
     ) as cloudformation:
         cloudformation.ensure_deleted(
             StackName=f"{constants.BOOTSTRAP_STACK_NAME}-spoke"
@@ -1005,7 +1003,7 @@ def wait_for_code_build_in(iam_role_arns):
         index += 1
 
     with betterboto_client.CrossMultipleAccountsClientContextManager(
-            "codebuild", cross_accounts
+        "codebuild", cross_accounts
     ) as codebuild:
         while True:
             try:
@@ -1025,7 +1023,7 @@ def wait_for_cloudformation_in(iam_role_arns):
         index += 1
 
     with betterboto_client.CrossMultipleAccountsClientContextManager(
-            "cloudformation", cross_accounts
+        "cloudformation", cross_accounts
     ) as cloudformation:
         while True:
             try:
@@ -1042,14 +1040,14 @@ def is_a_parameter_override_execution() -> bool:
     with betterboto_client.ClientContextManager("codepipeline") as codepipeline:
         paginator = codepipeline.get_paginator("list_pipeline_executions")
         pages = paginator.paginate(
-            pipelineName=constants.PIPELINE_NAME, PaginationConfig={"PageSize": 100, }
+            pipelineName=constants.PIPELINE_NAME, PaginationConfig={"PageSize": 100,}
         )
         for page in pages:
             for pipeline_execution_summary in page.get(
-                    "pipelineExecutionSummaries", []
+                "pipelineExecutionSummaries", []
             ):
                 if codepipeline_execution_id == pipeline_execution_summary.get(
-                        "pipelineExecutionId"
+                    "pipelineExecutionId"
                 ):
                     trigger_detail = pipeline_execution_summary.get("trigger").get(
                         "triggerDetail"
@@ -1071,7 +1069,7 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                     while True:
                         time.sleep(5)
                         with betterboto_client.ClientContextManager(
-                                "codepipeline"
+                            "codepipeline"
                         ) as codepipeline:
                             click.echo(
                                 f"looking for execution for {parameters_file_version_id}"
@@ -1081,26 +1079,26 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                             )
                             pages = paginator.paginate(
                                 pipelineName=constants.PIPELINE_NAME,
-                                PaginationConfig={"PageSize": 100, },
+                                PaginationConfig={"PageSize": 100,},
                             )
                             for page in pages:
                                 for pipeline_execution_summary in page.get(
-                                        "pipelineExecutionSummaries", []
+                                    "pipelineExecutionSummaries", []
                                 ):
                                     if (
-                                            pipeline_execution_summary.get("trigger").get(
-                                                "triggerDetail"
-                                            )
-                                            == "ParameterisedSource"
+                                        pipeline_execution_summary.get("trigger").get(
+                                            "triggerDetail"
+                                        )
+                                        == "ParameterisedSource"
                                     ):
                                         for s in pipeline_execution_summary.get(
-                                                "sourceRevisions", []
+                                            "sourceRevisions", []
                                         ):
                                             if (
-                                                    s.get("actionName")
-                                                    == "ParameterisedSource"
-                                                    and s.get("revisionId")
-                                                    == parameters_file_version_id
+                                                s.get("actionName")
+                                                == "ParameterisedSource"
+                                                and s.get("revisionId")
+                                                == parameters_file_version_id
                                             ):
                                                 pipeline_execution_id = pipeline_execution_summary.get(
                                                     "pipelineExecutionId"
@@ -1166,7 +1164,7 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                                                                 method="PUT",
                                                             )
                                                             with urllib.request.urlopen(
-                                                                    req
+                                                                req
                                                             ) as f:
                                                                 pass
                                                             logger.info(f.status)
