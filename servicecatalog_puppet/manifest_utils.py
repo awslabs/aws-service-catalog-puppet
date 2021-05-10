@@ -651,25 +651,6 @@ class Manifest(dict):
             raise Exception(f"Could not find: {'' + '/'.join(mapping)}")
         return result
 
-    def get_actions_from(
-        self, launch_name, pre_or_post, launch_or_spoke_local_portfolio
-    ):
-        logger.info(
-            f"get_actions_from for {launch_or_spoke_local_portfolio}.{launch_name}"
-        )
-        launch_details = self.get(launch_or_spoke_local_portfolio).get(launch_name)
-        actions = self.get("actions")
-        result = list()
-        for provision_action in launch_details.get(f"{pre_or_post}_actions", []):
-            action = dict()
-            action.update(actions.get(provision_action.get("name")))
-            action.update(provision_action)
-            action["source"] = launch_name
-            action["phase"] = pre_or_post
-            action["source_type"] = launch_or_spoke_local_portfolio
-            result.append(action)
-        return result
-
     def get_account(self, account_id):
         for account in self.get("accounts"):
             if account.get("account_id") == str(account_id):
