@@ -26,3 +26,4 @@ exploded_results/
 parameters.yaml
 htmlcov/
 coverage.xml
+.DS_Store
