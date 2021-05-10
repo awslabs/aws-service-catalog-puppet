@@ -103,6 +103,7 @@ class TestManifestForExplode(unittest.TestCase):
         expanded_manifest[constants.LAUNCHES] = dict()
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
         expanded_manifest[constants.ACTIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
         expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict(
             lambda_invocation_with_no_dependencies=self.lambda_invocation_with_no_dependencies
         )
@@ -123,6 +124,7 @@ class TestManifestForExplode(unittest.TestCase):
         )
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
         expanded_manifest[constants.ACTIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
         expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict()
 
         expected_results = [expanded_manifest]
@@ -142,6 +144,7 @@ class TestManifestForExplode(unittest.TestCase):
             spoke_local_portfolio_with_no_dependencies=self.spoke_local_portfolio_with_no_dependencies
         )
         expanded_manifest[constants.ACTIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
         expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict()
 
         expected_results = [expanded_manifest]
@@ -163,6 +166,7 @@ class TestManifestForExplode(unittest.TestCase):
             spoke_local_portfolio_with_no_dependencies=self.spoke_local_portfolio_with_one_launch_dependency,
         )
         expanded_manifest[constants.ACTIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
         expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict()
 
         expected_results = [expanded_manifest]
@@ -184,6 +188,7 @@ class TestManifestForExplode(unittest.TestCase):
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
         expanded_manifest[constants.ACTIONS] = dict()
         expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
 
         expected_results_1 = deepcopy(expanded_manifest)
         expected_results_1[constants.LAUNCHES] = dict(
@@ -208,6 +213,7 @@ class TestManifestForExplode(unittest.TestCase):
         expanded_manifest[constants.LAUNCHES] = dict()
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
         expanded_manifest[constants.ACTIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
         expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict(
             lambda_invocation_with_no_dependencies=self.lambda_invocation_with_no_dependencies,
             lambda_invocation_with_one_lambda_dependency=self.lambda_invocation_with_one_lambda_dependency,
@@ -229,6 +235,7 @@ class TestManifestForExplode(unittest.TestCase):
         )
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
         expanded_manifest[constants.ACTIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
         expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict(
             lambda_invocation_with_one_launch_dependency=self.lambda_invocation_with_one_launch_dependency,
         )
@@ -249,6 +256,7 @@ class TestManifestForExplode(unittest.TestCase):
         )
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
         expanded_manifest[constants.ACTIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
         expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict(
             lambda_invocation_with_no_dependencies=self.lambda_invocation_with_no_dependencies,
         )
@@ -267,6 +275,7 @@ class TestManifestForExplode(unittest.TestCase):
         expanded_manifest[constants.LAUNCHES] = dict()
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
         expanded_manifest[constants.ACTIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
         expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict(
             lambda_invocation_with_one_lambda_dependency=self.lambda_invocation_with_one_lambda_dependency,
             lambda_invocation_with_no_dependencies=self.lambda_invocation_with_no_dependencies,
@@ -289,6 +298,7 @@ class TestManifestForExplode(unittest.TestCase):
         )
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
         expanded_manifest[constants.ACTIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
         expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict()
 
         expected_results = [expanded_manifest]
@@ -310,6 +320,7 @@ class TestManifestForExplode(unittest.TestCase):
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
         expanded_manifest[constants.ACTIONS] = dict()
         expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
 
         expected_results = [expanded_manifest]
 
@@ -331,6 +342,7 @@ class TestManifestForExplode(unittest.TestCase):
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
         expanded_manifest[constants.ACTIONS] = dict()
         expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
 
         expected_results = [expanded_manifest]
 
