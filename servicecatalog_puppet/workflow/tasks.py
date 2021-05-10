@@ -127,9 +127,11 @@ class PuppetTask(luigi.Task):
 
     def output(self):
         should_use_s3_target_if_caching_is_on = (
-                "cache_invalidator" not in self.params_for_results_display().keys()
+            "cache_invalidator" not in self.params_for_results_display().keys()
         )
-        if should_use_s3_target_if_caching_is_on and config.is_caching_enabled(config.get_puppet_account_id()):
+        if should_use_s3_target_if_caching_is_on and config.is_caching_enabled(
+            config.get_puppet_account_id()
+        ):
             return s3.S3Target(self.output_location, format=format.UTF8)
         else:
             return luigi.LocalTarget(self.output_location)
@@ -154,7 +156,9 @@ class PuppetTask(luigi.Task):
 
     @property
     def node_id(self):
-        values = [self.__class__.__name__.replace("Task", "")] + [str(v) for v in self.params_for_results_display().values()]
+        values = [self.__class__.__name__.replace("Task", "")] + [
+            str(v) for v in self.params_for_results_display().values()
+        ]
         return "/".join(values)
 
     def graph_node(self):

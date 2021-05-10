@@ -43,25 +43,13 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
             for launch_name, launch_details in self.manifest.get(
                 "launches", {}
             ).items():
-                if (
-                    launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE
-                    and not self.is_dry_run
-                ):
-                    tasks.append(
-                        LaunchInSpokeTask(
-                            launch_name=launch_name,
-                            manifest_file_path=self.manifest_file_path,
-                            puppet_account_id=self.puppet_account_id,
-                        )
+                tasks.append(
+                    LaunchTask(
+                        launch_name=launch_name,
+                        manifest_file_path=self.manifest_file_path,
+                        puppet_account_id=self.puppet_account_id,
                     )
-                else:
-                    tasks.append(
-                        LaunchTask(
-                            launch_name=launch_name,
-                            manifest_file_path=self.manifest_file_path,
-                            puppet_account_id=self.puppet_account_id,
-                        )
-                    )
+                )
         return requirements
 
     def run(self):
@@ -148,24 +136,30 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
         }
 
     def requires(self):
-        return dict(
+        required = dict(
             details=portfoliomanagement_tasks.GetVersionDetailsByNames(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 portfolio=self.portfolio,
                 product=self.product,
                 version=self.version,
-                account_id=self.puppet_account_id,
+                account_id=self.single_account
+                if self.execution_mode == constants.EXECUTION_MODE_SPOKE
+                else self.puppet_account_id,
                 region=self.region,
             ),
-            associations=portfoliomanagement_tasks.CreateAssociationsInPythonForPortfolioTask(
+        )
+        if self.execution_mode != constants.EXECUTION_MODE_SPOKE:
+            required[
+                "associations"
+            ] = portfoliomanagement_tasks.CreateAssociationsInPythonForPortfolioTask(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 account_id=self.puppet_account_id,
                 region=self.region,
                 portfolio=self.portfolio,
-            ),
-        )
+            )
+        return required
 
     def run(self):
         details = self.load_from_input("details")
@@ -173,7 +167,9 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
         version_id = details.get("version_details").get("Id")
         result = yield DoDescribeProvisioningParameters(
             manifest_file_path=self.manifest_file_path,
-            puppet_account_id=self.puppet_account_id,
+            puppet_account_id=self.single_account
+            if self.execution_mode == constants.EXECUTION_MODE_SPOKE
+            else self.puppet_account_id,
             region=self.region,
             product_id=product_id,
             version_id=version_id,
@@ -278,25 +274,55 @@ class ProvisionProductTask(
         return requirements
 
     def run(self):
-        yield DoProvisionProductTask(
-            manifest_file_path=self.manifest_file_path,
-            launch_name=self.launch_name,
-            puppet_account_id=self.puppet_account_id,
-            region=self.region,
-            account_id=self.account_id,
-            portfolio=self.portfolio,
-            product=self.product,
-            version=self.version,
-            ssm_param_inputs=self.ssm_param_inputs,
-            launch_parameters=self.launch_parameters,
-            manifest_parameters=self.manifest_parameters,
-            account_parameters=self.account_parameters,
-            retry_count=self.retry_count,
-            worker_timeout=self.worker_timeout,
-            ssm_param_outputs=self.ssm_param_outputs,
-            requested_priority=self.requested_priority,
-            execution=self.execution,
-        )
+        if self.execution_mode == constants.EXECUTION_MODE_SPOKE:
+            if self.execution == constants.EXECUTION_MODE_SPOKE:
+                yield DoProvisionProductTask(
+                    manifest_file_path=self.manifest_file_path,
+                    launch_name=self.launch_name,
+                    puppet_account_id=self.puppet_account_id,
+                    region=self.region,
+                    account_id=self.account_id,
+                    portfolio=self.portfolio,
+                    product=self.product,
+                    version=self.version,
+                    ssm_param_inputs=self.ssm_param_inputs,
+                    launch_parameters=self.launch_parameters,
+                    manifest_parameters=self.manifest_parameters,
+                    account_parameters=self.account_parameters,
+                    retry_count=self.retry_count,
+                    worker_timeout=self.worker_timeout,
+                    ssm_param_outputs=self.ssm_param_outputs,
+                    requested_priority=self.requested_priority,
+                    execution=self.execution,
+                )
+
+        else:
+            if self.execution == constants.EXECUTION_MODE_SPOKE:
+                yield RunDeployInSpokeTask(
+                    manifest_file_path=self.manifest_file_path,
+                    puppet_account_id=self.puppet_account_id,
+                    account_id=self.account_id,
+                )
+            else:
+                yield DoProvisionProductTask(
+                    manifest_file_path=self.manifest_file_path,
+                    launch_name=self.launch_name,
+                    puppet_account_id=self.puppet_account_id,
+                    region=self.region,
+                    account_id=self.account_id,
+                    portfolio=self.portfolio,
+                    product=self.product,
+                    version=self.version,
+                    ssm_param_inputs=self.ssm_param_inputs,
+                    launch_parameters=self.launch_parameters,
+                    manifest_parameters=self.manifest_parameters,
+                    account_parameters=self.account_parameters,
+                    retry_count=self.retry_count,
+                    worker_timeout=self.worker_timeout,
+                    ssm_param_outputs=self.ssm_param_outputs,
+                    requested_priority=self.requested_priority,
+                    execution=self.execution,
+                )
         self.write_output(self.params_for_results_display())
 
 
@@ -355,7 +381,9 @@ class DoProvisionProductTask(
             "details": portfoliomanagement_tasks.GetVersionDetailsByNames(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
-                account_id=self.puppet_account_id,
+                account_id=self.single_account
+                if self.execution_mode == constants.EXECUTION_MODE_SPOKE
+                else self.puppet_account_id,
                 portfolio=self.portfolio,
                 product=self.product,
                 version=self.version,
@@ -842,7 +870,9 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
             "details": portfoliomanagement_tasks.GetVersionDetailsByNames(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
-                account_id=self.puppet_account_id,
+                account_id=self.single_account
+                if self.execution_mode == constants.EXECUTION_MODE_SPOKE
+                else self.puppet_account_id,
                 portfolio=self.portfolio,
                 product=self.product,
                 version=self.version,
@@ -1005,12 +1035,6 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
 
-    home_region = luigi.Parameter()
-    regions = luigi.ListParameter()
-    should_collect_cloudformation_events = luigi.BoolParameter()
-    should_forward_events_to_eventbridge = luigi.BoolParameter()
-    should_forward_failures_to_opscenter = luigi.BoolParameter()
-
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -1019,6 +1043,16 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
         }
 
     def run(self):
+        home_region = config.get_home_region(self.puppet_account_id)
+        regions = config.get_regions(self.puppet_account_id)
+        should_collect_cloudformation_events = self.should_use_sns
+        should_forward_events_to_eventbridge = config.get_should_use_eventbridge(
+            self.puppet_account_id
+        )
+        should_forward_failures_to_opscenter = config.get_should_forward_failures_to_opscenter(
+            self.puppet_account_id
+        )
+
         with self.hub_client("s3") as s3:
             bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
             key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
@@ -1044,29 +1078,25 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
                         "value": self.puppet_account_id,
                         "type": "PLAINTEXT",
                     },
-                    {
-                        "name": "HOME_REGION",
-                        "value": self.home_region,
-                        "type": "PLAINTEXT",
-                    },
+                    {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
                     {
                         "name": "REGIONS",
-                        "value": ",".join(self.regions),
+                        "value": ",".join(regions),
                         "type": "PLAINTEXT",
                     },
                     {
                         "name": "SHOULD_COLLECT_CLOUDFORMATION_EVENTS",
-                        "value": str(self.should_collect_cloudformation_events),
+                        "value": str(should_collect_cloudformation_events),
                         "type": "PLAINTEXT",
                     },
                     {
                         "name": "SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE",
-                        "value": str(self.should_forward_events_to_eventbridge),
+                        "value": str(should_forward_events_to_eventbridge),
                         "type": "PLAINTEXT",
                     },
                     {
                         "name": "SHOULD_FORWARD_FAILURES_TO_OPSCENTER",
-                        "value": str(self.should_forward_failures_to_opscenter),
+                        "value": str(should_forward_failures_to_opscenter),
                         "type": "PLAINTEXT",
                     },
                 ],
@@ -1215,7 +1245,11 @@ class LaunchForRegionTask(LaunchForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-            self.puppet_account_id, self.section_name, self.launch_name, self.region
+            self.puppet_account_id,
+            self.section_name,
+            self.launch_name,
+            self.region,
+            single_account=self.single_account,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -1255,7 +1289,11 @@ class LaunchForAccountTask(LaunchForTask):
         klass = self.get_klass_for_provisioning()
 
         account_launch_tasks = self.manifest.get_tasks_for_launch_and_account(
-            self.puppet_account_id, self.section_name, self.launch_name, self.account_id
+            self.puppet_account_id,
+            self.section_name,
+            self.launch_name,
+            self.account_id,
+            single_account=self.single_account,
         )
         for task in account_launch_tasks:
             dependencies.append(
@@ -1290,6 +1328,7 @@ class LaunchForAccountAndRegionTask(LaunchForTask):
             self.launch_name,
             self.account_id,
             self.region,
+            single_account=self.single_account,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)

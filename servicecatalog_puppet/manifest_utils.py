@@ -279,7 +279,9 @@ def get_from_dict(d, path):
 
 
 class Manifest(dict):
-    def get_tasks_for(self, puppet_account_id, section_name, item_name):
+    def get_tasks_for(
+        self, puppet_account_id, section_name, item_name, single_account="None"
+    ):
         accounts = self.get(constants.ACCOUNTS)
         section = self.get(section_name)
         provisioning_tasks = list()
@@ -357,6 +359,8 @@ class Manifest(dict):
             regions = tag.get("regions")
             for account in accounts:
                 account_id = str(account.get("account_id"))
+                if single_account != "None" and single_account != account_id:
+                    continue
                 additional_parameters = {
                     "launches": dict(
                         account_id=account_id,
@@ -441,6 +445,8 @@ class Manifest(dict):
 
             account = self.get_account(account_id_of_account_to_deploy_to)
             account_id = account_id_of_account_to_deploy_to
+            if single_account != "None" and single_account != account_id:
+                continue
             additional_parameters = {
                 "launches": dict(
                     account_id=account_id,
@@ -521,29 +527,60 @@ class Manifest(dict):
         return provisioning_tasks
 
     def get_tasks_for_launch_and_region(
-        self, puppet_account_id, section_name, launch_name, region
+        self,
+        puppet_account_id,
+        section_name,
+        launch_name,
+        region,
+        single_account="None",
     ):
         return [
             task
-            for task in self.get_tasks_for(puppet_account_id, section_name, launch_name)
+            for task in self.get_tasks_for(
+                puppet_account_id,
+                section_name,
+                launch_name,
+                single_account=single_account,
+            )
             if task.get("region") == region
         ]
 
     def get_tasks_for_launch_and_account(
-        self, puppet_account_id, section_nam, launch_name, account_id
+        self,
+        puppet_account_id,
+        section_nam,
+        launch_name,
+        account_id,
+        single_account="None",
     ):
         return [
             task
-            for task in self.get_tasks_for(puppet_account_id, section_nam, launch_name)
+            for task in self.get_tasks_for(
+                puppet_account_id,
+                section_nam,
+                launch_name,
+                single_account=single_account,
+            )
             if task.get("account_id") == account_id
         ]
 
     def get_tasks_for_launch_and_account_and_region(
-        self, puppet_account_id, section_name, launch_name, account_id, region
+        self,
+        puppet_account_id,
+        section_name,
+        launch_name,
+        account_id,
+        region,
+        single_account="None",
     ):
         return [
             task
-            for task in self.get_tasks_for(puppet_account_id, section_name, launch_name)
+            for task in self.get_tasks_for(
+                puppet_account_id,
+                section_name,
+                launch_name,
+                single_account=single_account,
+            )
             if task.get("account_id") == account_id and task.get("region") == region
         ]
 
@@ -612,25 +649,6 @@ class Manifest(dict):
 
         if result is None:
             raise Exception(f"Could not find: {'' + '/'.join(mapping)}")
-        return result
-
-    def get_actions_from(
-        self, launch_name, pre_or_post, launch_or_spoke_local_portfolio
-    ):
-        logger.info(
-            f"get_actions_from for {launch_or_spoke_local_portfolio}.{launch_name}"
-        )
-        launch_details = self.get(launch_or_spoke_local_portfolio).get(launch_name)
-        actions = self.get("actions")
-        result = list()
-        for provision_action in launch_details.get(f"{pre_or_post}_actions", []):
-            action = dict()
-            action.update(actions.get(provision_action.get("name")))
-            action.update(provision_action)
-            action["source"] = launch_name
-            action["phase"] = pre_or_post
-            action["source_type"] = launch_or_spoke_local_portfolio
-            result.append(action)
         return result
 
     def get_account(self, account_id):
@@ -849,6 +867,7 @@ def create_minimal_manifest(manifest):
     minimal_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
     minimal_manifest[constants.ACTIONS] = dict()
     minimal_manifest[constants.LAMBDA_INVOCATIONS] = dict()
+    minimal_manifest[constants.ASSERTIONS] = dict()
     return minimal_manifest
 
 
@@ -858,6 +877,7 @@ def convert_to_graph(expanded_manifest, G):
         constants.SPOKE_LOCAL_PORTFOLIOS,
         constants.ACTIONS,
         constants.LAMBDA_INVOCATIONS,
+        constants.ASSERTIONS,
     ]
 
     for section in sections:
@@ -874,6 +894,7 @@ def convert_to_graph(expanded_manifest, G):
     mapping[constants.SPOKE_LOCAL_PORTFOLIO] = constants.SPOKE_LOCAL_PORTFOLIOS
     mapping[constants.ACTION] = constants.ACTIONS
     mapping[constants.LAMBDA_INVOCATION] = constants.LAMBDA_INVOCATIONS
+    mapping[constants.ASSERTION] = constants.ASSERTIONS
 
     for section in sections:
         for item_name, item_details in expanded_manifest.get(section, {}).items():

@@ -535,11 +535,6 @@ class RunDeployInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
     account_id = "account_id"
-    home_region = "home_region"
-    regions = []
-    should_collect_cloudformation_events = False
-    should_forward_events_to_eventbridge = False
-    should_forward_failures_to_opscenter = False
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import launch
@@ -550,11 +545,6 @@ class RunDeployInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
             account_id=self.account_id,
-            home_region=self.home_region,
-            regions=self.regions,
-            should_collect_cloudformation_events=self.should_collect_cloudformation_events,
-            should_forward_events_to_eventbridge=self.should_forward_events_to_eventbridge,
-            should_forward_failures_to_opscenter=self.should_forward_failures_to_opscenter,
         )
 
         self.wire_up_mocks()

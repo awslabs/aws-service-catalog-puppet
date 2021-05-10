@@ -24,7 +24,6 @@ from betterboto import client as betterboto_client
 from jinja2 import Template
 from pykwalify.core import Core
 
-
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
@@ -79,7 +78,7 @@ def reset_provisioned_product_owner(f):
         task_status = task.get("status")
         if task_status == constants.PROVISIONED:
             tasks_to_run.append(
-                workflow.launch.ResetProvisionedProductOwnerTask(
+                launch_tasks.ResetProvisionedProductOwnerTask(
                     launch_name=task.get("launch_name"),
                     account_id=task.get("account_id"),
                     region=task.get("region"),
@@ -97,26 +96,30 @@ def reset_provisioned_product_owner(f):
 
 
 def generate_tasks(
-    f, puppet_account_id, executor_account_id,
+    f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
 ):
-
-    return [
+    tasks = [
         launch_tasks.LaunchSectionTask(
             manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
-        spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        lambda_invocations_tasks.LambdaInvocationsSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        codebuild_runs_tasks.CodeBuildRunsSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        assertions_tasks.AssertionsSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
     ]
+    if execution_mode != constants.EXECUTION_MODE_SPOKE:
+        if not is_dry_run:
+            tasks += [
+                assertions_tasks.AssertionsSectionTask(
+                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+                ),
+                spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
+                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+                ),
+                lambda_invocations_tasks.LambdaInvocationsSectionTask(
+                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+                ),
+                codebuild_runs_tasks.CodeBuildRunsSectionTask(
+                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+                ),
+            ]
+    return tasks
 
 
 def deploy(
@@ -141,8 +144,9 @@ def deploy(
             puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
         )
     )
-
-    tasks_to_run = generate_tasks(f, puppet_account_id, executor_account_id,)
+    tasks_to_run = generate_tasks(
+        f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
+    )
     runner.run_tasks(
         puppet_account_id,
         executor_account_id,
@@ -175,9 +179,7 @@ def graph_nodes(what):
 def graph_lines(task, dependency):
     nodes = []
     if isinstance(dependency, puppet_tasks.PuppetTask):
-        nodes.append(
-            f'"{task.node_id}" -> "{dependency.node_id}"'
-        )
+        nodes.append(f'"{task.node_id}" -> "{dependency.node_id}"')
         # nodes += graph_lines(task, task.requires())
     elif isinstance(dependency, list):
         for i in dependency:
@@ -200,9 +202,7 @@ def graph(f):
 
         what = task.requires()
         if isinstance(what, puppet_tasks.PuppetTask):
-            lines.append(
-                f'"{task.node_id}" -> "{what.node_id}"'
-            )
+            lines.append(f'"{task.node_id}" -> "{what.node_id}"')
         elif isinstance(what, list):
             for item in what:
                 lines += graph_lines(task, item)
@@ -211,10 +211,6 @@ def graph(f):
                 lines += graph_lines(task, item)
         else:
             raise Exception(f"unknown {type(what)}")
-
-
-
-
 
         # nodes.append(task.graph_node())
         # lines += task.get_graph_lines()
