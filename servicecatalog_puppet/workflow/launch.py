@@ -1035,12 +1035,6 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
 
-    # home_region = luigi.Parameter()
-    # regions = luigi.ListParameter()
-    # should_collect_cloudformation_events = luigi.BoolParameter()
-    # should_forward_events_to_eventbridge = luigi.BoolParameter()
-    # should_forward_failures_to_opscenter = luigi.BoolParameter()
-
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
