@@ -36,6 +36,9 @@ SPOKE_LOCAL_PORTFOLIO = "spoke-local-portfolio"
 ACTION = "action"
 
 AFFINITY = "affinity"
+AFFINITY_ACCOUNT_AND_REGION = "account-and-region"
+AFFINITY_ACCOUNT = "account"
+AFFINITY_REGION = "region"
 
 RESULTS_DIRECTORY = "results"
 

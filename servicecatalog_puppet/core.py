@@ -1,5 +1,6 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
+import networkx as nx
 import io
 import json
 import logging
@@ -1171,3 +1172,157 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                                                             logger.info(f.reason)
 
                                                         return succeeded
+
+
+def generate_asl2(
+        f,
+):
+    puppet_account_id = config.get_puppet_account_id()
+
+    expanded_manifest = manifest_utils.Manifest(
+        yaml.safe_load(
+            open(f.name, "r").read()
+        )
+    )
+    sections = [
+        constants.LAUNCHES,
+        constants.SPOKE_LOCAL_PORTFOLIOS,
+        constants.LAMBDA_INVOCATIONS,
+        constants.ASSERTIONS,
+        constants.CODE_BUILD_RUNS,
+    ]
+
+    types = dict()
+    types[constants.LAUNCHES] = constants.LAUNCH
+    types[constants.SPOKE_LOCAL_PORTFOLIOS] = constants.SPOKE_LOCAL_PORTFOLIO
+    types[constants.LAMBDA_INVOCATIONS] = constants.LAMBDA_INVOCATION
+    types[constants.ASSERTIONS] = constants.ASSERTION
+    types[constants.CODE_BUILD_RUNS] = constants.CODE_BUILD_RUN
+
+    G = nx.DiGraph()
+    for section_name in sections:
+        for item_name, item in expanded_manifest.get(section_name, {}).items():
+            for task in expanded_manifest.get_tasks_for(
+                    puppet_account_id, section_name, item_name
+            ):
+                uid = f"{types.get(section_name)}|{item_name}|{task.get('account_id')}|{task.get('region')}"
+                data = dict(section_name=section_name, item_name=item_name,)
+                # data.update(task)
+                # G.add_nodes_from(
+                #     [(uid, data),]
+                # )
+
+    for section_name in sections:
+        for item_name, item in expanded_manifest.get(section_name, {}).items():
+            for task in expanded_manifest.get_tasks_for(
+                    puppet_account_id, section_name, item_name
+            ):
+                uid = f"{section_name}|{item_name}|{task.get('account_id')}|{task.get('region')}"
+                # G.add_edge(uid, f"account|{task.get('account_id')}|{task.get('region')}")
+                # G.add_edge(uid, f"region|{task.get('region')}")
+                for d in item.get("depends_on", []):
+                    if d.get('affinity') == constants.AFFINITY_ACCOUNT_AND_REGION:
+                        G.add_edge(uid, f"{d.get('type')}|{d.get('name')}|{task.get('account_id')}|{task.get('region')}")
+
+
+    from networkx.drawing.nx_pydot import write_dot
+    pos = nx.nx_agraph.graphviz_layout(G)
+    nx.draw(G, pos=pos)
+    write_dot(G, 'file.dot')
+
+    print(G)
+
+
+    #
+    #
+    # for section in sections:
+    #     for item_name, item_details in expanded_manifest.get(section, {}).items():
+    #         uid = f"{section}|{item_name}"
+    #         data = dict(section=section, item_name=item_name,)
+    #         data.update(item_details)
+    #         G.add_nodes_from(
+    #             [(uid, data),]
+    #         )
+    #
+    # mapping = dict()
+    # mapping[constants.LAUNCH] = constants.LAUNCHES
+    # mapping[constants.SPOKE_LOCAL_PORTFOLIO] = constants.SPOKE_LOCAL_PORTFOLIOS
+    # mapping[constants.LAMBDA_INVOCATION] = constants.LAMBDA_INVOCATIONS
+    # mapping[constants.ASSERTION] = constants.ASSERTIONS
+    # mapping[constants.CODE_BUILD_RUN] = constants.CODE_BUILD_RUNS
+    #
+    # for section in sections:
+    #     for item_name, item_details in expanded_manifest.get(section, {}).items():
+    #         uid = f"{section}|{item_name}"
+    #         for d in item_details.get("depends_on", []):
+    #             if isinstance(d, str):
+    #                 G.add_edge(uid, f"{constants.LAUNCHES}|{d}")
+    #             else:
+    #                 G.add_edge(uid, f"{mapping.get(d.get('type'))}|{d.get('name')}")
+    #
+    #
+    #
+    # logger.info(f"found {len(exploded)} graphs")
+
+
+
+def generate_asl(
+        f,
+):
+    puppet_account_id = config.get_puppet_account_id()
+
+    expanded_manifest = manifest_utils.Manifest(
+        yaml.safe_load(
+            open(f.name, "r").read()
+        )
+    )
+    sections = [
+        constants.LAUNCHES,
+        constants.SPOKE_LOCAL_PORTFOLIOS,
+        constants.LAMBDA_INVOCATIONS,
+        constants.ASSERTIONS,
+        constants.CODE_BUILD_RUNS,
+    ]
+
+    types = dict()
+    types[constants.LAUNCHES] = constants.LAUNCH
+    types[constants.SPOKE_LOCAL_PORTFOLIOS] = constants.SPOKE_LOCAL_PORTFOLIO
+    types[constants.LAMBDA_INVOCATIONS] = constants.LAMBDA_INVOCATION
+    types[constants.ASSERTIONS] = constants.ASSERTION
+    types[constants.CODE_BUILD_RUNS] = constants.CODE_BUILD_RUN
+
+    states = dict()
+    for section_name in sections:
+        for item_name, item in expanded_manifest.get(section_name, {}).items():
+            states[f"{item_name}-start"] = dict(
+                Type="Pass"
+            )
+            for task in expanded_manifest.get_tasks_for(
+                    puppet_account_id, section_name, item_name
+            ):
+                uid = f"{types.get(section_name)}|{item_name}|{task.get('account_id')}|{task.get('region')}"
+                states[uid] = dict(
+                    Type="Pass",
+                )
+                # data.update(task)
+            states[f"{item_name}-end"] = dict(
+                Type="Pass"
+            )
+
+    for section_name in sections:
+        for item_name, item in expanded_manifest.get(section_name, {}).items():
+            for task in expanded_manifest.get_tasks_for(
+                    puppet_account_id, section_name, item_name
+            ):
+                uid = f"{section_name}|{item_name}|{task.get('account_id')}|{task.get('region')}"
+                for d in item.get("depends_on", []):
+                    if d.get('affinity') == constants.AFFINITY_ACCOUNT_AND_REGION:
+                        d_uid = f"{d.get('type')}|{d.get('name')}|{task.get('account_id')}|{task.get('region')}"
+                        states[d_uid]
+
+
+    print(
+        json.dumps(
+            states
+        )
+    )

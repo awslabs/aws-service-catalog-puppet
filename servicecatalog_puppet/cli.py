@@ -553,5 +553,13 @@ def wait_for_parameterised_run_to_complete(on_complete_url):
         sys.exit(1)
 
 
+@cli.command()
+@click.argument("f", type=click.File())
+def generate_asl(
+    f,
+):
+    core.generate_asl(f)
+
+
 if __name__ == "__main__":
     cli()

@@ -548,7 +548,7 @@ class Manifest(dict):
     def get_tasks_for_launch_and_account(
         self,
         puppet_account_id,
-        section_nam,
+        section_name,
         launch_name,
         account_id,
         single_account="None",
@@ -557,7 +557,7 @@ class Manifest(dict):
             task
             for task in self.get_tasks_for(
                 puppet_account_id,
-                section_nam,
+                section_name,
                 launch_name,
                 single_account=single_account,
             )
@@ -875,9 +875,9 @@ def convert_to_graph(expanded_manifest, G):
     sections = [
         constants.LAUNCHES,
         constants.SPOKE_LOCAL_PORTFOLIOS,
-        constants.ACTIONS,
         constants.LAMBDA_INVOCATIONS,
         constants.ASSERTIONS,
+        constants.CODE_BUILD_RUNS,
     ]
 
     for section in sections:
@@ -892,9 +892,9 @@ def convert_to_graph(expanded_manifest, G):
     mapping = dict()
     mapping[constants.LAUNCH] = constants.LAUNCHES
     mapping[constants.SPOKE_LOCAL_PORTFOLIO] = constants.SPOKE_LOCAL_PORTFOLIOS
-    mapping[constants.ACTION] = constants.ACTIONS
     mapping[constants.LAMBDA_INVOCATION] = constants.LAMBDA_INVOCATIONS
     mapping[constants.ASSERTION] = constants.ASSERTIONS
+    mapping[constants.CODE_BUILD_RUN] = constants.CODE_BUILD_RUNS
 
     for section in sections:
         for item_name, item_details in expanded_manifest.get(section, {}).items():
