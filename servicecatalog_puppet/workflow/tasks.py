@@ -357,7 +357,7 @@ def on_task_processing_time(task, duration):
         ]:
             if task_params.get(note_worthy):
                 dimensions.append(
-                    dict(Name=note_worthy, Value=task_params.get(note_worthy))
+                    dict(Name=str(note_worthy), Value=str(task_params.get(note_worthy)))
                 )
 
         cloudwatch.put_metric_data(
