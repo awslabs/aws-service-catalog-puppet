@@ -1467,8 +1467,6 @@ class AssociatePrincipalWithPortfolioTask(PortfolioManagementTask):
                 time.sleep(1)
                 results = servicecatalog.list_principals_for_portfolio_single_page(
                     PortfolioId=self.portfolio_id,
-                    PrincipalARN=config.get_puppet_role_arn(self.account_id),
-                    PrincipalType="IAM",
                 ).get("Principals", [])
 
         self.write_output(self.param_kwargs)
