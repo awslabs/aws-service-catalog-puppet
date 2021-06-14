@@ -1440,6 +1440,7 @@ class AssociatePrincipalWithPortfolioTask(PortfolioManagementTask):
     def api_calls_used(self):
         return {
             f"servicecatalog.associate_principal_with_portfolio_{self.region}": 1,
+            f"servicecatalog.list_principals_for_portfolio_single_page_{self.region}": 1,
         }
 
     def run(self):
