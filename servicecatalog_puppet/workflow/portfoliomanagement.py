@@ -1440,6 +1440,7 @@ class AssociatePrincipalWithPortfolioTask(PortfolioManagementTask):
     def api_calls_used(self):
         return {
             f"servicecatalog.associate_principal_with_portfolio_{self.region}": 1,
+            f"servicecatalog.list_principals_for_portfolio_single_page_{self.region}": 1,
         }
 
     def run(self):
@@ -1451,12 +1452,23 @@ class AssociatePrincipalWithPortfolioTask(PortfolioManagementTask):
             f.write("{}")
 
         self.info(f"Creating the association for portfolio {self.portfolio_id}")
+        principal_arn = config.get_puppet_role_arn(self.account_id)
         with self.hub_regional_client("servicecatalog") as servicecatalog:
             servicecatalog.associate_principal_with_portfolio(
                 PortfolioId=self.portfolio_id,
-                PrincipalARN=config.get_puppet_role_arn(self.account_id),
+                PrincipalARN=principal_arn,
                 PrincipalType="IAM",
             )
+            results = []
+            needle = dict(PrincipalARN=principal_arn, PrincipalType='IAM')
+            self.info(f"Checking for principal association of: {principal_arn} to: {self.portfolio_id}")
+            while needle not in results:
+                self.info("- not found yet, still looking")
+                time.sleep(1)
+                results = servicecatalog.list_principals_for_portfolio_single_page(
+                    PortfolioId=self.portfolio_id,
+                ).get("Principals", [])
+
         self.write_output(self.param_kwargs)
 
 
