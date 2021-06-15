@@ -50,6 +50,7 @@ def terminate_if_status_is_not_available(
     )
     provisioned_product_id = False
     provisioning_artifact_id = False
+    current_status = False
     for r in response.get("ProvisionedProducts", []):
         if r.get("Name") == provisioned_product_name:
             current_status = r.get("Status")
@@ -81,7 +82,7 @@ def terminate_if_status_is_not_available(
                 )
                 terminate_provisioned_product(prefix, service_catalog, r.get("Id"))
     logger.info(f"{prefix} :: Finished terminate_if_status_is_not_available")
-    return provisioned_product_id, provisioning_artifact_id
+    return provisioned_product_id, provisioning_artifact_id, current_status
 
 
 def get_stack_output_for(cloudformation, stack_name):
