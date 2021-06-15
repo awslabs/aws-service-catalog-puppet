@@ -145,9 +145,13 @@ def provision_product_with_plan(
         )
         if provisioned_product_plan.get("ProvisionProductName") == launch_name:
             f"{uid} :: Found existing plan, going to terminate it"
-            service_catalog.delete_provisioned_product_plan(
+            provisioned_product_plan_details = service_catalog.describe_provisioned_product_plan_single_page(
                 PlanId=provisioned_product_plan.get("PlanId")
-            )
+            ).get("ProvisionedProductPlanDetails")
+            if provisioned_product_plan_details.get("Status") not in ["EXECUTE_FAILED"]:
+                service_catalog.delete_provisioned_product_plan(
+                    PlanId=provisioned_product_plan.get("PlanId")
+                )
 
     logger.info(f"{uid} :: Creating a plan")
     partition = config.get_partition()
