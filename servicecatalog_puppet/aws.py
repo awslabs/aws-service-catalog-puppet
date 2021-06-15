@@ -234,9 +234,9 @@ def provision_product_with_plan(
                 )
                 provisioned_product_detail = response.get("ProvisionedProductDetail")
                 execute_status = provisioned_product_detail.get("Status")
-                if execute_status in ["AVAILABLE", "TAINTED", "EXECUTE_SUCCESS"]:
+                if execute_status in ["AVAILABLE", "EXECUTE_SUCCESS"]:
                     break
-                elif execute_status == "ERROR":
+                elif execute_status in ["ERROR", "TAINTED"]:
                     raise Exception(
                         f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
                     )
@@ -340,9 +340,9 @@ def provision_product(
             )
             provisioned_product_detail = response.get("ProvisionedProductDetail")
             execute_status = provisioned_product_detail.get("Status")
-            if execute_status in ["AVAILABLE", "TAINTED", "EXECUTE_SUCCESS"]:
+            if execute_status in ["AVAILABLE", "EXECUTE_SUCCESS"]:
                 break
-            elif execute_status == "ERROR":
+            elif execute_status in ["ERROR", "TAINTED"]:
                 raise Exception(
                     f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
                 )
