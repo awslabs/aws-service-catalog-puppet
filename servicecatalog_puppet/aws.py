@@ -197,12 +197,6 @@ def provision_product_with_plan(
             f"{uid} :: Plan created, "
             f"changes: {yaml.safe_dump(describe_provisioned_product_plan_response.get('ResourceChanges'))}"
         )
-        if len(describe_provisioned_product_plan_response.get("ResourceChanges")) == 0:
-            logger.warning(
-                f"{uid} :: There are no resource changes in this plan, "
-                f"running this anyway - your product will be marked as tainted as your CloudFormation changeset"
-                f"will fail but your product will be the correct version and in tact."
-            )
 
         logger.info(f"{uid} :: executing changes")
         service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
@@ -296,6 +290,8 @@ def provision_product(
 ):
     partition = config.get_partition()
     uid = f"[{launch_name}] {account_id}:{region}]"
+    logger.warning("HERE IT ISSS")
+    logger.info("HERE IT ISSS")
     provisioning_parameters = []
     for p in params.keys():
         if params.get(p) is None:
