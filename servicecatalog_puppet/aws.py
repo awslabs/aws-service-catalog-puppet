@@ -146,7 +146,7 @@ def provision_product_with_plan(
             f"{uid} :: Found plan for {plan_launch_name}"
         )
         if plan_launch_name == launch_name:
-            f"{uid} :: Found existing plan, going to terminate it"
+            logger.info(f"{uid} :: Found existing plan, going to terminate it {provisioned_product_plan}")
             provisioned_product_plan_details = service_catalog.describe_provisioned_product_plan(
                 PlanId=provisioned_product_plan.get("PlanId")
             ).get("ProvisionedProductPlanDetails")
