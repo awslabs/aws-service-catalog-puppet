@@ -231,7 +231,12 @@ def provision_product_with_plan(
                 execute_status = provisioned_product_detail.get("Status")
                 if execute_status in ["AVAILABLE", "EXECUTE_SUCCESS"]:
                     break
-                elif execute_status in ["ERROR", "TAINTED"]:
+                elif execute_status == "TAINTED":
+                    service_catalog.delete_provisioned_product_plan(PlanId=plan_id)
+                    raise Exception(
+                        f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
+                    )
+                elif execute_status == "ERROR":
                     raise Exception(
                         f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
                     )
@@ -290,8 +295,6 @@ def provision_product(
 ):
     partition = config.get_partition()
     uid = f"[{launch_name}] {account_id}:{region}]"
-    logger.warning("HERE IT ISSS")
-    logger.info("HERE IT ISSS")
     provisioning_parameters = []
     for p in params.keys():
         if params.get(p) is None:
@@ -393,9 +396,9 @@ def update_provisioned_product(
             )
             provisioned_product_detail = response.get("ProvisionedProductDetail")
             execute_status = provisioned_product_detail.get("Status")
-            if execute_status in ["AVAILABLE", "TAINTED", "EXECUTE_SUCCESS"]:
+            if execute_status in ["AVAILABLE", "EXECUTE_SUCCESS"]:
                 break
-            elif execute_status == "ERROR":
+            elif execute_status in ["ERROR", "TAINTED"]:
                 raise Exception(
                     f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
                 )
