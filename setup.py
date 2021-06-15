@@ -15,7 +15,7 @@ package_data = \
 
 install_requires = \
 ['awacs>=1.0.2,<2.0.0',
- 'better-boto==0.35.0',
+ 'better-boto==0.39.0',
  'boto3==1.16.56',
  'cfn-flip==1.2.3',
  'click==7.0',
