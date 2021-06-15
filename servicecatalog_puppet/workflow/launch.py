@@ -1105,7 +1105,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
                     },
                 ],
             )
-        self.write_output(response)
+        self.write_output(dict(account_id=self.account_id, **response))
 
 
 class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
