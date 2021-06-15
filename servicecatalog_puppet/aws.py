@@ -141,10 +141,11 @@ def provision_product_with_plan(
             "ProvisionedProductPlans", []
         )
     for provisioned_product_plan in provisioned_product_plans:
+        plan_launch_name = provisioned_product_plan.get('ProvisionProductName')
         logger.info(
-            f"{uid} :: Found plan for {provisioned_product_plan.get('ProvisionProductName')}"
+            f"{uid} :: Found plan for {plan_launch_name}"
         )
-        if provisioned_product_plan.get("ProvisionProductName") == launch_name:
+        if plan_launch_name == launch_name:
             f"{uid} :: Found existing plan, going to terminate it"
             provisioned_product_plan_details = service_catalog.describe_provisioned_product_plan(
                 PlanId=provisioned_product_plan.get("PlanId")
@@ -153,6 +154,8 @@ def provision_product_with_plan(
                 service_catalog.delete_provisioned_product_plan(
                     PlanId=provisioned_product_plan.get("PlanId")
                 )
+        else:
+            logger.info(f"Plan for '{plan_launch_name}' is not '{launch_name}' and so not of interest")
 
     logger.info(f"{uid} :: Creating a plan")
     partition = config.get_partition()
