@@ -157,6 +157,11 @@ def provision_product_with_plan(
         else:
             logger.info(f"Plan for '{plan_launch_name}' is not '{launch_name}' and so not of interest")
 
+
+    logger.info("DEBUG in")
+    logger.info(service_catalog.list_provisioned_product_plans_single_page())
+    logger.info("DEBUG out")
+
     logger.info(f"{uid} :: Creating a plan")
     partition = config.get_partition()
     regional_sns_topic = f"arn:{partition}:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
