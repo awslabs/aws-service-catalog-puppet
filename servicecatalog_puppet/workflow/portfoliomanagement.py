@@ -1460,8 +1460,10 @@ class AssociatePrincipalWithPortfolioTask(PortfolioManagementTask):
                 PrincipalType="IAM",
             )
             results = []
-            needle = dict(PrincipalARN=principal_arn, PrincipalType='IAM')
-            self.info(f"Checking for principal association of: {principal_arn} to: {self.portfolio_id}")
+            needle = dict(PrincipalARN=principal_arn, PrincipalType="IAM")
+            self.info(
+                f"Checking for principal association of: {principal_arn} to: {self.portfolio_id}"
+            )
             while needle not in results:
                 self.info("- not found yet, still looking")
                 time.sleep(1)

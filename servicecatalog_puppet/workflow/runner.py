@@ -113,41 +113,45 @@ def run_tasks(
     if execution_mode == constants.EXECUTION_MODE_HUB:
         logger.info("Checking spoke executions...")
         for filename in glob(
-                f"output/RunDeployInSpokeTask/**/{cache_invalidator}.json",
-                recursive=True,
+            f"output/RunDeployInSpokeTask/**/{cache_invalidator}.json", recursive=True,
         ):
-            result = json.loads(open(filename, 'r').read())
+            result = json.loads(open(filename, "r").read())
             spoke_account_id = result.get("account_id")
             build = result.get("build")
             build_id = build.get("id")
-            logger.info(f"Checking spoke execution for account: {spoke_account_id} build: {build_id}")
+            logger.info(
+                f"Checking spoke execution for account: {spoke_account_id} build: {build_id}"
+            )
             with betterboto_client.CrossAccountClientContextManager(
-                    "codebuild",
-                    config.get_puppet_role_arn(spoke_account_id),
-                    f"{spoke_account_id}-{config.get_puppet_role_name()}",
+                "codebuild",
+                config.get_puppet_role_arn(spoke_account_id),
+                f"{spoke_account_id}-{config.get_puppet_role_name()}",
             ) as codebuild_client:
-                while build.get('buildStatus') == 'IN_PROGRESS':
+                while build.get("buildStatus") == "IN_PROGRESS":
                     response = codebuild_client.batch_get_builds(ids=[build_id])
-                    build = response.get('builds')[0]
+                    build = response.get("builds")[0]
                     time.sleep(10)
-                    logger.info("Current status: {}".format(build.get('buildStatus')))
-                if build.get('buildStatus') != "SUCCEEDED":
-                    params_for_results = dict(account_id=spoke_account_id, build_id=build_id)
+                    logger.info("Current status: {}".format(build.get("buildStatus")))
+                if build.get("buildStatus") != "SUCCEEDED":
+                    params_for_results = dict(
+                        account_id=spoke_account_id, build_id=build_id
+                    )
                     for ev in build.get("environment").get("environmentVariables", []):
                         params_for_results[ev.get("name")] = ev.get("value")
                     failure = dict(
-                            event_type="failure",
-                            task_type="RunDeployInSpokeTask",
-                            task_params=params_for_results,
-                            params_for_results=params_for_results,
-                            exception_type="<class 'Exception'>",
-                            exception_stack_trace= [
-                                f"Codebuild in spoke did not succeed: {build.get('buildStatus')}"
-                            ]
+                        event_type="failure",
+                        task_type="RunDeployInSpokeTask",
+                        task_params=params_for_results,
+                        params_for_results=params_for_results,
+                        exception_type="<class 'Exception'>",
+                        exception_stack_trace=[
+                            f"Codebuild in spoke did not succeed: {build.get('buildStatus')}"
+                        ],
                     )
-                    open(f"results/failure/RunDeployInSpokeTask-{spoke_account_id}.json", 'w').write(
-                        json.dumps(failure)
-                    )
+                    open(
+                        f"results/failure/RunDeployInSpokeTask-{spoke_account_id}.json",
+                        "w",
+                    ).write(json.dumps(failure))
 
     if is_list_launches:
         if is_list_launches == "table":
