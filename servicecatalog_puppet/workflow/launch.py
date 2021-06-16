@@ -437,6 +437,7 @@ class DoProvisionProductTask(
             (
                 provisioned_product_id,
                 provisioning_artifact_id,
+                provisioned_product_status,
             ) = aws.terminate_if_status_is_not_available(
                 service_catalog,
                 self.launch_name,
@@ -484,6 +485,9 @@ class DoProvisionProductTask(
                             need_to_provision = False
                         else:
                             self.info(f"params changed")
+
+                if provisioned_product_status == "TAINTED":
+                    need_to_provision = True
 
                 if need_to_provision:
                     self.info(
@@ -1101,7 +1105,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
                     },
                 ],
             )
-        self.write_output(response)
+        self.write_output(dict(account_id=self.account_id, **response))
 
 
 class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):

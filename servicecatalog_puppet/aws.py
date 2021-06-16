@@ -50,6 +50,7 @@ def terminate_if_status_is_not_available(
     )
     provisioned_product_id = False
     provisioning_artifact_id = False
+    current_status = False
     for r in response.get("ProvisionedProducts", []):
         if r.get("Name") == provisioned_product_name:
             current_status = r.get("Status")
@@ -81,7 +82,7 @@ def terminate_if_status_is_not_available(
                 )
                 terminate_provisioned_product(prefix, service_catalog, r.get("Id"))
     logger.info(f"{prefix} :: Finished terminate_if_status_is_not_available")
-    return provisioned_product_id, provisioning_artifact_id
+    return provisioned_product_id, provisioning_artifact_id, current_status
 
 
 def get_stack_output_for(cloudformation, stack_name):
@@ -192,12 +193,6 @@ def provision_product_with_plan(
             f"{uid} :: Plan created, "
             f"changes: {yaml.safe_dump(describe_provisioned_product_plan_response.get('ResourceChanges'))}"
         )
-        if len(describe_provisioned_product_plan_response.get("ResourceChanges")) == 0:
-            logger.warning(
-                f"{uid} :: There are no resource changes in this plan, "
-                f"running this anyway - your product will be marked as tainted as your CloudFormation changeset"
-                f"will fail but your product will be the correct version and in tact."
-            )
 
         logger.info(f"{uid} :: executing changes")
         service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
@@ -230,8 +225,13 @@ def provision_product_with_plan(
                 )
                 provisioned_product_detail = response.get("ProvisionedProductDetail")
                 execute_status = provisioned_product_detail.get("Status")
-                if execute_status in ["AVAILABLE", "TAINTED", "EXECUTE_SUCCESS"]:
+                if execute_status in ["AVAILABLE", "EXECUTE_SUCCESS"]:
                     break
+                elif execute_status == "TAINTED":
+                    service_catalog.delete_provisioned_product_plan(PlanId=plan_id)
+                    raise Exception(
+                        f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
+                    )
                 elif execute_status == "ERROR":
                     raise Exception(
                         f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
@@ -336,9 +336,9 @@ def provision_product(
             )
             provisioned_product_detail = response.get("ProvisionedProductDetail")
             execute_status = provisioned_product_detail.get("Status")
-            if execute_status in ["AVAILABLE", "TAINTED", "EXECUTE_SUCCESS"]:
+            if execute_status in ["AVAILABLE", "EXECUTE_SUCCESS"]:
                 break
-            elif execute_status == "ERROR":
+            elif execute_status in ["ERROR", "TAINTED"]:
                 raise Exception(
                     f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
                 )
@@ -392,9 +392,9 @@ def update_provisioned_product(
             )
             provisioned_product_detail = response.get("ProvisionedProductDetail")
             execute_status = provisioned_product_detail.get("Status")
-            if execute_status in ["AVAILABLE", "TAINTED", "EXECUTE_SUCCESS"]:
+            if execute_status in ["AVAILABLE", "EXECUTE_SUCCESS"]:
                 break
-            elif execute_status == "ERROR":
+            elif execute_status in ["ERROR", "TAINTED"]:
                 raise Exception(
                     f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
                 )

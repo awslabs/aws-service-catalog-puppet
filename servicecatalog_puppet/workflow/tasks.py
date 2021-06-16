@@ -40,7 +40,10 @@ class PuppetTask(luigi.Task):
 
     @property
     def should_use_product_plans(self):
-        return os.environ.get("SCT_SHOULD_USE_PRODUCT_PLANS", "True") == "True"
+        if self.execution_mode == constants.EXECUTION_MODE_HUB:
+            return os.environ.get("SCT_SHOULD_USE_PRODUCT_PLANS", "True") == "True"
+        else:
+            return False
 
     @property
     def cache_invalidator(self):
