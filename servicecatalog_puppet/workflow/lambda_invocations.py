@@ -271,11 +271,12 @@ class LambdaInvocationTask(LambdaInvocationForTask):
         affinities_used = dict()
         is_a_dependency = False
 
-        for launch_name, launch_details in self.manifest.get(constants.LAUNCHES, {}).items():
-            for dep in launch_details.get("depends_on", []):
-                if dep.get("type") == constants.LAMBDA_INVOCATION and dep.get("name") == self.lambda_invocation_name:
-                    is_a_dependency = True
-                    affinities_used[dep.get('affinity')] = True
+        for manifest_section_name in constants.ALL_SECTION_NAMES:
+            for name, details in self.manifest.get(manifest_section_name, {}).items():
+                for dep in details.get("depends_on", []):
+                    if dep.get("type") == constants.LAMBDA_INVOCATION and dep.get("name") == self.lambda_invocation_name:
+                        is_a_dependency = True
+                        affinities_used[dep.get('affinity')] = True
 
         if is_a_dependency:
             if affinities_used.get(constants.AFFINITY_REGION):
