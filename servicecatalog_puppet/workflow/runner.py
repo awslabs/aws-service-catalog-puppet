@@ -86,8 +86,6 @@ def run_tasks(
         detailed_summary=True,
         workers=num_workers,
         log_level=os.environ.get("LUIGI_LOG_LEVEL", constants.LUIGI_DEFAULT_LOG_LEVEL),
-        parallel_scheduling=True,
-        parallel_scheduling_processes=100,
     )
 
     if should_use_shared_scheduler:
