@@ -36,6 +36,16 @@ SPOKE_LOCAL_PORTFOLIO = "spoke-local-portfolio"
 ACTION = "action"
 
 AFFINITY = "affinity"
+AFFINITY_REGION = "region"
+AFFINITY_ACCOUNT = "account"
+AFFINITY_ACCOUNT_AND_REGION = "account-and-region"
+
+ALL_SECTION_NAMES = [
+    LAUNCHES,
+    SPOKE_LOCAL_PORTFOLIOS,
+    LAMBDA_INVOCATIONS,
+    CODE_BUILD_RUNS,
+]
 
 RESULTS_DIRECTORY = "results"
 
