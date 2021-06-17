@@ -1371,7 +1371,7 @@ class LaunchTask(LaunchForTask):
                     affinities_used[dep.get('affinity')] = True
 
         if is_a_dependency:
-            if affinities_used[constants.AFFINITY_REGION]:
+            if affinities_used.get(constants.AFFINITY_REGION):
                 for region in self.manifest.get_regions_used_for_section_item(
                         self.puppet_account_id, constants.LAUNCHES, self.launch_name
                 ):
@@ -1379,7 +1379,7 @@ class LaunchTask(LaunchForTask):
                         LaunchForRegionTask(**self.param_kwargs, region=region,)
                     )
 
-            if affinities_used[constants.AFFINITY_ACCOUNT]:
+            if affinities_used.get(constants.AFFINITY_ACCOUNT):
                 for account_id in self.manifest.get_account_ids_used_for_section_item(
                         self.puppet_account_id, constants.LAUNCHES, self.launch_name
                 ):
@@ -1387,7 +1387,7 @@ class LaunchTask(LaunchForTask):
                         LaunchForAccountTask(**self.param_kwargs, account_id=account_id,)
                     )
 
-            if affinities_used[constants.AFFINITY_ACCOUNT_AND_REGION]:
+            if affinities_used.get(constants.AFFINITY_ACCOUNT_AND_REGION):
                 for (
                         account_id,
                         regions,
@@ -1401,7 +1401,7 @@ class LaunchTask(LaunchForTask):
                             )
                         )
 
-            if affinities_used[constants.LAUNCH]:
+            if affinities_used.get(constants.LAUNCH):
                 klass = self.get_klass_for_provisioning()
                 for (
                         account_id,
