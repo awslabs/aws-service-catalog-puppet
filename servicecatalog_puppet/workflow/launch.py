@@ -1355,6 +1355,7 @@ class LaunchTask(LaunchForTask):
         account_dependencies = list()
         account_and_region_dependencies = list()
         requirements = dict(
+            dependencies=dependencies,
             regional_launches=regional_dependencies,
             account_launches=account_dependencies,
             account_and_region_dependencies=account_and_region_dependencies,
