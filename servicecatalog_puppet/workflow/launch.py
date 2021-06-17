@@ -1350,6 +1350,7 @@ class LaunchTask(LaunchForTask):
         }
 
     def requires(self):
+        dependencies = list()
         regional_dependencies = list()
         account_dependencies = list()
         account_and_region_dependencies = list()
@@ -1358,32 +1359,68 @@ class LaunchTask(LaunchForTask):
             account_launches=account_dependencies,
             account_and_region_dependencies=account_and_region_dependencies,
         )
-        for region in self.manifest.get_regions_used_for_section_item(
-            self.puppet_account_id, constants.LAUNCHES, self.launch_name
-        ):
-            regional_dependencies.append(
-                LaunchForRegionTask(**self.param_kwargs, region=region,)
-            )
 
-        for account_id in self.manifest.get_account_ids_used_for_section_item(
-            self.puppet_account_id, constants.LAUNCHES, self.launch_name
-        ):
-            account_dependencies.append(
-                LaunchForAccountTask(**self.param_kwargs, account_id=account_id,)
-            )
+        affinities_used = dict()
+        is_a_dependency = False
 
-        for (
-            account_id,
-            regions,
-        ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-            self.puppet_account_id, constants.LAUNCHES, self.launch_name
-        ).items():
-            for region in regions:
-                account_and_region_dependencies.append(
-                    LaunchForAccountAndRegionTask(
-                        **self.param_kwargs, account_id=account_id, region=region,
+        for launch_name, launch_details in self.manifest.get(constants.LAUNCHES, {}).items():
+            for dep in launch_details.get("depends_on", []):
+                if dep.get("type") == constants.LAUNCH and dep.get("name") == self.launch_name:
+                    is_a_dependency = True
+                    affinities_used[dep.get('affinity')] = True
+
+        if is_a_dependency:
+            if affinities_used[constants.AFFINITY_REGION]:
+                for region in self.manifest.get_regions_used_for_section_item(
+                        self.puppet_account_id, constants.LAUNCHES, self.launch_name
+                ):
+                    regional_dependencies.append(
+                        LaunchForRegionTask(**self.param_kwargs, region=region,)
                     )
-                )
+
+            if affinities_used[constants.AFFINITY_ACCOUNT]:
+                for account_id in self.manifest.get_account_ids_used_for_section_item(
+                        self.puppet_account_id, constants.LAUNCHES, self.launch_name
+                ):
+                    account_dependencies.append(
+                        LaunchForAccountTask(**self.param_kwargs, account_id=account_id,)
+                    )
+
+            if affinities_used[constants.AFFINITY_ACCOUNT_AND_REGION]:
+                for (
+                        account_id,
+                        regions,
+                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+                    self.puppet_account_id, constants.LAUNCHES, self.launch_name
+                ).items():
+                    for region in regions:
+                        account_and_region_dependencies.append(
+                            LaunchForAccountAndRegionTask(
+                                **self.param_kwargs, account_id=account_id, region=region,
+                            )
+                        )
+
+            if affinities_used[constants.LAUNCH]:
+                klass = self.get_klass_for_provisioning()
+                for (
+                        account_id,
+                        regions,
+                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+                    self.puppet_account_id, constants.LAUNCHES, self.launch_name
+                ).items():
+                    for region in regions:
+
+                        for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+                                self.puppet_account_id,
+                                self.section_name,
+                                self.launch_name,
+                                account_id,
+                                region,
+                                single_account=self.single_account,
+                        ):
+                            dependencies.append(
+                                klass(**task, manifest_file_path=self.manifest_file_path)
+                            )
 
         return requirements
 
