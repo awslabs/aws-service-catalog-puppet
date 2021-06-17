@@ -1423,6 +1423,28 @@ class LaunchTask(LaunchForTask):
                                 klass(**task, manifest_file_path=self.manifest_file_path)
                             )
 
+        else:
+            klass = self.get_klass_for_provisioning()
+            for (
+                    account_id,
+                    regions,
+            ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+                self.puppet_account_id, constants.LAUNCHES, self.launch_name
+            ).items():
+                for region in regions:
+
+                    for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+                            self.puppet_account_id,
+                            self.section_name,
+                            self.launch_name,
+                            account_id,
+                            region,
+                            single_account=self.single_account,
+                    ):
+                        dependencies.append(
+                            klass(**task, manifest_file_path=self.manifest_file_path)
+                        )
+
         return requirements
 
     def run(self):
