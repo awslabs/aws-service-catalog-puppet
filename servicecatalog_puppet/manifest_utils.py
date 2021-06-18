@@ -173,15 +173,10 @@ def expand_manifest(manifest, client):
 
 
 def rewrite_depends_on(manifest):
-    sections = [
-        (constants.LAUNCH, constants.LAUNCHES),
-        (constants.SPOKE_LOCAL_PORTFOLIO, constants.SPOKE_LOCAL_PORTFOLIOS),
-        (constants.LAMBDA_INVOCATION, constants.LAMBDA_INVOCATIONS),
-        (constants.CODE_BUILD_RUN, constants.CODE_BUILD_RUNS),
-        (constants.ASSERTION, constants.ASSERTIONS),
-        (constants.ACTION, constants.ACTIONS),
-    ]
-    for section_item_name, section_name in sections:
+    for (
+        section_item_name,
+        section_name,
+    ) in constants.ALL_SECTION_NAME_SINGULAR_AND_PLURAL_LIST:
         for item, details in manifest.get(section_name, {}).items():
             for i in range(len(details.get("depends_on", []))):
                 if isinstance(details["depends_on"][i], str):

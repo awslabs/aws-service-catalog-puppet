@@ -577,6 +577,7 @@ def expand(f, single_account, subset=None):
         click.echo("Filtered")
 
     new_manifest = manifest_utils.rewrite_depends_on(new_manifest)
+    new_manifest = manifest_utils.rewrite_ssm_parameters(new_manifest)
 
     if subset:
         click.echo(f"Filtering for subset: {subset}")
