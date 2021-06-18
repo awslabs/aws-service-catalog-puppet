@@ -191,6 +191,40 @@ def rewrite_depends_on(manifest):
     return manifest
 
 
+def rewrite_ssm_parameters(manifest):
+    """
+    when an item in a section of the manifest uses an ssm parameter this will add a depends on to the ssm parameter
+    where it finds the parameter being set up by the output of a dependency.
+    :param manifest:
+    :return:
+    """
+    for (
+        section_item_name,
+        section_name,
+    ) in constants.SECTION_NAME_SINGULAR_AND_PLURAL_LIST_THAT_SUPPORTS_PARAMETERS:
+        for item, details in manifest.get(section_name, {}).items():
+            for parameter_name, parameter_details in details.get(
+                "parameters", {}
+            ).items():
+                if parameter_details.get("ssm"):
+                    for d in details.get("depends_on", []):
+                        dependency = manifest.get(
+                            constants.SECTION_SINGULAR_TO_PLURAL[d.get("type")]
+                        ).get(d.get("name"))
+                        for output in dependency.get("outputs", {}).get("ssm", []):
+                            if output.get("param_name") == parameter_details.get(
+                                "ssm"
+                            ).get("name"):
+                                parameter_depends_on = parameter_details["ssm"].get(
+                                    "depends_on", []
+                                )
+                                parameter_depends_on.append(d)
+                                parameter_details["ssm"][
+                                    "depends_on"
+                                ] = parameter_depends_on
+    return manifest
+
+
 def expand_path(account, client):
     ou = client.convert_path_to_ou(account.get("ou"))
     account["ou"] = ou
