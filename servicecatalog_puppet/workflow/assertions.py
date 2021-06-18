@@ -225,40 +225,98 @@ class AssertionTask(AssertionForTask):
         }
 
     def requires(self):
+        dependencies = list()
         regional_dependencies = list()
         account_dependencies = list()
         account_and_region_dependencies = list()
         requirements = dict(
+            dependencies=dependencies,
             regional_launches=regional_dependencies,
             account_launches=account_dependencies,
             account_and_region_dependencies=account_and_region_dependencies,
         )
-        for region in self.manifest.get_regions_used_for_section_item(
-            self.puppet_account_id, self.section_name, self.assertion_name
-        ):
-            regional_dependencies.append(
-                AssertionForRegionTask(**self.param_kwargs, region=region,)
-            )
 
-        for account_id in self.manifest.get_account_ids_used_for_section_item(
-            self.puppet_account_id, self.section_name, self.assertion_name
-        ):
-            account_dependencies.append(
-                AssertionForAccountTask(**self.param_kwargs, account_id=account_id,)
-            )
+        affinities_used = dict()
+        is_a_dependency = False
 
-        for (
-            account_id,
-            regions,
-        ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-            self.puppet_account_id, self.section_name, self.assertion_name
-        ).items():
-            for region in regions:
-                account_and_region_dependencies.append(
-                    AssertionForAccountAndRegionTask(
-                        **self.param_kwargs, account_id=account_id, region=region,
+        for manifest_section_name in constants.ALL_SECTION_NAMES:
+            for name, details in self.manifest.get(manifest_section_name, {}).items():
+                for dep in details.get("depends_on", []):
+                    if dep.get("type") == constants.ASSERTION and dep.get("name") == self.assertion_name:
+                        is_a_dependency = True
+                        affinities_used[dep.get('affinity')] = True
+
+
+        if is_a_dependency:
+            if affinities_used.get(constants.AFFINITY_REGION):
+                for region in self.manifest.get_regions_used_for_section_item(
+                    self.puppet_account_id, self.section_name, self.assertion_name
+                ):
+                    regional_dependencies.append(
+                        AssertionForRegionTask(**self.param_kwargs, region=region,)
                     )
-                )
+
+            if affinities_used.get(constants.AFFINITY_ACCOUNT):
+                for account_id in self.manifest.get_account_ids_used_for_section_item(
+                    self.puppet_account_id, self.section_name, self.assertion_name
+                ):
+                    account_dependencies.append(
+                        AssertionForAccountTask(**self.param_kwargs, account_id=account_id,)
+                    )
+
+            if affinities_used.get(constants.AFFINITY_ACCOUNT_AND_REGION):
+                for (
+                    account_id,
+                    regions,
+                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+                    self.puppet_account_id, self.section_name, self.assertion_name
+                ).items():
+                    for region in regions:
+                        account_and_region_dependencies.append(
+                            AssertionForAccountAndRegionTask(
+                                **self.param_kwargs, account_id=account_id, region=region,
+                            )
+                        )
+
+            if affinities_used.get(constants.ASSERTION):
+                klass = self.get_klass_for_provisioning()
+                for (
+                        account_id,
+                        regions,
+                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+                    self.puppet_account_id, self.section_name, self.assertion_name
+                ).items():
+                    for region in regions:
+                        for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+                                self.puppet_account_id,
+                                self.section_name,
+                                self.assertion_name,
+                                account_id,
+                                region,
+                        ):
+                            dependencies.append(
+                                klass(**task, manifest_file_path=self.manifest_file_path)
+                            )
+
+        else:
+            klass = self.get_klass_for_provisioning()
+            for (
+                    account_id,
+                    regions,
+            ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+                self.puppet_account_id, self.section_name, self.assertion_name
+            ).items():
+                for region in regions:
+                    for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+                            self.puppet_account_id,
+                            self.section_name,
+                            self.assertion_name,
+                            account_id,
+                            region,
+                    ):
+                        dependencies.append(
+                            klass(**task, manifest_file_path=self.manifest_file_path)
+                        )
 
         return requirements
 
