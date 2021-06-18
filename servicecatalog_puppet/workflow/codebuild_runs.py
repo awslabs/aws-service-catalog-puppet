@@ -279,9 +279,12 @@ class CodeBuildRunTask(CodeBuildRunForTask):
         for manifest_section_name in constants.ALL_SECTION_NAMES:
             for name, details in self.manifest.get(manifest_section_name, {}).items():
                 for dep in details.get("depends_on", []):
-                    if dep.get("type") == constants.CODE_BUILD_RUN and dep.get("name") == self.code_build_run_name:
+                    if (
+                        dep.get("type") == constants.CODE_BUILD_RUN
+                        and dep.get("name") == self.code_build_run_name
+                    ):
                         is_a_dependency = True
-                        affinities_used[dep.get('affinity')] = True
+                        affinities_used[dep.get("affinity")] = True
 
         if is_a_dependency:
             if affinities_used.get(constants.AFFINITY_REGION):
@@ -297,7 +300,9 @@ class CodeBuildRunTask(CodeBuildRunForTask):
                     self.puppet_account_id, self.section_name, self.code_build_run_name
                 ):
                     account_dependencies.append(
-                        CodeBuildRunForAccountTask(**self.param_kwargs, account_id=account_id,)
+                        CodeBuildRunForAccountTask(
+                            **self.param_kwargs, account_id=account_id,
+                        )
                     )
 
             if affinities_used.get(constants.AFFINITY_ACCOUNT_AND_REGION):
@@ -310,45 +315,53 @@ class CodeBuildRunTask(CodeBuildRunForTask):
                     for region in regions:
                         account_and_region_dependencies.append(
                             CodeBuildRunForAccountAndRegionTask(
-                                **self.param_kwargs, account_id=account_id, region=region,
+                                **self.param_kwargs,
+                                account_id=account_id,
+                                region=region,
                             )
                         )
 
             if affinities_used.get(constants.CODE_BUILD_RUN):
                 klass = self.get_klass_for_provisioning()
                 for (
-                        account_id,
-                        regions,
+                    account_id,
+                    regions,
                 ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
                     self.puppet_account_id, self.section_name, self.code_build_run_name
                 ).items():
                     for region in regions:
-                        for task in self.manifest.get_tasks_for_launch_and_account_and_region(
-                                self.puppet_account_id,
-                                self.section_name,
-                                self.code_build_run_name,
-                                account_id,
-                                region,
-                        ):
-                            dependencies.append(
-                                klass(**task, manifest_file_path=self.manifest_file_path)
-                            )
-
-        else:
-            klass = self.get_klass_for_provisioning()
-            for (
-                    account_id,
-                    regions,
-            ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.code_build_run_name
-            ).items():
-                for region in regions:
-                    for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+                        for (
+                            task
+                        ) in self.manifest.get_tasks_for_launch_and_account_and_region(
                             self.puppet_account_id,
                             self.section_name,
                             self.code_build_run_name,
                             account_id,
                             region,
+                        ):
+                            dependencies.append(
+                                klass(
+                                    **task, manifest_file_path=self.manifest_file_path
+                                )
+                            )
+
+        else:
+            klass = self.get_klass_for_provisioning()
+            for (
+                account_id,
+                regions,
+            ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+                self.puppet_account_id, self.section_name, self.code_build_run_name
+            ).items():
+                for region in regions:
+                    for (
+                        task
+                    ) in self.manifest.get_tasks_for_launch_and_account_and_region(
+                        self.puppet_account_id,
+                        self.section_name,
+                        self.code_build_run_name,
+                        account_id,
+                        region,
                     ):
                         dependencies.append(
                             klass(**task, manifest_file_path=self.manifest_file_path)

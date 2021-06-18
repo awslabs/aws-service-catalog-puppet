@@ -274,22 +274,31 @@ class LambdaInvocationTask(LambdaInvocationForTask):
         for manifest_section_name in constants.ALL_SECTION_NAMES:
             for name, details in self.manifest.get(manifest_section_name, {}).items():
                 for dep in details.get("depends_on", []):
-                    if dep.get("type") == constants.LAMBDA_INVOCATION and dep.get("name") == self.lambda_invocation_name:
+                    if (
+                        dep.get("type") == constants.LAMBDA_INVOCATION
+                        and dep.get("name") == self.lambda_invocation_name
+                    ):
                         is_a_dependency = True
-                        affinities_used[dep.get('affinity')] = True
+                        affinities_used[dep.get("affinity")] = True
 
         if is_a_dependency:
             if affinities_used.get(constants.AFFINITY_REGION):
                 for region in self.manifest.get_regions_used_for_section_item(
-                    self.puppet_account_id, self.section_name, self.lambda_invocation_name
+                    self.puppet_account_id,
+                    self.section_name,
+                    self.lambda_invocation_name,
                 ):
                     regional_dependencies.append(
-                        LambdaInvocationForRegionTask(**self.param_kwargs, region=region,)
+                        LambdaInvocationForRegionTask(
+                            **self.param_kwargs, region=region,
+                        )
                     )
 
             if affinities_used.get(constants.AFFINITY_ACCOUNT):
                 for account_id in self.manifest.get_account_ids_used_for_section_item(
-                    self.puppet_account_id, self.section_name, self.lambda_invocation_name
+                    self.puppet_account_id,
+                    self.section_name,
+                    self.lambda_invocation_name,
                 ):
                     account_dependencies.append(
                         LambdaInvocationForAccountTask(
@@ -302,49 +311,61 @@ class LambdaInvocationTask(LambdaInvocationForTask):
                     account_id,
                     regions,
                 ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                    self.puppet_account_id, self.section_name, self.lambda_invocation_name
+                    self.puppet_account_id,
+                    self.section_name,
+                    self.lambda_invocation_name,
                 ).items():
                     for region in regions:
                         account_and_region_dependencies.append(
                             LambdaInvocationForAccountAndRegionTask(
-                                **self.param_kwargs, account_id=account_id, region=region,
+                                **self.param_kwargs,
+                                account_id=account_id,
+                                region=region,
                             )
                         )
 
             if affinities_used.get(constants.LAMBDA_INVOCATION):
                 klass = self.get_klass_for_provisioning()
                 for (
-                        account_id,
-                        regions,
-                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                    self.puppet_account_id, self.section_name, self.lambda_invocation_name
-                ).items():
-                    for region in regions:
-                        for task in self.manifest.get_tasks_for_launch_and_account_and_region(
-                                self.puppet_account_id,
-                                self.section_name,
-                                self.lambda_invocation_name,
-                                account_id,
-                                region,
-                        ):
-                            dependencies.append(
-                                klass(**task, manifest_file_path=self.manifest_file_path)
-                            )
-        else:
-            klass = self.get_klass_for_provisioning()
-            for (
                     account_id,
                     regions,
-            ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.lambda_invocation_name
-            ).items():
-                for region in regions:
-                    for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+                    self.puppet_account_id,
+                    self.section_name,
+                    self.lambda_invocation_name,
+                ).items():
+                    for region in regions:
+                        for (
+                            task
+                        ) in self.manifest.get_tasks_for_launch_and_account_and_region(
                             self.puppet_account_id,
                             self.section_name,
                             self.lambda_invocation_name,
                             account_id,
                             region,
+                        ):
+                            dependencies.append(
+                                klass(
+                                    **task, manifest_file_path=self.manifest_file_path
+                                )
+                            )
+        else:
+            klass = self.get_klass_for_provisioning()
+            for (
+                account_id,
+                regions,
+            ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+                self.puppet_account_id, self.section_name, self.lambda_invocation_name
+            ).items():
+                for region in regions:
+                    for (
+                        task
+                    ) in self.manifest.get_tasks_for_launch_and_account_and_region(
+                        self.puppet_account_id,
+                        self.section_name,
+                        self.lambda_invocation_name,
+                        account_id,
+                        region,
                     ):
                         dependencies.append(
                             klass(**task, manifest_file_path=self.manifest_file_path)
