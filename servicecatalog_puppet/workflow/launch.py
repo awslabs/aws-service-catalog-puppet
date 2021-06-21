@@ -13,6 +13,7 @@ from servicecatalog_puppet.workflow import (
     portfoliomanagement as portfoliomanagement_tasks,
     manifest as manifest_tasks,
     dependency,
+    generate,
 )
 
 
@@ -998,6 +999,13 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
+
+    def requires(self):
+        generate.GenerateSharesTask(
+            puppet_account_id=self.puppet_account_id,
+            manifest_file_path=self.manifest_file_path,
+            section=constants.LAUNCHES,
+        )
 
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)
