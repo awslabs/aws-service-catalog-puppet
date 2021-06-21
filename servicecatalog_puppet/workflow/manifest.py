@@ -62,7 +62,9 @@ class SectionTask(tasks.PuppetTask, ManifestMixen):
                 ):
                     dependencies.append(
                         launch.RunDeployInSpokeTask(
-                            **kwargs_to_use, account_id=account_id,
+                            manifest_file_path=kwargs_to_use.get("manifest_file_path"),
+                            puppet_account_id=self.puppet_account_id,
+                            account_id=account_id,
                         )
                     )
                 return dependencies
