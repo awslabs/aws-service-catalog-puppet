@@ -1001,7 +1001,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
         }
 
     def requires(self):
-        generate.GenerateSharesTask(
+        return generate.GenerateSharesTask(
             puppet_account_id=self.puppet_account_id,
             manifest_file_path=self.manifest_file_path,
             section=constants.LAUNCHES,
