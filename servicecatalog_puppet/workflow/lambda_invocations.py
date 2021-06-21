@@ -257,119 +257,26 @@ class LambdaInvocationTask(LambdaInvocationForTask):
         }
 
     def requires(self):
-        dependencies = list()
-        regional_dependencies = list()
-        account_dependencies = list()
-        account_and_region_dependencies = list()
-        requirements = dict(
-            dependencies=dependencies,
-            regional_launches=regional_dependencies,
-            account_launches=account_dependencies,
-            account_and_region_dependencies=account_and_region_dependencies,
-        )
+        requirements = list()
 
-        affinities_used = dict()
-        is_a_dependency = False
-
-        for manifest_section_name in constants.ALL_SECTION_NAMES:
-            for name, details in self.manifest.get(manifest_section_name, {}).items():
-                for dep in details.get("depends_on", []):
-                    if (
-                        dep.get("type") == constants.LAMBDA_INVOCATION
-                        and dep.get("name") == self.lambda_invocation_name
-                    ):
-                        is_a_dependency = True
-                        affinities_used[dep.get("affinity")] = True
-
-        if is_a_dependency:
-            if affinities_used.get(constants.AFFINITY_REGION):
-                for region in self.manifest.get_regions_used_for_section_item(
+        klass = self.get_klass_for_provisioning()
+        for (
+            account_id,
+            regions,
+        ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+            self.puppet_account_id, self.section_name, self.lambda_invocation_name
+        ).items():
+            for region in regions:
+                for task in self.manifest.get_tasks_for_launch_and_account_and_region(
                     self.puppet_account_id,
                     self.section_name,
                     self.lambda_invocation_name,
-                ):
-                    regional_dependencies.append(
-                        LambdaInvocationForRegionTask(
-                            **self.param_kwargs, region=region,
-                        )
-                    )
-
-            if affinities_used.get(constants.AFFINITY_ACCOUNT):
-                for account_id in self.manifest.get_account_ids_used_for_section_item(
-                    self.puppet_account_id,
-                    self.section_name,
-                    self.lambda_invocation_name,
-                ):
-                    account_dependencies.append(
-                        LambdaInvocationForAccountTask(
-                            **self.param_kwargs, account_id=account_id,
-                        )
-                    )
-
-            if affinities_used.get(constants.AFFINITY_ACCOUNT_AND_REGION):
-                for (
                     account_id,
-                    regions,
-                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                    self.puppet_account_id,
-                    self.section_name,
-                    self.lambda_invocation_name,
-                ).items():
-                    for region in regions:
-                        account_and_region_dependencies.append(
-                            LambdaInvocationForAccountAndRegionTask(
-                                **self.param_kwargs,
-                                account_id=account_id,
-                                region=region,
-                            )
-                        )
-
-            if affinities_used.get(constants.LAMBDA_INVOCATION):
-                klass = self.get_klass_for_provisioning()
-                for (
-                    account_id,
-                    regions,
-                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                    self.puppet_account_id,
-                    self.section_name,
-                    self.lambda_invocation_name,
-                ).items():
-                    for region in regions:
-                        for (
-                            task
-                        ) in self.manifest.get_tasks_for_launch_and_account_and_region(
-                            self.puppet_account_id,
-                            self.section_name,
-                            self.lambda_invocation_name,
-                            account_id,
-                            region,
-                        ):
-                            dependencies.append(
-                                klass(
-                                    **task, manifest_file_path=self.manifest_file_path
-                                )
-                            )
-        else:
-            klass = self.get_klass_for_provisioning()
-            for (
-                account_id,
-                regions,
-            ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.lambda_invocation_name
-            ).items():
-                for region in regions:
-                    for (
-                        task
-                    ) in self.manifest.get_tasks_for_launch_and_account_and_region(
-                        self.puppet_account_id,
-                        self.section_name,
-                        self.lambda_invocation_name,
-                        account_id,
-                        region,
-                    ):
-                        dependencies.append(
-                            klass(**task, manifest_file_path=self.manifest_file_path)
-                        )
+                    region,
+                ):
+                    requirements.append(
+                        klass(**task, manifest_file_path=self.manifest_file_path)
+                    )
 
         return requirements
 
@@ -387,18 +294,27 @@ class LambdaInvocationsSectionTask(
         }
 
     def requires(self):
-        requirements = dict(
-            invocations=[
-                LambdaInvocationTask(
-                    lambda_invocation_name=lambda_invocation_name,
-                    manifest_file_path=self.manifest_file_path,
+        requirements = list()
+
+        for name, details in self.manifest.get(
+            constants.LAMBDA_INVOCATIONS, {}
+        ).items():
+            requirements += self.handle_requirements_for(
+                name,
+                details,
+                constants.LAMBDA_INVOCATION,
+                constants.LAMBDA_INVOCATIONS,
+                self.execution_mode == constants.EXECUTION_MODE_SPOKE,
+                LambdaInvocationForRegionTask,
+                LambdaInvocationForAccountTask,
+                LambdaInvocationForAccountAndRegionTask,
+                LambdaInvocationTask,
+                dict(
+                    lambda_invocation_name=name,
                     puppet_account_id=self.puppet_account_id,
-                )
-                for lambda_invocation_name, lambda_invocation in self.manifest.get(
-                    self.section_name, {}
-                ).items()
-            ]
-        )
+                    manifest_file_path=self.manifest_file_path,
+                ),
+            )
         return requirements
 
     def run(self):
