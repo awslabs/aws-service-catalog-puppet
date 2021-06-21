@@ -50,7 +50,22 @@ class SectionTask(tasks.PuppetTask, ManifestMixen):
     ):
         if is_in_spoke_execution_mode:
             if section_name_plural == constants.LAUNCHES:
-                if details.get("execution") != constants.EXECUTION_MODE_SPOKE:
+                if details.get("execution") == constants.EXECUTION_MODE_SPOKE:
+                    from servicecatalog_puppet.workflow import launch
+
+                    dependencies = list()
+                    for (
+                        account_id
+                    ) in self.manifest.get_account_ids_used_for_section_item(
+                        self.puppet_account_id, section_name_plural, name
+                    ):
+                        dependencies.append(
+                            launch.RunDeployInSpokeTask(
+                                **kwargs_to_use, account_id=account_id,
+                            )
+                        )
+                    return dependencies
+                else:
                     return []
             else:
                 return []
