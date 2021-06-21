@@ -41,7 +41,9 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                 LaunchForAccountAndRegionTask,
                 LaunchTask,
                 dict(
-                    launch_name=launch_name, puppet_account_id=self.puppet_account_id,
+                    launch_name=launch_name,
+                    puppet_account_id=self.puppet_account_id,
+                    manifest_file_path=self.manifest_file_path,
                 ),
             )
 
