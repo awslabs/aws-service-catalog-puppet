@@ -25,35 +25,125 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
 
     def requires(self):
         self.info(f"Launching and execution mode is: {self.execution_mode}")
-        tasks = list()
-        requirements = dict(tasks=tasks)
-        if self.execution_mode == constants.EXECUTION_MODE_SPOKE:
-            for launch_name, launch_details in self.manifest.get(
-                "launches", {}
-            ).items():
-                if launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE:
-                    tasks.append(
-                        LaunchTask(
-                            launch_name=launch_name,
-                            manifest_file_path=self.manifest_file_path,
-                            puppet_account_id=self.puppet_account_id,
-                        )
-                    )
-        else:
-            for launch_name, launch_details in self.manifest.get(
-                "launches", {}
-            ).items():
-                tasks.append(
-                    LaunchTask(
-                        launch_name=launch_name,
-                        manifest_file_path=self.manifest_file_path,
-                        puppet_account_id=self.puppet_account_id,
-                    )
-                )
+        requirements = list()
+
+        for launch_name, launch_details in self.manifest.get(
+            constants.LAUNCHES, {}
+        ).items():
+            requirements += self.handle_requirements_for(
+                launch_name,
+                launch_details,
+                constants.LAUNCH,
+                constants.LAUNCHES,
+                self.execution_mode == constants.EXECUTION_MODE_SPOKE,
+                LaunchForRegionTask,
+                LaunchForAccountTask,
+                LaunchForAccountAndRegionTask,
+                LaunchTask,
+                dict(
+                    launch_name=launch_name, puppet_account_id=self.puppet_account_id,
+                ),
+            )
+
+        # if self.execution_mode == constants.EXECUTION_MODE_SPOKE:
+        #     for launch_name, launch_details in self.manifest.get(
+        #         "launches", {}
+        #     ).items():
+        #         if launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE:
+        #             tasks.append(
+        #                 LaunchTask(
+        #                     launch_name=launch_name,
+        #                     manifest_file_path=self.manifest_file_path,
+        #                     puppet_account_id=self.puppet_account_id,
+        #                 )
+        #             )
+        # else:
+        #     for launch_name, launch_details in self.manifest.get(
+        #         "launches", {}
+        #     ).items():
+        #         tasks.append(
+        #             LaunchTask(
+        #                 launch_name=launch_name,
+        #                 manifest_file_path=self.manifest_file_path,
+        #                 puppet_account_id=self.puppet_account_id,
+        #             )
+        #         )
+        # return requirements
         return requirements
 
     def run(self):
         self.write_output(self.manifest.get("launches", {}))
+
+    def handle_requirements_for(
+        self,
+        name,
+        details,
+        section_name_singular,
+        section_name_plural,
+        is_in_spoke_execution_mode,
+        for_region_task_klass,
+        for_account_task_klass,
+        for_account_and_region_task_klass,
+        task_klass,
+        kwargs_to_use,
+    ):
+        if is_in_spoke_execution_mode:
+            if details.get("execution") != constants.EXECUTION_MODE_SPOKE:
+                return []
+
+        dependencies = list()
+
+        affinities_used = dict()
+        is_a_dependency = False
+
+        for manifest_section_name in constants.ALL_SECTION_NAMES:
+            for n, d in self.manifest.get(manifest_section_name, {}).items():
+                for dep in d.get("depends_on", []):
+                    if (
+                        dep.get("type") == section_name_singular
+                        and dep.get("name") == name
+                    ):
+                        is_a_dependency = True
+                        affinities_used[dep.get("affinity")] = True
+
+        if is_a_dependency:
+            if affinities_used.get(constants.AFFINITY_REGION):
+                for region in self.manifest.get_regions_used_for_section_item(
+                    self.puppet_account_id, section_name_plural, name
+                ):
+                    dependencies.append(
+                        for_region_task_klass(**kwargs_to_use, region=region,)
+                    )
+
+            if affinities_used.get(constants.AFFINITY_ACCOUNT):
+                for account_id in self.manifest.get_account_ids_used_for_section_item(
+                    self.puppet_account_id, section_name_plural, name
+                ):
+                    dependencies.append(
+                        for_account_task_klass(**kwargs_to_use, account_id=account_id,)
+                    )
+
+            if affinities_used.get(constants.AFFINITY_ACCOUNT_AND_REGION):
+                for (
+                    account_id,
+                    regions,
+                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+                    self.puppet_account_id, section_name_plural, name
+                ).items():
+                    for region in regions:
+                        dependencies.append(
+                            for_account_and_region_task_klass(
+                                **kwargs_to_use, account_id=account_id, region=region,
+                            )
+                        )
+
+            if affinities_used.get(constants.LAUNCH):
+                dependencies.append(task_klass(**kwargs_to_use))
+
+        else:
+            dependencies.append(task_klass(**kwargs_to_use))
+
+        return dependencies
 
 
 class ProvisioningTask(tasks.PuppetTaskWithParameters, manifest_tasks.ManifestMixen):
@@ -1308,114 +1398,27 @@ class LaunchTask(LaunchForTask):
         }
 
     def requires(self):
-        dependencies = list()
-        regional_dependencies = list()
-        account_dependencies = list()
-        account_and_region_dependencies = list()
-        requirements = dict(
-            dependencies=dependencies,
-            regional_launches=regional_dependencies,
-            account_launches=account_dependencies,
-            account_and_region_dependencies=account_and_region_dependencies,
-        )
+        requirements = list()
 
-        affinities_used = dict()
-        is_a_dependency = False
-
-        for manifest_section_name in constants.ALL_SECTION_NAMES:
-            for name, details in self.manifest.get(manifest_section_name, {}).items():
-                for dep in details.get("depends_on", []):
-                    if (
-                        dep.get("type") == constants.LAUNCH
-                        and dep.get("name") == self.launch_name
-                    ):
-                        is_a_dependency = True
-                        affinities_used[dep.get("affinity")] = True
-
-        if is_a_dependency:
-            if affinities_used.get(constants.AFFINITY_REGION):
-                for region in self.manifest.get_regions_used_for_section_item(
-                    self.puppet_account_id, constants.LAUNCHES, self.launch_name
-                ):
-                    regional_dependencies.append(
-                        LaunchForRegionTask(**self.param_kwargs, region=region,)
-                    )
-
-            if affinities_used.get(constants.AFFINITY_ACCOUNT):
-                for account_id in self.manifest.get_account_ids_used_for_section_item(
-                    self.puppet_account_id, constants.LAUNCHES, self.launch_name
-                ):
-                    account_dependencies.append(
-                        LaunchForAccountTask(
-                            **self.param_kwargs, account_id=account_id,
-                        )
-                    )
-
-            if affinities_used.get(constants.AFFINITY_ACCOUNT_AND_REGION):
-                for (
+        klass = self.get_klass_for_provisioning()
+        for (
+            account_id,
+            regions,
+        ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+            self.puppet_account_id, constants.LAUNCHES, self.launch_name
+        ).items():
+            for region in regions:
+                for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+                    self.puppet_account_id,
+                    self.section_name,
+                    self.launch_name,
                     account_id,
-                    regions,
-                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                    self.puppet_account_id, constants.LAUNCHES, self.launch_name
-                ).items():
-                    for region in regions:
-                        account_and_region_dependencies.append(
-                            LaunchForAccountAndRegionTask(
-                                **self.param_kwargs,
-                                account_id=account_id,
-                                region=region,
-                            )
-                        )
-
-            if affinities_used.get(constants.LAUNCH):
-                klass = self.get_klass_for_provisioning()
-                for (
-                    account_id,
-                    regions,
-                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                    self.puppet_account_id, constants.LAUNCHES, self.launch_name
-                ).items():
-                    for region in regions:
-
-                        for (
-                            task
-                        ) in self.manifest.get_tasks_for_launch_and_account_and_region(
-                            self.puppet_account_id,
-                            self.section_name,
-                            self.launch_name,
-                            account_id,
-                            region,
-                            single_account=self.single_account,
-                        ):
-                            dependencies.append(
-                                klass(
-                                    **task, manifest_file_path=self.manifest_file_path
-                                )
-                            )
-
-        else:
-            klass = self.get_klass_for_provisioning()
-            for (
-                account_id,
-                regions,
-            ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                self.puppet_account_id, constants.LAUNCHES, self.launch_name
-            ).items():
-                for region in regions:
-
-                    for (
-                        task
-                    ) in self.manifest.get_tasks_for_launch_and_account_and_region(
-                        self.puppet_account_id,
-                        self.section_name,
-                        self.launch_name,
-                        account_id,
-                        region,
-                        single_account=self.single_account,
-                    ):
-                        dependencies.append(
-                            klass(**task, manifest_file_path=self.manifest_file_path)
-                        )
+                    region,
+                    single_account=self.single_account,
+                ):
+                    requirements.append(
+                        klass(**task, manifest_file_path=self.manifest_file_path)
+                    )
 
         return requirements
 
