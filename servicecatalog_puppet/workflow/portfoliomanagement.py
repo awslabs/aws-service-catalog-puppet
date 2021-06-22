@@ -142,15 +142,9 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
         product_id = details.get("product_id")
         with self.spoke_regional_client("servicecatalog") as servicecatalog:
             version_id = None
-            try:
-                response = servicecatalog.list_provisioning_artifacts_single_page(
-                    ProductId=product_id
-                )
-            except servicecatalog.exceptions.ThrottlingException:
-                time.sleep(1)
-                response = servicecatalog.list_provisioning_artifacts_single_page(
-                    ProductId=product_id
-                )
+            response = servicecatalog.list_provisioning_artifacts_single_page(
+                ProductId=product_id, wait_between_pages=1,
+            )
             for provisioning_artifact_detail in response.get(
                 "ProvisioningArtifactDetails"
             ):
