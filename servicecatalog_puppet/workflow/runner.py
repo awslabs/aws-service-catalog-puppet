@@ -114,16 +114,20 @@ def run_tasks(
 
     if execution_mode == constants.EXECUTION_MODE_HUB:
         logger.info("Checking spoke executions...")
-        for filename in glob(
+        all_run_deploy_in_spoke_tasks = glob(
             f"output/RunDeployInSpokeTask/**/{cache_invalidator}.json", recursive=True,
-        ):
+        )
+        n_all_run_deploy_in_spoke_tasks = len(all_run_deploy_in_spoke_tasks)
+        index = 0
+        for filename in all_run_deploy_in_spoke_tasks:
             result = json.loads(open(filename, "r").read())
             spoke_account_id = result.get("account_id")
             build = result.get("build")
             build_id = build.get("id")
             logger.info(
-                f"Checking spoke execution for account: {spoke_account_id} build: {build_id}"
+                f"[{index}/{n_all_run_deploy_in_spoke_tasks}] Checking spoke execution for account: {spoke_account_id} build: {build_id}"
             )
+            index += 1
             with betterboto_client.CrossAccountClientContextManager(
                 "codebuild",
                 config.get_puppet_role_arn(spoke_account_id),
