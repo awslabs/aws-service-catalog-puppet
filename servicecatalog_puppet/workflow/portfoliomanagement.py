@@ -1404,11 +1404,14 @@ class ShareAndAcceptPortfolioTask(
             )
             puppet_role_needs_associating = True
             principal_to_associate = config.get_puppet_role_arn(self.account_id)
+            self.info(f"Checking if {principal_to_associate} needs to be associated")
             for principal_for_portfolio in principals_for_portfolio:
+                self.info(f"comparing {principal_to_associate} to {principal_for_portfolio.get('PrincipalARN')}")
                 if (
                     principal_for_portfolio.get("PrincipalARN")
                     == principal_to_associate
                 ):
+                    self.info("found a match!! no longer going to add")
                     puppet_role_needs_associating = False
 
             if puppet_role_needs_associating:
