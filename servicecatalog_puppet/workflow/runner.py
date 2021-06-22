@@ -133,6 +133,8 @@ def run_tasks(
                 config.get_puppet_role_arn(spoke_account_id),
                 f"{spoke_account_id}-{config.get_puppet_role_name()}",
             ) as codebuild_client:
+                response = codebuild_client.batch_get_builds(ids=[build_id])
+                build = response.get("builds")[0]
                 while build.get("buildStatus") == "IN_PROGRESS":
                     response = codebuild_client.batch_get_builds(ids=[build_id])
                     build = response.get("builds")[0]
