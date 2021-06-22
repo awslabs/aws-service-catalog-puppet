@@ -592,7 +592,7 @@ class GetProductsAndProvisioningArtifactsTask(PortfolioManagementTask):
 
     def api_calls_used(self):
         return [
-            f"servicecatalog.list_provisioning_artifacts_{self.region}",
+            f"servicecatalog.list_provisioning_artifacts_{self.puppet_account_id}_{self.region}",
         ]
 
     def run(self):
