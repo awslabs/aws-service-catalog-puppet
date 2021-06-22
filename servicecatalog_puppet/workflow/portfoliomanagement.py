@@ -325,7 +325,7 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
         ) as cross_account_servicecatalog:
             result = None
             response = (
-                cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
+                cross_account_servicecatalog.list_accepted_portfolio_shares_single_page(PortfolioShareType='AWS_ORGANIZATIONS')
             )
             for portfolio_detail in response.get("PortfolioDetails"):
                 if portfolio_detail.get("DisplayName") == self.portfolio:
