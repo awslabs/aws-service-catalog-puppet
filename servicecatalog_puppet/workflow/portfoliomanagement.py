@@ -1402,16 +1402,16 @@ class ShareAndAcceptPortfolioTask(
             ).get(
                 "Principals"
             )
-            principal_was_associated = False
+            puppet_role_needs_associating = True
             principal_to_associate = config.get_puppet_role_arn(self.account_id)
             for principal_for_portfolio in principals_for_portfolio:
                 if (
                     principal_for_portfolio.get("PrincipalARN")
                     == principal_to_associate
                 ):
-                    principal_was_associated = True
+                    puppet_role_needs_associating = False
 
-            if not principal_was_associated:
+            if puppet_role_needs_associating:
                 cross_account_servicecatalog.associate_principal_with_portfolio(
                     PortfolioId=portfolio_id,
                     PrincipalARN=principal_to_associate,
