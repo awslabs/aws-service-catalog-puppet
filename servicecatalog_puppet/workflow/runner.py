@@ -110,6 +110,8 @@ def run_tasks(
 
     cache_invalidator = os.environ.get("SCT_CACHE_INVALIDATOR")
 
+    has_spoke_failures = False
+
     if execution_mode == constants.EXECUTION_MODE_HUB:
         logger.info("Checking spoke executions...")
         for filename in glob(
@@ -133,6 +135,7 @@ def run_tasks(
                     time.sleep(10)
                     logger.info("Current status: {}".format(build.get("buildStatus")))
                 if build.get("buildStatus") != "SUCCEEDED":
+                    has_spoke_failures = True
                     params_for_results = dict(
                         account_id=spoke_account_id, build_id=build_id
                     )
@@ -397,7 +400,10 @@ def run_tasks(
     if running_exploded:
         pass
     else:
-        sys.exit(exit_status_code)
+        if has_spoke_failures:
+            sys.exit(1)
+        else:
+            sys.exit(exit_status_code)
 
 
 def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
@@ -437,4 +443,5 @@ def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
         LuigiStatusCode.NOT_RUN: 4,
         LuigiStatusCode.MISSING_EXT: 5,
     }
+
     sys.exit(exit_status_codes.get(run_result.status))
