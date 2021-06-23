@@ -143,7 +143,7 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
         with self.spoke_regional_client("servicecatalog") as servicecatalog:
             version_id = None
             response = servicecatalog.list_provisioning_artifacts_single_page(
-                ProductId=product_id, wait_between_pages=3,
+                ProductId=product_id, wait_between_pages=10,
             )
             for provisioning_artifact_detail in response.get(
                 "ProvisioningArtifactDetails"
