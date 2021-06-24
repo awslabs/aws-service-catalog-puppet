@@ -256,7 +256,7 @@ class PuppetTaskWithParameters(PuppetTask):
                     region=param_details.get("ssm").get(
                         "region", config.get_home_region(self.puppet_account_id)
                     ),
-                    depends_on=param_details.get("ssm").get("depends_on"),
+                    depends_on=param_details.get("ssm").get("depends_on", []),
                     manifest_file_path=self.manifest_file_path,
                     puppet_account_id=self.puppet_account_id,
                     spoke_account_id=self.account_id,
