@@ -145,7 +145,7 @@ class GetVersionIdByVersionName(PortfolioManagementTask, manifest_tasks.Manifest
         if self.manifest.has_cache():
             product = self.manifest["id_cache"][self.region][self.portfolio]["products"][self.product]
             product_id = product['id']
-            version_id = product['versions'][self.version]['id']
+            version_id = product['versions'][self.version]
         else:
             details = self.load_from_input("product")
             product_id = details.get("product_id")
