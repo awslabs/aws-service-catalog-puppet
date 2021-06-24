@@ -62,7 +62,7 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
                 region=self.region,
             )
             if not (
-                self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run
+                    self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run
             ):
                 requirements["generate_shares"] = generate_tasks.GenerateSharesTask(
                     puppet_account_id=self.puppet_account_id,
@@ -76,7 +76,7 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
 
         if self.account_id == self.puppet_account_id:
             for provisioning_artifact_summary in details.get(
-                "ProvisioningArtifactSummaries"
+                    "ProvisioningArtifactSummaries"
             ):
                 if provisioning_artifact_summary.get("Name") == self.version:
                     self.write_output(
@@ -102,7 +102,7 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
         )
 
 
-class GetVersionIdByVersionName(PortfolioManagementTask):
+class GetVersionIdByVersionName(PortfolioManagementTask, manifest_tasks.ManifestMixen):
     puppet_account_id = luigi.Parameter()
     portfolio = luigi.Parameter()
     product = luigi.Parameter()
@@ -127,45 +127,53 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
         ]
 
     def requires(self):
-        return dict(
-            product=GetProductIdByProductName(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                portfolio=self.portfolio,
-                product=self.product,
-                account_id=self.account_id,
-                region=self.region,
+        if self.manifest.has_cache():
+            return []
+        else:
+            return dict(
+                product=GetProductIdByProductName(
+                    manifest_file_path=self.manifest_file_path,
+                    puppet_account_id=self.puppet_account_id,
+                    portfolio=self.portfolio,
+                    product=self.product,
+                    account_id=self.account_id,
+                    region=self.region,
+                )
             )
-        )
 
     def run(self):
-        details = self.load_from_input("product")
-        product_id = details.get("product_id")
-        with self.spoke_regional_client("servicecatalog") as servicecatalog:
-            version_id = None
-            time.sleep(1)
-            response = servicecatalog.list_provisioning_artifacts_single_page(
-                ProductId=product_id, wait_between_pages=1,
-            )
-            for provisioning_artifact_detail in response.get(
-                "ProvisioningArtifactDetails"
-            ):
-                if provisioning_artifact_detail.get("Name") == self.version:
-                    version_id = provisioning_artifact_detail.get("Id")
-            assert version_id is not None, "Did not find version looking for"
-            with self.output().open("w") as f:
-                f.write(
-                    json.dumps(
-                        {
-                            "version_name": self.version,
-                            "version_id": version_id,
-                            "product_name": self.product,
-                            "product_id": product_id,
-                        },
-                        indent=4,
-                        default=str,
-                    )
+        if self.manifest.has_cache():
+            product = self.manifest["id_cache"][self.region][self.portfolio]["products"][self.product]
+            product_id = product['id']
+            version_id = product['versions'][self.version]['id']
+        else:
+            details = self.load_from_input("product")
+            product_id = details.get("product_id")
+            with self.spoke_regional_client("servicecatalog") as servicecatalog:
+                version_id = None
+                response = servicecatalog.list_provisioning_artifacts_single_page(
+                    ProductId=product_id,
                 )
+                for provisioning_artifact_detail in response.get(
+                        "ProvisioningArtifactDetails"
+                ):
+                    if provisioning_artifact_detail.get("Name") == self.version:
+                        version_id = provisioning_artifact_detail.get("Id")
+                assert version_id is not None, "Did not find version looking for"
+
+        with self.output().open("w") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "version_name": self.version,
+                        "version_id": version_id,
+                        "product_name": self.product,
+                        "product_id": product_id,
+                    },
+                    indent=4,
+                    default=str,
+                )
+            )
 
 
 class SearchProductsAsAdminTask(PortfolioManagementTask):
@@ -323,7 +331,7 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
 
     def run(self):
         with self.spoke_regional_client(
-            "servicecatalog"
+                "servicecatalog"
         ) as cross_account_servicecatalog:
             result = None
             response = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page(
@@ -562,7 +570,7 @@ class CreateAssociationsForSpokeLocalPortfolioTask(PortfolioManagementTask):
                 if self.should_use_sns
                 else [],
             )
-            result = cloudformation.describe_stacks(StackName=stack_name,).get(
+            result = cloudformation.describe_stacks(StackName=stack_name, ).get(
                 "Stacks"
             )[0]
             self.write_output(result)
@@ -618,11 +626,11 @@ class GetProductsAndProvisioningArtifactsTask(PortfolioManagementTask):
                     "ProvisioningArtifactDetails", []
                 )
                 for (
-                    hub_provisioning_artifact_detail
+                        hub_provisioning_artifact_detail
                 ) in hub_provisioning_artifact_details:
                     if (
-                        hub_provisioning_artifact_detail.get("Type")
-                        == "CLOUD_FORMATION_TEMPLATE"
+                            hub_provisioning_artifact_detail.get("Type")
+                            == "CLOUD_FORMATION_TEMPLATE"
                     ):
                         provisioning_artifact_details.append(
                             hub_provisioning_artifact_detail
@@ -696,11 +704,11 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 hub_product_name = product_view_summary.get("Name")
 
                 for hub_provisioning_artifact_detail in product_view_summary.get(
-                    "provisioning_artifact_details", []
+                        "provisioning_artifact_details", []
                 ):
                     if (
-                        hub_provisioning_artifact_detail.get("Type")
-                        == "CLOUD_FORMATION_TEMPLATE"
+                            hub_provisioning_artifact_detail.get("Type")
+                            == "CLOUD_FORMATION_TEMPLATE"
                     ):
                         product_versions_that_should_be_copied[
                             f"{hub_provisioning_artifact_detail.get('Name')}"
@@ -713,11 +721,11 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                 hub_product_arn = product_view_summary.get("ProductARN")
                 copy_args = {
                     "SourceProductArn": hub_product_arn,
-                    "CopyOptions": ["CopyTags",],
+                    "CopyOptions": ["CopyTags", ],
                 }
 
                 with self.spoke_regional_client(
-                    "servicecatalog"
+                        "servicecatalog"
                 ) as spoke_service_catalog:
                     p = None
                     try:
@@ -745,16 +753,16 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                                     "ProvisioningArtifactDetails"
                                 )
                                 for (
-                                    provisioning_artifact_detail
+                                        provisioning_artifact_detail
                                 ) in spoke_provisioning_artifact_details:
                                     id_to_delete = (
                                         f"{provisioning_artifact_detail.get('Name')}"
                                     )
                                     if (
-                                        product_versions_that_should_be_copied.get(
-                                            id_to_delete, None
-                                        )
-                                        is not None
+                                            product_versions_that_should_be_copied.get(
+                                                id_to_delete, None
+                                            )
+                                            is not None
                                     ):
                                         self.info(
                                             f"{hub_product_name} :: Going to skip {spoke_product_id} {provisioning_artifact_detail.get('Name')}"
@@ -834,18 +842,18 @@ class CopyIntoSpokeLocalPortfolioTask(PortfolioManagementTask):
                         "ProvisioningArtifactDetails", []
                     )
                     for (
-                        version_name,
-                        version_details,
+                            version_name,
+                            version_details,
                     ) in product_versions_that_should_be_updated.items():
                         self.info(
                             f"{version_name} is active: {version_details.get('Active')} in hub"
                         )
                         for (
-                            spoke_provisioning_artifact_detail
+                                spoke_provisioning_artifact_detail
                         ) in spoke_provisioning_artifact_details:
                             if (
-                                spoke_provisioning_artifact_detail.get("Name")
-                                == version_name
+                                    spoke_provisioning_artifact_detail.get("Name")
+                                    == version_name
                             ):
                                 self.info(
                                     f"Updating active of {version_name}/{spoke_provisioning_artifact_detail.get('Id')} "
@@ -1081,7 +1089,7 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
             template = config.env.get_template(
                 "launch_role_constraints.template.yaml.j2"
             ).render(
-                portfolio={"DisplayName": self.portfolio,},
+                portfolio={"DisplayName": self.portfolio, },
                 portfolio_id=portfolio_id,
                 launch_constraints=new_launch_constraints,
                 product_name_to_id_dict=product_name_to_id_dict,
@@ -1096,7 +1104,7 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
                 if self.should_use_sns
                 else [],
             )
-            result = cloudformation.describe_stacks(StackName=stack_name,).get(
+            result = cloudformation.describe_stacks(StackName=stack_name, ).get(
                 "Stacks"
             )[0]
             self.write_output(result)
@@ -1115,13 +1123,13 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
                     )
                 elif isinstance(launch_constraint.get("products"), str):
                     with self.spoke_regional_client(
-                        "servicecatalog"
+                            "servicecatalog"
                     ) as service_catalog:
                         response = service_catalog.search_products_as_admin_single_page(
                             PortfolioId=portfolio_id
                         )
                         for product_view_details in response.get(
-                            "ProductViewDetails", []
+                                "ProductViewDetails", []
                         ):
                             product_view_summary = product_view_details.get(
                                 "ProductViewSummary"
@@ -1130,8 +1138,8 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(PortfolioManagementT
                                 product_view_summary.get("Name")
                             ] = product_view_summary.get("ProductId")
                             if re.match(
-                                launch_constraint.get("products"),
-                                product_view_summary.get("Name"),
+                                    launch_constraint.get("products"),
+                                    product_view_summary.get("Name"),
                             ):
                                 new_launch_constraint["products"].append(
                                     product_view_summary.get("Name")
@@ -1177,7 +1185,7 @@ class RequestPolicyTask(PortfolioManagementTask):
             path = f"{p}/{self.account_id}.json"
 
         f = open(path, "w")
-        f.write(json.dumps(self.param_kwargs, indent=4, default=str,))
+        f.write(json.dumps(self.param_kwargs, indent=4, default=str, ))
         f.close()
         self.write_output(self.param_kwargs)
 
@@ -1382,7 +1390,7 @@ class ShareAndAcceptPortfolioTask(
         portfolio_id = portfolio.get("portfolio_id")
 
         with self.spoke_regional_client(
-            "servicecatalog"
+                "servicecatalog"
         ) as cross_account_servicecatalog:
             if self.sharing_mode != constants.SHARING_MODE_AWS_ORGANIZATIONS:
                 was_accepted = False
@@ -1412,8 +1420,8 @@ class ShareAndAcceptPortfolioTask(
                     f"comparing {principal_to_associate} to {principal_for_portfolio.get('PrincipalARN')}"
                 )
                 if (
-                    principal_for_portfolio.get("PrincipalARN")
-                    == principal_to_associate
+                        principal_for_portfolio.get("PrincipalARN")
+                        == principal_to_associate
                 ):
                     self.info("found a match!! no longer going to add")
                     puppet_role_needs_associating = False
@@ -1779,6 +1787,12 @@ class DeletePortfolio(PortfolioManagementTask):
 class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
     puppet_account_id = luigi.Parameter()
 
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
     def requires(self):
         requirements = dict()
         regions = config.get_regions(self.puppet_account_id)
@@ -1816,28 +1830,18 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_tasks.ManifestMixen
     def run(self):
         new_manifest = copy.deepcopy(self.manifest)
         regions = config.get_regions(self.puppet_account_id)
+        global_id_cache = dict()
+        new_manifest['id_cache'] = global_id_cache
         for region in regions:
+            id_cache = dict()
+            global_id_cache[region] = id_cache
             r = self.input().get(region)
             for launch_name, launch_details in self.manifest.get_launches_items():
-                if (
-                    new_manifest[constants.LAUNCHES][launch_name].get("portfolio_ids")
-                    is None
-                ):
-                    new_manifest[constants.LAUNCHES][launch_name][
-                        "portfolio_ids"
-                    ] = dict()
-                    new_manifest[constants.LAUNCHES][launch_name][
-                        "product_ids"
-                    ] = dict()
-                    new_manifest[constants.LAUNCHES][launch_name][
-                        "version_ids"
-                    ] = dict()
-
                 target = r.get(launch_details.get("portfolio")).get("details")
                 portfolio_id = json.loads(target.open("r").read()).get("portfolio_id")
-                new_manifest[constants.LAUNCHES][launch_name]["portfolio_ids"][
-                    region
-                ] = portfolio_id
+                portfolio_name = launch_details.get("portfolio")
+                if id_cache.get(portfolio_name) is None:
+                    id_cache[portfolio_name] = dict(id=portfolio_id, products=dict())
 
                 product = launch_details.get("product")
                 target = (
@@ -1846,14 +1850,12 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_tasks.ManifestMixen
                 all_details = json.loads(target.open("r").read())
                 for p in all_details:
                     if p.get("Name") == product:
-                        new_manifest[constants.LAUNCHES][launch_name]["product_ids"][
-                            region
-                        ] = p.get("ProductId")
+
+                        if id_cache[portfolio_name].get('products').get(product) is None:
+                            id_cache[portfolio_name]['products'][product] = dict(id=p.get("ProductId"), versions=dict())
                         version = launch_details.get("version")
                         for a in p.get("provisioning_artifact_details"):
                             if a.get("Name") == version:
-                                new_manifest[constants.LAUNCHES][launch_name][
-                                    "version_ids"
-                                ][region] = a.get("Id")
+                                id_cache[portfolio_name]['products'][product]['versions'][version] = a.get("Id")
 
         self.write_output(yaml.safe_dump(json.loads(json.dumps(new_manifest))), skip_json_dump=True)

@@ -308,6 +308,9 @@ def get_from_dict(d, path):
 
 
 class Manifest(dict):
+    def has_cache(self):
+        return self.get("id_cache") is not None
+
     def get_launches_items(self):
         return self.get(constants.LAUNCHES, {}).items()
 
