@@ -46,6 +46,15 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
+    def test_no_exception_when_optional_parameters_are_missing(self):
+        # setup
+        # exercise
+        self.module.GetSSMParamTask(
+            parameter_name=self.parameter_name,
+            name=self.name,
+            region=self.region,
+        )
+
     def test_api_calls_used(self):
         # setup
         expected_result = ["ssm.get_parameter"]

@@ -178,12 +178,12 @@ class GetSSMParamTask(PuppetTask):
     parameter_name = luigi.Parameter()
     name = luigi.Parameter()
     region = luigi.Parameter(default=None)
-    depends_on = luigi.ListParameter()
 
-    manifest_file_path = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
-    spoke_account_id = luigi.Parameter()
-    spoke_region = luigi.Parameter()
+    depends_on = luigi.ListParameter(default=[])
+    manifest_file_path = luigi.Parameter(default="")
+    puppet_account_id = luigi.Parameter(default="")
+    spoke_account_id = luigi.Parameter(default="")
+    spoke_region = luigi.Parameter(default="")
 
     def params_for_results_display(self):
         return {
