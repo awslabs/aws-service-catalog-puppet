@@ -308,6 +308,12 @@ def get_from_dict(d, path):
 
 
 class Manifest(dict):
+    def get_launches_items(self):
+        return self.get(constants.LAUNCHES, {}).items()
+
+    def get_launch(self, name):
+        return self.get(constants.LAUNCHES).get(name)
+
     def get_tasks_for(
         self, puppet_account_id, section_name, item_name, single_account="None"
     ):

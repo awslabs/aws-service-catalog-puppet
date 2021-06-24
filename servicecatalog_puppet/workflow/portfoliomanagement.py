@@ -5,6 +5,7 @@ import time
 
 import luigi
 import yaml
+import copy
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
@@ -325,8 +326,8 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
             "servicecatalog"
         ) as cross_account_servicecatalog:
             result = None
-            response = (
-                cross_account_servicecatalog.list_accepted_portfolio_shares_single_page(PortfolioShareType='AWS_ORGANIZATIONS')
+            response = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page(
+                PortfolioShareType="AWS_ORGANIZATIONS"
             )
             for portfolio_detail in response.get("PortfolioDetails"):
                 if portfolio_detail.get("DisplayName") == self.portfolio:
@@ -1407,7 +1408,9 @@ class ShareAndAcceptPortfolioTask(
             principal_to_associate = config.get_puppet_role_arn(self.account_id)
             self.info(f"Checking if {principal_to_associate} needs to be associated")
             for principal_for_portfolio in principals_for_portfolio:
-                self.info(f"comparing {principal_to_associate} to {principal_for_portfolio.get('PrincipalARN')}")
+                self.info(
+                    f"comparing {principal_to_associate} to {principal_for_portfolio.get('PrincipalARN')}"
+                )
                 if (
                     principal_for_portfolio.get("PrincipalARN")
                     == principal_to_associate
@@ -1771,3 +1774,86 @@ class DeletePortfolio(PortfolioManagementTask):
                     manifest_file_path=self.manifest_file_path,
                 )
         self.write_output(self.params_for_results_display())
+
+
+class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
+    puppet_account_id = luigi.Parameter()
+
+    def requires(self):
+        requirements = dict()
+        regions = config.get_regions(self.puppet_account_id)
+        for launch_name, launch_details in self.manifest.get_launches_items():
+            portfolio = launch_details.get("portfolio")
+            for region in regions:
+                if requirements.get(region) is None:
+                    requirements[region] = dict()
+
+                regional_details = requirements[region]
+                if regional_details.get(portfolio) is None:
+                    regional_details[portfolio] = dict(products=dict())
+
+                portfolio_details = regional_details[portfolio]
+                if portfolio_details.get("details") is None:
+                    portfolio_details["details"] = GetPortfolioByPortfolioName(
+                        manifest_file_path=self.manifest_file_path,
+                        portfolio=portfolio,
+                        puppet_account_id=self.puppet_account_id,
+                        account_id=self.puppet_account_id,
+                        region=region,
+                    )
+
+                product = launch_details.get("product")
+                products = portfolio_details.get("products")
+                if products.get(product) is None:
+                    products[product] = GetProductsAndProvisioningArtifactsTask(
+                        manifest_file_path=self.manifest_file_path,
+                        region=region,
+                        portfolio=portfolio,
+                        puppet_account_id=self.puppet_account_id,
+                    )
+        return requirements
+
+    def run(self):
+        new_manifest = copy.deepcopy(self.manifest)
+        regions = config.get_regions(self.puppet_account_id)
+        for region in regions:
+            r = self.input().get(region)
+            for launch_name, launch_details in self.manifest.get_launches_items():
+                if (
+                    new_manifest[constants.LAUNCHES][launch_name].get("portfolio_ids")
+                    is None
+                ):
+                    new_manifest[constants.LAUNCHES][launch_name][
+                        "portfolio_ids"
+                    ] = dict()
+                    new_manifest[constants.LAUNCHES][launch_name][
+                        "product_ids"
+                    ] = dict()
+                    new_manifest[constants.LAUNCHES][launch_name][
+                        "version_ids"
+                    ] = dict()
+
+                target = r.get(launch_details.get("portfolio")).get("details")
+                portfolio_id = json.loads(target.open("r").read()).get("portfolio_id")
+                new_manifest[constants.LAUNCHES][launch_name]["portfolio_ids"][
+                    region
+                ] = portfolio_id
+
+                product = launch_details.get("product")
+                target = (
+                    r.get(launch_details.get("portfolio")).get("products").get(product)
+                )
+                all_details = json.loads(target.open("r").read())
+                for p in all_details:
+                    if p.get("Name") == product:
+                        new_manifest[constants.LAUNCHES][launch_name]["product_ids"][
+                            region
+                        ] = p.get("ProductId")
+                        version = launch_details.get("version")
+                        for a in p.get("provisioning_artifact_details"):
+                            if a.get("Name") == version:
+                                new_manifest[constants.LAUNCHES][launch_name][
+                                    "version_ids"
+                                ][region] = a.get("Id")
+
+        self.write_output(yaml.safe_dump(new_manifest), skip_json_dump=True)

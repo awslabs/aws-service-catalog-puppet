@@ -281,7 +281,14 @@ class ProvisionProductTask(
                 version=self.version,
                 region=self.region,
             ),
-            "details": portfoliomanagement_tasks.GetVersionDetailsByNames(
+        }
+
+        if self.manifest.get_launch(self.launch_name).get("portfolio_ids"):
+            pass
+        else:
+            requirements[
+                "details"
+            ] = portfoliomanagement_tasks.GetVersionDetailsByNames(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 account_id=self.single_account
@@ -291,8 +298,7 @@ class ProvisionProductTask(
                 product=self.product,
                 version=self.version,
                 region=self.region,
-            ),
-        }
+            )
         return requirements
 
     def api_calls_used(self):
@@ -319,62 +325,15 @@ class ProvisionProductTask(
             )
         return apis
 
-    # def run(self):
-    #     if self.execution_mode == constants.EXECUTION_MODE_SPOKE:
-    #         if self.execution == constants.EXECUTION_MODE_SPOKE:
-    #             yield DoProvisionProductTask(
-    #                 manifest_file_path=self.manifest_file_path,
-    #                 launch_name=self.launch_name,
-    #                 puppet_account_id=self.puppet_account_id,
-    #                 region=self.region,
-    #                 account_id=self.account_id,
-    #                 portfolio=self.portfolio,
-    #                 product=self.product,
-    #                 version=self.version,
-    #                 ssm_param_inputs=self.ssm_param_inputs,
-    #                 launch_parameters=self.launch_parameters,
-    #                 manifest_parameters=self.manifest_parameters,
-    #                 account_parameters=self.account_parameters,
-    #                 retry_count=self.retry_count,
-    #                 worker_timeout=self.worker_timeout,
-    #                 ssm_param_outputs=self.ssm_param_outputs,
-    #                 requested_priority=self.requested_priority,
-    #                 execution=self.execution,
-    #             )
-    #
-    #     else:
-    #         if self.execution == constants.EXECUTION_MODE_SPOKE:
-    #             yield RunDeployInSpokeTask(
-    #                 manifest_file_path=self.manifest_file_path,
-    #                 puppet_account_id=self.puppet_account_id,
-    #                 account_id=self.account_id,
-    #             )
-    #         else:
-    #             yield DoProvisionProductTask(
-    #                 manifest_file_path=self.manifest_file_path,
-    #                 launch_name=self.launch_name,
-    #                 puppet_account_id=self.puppet_account_id,
-    #                 region=self.region,
-    #                 account_id=self.account_id,
-    #                 portfolio=self.portfolio,
-    #                 product=self.product,
-    #                 version=self.version,
-    #                 ssm_param_inputs=self.ssm_param_inputs,
-    #                 launch_parameters=self.launch_parameters,
-    #                 manifest_parameters=self.manifest_parameters,
-    #                 account_parameters=self.account_parameters,
-    #                 retry_count=self.retry_count,
-    #                 worker_timeout=self.worker_timeout,
-    #                 ssm_param_outputs=self.ssm_param_outputs,
-    #                 requested_priority=self.requested_priority,
-    #                 execution=self.execution,
-    #             )
-    #     self.write_output(self.params_for_results_display())
-
     def run(self):
-        details = self.load_from_input("details")
-        product_id = details.get("product_details").get("ProductId")
-        version_id = details.get("version_details").get("Id")
+        if self.input().get("details"):
+            details = self.load_from_input("details")
+            product_id = details.get("product_details").get("ProductId")
+            version_id = details.get("version_details").get("Id")
+        else:
+            launch_details = self.manifest.get_launch(self.launch_name)
+            product_id = launch_details["product_ids"][self.region]
+            version_id = launch_details["version_ids"][self.region]
 
         task_output = dict(
             **self.params_for_results_display(),
@@ -1001,10 +960,16 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
         }
 
     def requires(self):
-        return generate.GenerateSharesTask(
-            puppet_account_id=self.puppet_account_id,
-            manifest_file_path=self.manifest_file_path,
-            section=constants.LAUNCHES,
+        return dict(
+            shares=generate.GenerateSharesTask(
+                puppet_account_id=self.puppet_account_id,
+                manifest_file_path=self.manifest_file_path,
+                section=constants.LAUNCHES,
+            ),
+            new_manifest=portfoliomanagement_tasks.GenerateManifestWithIdsTask(
+                puppet_account_id=self.puppet_account_id,
+                manifest_file_path=self.manifest_file_path,
+            ),
         )
 
     def run(self):
@@ -1022,7 +987,9 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
             bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
             key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
             s3.put_object(
-                Body=open(self.manifest_file_path).read(), Bucket=bucket, Key=key,
+                Body=self.input().get("new_manifest").open("r").read(),
+                Bucket=bucket,
+                Key=key,
             )
             signed_url = s3.generate_presigned_url(
                 "get_object",
