@@ -1,3 +1,4 @@
+
 from unittest import skip
 
 from . import tasks_unit_tests_helper
@@ -129,7 +130,7 @@ class ProvisioningArtifactParametersTaskTest(
         raise NotImplementedError()
 
 
-class DoProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
+class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     launch_name = "launch_name"
     portfolio = "portfolio"
@@ -154,7 +155,7 @@ class DoProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         self.module = launch
 
-        self.sut = self.module.DoProvisionProductTask(
+        self.sut = self.module.ProvisionProductTask(
             manifest_file_path=self.manifest_file_path,
             launch_name=self.launch_name,
             portfolio=self.portfolio,

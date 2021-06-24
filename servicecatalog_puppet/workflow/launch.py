@@ -59,8 +59,8 @@ class ProvisioningTask(tasks.PuppetTaskWithParameters, manifest_tasks.ManifestMi
     def status(self):
         return (
             self.manifest.get(constants.LAUNCHES)
-                .get(self.launch_name)
-                .get("status", constants.PROVISIONED)
+            .get(self.launch_name)
+            .get("status", constants.PROVISIONED)
         )
 
     @property
@@ -291,7 +291,7 @@ class ProvisionProductTask(
                 product=self.product,
                 version=self.version,
                 region=self.region,
-            )
+            ),
         }
         return requirements
 
@@ -359,7 +359,7 @@ class ProvisionProductTask(
                 )
 
                 with self.input().get("provisioning_artifact_parameters").open(
-                        "r"
+                    "r"
                 ) as f:
                     provisioning_artifact_parameters = json.loads(f.read())
 
@@ -472,7 +472,7 @@ class ProvisionProductTask(
                         f"Running in execution mode: {self.execution}, checking for SSM outputs"
                     )
                     with self.spoke_regional_client(
-                            "cloudformation"
+                        "cloudformation"
                     ) as spoke_cloudformation:
                         stack_details = aws.get_stack_output_for(
                             spoke_cloudformation,
@@ -488,7 +488,7 @@ class ProvisionProductTask(
                             # TODO push into another task
                             for output in stack_details.get("Outputs", []):
                                 if output.get("OutputKey") == ssm_param_output.get(
-                                        "stack_output"
+                                    "stack_output"
                                 ):
                                     ssm_parameter_name = ssm_param_output.get(
                                         "param_name"
@@ -588,7 +588,7 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                     )
 
                     with self.input().get("provisioning_artifact_parameters").open(
-                            "r"
+                        "r"
                     ) as f:
                         provisioning_artifact_parameters = json.loads(f.read())
 
@@ -646,14 +646,14 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
                         )
 
     def get_current_version(
-            self, provisioning_artifact_id, product_id, service_catalog
+        self, provisioning_artifact_id, product_id, service_catalog
     ):
         return service_catalog.describe_provisioning_artifact(
             ProvisioningArtifactId=provisioning_artifact_id, ProductId=product_id,
         ).get("ProvisioningArtifactDetail")
 
     def write_result(
-            self, current_version, new_version, effect, current_status, active, notes=""
+        self, current_version, new_version, effect, current_status, active, notes=""
     ):
         with self.output().open("w") as f:
             f.write(
@@ -810,7 +810,7 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
             )
             log_output = self.to_str_params()
             log_output.update(
-                {"provisioned_product_id": provisioned_product_id, }
+                {"provisioned_product_id": provisioned_product_id,}
             )
 
             for ssm_param_output in self.ssm_param_outputs:
@@ -821,7 +821,7 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
                 with self.hub_client("ssm") as ssm:
                     try:
                         # todo push into another task
-                        ssm.delete_parameter(Name=param_name, )
+                        ssm.delete_parameter(Name=param_name,)
                         self.info(
                             f"[{self.launch_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
                         )
@@ -831,7 +831,7 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
                         )
 
             with self.output().open("w") as f:
-                f.write(json.dumps(log_output, indent=4, default=str, ))
+                f.write(json.dumps(log_output, indent=4, default=str,))
 
             self.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: finished terminating"
@@ -916,8 +916,8 @@ class TerminateProductDryRunTask(ProvisioningTask):
                         ProvisioningArtifactId=r.get("ProvisioningArtifactId"),
                         ProductId=self.product_id,
                     )
-                        .get("ProvisioningArtifactDetail")
-                        .get("Name")
+                    .get("ProvisioningArtifactDetail")
+                    .get("Name")
                 )
 
                 if r.get("Status") != "TERMINATED":
@@ -999,7 +999,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
                         "value": self.puppet_account_id,
                         "type": "PLAINTEXT",
                     },
-                    {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT", },
+                    {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
                     {
                         "name": "REGIONS",
                         "value": ",".join(regions),
@@ -1166,11 +1166,11 @@ class LaunchForRegionTask(LaunchForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-                self.puppet_account_id,
-                self.section_name,
-                self.launch_name,
-                self.region,
-                single_account=self.single_account,
+            self.puppet_account_id,
+            self.section_name,
+            self.launch_name,
+            self.region,
+            single_account=self.single_account,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -1205,7 +1205,7 @@ class LaunchForAccountTask(LaunchForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies, )
+        requirements = dict(dependencies=dependencies,)
 
         klass = self.get_klass_for_provisioning()
 
@@ -1244,12 +1244,12 @@ class LaunchForAccountAndRegionTask(LaunchForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_account_and_region(
-                self.puppet_account_id,
-                self.section_name,
-                self.launch_name,
-                self.account_id,
-                self.region,
-                single_account=self.single_account,
+            self.puppet_account_id,
+            self.section_name,
+            self.launch_name,
+            self.account_id,
+            self.region,
+            single_account=self.single_account,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
@@ -1271,19 +1271,19 @@ class LaunchTask(LaunchForTask):
 
         klass = self.get_klass_for_provisioning()
         for (
-                account_id,
-                regions,
+            account_id,
+            regions,
         ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
             self.puppet_account_id, constants.LAUNCHES, self.launch_name
         ).items():
             for region in regions:
                 for task in self.manifest.get_tasks_for_launch_and_account_and_region(
-                        self.puppet_account_id,
-                        self.section_name,
-                        self.launch_name,
-                        account_id,
-                        region,
-                        single_account=self.single_account,
+                    self.puppet_account_id,
+                    self.section_name,
+                    self.launch_name,
+                    account_id,
+                    region,
+                    single_account=self.single_account,
                 ):
                     requirements.append(
                         klass(**task, manifest_file_path=self.manifest_file_path)

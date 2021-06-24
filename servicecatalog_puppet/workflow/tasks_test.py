@@ -7,6 +7,11 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     parameter_name = "parameter_name"
     name = "name"
     region = "region"
+    depends_on = []
+    manifest_file_path = "manifest_file_path"
+    puppet_account_id = "puppet_account_id"
+    spoke_account_id = "spoke_account_id"
+    spoke_region = "spoke_region"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import tasks
@@ -14,7 +19,14 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.module = tasks
 
         self.sut = self.module.GetSSMParamTask(
-            parameter_name=self.parameter_name, name=self.name, region=self.region,
+            parameter_name=self.parameter_name,
+            name=self.name,
+            region=self.region,
+            depends_on=self.depends_on,
+            manifest_file_path=self.manifest_file_path,
+            puppet_account_id=self.puppet_account_id,
+            spoke_account_id=self.spoke_account_id,
+            spoke_region=self.spoke_region,
         )
 
         self.wire_up_mocks()
