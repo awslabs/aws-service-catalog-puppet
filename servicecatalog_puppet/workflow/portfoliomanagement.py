@@ -1856,4 +1856,4 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_tasks.ManifestMixen
                                     "version_ids"
                                 ][region] = a.get("Id")
 
-        self.write_output(yaml.safe_dump(new_manifest), skip_json_dump=True)
+        self.write_output(yaml.safe_dump(json.loads(json.dumps(new_manifest))), skip_json_dump=True)
