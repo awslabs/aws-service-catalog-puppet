@@ -13,6 +13,7 @@ from servicecatalog_puppet.workflow import (
     portfoliomanagement as portfoliomanagement_tasks,
     manifest as manifest_tasks,
     dependency,
+    generate,
 )
 
 
@@ -25,31 +26,26 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
 
     def requires(self):
         self.info(f"Launching and execution mode is: {self.execution_mode}")
-        tasks = list()
-        requirements = dict(tasks=tasks)
-        if self.execution_mode == constants.EXECUTION_MODE_SPOKE:
-            for launch_name, launch_details in self.manifest.get(
-                "launches", {}
-            ).items():
-                if launch_details.get("execution") == constants.EXECUTION_MODE_SPOKE:
-                    tasks.append(
-                        LaunchTask(
-                            launch_name=launch_name,
-                            manifest_file_path=self.manifest_file_path,
-                            puppet_account_id=self.puppet_account_id,
-                        )
-                    )
-        else:
-            for launch_name, launch_details in self.manifest.get(
-                "launches", {}
-            ).items():
-                tasks.append(
-                    LaunchTask(
-                        launch_name=launch_name,
-                        manifest_file_path=self.manifest_file_path,
-                        puppet_account_id=self.puppet_account_id,
-                    )
-                )
+        requirements = list()
+
+        for name, details in self.manifest.get(constants.LAUNCHES, {}).items():
+            requirements += self.handle_requirements_for(
+                name,
+                details,
+                constants.LAUNCH,
+                constants.LAUNCHES,
+                self.execution_mode == constants.EXECUTION_MODE_SPOKE,
+                LaunchForRegionTask,
+                LaunchForAccountTask,
+                LaunchForAccountAndRegionTask,
+                LaunchTask,
+                dict(
+                    launch_name=name,
+                    puppet_account_id=self.puppet_account_id,
+                    manifest_file_path=self.manifest_file_path,
+                ),
+            )
+
         return requirements
 
     def run(self):
@@ -269,106 +265,13 @@ class ProvisionProductTask(
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def requires(self):
-        requirements = {"section_dependencies": self.get_section_dependencies()}
-        return requirements
-
-    def run(self):
-        if self.execution_mode == constants.EXECUTION_MODE_SPOKE:
-            if self.execution == constants.EXECUTION_MODE_SPOKE:
-                yield DoProvisionProductTask(
-                    manifest_file_path=self.manifest_file_path,
-                    launch_name=self.launch_name,
-                    puppet_account_id=self.puppet_account_id,
-                    region=self.region,
-                    account_id=self.account_id,
-                    portfolio=self.portfolio,
-                    product=self.product,
-                    version=self.version,
-                    ssm_param_inputs=self.ssm_param_inputs,
-                    launch_parameters=self.launch_parameters,
-                    manifest_parameters=self.manifest_parameters,
-                    account_parameters=self.account_parameters,
-                    retry_count=self.retry_count,
-                    worker_timeout=self.worker_timeout,
-                    ssm_param_outputs=self.ssm_param_outputs,
-                    requested_priority=self.requested_priority,
-                    execution=self.execution,
-                )
-
-        else:
-            if self.execution == constants.EXECUTION_MODE_SPOKE:
-                yield RunDeployInSpokeTask(
-                    manifest_file_path=self.manifest_file_path,
-                    puppet_account_id=self.puppet_account_id,
-                    account_id=self.account_id,
-                )
-            else:
-                yield DoProvisionProductTask(
-                    manifest_file_path=self.manifest_file_path,
-                    launch_name=self.launch_name,
-                    puppet_account_id=self.puppet_account_id,
-                    region=self.region,
-                    account_id=self.account_id,
-                    portfolio=self.portfolio,
-                    product=self.product,
-                    version=self.version,
-                    ssm_param_inputs=self.ssm_param_inputs,
-                    launch_parameters=self.launch_parameters,
-                    manifest_parameters=self.manifest_parameters,
-                    account_parameters=self.account_parameters,
-                    retry_count=self.retry_count,
-                    worker_timeout=self.worker_timeout,
-                    ssm_param_outputs=self.ssm_param_outputs,
-                    requested_priority=self.requested_priority,
-                    execution=self.execution,
-                )
-        self.write_output(self.params_for_results_display())
-
-
-class DoProvisionProductTask(
-    ProvisioningTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin
-):
-    launch_name = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
-
-    region = luigi.Parameter()
-    account_id = luigi.Parameter()
-
-    portfolio = luigi.Parameter()
-    product = luigi.Parameter()
-    version = luigi.Parameter()
-
-    ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
-
-    launch_parameters = luigi.DictParameter(default={}, significant=False)
-    manifest_parameters = luigi.DictParameter(default={}, significant=False)
-    account_parameters = luigi.DictParameter(default={}, significant=False)
-
-    retry_count = luigi.IntParameter(default=1, significant=False)
-    worker_timeout = luigi.IntParameter(default=0, significant=False)
-    ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
-    requested_priority = luigi.IntParameter(significant=False, default=0)
-
-    execution = luigi.Parameter()
-
-    try_count = 1
-
-    def params_for_results_display(self):
-        return {
-            "puppet_account_id": self.puppet_account_id,
-            "launch_name": self.launch_name,
-            "account_id": self.account_id,
-            "region": self.region,
-            "cache_invalidator": self.cache_invalidator,
-        }
-
     @property
     def priority(self):
         return self.requested_priority
 
     def requires(self):
         requirements = {
+            "section_dependencies": self.get_section_dependencies(),
             "ssm_params": self.get_ssm_parameters(),
             "provisioning_artifact_parameters": ProvisioningArtifactParametersTask(
                 manifest_file_path=self.manifest_file_path,
@@ -390,7 +293,6 @@ class DoProvisionProductTask(
                 region=self.region,
             ),
         }
-
         return requirements
 
     def api_calls_used(self):
@@ -618,7 +520,7 @@ class DoProvisionProductTask(
                 self.info("finished")
 
 
-class ProvisionProductDryRunTask(DoProvisionProductTask):
+class ProvisionProductDryRunTask(ProvisionProductTask):
     def output(self):
         return luigi.LocalTarget(self.output_location)
 
@@ -1046,6 +948,19 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
             "cache_invalidator": self.cache_invalidator,
         }
 
+    def requires(self):
+        return dict(
+            shares=generate.GenerateSharesTask(
+                puppet_account_id=self.puppet_account_id,
+                manifest_file_path=self.manifest_file_path,
+                section=constants.LAUNCHES,
+            ),
+            new_manifest=portfoliomanagement_tasks.GenerateManifestWithIdsTask(
+                puppet_account_id=self.puppet_account_id,
+                manifest_file_path=self.manifest_file_path,
+            ),
+        )
+
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)
         regions = config.get_regions(self.puppet_account_id)
@@ -1061,7 +976,9 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
             bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
             key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
             s3.put_object(
-                Body=open(self.manifest_file_path).read(), Bucket=bucket, Key=key,
+                Body=self.input().get("new_manifest").open("r").read(),
+                Bucket=bucket,
+                Key=key,
             )
             signed_url = s3.generate_presigned_url(
                 "get_object",
@@ -1350,101 +1267,27 @@ class LaunchTask(LaunchForTask):
         }
 
     def requires(self):
-        dependencies = list()
-        regional_dependencies = list()
-        account_dependencies = list()
-        account_and_region_dependencies = list()
-        requirements = dict(
-            dependencies=dependencies,
-            regional_launches=regional_dependencies,
-            account_launches=account_dependencies,
-            account_and_region_dependencies=account_and_region_dependencies,
-        )
+        requirements = list()
 
-        affinities_used = dict()
-        is_a_dependency = False
-
-        for manifest_section_name in constants.ALL_SECTION_NAMES:
-            for name, details in self.manifest.get(manifest_section_name, {}).items():
-                for dep in details.get("depends_on", []):
-                    if dep.get("type") == constants.LAUNCH and dep.get("name") == self.launch_name:
-                        is_a_dependency = True
-                        affinities_used[dep.get('affinity')] = True
-
-        if is_a_dependency:
-            if affinities_used.get(constants.AFFINITY_REGION):
-                for region in self.manifest.get_regions_used_for_section_item(
-                        self.puppet_account_id, constants.LAUNCHES, self.launch_name
-                ):
-                    regional_dependencies.append(
-                        LaunchForRegionTask(**self.param_kwargs, region=region,)
-                    )
-
-            if affinities_used.get(constants.AFFINITY_ACCOUNT):
-                for account_id in self.manifest.get_account_ids_used_for_section_item(
-                        self.puppet_account_id, constants.LAUNCHES, self.launch_name
-                ):
-                    account_dependencies.append(
-                        LaunchForAccountTask(**self.param_kwargs, account_id=account_id,)
-                    )
-
-            if affinities_used.get(constants.AFFINITY_ACCOUNT_AND_REGION):
-                for (
-                        account_id,
-                        regions,
-                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                    self.puppet_account_id, constants.LAUNCHES, self.launch_name
-                ).items():
-                    for region in regions:
-                        account_and_region_dependencies.append(
-                            LaunchForAccountAndRegionTask(
-                                **self.param_kwargs, account_id=account_id, region=region,
-                            )
-                        )
-
-            if affinities_used.get(constants.LAUNCH):
-                klass = self.get_klass_for_provisioning()
-                for (
-                        account_id,
-                        regions,
-                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                    self.puppet_account_id, constants.LAUNCHES, self.launch_name
-                ).items():
-                    for region in regions:
-
-                        for task in self.manifest.get_tasks_for_launch_and_account_and_region(
-                                self.puppet_account_id,
-                                self.section_name,
-                                self.launch_name,
-                                account_id,
-                                region,
-                                single_account=self.single_account,
-                        ):
-                            dependencies.append(
-                                klass(**task, manifest_file_path=self.manifest_file_path)
-                            )
-
-        else:
-            klass = self.get_klass_for_provisioning()
-            for (
+        klass = self.get_klass_for_provisioning()
+        for (
+            account_id,
+            regions,
+        ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+            self.puppet_account_id, constants.LAUNCHES, self.launch_name
+        ).items():
+            for region in regions:
+                for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+                    self.puppet_account_id,
+                    self.section_name,
+                    self.launch_name,
                     account_id,
-                    regions,
-            ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                self.puppet_account_id, constants.LAUNCHES, self.launch_name
-            ).items():
-                for region in regions:
-
-                    for task in self.manifest.get_tasks_for_launch_and_account_and_region(
-                            self.puppet_account_id,
-                            self.section_name,
-                            self.launch_name,
-                            account_id,
-                            region,
-                            single_account=self.single_account,
-                    ):
-                        dependencies.append(
-                            klass(**task, manifest_file_path=self.manifest_file_path)
-                        )
+                    region,
+                    single_account=self.single_account,
+                ):
+                    requirements.append(
+                        klass(**task, manifest_file_path=self.manifest_file_path)
+                    )
 
         return requirements
 

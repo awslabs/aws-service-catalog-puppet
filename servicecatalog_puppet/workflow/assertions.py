@@ -225,28 +225,9 @@ class AssertionTask(AssertionForTask):
         }
 
     def requires(self):
-        regional_dependencies = list()
-        account_dependencies = list()
-        account_and_region_dependencies = list()
-        requirements = dict(
-            regional_launches=regional_dependencies,
-            account_launches=account_dependencies,
-            account_and_region_dependencies=account_and_region_dependencies,
-        )
-        for region in self.manifest.get_regions_used_for_section_item(
-            self.puppet_account_id, self.section_name, self.assertion_name
-        ):
-            regional_dependencies.append(
-                AssertionForRegionTask(**self.param_kwargs, region=region,)
-            )
+        requirements = list()
 
-        for account_id in self.manifest.get_account_ids_used_for_section_item(
-            self.puppet_account_id, self.section_name, self.assertion_name
-        ):
-            account_dependencies.append(
-                AssertionForAccountTask(**self.param_kwargs, account_id=account_id,)
-            )
-
+        klass = self.get_klass_for_provisioning()
         for (
             account_id,
             regions,
@@ -254,11 +235,16 @@ class AssertionTask(AssertionForTask):
             self.puppet_account_id, self.section_name, self.assertion_name
         ).items():
             for region in regions:
-                account_and_region_dependencies.append(
-                    AssertionForAccountAndRegionTask(
-                        **self.param_kwargs, account_id=account_id, region=region,
+                for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+                    self.puppet_account_id,
+                    self.section_name,
+                    self.assertion_name,
+                    account_id,
+                    region,
+                ):
+                    requirements.append(
+                        klass(**task, manifest_file_path=self.manifest_file_path)
                     )
-                )
 
         return requirements
 
@@ -274,18 +260,26 @@ class AssertionsSectionTask(AssertionBaseTask, manifest_tasks.SectionTask):
         }
 
     def requires(self):
-        requirements = dict(
-            invocations=[
-                AssertionTask(
-                    assertion_name=assertion_name,
-                    manifest_file_path=self.manifest_file_path,
+        requirements = list()
+
+        for name, details in self.manifest.get(constants.ASSERTIONS, {}).items():
+            requirements += self.handle_requirements_for(
+                name,
+                details,
+                constants.ASSERTION,
+                constants.ASSERTIONS,
+                self.execution_mode == constants.EXECUTION_MODE_SPOKE,
+                AssertionForRegionTask,
+                AssertionForAccountTask,
+                AssertionForAccountAndRegionTask,
+                AssertionTask,
+                dict(
+                    assertion_name=name,
                     puppet_account_id=self.puppet_account_id,
-                )
-                for assertion_name, assertion in self.manifest.get(
-                    self.section_name, {}
-                ).items()
-            ]
-        )
+                    manifest_file_path=self.manifest_file_path,
+                ),
+            )
+
         return requirements
 
     def run(self):

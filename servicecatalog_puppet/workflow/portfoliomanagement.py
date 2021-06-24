@@ -5,6 +5,7 @@ import time
 
 import luigi
 import yaml
+import copy
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
@@ -101,7 +102,7 @@ class GetVersionDetailsByNames(PortfolioManagementTask):
         )
 
 
-class GetVersionIdByVersionName(PortfolioManagementTask):
+class GetVersionIdByVersionName(PortfolioManagementTask, manifest_tasks.ManifestMixen):
     puppet_account_id = luigi.Parameter()
     portfolio = luigi.Parameter()
     product = luigi.Parameter()
@@ -126,44 +127,55 @@ class GetVersionIdByVersionName(PortfolioManagementTask):
         ]
 
     def requires(self):
-        return dict(
-            product=GetProductIdByProductName(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                portfolio=self.portfolio,
-                product=self.product,
-                account_id=self.account_id,
-                region=self.region,
+        if self.manifest.has_cache():
+            return []
+        else:
+            return dict(
+                product=GetProductIdByProductName(
+                    manifest_file_path=self.manifest_file_path,
+                    puppet_account_id=self.puppet_account_id,
+                    portfolio=self.portfolio,
+                    product=self.product,
+                    account_id=self.account_id,
+                    region=self.region,
+                )
             )
-        )
 
     def run(self):
-        details = self.load_from_input("product")
-        product_id = details.get("product_id")
-        with self.spoke_regional_client("servicecatalog") as servicecatalog:
-            version_id = None
-            response = servicecatalog.list_provisioning_artifacts_single_page(
-                ProductId=product_id
-            )
-            for provisioning_artifact_detail in response.get(
-                "ProvisioningArtifactDetails"
-            ):
-                if provisioning_artifact_detail.get("Name") == self.version:
-                    version_id = provisioning_artifact_detail.get("Id")
-            assert version_id is not None, "Did not find version looking for"
-            with self.output().open("w") as f:
-                f.write(
-                    json.dumps(
-                        {
-                            "version_name": self.version,
-                            "version_id": version_id,
-                            "product_name": self.product,
-                            "product_id": product_id,
-                        },
-                        indent=4,
-                        default=str,
-                    )
+        if self.manifest.has_cache():
+            product = self.manifest["id_cache"][self.region][self.portfolio][
+                "products"
+            ][self.product]
+            product_id = product["id"]
+            version_id = product["versions"][self.version]
+        else:
+            details = self.load_from_input("product")
+            product_id = details.get("product_id")
+            with self.spoke_regional_client("servicecatalog") as servicecatalog:
+                version_id = None
+                response = servicecatalog.list_provisioning_artifacts_single_page(
+                    ProductId=product_id,
                 )
+                for provisioning_artifact_detail in response.get(
+                    "ProvisioningArtifactDetails"
+                ):
+                    if provisioning_artifact_detail.get("Name") == self.version:
+                        version_id = provisioning_artifact_detail.get("Id")
+                assert version_id is not None, "Did not find version looking for"
+
+        with self.output().open("w") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "version_name": self.version,
+                        "version_id": version_id,
+                        "product_name": self.product,
+                        "product_id": product_id,
+                    },
+                    indent=4,
+                    default=str,
+                )
+            )
 
 
 class SearchProductsAsAdminTask(PortfolioManagementTask):
@@ -324,8 +336,8 @@ class GetPortfolioByPortfolioName(PortfolioManagementTask):
             "servicecatalog"
         ) as cross_account_servicecatalog:
             result = None
-            response = (
-                cross_account_servicecatalog.list_accepted_portfolio_shares_single_page()
+            response = cross_account_servicecatalog.list_accepted_portfolio_shares_single_page(
+                PortfolioShareType="AWS_ORGANIZATIONS"
             )
             for portfolio_detail in response.get("PortfolioDetails"):
                 if portfolio_detail.get("DisplayName") == self.portfolio:
@@ -592,7 +604,7 @@ class GetProductsAndProvisioningArtifactsTask(PortfolioManagementTask):
 
     def api_calls_used(self):
         return [
-            f"servicecatalog.list_provisioning_artifacts_{self.region}",
+            f"servicecatalog.list_provisioning_artifacts_{self.puppet_account_id}_{self.region}",
         ]
 
     def run(self):
@@ -1402,16 +1414,21 @@ class ShareAndAcceptPortfolioTask(
             ).get(
                 "Principals"
             )
-            principal_was_associated = False
+            puppet_role_needs_associating = True
             principal_to_associate = config.get_puppet_role_arn(self.account_id)
+            self.info(f"Checking if {principal_to_associate} needs to be associated")
             for principal_for_portfolio in principals_for_portfolio:
+                self.info(
+                    f"comparing {principal_to_associate} to {principal_for_portfolio.get('PrincipalARN')}"
+                )
                 if (
                     principal_for_portfolio.get("PrincipalARN")
                     == principal_to_associate
                 ):
-                    principal_was_associated = True
+                    self.info("found a match!! no longer going to add")
+                    puppet_role_needs_associating = False
 
-            if not principal_was_associated:
+            if puppet_role_needs_associating:
                 cross_account_servicecatalog.associate_principal_with_portfolio(
                     PortfolioId=portfolio_id,
                     PrincipalARN=principal_to_associate,
@@ -1767,3 +1784,89 @@ class DeletePortfolio(PortfolioManagementTask):
                     manifest_file_path=self.manifest_file_path,
                 )
         self.write_output(self.params_for_results_display())
+
+
+class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_tasks.ManifestMixen):
+    puppet_account_id = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "puppet_account_id": self.puppet_account_id,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def requires(self):
+        requirements = dict()
+        regions = config.get_regions(self.puppet_account_id)
+        for launch_name, launch_details in self.manifest.get_launches_items():
+            portfolio = launch_details.get("portfolio")
+            for region in regions:
+                if requirements.get(region) is None:
+                    requirements[region] = dict()
+
+                regional_details = requirements[region]
+                if regional_details.get(portfolio) is None:
+                    regional_details[portfolio] = dict(products=dict())
+
+                portfolio_details = regional_details[portfolio]
+                if portfolio_details.get("details") is None:
+                    portfolio_details["details"] = GetPortfolioByPortfolioName(
+                        manifest_file_path=self.manifest_file_path,
+                        portfolio=portfolio,
+                        puppet_account_id=self.puppet_account_id,
+                        account_id=self.puppet_account_id,
+                        region=region,
+                    )
+
+                product = launch_details.get("product")
+                products = portfolio_details.get("products")
+                if products.get(product) is None:
+                    products[product] = GetProductsAndProvisioningArtifactsTask(
+                        manifest_file_path=self.manifest_file_path,
+                        region=region,
+                        portfolio=portfolio,
+                        puppet_account_id=self.puppet_account_id,
+                    )
+        return requirements
+
+    def run(self):
+        new_manifest = copy.deepcopy(self.manifest)
+        regions = config.get_regions(self.puppet_account_id)
+        global_id_cache = dict()
+        new_manifest["id_cache"] = global_id_cache
+        for region in regions:
+            id_cache = dict()
+            global_id_cache[region] = id_cache
+            r = self.input().get(region)
+            for launch_name, launch_details in self.manifest.get_launches_items():
+                target = r.get(launch_details.get("portfolio")).get("details")
+                portfolio_id = json.loads(target.open("r").read()).get("portfolio_id")
+                portfolio_name = launch_details.get("portfolio")
+                if id_cache.get(portfolio_name) is None:
+                    id_cache[portfolio_name] = dict(id=portfolio_id, products=dict())
+
+                product = launch_details.get("product")
+                target = (
+                    r.get(launch_details.get("portfolio")).get("products").get(product)
+                )
+                all_details = json.loads(target.open("r").read())
+                for p in all_details:
+                    if p.get("Name") == product:
+
+                        if (
+                            id_cache[portfolio_name].get("products").get(product)
+                            is None
+                        ):
+                            id_cache[portfolio_name]["products"][product] = dict(
+                                id=p.get("ProductId"), versions=dict()
+                            )
+                        version = launch_details.get("version")
+                        for a in p.get("provisioning_artifact_details"):
+                            if a.get("Name") == version:
+                                id_cache[portfolio_name]["products"][product][
+                                    "versions"
+                                ][version] = a.get("Id")
+
+        self.write_output(
+            yaml.safe_dump(json.loads(json.dumps(new_manifest))), skip_json_dump=True
+        )

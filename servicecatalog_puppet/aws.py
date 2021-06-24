@@ -507,15 +507,3 @@ def run_pipeline(pipeline_name, tail):
                 else:
                     time.sleep(5)
         return pipeline_execution_id
-
-
-def get_version_id_for(servicecatalog, product_id, version_name):
-    version_id = None
-    response = servicecatalog.list_provisioning_artifacts_single_page(
-        ProductId=product_id
-    )
-    for provisioning_artifact_detail in response.get("ProvisioningArtifactDetails"):
-        if provisioning_artifact_detail.get("Name") == version_name:
-            version_id = provisioning_artifact_detail.get("Id")
-    assert version_id is not None, "Did not find version looking for"
-    return version_id

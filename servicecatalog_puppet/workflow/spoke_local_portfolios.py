@@ -39,18 +39,28 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
         )
 
     def requires(self):
-        requirements = dict()
+        requirements = list()
         if self.should_run():
-            requirements["spoke_local_portfolio_tasks"] = [
-                SpokeLocalPortfolioTask(
-                    spoke_local_portfolio_name=spoke_local_portfolio_name,
-                    manifest_file_path=self.manifest_file_path,
-                    puppet_account_id=self.puppet_account_id,
+
+            for name, details in self.manifest.get(
+                constants.SPOKE_LOCAL_PORTFOLIOS, {}
+            ).items():
+                requirements += self.handle_requirements_for(
+                    name,
+                    details,
+                    constants.SPOKE_LOCAL_PORTFOLIO,
+                    constants.SPOKE_LOCAL_PORTFOLIOS,
+                    self.execution_mode == constants.EXECUTION_MODE_SPOKE,
+                    SpokeLocalPortfolioForRegionTask,
+                    SpokeLocalPortfolioForAccountTask,
+                    SpokeLocalPortfolioForAccountAndRegionTask,
+                    SpokeLocalPortfolioTask,
+                    dict(
+                        spoke_local_portfolio_name=name,
+                        puppet_account_id=self.puppet_account_id,
+                        manifest_file_path=self.manifest_file_path,
+                    ),
                 )
-                for spoke_local_portfolio_name, spoke_local_portfolio in self.manifest.get(
-                    "spoke-local-portfolios", {}
-                ).items()
-            ]
 
         return requirements
 
@@ -199,99 +209,26 @@ class SpokeLocalPortfolioTask(SpokeLocalPortfolioForTask):
         }
 
     def requires(self):
-        dependencies = list()
-        regional_dependencies = list()
-        account_dependencies = list()
-        account_and_region_dependencies = list()
-        requirements = dict(
-            dependencies=dependencies,
-            regional_launches=regional_dependencies,
-            account_launches=account_dependencies,
-            account_and_region_dependencies=account_and_region_dependencies,
-        )
+        requirements = list()
 
-        affinities_used = dict()
-        is_a_dependency = False
-
-        for manifest_section_name in constants.ALL_SECTION_NAMES:
-            for name, details in self.manifest.get(manifest_section_name, {}).items():
-                for dep in details.get("depends_on", []):
-                    if dep.get("type") == constants.SPOKE_LOCAL_PORTFOLIO and dep.get("name") == self.spoke_local_portfolio_name:
-                        is_a_dependency = True
-                        affinities_used[dep.get('affinity')] = True
-
-        if is_a_dependency:
-            if affinities_used.get(constants.AFFINITY_REGION):
-                for region in self.manifest.get_regions_used_for_section_item(
-                    self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name
-                ):
-                    regional_dependencies.append(
-                        SpokeLocalPortfolioForRegionTask(**self.param_kwargs, region=region,)
-                    )
-
-            if affinities_used.get(constants.AFFINITY_ACCOUNT):
-                for account_id in self.manifest.get_account_ids_used_for_section_item(
-                    self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name
-                ):
-                    account_dependencies.append(
-                        SpokeLocalPortfolioForAccountTask(
-                            **self.param_kwargs, account_id=account_id,
-                        )
-                    )
-
-            if affinities_used.get(constants.AFFINITY_ACCOUNT_AND_REGION):
-                for (
+        klass = self.get_klass_for_provisioning()
+        for (
+            account_id,
+            regions,
+        ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
+            self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name,
+        ).items():
+            for region in regions:
+                for task in self.manifest.get_tasks_for_launch_and_account_and_region(
+                    self.puppet_account_id,
+                    self.section_name,
+                    self.spoke_local_portfolio_name,
                     account_id,
-                    regions,
-                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                    self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name
-                ).items():
-                    for region in regions:
-                        account_and_region_dependencies.append(
-                            SpokeLocalPortfolioForAccountAndRegionTask(
-                                **self.param_kwargs, account_id=account_id, region=region,
-                            )
-                        )
-
-            if affinities_used.get(constants.SPOKE_LOCAL_PORTFOLIO):
-                klass = self.get_klass_for_provisioning()
-                for (
-                        account_id,
-                        regions,
-                ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                    self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name
-                ).items():
-                    for region in regions:
-                        for task in self.manifest.get_tasks_for_launch_and_account_and_region(
-                                self.puppet_account_id,
-                                self.section_name,
-                                self.spoke_local_portfolio_name,
-                                account_id,
-                                region,
-                        ):
-                            dependencies.append(
-                                klass(**task, manifest_file_path=self.manifest_file_path)
-                            )
-
-        else:
-            klass = self.get_klass_for_provisioning()
-            for (
-                    account_id,
-                    regions,
-            ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name
-            ).items():
-                for region in regions:
-                    for task in self.manifest.get_tasks_for_launch_and_account_and_region(
-                            self.puppet_account_id,
-                            self.section_name,
-                            self.spoke_local_portfolio_name,
-                            account_id,
-                            region,
-                    ):
-                        dependencies.append(
-                            klass(**task, manifest_file_path=self.manifest_file_path)
-                        )
+                    region,
+                ):
+                    requirements.append(
+                        klass(**task, manifest_file_path=self.manifest_file_path)
+                    )
 
         return requirements
 

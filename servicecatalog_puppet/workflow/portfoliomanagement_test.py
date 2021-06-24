@@ -672,7 +672,7 @@ class GetProductsAndProvisioningArtifactsTaskTest(
     def test_api_calls_used(self):
         # setup
         expected_result = [
-            f"servicecatalog.list_provisioning_artifacts_{self.region}",
+            f"servicecatalog.list_provisioning_artifacts_{self.puppet_account_id}_{self.region}",
         ]
 
         # exercise

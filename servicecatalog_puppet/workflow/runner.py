@@ -110,29 +110,38 @@ def run_tasks(
 
     cache_invalidator = os.environ.get("SCT_CACHE_INVALIDATOR")
 
+    has_spoke_failures = False
+
     if execution_mode == constants.EXECUTION_MODE_HUB:
         logger.info("Checking spoke executions...")
-        for filename in glob(
+        all_run_deploy_in_spoke_tasks = glob(
             f"output/RunDeployInSpokeTask/**/{cache_invalidator}.json", recursive=True,
-        ):
+        )
+        n_all_run_deploy_in_spoke_tasks = len(all_run_deploy_in_spoke_tasks)
+        index = 0
+        for filename in all_run_deploy_in_spoke_tasks:
             result = json.loads(open(filename, "r").read())
             spoke_account_id = result.get("account_id")
             build = result.get("build")
             build_id = build.get("id")
             logger.info(
-                f"Checking spoke execution for account: {spoke_account_id} build: {build_id}"
+                f"[{index}/{n_all_run_deploy_in_spoke_tasks}] Checking spoke execution for account: {spoke_account_id} build: {build_id}"
             )
+            index += 1
             with betterboto_client.CrossAccountClientContextManager(
                 "codebuild",
                 config.get_puppet_role_arn(spoke_account_id),
                 f"{spoke_account_id}-{config.get_puppet_role_name()}",
             ) as codebuild_client:
+                response = codebuild_client.batch_get_builds(ids=[build_id])
+                build = response.get("builds")[0]
                 while build.get("buildStatus") == "IN_PROGRESS":
                     response = codebuild_client.batch_get_builds(ids=[build_id])
                     build = response.get("builds")[0]
                     time.sleep(10)
                     logger.info("Current status: {}".format(build.get("buildStatus")))
                 if build.get("buildStatus") != "SUCCEEDED":
+                    has_spoke_failures = True
                     params_for_results = dict(
                         account_id=spoke_account_id, build_id=build_id
                     )
@@ -397,7 +406,10 @@ def run_tasks(
     if running_exploded:
         pass
     else:
-        sys.exit(exit_status_code)
+        if has_spoke_failures:
+            sys.exit(1)
+        else:
+            sys.exit(exit_status_code)
 
 
 def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
@@ -437,4 +449,5 @@ def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
         LuigiStatusCode.NOT_RUN: 4,
         LuigiStatusCode.MISSING_EXT: 5,
     }
+
     sys.exit(exit_status_codes.get(run_result.status))

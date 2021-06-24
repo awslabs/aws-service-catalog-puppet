@@ -13,6 +13,7 @@ from luigi.contrib import s3
 from deepmerge import always_merger
 
 from servicecatalog_puppet import constants, config
+from servicecatalog_puppet.workflow.dependency import generate_dependency_tasks
 
 logger = logging.getLogger("tasks")
 logger.setLevel(logging.INFO)
@@ -177,6 +178,12 @@ class GetSSMParamTask(PuppetTask):
     parameter_name = luigi.Parameter()
     name = luigi.Parameter()
     region = luigi.Parameter(default=None)
+    depends_on = luigi.ListParameter()
+
+    manifest_file_path = luigi.Parameter()
+    puppet_account_id = luigi.Parameter()
+    spoke_account_id = luigi.Parameter()
+    spoke_region = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -188,6 +195,18 @@ class GetSSMParamTask(PuppetTask):
 
     def api_calls_used(self):
         return ["ssm.get_parameter"]
+
+    def requires(self):
+        if len(self.depends_on) > 0:
+            return generate_dependency_tasks(
+                self.depends_on,
+                self.manifest_file_path,
+                self.puppet_account_id,
+                self.spoke_account_id,
+                self.spoke_region,
+            )
+        else:
+            return []
 
     def run(self):
         with betterboto_client.ClientContextManager(
@@ -237,6 +256,11 @@ class PuppetTaskWithParameters(PuppetTask):
                     region=param_details.get("ssm").get(
                         "region", config.get_home_region(self.puppet_account_id)
                     ),
+                    depends_on=param_details.get("ssm").get("depends_on"),
+                    manifest_file_path=self.manifest_file_path,
+                    puppet_account_id=self.puppet_account_id,
+                    spoke_account_id=self.account_id,
+                    spoke_region=self.region,
                 )
 
         return ssm_params
