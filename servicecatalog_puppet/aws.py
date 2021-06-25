@@ -40,7 +40,7 @@ def terminate_provisioned_product(prefix, service_catalog, provisioned_product_i
         raise Exception(f"Failed to terminate provisioned product: Status = {status}")
 
 
-def get_provisioned_product_from_scan(provisioned_product_name, logging_prefix):
+def get_provisioned_product_from_scan(service_catalog, provisioned_product_name, logging_prefix):
     logger.info(f"{logging_prefix}: running get_provisioned_product_from_scan")
     paginator = service_catalog.get_paginator('scan_provisioned_products')
     pages = paginator.paginate(
@@ -61,7 +61,7 @@ def terminate_if_status_is_not_available(
 ):
     prefix = f"[{provisioned_product_name}] {account_id}:{region}"
     logger.info(f"{prefix} :: checking if should be terminated")
-    provisioned_product = get_provisioned_product_from_scan(provisioned_product_name, prefix)
+    provisioned_product = get_provisioned_product_from_scan(service_catalog, provisioned_product_name, prefix)
 
     provisioned_product_id = False
     provisioning_artifact_id = False
