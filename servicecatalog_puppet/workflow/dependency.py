@@ -2,7 +2,12 @@ from servicecatalog_puppet import constants
 
 
 def generate_dependency_tasks(
-    dependencies, manifest_file_path, puppet_account_id, account_id, region
+    dependencies,
+    manifest_file_path,
+    puppet_account_id,
+    account_id,
+    region,
+    should_run_non_launch_dependencies,
 ):
     from servicecatalog_puppet.workflow import codebuild_runs
     from servicecatalog_puppet.workflow import launch
@@ -48,7 +53,10 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif depends_on.get("type") == constants.SPOKE_LOCAL_PORTFOLIO:
+        elif (
+            should_run_non_launch_dependencies
+            and depends_on.get("type") == constants.SPOKE_LOCAL_PORTFOLIO
+        ):
             if depends_on.get(constants.AFFINITY) == constants.SPOKE_LOCAL_PORTFOLIO:
                 these_dependencies.append(
                     spoke_local_portfolios.SpokeLocalPortfolioTask(
@@ -82,7 +90,10 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif depends_on.get("type") == constants.ASSERTION:
+        elif (
+            should_run_non_launch_dependencies
+            and depends_on.get("type") == constants.ASSERTION
+        ):
             if depends_on.get(constants.AFFINITY) == constants.ASSERTION:
                 these_dependencies.append(
                     assertions.AssertionTask(
@@ -115,7 +126,10 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif depends_on.get("type") == constants.CODE_BUILD_RUN:
+        elif (
+            should_run_non_launch_dependencies
+            and depends_on.get("type") == constants.CODE_BUILD_RUN
+        ):
             if depends_on.get(constants.AFFINITY) == constants.CODE_BUILD_RUN:
                 these_dependencies.append(
                     codebuild_runs.CodeBuildRunTask(
@@ -148,7 +162,10 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif depends_on.get("type") == constants.LAMBDA_INVOCATION:
+        elif (
+            should_run_non_launch_dependencies
+            and depends_on.get("type") == constants.LAMBDA_INVOCATION
+        ):
             if depends_on.get(constants.AFFINITY) == constants.LAMBDA_INVOCATION:
                 these_dependencies.append(
                     lambda_invocations.LambdaInvocationTask(
@@ -208,18 +225,21 @@ class DependenciesMixin(object):
             self.manifest.get(self.section_name).get(item_name).get("depends_on", [])
         )
 
+        should_run_non_launch_dependencies = not (
+            self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run
+        )
+
         these_dependencies = generate_dependency_tasks(
             dependencies,
             self.manifest_file_path,
             self.puppet_account_id,
             self.account_id,
             self.region,
+            should_run_non_launch_dependencies,
         )
 
         if self.section_name in [constants.SPOKE_LOCAL_PORTFOLIOS, constants.LAUNCHES]:
-            if not (
-                self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run
-            ):
+            if should_run_non_launch_dependencies:
                 these_dependencies.append(
                     generate.GenerateSharesTask(
                         puppet_account_id=self.puppet_account_id,

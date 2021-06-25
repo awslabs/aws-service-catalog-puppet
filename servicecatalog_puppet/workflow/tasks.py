@@ -198,12 +198,16 @@ class GetSSMParamTask(PuppetTask):
 
     def requires(self):
         if len(self.depends_on) > 0:
+            should_run_non_launch_dependencies = not (
+                self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run
+            )
             return generate_dependency_tasks(
                 self.depends_on,
                 self.manifest_file_path,
                 self.puppet_account_id,
                 self.spoke_account_id,
                 self.spoke_region,
+                should_run_non_launch_dependencies,
             )
         else:
             return []
