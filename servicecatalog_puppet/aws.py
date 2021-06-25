@@ -46,7 +46,7 @@ def terminate_if_status_is_not_available(
     prefix = f"[{provisioned_product_name}] {account_id}:{region}"
     logger.info(f"{prefix} :: checking if should be terminated")
     response = service_catalog.scan_provisioned_products_single_page(
-        AccessLevelFilter={"Key": "Account", "Value": "self"},
+        AccessLevelFilter={"Key": "Account", "Value": "self"}, logging_prefix=prefix,
     )
     provisioned_product_id = False
     provisioning_artifact_id = False
