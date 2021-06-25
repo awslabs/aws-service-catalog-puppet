@@ -40,47 +40,61 @@ def terminate_provisioned_product(prefix, service_catalog, provisioned_product_i
         raise Exception(f"Failed to terminate provisioned product: Status = {status}")
 
 
+def get_provisioned_product_from_scan(service_catalog, provisioned_product_name, logging_prefix):
+    logger.info(f"{logging_prefix}: running get_provisioned_product_from_scan")
+    paginator = service_catalog.get_paginator('scan_provisioned_products')
+    pages = paginator.paginate(
+        AccessLevelFilter={"Key": "Account", "Value": "self"},
+    )
+
+    for page in pages:
+        logger.info(f"{logging_prefix}: running get_provisioned_product_from_scan paging")
+        for provisioned_product in page.get("ProvisionedProducts", []):
+            if provisioned_product.get("Name") == provisioned_product_name:
+                return provisioned_product
+
+    raise None
+
+
 def terminate_if_status_is_not_available(
     service_catalog, provisioned_product_name, product_id, account_id, region
 ):
     prefix = f"[{provisioned_product_name}] {account_id}:{region}"
     logger.info(f"{prefix} :: checking if should be terminated")
-    response = service_catalog.scan_provisioned_products_single_page(
-        AccessLevelFilter={"Key": "Account", "Value": "self"},
-    )
+    provisioned_product = get_provisioned_product_from_scan(service_catalog, provisioned_product_name, prefix)
+
     provisioned_product_id = False
     provisioning_artifact_id = False
     current_status = False
-    for r in response.get("ProvisionedProducts", []):
-        if r.get("Name") == provisioned_product_name:
-            current_status = r.get("Status")
-            logger.info(f"{prefix} :: current status is {current_status}")
-            if current_status in ["AVAILABLE", "TAINTED"]:
-                provisioned_product_id = r.get("Id")
-                provisioning_artifact_id = r.get("ProvisioningArtifactId")
-            elif current_status in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
-                while True:
-                    status = (
-                        service_catalog.describe_provisioned_product(Id=r.get("Id"))
-                        .get("ProvisionedProductDetail")
-                        .get("Status")
-                    )
-                    logger.info(f"{prefix} :: waiting to complete: {status}")
-                    time.sleep(5)
-                    if status not in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
-                        return terminate_if_status_is_not_available(
-                            service_catalog,
-                            provisioned_product_name,
-                            product_id,
-                            account_id,
-                            region,
-                        )
-
-            elif current_status == "ERROR":
-                logger.info(
-                    f"{prefix} :: terminating as its status is {r.get('Status')}"
+    if provisioned_product is not None:
+        current_status = provisioned_product.get("Status")
+        logger.info(f"{prefix} :: current status is {current_status}")
+        if current_status in ["AVAILABLE", "TAINTED"]:
+            provisioned_product_id = provisioned_product.get("Id")
+            provisioning_artifact_id = provisioned_product.get("ProvisioningArtifactId")
+        elif current_status in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
+            while True:
+                status = (
+                    service_catalog.describe_provisioned_product(Id=provisioned_product.get("Id"))
+                    .get("ProvisionedProductDetail")
+                    .get("Status")
                 )
-                terminate_provisioned_product(prefix, service_catalog, r.get("Id"))
+                logger.info(f"{prefix} :: waiting to complete: {status}")
+                time.sleep(5)
+                if status not in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
+                    return terminate_if_status_is_not_available(
+                        service_catalog,
+                        provisioned_product_name,
+                        product_id,
+                        account_id,
+                        region,
+                    )
+
+        elif current_status == "ERROR":
+            logger.info(
+                f"{prefix} :: terminating as its status is {provisioned_product.get('Status')}"
+            )
+            terminate_provisioned_product(prefix, service_catalog, provisioned_product.get("Id"))
     logger.info(f"{prefix} :: Finished terminate_if_status_is_not_available")
     return provisioned_product_id, provisioning_artifact_id, current_status
 
