@@ -52,6 +52,9 @@ class SectionTask(tasks.PuppetTask, ManifestMixen):
         affinities_used = dict()
         is_a_dependency = False
 
+        details = self.manifest.get(section_name_plural).get(name)
+        self_execution = details.get("execution")
+
         for manifest_section_name in constants.ALL_SECTION_NAMES:
             for n, d in self.manifest.get(manifest_section_name, {}).items():
                 for dep in d.get("depends_on", []):
@@ -61,6 +64,9 @@ class SectionTask(tasks.PuppetTask, ManifestMixen):
                     ):
                         is_a_dependency = True
                         affinities_used[dep.get("affinity")] = True
+
+                        if self_execution == constants.EXECUTION_MODE_SPOKE:
+                            dependencies.append(task_klass(**kwargs_to_use))
 
         if is_a_dependency:
             if affinities_used.get(constants.AFFINITY_REGION):

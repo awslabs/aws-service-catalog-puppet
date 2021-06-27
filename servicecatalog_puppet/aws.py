@@ -55,7 +55,7 @@ def get_provisioned_product_from_scan(
             if provisioned_product.get("Name") == provisioned_product_name:
                 return provisioned_product
 
-    raise None
+    return None
 
 
 def terminate_if_status_is_not_available(

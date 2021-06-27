@@ -1152,6 +1152,7 @@ class LaunchForSpokeExecutionTask(ProvisioningTask, dependency.DependenciesMixin
     def run(self):
         tasks_to_run = self.get_tasks()
         yield tasks_to_run
+        self.write_output(self.params_for_results_display())
 
 
 class LaunchForTask(ProvisioningTask):
