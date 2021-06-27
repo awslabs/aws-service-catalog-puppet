@@ -55,7 +55,7 @@ class ProvisioningTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launches import launch
+        import servicecatalog_puppet.workflow.launches.launch
 
         self.module = launch
 
@@ -150,7 +150,7 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     execution = "execution"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launches import launch
+        import servicecatalog_puppet.workflow.launches.launch
 
         self.module = launch
 
@@ -332,7 +332,7 @@ class TerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     execution = "execution"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launches import launch
+        import servicecatalog_puppet.workflow.launches.launch
 
         self.module = launch
 
@@ -480,7 +480,7 @@ class ResetProvisionedProductOwnerTaskTest(tasks_unit_tests_helper.PuppetTaskUni
     region = "region"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launches import launch
+        import servicecatalog_puppet.workflow.launches.launch
 
         self.module = launch
 
@@ -579,7 +579,7 @@ class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launches import launch
+        import servicecatalog_puppet.workflow.launches.launch
 
         self.module = launch
 

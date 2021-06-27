@@ -7,7 +7,6 @@ import luigi
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import config
-from servicecatalog_puppet import manifest_utils_for_launches
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import (
     tasks,
