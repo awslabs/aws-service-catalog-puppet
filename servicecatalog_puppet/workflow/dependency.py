@@ -12,7 +12,7 @@ def generate_dependency_tasks(
     is_running_in_hub = execution_mode != constants.EXECUTION_MODE_SPOKE
 
     from servicecatalog_puppet.workflow import codebuild_runs
-    from servicecatalog_puppet.workflow.launches import launch
+    from servicecatalog_puppet.workflow import launch
     from servicecatalog_puppet.workflow import spoke_local_portfolios
     from servicecatalog_puppet.workflow import assertions
     from servicecatalog_puppet.workflow import lambda_invocations
@@ -198,7 +198,7 @@ def generate_dependency_tasks(
 class DependenciesMixin(object):
     def get_section_dependencies(self):
         from servicecatalog_puppet.workflow import codebuild_runs
-        from servicecatalog_puppet.workflow.launches import launch
+        from servicecatalog_puppet.workflow import launch
         from servicecatalog_puppet.workflow import spoke_local_portfolios
         from servicecatalog_puppet.workflow import assertions
         from servicecatalog_puppet.workflow import lambda_invocations
