@@ -55,7 +55,10 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif is_running_in_hub and depends_on.get("type") == constants.SPOKE_LOCAL_PORTFOLIO:
+        elif (
+            is_running_in_hub
+            and depends_on.get("type") == constants.SPOKE_LOCAL_PORTFOLIO
+        ):
             if depends_on.get(constants.AFFINITY) == constants.SPOKE_LOCAL_PORTFOLIO:
                 these_dependencies.append(
                     spoke_local_portfolios.SpokeLocalPortfolioTask(
@@ -155,7 +158,9 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif is_running_in_hub and depends_on.get("type") == constants.LAMBDA_INVOCATION:
+        elif (
+            is_running_in_hub and depends_on.get("type") == constants.LAMBDA_INVOCATION
+        ):
             if depends_on.get(constants.AFFINITY) == constants.LAMBDA_INVOCATION:
                 these_dependencies.append(
                     lambda_invocations.LambdaInvocationTask(

@@ -41,7 +41,7 @@ from servicecatalog_puppet.workflow import (
     codebuild_runs as codebuild_runs_tasks,
     assertions as assertions_tasks,
 )
-import servicecatalog_puppet.workflow.launches.launch as launch_tasks
+from servicecatalog_puppet.workflow.launches import launch as launch_tasks
 from servicecatalog_puppet.workflow import management as management_tasks
 from servicecatalog_puppet.workflow import runner as runner
 

@@ -241,9 +241,7 @@ class DoDescribeProvisioningParameters(ProvisioningTask):
             )
 
 
-class ProvisionProductTask(
-    ProvisioningTask, dependency.DependenciesMixin
-):
+class ProvisionProductTask(ProvisioningTask, dependency.DependenciesMixin):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -1050,16 +1048,14 @@ class LaunchForSpokeExecutionTask(ProvisioningTask, dependency.DependenciesMixin
         }
 
     def requires(self):
-        requires = dict(
-            section_dependencies=self.get_section_dependencies(),
-        )
+        requires = dict(section_dependencies=self.get_section_dependencies(),)
         return requires
 
     @functools.lru_cache(maxsize=8)
     def get_tasks(self):
         tasks_to_run = list()
         for account_id in self.manifest.get_account_ids_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.launch_name
+            self.puppet_account_id, self.section_name, self.launch_name
         ):
             tasks_to_run.append(
                 RunDeployInSpokeTask(
