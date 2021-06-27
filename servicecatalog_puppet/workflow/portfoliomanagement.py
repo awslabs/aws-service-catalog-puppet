@@ -1840,38 +1840,31 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_tasks.ManifestMixen
         regions = config.get_regions(self.puppet_account_id)
         global_id_cache = dict()
         new_manifest["id_cache"] = global_id_cache
+
         for region in regions:
-            id_cache = dict()
-            global_id_cache[region] = id_cache
+            regional_id_cache = dict()
             r = self.input().get(region)
             for launch_name, launch_details in self.manifest.get_launches_items():
                 target = r.get(launch_details.get("portfolio")).get("details")
                 portfolio_id = json.loads(target.open("r").read()).get("portfolio_id")
                 portfolio_name = launch_details.get("portfolio")
-                if id_cache.get(portfolio_name) is None:
-                    id_cache[portfolio_name] = dict(id=portfolio_id, products=dict())
+                if regional_id_cache.get(portfolio_name) is None:
+                    regional_id_cache[portfolio_name] = dict(id=portfolio_id, products=dict())
 
                 product = launch_details.get("product")
                 target = (
                     r.get(launch_details.get("portfolio")).get("products").get(product)
                 )
                 all_details = json.loads(target.open("r").read())
-                for p in all_details:
-                    if p.get("Name") == product:
+                all_products_and_their_versions = all_details
+                for p in all_products_and_their_versions:
+                    if regional_id_cache[portfolio_name]["products"].get(p.get("Name")) is None:
+                        regional_id_cache[portfolio_name]["products"][p.get("Name")] = dict(id=p.get("ProductId"), versions=dict())
 
-                        if (
-                                id_cache[portfolio_name].get("products").get(product)
-                                is None
-                        ):
-                            id_cache[portfolio_name]["products"][product] = dict(
-                                id=p.get("ProductId"), versions=dict()
-                            )
-                        version = launch_details.get("version")
-                        for a in p.get("provisioning_artifact_details"):
-                            if a.get("Name") == version:
-                                id_cache[portfolio_name]["products"][product][
-                                    "versions"
-                                ][version] = a.get("Id")
+                    for a in p.get("provisioning_artifact_details"):
+                        regional_id_cache[portfolio_name]["products"][p.get("Name")]["versions"][a.get("Name")] = a.get("Id")
+
+            global_id_cache[region] = regional_id_cache
 
         self.write_output(
             yaml.safe_dump(json.loads(json.dumps(new_manifest))), skip_json_dump=True
