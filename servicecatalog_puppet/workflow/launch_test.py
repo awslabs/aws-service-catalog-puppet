@@ -8,7 +8,7 @@ class LaunchSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launches import launch
+        from servicecatalog_puppet.workflow import launch
 
         self.module = launch
 
@@ -55,7 +55,7 @@ class ProvisioningTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
 
     def setUp(self) -> None:
-        import servicecatalog_puppet.workflow.launches.launch
+        from servicecatalog_puppet.workflow import launch
 
         self.module = launch
 
@@ -77,7 +77,7 @@ class ProvisioningArtifactParametersTaskTest(
     region = "region"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launches import launch
+        from servicecatalog_puppet.workflow import launch
 
         self.module = launch
 
@@ -150,7 +150,7 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     execution = "execution"
 
     def setUp(self) -> None:
-        import servicecatalog_puppet.workflow.launches.launch
+        from servicecatalog_puppet.workflow import launch
 
         self.module = launch
 
@@ -259,7 +259,7 @@ class ProvisionProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
     execution = "execution"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launches import launch
+        from servicecatalog_puppet.workflow import launch
 
         self.module = launch
 
@@ -332,7 +332,7 @@ class TerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     execution = "execution"
 
     def setUp(self) -> None:
-        import servicecatalog_puppet.workflow.launches.launch
+        from servicecatalog_puppet.workflow import launch
 
         self.module = launch
 
@@ -409,7 +409,7 @@ class TerminateProductDryRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
     ssm_param_inputs = []
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launches import launch
+        from servicecatalog_puppet.workflow import launch
 
         self.module = launch
 
@@ -480,7 +480,7 @@ class ResetProvisionedProductOwnerTaskTest(tasks_unit_tests_helper.PuppetTaskUni
     region = "region"
 
     def setUp(self) -> None:
-        import servicecatalog_puppet.workflow.launches.launch
+        from servicecatalog_puppet.workflow import launch
 
         self.module = launch
 
@@ -537,7 +537,7 @@ class RunDeployInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     account_id = "account_id"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launches import launch
+        from servicecatalog_puppet.workflow import launch
 
         self.module = launch
 
@@ -573,17 +573,17 @@ class RunDeployInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         raise NotImplementedError()
 
 
-class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
+class LaunchForSpokeExecutionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     launch_name = "launch_name"
     puppet_account_id = "puppet_account_id"
 
     def setUp(self) -> None:
-        import servicecatalog_puppet.workflow.launches.launch
+        from servicecatalog_puppet.workflow import launch
 
         self.module = launch
 
-        self.sut = self.module.LaunchInSpokeTask(
+        self.sut = self.module.LaunchForSpokeExecutionTask(
             manifest_file_path=self.manifest_file_path,
             launch_name=self.launch_name,
             puppet_account_id=self.puppet_account_id,
@@ -630,7 +630,7 @@ class LaunchTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launches import launch
+        from servicecatalog_puppet.workflow import launch
 
         self.module = launch
 
