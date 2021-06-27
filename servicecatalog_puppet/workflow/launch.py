@@ -1048,8 +1048,91 @@ class LaunchForSpokeExecutionTask(ProvisioningTask, dependency.DependenciesMixin
         }
 
     def requires(self):
-        requires = dict(section_dependencies=self.get_section_dependencies(),)
-        return requires
+        from servicecatalog_puppet.workflow import codebuild_runs
+        from servicecatalog_puppet.workflow import spoke_local_portfolios
+        from servicecatalog_puppet.workflow import assertions
+        from servicecatalog_puppet.workflow import lambda_invocations
+
+        these_dependencies = list()
+        common_args = dict(
+            manifest_file_path=self.manifest_file_path,
+            puppet_account_id=self.puppet_account_id,
+        )
+        dependencies = self.manifest.get_launch(self.launch_name).get("depends_on", [])
+        for depends_on in dependencies:
+            depends_on_affinity = depends_on.get(constants.AFFINITY)
+            depends_on_type = depends_on.get("type")
+            if depends_on_type == constants.LAUNCH:
+                if depends_on_affinity == constants.LAUNCH:
+                    dep = self.manifest.get_launch(depends_on.get("name"))
+                    if dep.get("execution") == constants.EXECUTION_MODE_SPOKE:
+                        these_dependencies.append(
+                            LaunchForSpokeExecutionTask(
+                                **common_args, launch_name=depends_on.get("name"),
+                            )
+                        )
+                    else:
+                        these_dependencies.append(
+                            LaunchTask(
+                                **common_args, launch_name=depends_on.get("name"),
+                            )
+                        )
+                else:
+                    raise Exception(
+                        "Could can only depend on a launch using affinity launch when using spoke execution mode"
+                    )
+
+            elif depends_on_type == constants.SPOKE_LOCAL_PORTFOLIO:
+                if depends_on_affinity == constants.SPOKE_LOCAL_PORTFOLIO:
+                    these_dependencies.append(
+                        spoke_local_portfolios.SpokeLocalPortfolioTask(
+                            **common_args,
+                            spoke_local_portfolio_name=depends_on.get("name"),
+                        )
+                    )
+                else:
+                    raise Exception(
+                        "Could can only depend on a spoke_local_portfolio using affinity spoke_local_portfolios when using spoke execution mode"
+                    )
+
+            elif depends_on_type == constants.ASSERTION:
+                if depends_on_affinity == constants.ASSERTION:
+                    these_dependencies.append(
+                        assertions.AssertionTask(
+                            **common_args, assertion_name=depends_on.get("name"),
+                        )
+                    )
+                else:
+                    raise Exception(
+                        "Could can only depend on an assertion using affinity assertion when using spoke execution mode"
+                    )
+
+            elif depends_on_type == constants.CODE_BUILD_RUN:
+                if depends_on_affinity == constants.CODE_BUILD_RUN:
+                    these_dependencies.append(
+                        codebuild_runs.CodeBuildRunTask(
+                            **common_args, code_build_run_name=depends_on.get("name"),
+                        )
+                    )
+                else:
+                    raise Exception(
+                        "Could can only depend on a code_build_run using affinity code_build_run when using spoke execution mode"
+                    )
+
+            elif depends_on_type == constants.LAMBDA_INVOCATION:
+                if depends_on_affinity == constants.LAMBDA_INVOCATION:
+                    these_dependencies.append(
+                        lambda_invocations.LambdaInvocationTask(
+                            **common_args,
+                            lambda_invocation_name=depends_on.get("name"),
+                        )
+                    )
+                else:
+                    raise Exception(
+                        "Could can only depend on a lambda_invocation using affinity lambda_invocation when using spoke execution mode"
+                    )
+
+        return these_dependencies
 
     @functools.lru_cache(maxsize=8)
     def get_tasks(self):
