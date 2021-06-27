@@ -65,8 +65,9 @@ class SectionTask(tasks.PuppetTask, ManifestMixen):
                         is_a_dependency = True
                         affinities_used[dep.get("affinity")] = True
 
-                        if self_execution == constants.EXECUTION_MODE_SPOKE:
-                            dependencies.append(task_klass(**kwargs_to_use))
+                        if not self.is_running_in_spoke():
+                            if self_execution == constants.EXECUTION_MODE_SPOKE:
+                                dependencies.append(task_klass(**kwargs_to_use))
 
         if is_a_dependency:
             if affinities_used.get(constants.AFFINITY_REGION):

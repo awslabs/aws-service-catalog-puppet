@@ -32,8 +32,24 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
             execution = details.get("execution")
 
             if self.is_running_in_spoke():
-                if execution != constants.EXECUTION_MODE_SPOKE:
+                if execution == constants.EXECUTION_MODE_SPOKE:
+                    requirements += self.handle_requirements_for(
+                        name,
+                        constants.LAUNCH,
+                        constants.LAUNCHES,
+                        LaunchForRegionTask,
+                        LaunchForAccountTask,
+                        LaunchForAccountAndRegionTask,
+                        LaunchTask,
+                        dict(
+                            launch_name=name,
+                            puppet_account_id=self.puppet_account_id,
+                            manifest_file_path=self.manifest_file_path,
+                        ),
+                    )
+                else:
                     continue
+
             else:
                 if execution != constants.EXECUTION_MODE_SPOKE:
                     requirements += self.handle_requirements_for(
