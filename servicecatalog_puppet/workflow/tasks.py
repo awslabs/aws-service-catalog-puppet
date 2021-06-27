@@ -35,6 +35,9 @@ class PuppetTask(luigi.Task):
     def execution_mode(self):
         return os.environ.get("SCT_EXECUTION_MODE", constants.EXECUTION_MODE_HUB)
 
+    def is_running_in_spoke(self):
+        return self.execution_mode == constants.EXECUTION_MODE_SPOKE
+
     @property
     def single_account(self):
         return os.environ.get("SCT_SINGLE_ACCOUNT", "None")
@@ -198,16 +201,13 @@ class GetSSMParamTask(PuppetTask):
 
     def requires(self):
         if len(self.depends_on) > 0:
-            should_run_non_launch_dependencies = not (
-                self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run
-            )
             return generate_dependency_tasks(
                 self.depends_on,
                 self.manifest_file_path,
                 self.puppet_account_id,
                 self.spoke_account_id,
                 self.spoke_region,
-                should_run_non_launch_dependencies,
+                self.execution_mode,
             )
         else:
             return []

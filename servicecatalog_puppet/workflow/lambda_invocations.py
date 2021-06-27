@@ -301,10 +301,8 @@ class LambdaInvocationsSectionTask(
         ).items():
             requirements += self.handle_requirements_for(
                 name,
-                details,
                 constants.LAMBDA_INVOCATION,
                 constants.LAMBDA_INVOCATIONS,
-                self.execution_mode == constants.EXECUTION_MODE_SPOKE,
                 LambdaInvocationForRegionTask,
                 LambdaInvocationForAccountTask,
                 LambdaInvocationForAccountAndRegionTask,

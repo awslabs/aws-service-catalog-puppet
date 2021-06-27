@@ -38,20 +38,14 @@ class SectionTask(tasks.PuppetTask, ManifestMixen):
     def handle_requirements_for(
         self,
         name,
-        details,
         section_name_singular,
         section_name_plural,
-        is_in_spoke_execution_mode,
         for_region_task_klass,
         for_account_task_klass,
         for_account_and_region_task_klass,
         task_klass,
         kwargs_to_use,
     ):
-        if is_in_spoke_execution_mode:
-            if section_name_plural == constants.LAUNCHES:
-                if details.get("execution") != constants.EXECUTION_MODE_SPOKE:
-                    return []
 
         dependencies = list()
 

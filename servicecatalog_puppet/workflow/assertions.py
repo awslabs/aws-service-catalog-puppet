@@ -265,10 +265,8 @@ class AssertionsSectionTask(AssertionBaseTask, manifest_tasks.SectionTask):
         for name, details in self.manifest.get(constants.ASSERTIONS, {}).items():
             requirements += self.handle_requirements_for(
                 name,
-                details,
                 constants.ASSERTION,
                 constants.ASSERTIONS,
-                self.execution_mode == constants.EXECUTION_MODE_SPOKE,
                 AssertionForRegionTask,
                 AssertionForAccountTask,
                 AssertionForAccountAndRegionTask,

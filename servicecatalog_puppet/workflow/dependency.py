@@ -7,8 +7,10 @@ def generate_dependency_tasks(
     puppet_account_id,
     account_id,
     region,
-    should_run_non_launch_dependencies,
+    execution_mode,
 ):
+    is_running_in_hub = execution_mode != constants.EXECUTION_MODE_SPOKE
+
     from servicecatalog_puppet.workflow import codebuild_runs
     from servicecatalog_puppet.workflow import launch
     from servicecatalog_puppet.workflow import spoke_local_portfolios
@@ -53,10 +55,7 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif (
-            should_run_non_launch_dependencies
-            and depends_on.get("type") == constants.SPOKE_LOCAL_PORTFOLIO
-        ):
+        elif is_running_in_hub and depends_on.get("type") == constants.SPOKE_LOCAL_PORTFOLIO:
             if depends_on.get(constants.AFFINITY) == constants.SPOKE_LOCAL_PORTFOLIO:
                 these_dependencies.append(
                     spoke_local_portfolios.SpokeLocalPortfolioTask(
@@ -90,10 +89,7 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif (
-            should_run_non_launch_dependencies
-            and depends_on.get("type") == constants.ASSERTION
-        ):
+        elif is_running_in_hub and depends_on.get("type") == constants.ASSERTION:
             if depends_on.get(constants.AFFINITY) == constants.ASSERTION:
                 these_dependencies.append(
                     assertions.AssertionTask(
@@ -126,10 +122,7 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif (
-            should_run_non_launch_dependencies
-            and depends_on.get("type") == constants.CODE_BUILD_RUN
-        ):
+        elif is_running_in_hub and depends_on.get("type") == constants.CODE_BUILD_RUN:
             if depends_on.get(constants.AFFINITY) == constants.CODE_BUILD_RUN:
                 these_dependencies.append(
                     codebuild_runs.CodeBuildRunTask(
@@ -162,10 +155,7 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif (
-            should_run_non_launch_dependencies
-            and depends_on.get("type") == constants.LAMBDA_INVOCATION
-        ):
+        elif is_running_in_hub and depends_on.get("type") == constants.LAMBDA_INVOCATION:
             if depends_on.get(constants.AFFINITY) == constants.LAMBDA_INVOCATION:
                 these_dependencies.append(
                     lambda_invocations.LambdaInvocationTask(
@@ -235,7 +225,7 @@ class DependenciesMixin(object):
             self.puppet_account_id,
             self.account_id,
             self.region,
-            should_generate_shares,
+            self.execution_mode,
         )
 
         if self.section_name in [constants.SPOKE_LOCAL_PORTFOLIOS, constants.LAUNCHES]:
