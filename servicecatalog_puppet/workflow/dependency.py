@@ -225,7 +225,7 @@ class DependenciesMixin(object):
             self.manifest.get(self.section_name).get(item_name).get("depends_on", [])
         )
 
-        should_run_non_launch_dependencies = not (
+        should_generate_shares = not (
             self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run
         )
 
@@ -235,11 +235,11 @@ class DependenciesMixin(object):
             self.puppet_account_id,
             self.account_id,
             self.region,
-            should_run_non_launch_dependencies,
+            should_generate_shares,
         )
 
         if self.section_name in [constants.SPOKE_LOCAL_PORTFOLIOS, constants.LAUNCHES]:
-            if should_run_non_launch_dependencies:
+            if should_generate_shares:
                 these_dependencies.append(
                     generate.GenerateSharesTask(
                         puppet_account_id=self.puppet_account_id,
