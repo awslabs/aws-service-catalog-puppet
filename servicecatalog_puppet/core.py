@@ -36,12 +36,12 @@ from servicecatalog_puppet.template_builder.hub import (
 )
 from servicecatalog_puppet.workflow import (
     tasks as puppet_tasks,
-    launch as launch_tasks,
     spoke_local_portfolios as spoke_local_portfolios_tasks,
     lambda_invocations as lambda_invocations_tasks,
     codebuild_runs as codebuild_runs_tasks,
     assertions as assertions_tasks,
 )
+from servicecatalog_puppet.workflow.launches import launch as launch_tasks
 from servicecatalog_puppet.workflow import management as management_tasks
 from servicecatalog_puppet.workflow import runner as runner
 

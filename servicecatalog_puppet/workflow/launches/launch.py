@@ -1,3 +1,4 @@
+import functools
 import json
 import os
 import time
@@ -52,7 +53,7 @@ class LaunchSectionTask(manifest_tasks.SectionTask):
                     )
                 else:
                     requirements.append(
-                        LaunchInSpokeTask(
+                        LaunchForSpokeExecutionTask(
                             launch_name=name,
                             puppet_account_id=self.puppet_account_id,
                             manifest_file_path=self.manifest_file_path,
@@ -242,7 +243,7 @@ class DoDescribeProvisioningParameters(ProvisioningTask):
 
 
 class ProvisionProductTask(
-    ProvisioningTask, manifest_tasks.ManifestMixen, dependency.DependenciesMixin
+    ProvisioningTask, dependency.DependenciesMixin
 ):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -1038,7 +1039,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
         self.write_output(dict(account_id=self.account_id, **response))
 
 
-class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
+class LaunchForSpokeExecutionTask(ProvisioningTask, dependency.DependenciesMixin):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -1049,85 +1050,33 @@ class LaunchInSpokeTask(ProvisioningTask, manifest_tasks.ManifestMixen):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def generate_tasks(self, task_defs, manifest):
-        self.info("generate_provisions")
-        provisions = []
-
-        for task_def in task_defs:
-            if self.single_account == "None":
-                pass
-            else:
-                if task_def.get("account_id") != self.single_account:
-                    continue
-            task_status = task_def.get("status")
-            del task_def["status"]
-            del task_def["depends_on"]
-            run_deploy_in_spoke_task_params = dict(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                account_id=task_def.get("account_id"),
-                home_region=config.get_home_region(self.puppet_account_id),
-                regions=config.get_regions(self.puppet_account_id),
-                should_collect_cloudformation_events=self.should_use_sns,
-                should_forward_events_to_eventbridge=config.get_should_use_eventbridge(
-                    self.puppet_account_id
-                ),
-                should_forward_failures_to_opscenter=config.get_should_forward_failures_to_opscenter(
-                    self.puppet_account_id
-                ),
-            )
-
-            if task_status == constants.PROVISIONED:
-                provisioning_parameters = {}
-                for p in ProvisionProductTask.get_param_names(include_significant=True):
-                    provisioning_parameters[p] = task_def.get(p)
-
-                if self.is_dry_run:
-                    provisions.append(
-                        ProvisionProductDryRunTask(**provisioning_parameters)
-                    )
-                else:
-                    provisions.append(
-                        RunDeployInSpokeTask(**run_deploy_in_spoke_task_params)
-                    )
-
-            elif task_status == constants.TERMINATED:
-                terminating_parameters = {}
-                for p in TerminateProductTask.get_param_names(include_significant=True):
-                    terminating_parameters[p] = task_def.get(p)
-
-                if self.is_dry_run:
-                    provisions.append(
-                        TerminateProductDryRunTask(**terminating_parameters)
-                    )
-                else:
-                    provisions.append(
-                        RunDeployInSpokeTask(**run_deploy_in_spoke_task_params)
-                    )
-            else:
-                raise Exception(f"Unsupported status of {task_status}")
-        self.info(f"len of provisions: {len(provisions)}")
-        return provisions
-
     def requires(self):
-        requirements = dict()
-        configuration = manifest_utils_for_launches.get_configuration_from_launch(
-            self.manifest, self.launch_name
+        requires = dict(
+            section_dependencies=self.get_section_dependencies(),
         )
-        configuration["puppet_account_id"] = self.puppet_account_id
+        return requires
 
-        launch_tasks_def = self.manifest.get_task_defs_from_details(
-            self.puppet_account_id, False, self.launch_name, configuration, "launches"
-        )
-        requirements["launches"] = self.generate_tasks(launch_tasks_def, self.manifest)
-        return requirements
+    @functools.lru_cache(maxsize=8)
+    def get_tasks(self):
+        tasks_to_run = list()
+        for account_id in self.manifest.get_account_ids_used_for_section_item(
+                self.puppet_account_id, self.section_name, self.launch_name
+        ):
+            tasks_to_run.append(
+                RunDeployInSpokeTask(
+                    manifest_file_path=self.manifest_file_path,
+                    puppet_account_id=self.puppet_account_id,
+                    account_id=account_id,
+                )
+            )
+        return tasks_to_run
 
     def run(self):
-        self.info("started")
-        self.write_output(self.params_for_results_display())
+        tasks_to_run = self.get_tasks()
+        yield tasks_to_run
 
 
-class LaunchForTask(ProvisioningTask, manifest_tasks.ManifestMixen):
+class LaunchForTask(ProvisioningTask):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
