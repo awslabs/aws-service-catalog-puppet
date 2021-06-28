@@ -47,10 +47,8 @@ class SpokeLocalPortfolioSectionTask(manifest_tasks.SectionTask):
             ).items():
                 requirements += self.handle_requirements_for(
                     name,
-                    details,
                     constants.SPOKE_LOCAL_PORTFOLIO,
                     constants.SPOKE_LOCAL_PORTFOLIOS,
-                    self.execution_mode == constants.EXECUTION_MODE_SPOKE,
                     SpokeLocalPortfolioForRegionTask,
                     SpokeLocalPortfolioForAccountTask,
                     SpokeLocalPortfolioForAccountAndRegionTask,

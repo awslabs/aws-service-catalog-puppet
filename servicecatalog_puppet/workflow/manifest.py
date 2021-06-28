@@ -38,41 +38,22 @@ class SectionTask(tasks.PuppetTask, ManifestMixen):
     def handle_requirements_for(
         self,
         name,
-        details,
         section_name_singular,
         section_name_plural,
-        is_in_spoke_execution_mode,
         for_region_task_klass,
         for_account_task_klass,
         for_account_and_region_task_klass,
         task_klass,
         kwargs_to_use,
     ):
-        if is_in_spoke_execution_mode:
-            if section_name_plural == constants.LAUNCHES:
-                if details.get("execution") != constants.EXECUTION_MODE_SPOKE:
-                    return []
-        else:
-            if details.get("execution") == constants.EXECUTION_MODE_SPOKE:
-                from servicecatalog_puppet.workflow import launch
-
-                dependencies = list()
-                for account_id in self.manifest.get_account_ids_used_for_section_item(
-                    self.puppet_account_id, section_name_plural, name
-                ):
-                    dependencies.append(
-                        launch.RunDeployInSpokeTask(
-                            manifest_file_path=kwargs_to_use.get("manifest_file_path"),
-                            puppet_account_id=self.puppet_account_id,
-                            account_id=account_id,
-                        )
-                    )
-                return dependencies
 
         dependencies = list()
 
         affinities_used = dict()
         is_a_dependency = False
+
+        details = self.manifest.get(section_name_plural).get(name)
+        self_execution = details.get("execution")
 
         for manifest_section_name in constants.ALL_SECTION_NAMES:
             for n, d in self.manifest.get(manifest_section_name, {}).items():
@@ -83,6 +64,10 @@ class SectionTask(tasks.PuppetTask, ManifestMixen):
                     ):
                         is_a_dependency = True
                         affinities_used[dep.get("affinity")] = True
+
+                        if not self.is_running_in_spoke():
+                            if self_execution == constants.EXECUTION_MODE_SPOKE:
+                                dependencies.append(task_klass(**kwargs_to_use))
 
         if is_a_dependency:
             if affinities_used.get(constants.AFFINITY_REGION):

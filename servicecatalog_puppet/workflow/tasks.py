@@ -35,6 +35,9 @@ class PuppetTask(luigi.Task):
     def execution_mode(self):
         return os.environ.get("SCT_EXECUTION_MODE", constants.EXECUTION_MODE_HUB)
 
+    def is_running_in_spoke(self):
+        return self.execution_mode == constants.EXECUTION_MODE_SPOKE
+
     @property
     def single_account(self):
         return os.environ.get("SCT_SINGLE_ACCOUNT", "None")
@@ -204,6 +207,7 @@ class GetSSMParamTask(PuppetTask):
                 self.puppet_account_id,
                 self.spoke_account_id,
                 self.spoke_region,
+                self.execution_mode,
             )
         else:
             return []

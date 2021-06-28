@@ -1,7 +1,6 @@
-
 from unittest import skip
 
-from . import tasks_unit_tests_helper
+from workflow import tasks_unit_tests_helper
 
 
 class LaunchSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
@@ -574,7 +573,7 @@ class RunDeployInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         raise NotImplementedError()
 
 
-class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
+class LaunchForSpokeExecutionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     launch_name = "launch_name"
     puppet_account_id = "puppet_account_id"
@@ -584,7 +583,7 @@ class LaunchInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         self.module = launch
 
-        self.sut = self.module.LaunchInSpokeTask(
+        self.sut = self.module.LaunchForSpokeExecutionTask(
             manifest_file_path=self.manifest_file_path,
             launch_name=self.launch_name,
             puppet_account_id=self.puppet_account_id,

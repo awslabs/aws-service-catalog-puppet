@@ -40,20 +40,22 @@ def terminate_provisioned_product(prefix, service_catalog, provisioned_product_i
         raise Exception(f"Failed to terminate provisioned product: Status = {status}")
 
 
-def get_provisioned_product_from_scan(service_catalog, provisioned_product_name, logging_prefix):
+def get_provisioned_product_from_scan(
+    service_catalog, provisioned_product_name, logging_prefix
+):
     logger.info(f"{logging_prefix}: running get_provisioned_product_from_scan")
-    paginator = service_catalog.get_paginator('scan_provisioned_products')
-    pages = paginator.paginate(
-        AccessLevelFilter={"Key": "Account", "Value": "self"},
-    )
+    paginator = service_catalog.get_paginator("scan_provisioned_products")
+    pages = paginator.paginate(AccessLevelFilter={"Key": "Account", "Value": "self"},)
 
     for page in pages:
-        logger.info(f"{logging_prefix}: running get_provisioned_product_from_scan paging")
+        logger.info(
+            f"{logging_prefix}: running get_provisioned_product_from_scan paging"
+        )
         for provisioned_product in page.get("ProvisionedProducts", []):
             if provisioned_product.get("Name") == provisioned_product_name:
                 return provisioned_product
 
-    raise None
+    return None
 
 
 def terminate_if_status_is_not_available(
@@ -61,7 +63,9 @@ def terminate_if_status_is_not_available(
 ):
     prefix = f"[{provisioned_product_name}] {account_id}:{region}"
     logger.info(f"{prefix} :: checking if should be terminated")
-    provisioned_product = get_provisioned_product_from_scan(service_catalog, provisioned_product_name, prefix)
+    provisioned_product = get_provisioned_product_from_scan(
+        service_catalog, provisioned_product_name, prefix
+    )
 
     provisioned_product_id = False
     provisioning_artifact_id = False
@@ -75,7 +79,9 @@ def terminate_if_status_is_not_available(
         elif current_status in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
             while True:
                 status = (
-                    service_catalog.describe_provisioned_product(Id=provisioned_product.get("Id"))
+                    service_catalog.describe_provisioned_product(
+                        Id=provisioned_product.get("Id")
+                    )
                     .get("ProvisionedProductDetail")
                     .get("Status")
                 )
@@ -94,7 +100,9 @@ def terminate_if_status_is_not_available(
             logger.info(
                 f"{prefix} :: terminating as its status is {provisioned_product.get('Status')}"
             )
-            terminate_provisioned_product(prefix, service_catalog, provisioned_product.get("Id"))
+            terminate_provisioned_product(
+                prefix, service_catalog, provisioned_product.get("Id")
+            )
     logger.info(f"{prefix} :: Finished terminate_if_status_is_not_available")
     return provisioned_product_id, provisioning_artifact_id, current_status
 

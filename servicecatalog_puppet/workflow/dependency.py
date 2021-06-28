@@ -2,8 +2,15 @@ from servicecatalog_puppet import constants
 
 
 def generate_dependency_tasks(
-    dependencies, manifest_file_path, puppet_account_id, account_id, region
+    dependencies,
+    manifest_file_path,
+    puppet_account_id,
+    account_id,
+    region,
+    execution_mode,
 ):
+    is_running_in_hub = execution_mode != constants.EXECUTION_MODE_SPOKE
+
     from servicecatalog_puppet.workflow import codebuild_runs
     from servicecatalog_puppet.workflow import launch
     from servicecatalog_puppet.workflow import spoke_local_portfolios
@@ -48,7 +55,10 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif depends_on.get("type") == constants.SPOKE_LOCAL_PORTFOLIO:
+        elif (
+            is_running_in_hub
+            and depends_on.get("type") == constants.SPOKE_LOCAL_PORTFOLIO
+        ):
             if depends_on.get(constants.AFFINITY) == constants.SPOKE_LOCAL_PORTFOLIO:
                 these_dependencies.append(
                     spoke_local_portfolios.SpokeLocalPortfolioTask(
@@ -82,7 +92,7 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif depends_on.get("type") == constants.ASSERTION:
+        elif is_running_in_hub and depends_on.get("type") == constants.ASSERTION:
             if depends_on.get(constants.AFFINITY) == constants.ASSERTION:
                 these_dependencies.append(
                     assertions.AssertionTask(
@@ -115,7 +125,7 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif depends_on.get("type") == constants.CODE_BUILD_RUN:
+        elif is_running_in_hub and depends_on.get("type") == constants.CODE_BUILD_RUN:
             if depends_on.get(constants.AFFINITY) == constants.CODE_BUILD_RUN:
                 these_dependencies.append(
                     codebuild_runs.CodeBuildRunTask(
@@ -148,7 +158,9 @@ def generate_dependency_tasks(
                     )
                 )
 
-        elif depends_on.get("type") == constants.LAMBDA_INVOCATION:
+        elif (
+            is_running_in_hub and depends_on.get("type") == constants.LAMBDA_INVOCATION
+        ):
             if depends_on.get(constants.AFFINITY) == constants.LAMBDA_INVOCATION:
                 these_dependencies.append(
                     lambda_invocations.LambdaInvocationTask(
@@ -208,18 +220,21 @@ class DependenciesMixin(object):
             self.manifest.get(self.section_name).get(item_name).get("depends_on", [])
         )
 
+        should_generate_shares = not (
+            self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run
+        )
+
         these_dependencies = generate_dependency_tasks(
             dependencies,
             self.manifest_file_path,
             self.puppet_account_id,
             self.account_id,
             self.region,
+            self.execution_mode,
         )
 
         if self.section_name in [constants.SPOKE_LOCAL_PORTFOLIOS, constants.LAUNCHES]:
-            if not (
-                self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run
-            ):
+            if should_generate_shares:
                 these_dependencies.append(
                     generate.GenerateSharesTask(
                         puppet_account_id=self.puppet_account_id,

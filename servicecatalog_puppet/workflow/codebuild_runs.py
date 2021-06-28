@@ -302,10 +302,8 @@ class CodeBuildRunsSectionTask(CodeBuildRunBaseTask, manifest_tasks.SectionTask)
         for name, details in self.manifest.get(constants.CODE_BUILD_RUNS, {}).items():
             requirements += self.handle_requirements_for(
                 name,
-                details,
                 constants.CODE_BUILD_RUN,
                 constants.CODE_BUILD_RUNS,
-                self.execution_mode == constants.EXECUTION_MODE_SPOKE,
                 CodeBuildRunForRegionTask,
                 CodeBuildRunForAccountTask,
                 CodeBuildRunForAccountAndRegionTask,
