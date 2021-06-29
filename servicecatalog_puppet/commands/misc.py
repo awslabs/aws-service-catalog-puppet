@@ -19,12 +19,13 @@ from servicecatalog_puppet import (
 )
 from servicecatalog_puppet.workflow import (
     launch as launch_tasks,
-    assertions as assertions_tasks,
-    spoke_local_portfolios as spoke_local_portfolios_tasks,
-    lambda_invocations as lambda_invocations_tasks,
-    codebuild_runs as codebuild_runs_tasks,
     runner as runner,
 )
+from servicecatalog_puppet.workflow.assertions import assertions_section_task
+from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_section_task
+from servicecatalog_puppet.workflow.lambda_invocations import lambda_invocation_section_task
+from servicecatalog_puppet.workflow.launch import launch_section_task
+from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_section_task
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -267,7 +268,7 @@ def generate_tasks(
     f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
 ):
     tasks = [
-        launch_tasks.LaunchSectionTask(
+        launch_section_task.LaunchSectionTask(
             manifest_file_path=f.name,
             puppet_account_id=puppet_account_id,
         ),
@@ -275,19 +276,19 @@ def generate_tasks(
     if execution_mode != constants.EXECUTION_MODE_SPOKE:
         if not is_dry_run:
             tasks += [
-                assertions_tasks.AssertionsSectionTask(
+                assertions_section_task.AssertionsSectionTask(
                     manifest_file_path=f.name,
                     puppet_account_id=puppet_account_id,
                 ),
-                spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
+                spoke_local_portfolio_section_task.SpokeLocalPortfolioSectionTask(
                     manifest_file_path=f.name,
                     puppet_account_id=puppet_account_id,
                 ),
-                lambda_invocations_tasks.LambdaInvocationsSectionTask(
+                lambda_invocation_section_task.LambdaInvocationsSectionTask(
                     manifest_file_path=f.name,
                     puppet_account_id=puppet_account_id,
                 ),
-                codebuild_runs_tasks.CodeBuildRunsSectionTask(
+                code_build_run_section_task.CodeBuildRunsSectionTask(
                     manifest_file_path=f.name,
                     puppet_account_id=puppet_account_id,
                 ),

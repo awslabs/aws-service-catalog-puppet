@@ -3,7 +3,7 @@ from functools import lru_cache
 import luigi
 import yaml
 
-import manifest_utils
+from servicecatalog_puppet import manifest_utils
 
 
 class ManifestMixen(object):

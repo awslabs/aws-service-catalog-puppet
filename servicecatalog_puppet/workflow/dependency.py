@@ -227,23 +227,22 @@ def generate_dependency_tasks(
 
 class DependenciesMixin(object):
     def get_section_dependencies(self):
-        from servicecatalog_puppet.workflow import codebuild_runs
-        from servicecatalog_puppet.workflow import launch
-        from servicecatalog_puppet.workflow import spoke_local_portfolios
-        from servicecatalog_puppet.workflow import assertions
-        from servicecatalog_puppet.workflow import lambda_invocations
 
-        from servicecatalog_puppet.workflow import generate
+        from servicecatalog_puppet.workflow.codebuild_runs.execute_code_build_run_task import ExecuteCodeBuildRunTask
+        from servicecatalog_puppet.workflow.launch.provisioning_task import ProvisioningTask
+        from servicecatalog_puppet.workflow.spoke_local_portfolios.spoke_local_portfolio_base_task import SpokeLocalPortfolioBaseTask
+        from servicecatalog_puppet.workflow.assertions.assert_task import AssertTask
+        from servicecatalog_puppet.workflow.lambda_invocations.invoke_lambda_task import InvokeLambdaTask
 
-        if isinstance(self, codebuild_runs.ExecuteCodeBuildRunTask):
+        if isinstance(self, ExecuteCodeBuildRunTask):
             item_name = self.code_build_run_name
-        elif isinstance(self, launch.ProvisioningTask):
+        elif isinstance(self, ProvisioningTask):
             item_name = self.launch_name
-        elif isinstance(self, spoke_local_portfolios.SpokeLocalPortfolioBaseTask):
+        elif isinstance(self, SpokeLocalPortfolioBaseTask):
             item_name = self.spoke_local_portfolio_name
-        elif isinstance(self, assertions.AssertTask):
+        elif isinstance(self, AssertTask):
             item_name = self.assertion_name
-        elif isinstance(self, lambda_invocations.InvokeLambdaTask):
+        elif isinstance(self, InvokeLambdaTask):
             item_name = self.lambda_invocation_name
         else:
             raise Exception(
