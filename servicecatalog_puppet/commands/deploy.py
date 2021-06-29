@@ -1,0 +1,44 @@
+import os
+from datetime import datetime
+
+from servicecatalog_puppet import config
+from servicecatalog_puppet.commands.misc import generate_tasks
+from servicecatalog_puppet.workflow import runner as runner
+
+
+def deploy(
+    f,
+    puppet_account_id,
+    executor_account_id,
+    single_account=None,
+    num_workers=10,
+    is_dry_run=False,
+    is_list_launches=False,
+    execution_mode="hub",
+    on_complete_url=None,
+    running_exploded=False,
+):
+    os.environ["SCT_CACHE_INVALIDATOR"] = str(datetime.now())
+    os.environ["SCT_EXECUTION_MODE"] = str(execution_mode)
+    os.environ["SCT_SINGLE_ACCOUNT"] = str(single_account)
+    os.environ["SCT_IS_DRY_RUN"] = str(is_dry_run)
+    os.environ["SCT_SHOULD_USE_SNS"] = str(config.get_should_use_sns(puppet_account_id))
+    os.environ["SCT_SHOULD_USE_PRODUCT_PLANS"] = str(
+        config.get_should_use_product_plans(
+            puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
+        )
+    )
+    tasks_to_run = generate_tasks(
+        f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
+    )
+    runner.run_tasks(
+        puppet_account_id,
+        executor_account_id,
+        tasks_to_run,
+        num_workers,
+        is_dry_run,
+        is_list_launches,
+        execution_mode,
+        on_complete_url,
+        running_exploded,
+    )

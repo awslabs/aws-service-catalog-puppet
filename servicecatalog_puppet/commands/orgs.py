@@ -3,10 +3,12 @@ from betterboto import client as betterboto_client
 from jinja2 import Template
 
 import asset_helpers
-from core import logger
 
+import logging
 from servicecatalog_puppet import constants
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 def set_org_iam_role_arn(org_iam_role_arn):
     with betterboto_client.ClientContextManager("ssm") as ssm:
