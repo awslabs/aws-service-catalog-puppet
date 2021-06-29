@@ -1,4 +1,5 @@
 from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow.generate import generate_shares_task
 
 
 def generate_dependency_tasks(
@@ -11,11 +12,11 @@ def generate_dependency_tasks(
 ):
     is_running_in_hub = execution_mode != constants.EXECUTION_MODE_SPOKE
 
-    from servicecatalog_puppet.workflow import codebuild_runs
-    from servicecatalog_puppet.workflow import launch
-    from servicecatalog_puppet.workflow import spoke_local_portfolios
-    from servicecatalog_puppet.workflow import assertions
-    from servicecatalog_puppet.workflow import lambda_invocations
+    from servicecatalog_puppet.workflow.launch import launch_task, launch_for_account_task, launch_for_region_task, launch_for_account_and_region_task
+    from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_task, spoke_local_portfolio_for_account_task, spoke_local_portfolio_for_region_task, spoke_local_portfolio_for_account_and_region_task
+    from servicecatalog_puppet.workflow.assertions import assertion_task, assertion_for_account_task, assertion_for_region_task, assertion_for_account_and_region_task
+    from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_task, code_build_run_for_account_task, code_build_run_for_region_task, code_build_run_for_account_and_region_task
+    from servicecatalog_puppet.workflow.lambda_invocations import lambda_invocation_task, lambda_invocation_for_account_task, lambda_invocation_for_region_task, lambda_invocation_for_account_and_region_task
 
     these_dependencies = list()
     common_args = dict(
@@ -26,14 +27,14 @@ def generate_dependency_tasks(
         if depends_on.get("type") == constants.LAUNCH:
             if depends_on.get(constants.AFFINITY) == constants.LAUNCH:
                 these_dependencies.append(
-                    launch.LaunchTask(
+                    launch_task.LaunchTask(
                         **common_args,
                         launch_name=depends_on.get("name"),
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account":
                 these_dependencies.append(
-                    launch.LaunchForAccountTask(
+                    launch_for_account_task.LaunchForAccountTask(
                         **common_args,
                         launch_name=depends_on.get("name"),
                         account_id=account_id,
@@ -41,7 +42,7 @@ def generate_dependency_tasks(
                 )
             if depends_on.get(constants.AFFINITY) == "region":
                 these_dependencies.append(
-                    launch.LaunchForRegionTask(
+                    launch_for_region_task.LaunchForRegionTask(
                         **common_args,
                         launch_name=depends_on.get("name"),
                         region=region,
@@ -49,7 +50,7 @@ def generate_dependency_tasks(
                 )
             if depends_on.get(constants.AFFINITY) == "account-and-region":
                 these_dependencies.append(
-                    launch.LaunchForAccountAndRegionTask(
+                    launch_for_account_and_region_task.LaunchForAccountAndRegionTask(
                         **common_args,
                         launch_name=depends_on.get("name"),
                         account_id=account_id,
@@ -63,14 +64,14 @@ def generate_dependency_tasks(
         ):
             if depends_on.get(constants.AFFINITY) == constants.SPOKE_LOCAL_PORTFOLIO:
                 these_dependencies.append(
-                    spoke_local_portfolios.SpokeLocalPortfolioTask(
+                    spoke_local_portfolio_task.SpokeLocalPortfolioTask(
                         **common_args,
                         spoke_local_portfolio_name=depends_on.get("name"),
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account":
                 these_dependencies.append(
-                    spoke_local_portfolios.SpokeLocalPortfolioForAccountTask(
+                    spoke_local_portfolio_for_account_task.SpokeLocalPortfolioForAccountTask(
                         **common_args,
                         spoke_local_portfolio_name=depends_on.get("name"),
                         account_id=account_id,
@@ -78,7 +79,7 @@ def generate_dependency_tasks(
                 )
             if depends_on.get(constants.AFFINITY) == "region":
                 these_dependencies.append(
-                    spoke_local_portfolios.SpokeLocalPortfolioForRegionTask(
+                    spoke_local_portfolio_for_region_task.SpokeLocalPortfolioForRegionTask(
                         **common_args,
                         spoke_local_portfolio_name=depends_on.get("name"),
                         region=region,
@@ -86,25 +87,24 @@ def generate_dependency_tasks(
                 )
             if depends_on.get(constants.AFFINITY) == "account-and-region":
                 these_dependencies.append(
-                    spoke_local_portfolios.SpokeLocalPortfolioForAccountAndRegionTask(
+                    spoke_local_portfolio_for_account_and_region_task.SpokeLocalPortfolioForAccountAndRegionTask(
                         **common_args,
                         spoke_local_portfolio_name=depends_on.get("name"),
                         account_id=account_id,
                         region=region,
                     )
                 )
-
         elif is_running_in_hub and depends_on.get("type") == constants.ASSERTION:
             if depends_on.get(constants.AFFINITY) == constants.ASSERTION:
                 these_dependencies.append(
-                    assertions.AssertionTask(
+                    assertion_task.AssertionTask(
                         **common_args,
                         assertion_name=depends_on.get("name"),
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account":
                 these_dependencies.append(
-                    assertions.AssertionForAccountTask(
+                    assertion_for_account_task.AssertionForAccountTask(
                         **common_args,
                         assertion_name=depends_on.get("name"),
                         account_id=account_id,
@@ -112,7 +112,7 @@ def generate_dependency_tasks(
                 )
             if depends_on.get(constants.AFFINITY) == "region":
                 these_dependencies.append(
-                    assertions.AssertionForRegionTask(
+                    assertion_for_region_task.AssertionForRegionTask(
                         **common_args,
                         assertion_name=depends_on.get("name"),
                         region=region,
@@ -120,7 +120,7 @@ def generate_dependency_tasks(
                 )
             if depends_on.get(constants.AFFINITY) == "account-and-region":
                 these_dependencies.append(
-                    assertions.AssertionForAccountAndRegionTask(
+                    assertion_for_account_and_region_task.AssertionForAccountAndRegionTask(
                         **common_args,
                         assertion_name=depends_on.get("name"),
                         account_id=account_id,
@@ -131,14 +131,14 @@ def generate_dependency_tasks(
         elif is_running_in_hub and depends_on.get("type") == constants.CODE_BUILD_RUN:
             if depends_on.get(constants.AFFINITY) == constants.CODE_BUILD_RUN:
                 these_dependencies.append(
-                    codebuild_runs.CodeBuildRunTask(
+                    code_build_run_task.CodeBuildRunTask(
                         **common_args,
                         code_build_run_name=depends_on.get("name"),
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account":
                 these_dependencies.append(
-                    codebuild_runs.CodeBuildRunForAccountTask(
+                    code_build_run_for_account_task.CodeBuildRunForAccountTask(
                         **common_args,
                         code_build_run_name=depends_on.get("name"),
                         account_id=account_id,
@@ -146,7 +146,7 @@ def generate_dependency_tasks(
                 )
             if depends_on.get(constants.AFFINITY) == "region":
                 these_dependencies.append(
-                    codebuild_runs.CodeBuildRunForRegionTask(
+                    code_build_run_for_region_task.CodeBuildRunForRegionTask(
                         **common_args,
                         code_build_run_name=depends_on.get("name"),
                         region=region,
@@ -154,7 +154,7 @@ def generate_dependency_tasks(
                 )
             if depends_on.get(constants.AFFINITY) == "account-and-region":
                 these_dependencies.append(
-                    codebuild_runs.CodeBuildRunForAccountAndRegionTask(
+                    code_build_run_for_account_and_region_task.CodeBuildRunForAccountAndRegionTask(
                         **common_args,
                         code_build_run_name=depends_on.get("name"),
                         account_id=account_id,
@@ -167,14 +167,14 @@ def generate_dependency_tasks(
         ):
             if depends_on.get(constants.AFFINITY) == constants.LAMBDA_INVOCATION:
                 these_dependencies.append(
-                    lambda_invocations.LambdaInvocationTask(
+                    lambda_invocation_task.LambdaInvocationTask(
                         **common_args,
                         lambda_invocation_name=depends_on.get("name"),
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account":
                 these_dependencies.append(
-                    lambda_invocations.LambdaInvocationForAccountTask(
+                    lambda_invocation_for_account_task.LambdaInvocationForAccountTask(
                         **common_args,
                         lambda_invocation_name=depends_on.get("name"),
                         account_id=account_id,
@@ -182,7 +182,7 @@ def generate_dependency_tasks(
                 )
             if depends_on.get(constants.AFFINITY) == "region":
                 these_dependencies.append(
-                    lambda_invocations.LambdaInvocationForRegionTask(
+                    lambda_invocation_for_region_task.LambdaInvocationForRegionTask(
                         **common_args,
                         lambda_invocation_name=depends_on.get("name"),
                         region=region,
@@ -190,7 +190,7 @@ def generate_dependency_tasks(
                 )
             if depends_on.get(constants.AFFINITY) == "account-and-region":
                 these_dependencies.append(
-                    lambda_invocations.LambdaInvocationForAccountAndRegionTask(
+                    lambda_invocation_for_account_and_region_task.LambdaInvocationForAccountAndRegionTask(
                         **common_args,
                         lambda_invocation_name=depends_on.get("name"),
                         account_id=account_id,
@@ -220,6 +220,8 @@ class DependenciesMixin(object):
             item_name = self.assertion_name
         elif isinstance(self, lambda_invocations.InvokeLambdaTask):
             item_name = self.lambda_invocation_name
+        else:
+            raise Exception(f"Could not determine an item_name for {self.__class__.__name__}")
 
         dependencies = (
             self.manifest.get(self.section_name).get(item_name).get("depends_on", [])
@@ -241,7 +243,7 @@ class DependenciesMixin(object):
         if self.section_name in [constants.SPOKE_LOCAL_PORTFOLIOS, constants.LAUNCHES]:
             if should_generate_shares:
                 these_dependencies.append(
-                    generate.GenerateSharesTask(
+                    generate_shares_task.GenerateSharesTask(
                         puppet_account_id=self.puppet_account_id,
                         manifest_file_path=self.manifest_file_path,
                         section=self.section_name,

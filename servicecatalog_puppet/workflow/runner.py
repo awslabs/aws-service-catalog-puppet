@@ -1,3 +1,4 @@
+from servicecatalog_puppet import config
 import json
 import logging
 import os
@@ -16,7 +17,8 @@ from betterboto import client as betterboto_client
 from colorclass import Color
 from luigi import LuigiStatusCode
 
-from servicecatalog_puppet import config, constants
+from servicecatalog_puppet import config
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 
 logger = logging.getLogger()
