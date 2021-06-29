@@ -1,6 +1,7 @@
 import luigi
 
 from servicecatalog_puppet.workflow import dependency
+from servicecatalog_puppet.workflow.assertions import do_assert_task
 from servicecatalog_puppet.workflow.assertions import assertion_base_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
@@ -35,7 +36,7 @@ class AssertTask(
         return requirements
 
     def run(self):
-        yield DoAssertTask(
+        yield do_assert_task.DoAssertTask(
             manifest_file_path=self.manifest_file_path,
             assertion_name=self.assertion_name,
             region=self.region,
