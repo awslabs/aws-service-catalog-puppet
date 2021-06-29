@@ -1,14 +1,20 @@
-from servicecatalog_puppet.workflow.lambda_invocations import lambda_invocation_base_task
+from servicecatalog_puppet.workflow.lambda_invocations import (
+    lambda_invocation_base_task,
+)
 import luigi
 
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow.lambda_invocations import do_invoke_lambda_task
-from servicecatalog_puppet.workflow.lambda_invocations import lambda_invocation_base_task
+from servicecatalog_puppet.workflow.lambda_invocations import (
+    lambda_invocation_base_task,
+)
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 
 class InvokeLambdaTask(
-    lambda_invocation_base_task.LambdaInvocationBaseTask, manifest_mixin.ManifestMixen, dependency.DependenciesMixin
+    lambda_invocation_base_task.LambdaInvocationBaseTask,
+    manifest_mixin.ManifestMixen,
+    dependency.DependenciesMixin,
 ):
     lambda_invocation_name = luigi.Parameter()
     region = luigi.Parameter()

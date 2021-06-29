@@ -12,7 +12,9 @@ class SpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     sharing_mode = "sharing_mode"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_task
+        from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+            spoke_local_portfolio_task,
+        )
 
         self.module = spoke_local_portfolio_task
 

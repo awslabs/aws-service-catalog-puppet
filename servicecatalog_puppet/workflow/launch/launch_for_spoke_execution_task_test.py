@@ -8,7 +8,9 @@ class LaunchForSpokeExecutionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
     puppet_account_id = "puppet_account_id"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launch import launch_for_spoke_execution_task
+        from servicecatalog_puppet.workflow.launch import (
+            launch_for_spoke_execution_task,
+        )
 
         self.module = launch_for_spoke_execution_task
 

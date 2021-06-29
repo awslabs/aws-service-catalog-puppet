@@ -4,9 +4,15 @@ import luigi
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow.portfolio.accessors import get_portfolio_by_portfolio_name_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import portfolio_management_task
-from servicecatalog_puppet.workflow.portfolio.sharing_management import create_share_for_account_launch_region_task
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    get_portfolio_by_portfolio_name_task,
+)
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    portfolio_management_task,
+)
+from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+    create_share_for_account_launch_region_task,
+)
 
 
 class CreateSpokeLocalPortfolioTask(

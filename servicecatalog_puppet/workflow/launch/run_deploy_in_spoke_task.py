@@ -100,4 +100,3 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
                 ],
             )
         self.write_output(dict(account_id=self.account_id, **response))
-

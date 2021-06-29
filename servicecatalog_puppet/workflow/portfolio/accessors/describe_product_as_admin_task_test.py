@@ -12,7 +12,9 @@ class DescribeProductAsAdminTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
     region = "region"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.accessors import describe_product_as_admin_task
+        from servicecatalog_puppet.workflow.portfolio.accessors import (
+            describe_product_as_admin_task,
+        )
 
         self.module = describe_product_as_admin_task
 

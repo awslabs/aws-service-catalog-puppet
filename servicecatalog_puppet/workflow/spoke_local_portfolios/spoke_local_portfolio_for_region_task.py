@@ -1,10 +1,14 @@
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_for_task
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    spoke_local_portfolio_for_task,
+)
 
 
-class SpokeLocalPortfolioForRegionTask(spoke_local_portfolio_for_task.SpokeLocalPortfolioForTask):
+class SpokeLocalPortfolioForRegionTask(
+    spoke_local_portfolio_for_task.SpokeLocalPortfolioForTask
+):
     region = luigi.Parameter()
 
     def params_for_results_display(self):
@@ -26,10 +30,10 @@ class SpokeLocalPortfolioForRegionTask(spoke_local_portfolio_for_task.SpokeLocal
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-                self.puppet_account_id,
-                self.section_name,
-                self.spoke_local_portfolio_name,
-                self.region,
+            self.puppet_account_id,
+            self.section_name,
+            self.spoke_local_portfolio_name,
+            self.region,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)

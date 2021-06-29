@@ -11,7 +11,9 @@ class SearchProductsAsAdminTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     region = "region"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.accessors import search_products_as_admin_task
+        from servicecatalog_puppet.workflow.portfolio.accessors import (
+            search_products_as_admin_task,
+        )
 
         self.module = search_products_as_admin_task
 

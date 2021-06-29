@@ -13,7 +13,9 @@ class CreateAssociationsInPythonForPortfolioTaskTest(
     portfolio = "portfolio"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.associations import create_associations_in_python_for_portfolio_task
+        from servicecatalog_puppet.workflow.portfolio.associations import (
+            create_associations_in_python_for_portfolio_task,
+        )
 
         self.module = create_associations_in_python_for_portfolio_task
 

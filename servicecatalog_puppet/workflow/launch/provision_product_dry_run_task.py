@@ -75,7 +75,7 @@ class ProvisionProductDryRunTask(provision_product_task.ProvisionProductTask):
                     )
 
                     with self.input().get("provisioning_artifact_parameters").open(
-                            "r"
+                        "r"
                     ) as f:
                         provisioning_artifact_parameters = json.loads(f.read())
 
@@ -133,7 +133,7 @@ class ProvisionProductDryRunTask(provision_product_task.ProvisionProductTask):
                         )
 
     def get_current_version(
-            self, provisioning_artifact_id, product_id, service_catalog
+        self, provisioning_artifact_id, product_id, service_catalog
     ):
         return service_catalog.describe_provisioning_artifact(
             ProvisioningArtifactId=provisioning_artifact_id,
@@ -141,7 +141,7 @@ class ProvisionProductDryRunTask(provision_product_task.ProvisionProductTask):
         ).get("ProvisioningArtifactDetail")
 
     def write_result(
-            self, current_version, new_version, effect, current_status, active, notes=""
+        self, current_version, new_version, effect, current_status, active, notes=""
     ):
         with self.output().open("w") as f:
             f.write(
@@ -159,4 +159,3 @@ class ProvisionProductDryRunTask(provision_product_task.ProvisionProductTask):
                     default=str,
                 )
             )
-

@@ -17,8 +17,9 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     )
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.generate import generate_policies_template_task
-
+        from servicecatalog_puppet.workflow.generate import (
+            generate_policies_template_task,
+        )
 
         self.module = generate_policies_template_task
 

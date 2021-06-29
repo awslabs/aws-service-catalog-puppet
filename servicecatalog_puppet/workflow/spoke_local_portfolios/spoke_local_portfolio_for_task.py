@@ -2,13 +2,20 @@ import luigi
 
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow.spoke_local_portfolios import share_portfolio_with_spoke_task
-from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_base_task
-from servicecatalog_puppet.workflow.spoke_local_portfolios import terminate_portfolio_in_spoke_task
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    share_portfolio_with_spoke_task,
+)
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    spoke_local_portfolio_base_task,
+)
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    terminate_portfolio_in_spoke_task,
+)
 
 
 class SpokeLocalPortfolioForTask(
-    spoke_local_portfolio_base_task.SpokeLocalPortfolioBaseTask, manifest_mixin.ManifestMixen
+    spoke_local_portfolio_base_task.SpokeLocalPortfolioBaseTask,
+    manifest_mixin.ManifestMixen,
 ):
     spoke_local_portfolio_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -26,4 +33,3 @@ class SpokeLocalPortfolioForTask(
 
     def run(self):
         self.write_output(self.params_for_results_display())
-

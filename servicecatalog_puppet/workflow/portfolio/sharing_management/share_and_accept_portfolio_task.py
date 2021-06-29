@@ -3,10 +3,18 @@ import luigi
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow.portfolio.accessors import get_portfolio_by_portfolio_name_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import portfolio_management_task
-from servicecatalog_puppet.workflow.portfolio.sharing_management import share_portfolio_task
-from servicecatalog_puppet.workflow.portfolio.sharing_management import share_portfolio_via_orgs_task
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    get_portfolio_by_portfolio_name_task,
+)
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    portfolio_management_task,
+)
+from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+    share_portfolio_task,
+)
+from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+    share_portfolio_via_orgs_task,
+)
 
 
 class ShareAndAcceptPortfolioTask(
@@ -53,7 +61,9 @@ class ShareAndAcceptPortfolioTask(
                     puppet_account_id=self.puppet_account_id,
                 )
             else:
-                requirements["share"] = share_portfolio_via_orgs_task.SharePortfolioViaOrgsTask(
+                requirements[
+                    "share"
+                ] = share_portfolio_via_orgs_task.SharePortfolioViaOrgsTask(
                     manifest_file_path=self.manifest_file_path,
                     portfolio=self.portfolio,
                     region=self.region,

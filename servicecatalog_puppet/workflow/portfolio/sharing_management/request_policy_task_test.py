@@ -11,7 +11,9 @@ class RequestPolicyTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     organization = "organization"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.sharing_management import request_policy_task
+        from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+            request_policy_task,
+        )
 
         self.module = request_policy_task
 

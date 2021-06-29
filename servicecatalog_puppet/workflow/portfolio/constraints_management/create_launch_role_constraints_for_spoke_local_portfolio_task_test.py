@@ -18,7 +18,9 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTaskTest(
     sharing_mode = "sharing_mode"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.constraints_management import create_launch_role_constraints_for_spoke_local_portfolio_task
+        from servicecatalog_puppet.workflow.portfolio.constraints_management import (
+            create_launch_role_constraints_for_spoke_local_portfolio_task,
+        )
 
         self.module = create_launch_role_constraints_for_spoke_local_portfolio_task
 

@@ -14,7 +14,9 @@ class ImportIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUn
     sharing_mode = "sharing_mode"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.portfolio_management import import_into_spoke_local_portfolio_task
+        from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+            import_into_spoke_local_portfolio_task,
+        )
 
         self.module = import_into_spoke_local_portfolio_task
 

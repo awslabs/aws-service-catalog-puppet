@@ -3,7 +3,9 @@ import luigi
 from servicecatalog_puppet.workflow.lambda_invocations import lambda_invocation_for_task
 
 
-class LambdaInvocationForAccountTask(lambda_invocation_for_task.LambdaInvocationForTask):
+class LambdaInvocationForAccountTask(
+    lambda_invocation_for_task.LambdaInvocationForTask
+):
     account_id = luigi.Parameter()
 
     def params_for_results_display(self):

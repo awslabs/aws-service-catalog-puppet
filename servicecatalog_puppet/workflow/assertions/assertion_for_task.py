@@ -5,7 +5,9 @@ from servicecatalog_puppet.workflow.assertions import assertion_base_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 
-class AssertionForTask(assertion_base_task.AssertionBaseTask, manifest_mixin.ManifestMixen):
+class AssertionForTask(
+    assertion_base_task.AssertionBaseTask, manifest_mixin.ManifestMixen
+):
     assertion_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 

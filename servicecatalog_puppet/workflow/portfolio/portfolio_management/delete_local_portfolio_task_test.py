@@ -8,7 +8,9 @@ class DeleteLocalPortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     portfolio_id = "portfolio_id"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.portfolio_management import delete_local_portfolio_task
+        from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+            delete_local_portfolio_task,
+        )
 
         self.module = delete_local_portfolio_task
 

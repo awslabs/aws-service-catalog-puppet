@@ -4,10 +4,14 @@ import time
 import luigi
 
 from servicecatalog_puppet import config
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import portfolio_management_task
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    portfolio_management_task,
+)
 
 
-class AssociatePrincipalWithPortfolioTask(portfolio_management_task.PortfolioManagementTask):
+class AssociatePrincipalWithPortfolioTask(
+    portfolio_management_task.PortfolioManagementTask
+):
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()

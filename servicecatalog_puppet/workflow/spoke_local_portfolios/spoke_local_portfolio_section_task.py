@@ -1,9 +1,17 @@
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.manifest import section_task
-from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_for_account_and_region_task
-from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_for_account_task
-from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_for_region_task
-from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_task
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    spoke_local_portfolio_for_account_and_region_task,
+)
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    spoke_local_portfolio_for_account_task,
+)
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    spoke_local_portfolio_for_region_task,
+)
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    spoke_local_portfolio_task,
+)
 
 
 class SpokeLocalPortfolioSectionTask(section_task.SectionTask):
@@ -16,7 +24,7 @@ class SpokeLocalPortfolioSectionTask(section_task.SectionTask):
 
     def should_run(self):
         return (
-                self.execution_mode == constants.EXECUTION_MODE_HUB and not self.is_dry_run
+            self.execution_mode == constants.EXECUTION_MODE_HUB and not self.is_dry_run
         )
 
     def requires(self):
@@ -24,7 +32,7 @@ class SpokeLocalPortfolioSectionTask(section_task.SectionTask):
         if self.should_run():
 
             for name, details in self.manifest.get(
-                    constants.SPOKE_LOCAL_PORTFOLIOS, {}
+                constants.SPOKE_LOCAL_PORTFOLIOS, {}
             ).items():
                 requirements += self.handle_requirements_for(
                     name,
@@ -45,4 +53,3 @@ class SpokeLocalPortfolioSectionTask(section_task.SectionTask):
 
     def run(self):
         self.write_output(self.manifest.get("spoke-local-portfolios"))
-

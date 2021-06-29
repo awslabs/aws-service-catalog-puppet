@@ -2,10 +2,18 @@ import luigi
 
 from servicecatalog_puppet import utils
 from servicecatalog_puppet.workflow.general import delete_cloud_formation_stack_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import delete_local_portfolio_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import disassociate_products_from_portfolio_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import portfolio_management_task
-from servicecatalog_puppet.workflow.portfolio.sharing_management import delete_portfolio_share_task
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    delete_local_portfolio_task,
+)
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    disassociate_products_from_portfolio_task,
+)
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    portfolio_management_task,
+)
+from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+    delete_portfolio_share_task,
+)
 
 
 class DeletePortfolio(portfolio_management_task.PortfolioManagementTask):

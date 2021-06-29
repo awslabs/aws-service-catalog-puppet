@@ -1,13 +1,17 @@
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.assertions import assertion_base_task
-from servicecatalog_puppet.workflow.assertions import assertion_for_account_and_region_task
+from servicecatalog_puppet.workflow.assertions import (
+    assertion_for_account_and_region_task,
+)
 from servicecatalog_puppet.workflow.assertions import assertion_for_account_task
 from servicecatalog_puppet.workflow.assertions import assertion_for_region_task
 from servicecatalog_puppet.workflow.assertions import assertion_task
 from servicecatalog_puppet.workflow.manifest import section_task
 
 
-class AssertionsSectionTask(assertion_base_task.AssertionBaseTask, section_task.SectionTask):
+class AssertionsSectionTask(
+    assertion_base_task.AssertionBaseTask, section_task.SectionTask
+):
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,

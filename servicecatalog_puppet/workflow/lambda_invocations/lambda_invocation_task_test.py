@@ -10,7 +10,9 @@ class LambdaInvocationTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     should_use_sns = False
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.lambda_invocations import lambda_invocation_task
+        from servicecatalog_puppet.workflow.lambda_invocations import (
+            lambda_invocation_task,
+        )
 
         self.module = lambda_invocation_task
 

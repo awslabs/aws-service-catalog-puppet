@@ -3,8 +3,12 @@ import luigi
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.launch import do_describe_provisioning_parameters
 from servicecatalog_puppet.workflow.launch import provisioning_task
-from servicecatalog_puppet.workflow.portfolio.accessors import get_version_details_by_names_task
-from servicecatalog_puppet.workflow.portfolio.associations import create_associations_in_python_for_portfolio_task
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    get_version_details_by_names_task,
+)
+from servicecatalog_puppet.workflow.portfolio.associations import (
+    create_associations_in_python_for_portfolio_task,
+)
 
 
 class ProvisioningArtifactParametersTask(provisioning_task.ProvisioningTask):
@@ -58,18 +62,19 @@ class ProvisioningArtifactParametersTask(provisioning_task.ProvisioningTask):
         details = self.load_from_input("details")
         product_id = details.get("product_details").get("ProductId")
         version_id = details.get("version_details").get("Id")
-        result = yield do_describe_provisioning_parameters.DoDescribeProvisioningParameters(
-            manifest_file_path=self.manifest_file_path,
-            puppet_account_id=self.single_account
-            if self.execution_mode == constants.EXECUTION_MODE_SPOKE
-            else self.puppet_account_id,
-            region=self.region,
-            product_id=product_id,
-            version_id=version_id,
-            portfolio=self.portfolio,
+        result = (
+            yield do_describe_provisioning_parameters.DoDescribeProvisioningParameters(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.single_account
+                if self.execution_mode == constants.EXECUTION_MODE_SPOKE
+                else self.puppet_account_id,
+                region=self.region,
+                product_id=product_id,
+                version_id=version_id,
+                portfolio=self.portfolio,
+            )
         )
         self.write_output(
             result.open("r").read(),
             skip_json_dump=True,
         )
-

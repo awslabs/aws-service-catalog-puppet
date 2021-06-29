@@ -5,7 +5,9 @@ from servicecatalog_puppet.workflow.launch import do_terminate_product_task
 from servicecatalog_puppet.workflow.launch import provisioning_task
 
 
-class TerminateProductTask(provisioning_task.ProvisioningTask, dependency.DependenciesMixin):
+class TerminateProductTask(
+    provisioning_task.ProvisioningTask, dependency.DependenciesMixin
+):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 

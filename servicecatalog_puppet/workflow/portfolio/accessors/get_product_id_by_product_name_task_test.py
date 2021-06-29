@@ -12,7 +12,9 @@ class GetProductIdByProductNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     region = "region"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.accessors import get_product_id_by_product_name_task
+        from servicecatalog_puppet.workflow.portfolio.accessors import (
+            get_product_id_by_product_name_task,
+        )
 
         self.module = get_product_id_by_product_name_task
 

@@ -3,11 +3,17 @@ import json
 import luigi
 
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import portfolio_management_task
-from servicecatalog_puppet.workflow.portfolio.accessors import get_product_id_by_product_name_task
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    portfolio_management_task,
+)
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    get_product_id_by_product_name_task,
+)
 
 
-class GetVersionIdByVersionName(portfolio_management_task.PortfolioManagementTask, manifest_mixin.ManifestMixen):
+class GetVersionIdByVersionName(
+    portfolio_management_task.PortfolioManagementTask, manifest_mixin.ManifestMixen
+):
     puppet_account_id = luigi.Parameter()
     portfolio = luigi.Parameter()
     product = luigi.Parameter()

@@ -6,7 +6,9 @@ from servicecatalog_puppet.workflow.general import delete_cloud_formation_stack_
 from servicecatalog_puppet.workflow.generate import ensure_event_bridge_event_bus_task
 from servicecatalog_puppet.workflow.generate import generate_policies_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow.portfolio.sharing_management import create_share_for_account_launch_region_task
+from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+    create_share_for_account_launch_region_task,
+)
 
 
 class GenerateSharesTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):

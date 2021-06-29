@@ -11,8 +11,9 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     ou_to_share_with = "ou_to_share_with"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.sharing_management import share_portfolio_via_orgs_task
-
+        from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+            share_portfolio_via_orgs_task,
+        )
 
         self.module = share_portfolio_via_orgs_task
 

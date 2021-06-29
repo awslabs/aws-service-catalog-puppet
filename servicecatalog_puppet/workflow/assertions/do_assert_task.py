@@ -9,7 +9,9 @@ from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 
 class DoAssertTask(
-    assertion_base_task.AssertionBaseTask, manifest_mixin.ManifestMixen, dependency.DependenciesMixin
+    assertion_base_task.AssertionBaseTask,
+    manifest_mixin.ManifestMixen,
+    dependency.DependenciesMixin,
 ):
     assertion_name = luigi.Parameter()
     region = luigi.Parameter()

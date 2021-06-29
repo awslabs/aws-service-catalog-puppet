@@ -1,11 +1,15 @@
 import luigi
 
-from servicecatalog_puppet.workflow.lambda_invocations import lambda_invocation_base_task
+from servicecatalog_puppet.workflow.lambda_invocations import (
+    lambda_invocation_base_task,
+)
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 from workflow.lambda_invocations.invoke_lambda_task import InvokeLambdaTask
 
 
-class LambdaInvocationForTask(lambda_invocation_base_task.LambdaInvocationBaseTask, manifest_mixin.ManifestMixen):
+class LambdaInvocationForTask(
+    lambda_invocation_base_task.LambdaInvocationBaseTask, manifest_mixin.ManifestMixen
+):
     lambda_invocation_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 

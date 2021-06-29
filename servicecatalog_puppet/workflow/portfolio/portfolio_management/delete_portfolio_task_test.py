@@ -13,7 +13,9 @@ class DeletePortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.portfolio_management import delete_portfolio_task
+        from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+            delete_portfolio_task,
+        )
 
         self.module = delete_portfolio_task
 

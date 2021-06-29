@@ -69,4 +69,3 @@ class LaunchSectionTask(section_task.SectionTask):
 
     def run(self):
         self.write_output(self.manifest.get("launches", {}))
-

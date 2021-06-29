@@ -12,8 +12,9 @@ class CreateShareForAccountLaunchRegionTest(tasks_unit_tests_helper.PuppetTaskUn
     sharing_mode = "sharing_mode"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.sharing_management import create_share_for_account_launch_region_task
-
+        from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+            create_share_for_account_launch_region_task,
+        )
 
         self.module = create_share_for_account_launch_region_task
 

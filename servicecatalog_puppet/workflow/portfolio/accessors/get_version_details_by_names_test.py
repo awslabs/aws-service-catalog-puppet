@@ -13,7 +13,9 @@ class GetVersionDetailsByNamesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     region = "region"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.accessors import get_version_details_by_names_task
+        from servicecatalog_puppet.workflow.portfolio.accessors import (
+            get_version_details_by_names_task,
+        )
 
         self.module = get_version_details_by_names_task
 

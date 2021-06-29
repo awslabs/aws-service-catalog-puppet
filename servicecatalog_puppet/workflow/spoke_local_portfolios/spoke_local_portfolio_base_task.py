@@ -19,13 +19,3 @@ class SpokeLocalPortfolioBaseTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
     @property
     def section_name(self):
         return constants.SPOKE_LOCAL_PORTFOLIOS
-
-
-
-
-
-
-
-
-
-

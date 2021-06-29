@@ -9,7 +9,9 @@ class DisassociateProductFromPortfolioTest(tasks_unit_tests_helper.PuppetTaskUni
     product_id = "product_id"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.portfolio_management import disassociate_product_from_portfolio_task
+        from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+            disassociate_product_from_portfolio_task,
+        )
 
         self.module = disassociate_product_from_portfolio_task
 

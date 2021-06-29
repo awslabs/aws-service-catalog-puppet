@@ -85,8 +85,8 @@ class TerminateProductDryRunTask(provisioning_task.ProvisioningTask):
                         ProvisioningArtifactId=r.get("ProvisioningArtifactId"),
                         ProductId=self.product_id,
                     )
-                        .get("ProvisioningArtifactDetail")
-                        .get("Name")
+                    .get("ProvisioningArtifactDetail")
+                    .get("Name")
                 )
 
                 if r.get("Status") != "TERMINATED":
@@ -103,4 +103,3 @@ class TerminateProductDryRunTask(provisioning_task.ProvisioningTask):
                         constants.CHANGE,
                         notes="The product is already terminated",
                     )
-

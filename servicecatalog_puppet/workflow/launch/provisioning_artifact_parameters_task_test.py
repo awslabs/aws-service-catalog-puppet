@@ -1,6 +1,7 @@
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 from unittest import skip
 
+
 class ProvisioningArtifactParametersTaskTest(
     tasks_unit_tests_helper.PuppetTaskUnitTest
 ):
@@ -12,7 +13,9 @@ class ProvisioningArtifactParametersTaskTest(
     region = "region"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launch import provisioning_artifact_parameters_task
+        from servicecatalog_puppet.workflow.launch import (
+            provisioning_artifact_parameters_task,
+        )
 
         self.module = provisioning_artifact_parameters_task
 

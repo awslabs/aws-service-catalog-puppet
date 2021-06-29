@@ -3,11 +3,17 @@ import luigi
 import utils
 from servicecatalog_puppet import config
 from servicecatalog_puppet.workflow.general import delete_cloud_formation_stack_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import create_spoke_local_portfolio_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import portfolio_management_task
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    create_spoke_local_portfolio_task,
+)
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    portfolio_management_task,
+)
 
 
-class CreateAssociationsForSpokeLocalPortfolioTask(portfolio_management_task.PortfolioManagementTask):
+class CreateAssociationsForSpokeLocalPortfolioTask(
+    portfolio_management_task.PortfolioManagementTask
+):
     spoke_local_portfolio_name = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()

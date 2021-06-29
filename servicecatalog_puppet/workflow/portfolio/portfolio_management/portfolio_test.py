@@ -5,7 +5,9 @@ class PortfolioManagementTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.portfolio_management import portfolio_management_task
+        from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+            portfolio_management_task,
+        )
 
         self.module = portfolio_management_task
 

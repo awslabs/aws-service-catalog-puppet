@@ -10,5 +10,3 @@ class LambdaInvocationBaseTask(tasks.PuppetTask):
     @property
     def section_name(self):
         return constants.LAMBDA_INVOCATIONS
-
-

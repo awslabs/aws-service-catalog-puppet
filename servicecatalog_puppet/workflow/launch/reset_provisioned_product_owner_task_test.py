@@ -9,7 +9,9 @@ class ResetProvisionedProductOwnerTaskTest(tasks_unit_tests_helper.PuppetTaskUni
     region = "region"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.launch import reset_provisioned_product_owner_task
+        from servicecatalog_puppet.workflow.launch import (
+            reset_provisioned_product_owner_task,
+        )
 
         self.module = reset_provisioned_product_owner_task
 

@@ -2,8 +2,12 @@ import luigi
 
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow.spoke_local_portfolios import do_terminate_portfolio_in_spoke_task
-from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_base_task
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    do_terminate_portfolio_in_spoke_task,
+)
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    spoke_local_portfolio_base_task,
+)
 
 
 class TerminatePortfolioInSpokeTask(

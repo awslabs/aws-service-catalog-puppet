@@ -7,8 +7,12 @@ import yaml
 from servicecatalog_puppet import config
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow.portfolio.accessors import get_portfolio_by_portfolio_name_task
-from servicecatalog_puppet.workflow.portfolio.accessors import get_products_and_provisioning_artifacts_task
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    get_portfolio_by_portfolio_name_task,
+)
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    get_products_and_provisioning_artifacts_task,
+)
 
 
 class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
@@ -35,7 +39,9 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
 
                 portfolio_details = regional_details[portfolio]
                 if portfolio_details.get("details") is None:
-                    portfolio_details["details"] = get_portfolio_by_portfolio_name_task.GetPortfolioByPortfolioName(
+                    portfolio_details[
+                        "details"
+                    ] = get_portfolio_by_portfolio_name_task.GetPortfolioByPortfolioName(
                         manifest_file_path=self.manifest_file_path,
                         portfolio=portfolio,
                         puppet_account_id=self.puppet_account_id,
@@ -46,7 +52,9 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                 product = launch_details.get("product")
                 products = portfolio_details.get("products")
                 if products.get(product) is None:
-                    products[product] = get_products_and_provisioning_artifacts_task.GetProductsAndProvisioningArtifactsTask(
+                    products[
+                        product
+                    ] = get_products_and_provisioning_artifacts_task.GetProductsAndProvisioningArtifactsTask(
                         manifest_file_path=self.manifest_file_path,
                         region=region,
                         portfolio=portfolio,

@@ -7,7 +7,9 @@ from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 
 class ExecuteCodeBuildRunTask(
-    code_build_run_base_task.CodeBuildRunBaseTask, manifest_mixin.ManifestMixen, dependency.DependenciesMixin
+    code_build_run_base_task.CodeBuildRunBaseTask,
+    manifest_mixin.ManifestMixen,
+    dependency.DependenciesMixin,
 ):
     code_build_run_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()

@@ -25,7 +25,6 @@ class TerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.launch import terminate_product_task
 
-
         self.module = terminate_product_task
 
         self.sut = self.module.TerminateProductTask(

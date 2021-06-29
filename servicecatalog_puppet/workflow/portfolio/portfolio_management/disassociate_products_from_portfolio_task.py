@@ -1,10 +1,16 @@
 import luigi
 
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import disassociate_product_from_portfolio_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import portfolio_management_task
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    disassociate_product_from_portfolio_task,
+)
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    portfolio_management_task,
+)
 
 
-class DisassociateProductsFromPortfolio(portfolio_management_task.PortfolioManagementTask):
+class DisassociateProductsFromPortfolio(
+    portfolio_management_task.PortfolioManagementTask
+):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio_id = luigi.Parameter()

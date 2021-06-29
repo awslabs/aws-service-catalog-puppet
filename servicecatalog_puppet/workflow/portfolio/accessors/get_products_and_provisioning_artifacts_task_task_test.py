@@ -12,7 +12,9 @@ class GetProductsAndProvisioningArtifactsTaskTest(
     puppet_account_id = "puppet_account_id"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.accessors import get_products_and_provisioning_artifacts_task
+        from servicecatalog_puppet.workflow.portfolio.accessors import (
+            get_products_and_provisioning_artifacts_task,
+        )
 
         self.module = get_products_and_provisioning_artifacts_task
 

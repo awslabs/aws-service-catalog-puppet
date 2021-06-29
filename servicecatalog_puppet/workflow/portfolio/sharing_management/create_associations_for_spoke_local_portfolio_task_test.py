@@ -17,8 +17,9 @@ class CreateAssociationsForSpokeLocalPortfolioTaskTest(
     sharing_mode = "sharing_mode"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.sharing_management import create_associations_for_spoke_local_portfolio_task
-
+        from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+            create_associations_for_spoke_local_portfolio_task,
+        )
 
         self.module = create_associations_for_spoke_local_portfolio_task
 

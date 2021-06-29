@@ -2,8 +2,12 @@ import luigi
 
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import delete_portfolio_task
-from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_base_task
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    delete_portfolio_task,
+)
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    spoke_local_portfolio_base_task,
+)
 
 
 class DoTerminatePortfolioInSpokeTask(
@@ -46,4 +50,3 @@ class DoTerminatePortfolioInSpokeTask(
 
     def run(self):
         self.write_output(self.params_for_results_display())
-

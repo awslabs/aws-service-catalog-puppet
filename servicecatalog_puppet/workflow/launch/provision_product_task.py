@@ -8,10 +8,14 @@ from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.launch import provisioning_artifact_parameters_task
 from servicecatalog_puppet.workflow.launch import provisioning_task
-from servicecatalog_puppet.workflow.portfolio.accessors import get_version_details_by_names_task
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    get_version_details_by_names_task,
+)
 
 
-class ProvisionProductTask(provisioning_task.ProvisioningTask, dependency.DependenciesMixin):
+class ProvisionProductTask(
+    provisioning_task.ProvisioningTask, dependency.DependenciesMixin
+):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -140,7 +144,7 @@ class ProvisionProductTask(provisioning_task.ProvisioningTask, dependency.Depend
                 )
 
                 with self.input().get("provisioning_artifact_parameters").open(
-                        "r"
+                    "r"
                 ) as f:
                     provisioning_artifact_parameters = json.loads(f.read())
 
@@ -253,7 +257,7 @@ class ProvisionProductTask(provisioning_task.ProvisioningTask, dependency.Depend
                         f"Running in execution mode: {self.execution}, checking for SSM outputs"
                     )
                     with self.spoke_regional_client(
-                            "cloudformation"
+                        "cloudformation"
                     ) as spoke_cloudformation:
                         stack_details = aws.get_stack_output_for(
                             spoke_cloudformation,
@@ -269,7 +273,7 @@ class ProvisionProductTask(provisioning_task.ProvisioningTask, dependency.Depend
                             # TODO push into another task
                             for output in stack_details.get("Outputs", []):
                                 if output.get("OutputKey") == ssm_param_output.get(
-                                        "stack_output"
+                                    "stack_output"
                                 ):
                                     ssm_parameter_name = ssm_param_output.get(
                                         "param_name"
@@ -299,4 +303,3 @@ class ProvisionProductTask(provisioning_task.ProvisioningTask, dependency.Depend
                 else:
                     self.write_output(task_output)
                 self.info("finished")
-

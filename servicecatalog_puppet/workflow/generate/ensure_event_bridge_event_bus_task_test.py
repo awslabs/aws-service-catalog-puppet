@@ -6,7 +6,9 @@ class EnsureEventBridgeEventBusTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
     region = "region"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.generate import ensure_event_bridge_event_bus_task
+        from servicecatalog_puppet.workflow.generate import (
+            ensure_event_bridge_event_bus_task,
+        )
 
         self.module = ensure_event_bridge_event_bus_task
 

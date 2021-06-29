@@ -8,7 +8,9 @@ class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTes
     puppet_account_id = "puppet_account_id"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.lambda_invocations import lambda_invocation_section_task
+        from servicecatalog_puppet.workflow.lambda_invocations import (
+            lambda_invocation_section_task,
+        )
 
         self.module = lambda_invocation_section_task
 

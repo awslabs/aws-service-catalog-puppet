@@ -13,7 +13,9 @@ class ShareAndAcceptPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
     cache_invalidator = "cache_invalidator"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.sharing_management import share_and_accept_portfolio_task
+        from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+            share_and_accept_portfolio_task,
+        )
 
         self.module = share_and_accept_portfolio_task
 

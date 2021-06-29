@@ -23,12 +23,12 @@ class LaunchForAccountAndRegionTask(launch_for_task.LaunchForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_account_and_region(
-                self.puppet_account_id,
-                self.section_name,
-                self.launch_name,
-                self.account_id,
-                self.region,
-                single_account=self.single_account,
+            self.puppet_account_id,
+            self.section_name,
+            self.launch_name,
+            self.account_id,
+            self.region,
+            single_account=self.single_account,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)

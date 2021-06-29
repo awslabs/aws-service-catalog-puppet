@@ -8,8 +8,9 @@ class SpokeLocalPortfolioSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitT
     puppet_account_id = "puppet_account_id"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_section_task
-
+        from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+            spoke_local_portfolio_section_task,
+        )
 
         self.module = spoke_local_portfolio_section_task
 

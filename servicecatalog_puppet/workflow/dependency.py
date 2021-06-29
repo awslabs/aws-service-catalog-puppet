@@ -12,11 +12,36 @@ def generate_dependency_tasks(
 ):
     is_running_in_hub = execution_mode != constants.EXECUTION_MODE_SPOKE
 
-    from servicecatalog_puppet.workflow.launch import launch_task, launch_for_account_task, launch_for_region_task, launch_for_account_and_region_task
-    from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_task, spoke_local_portfolio_for_account_task, spoke_local_portfolio_for_region_task, spoke_local_portfolio_for_account_and_region_task
-    from servicecatalog_puppet.workflow.assertions import assertion_task, assertion_for_account_task, assertion_for_region_task, assertion_for_account_and_region_task
-    from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_task, code_build_run_for_account_task, code_build_run_for_region_task, code_build_run_for_account_and_region_task
-    from servicecatalog_puppet.workflow.lambda_invocations import lambda_invocation_task, lambda_invocation_for_account_task, lambda_invocation_for_region_task, lambda_invocation_for_account_and_region_task
+    from servicecatalog_puppet.workflow.launch import (
+        launch_task,
+        launch_for_account_task,
+        launch_for_region_task,
+        launch_for_account_and_region_task,
+    )
+    from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+        spoke_local_portfolio_task,
+        spoke_local_portfolio_for_account_task,
+        spoke_local_portfolio_for_region_task,
+        spoke_local_portfolio_for_account_and_region_task,
+    )
+    from servicecatalog_puppet.workflow.assertions import (
+        assertion_task,
+        assertion_for_account_task,
+        assertion_for_region_task,
+        assertion_for_account_and_region_task,
+    )
+    from servicecatalog_puppet.workflow.codebuild_runs import (
+        code_build_run_task,
+        code_build_run_for_account_task,
+        code_build_run_for_region_task,
+        code_build_run_for_account_and_region_task,
+    )
+    from servicecatalog_puppet.workflow.lambda_invocations import (
+        lambda_invocation_task,
+        lambda_invocation_for_account_task,
+        lambda_invocation_for_region_task,
+        lambda_invocation_for_account_and_region_task,
+    )
 
     these_dependencies = list()
     common_args = dict(
@@ -221,7 +246,9 @@ class DependenciesMixin(object):
         elif isinstance(self, lambda_invocations.InvokeLambdaTask):
             item_name = self.lambda_invocation_name
         else:
-            raise Exception(f"Could not determine an item_name for {self.__class__.__name__}")
+            raise Exception(
+                f"Could not determine an item_name for {self.__class__.__name__}"
+            )
 
         dependencies = (
             self.manifest.get(self.section_name).get(item_name).get("depends_on", [])

@@ -6,10 +6,14 @@ from servicecatalog_puppet import aws
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow.launch import provisioning_task
-from servicecatalog_puppet.workflow.portfolio.accessors import get_version_details_by_names_task
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    get_version_details_by_names_task,
+)
 
 
-class DoTerminateProductTask(provisioning_task.ProvisioningTask, dependency.DependenciesMixin):
+class DoTerminateProductTask(
+    provisioning_task.ProvisioningTask, dependency.DependenciesMixin
+):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 

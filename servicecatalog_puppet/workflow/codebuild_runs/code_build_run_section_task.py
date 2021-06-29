@@ -1,13 +1,19 @@
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_base_task
-from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_for_account_and_region_task
-from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_for_account_task
+from servicecatalog_puppet.workflow.codebuild_runs import (
+    code_build_run_for_account_and_region_task,
+)
+from servicecatalog_puppet.workflow.codebuild_runs import (
+    code_build_run_for_account_task,
+)
 from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_for_region_task
 from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_task
 from servicecatalog_puppet.workflow.manifest import section_task
 
 
-class CodeBuildRunsSectionTask(code_build_run_base_task.CodeBuildRunBaseTask, section_task.SectionTask):
+class CodeBuildRunsSectionTask(
+    code_build_run_base_task.CodeBuildRunBaseTask, section_task.SectionTask
+):
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,

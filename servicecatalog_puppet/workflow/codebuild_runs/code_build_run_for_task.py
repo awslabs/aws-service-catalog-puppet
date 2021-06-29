@@ -5,7 +5,9 @@ from servicecatalog_puppet.workflow.codebuild_runs import execute_code_build_run
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 
-class CodeBuildRunForTask(code_build_run_base_task.CodeBuildRunBaseTask, manifest_mixin.ManifestMixen):
+class CodeBuildRunForTask(
+    code_build_run_base_task.CodeBuildRunBaseTask, manifest_mixin.ManifestMixen
+):
     code_build_run_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 

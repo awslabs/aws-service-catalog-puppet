@@ -43,4 +43,3 @@ class ListLaunchPathsTask(provisioning_task.ProvisioningTask):
                         self.info(f"Got path: {path_id} for product: {self.product_id}")
                         self.write_output(launch_path_summary)
         raise Exception("Could not find a launch path")
-

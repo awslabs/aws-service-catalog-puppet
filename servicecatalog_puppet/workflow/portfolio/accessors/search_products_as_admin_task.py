@@ -1,7 +1,11 @@
 import luigi
 
-from servicecatalog_puppet.workflow.portfolio.accessors import get_portfolio_by_portfolio_name_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import portfolio_management_task
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    get_portfolio_by_portfolio_name_task,
+)
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    portfolio_management_task,
+)
 
 
 class SearchProductsAsAdminTask(portfolio_management_task.PortfolioManagementTask):

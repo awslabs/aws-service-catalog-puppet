@@ -1,5 +1,6 @@
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
+
 class DeleteCloudFormationStackTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     account_id = "account_id"
     region = "region"
@@ -7,7 +8,9 @@ class DeleteCloudFormationStackTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
     nonce = "nonce"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.general import delete_cloud_formation_stack_task
+        from servicecatalog_puppet.workflow.general import (
+            delete_cloud_formation_stack_task,
+        )
 
         self.module = delete_cloud_formation_stack_task
 

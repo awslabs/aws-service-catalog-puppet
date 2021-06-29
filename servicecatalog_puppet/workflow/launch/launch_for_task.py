@@ -37,6 +37,3 @@ class LaunchForTask(provisioning_task.ProvisioningTask):
 
     def run(self):
         self.write_output(self.params_for_results_display())
-
-
-

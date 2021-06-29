@@ -1,6 +1,7 @@
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 from unittest import skip
 
+
 class RunDeployInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"

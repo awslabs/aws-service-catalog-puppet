@@ -1,11 +1,19 @@
 import luigi
 
-from servicecatalog_puppet.workflow.portfolio.accessors import get_portfolio_by_portfolio_name_task
-from servicecatalog_puppet.workflow.portfolio.associations import associate_principal_with_portfolio_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import portfolio_management_task
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    get_portfolio_by_portfolio_name_task,
+)
+from servicecatalog_puppet.workflow.portfolio.associations import (
+    associate_principal_with_portfolio_task,
+)
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    portfolio_management_task,
+)
 
 
-class CreateAssociationsInPythonForPortfolioTask(portfolio_management_task.PortfolioManagementTask):
+class CreateAssociationsInPythonForPortfolioTask(
+    portfolio_management_task.PortfolioManagementTask
+):
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()

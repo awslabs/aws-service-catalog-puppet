@@ -3,13 +3,23 @@ import time
 
 import luigi
 
-from servicecatalog_puppet.workflow.portfolio.accessors import get_portfolio_by_portfolio_name_task
-from servicecatalog_puppet.workflow.portfolio.accessors import get_products_and_provisioning_artifacts_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import create_spoke_local_portfolio_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import portfolio_management_task
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    get_portfolio_by_portfolio_name_task,
+)
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    get_products_and_provisioning_artifacts_task,
+)
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    create_spoke_local_portfolio_task,
+)
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    portfolio_management_task,
+)
 
 
-class ImportIntoSpokeLocalPortfolioTask(portfolio_management_task.PortfolioManagementTask):
+class ImportIntoSpokeLocalPortfolioTask(
+    portfolio_management_task.PortfolioManagementTask
+):
     spoke_local_portfolio_name = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()

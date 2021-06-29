@@ -1,11 +1,19 @@
 import luigi
 
-from servicecatalog_puppet.workflow.portfolio.associations import create_associations_in_python_for_portfolio_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import portfolio_management_task
-from servicecatalog_puppet.workflow.portfolio.sharing_management import share_and_accept_portfolio_task
+from servicecatalog_puppet.workflow.portfolio.associations import (
+    create_associations_in_python_for_portfolio_task,
+)
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    portfolio_management_task,
+)
+from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+    share_and_accept_portfolio_task,
+)
 
 
-class CreateShareForAccountLaunchRegion(portfolio_management_task.PortfolioManagementTask):
+class CreateShareForAccountLaunchRegion(
+    portfolio_management_task.PortfolioManagementTask
+):
     """for the given account_id and launch and region create the shares"""
 
     puppet_account_id = luigi.Parameter()

@@ -26,7 +26,6 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.launch import provision_product_task
 
-
         self.module = provision_product_task
 
         self.sut = self.module.ProvisionProductTask(

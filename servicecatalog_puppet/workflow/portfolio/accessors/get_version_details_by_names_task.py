@@ -2,9 +2,15 @@ import luigi
 
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.generate import generate_shares_task
-from servicecatalog_puppet.workflow.portfolio.accessors import describe_product_as_admin_task
-from servicecatalog_puppet.workflow.portfolio.accessors import get_version_id_by_version_name_task
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import portfolio_management_task
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    describe_product_as_admin_task,
+)
+from servicecatalog_puppet.workflow.portfolio.accessors import (
+    get_version_id_by_version_name_task,
+)
+from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+    portfolio_management_task,
+)
 
 
 class GetVersionDetailsByNames(portfolio_management_task.PortfolioManagementTask):
@@ -30,7 +36,9 @@ class GetVersionDetailsByNames(portfolio_management_task.PortfolioManagementTask
         requirements = dict()
 
         if self.account_id == self.puppet_account_id:
-            requirements["details"] = describe_product_as_admin_task.DescribeProductAsAdminTask(
+            requirements[
+                "details"
+            ] = describe_product_as_admin_task.DescribeProductAsAdminTask(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 portfolio=self.portfolio,
@@ -39,7 +47,9 @@ class GetVersionDetailsByNames(portfolio_management_task.PortfolioManagementTask
                 region=self.region,
             )
         else:
-            requirements["details"] = get_version_id_by_version_name_task.GetVersionIdByVersionName(
+            requirements[
+                "details"
+            ] = get_version_id_by_version_name_task.GetVersionIdByVersionName(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,
                 portfolio=self.portfolio,
@@ -51,7 +61,9 @@ class GetVersionDetailsByNames(portfolio_management_task.PortfolioManagementTask
             if not (
                 self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run
             ):
-                requirements["generate_shares"] = generate_shares_task.GenerateSharesTask(
+                requirements[
+                    "generate_shares"
+                ] = generate_shares_task.GenerateSharesTask(
                     puppet_account_id=self.puppet_account_id,
                     manifest_file_path=self.manifest_file_path,
                     section=constants.LAUNCHES,

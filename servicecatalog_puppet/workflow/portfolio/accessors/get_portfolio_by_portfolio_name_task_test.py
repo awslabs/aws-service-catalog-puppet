@@ -11,7 +11,9 @@ class GetPortfolioByPortfolioNameTest(tasks_unit_tests_helper.PuppetTaskUnitTest
     region = "region"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.accessors import get_portfolio_by_portfolio_name_task
+        from servicecatalog_puppet.workflow.portfolio.accessors import (
+            get_portfolio_by_portfolio_name_task,
+        )
 
         self.module = get_portfolio_by_portfolio_name_task
 

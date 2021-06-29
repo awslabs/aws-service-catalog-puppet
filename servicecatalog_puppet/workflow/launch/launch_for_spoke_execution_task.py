@@ -10,10 +10,14 @@ from servicecatalog_puppet.workflow.lambda_invocations import lambda_invocation_
 from servicecatalog_puppet.workflow.launch import launch_task
 from servicecatalog_puppet.workflow.launch import provisioning_task
 from servicecatalog_puppet.workflow.launch import run_deploy_in_spoke_task
-from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_task
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    spoke_local_portfolio_task,
+)
 
 
-class LaunchForSpokeExecutionTask(provisioning_task.ProvisioningTask, dependency.DependenciesMixin):
+class LaunchForSpokeExecutionTask(
+    provisioning_task.ProvisioningTask, dependency.DependenciesMixin
+):
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -115,7 +119,7 @@ class LaunchForSpokeExecutionTask(provisioning_task.ProvisioningTask, dependency
     def get_tasks(self):
         tasks_to_run = list()
         for account_id in self.manifest.get_account_ids_used_for_section_item(
-                self.puppet_account_id, self.section_name, self.launch_name
+            self.puppet_account_id, self.section_name, self.launch_name
         ):
             tasks_to_run.append(
                 run_deploy_in_spoke_task.RunDeployInSpokeTask(
@@ -130,4 +134,3 @@ class LaunchForSpokeExecutionTask(provisioning_task.ProvisioningTask, dependency
         tasks_to_run = self.get_tasks()
         yield tasks_to_run
         self.write_output(self.params_for_results_display())
-
