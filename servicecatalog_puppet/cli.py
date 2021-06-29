@@ -10,6 +10,9 @@ import sys
 import click
 import yaml
 
+import servicecatalog_puppet.commands.orgs as orgs_commands
+from servicecatalog_puppet.commands import version as version_commands
+
 from servicecatalog_puppet import core, config
 
 
@@ -414,7 +417,7 @@ def validate(f):
 
 @cli.command()
 def version():
-    core.version()
+    version_commands.version()
 
 
 @cli.command()
@@ -428,13 +431,13 @@ def upload_config(p):
 @cli.command()
 @click.argument("org-iam-role-arn")
 def set_org_iam_role_arn(org_iam_role_arn):
-    core.set_org_iam_role_arn(org_iam_role_arn)
+    orgs_commands.set_org_iam_role_arn(org_iam_role_arn)
 
 
 @cli.command()
 @click.argument("puppet_account_id")
 def bootstrap_org_master(puppet_account_id):
-    core.bootstrap_org_master(puppet_account_id)
+    orgs_commands.bootstrap_org_master(puppet_account_id)
 
 
 @cli.command()

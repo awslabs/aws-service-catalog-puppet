@@ -6,6 +6,7 @@ package_dir = \
 
 packages = \
 ['servicecatalog_puppet',
+ 'servicecatalog_puppet.commands',
  'servicecatalog_puppet.template_builder',
  'servicecatalog_puppet.template_builder.hub',
  'servicecatalog_puppet.workflow']
