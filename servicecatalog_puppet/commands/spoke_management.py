@@ -7,7 +7,10 @@ from jinja2 import Template
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow import management as management_tasks, runner as runner
+from servicecatalog_puppet.workflow import (
+    management as management_tasks,
+    runner as runner,
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -54,7 +57,12 @@ def _do_bootstrap_spoke(
                 "UsePreviousValue": False,
             },
         ],
-        "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}],
+        "Tags": [
+            {
+                "Key": "ServiceCatalogPuppet:Actor",
+                "Value": "Framework",
+            }
+        ],
     }
     cloudformation.create_or_update(**args)
     logger.info("Finished bootstrap of spoke")

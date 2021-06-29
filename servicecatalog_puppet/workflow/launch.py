@@ -201,7 +201,8 @@ class ProvisioningArtifactParametersTask(ProvisioningTask):
             portfolio=self.portfolio,
         )
         self.write_output(
-            result.open("r").read(), skip_json_dump=True,
+            result.open("r").read(),
+            skip_json_dump=True,
         )
 
 
@@ -233,12 +234,12 @@ class DoDescribeProvisioningParameters(ProvisioningTask):
             retries = 3
             while retries > 0:
                 try:
-                    provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
-                        ProductId=self.product_id,
-                        ProvisioningArtifactId=self.version_id,
-                        PathName=self.portfolio,
-                    ).get(
-                        "ProvisioningArtifactParameters", []
+                    provisioning_artifact_parameters = (
+                        service_catalog.describe_provisioning_parameters(
+                            ProductId=self.product_id,
+                            ProvisioningArtifactId=self.version_id,
+                            PathName=self.portfolio,
+                        ).get("ProvisioningArtifactParameters", [])
                     )
                     retries = 0
                     break
@@ -676,7 +677,8 @@ class ProvisionProductDryRunTask(ProvisionProductTask):
         self, provisioning_artifact_id, product_id, service_catalog
     ):
         return service_catalog.describe_provisioning_artifact(
-            ProvisioningArtifactId=provisioning_artifact_id, ProductId=product_id,
+            ProvisioningArtifactId=provisioning_artifact_id,
+            ProductId=product_id,
         ).get("ProvisioningArtifactDetail")
 
     def write_result(
@@ -837,7 +839,9 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
             )
             log_output = self.to_str_params()
             log_output.update(
-                {"provisioned_product_id": provisioned_product_id,}
+                {
+                    "provisioned_product_id": provisioned_product_id,
+                }
             )
 
             for ssm_param_output in self.ssm_param_outputs:
@@ -848,7 +852,9 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
                 with self.hub_client("ssm") as ssm:
                     try:
                         # todo push into another task
-                        ssm.delete_parameter(Name=param_name,)
+                        ssm.delete_parameter(
+                            Name=param_name,
+                        )
                         self.info(
                             f"[{self.launch_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
                         )
@@ -858,7 +864,13 @@ class DoTerminateProductTask(ProvisioningTask, dependency.DependenciesMixin):
                         )
 
             with self.output().open("w") as f:
-                f.write(json.dumps(log_output, indent=4, default=str,))
+                f.write(
+                    json.dumps(
+                        log_output,
+                        indent=4,
+                        default=str,
+                    )
+                )
 
             self.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: finished terminating"
@@ -995,8 +1007,8 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
         should_forward_events_to_eventbridge = config.get_should_use_eventbridge(
             self.puppet_account_id
         )
-        should_forward_failures_to_opscenter = config.get_should_forward_failures_to_opscenter(
-            self.puppet_account_id
+        should_forward_failures_to_opscenter = (
+            config.get_should_forward_failures_to_opscenter(self.puppet_account_id)
         )
 
         with self.hub_client("s3") as s3:
@@ -1026,7 +1038,11 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
                         "value": self.puppet_account_id,
                         "type": "PLAINTEXT",
                     },
-                    {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
+                    {
+                        "name": "HOME_REGION",
+                        "value": home_region,
+                        "type": "PLAINTEXT",
+                    },
                     {
                         "name": "REGIONS",
                         "value": ",".join(regions),
@@ -1084,13 +1100,15 @@ class LaunchForSpokeExecutionTask(ProvisioningTask, dependency.DependenciesMixin
                     if dep.get("execution") == constants.EXECUTION_MODE_SPOKE:
                         these_dependencies.append(
                             LaunchForSpokeExecutionTask(
-                                **common_args, launch_name=depends_on.get("name"),
+                                **common_args,
+                                launch_name=depends_on.get("name"),
                             )
                         )
                     else:
                         these_dependencies.append(
                             LaunchTask(
-                                **common_args, launch_name=depends_on.get("name"),
+                                **common_args,
+                                launch_name=depends_on.get("name"),
                             )
                         )
                 else:
@@ -1115,7 +1133,8 @@ class LaunchForSpokeExecutionTask(ProvisioningTask, dependency.DependenciesMixin
                 if depends_on_affinity == constants.ASSERTION:
                     these_dependencies.append(
                         assertions.AssertionTask(
-                            **common_args, assertion_name=depends_on.get("name"),
+                            **common_args,
+                            assertion_name=depends_on.get("name"),
                         )
                     )
                 else:
@@ -1127,7 +1146,8 @@ class LaunchForSpokeExecutionTask(ProvisioningTask, dependency.DependenciesMixin
                 if depends_on_affinity == constants.CODE_BUILD_RUN:
                     these_dependencies.append(
                         codebuild_runs.CodeBuildRunTask(
-                            **common_args, code_build_run_name=depends_on.get("name"),
+                            **common_args,
+                            code_build_run_name=depends_on.get("name"),
                         )
                     )
                 else:
@@ -1217,7 +1237,8 @@ class LaunchForRegionTask(LaunchForTask):
         dependencies = list()
         these_dependencies = list()
         requirements = dict(
-            dependencies=dependencies, these_dependencies=these_dependencies,
+            dependencies=dependencies,
+            these_dependencies=these_dependencies,
         )
 
         klass = self.get_klass_for_provisioning()
@@ -1262,7 +1283,9 @@ class LaunchForAccountTask(LaunchForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies,)
+        requirements = dict(
+            dependencies=dependencies,
+        )
 
         klass = self.get_klass_for_provisioning()
 

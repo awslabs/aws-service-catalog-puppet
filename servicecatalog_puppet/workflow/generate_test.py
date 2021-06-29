@@ -10,7 +10,12 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     manifest_file_path = "manifest_file_path"
     region = "region"
-    sharing_policies = dict(accounts=["01234567890",], organizations=["ou-0932u0jsdj"],)
+    sharing_policies = dict(
+        accounts=[
+            "01234567890",
+        ],
+        organizations=["ou-0932u0jsdj"],
+    )
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow import generate

@@ -50,7 +50,9 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # setup
         # exercise
         self.module.GetSSMParamTask(
-            parameter_name=self.parameter_name, name=self.name, region=self.region,
+            parameter_name=self.parameter_name,
+            name=self.name,
+            region=self.region,
         )
 
     def test_api_calls_used(self):

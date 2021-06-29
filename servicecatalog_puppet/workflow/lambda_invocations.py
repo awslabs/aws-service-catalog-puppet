@@ -97,7 +97,9 @@ class DoInvokeLambdaTask(
         }
 
     def requires(self):
-        return dict(ssm_params=self.get_ssm_parameters(),)
+        return dict(
+            ssm_params=self.get_ssm_parameters(),
+        )
 
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)
@@ -167,7 +169,8 @@ class LambdaInvocationForRegionTask(LambdaInvocationForTask):
         dependencies = list()
         these_dependencies = list()
         requirements = dict(
-            dependencies=dependencies, these_dependencies=these_dependencies,
+            dependencies=dependencies,
+            these_dependencies=these_dependencies,
         )
 
         klass = self.get_klass_for_provisioning()
@@ -198,7 +201,9 @@ class LambdaInvocationForAccountTask(LambdaInvocationForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies,)
+        requirements = dict(
+            dependencies=dependencies,
+        )
 
         klass = self.get_klass_for_provisioning()
 

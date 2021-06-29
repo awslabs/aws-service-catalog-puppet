@@ -138,7 +138,8 @@ class AssertionForRegionTask(AssertionForTask):
         dependencies = list()
         these_dependencies = list()
         requirements = dict(
-            dependencies=dependencies, these_dependencies=these_dependencies,
+            dependencies=dependencies,
+            these_dependencies=these_dependencies,
         )
 
         klass = self.get_klass_for_provisioning()
@@ -166,7 +167,9 @@ class AssertionForAccountTask(AssertionForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies,)
+        requirements = dict(
+            dependencies=dependencies,
+        )
 
         klass = self.get_klass_for_provisioning()
 

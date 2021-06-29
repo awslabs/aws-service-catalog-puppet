@@ -19,14 +19,16 @@ def generate_dependency_tasks(
 
     these_dependencies = list()
     common_args = dict(
-        manifest_file_path=manifest_file_path, puppet_account_id=puppet_account_id,
+        manifest_file_path=manifest_file_path,
+        puppet_account_id=puppet_account_id,
     )
     for depends_on in dependencies:
         if depends_on.get("type") == constants.LAUNCH:
             if depends_on.get(constants.AFFINITY) == constants.LAUNCH:
                 these_dependencies.append(
                     launch.LaunchTask(
-                        **common_args, launch_name=depends_on.get("name"),
+                        **common_args,
+                        launch_name=depends_on.get("name"),
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account":
@@ -96,7 +98,8 @@ def generate_dependency_tasks(
             if depends_on.get(constants.AFFINITY) == constants.ASSERTION:
                 these_dependencies.append(
                     assertions.AssertionTask(
-                        **common_args, assertion_name=depends_on.get("name"),
+                        **common_args,
+                        assertion_name=depends_on.get("name"),
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account":
@@ -129,7 +132,8 @@ def generate_dependency_tasks(
             if depends_on.get(constants.AFFINITY) == constants.CODE_BUILD_RUN:
                 these_dependencies.append(
                     codebuild_runs.CodeBuildRunTask(
-                        **common_args, code_build_run_name=depends_on.get("name"),
+                        **common_args,
+                        code_build_run_name=depends_on.get("name"),
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account":
@@ -164,7 +168,8 @@ def generate_dependency_tasks(
             if depends_on.get(constants.AFFINITY) == constants.LAMBDA_INVOCATION:
                 these_dependencies.append(
                     lambda_invocations.LambdaInvocationTask(
-                        **common_args, lambda_invocation_name=depends_on.get("name"),
+                        **common_args,
+                        lambda_invocation_name=depends_on.get("name"),
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account":

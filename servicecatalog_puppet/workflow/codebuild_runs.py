@@ -124,10 +124,18 @@ class DoExecuteCodeBuildRunTask(
                                 )
 
             parameters_to_use.append(
-                dict(name="TARGET_ACCOUNT_ID", value=self.account_id, type="PLAINTEXT",)
+                dict(
+                    name="TARGET_ACCOUNT_ID",
+                    value=self.account_id,
+                    type="PLAINTEXT",
+                )
             )
             parameters_to_use.append(
-                dict(name="TARGET_REGION", value=self.region, type="PLAINTEXT",)
+                dict(
+                    name="TARGET_REGION",
+                    value=self.region,
+                    type="PLAINTEXT",
+                )
             )
             codebuild.start_build_and_wait_for_completion(
                 projectName=self.project_name,
@@ -169,7 +177,8 @@ class CodeBuildRunForRegionTask(CodeBuildRunForTask):
         dependencies = list()
         these_dependencies = list()
         requirements = dict(
-            dependencies=dependencies, these_dependencies=these_dependencies,
+            dependencies=dependencies,
+            these_dependencies=these_dependencies,
         )
 
         klass = self.get_klass_for_provisioning()
@@ -200,7 +209,9 @@ class CodeBuildRunForAccountTask(CodeBuildRunForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies,)
+        requirements = dict(
+            dependencies=dependencies,
+        )
 
         klass = self.get_klass_for_provisioning()
 

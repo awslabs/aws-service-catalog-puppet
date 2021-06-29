@@ -9,13 +9,22 @@ from datetime import datetime
 import click
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import aws
 
-from servicecatalog_puppet import config, constants, manifest_utils, manifest_utils_for_launches
-from servicecatalog_puppet.workflow import launch as launch_tasks, runner as runner
-from workflow import launch as launch_tasks, assertions as assertions_tasks, \
-    spoke_local_portfolios as spoke_local_portfolios_tasks, lambda_invocations as lambda_invocations_tasks, \
-    codebuild_runs as codebuild_runs_tasks
+from servicecatalog_puppet import (
+    aws,
+    config,
+    constants,
+    manifest_utils,
+    manifest_utils_for_launches,
+)
+from servicecatalog_puppet.workflow import (
+    launch as launch_tasks,
+    assertions as assertions_tasks,
+    spoke_local_portfolios as spoke_local_portfolios_tasks,
+    lambda_invocations as lambda_invocations_tasks,
+    codebuild_runs as codebuild_runs_tasks,
+    runner as runner,
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -75,7 +84,7 @@ def wait_for_code_build_in(iam_role_arns):
         index += 1
 
     with betterboto_client.CrossMultipleAccountsClientContextManager(
-            "codebuild", cross_accounts
+        "codebuild", cross_accounts
     ) as codebuild:
         while True:
             try:
@@ -95,7 +104,7 @@ def wait_for_cloudformation_in(iam_role_arns):
         index += 1
 
     with betterboto_client.CrossMultipleAccountsClientContextManager(
-            "cloudformation", cross_accounts
+        "cloudformation", cross_accounts
     ) as cloudformation:
         while True:
             try:
@@ -112,14 +121,17 @@ def is_a_parameter_override_execution() -> bool:
     with betterboto_client.ClientContextManager("codepipeline") as codepipeline:
         paginator = codepipeline.get_paginator("list_pipeline_executions")
         pages = paginator.paginate(
-            pipelineName=constants.PIPELINE_NAME, PaginationConfig={"PageSize": 100, }
+            pipelineName=constants.PIPELINE_NAME,
+            PaginationConfig={
+                "PageSize": 100,
+            },
         )
         for page in pages:
             for pipeline_execution_summary in page.get(
-                    "pipelineExecutionSummaries", []
+                "pipelineExecutionSummaries", []
             ):
                 if codepipeline_execution_id == pipeline_execution_summary.get(
-                        "pipelineExecutionId"
+                    "pipelineExecutionId"
                 ):
                     trigger_detail = pipeline_execution_summary.get("trigger").get(
                         "triggerDetail"
@@ -141,7 +153,7 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                     while True:
                         time.sleep(5)
                         with betterboto_client.ClientContextManager(
-                                "codepipeline"
+                            "codepipeline"
                         ) as codepipeline:
                             click.echo(
                                 f"looking for execution for {parameters_file_version_id}"
@@ -151,29 +163,33 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                             )
                             pages = paginator.paginate(
                                 pipelineName=constants.PIPELINE_NAME,
-                                PaginationConfig={"PageSize": 100, },
+                                PaginationConfig={
+                                    "PageSize": 100,
+                                },
                             )
                             for page in pages:
                                 for pipeline_execution_summary in page.get(
-                                        "pipelineExecutionSummaries", []
+                                    "pipelineExecutionSummaries", []
                                 ):
                                     if (
-                                            pipeline_execution_summary.get("trigger").get(
-                                                "triggerDetail"
-                                            )
-                                            == "ParameterisedSource"
+                                        pipeline_execution_summary.get("trigger").get(
+                                            "triggerDetail"
+                                        )
+                                        == "ParameterisedSource"
                                     ):
                                         for s in pipeline_execution_summary.get(
-                                                "sourceRevisions", []
+                                            "sourceRevisions", []
                                         ):
                                             if (
-                                                    s.get("actionName")
-                                                    == "ParameterisedSource"
-                                                    and s.get("revisionId")
-                                                    == parameters_file_version_id
+                                                s.get("actionName")
+                                                == "ParameterisedSource"
+                                                and s.get("revisionId")
+                                                == parameters_file_version_id
                                             ):
-                                                pipeline_execution_id = pipeline_execution_summary.get(
-                                                    "pipelineExecutionId"
+                                                pipeline_execution_id = (
+                                                    pipeline_execution_summary.get(
+                                                        "pipelineExecutionId"
+                                                    )
                                                 )
                                                 click.echo(
                                                     f"Found execution id {pipeline_execution_id}"
@@ -228,15 +244,17 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                                                                     ),
                                                                     Data=f"{pipeline_execution_id}",
                                                                 )
-                                                            req = urllib.request.Request(
-                                                                url=on_complete_url,
-                                                                data=json.dumps(
-                                                                    result
-                                                                ).encode(),
-                                                                method="PUT",
+                                                            req = (
+                                                                urllib.request.Request(
+                                                                    url=on_complete_url,
+                                                                    data=json.dumps(
+                                                                        result
+                                                                    ).encode(),
+                                                                    method="PUT",
+                                                                )
                                                             )
                                                             with urllib.request.urlopen(
-                                                                    req
+                                                                req
                                                             ) as f:
                                                                 pass
                                                             logger.info(f.status)
@@ -250,23 +268,28 @@ def generate_tasks(
 ):
     tasks = [
         launch_tasks.LaunchSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+            manifest_file_path=f.name,
+            puppet_account_id=puppet_account_id,
         ),
     ]
     if execution_mode != constants.EXECUTION_MODE_SPOKE:
         if not is_dry_run:
             tasks += [
                 assertions_tasks.AssertionsSectionTask(
-                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+                    manifest_file_path=f.name,
+                    puppet_account_id=puppet_account_id,
                 ),
                 spoke_local_portfolios_tasks.SpokeLocalPortfolioSectionTask(
-                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+                    manifest_file_path=f.name,
+                    puppet_account_id=puppet_account_id,
                 ),
                 lambda_invocations_tasks.LambdaInvocationsSectionTask(
-                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+                    manifest_file_path=f.name,
+                    puppet_account_id=puppet_account_id,
                 ),
                 codebuild_runs_tasks.CodeBuildRunsSectionTask(
-                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+                    manifest_file_path=f.name,
+                    puppet_account_id=puppet_account_id,
                 ),
             ]
     return tasks

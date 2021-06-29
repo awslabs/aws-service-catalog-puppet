@@ -102,7 +102,8 @@ class SpokeLocalPortfolioForRegionTask(SpokeLocalPortfolioForTask):
         dependencies = list()
         these_dependencies = list()
         requirements = dict(
-            dependencies=dependencies, these_dependencies=these_dependencies,
+            dependencies=dependencies,
+            these_dependencies=these_dependencies,
         )
 
         klass = self.get_klass_for_provisioning()
@@ -148,7 +149,9 @@ class SpokeLocalPortfolioForAccountTask(SpokeLocalPortfolioForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(dependencies=dependencies,)
+        requirements = dict(
+            dependencies=dependencies,
+        )
 
         klass = self.get_klass_for_provisioning()
 
@@ -214,7 +217,9 @@ class SpokeLocalPortfolioTask(SpokeLocalPortfolioForTask):
             account_id,
             regions,
         ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-            self.puppet_account_id, self.section_name, self.spoke_local_portfolio_name,
+            self.puppet_account_id,
+            self.section_name,
+            self.spoke_local_portfolio_name,
         ).items():
             for region in regions:
                 for task in self.manifest.get_tasks_for_launch_and_account_and_region(
@@ -432,8 +437,10 @@ class DoSharePortfolioWithSpokeTask(
                 sharing_mode=sharing_mode,
             )
 
-            create_spoke_local_portfolio_task = portfoliomanagement_tasks.CreateSpokeLocalPortfolioTask(
-                **create_spoke_local_portfolio_task_params
+            create_spoke_local_portfolio_task = (
+                portfoliomanagement_tasks.CreateSpokeLocalPortfolioTask(
+                    **create_spoke_local_portfolio_task_params
+                )
             )
             tasks.append(create_spoke_local_portfolio_task)
 
@@ -446,31 +453,37 @@ class DoSharePortfolioWithSpokeTask(
         )
 
         if len(task_def.get("associations", [])) > 0:
-            create_associations_for_portfolio_task = portfoliomanagement_tasks.CreateAssociationsForSpokeLocalPortfolioTask(
-                **create_spoke_local_portfolio_task_as_dependency_params,
-                spoke_local_portfolio_name=self.spoke_local_portfolio_name,
-                sharing_mode=sharing_mode,
-                associations=task_def.get("associations"),
-                puppet_account_id=self.puppet_account_id,
+            create_associations_for_portfolio_task = (
+                portfoliomanagement_tasks.CreateAssociationsForSpokeLocalPortfolioTask(
+                    **create_spoke_local_portfolio_task_as_dependency_params,
+                    spoke_local_portfolio_name=self.spoke_local_portfolio_name,
+                    sharing_mode=sharing_mode,
+                    associations=task_def.get("associations"),
+                    puppet_account_id=self.puppet_account_id,
+                )
             )
             tasks.append(create_associations_for_portfolio_task)
 
         launch_constraints = task_def.get("constraints", {}).get("launch", [])
 
         if product_generation_method == "import":
-            import_into_spoke_local_portfolio_task = portfoliomanagement_tasks.ImportIntoSpokeLocalPortfolioTask(
-                **create_spoke_local_portfolio_task_as_dependency_params,
-                spoke_local_portfolio_name=self.spoke_local_portfolio_name,
-                sharing_mode=sharing_mode,
-                puppet_account_id=self.puppet_account_id,
+            import_into_spoke_local_portfolio_task = (
+                portfoliomanagement_tasks.ImportIntoSpokeLocalPortfolioTask(
+                    **create_spoke_local_portfolio_task_as_dependency_params,
+                    spoke_local_portfolio_name=self.spoke_local_portfolio_name,
+                    sharing_mode=sharing_mode,
+                    puppet_account_id=self.puppet_account_id,
+                )
             )
             tasks.append(import_into_spoke_local_portfolio_task)
         else:
-            copy_into_spoke_local_portfolio_task = portfoliomanagement_tasks.CopyIntoSpokeLocalPortfolioTask(
-                **create_spoke_local_portfolio_task_as_dependency_params,
-                spoke_local_portfolio_name=self.spoke_local_portfolio_name,
-                sharing_mode=sharing_mode,
-                puppet_account_id=self.puppet_account_id,
+            copy_into_spoke_local_portfolio_task = (
+                portfoliomanagement_tasks.CopyIntoSpokeLocalPortfolioTask(
+                    **create_spoke_local_portfolio_task_as_dependency_params,
+                    spoke_local_portfolio_name=self.spoke_local_portfolio_name,
+                    sharing_mode=sharing_mode,
+                    puppet_account_id=self.puppet_account_id,
+                )
             )
             tasks.append(copy_into_spoke_local_portfolio_task)
 

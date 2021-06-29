@@ -115,7 +115,8 @@ def run_tasks(
     if execution_mode == constants.EXECUTION_MODE_HUB:
         logger.info("Checking spoke executions...")
         all_run_deploy_in_spoke_tasks = glob(
-            f"output/RunDeployInSpokeTask/**/{cache_invalidator}.json", recursive=True,
+            f"output/RunDeployInSpokeTask/**/{cache_invalidator}.json",
+            recursive=True,
         )
         n_all_run_deploy_in_spoke_tasks = len(all_run_deploy_in_spoke_tasks)
         index = 0
@@ -238,7 +239,13 @@ def run_tasks(
                     status=result.get("current_status"),
                 )
 
-            click.echo(json.dumps(results, indent=4, default=str,))
+            click.echo(
+                json.dumps(
+                    results,
+                    indent=4,
+                    default=str,
+                )
+            )
 
         else:
             raise Exception(f"Unsupported format: {is_list_launches}")
@@ -319,7 +326,11 @@ def run_tasks(
                 params = yaml.safe_dump(params)
 
                 table_data.append(
-                    [result.get("task_type"), params, result.get("duration"),]
+                    [
+                        result.get("task_type"),
+                        params,
+                        result.get("duration"),
+                    ]
                 )
             click.echo(table.table)
             for filename in glob("results/failure/*.json"):
