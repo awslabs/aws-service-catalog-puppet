@@ -4,6 +4,8 @@ import glob
 from parso.python import tree
 
 ignored = [
+    "section_name",
+    "get_klass_for_provisioning",
     "get_sharing_policies",
     "output_suffix",
     "get_all_params",
@@ -27,8 +29,7 @@ ignored = [
 ]
 
 HEADER = """from unittest import skip
-from . import tasks_unit_tests_helper
-
+from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 """
 
@@ -55,6 +56,10 @@ global_params = dict(
     ssm_param_inputs=list(),
     ssm_param_outputs=list(),
     worker_timeout=3,
+
+    assertion_name="assertion_name",
+    expected=dict(),
+    actual=dict(),
 
     account_id="account_id",
     cache_invalidator="cache_invalidator",
@@ -254,9 +259,14 @@ def get_initial_args_for(c):
     return dict()
 
 
-for input in glob.glob("servicecatalog_puppet/workflow/*.py", recursive=True):
+for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
+    print(input)
     if input.endswith("_tests.py") or input.endswith("_test.py") or input.endswith("tasks_unit_tests_helper.py") or input.endswith("__init__.py"):
         continue
+
+    if "assertions" not in input:
+        continue
+
     mod = input.split('/')[-1].replace('.py', '')
     print(f"Starting {input}")
     output = input.replace(".py", "_test.py")
