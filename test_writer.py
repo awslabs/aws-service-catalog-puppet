@@ -187,6 +187,7 @@ def handle(c, output, mod, classes):
         else:
             raise Exception(f"unhandled: {name}")
 
+
 def handle_function(f, output, mod, classes):
     name = f.name.value
     if name == "params_for_results_display":
@@ -201,6 +202,7 @@ def handle_function(f, output, mod, classes):
         pass
     else:
         raise Exception(f"unhandled: {name}")
+
 
 def get_initial_args_for(c):
     supers = c.get_super_arglist().get_code()
@@ -262,11 +264,12 @@ def get_initial_args_for(c):
     return dict()
 
 
-package="lambda_invocations"
+package = "launch"
 
 for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
     print(input)
-    if input.endswith("_tests.py") or input.endswith("_test.py") or input.endswith("tasks_unit_tests_helper.py") or input.endswith("__init__.py"):
+    if input.endswith("_tests.py") or input.endswith("_test.py") or input.endswith(
+            "tasks_unit_tests_helper.py") or input.endswith("__init__.py"):
         continue
 
     if package not in input:
@@ -297,15 +300,17 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
 """)
         suite = c.children[-1]
         params = get_initial_args_for(c)
-        for p in params.keys():
-            if isinstance(params.get(p), str):
-                open(output, "a+").write(f"    {p} = \"{params.get(p)}\"\n")
-            else:
-                open(output, "a+").write(f"    {p} = {params.get(p)}\n")
+        # start of removal
+        # for p in params.keys():
+        #     if isinstance(params.get(p), str):
+        #         open(output, "a+").write(f"    {p} = \"{params.get(p)}\"\n")
+        #     else:
+        #         open(output, "a+").write(f"    {p} = {params.get(p)}\n")
+        # end of removal
         for child in suite.children:
             # if isinstance(child, tree.Function):
-                # handle_function(child, output, mod, classes)
-                # print(child.name.value)
+            # handle_function(child, output, mod, classes)
+            # print(child.name.value)
             if isinstance(child, tree.PythonNode):
                 if child.type == "simple_stmt":
                     parameter = child.children[0]
@@ -324,10 +329,10 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
                                 parameter_type = parameter_value.children[1].children[1].value
                                 parameter_value = global_params[parameter_name]
                                 params[parameter_name] = parameter_value
-                                if parameter_type == "Parameter":
-                                    open(output, "a+").write(f"    {parameter_name} = \"{parameter_value}\"\n")
-                                else:
-                                    open(output, "a+").write(f"    {parameter_name} = {parameter_value}\n")
+                                # if parameter_type == "Parameter":
+                                #     open(output, "a+").write(f"    {parameter_name} = \"{parameter_value}\"\n")
+                                # else:
+                                #     open(output, "a+").write(f"    {parameter_name} = {parameter_value}\n")
                             elif parameter_value.type == "atom":
                                 pass
                                 # parameter_value = global_params[parameter_name]
@@ -338,6 +343,11 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
                         else:
                             raise Exception(f"cannot handle {type(parameter_value)}")
 
+        for p in params.keys():
+            if isinstance(params.get(p), str):
+                open(output, "a+").write(f"    {p} = \"{params.get(p)}\"\n")
+            else:
+                open(output, "a+").write(f"    {p} = {params.get(p)}\n")
 
         open(output, "a+").write(f"""
     def setUp(self) -> None:
