@@ -18,7 +18,7 @@ from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
 from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
     import_into_spoke_local_portfolio_task,
 )
-from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+from servicecatalog_puppet.workflow.portfolio.associations import (
     create_associations_for_spoke_local_portfolio_task,
 )
 from servicecatalog_puppet.workflow.spoke_local_portfolios import (
