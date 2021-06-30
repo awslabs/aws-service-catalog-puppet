@@ -35,12 +35,6 @@ class RequestPolicyTask(portfolio_management_task.PortfolioManagementTask):
             path = f"{p}/{self.account_id}.json"
 
         f = open(path, "w")
-        f.write(
-            json.dumps(
-                self.param_kwargs,
-                indent=4,
-                default=str,
-            )
-        )
+        f.write(json.dumps(self.param_kwargs, indent=4, default=str,))
         f.close()
         self.write_output(self.param_kwargs)

@@ -26,9 +26,7 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
 
     def requires(self):
         requirements = dict(
-            deletes=list(),
-            ensure_event_buses=list(),
-            generate_policies=list(),
+            deletes=list(), ensure_event_buses=list(), generate_policies=list(),
         )
         for region_name, accounts in self.manifest.get_accounts_by_region().items():
             requirements["deletes"].append(
@@ -46,8 +44,7 @@ class GenerateSharesTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
         ) in self.manifest.get_sharing_policies_by_region().items():
             requirements["ensure_event_buses"].append(
                 ensure_event_bridge_event_bus_task.EnsureEventBridgeEventBusTask(
-                    puppet_account_id=self.puppet_account_id,
-                    region=region_name,
+                    puppet_account_id=self.puppet_account_id, region=region_name,
                 )
             )
 

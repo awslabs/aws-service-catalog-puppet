@@ -33,12 +33,12 @@ class DoDescribeProvisioningParameters(provisioning_task.ProvisioningTask):
             retries = 3
             while retries > 0:
                 try:
-                    provisioning_artifact_parameters = (
-                        service_catalog.describe_provisioning_parameters(
-                            ProductId=self.product_id,
-                            ProvisioningArtifactId=self.version_id,
-                            PathName=self.portfolio,
-                        ).get("ProvisioningArtifactParameters", [])
+                    provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
+                        ProductId=self.product_id,
+                        ProvisioningArtifactId=self.version_id,
+                        PathName=self.portfolio,
+                    ).get(
+                        "ProvisioningArtifactParameters", []
                     )
                     retries = 0
                     break

@@ -18,8 +18,7 @@ class LambdaInvocationForRegionTask(lambda_invocation_for_task.LambdaInvocationF
         dependencies = list()
         these_dependencies = list()
         requirements = dict(
-            dependencies=dependencies,
-            these_dependencies=these_dependencies,
+            dependencies=dependencies, these_dependencies=these_dependencies,
         )
 
         klass = self.get_klass_for_provisioning()

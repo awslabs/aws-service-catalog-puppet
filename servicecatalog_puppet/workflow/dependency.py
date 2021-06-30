@@ -45,16 +45,14 @@ def generate_dependency_tasks(
 
     these_dependencies = list()
     common_args = dict(
-        manifest_file_path=manifest_file_path,
-        puppet_account_id=puppet_account_id,
+        manifest_file_path=manifest_file_path, puppet_account_id=puppet_account_id,
     )
     for depends_on in dependencies:
         if depends_on.get("type") == constants.LAUNCH:
             if depends_on.get(constants.AFFINITY) == constants.LAUNCH:
                 these_dependencies.append(
                     launch_task.LaunchTask(
-                        **common_args,
-                        launch_name=depends_on.get("name"),
+                        **common_args, launch_name=depends_on.get("name"),
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account":
@@ -123,8 +121,7 @@ def generate_dependency_tasks(
             if depends_on.get(constants.AFFINITY) == constants.ASSERTION:
                 these_dependencies.append(
                     assertion_task.AssertionTask(
-                        **common_args,
-                        assertion_name=depends_on.get("name"),
+                        **common_args, assertion_name=depends_on.get("name"),
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account":
@@ -157,8 +154,7 @@ def generate_dependency_tasks(
             if depends_on.get(constants.AFFINITY) == constants.CODE_BUILD_RUN:
                 these_dependencies.append(
                     code_build_run_task.CodeBuildRunTask(
-                        **common_args,
-                        code_build_run_name=depends_on.get("name"),
+                        **common_args, code_build_run_name=depends_on.get("name"),
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account":
@@ -193,8 +189,7 @@ def generate_dependency_tasks(
             if depends_on.get(constants.AFFINITY) == constants.LAMBDA_INVOCATION:
                 these_dependencies.append(
                     lambda_invocation_task.LambdaInvocationTask(
-                        **common_args,
-                        lambda_invocation_name=depends_on.get("name"),
+                        **common_args, lambda_invocation_name=depends_on.get("name"),
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account":
@@ -228,11 +223,19 @@ def generate_dependency_tasks(
 class DependenciesMixin(object):
     def get_section_dependencies(self):
 
-        from servicecatalog_puppet.workflow.codebuild_runs.execute_code_build_run_task import ExecuteCodeBuildRunTask
-        from servicecatalog_puppet.workflow.launch.provisioning_task import ProvisioningTask
-        from servicecatalog_puppet.workflow.spoke_local_portfolios.spoke_local_portfolio_base_task import SpokeLocalPortfolioBaseTask
+        from servicecatalog_puppet.workflow.codebuild_runs.execute_code_build_run_task import (
+            ExecuteCodeBuildRunTask,
+        )
+        from servicecatalog_puppet.workflow.launch.provisioning_task import (
+            ProvisioningTask,
+        )
+        from servicecatalog_puppet.workflow.spoke_local_portfolios.spoke_local_portfolio_base_task import (
+            SpokeLocalPortfolioBaseTask,
+        )
         from servicecatalog_puppet.workflow.assertions.assert_task import AssertTask
-        from servicecatalog_puppet.workflow.lambda_invocations.invoke_lambda_task import InvokeLambdaTask
+        from servicecatalog_puppet.workflow.lambda_invocations.invoke_lambda_task import (
+            InvokeLambdaTask,
+        )
 
         if isinstance(self, ExecuteCodeBuildRunTask):
             item_name = self.code_build_run_name

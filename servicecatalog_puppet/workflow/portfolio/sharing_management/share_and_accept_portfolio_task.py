@@ -111,10 +111,10 @@ class ShareAndAcceptPortfolioTask(
                         PortfolioId=portfolio_id
                     )
 
-            principals_for_portfolio = (
-                cross_account_servicecatalog.list_principals_for_portfolio_single_page(
-                    PortfolioId=portfolio_id
-                ).get("Principals")
+            principals_for_portfolio = cross_account_servicecatalog.list_principals_for_portfolio_single_page(
+                PortfolioId=portfolio_id
+            ).get(
+                "Principals"
             )
             puppet_role_needs_associating = True
             principal_to_associate = config.get_puppet_role_arn(self.account_id)

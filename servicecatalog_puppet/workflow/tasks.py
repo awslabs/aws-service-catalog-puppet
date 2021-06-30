@@ -157,13 +157,7 @@ class PuppetTask(luigi.Task):
             if skip_json_dump:
                 f.write(content)
             else:
-                f.write(
-                    json.dumps(
-                        content,
-                        indent=4,
-                        default=str,
-                    )
-                )
+                f.write(json.dumps(content, indent=4, default=str,))
 
     @property
     def node_id(self):
@@ -200,13 +194,7 @@ def record_event(event_type, task, extra_event_data=None):
         / f"{task_type}-{task.task_id}.json",
         "w",
     ) as f:
-        f.write(
-            json.dumps(
-                event,
-                default=str,
-                indent=4,
-            )
-        )
+        f.write(json.dumps(event, default=str, indent=4,))
 
 
 @luigi.Task.event_handler(luigi.Event.FAILURE)
@@ -214,9 +202,7 @@ def on_task_failure(task, exception):
     exception_details = {
         "exception_type": type(exception),
         "exception_stack_trace": traceback.format_exception(
-            etype=type(exception),
-            value=exception,
-            tb=exception.__traceback__,
+            etype=type(exception), value=exception, tb=exception.__traceback__,
         ),
     }
     record_event("failure", task, exception_details)
@@ -275,12 +261,7 @@ def on_task_processing_time(task, duration):
         "cloudwatch-puppethub",
     ) as cloudwatch:
 
-        dimensions = [
-            dict(
-                Name="task_type",
-                Value=task.__class__.__name__,
-            )
-        ]
+        dimensions = [dict(Name="task_type", Value=task.__class__.__name__,)]
         for note_worthy in [
             "launch_name",
             "region",

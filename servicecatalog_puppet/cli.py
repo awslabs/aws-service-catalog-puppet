@@ -352,20 +352,10 @@ def bootstrap(
         scm_skip_creation_of_repo=not create_repo,
     )
     if source_provider == "CodeCommit":
-        parameters.update(
-            dict(
-                repo=repository_name,
-                branch=branch_name,
-            )
-        )
+        parameters.update(dict(repo=repository_name, branch=branch_name,))
     elif source_provider == "GitHub":
         parameters.update(
-            dict(
-                owner=owner,
-                repo=repo,
-                branch=branch,
-                webhook_secret=webhook_secret,
-            )
+            dict(owner=owner, repo=repo, branch=branch, webhook_secret=webhook_secret,)
         )
     elif source_provider == "CodeStarSourceConnection":
         parameters.update(
@@ -377,10 +367,7 @@ def bootstrap(
         )
     elif source_provider == "S3":
         parameters.update(
-            dict(
-                scm_bucket_name=scm_bucket_name,
-                scm_object_key=scm_object_key,
-            )
+            dict(scm_bucket_name=scm_bucket_name, scm_object_key=scm_object_key,)
         )
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")

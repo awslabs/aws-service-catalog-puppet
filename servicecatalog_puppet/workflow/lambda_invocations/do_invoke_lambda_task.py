@@ -36,9 +36,7 @@ class DoInvokeLambdaTask(
         }
 
     def requires(self):
-        return dict(
-            ssm_params=self.get_ssm_parameters(),
-        )
+        return dict(ssm_params=self.get_ssm_parameters(),)
 
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)

@@ -13,9 +13,7 @@ class TestManifestForExplode(unittest.TestCase):
         "name": "accounta",
         "expanded_from": "ou-aaaa-aaaaaaaa",
         "organization": "o-aaaaaaaa",
-        "regions_enabled": [
-            "eu-west-2",
-        ],
+        "regions_enabled": ["eu-west-2",],
         "tags": ["group:A"],
     }
     account_b = {
@@ -24,18 +22,14 @@ class TestManifestForExplode(unittest.TestCase):
         "expanded_from": "ou-bbbb-bbbbbbbb",
         "organization": "o-bbbbbbbb",
         "name": "accountb",
-        "regions_enabled": [
-            "us-west-2",
-        ],
+        "regions_enabled": ["us-west-2",],
         "tags": ["group:B"],
     }
     account_c = {
         "account_id": "432100098765",
         "default_region": "ap-west-1",
         "name": "accountc",
-        "regions_enabled": [
-            "ap-west-2",
-        ],
+        "regions_enabled": ["ap-west-2",],
         "tags": ["group:C"],
     }
     accounts = [
@@ -58,16 +52,9 @@ class TestManifestForExplode(unittest.TestCase):
     )
     lambda_invocation_with_one_launch_dependency = dict(
         function_name="lambda_invocation_with_one_launch_dependency",
-        depends_on=[
-            dict(
-                name="launch_with_no_dependencies",
-                type=constants.LAUNCH,
-            )
-        ],
+        depends_on=[dict(name="launch_with_no_dependencies", type=constants.LAUNCH,)],
     )
-    launch_with_no_dependencies = dict(
-        product="launch_with_no_dependencies",
-    )
+    launch_with_no_dependencies = dict(product="launch_with_no_dependencies",)
     spoke_local_portfolio_with_no_dependencies = dict(
         product="spoke_local_portfolio_with_no_dependencies",
     )

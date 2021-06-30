@@ -49,9 +49,7 @@ class GetSSMParamTask(tasks.PuppetTask):
             "ssm", region_name=self.region
         ) as ssm:
             try:
-                p = ssm.get_parameter(
-                    Name=self.name,
-                )
+                p = ssm.get_parameter(Name=self.name,)
                 self.write_output(
                     {
                         "Name": self.name,

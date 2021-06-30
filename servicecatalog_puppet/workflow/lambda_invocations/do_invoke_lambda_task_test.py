@@ -77,9 +77,7 @@ class DoInvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         )
         response = dict(StatusCode=200)
         self.inject_hub_regional_client_called_with_response(
-            "lambda",
-            "invoke",
-            response,
+            "lambda", "invoke", response,
         )
 
         # exercise

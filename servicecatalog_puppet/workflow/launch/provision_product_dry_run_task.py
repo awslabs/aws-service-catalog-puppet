@@ -136,8 +136,7 @@ class ProvisionProductDryRunTask(provision_product_task.ProvisionProductTask):
         self, provisioning_artifact_id, product_id, service_catalog
     ):
         return service_catalog.describe_provisioning_artifact(
-            ProvisioningArtifactId=provisioning_artifact_id,
-            ProductId=product_id,
+            ProvisioningArtifactId=provisioning_artifact_id, ProductId=product_id,
         ).get("ProvisioningArtifactDetail")
 
     def write_result(

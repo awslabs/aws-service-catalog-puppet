@@ -30,7 +30,6 @@ class DisassociateProductFromPortfolio(
     def run(self):
         with self.spoke_regional_client("servicecatalog") as servicecatalog:
             results = servicecatalog.disassociate_product_from_portfolio(
-                PortfolioId=self.portfolio_id,
-                ProductId=self.product_id,
+                PortfolioId=self.portfolio_id, ProductId=self.product_id,
             )
             self.write_output(results)

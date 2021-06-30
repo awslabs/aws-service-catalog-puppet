@@ -98,9 +98,7 @@ class CopyIntoSpokeLocalPortfolioTask(
                 hub_product_arn = product_view_summary.get("ProductARN")
                 copy_args = {
                     "SourceProductArn": hub_product_arn,
-                    "CopyOptions": [
-                        "CopyTags",
-                    ],
+                    "CopyOptions": ["CopyTags",],
                 }
 
                 with self.spoke_regional_client(
@@ -126,10 +124,10 @@ class CopyIntoSpokeLocalPortfolioTask(
                                     hub_product_name
                                 ] = spoke_product_id
                                 copy_args["TargetProductId"] = spoke_product_id
-                                spoke_provisioning_artifact_details = (
-                                    spoke_service_catalog.list_provisioning_artifacts(
-                                        ProductId=spoke_product_id
-                                    ).get("ProvisioningArtifactDetails")
+                                spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
+                                    ProductId=spoke_product_id
+                                ).get(
+                                    "ProvisioningArtifactDetails"
                                 )
                                 for (
                                     provisioning_artifact_detail
@@ -185,8 +183,7 @@ class CopyIntoSpokeLocalPortfolioTask(
                             f"adding {target_product_id} to portfolio {portfolio_id}"
                         )
                         spoke_service_catalog.associate_product_with_portfolio(
-                            ProductId=target_product_id,
-                            PortfolioId=portfolio_id,
+                            ProductId=target_product_id, PortfolioId=portfolio_id,
                         )
 
                         # associate_product_with_portfolio is not a synchronous request
@@ -216,10 +213,10 @@ class CopyIntoSpokeLocalPortfolioTask(
                         product_name_to_id_dict[hub_product_name] = target_product_id
 
                     product_id_in_spoke = spoke_product_id or target_product_id
-                    spoke_provisioning_artifact_details = (
-                        spoke_service_catalog.list_provisioning_artifacts(
-                            ProductId=product_id_in_spoke
-                        ).get("ProvisioningArtifactDetails", [])
+                    spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
+                        ProductId=product_id_in_spoke
+                    ).get(
+                        "ProvisioningArtifactDetails", []
                     )
                     for (
                         version_name,

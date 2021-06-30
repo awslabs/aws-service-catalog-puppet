@@ -45,15 +45,13 @@ class LaunchForSpokeExecutionTask(
                     if dep.get("execution") == constants.EXECUTION_MODE_SPOKE:
                         these_dependencies.append(
                             LaunchForSpokeExecutionTask(
-                                **common_args,
-                                launch_name=depends_on.get("name"),
+                                **common_args, launch_name=depends_on.get("name"),
                             )
                         )
                     else:
                         these_dependencies.append(
                             launch_task.LaunchTask(
-                                **common_args,
-                                launch_name=depends_on.get("name"),
+                                **common_args, launch_name=depends_on.get("name"),
                             )
                         )
                 else:
@@ -78,8 +76,7 @@ class LaunchForSpokeExecutionTask(
                 if depends_on_affinity == constants.ASSERTION:
                     these_dependencies.append(
                         assertion_task.AssertionTask(
-                            **common_args,
-                            assertion_name=depends_on.get("name"),
+                            **common_args, assertion_name=depends_on.get("name"),
                         )
                     )
                 else:
@@ -91,8 +88,7 @@ class LaunchForSpokeExecutionTask(
                 if depends_on_affinity == constants.CODE_BUILD_RUN:
                     these_dependencies.append(
                         code_build_run_task.CodeBuildRunTask(
-                            **common_args,
-                            code_build_run_name=depends_on.get("name"),
+                            **common_args, code_build_run_name=depends_on.get("name"),
                         )
                     )
                 else:

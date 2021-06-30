@@ -56,8 +56,7 @@ class SharePortfolioTask(portfolio_management_task.PortfolioManagementTask):
         self.info(f"{self.uid}: checking {portfolio_id} with {self.account_id}")
         with self.hub_regional_client("servicecatalog") as servicecatalog:
             account_ids = servicecatalog.list_portfolio_access_single_page(
-                PortfolioId=portfolio_id,
-                PageSize=20,
+                PortfolioId=portfolio_id, PageSize=20,
             ).get("AccountIds")
 
             if self.account_id in account_ids:
@@ -67,7 +66,6 @@ class SharePortfolioTask(portfolio_management_task.PortfolioManagementTask):
             else:
                 self.info(f"{self.uid}: sharing {portfolio_id} with {self.account_id}")
                 servicecatalog.create_portfolio_share(
-                    PortfolioId=portfolio_id,
-                    AccountId=self.account_id,
+                    PortfolioId=portfolio_id, AccountId=self.account_id,
                 )
         self.write_output(self.param_kwargs)

@@ -67,9 +67,6 @@ class DisassociateProductFromPortfolioTest(tasks_unit_tests_helper.PuppetTaskUni
         self.assert_spoke_regional_client_called_with(
             "servicecatalog",
             "disassociate_product_from_portfolio",
-            dict(
-                PortfolioId=self.portfolio_id,
-                ProductId=self.product_id,
-            ),
+            dict(PortfolioId=self.portfolio_id, ProductId=self.product_id,),
         )
         self.assert_output(result)

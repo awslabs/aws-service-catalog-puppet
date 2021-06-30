@@ -40,7 +40,6 @@ class DeletePortfolioShare(portfolio_management_task.PortfolioManagementTask):
         if portfolio_id:
             with self.hub_regional_client("servicecatalog") as servicecatalog:
                 servicecatalog.delete_portfolio_share(
-                    PortfolioId=portfolio_id,
-                    AccountId=self.account_id,
+                    PortfolioId=portfolio_id, AccountId=self.account_id,
                 )
         self.write_output(self.params_for_results_display())

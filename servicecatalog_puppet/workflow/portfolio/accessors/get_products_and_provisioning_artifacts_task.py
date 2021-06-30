@@ -54,10 +54,10 @@ class GetProductsAndProvisioningArtifactsTask(
                     "provisioning_artifact_details"
                 ] = []
                 hub_product_id = product_view_summary.get("ProductId")
-                hub_provisioning_artifact_details = (
-                    service_catalog.list_provisioning_artifacts(
-                        ProductId=hub_product_id
-                    ).get("ProvisioningArtifactDetails", [])
+                hub_provisioning_artifact_details = service_catalog.list_provisioning_artifacts(
+                    ProductId=hub_product_id
+                ).get(
+                    "ProvisioningArtifactDetails", []
                 )
                 for (
                     hub_provisioning_artifact_detail

@@ -41,8 +41,8 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
         should_forward_events_to_eventbridge = config.get_should_use_eventbridge(
             self.puppet_account_id
         )
-        should_forward_failures_to_opscenter = (
-            config.get_should_forward_failures_to_opscenter(self.puppet_account_id)
+        should_forward_failures_to_opscenter = config.get_should_forward_failures_to_opscenter(
+            self.puppet_account_id
         )
 
         with self.hub_client("s3") as s3:
@@ -72,11 +72,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
                         "value": self.puppet_account_id,
                         "type": "PLAINTEXT",
                     },
-                    {
-                        "name": "HOME_REGION",
-                        "value": home_region,
-                        "type": "PLAINTEXT",
-                    },
+                    {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
                     {
                         "name": "REGIONS",
                         "value": ",".join(regions),

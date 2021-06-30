@@ -97,9 +97,7 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(
             template = config.env.get_template(
                 "launch_role_constraints.template.yaml.j2"
             ).render(
-                portfolio={
-                    "DisplayName": self.portfolio,
-                },
+                portfolio={"DisplayName": self.portfolio,},
                 portfolio_id=portfolio_id,
                 launch_constraints=new_launch_constraints,
                 product_name_to_id_dict=product_name_to_id_dict,

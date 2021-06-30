@@ -18,9 +18,7 @@ class LambdaInvocationForAccountTask(
 
     def requires(self):
         dependencies = list()
-        requirements = dict(
-            dependencies=dependencies,
-        )
+        requirements = dict(dependencies=dependencies,)
 
         klass = self.get_klass_for_provisioning()
 

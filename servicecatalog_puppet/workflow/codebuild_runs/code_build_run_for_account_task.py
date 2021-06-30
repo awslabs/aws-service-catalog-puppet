@@ -16,9 +16,7 @@ class CodeBuildRunForAccountTask(code_build_run_for_task.CodeBuildRunForTask):
 
     def requires(self):
         dependencies = list()
-        requirements = dict(
-            dependencies=dependencies,
-        )
+        requirements = dict(dependencies=dependencies,)
 
         klass = self.get_klass_for_provisioning()
 

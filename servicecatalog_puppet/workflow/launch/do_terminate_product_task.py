@@ -87,9 +87,7 @@ class DoTerminateProductTask(
             )
             log_output = self.to_str_params()
             log_output.update(
-                {
-                    "provisioned_product_id": provisioned_product_id,
-                }
+                {"provisioned_product_id": provisioned_product_id,}
             )
 
             for ssm_param_output in self.ssm_param_outputs:
@@ -100,9 +98,7 @@ class DoTerminateProductTask(
                 with self.hub_client("ssm") as ssm:
                     try:
                         # todo push into another task
-                        ssm.delete_parameter(
-                            Name=param_name,
-                        )
+                        ssm.delete_parameter(Name=param_name,)
                         self.info(
                             f"[{self.launch_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
                         )
@@ -112,13 +108,7 @@ class DoTerminateProductTask(
                         )
 
             with self.output().open("w") as f:
-                f.write(
-                    json.dumps(
-                        log_output,
-                        indent=4,
-                        default=str,
-                    )
-                )
+                f.write(json.dumps(log_output, indent=4, default=str,))
 
             self.info(
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: finished terminating"

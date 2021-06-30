@@ -49,9 +49,7 @@ def bootstrap(
             try:
                 events.describe_event_bus(Name=constants.EVENT_BUS_NAME)
             except events.exceptions.ResourceNotFoundException:
-                events.create_event_bus(
-                    Name=constants.EVENT_BUS_NAME,
-                )
+                events.create_event_bus(Name=constants.EVENT_BUS_NAME,)
 
     all_regions = config.get_regions(
         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
@@ -80,12 +78,7 @@ def bootstrap(
                     "UsePreviousValue": False,
                 },
             ],
-            "Tags": [
-                {
-                    "Key": "ServiceCatalogPuppet:Actor",
-                    "Value": "Framework",
-                }
-            ],
+            "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}],
         }
         for client_region, client in clients.items():
             process = Thread(

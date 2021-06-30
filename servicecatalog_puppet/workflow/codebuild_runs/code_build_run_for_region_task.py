@@ -18,8 +18,7 @@ class CodeBuildRunForRegionTask(code_build_run_for_task.CodeBuildRunForTask):
         dependencies = list()
         these_dependencies = list()
         requirements = dict(
-            dependencies=dependencies,
-            these_dependencies=these_dependencies,
+            dependencies=dependencies, these_dependencies=these_dependencies,
         )
 
         klass = self.get_klass_for_provisioning()

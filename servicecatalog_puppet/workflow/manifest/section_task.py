@@ -66,10 +66,7 @@ class SectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
                     self.puppet_account_id, section_name_plural, name
                 ):
                     dependencies.append(
-                        for_region_task_klass(
-                            **kwargs_to_use,
-                            region=region,
-                        )
+                        for_region_task_klass(**kwargs_to_use, region=region,)
                     )
 
             if affinities_used.get(constants.AFFINITY_ACCOUNT):
@@ -77,10 +74,7 @@ class SectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
                     self.puppet_account_id, section_name_plural, name
                 ):
                     dependencies.append(
-                        for_account_task_klass(
-                            **kwargs_to_use,
-                            account_id=account_id,
-                        )
+                        for_account_task_klass(**kwargs_to_use, account_id=account_id,)
                     )
 
             if affinities_used.get(constants.AFFINITY_ACCOUNT_AND_REGION):
@@ -93,9 +87,7 @@ class SectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
                     for region in regions:
                         dependencies.append(
                             for_account_and_region_task_klass(
-                                **kwargs_to_use,
-                                account_id=account_id,
-                                region=region,
+                                **kwargs_to_use, account_id=account_id, region=region,
                             )
                         )
 

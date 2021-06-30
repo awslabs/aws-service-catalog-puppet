@@ -12,9 +12,7 @@ class TestManifest(unittest.TestCase):
         "name": "accounta",
         "expanded_from": "ou-aaaa-aaaaaaaa",
         "organization": "o-aaaaaaaa",
-        "regions_enabled": [
-            "eu-west-2",
-        ],
+        "regions_enabled": ["eu-west-2",],
         "tags": ["group:A"],
     }
     account_b = {
@@ -23,27 +21,17 @@ class TestManifest(unittest.TestCase):
         "expanded_from": "ou-bbbb-bbbbbbbb",
         "organization": "o-bbbbbbbb",
         "name": "accountb",
-        "regions_enabled": [
-            "us-west-2",
-        ],
+        "regions_enabled": ["us-west-2",],
         "tags": ["group:B"],
     }
     account_c = {
         "account_id": "432100098765",
         "default_region": "ap-west-1",
         "name": "accountc",
-        "regions_enabled": [
-            "ap-west-2",
-        ],
+        "regions_enabled": ["ap-west-2",],
         "tags": ["group:C"],
     }
-    accounts = {
-        "accounts": [
-            account_a,
-            account_b,
-            account_c,
-        ]
-    }
+    accounts = {"accounts": [account_a, account_b, account_c,]}
     launch_a = {
         "portfolio": "portfolio_a",
         "product": "product_a",
@@ -238,9 +226,7 @@ class TestManifest(unittest.TestCase):
                 "name": "accounta",
                 "expanded_from": "ou-aaaa-aaaaaaaa",
                 "organization": "o-aaaaaaaa",
-                "regions_enabled": [
-                    "eu-west-2",
-                ],
+                "regions_enabled": ["eu-west-2",],
                 "tags": ["group:A"],
             }
         )
@@ -269,9 +255,7 @@ class TestManifest(unittest.TestCase):
                 "name": "accounta",
                 "expanded_from": "ou-aaaa-aaaaaaaa",
                 "organization": "o-aaaaaaaa",
-                "regions_enabled": [
-                    "eu-west-2",
-                ],
+                "regions_enabled": ["eu-west-2",],
                 "tags": ["group:A"],
             }
         )
@@ -302,9 +286,7 @@ class TestManifest(unittest.TestCase):
                 "name": "accounta",
                 "expanded_from": "ou-aaaa-aaaaaaaa",
                 "organization": "o-aaaaaaaa",
-                "regions_enabled": [
-                    "eu-west-2",
-                ],
+                "regions_enabled": ["eu-west-2",],
                 "tags": ["group:A"],
             }
         )

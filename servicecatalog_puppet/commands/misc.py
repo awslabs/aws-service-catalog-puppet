@@ -23,9 +23,13 @@ from servicecatalog_puppet.workflow import (
 )
 from servicecatalog_puppet.workflow.assertions import assertions_section_task
 from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_section_task
-from servicecatalog_puppet.workflow.lambda_invocations import lambda_invocation_section_task
+from servicecatalog_puppet.workflow.lambda_invocations import (
+    lambda_invocation_section_task,
+)
 from servicecatalog_puppet.workflow.launch import launch_section_task
-from servicecatalog_puppet.workflow.spoke_local_portfolios import spoke_local_portfolio_section_task
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    spoke_local_portfolio_section_task,
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -122,10 +126,7 @@ def is_a_parameter_override_execution() -> bool:
     with betterboto_client.ClientContextManager("codepipeline") as codepipeline:
         paginator = codepipeline.get_paginator("list_pipeline_executions")
         pages = paginator.paginate(
-            pipelineName=constants.PIPELINE_NAME,
-            PaginationConfig={
-                "PageSize": 100,
-            },
+            pipelineName=constants.PIPELINE_NAME, PaginationConfig={"PageSize": 100,},
         )
         for page in pages:
             for pipeline_execution_summary in page.get(
@@ -164,9 +165,7 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                             )
                             pages = paginator.paginate(
                                 pipelineName=constants.PIPELINE_NAME,
-                                PaginationConfig={
-                                    "PageSize": 100,
-                                },
+                                PaginationConfig={"PageSize": 100,},
                             )
                             for page in pages:
                                 for pipeline_execution_summary in page.get(
@@ -187,10 +186,8 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                                                 and s.get("revisionId")
                                                 == parameters_file_version_id
                                             ):
-                                                pipeline_execution_id = (
-                                                    pipeline_execution_summary.get(
-                                                        "pipelineExecutionId"
-                                                    )
+                                                pipeline_execution_id = pipeline_execution_summary.get(
+                                                    "pipelineExecutionId"
                                                 )
                                                 click.echo(
                                                     f"Found execution id {pipeline_execution_id}"
@@ -245,14 +242,12 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                                                                     ),
                                                                     Data=f"{pipeline_execution_id}",
                                                                 )
-                                                            req = (
-                                                                urllib.request.Request(
-                                                                    url=on_complete_url,
-                                                                    data=json.dumps(
-                                                                        result
-                                                                    ).encode(),
-                                                                    method="PUT",
-                                                                )
+                                                            req = urllib.request.Request(
+                                                                url=on_complete_url,
+                                                                data=json.dumps(
+                                                                    result
+                                                                ).encode(),
+                                                                method="PUT",
                                                             )
                                                             with urllib.request.urlopen(
                                                                 req
@@ -269,28 +264,23 @@ def generate_tasks(
 ):
     tasks = [
         launch_section_task.LaunchSectionTask(
-            manifest_file_path=f.name,
-            puppet_account_id=puppet_account_id,
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
     ]
     if execution_mode != constants.EXECUTION_MODE_SPOKE:
         if not is_dry_run:
             tasks += [
                 assertions_section_task.AssertionsSectionTask(
-                    manifest_file_path=f.name,
-                    puppet_account_id=puppet_account_id,
+                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
                 ),
                 spoke_local_portfolio_section_task.SpokeLocalPortfolioSectionTask(
-                    manifest_file_path=f.name,
-                    puppet_account_id=puppet_account_id,
+                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
                 ),
                 lambda_invocation_section_task.LambdaInvocationsSectionTask(
-                    manifest_file_path=f.name,
-                    puppet_account_id=puppet_account_id,
+                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
                 ),
                 code_build_run_section_task.CodeBuildRunsSectionTask(
-                    manifest_file_path=f.name,
-                    puppet_account_id=puppet_account_id,
+                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
                 ),
             ]
     return tasks

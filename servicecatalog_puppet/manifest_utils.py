@@ -181,8 +181,7 @@ def rewrite_depends_on(manifest):
             for i in range(len(details.get("depends_on", []))):
                 if isinstance(details["depends_on"][i], str):
                     manifest[section_name][item]["depends_on"][i] = dict(
-                        name=details["depends_on"][i],
-                        type="launch",
+                        name=details["depends_on"][i], type="launch",
                     )
                 if isinstance(details["depends_on"][i], dict):
                     if details["depends_on"][i].get(constants.AFFINITY) is None:
@@ -405,12 +404,8 @@ class Manifest(dict):
                         account_id=account_id,
                         account_parameters=account.get("parameters", {}),
                     ),
-                    "spoke-local-portfolios": dict(
-                        account_id=account_id,
-                    ),
-                    "assertions": dict(
-                        account_id=account_id,
-                    ),
+                    "spoke-local-portfolios": dict(account_id=account_id,),
+                    "assertions": dict(account_id=account_id,),
                     "lambda-invocations": dict(
                         account_id=account_id,
                         account_parameters=account.get("parameters", {}),
@@ -495,12 +490,8 @@ class Manifest(dict):
                     account_id=account_id,
                     account_parameters=account.get("parameters", {}),
                 ),
-                "spoke-local-portfolios": dict(
-                    account_id=account_id,
-                ),
-                "assertions": dict(
-                    account_id=account_id,
-                ),
+                "spoke-local-portfolios": dict(account_id=account_id,),
+                "assertions": dict(account_id=account_id,),
                 "lambda-invocations": dict(
                     account_id=account_id,
                     account_parameters=account.get("parameters", {}),
@@ -751,10 +742,7 @@ class Manifest(dict):
         for launch_name, launch_details in self.get(section, {}).items():
             portfolio = launch_details.get("portfolio")
             tasks = self.get_task_defs_from_details(
-                puppet_account_id,
-                launch_name,
-                configuration,
-                section,
+                puppet_account_id, launch_name, configuration, section,
             )
             for task in tasks:
                 account_id = task.get("account_id")
@@ -933,15 +921,10 @@ def convert_to_graph(expanded_manifest, G):
     for section in sections:
         for item_name, item_details in expanded_manifest.get(section, {}).items():
             uid = f"{section}|{item_name}"
-            data = dict(
-                section=section,
-                item_name=item_name,
-            )
+            data = dict(section=section, item_name=item_name,)
             data.update(item_details)
             G.add_nodes_from(
-                [
-                    (uid, data),
-                ]
+                [(uid, data),]
             )
 
     mapping = dict()
