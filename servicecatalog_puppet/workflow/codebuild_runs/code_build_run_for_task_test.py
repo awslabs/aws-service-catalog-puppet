@@ -2,30 +2,22 @@ from unittest import skip
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
-class DoAssertTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
-    manifest_file_path = "manifest_file_path"
-    assertion_name = "assertion_name"
-    region = "region"
-    account_id = "account_id"
+class CodeBuildRunForTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
+    code_build_run_name = "code_build_run_name"
     puppet_account_id = "puppet_account_id"
-    expected = {}
-    actual = {}
-    requested_priority = 1
+    manifest_file_path = "manifest_file_path"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.assertions import do_assert_task
+        from servicecatalog_puppet.workflow.codebuild_runs import (
+            code_build_run_for_task,
+        )
 
-        self.module = do_assert_task
+        self.module = code_build_run_for_task
 
-        self.sut = self.module.DoAssertTask(
+        self.sut = self.module.CodeBuildRunForTask(
             manifest_file_path=self.manifest_file_path,
-            assertion_name=self.assertion_name,
-            region=self.region,
-            account_id=self.account_id,
+            code_build_run_name=self.code_build_run_name,
             puppet_account_id=self.puppet_account_id,
-            expected=self.expected,
-            actual=self.actual,
-            requested_priority=self.requested_priority,
         )
 
         self.wire_up_mocks()
@@ -34,9 +26,7 @@ class DoAssertTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
-            "assertion_name": self.assertion_name,
-            "region": self.region,
-            "account_id": self.account_id,
+            "code_build_run_name": self.code_build_run_name,
             "cache_invalidator": self.cache_invalidator,
         }
 

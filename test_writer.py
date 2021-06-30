@@ -61,6 +61,7 @@ global_params = dict(
     expected=dict(),
     actual=dict(),
 
+    code_build_run_name="code_build_run_name",
     account_id="account_id",
     cache_invalidator="cache_invalidator",
     execution="execution",
@@ -259,12 +260,14 @@ def get_initial_args_for(c):
     return dict()
 
 
+package="codebuild_runs"
+
 for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
     print(input)
     if input.endswith("_tests.py") or input.endswith("_test.py") or input.endswith("tasks_unit_tests_helper.py") or input.endswith("__init__.py"):
         continue
 
-    if "assertions" not in input:
+    if package not in input:
         continue
 
     mod = input.split('/')[-1].replace('.py', '')
@@ -334,7 +337,7 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         open(output, "a+").write(f"""
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow import {mod}
+        from servicecatalog_puppet.workflow.{package} import {mod}
         self.module = {mod}
         
         self.sut = self.module.{c.name.value}(

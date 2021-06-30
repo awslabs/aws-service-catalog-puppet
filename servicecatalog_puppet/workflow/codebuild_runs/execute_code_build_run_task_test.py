@@ -2,29 +2,37 @@ from unittest import skip
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
-class AssertTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
-    manifest_file_path = "manifest_file_path"
-    assertion_name = "assertion_name"
+class ExecuteCodeBuildRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
+    code_build_run_name = "code_build_run_name"
+    puppet_account_id = "puppet_account_id"
     region = "region"
     account_id = "account_id"
-    puppet_account_id = "puppet_account_id"
-    expected = {}
-    actual = {}
+    ssm_param_inputs = []
+    launch_parameters = {}
+    manifest_parameters = {}
+    account_parameters = {}
+    project_name = "project_name"
     requested_priority = 1
+    manifest_file_path = "manifest_file_path"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.assertions import assert_task
+        from servicecatalog_puppet.workflow.codebuild_runs import (
+            execute_code_build_run_task,
+        )
 
-        self.module = assert_task
+        self.module = execute_code_build_run_task
 
-        self.sut = self.module.AssertTask(
+        self.sut = self.module.ExecuteCodeBuildRunTask(
             manifest_file_path=self.manifest_file_path,
-            assertion_name=self.assertion_name,
+            code_build_run_name=self.code_build_run_name,
+            puppet_account_id=self.puppet_account_id,
             region=self.region,
             account_id=self.account_id,
-            puppet_account_id=self.puppet_account_id,
-            expected=self.expected,
-            actual=self.actual,
+            ssm_param_inputs=self.ssm_param_inputs,
+            launch_parameters=self.launch_parameters,
+            manifest_parameters=self.manifest_parameters,
+            account_parameters=self.account_parameters,
+            project_name=self.project_name,
             requested_priority=self.requested_priority,
         )
 
@@ -34,7 +42,7 @@ class AssertTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
-            "assertion_name": self.assertion_name,
+            "code_build_run_name": self.code_build_run_name,
             "region": self.region,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
