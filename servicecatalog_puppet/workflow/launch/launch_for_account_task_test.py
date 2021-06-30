@@ -7,7 +7,6 @@ class LaunchForAccountTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     launch_name = "launch_name"
     manifest_file_path = "manifest_file_path"
-    launch_name = "launch_name"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.launch import launch_for_account_task
