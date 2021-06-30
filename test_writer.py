@@ -1,3 +1,5 @@
+import os
+
 import parso
 import glob
 
@@ -260,7 +262,7 @@ def get_initial_args_for(c):
     return dict()
 
 
-package="codebuild_runs"
+package="lambda_invocations"
 
 for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
     print(input)
@@ -273,6 +275,8 @@ for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True)
     mod = input.split('/')[-1].replace('.py', '')
     print(f"Starting {input}")
     output = input.replace(".py", "_test.py")
+    if os.path.exists(output):
+        continue
     open(output, 'w+').write(HEADER)
     code = open(input, 'r').read()
     module = parso.parse(code, version="3.7")
