@@ -35,15 +35,7 @@ class SpokeLocalPortfolioSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitT
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    @skip
-    def test_requires(self):
-        # setup
-        # exercise
-        actual_result = self.sut.requires()
-
-        # verify
-        raise NotImplementedError()
-
+    
     @skip
     def test_run(self):
         # setup

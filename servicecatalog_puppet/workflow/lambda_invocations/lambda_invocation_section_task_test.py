@@ -34,15 +34,7 @@ class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTes
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    @skip
-    def test_requires(self):
-        # setup
-        # exercise
-        actual_result = self.sut.requires()
-
-        # verify
-        raise NotImplementedError()
-
+    
     def test_run(self):
         # setup
         lambda_invocations = dict(foo="bar")

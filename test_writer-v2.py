@@ -204,155 +204,47 @@ def handle_function(f, output, mod, classes):
         raise Exception(f"unhandled: {name}")
 
 
-def get_initial_args_for(c):
-    supers = c.get_super_arglist().get_code()
-    if "SectionTask" in supers:
-        return dict(
-            manifest_file_path=global_params.get('manifest_file_path'),
-            puppet_account_id=global_params.get("puppet_account_id"),
-            should_use_sns=global_params.get("should_use_sns"),
-            should_use_product_plans=global_params.get("should_use_product_plans"),
-            include_expanded_from=global_params.get("include_expanded_from"),
-            single_account=global_params.get("single_account"),
-            is_dry_run=global_params.get("is_dry_run"),
-            execution_mode=global_params.get("execution_mode"),
-            cache_invalidator=global_params.get("cache_invalidator"),
-        )
-    elif "PortfolioManagementTask" in supers:
-        return dict(
-            manifest_file_path=global_params.get('manifest_file_path'),
-        )
-    elif "ProvisioningTask" in supers:
-        return dict(
-            manifest_file_path=global_params.get('manifest_file_path'),
-        )
-    elif "ProvisionProductTask" in supers:
-        return dict(
-            manifest_file_path=global_params.get('manifest_file_path'),
 
-            launch_name=global_params.get("launch_name"),
-            portfolio=global_params.get("portfolio"),
-            portfolio_id=global_params.get("portfolio_id"),
-            product=global_params.get("product"),
-            product_id=global_params.get("product_id"),
-            version=global_params.get("version"),
-            version_id=global_params.get("version_id"),
-            region=global_params.get("region"),
-            account_id=global_params.get("account_id"),
-
-            puppet_account_id=global_params.get("puppet_account_id"),
-
-            parameters=global_params.get("parameters"),
-            ssm_param_inputs=global_params.get("ssm_param_inputs"),
-
-            launch_parameters=global_params.get("launch_parameters"),
-            manifest_parameters=global_params.get("manifest_parameters"),
-            account_parameters=global_params.get("account_parameters"),
-
-            retry_count=global_params.get("retry_count"),
-            worker_timeout=global_params.get("worker_timeout"),
-            ssm_param_outputs=global_params.get("ssm_param_outputs"),
-            should_use_sns=global_params.get("should_use_sns"),
-            should_use_product_plans=global_params.get("should_use_product_plans"),
-            requested_priority=global_params.get("requested_priority"),
-
-            execution=global_params.get("execution"),
-
-            cache_invalidator=global_params.get("cache_invalidator"),
-
-        )
-    return dict()
-
-
-for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
+# for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
+for input in glob.glob("servicecatalog_puppet/workflow/assertions/**/*.py", recursive=True):
     print(input)
     if input.endswith("_tests.py") or input.endswith("_test.py") or input.endswith(
             "tasks_unit_tests_helper.py") or input.endswith("__init__.py"):
         continue
 
     print(f"Starting work on {input}")
-    output = input.replace(".py", "_test.py")
-    if os.path.exists(output):
-        continue
 
     code = open(input, 'r').read()
-    module = parso.parse(code, version="3.7")
-    index = 0
-    classes = list()
+    sut = parso.parse(code, version="3.7")
 
-    for c in module.iter_classdefs():
-        classes.append(c.name.value)
-    for c in module.iter_classdefs():
-        if c.name.value in ["PuppetTask", "ManifestMixen"]:
-            continue
+    output = input.replace(".py", "_test.py")
+    code = open(output, 'r').read()
+    test = parso.parse(code, version="3.7")
 
-        # if c.name.value not in ["DeleteCloudFormationStackTask"]:
-        #     continue
-
-        open(output, "a+").write(f"""
-class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
-""")
+    has_test_requires_already = False
+    for c in test.iter_classdefs():
         suite = c.children[-1]
-        params = get_initial_args_for(c)
-        # start of removal
-        # for p in params.keys():
-        #     if isinstance(params.get(p), str):
-        #         open(output, "a+").write(f"    {p} = \"{params.get(p)}\"\n")
-        #     else:
-        #         open(output, "a+").write(f"    {p} = {params.get(p)}\n")
-        # end of removal
         for child in suite.children:
-            # if isinstance(child, tree.Function):
-            # handle_function(child, output, mod, classes)
-            # print(child.name.value)
-            if isinstance(child, tree.PythonNode):
-                if child.type == "simple_stmt":
-                    parameter = child.children[0]
-                    if isinstance(parameter, tree.ExprStmt):  # ignore docstrings for classes
-                        parameter_name = parameter.children[0].value
-                        parameter_value = parameter.children[2]
+            if isinstance(child, tree.Function):
+                if child.name.value == "test_requires":
+                    has_test_requires_already = True
 
-                        if isinstance(parameter_value, tree.Number):  # literal numbers
-                            pass
-                            # parameter_value = global_params[parameter_name]
-                            # params[parameter_name] = parameter_value
-                            # open(output, "a+").write(f"    {parameter_name} = {parameter_value}#1\n")
-
-                        elif isinstance(parameter_value, tree.PythonNode):  # everything else
-                            if parameter_value.type == "atom_expr":
-                                parameter_type = parameter_value.children[1].children[1].value
-                                parameter_value = global_params[parameter_name]
-                                params[parameter_name] = parameter_value
-                                # if parameter_type == "Parameter":
-                                #     open(output, "a+").write(f"    {parameter_name} = \"{parameter_value}\"\n")
-                                # else:
-                                #     open(output, "a+").write(f"    {parameter_name} = {parameter_value}\n")
-                            elif parameter_value.type == "atom":
-                                pass
-                                # parameter_value = global_params[parameter_name]
-                                # params[parameter_name] = parameter_value
-                                # open(output, "a+").write(f"    {parameter_name} = {parameter_value}#3\n")
-                            else:
-                                raise Exception(f"unhandled {parameter_name}: {parameter_value}")
-                        else:
-                            raise Exception(f"cannot handle {type(parameter_value)}")
-
-        for p in params.keys():
-            if isinstance(params.get(p), str):
-                open(output, "a+").write(f"    {p} = \"{params.get(p)}\"\n")
-            else:
-                open(output, "a+").write(f"    {p} = {params.get(p)}\n")
-
-        open(output, "a+").write(f"""
-    def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.{package} import {mod}
-        self.module = {mod}
-        
-        self.sut = self.module.{c.name.value}(
-            {", ".join([f"{p}=self.{p}" for p in params.keys()])}        
-        )
-        
-        self.wire_up_mocks()    
-""")
-        handle(c, output, mod, classes)
-    # raise Exception("endin")
+    print(f"has has_test_requires_already={has_test_requires_already}")
+    if not has_test_requires_already:
+        for c in sut.iter_classdefs():
+            suite = c.children[-1]
+            for child in suite.children:
+                if isinstance(child, tree.Function):
+                    if child.name.value == "requires":
+                        function = child
+                        function.children[1].value = "test_requires"
+                        code = function.get_code()
+                        code = code.replace("self.", "self.sut.")
+                        code = code.replace("    def test_requires(self):", "    def test_requires(self):\n        # setup")
+                        code = code.replace("        return requirements", "\n        expected_result = requirements\n        return requirements")
+                        code = code.replace("        return requirements", "\n        # exercise\n        actual_result=self.sut.requires()\n        return requirements")
+                        code = code.replace("        return requirements", "\n        # assert\n        return requirements")
+                        code = code.replace("return requirements", "self.assertEqual(expected_result, actual_result)")
+                        print(code)
+                    else:
+                        continue
