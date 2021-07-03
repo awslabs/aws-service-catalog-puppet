@@ -206,7 +206,7 @@ def handle_function(f, output, mod, classes):
 
 
 # for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
-for input in glob.glob("servicecatalog_puppet/workflow/assertions/**/*.py", recursive=True):
+for input in glob.glob("servicecatalog_puppet/workflow/spoke_local_portfolios/**/*.py", recursive=True):
     print(input)
     if input.endswith("_tests.py") or input.endswith("_test.py") or input.endswith(
             "tasks_unit_tests_helper.py") or input.endswith("__init__.py"):
@@ -218,6 +218,9 @@ for input in glob.glob("servicecatalog_puppet/workflow/assertions/**/*.py", recu
     sut = parso.parse(code, version="3.7")
 
     output = input.replace(".py", "_test.py")
+    # if output != "servicecatalog_puppet/workflow/assertions/assert_task_test.py":
+    #     continue
+
     code = open(output, 'r').read()
     test = parso.parse(code, version="3.7")
 
@@ -236,6 +239,7 @@ for input in glob.glob("servicecatalog_puppet/workflow/assertions/**/*.py", recu
             for child in suite.children:
                 if isinstance(child, tree.Function):
                     if child.name.value == "requires":
+                        handled = False
                         function = child
                         function.children[1].value = "test_requires"
                         code = function.get_code()
@@ -245,6 +249,18 @@ for input in glob.glob("servicecatalog_puppet/workflow/assertions/**/*.py", recu
                         code = code.replace("        return requirements", "\n        # exercise\n        actual_result=self.sut.requires()\n        return requirements")
                         code = code.replace("        return requirements", "\n        # assert\n        return requirements")
                         code = code.replace("return requirements", "self.assertEqual(expected_result, actual_result)")
-                        print(code)
+
+                        if "get_section_dependencies" in code:
+                            code = code.replace("    def test_requires(self):", "    @mock.patch('servicecatalog_puppet.workflow.dependency.DependenciesMixin.get_section_dependencies')\n    def test_requires(self, get_section_dependencies_mock):")
+                            code = code.replace("        # setup", "        # setup\n        get_section_dependencies_mock.return_value=['a']")
+                            handled = True
+
+                        elif 'self.sut.manifest.' in code:
+                            code = code.replace("    def test_requires(self):", "    @mock.patch('servicecatalog_puppet.workflow.manifest.manifest_mixin.ManifestMixen.manifest')\n    def test_requires(self, manifest_mock):")
+                            handled = True
+
+                        if handled:
+                            output_file = open(output, 'a').write(code)
+
                     else:
                         continue

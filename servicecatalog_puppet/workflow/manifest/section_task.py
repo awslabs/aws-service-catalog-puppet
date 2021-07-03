@@ -20,12 +20,6 @@ class SectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    @property
-    @lru_cache()
-    def manifest(self):
-        content = open(self.manifest_file_path, "r").read()
-        return manifest_utils.Manifest(yaml.safe_load(content))
-
     def handle_requirements_for(
         self,
         name,

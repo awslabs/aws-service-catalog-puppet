@@ -1,6 +1,6 @@
 from unittest import skip
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
-
+from unittest import skip, mock
 
 class AssertionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -43,3 +43,36 @@ class AssertionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         # verify
         raise NotImplementedError()
+
+    @mock.patch('servicecatalog_puppet.workflow.manifest.manifest_mixin.ManifestMixen.manifest')
+    def test_requires(self, manifest_mock):
+        # setup
+        requirements = list()
+
+        klass = self.sut.get_klass_for_provisioning()
+        for (
+            account_id,
+            regions,
+        ) in self.sut.manifest.get_account_ids_and_regions_used_for_section_item(
+            self.sut.puppet_account_id, self.sut.section_name, self.sut.assertion_name
+        ).items():
+            for region in regions:
+                for task in self.sut.manifest.get_tasks_for_launch_and_account_and_region(
+                    self.sut.puppet_account_id,
+                    self.sut.section_name,
+                    self.sut.assertion_name,
+                    account_id,
+                    region,
+                ):
+                    requirements.append(
+                        klass(**task, manifest_file_path=self.sut.manifest_file_path)
+                    )
+
+
+        expected_result = requirements
+
+        # exercise
+        actual_result=self.sut.requires()
+
+        # assert
+        self.assertEqual(expected_result, actual_result)

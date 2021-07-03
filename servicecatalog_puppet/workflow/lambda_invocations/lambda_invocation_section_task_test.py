@@ -1,6 +1,9 @@
 from unittest import skip, mock
 
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
+from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow.lambda_invocations import lambda_invocation_for_region_task, lambda_invocation_for_account_task, \
+    lambda_invocation_for_account_and_region_task, lambda_invocation_task
 
 
 class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
@@ -49,3 +52,34 @@ class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTes
 
         # verify
         self.assert_output(lambda_invocations)
+
+    @mock.patch('servicecatalog_puppet.workflow.manifest.manifest_mixin.ManifestMixen.manifest')
+    def test_requires(self, manifest_mock):
+        # setup
+        requirements = list()
+
+        for name, details in self.sut.manifest.get(
+            constants.LAMBDA_INVOCATIONS, {}
+        ).items():
+            requirements += self.sut.handle_requirements_for(
+                name,
+                constants.LAMBDA_INVOCATION,
+                constants.LAMBDA_INVOCATIONS,
+                lambda_invocation_for_region_task.LambdaInvocationForRegionTask,
+                lambda_invocation_for_account_task.LambdaInvocationForAccountTask,
+                lambda_invocation_for_account_and_region_task.LambdaInvocationForAccountAndRegionTask,
+                lambda_invocation_task.LambdaInvocationTask,
+                dict(
+                    lambda_invocation_name=name,
+                    puppet_account_id=self.sut.puppet_account_id,
+                    manifest_file_path=self.sut.manifest_file_path,
+                ),
+            )
+
+        expected_result = requirements
+
+        # exercise
+        actual_result=self.sut.requires()
+
+        # assert
+        self.assertEqual(expected_result, actual_result)

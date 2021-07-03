@@ -1,4 +1,4 @@
-from unittest import skip
+from unittest import skip, mock
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -40,3 +40,32 @@ class CodeBuildRunForRegionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.assertEqual(expected_result, actual_result)
 
     
+    @mock.patch('servicecatalog_puppet.workflow.manifest.manifest_mixin.ManifestMixen.manifest')
+    def test_requires(self, manifest_mock):
+        # setup
+        dependencies = list()
+        these_dependencies = list()
+        requirements = dict(
+            dependencies=dependencies, these_dependencies=these_dependencies,
+        )
+
+        klass = self.sut.get_klass_for_provisioning()
+
+        for task in self.sut.manifest.get_tasks_for_launch_and_region(
+            self.sut.puppet_account_id,
+            self.sut.section_name,
+            self.sut.code_build_run_name,
+            self.sut.region,
+        ):
+            dependencies.append(
+                klass(**task, manifest_file_path=self.sut.manifest_file_path)
+            )
+
+
+        expected_result = requirements
+
+        # exercise
+        actual_result=self.sut.requires()
+
+        # assert
+        self.assertEqual(expected_result, actual_result)

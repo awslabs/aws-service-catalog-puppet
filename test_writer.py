@@ -264,7 +264,7 @@ def get_initial_args_for(c):
     return dict()
 
 
-package = "associations"
+package = "spoke_local_portfolios"
 
 for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
     print(input)
