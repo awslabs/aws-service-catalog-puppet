@@ -9,7 +9,21 @@ packages = \
  'servicecatalog_puppet.commands',
  'servicecatalog_puppet.template_builder',
  'servicecatalog_puppet.template_builder.hub',
- 'servicecatalog_puppet.workflow']
+ 'servicecatalog_puppet.workflow',
+ 'servicecatalog_puppet.workflow.assertions',
+ 'servicecatalog_puppet.workflow.codebuild_runs',
+ 'servicecatalog_puppet.workflow.general',
+ 'servicecatalog_puppet.workflow.generate',
+ 'servicecatalog_puppet.workflow.lambda_invocations',
+ 'servicecatalog_puppet.workflow.launch',
+ 'servicecatalog_puppet.workflow.manifest',
+ 'servicecatalog_puppet.workflow.portfolio',
+ 'servicecatalog_puppet.workflow.portfolio.accessors',
+ 'servicecatalog_puppet.workflow.portfolio.associations',
+ 'servicecatalog_puppet.workflow.portfolio.constraints_management',
+ 'servicecatalog_puppet.workflow.portfolio.portfolio_management',
+ 'servicecatalog_puppet.workflow.portfolio.sharing_management',
+ 'servicecatalog_puppet.workflow.spoke_local_portfolios']
 
 package_data = \
 {'': ['*'], 'servicecatalog_puppet': ['manifests/*', 'templates/*']}
