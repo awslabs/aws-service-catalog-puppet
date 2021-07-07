@@ -1,0 +1,364 @@
+service: continuous-runner
+
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  region: eu-west-1
+  profile: default
+  runtime: nodejs12.x
+  lambdaHashingVersion: 20201221
+  timeout: 900
+  tracing:
+    lambda: true
+
+resources:
+  Resources:
+    FailureTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: 'FailureTopic'
+        TopicName: FailureTopic
+    CodeBuildServiceRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: TestingCodeBuildServiceRole
+        Path: /servicecatalog-puppet/
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal:
+                Service:
+                  - "codebuild.amazonaws.com"
+              Action:
+                - "sts:AssumeRole"
+        ManagedPolicyArns:
+          - !Sub "arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess"
+
+    HasNoLaunchesProvisioned:
+      Type: AWS::CodeBuild::Project
+      Properties: &properties
+        Name: HasNoLaunchesProvisioned
+        Description: "Project to verify HasNoLaunchesProvisioned"
+        ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+        Artifacts:
+          Type: no_artifacts
+        Environment:
+          Type: LINUX_CONTAINER
+          ComputeType: BUILD_GENERAL1_SMALL
+          Image: aws/codebuild/standard:4.0
+          EnvironmentVariables:
+            - Name: SPOKE_ACCOUNT_ID
+              Type: PARAMETER_STORE
+              Value: NOT_SET
+        Source:
+          Type: no_source
+          BuildSpec: |
+            version: 0.2
+            phases:
+              build:
+                commands:
+                  - aws sts assume-role --role-arn arn:aws:iam::$SPOKE_ACCOUNT_ID:role/servicecatalog-puppet/PuppetRole --role-session-name OSS > output.json
+                  - export AWS_ACCESS_KEY_ID=$(cat output.json | jq -r '.Credentials''.AccessKeyId')
+                  - export AWS_SECRET_ACCESS_KEY=$(cat output.json | jq -r '.Credentials''.SecretAccessKey')
+                  - export AWS_SESSION_TOKEN=$(cat output.json | jq -r '.Credentials''.SessionToken')
+                  - aws sts get-caller-identity
+                  - aws servicecatalog describe-provisioned-product --name basic-vpc && exit 1 || exit 0
+        TimeoutInMinutes: 10
+
+
+#  aws servicecatalog describe-portfolio --id=$(aws servicecatalog list-portfolios --query='PortfolioDetails[?DisplayName==`config-base-optional-all01s`].Id' --output text)
+
+    HasALaunchProvisioned:
+      Type: AWS::CodeBuild::Project
+      Properties:
+        << : *properties
+        Name: HasALaunchProvisioned
+        Description: "Project to verify HasALaunchProvisioned"
+        Source:
+          Type: no_source
+          BuildSpec: |
+            version: 0.2
+            phases:
+              build:
+                commands:
+                  - aws sts assume-role --role-arn arn:aws:iam::$SPOKE_ACCOUNT_ID:role/servicecatalog-puppet/PuppetRole --role-session-name OSS > output.json
+                  - export AWS_ACCESS_KEY_ID=$(cat output.json | jq -r '.Credentials''.AccessKeyId')
+                  - export AWS_SECRET_ACCESS_KEY=$(cat output.json | jq -r '.Credentials''.SecretAccessKey')
+                  - export AWS_SESSION_TOKEN=$(cat output.json | jq -r '.Credentials''.SessionToken')
+                  - aws sts get-caller-identity
+                  - aws servicecatalog describe-provisioned-product --name basic-vpc && exit 0 || exit 1
+
+    HasNoSpokeLocalShared:
+      Type: AWS::CodeBuild::Project
+      Properties:
+        << : *properties
+        Name: HasNoSpokeLocalShared
+        Description: "Project to verify HasNoSpokeLocalShared"
+        Source:
+          Type: no_source
+          BuildSpec: |
+            version: 0.2
+            phases:
+              build:
+                commands:
+                  - aws sts assume-role --role-arn arn:aws:iam::$SPOKE_ACCOUNT_ID:role/servicecatalog-puppet/PuppetRole --role-session-name OSS > output.json
+                  - export AWS_ACCESS_KEY_ID=$(cat output.json | jq -r '.Credentials''.AccessKeyId')
+                  - export AWS_SECRET_ACCESS_KEY=$(cat output.json | jq -r '.Credentials''.SecretAccessKey')
+                  - export AWS_SESSION_TOKEN=$(cat output.json | jq -r '.Credentials''.SessionToken')
+                  - aws sts get-caller-identity
+                  - aws servicecatalog describe-portfolio --id=$(aws servicecatalog list-portfolios --query='PortfolioDetails[?DisplayName==`config-base-optional-all01s`].Id' --output text) && exit 1 || exit 0
+
+    HasASpokeLocalShared:
+      Type: AWS::CodeBuild::Project
+      Properties:
+        << : *properties
+        Name: HasASpokeLocalShared
+        Description: "Project to verify HasASpokeLocalShared"
+        Source:
+          Type: no_source
+          BuildSpec: |
+            version: 0.2
+            phases:
+              build:
+                commands:
+                  - aws sts assume-role --role-arn arn:aws:iam::$SPOKE_ACCOUNT_ID:role/servicecatalog-puppet/PuppetRole --role-session-name OSS > output.json
+                  - export AWS_ACCESS_KEY_ID=$(cat output.json | jq -r '.Credentials''.AccessKeyId')
+                  - export AWS_SECRET_ACCESS_KEY=$(cat output.json | jq -r '.Credentials''.SecretAccessKey')
+                  - export AWS_SESSION_TOKEN=$(cat output.json | jq -r '.Credentials''.SessionToken')
+                  - aws sts get-caller-identity
+                  - aws servicecatalog describe-portfolio --id=$(aws servicecatalog list-portfolios --query='PortfolioDetails[?DisplayName==`config-base-optional-all01s`].Id' --output text) && exit 0 || exit 1
+
+
+functions:
+  setup-deploy-to:
+    handler: setup_deploy_to.handler
+  has-deployed-to:
+    handler: has_deployed_to.handler
+
+stepFunctions:
+  stateMachines:
+    continousRunner:
+      name: ContinousRunner
+      definition:
+        Comment: "Runs service catalog puppet on a loop"
+        StartAt: VerifyEnvironmentIsClean
+        States:
+
+          VerifyEnvironmentIsClean:
+            Type: "Parallel"
+            Catch:
+              - ErrorEquals: [ "States.ALL" ]
+                Next: CleanEnvironment
+            Branches:
+              - StartAt: HasNoLaunchesProvisioned
+                States:
+                  HasNoLaunchesProvisioned:
+                    Type: Task
+                    Resource: "arn:aws:states:::codebuild:startBuild.sync"
+                    Parameters:
+                      ProjectName: HasNoLaunchesProvisioned
+                      EnvironmentVariablesOverride:
+                        - Name: SPOKE_ACCOUNT_ID
+                          Type: PARAMETER_STORE
+                          Value: /SCT/e2e-testing/account-in-ou-ten/account-id
+                    End: true
+              - StartAt: HasNoSpokeLocalShared
+                States:
+                  HasNoSpokeLocalShared:
+                    Type: Task
+                    Resource: "arn:aws:states:::codebuild:startBuild.sync"
+                    Parameters:
+                      ProjectName: HasNoSpokeLocalShared
+                      EnvironmentVariablesOverride:
+                        - Name: SPOKE_ACCOUNT_ID
+                          Type: PARAMETER_STORE
+                          Value: /SCT/e2e-testing/account-in-ou-ten/account-id
+                    End: true
+            OutputPath: null
+            Next: SetupDeployToTenSingleRegion
+
+          SetupDeployToTenSingleRegion:
+            Type: Task
+            Resource: "arn:aws:states:::lambda:invoke"
+            Parameters:
+              FunctionName:
+                Ref: setup-deploy-to
+              Payload:
+                Scenario: "ten-accounts-one-region"
+            Catch:
+              - ErrorEquals: [ "States.ALL" ]
+                Next: CleanEnvironment
+            OutputPath: "$.Payload"
+            Next: WaitForDeployToTenSingleRegion
+
+          WaitForDeployToTenSingleRegion:
+            Type: Wait
+            Seconds: 5
+            Next: HasDeployToTenSingleRegionCompleted
+
+          HasDeployToTenSingleRegionCompleted:
+            Type: Task
+            Resource: "arn:aws:states:::lambda:invoke"
+            Parameters:
+              FunctionName:
+                Ref: has-deployed-to
+              Payload:
+                Scenario: "ten-accounts-one-region"
+                newCommitHash.$: "$.newCommitHash"
+                codepipelineExecutionId.$: "$.codepipelineExecutionId"
+            OutputPath: "$.Payload"
+            Catch:
+              - ErrorEquals: [ "States.ALL" ]
+                Next: CleanEnvironment
+            Next: CheckDeployToTenSingleRegionCompleted
+
+          CheckDeployToTenSingleRegionCompleted:
+            Type: Choice
+            Choices:
+              - Variable: "$.currentStatus"
+                StringEquals: "Cancelled"
+                Next: DeployToTenSingleRegionFailed
+              - Variable: "$.currentStatus"
+                StringEquals: "InProgress"
+                Next: WaitForDeployToTenSingleRegion
+              - Variable: "$.currentStatus"
+                StringEquals: "Stopped"
+                Next: DeployToTenSingleRegionFailed
+              - Variable: "$.currentStatus"
+                StringEquals: "Stopping"
+                Next: WaitForDeployToTenSingleRegion
+              - Variable: "$.currentStatus"
+                StringEquals: "Succeeded"
+                Next: DeployToTenSingleRegionCompleted
+              - Variable: "$.currentStatus"
+                StringEquals: "Superseded"
+                Next: DeployToTenSingleRegionFailed
+              - Variable: "$.currentStatus"
+                StringEquals: "Failed"
+                Next: DeployToTenSingleRegionFailed
+            Default: WaitForDeployToTenSingleRegion
+
+          DeployToTenSingleRegionFailed:
+            Type: Pass
+            Next: CleanEnvironment
+
+          DeployToTenSingleRegionCompleted:
+            Type: Pass
+            Next: VerifyTenAccountsSingleRegionWorked
+
+          VerifyTenAccountsSingleRegionWorked:
+            Type: "Parallel"
+            Catch:
+              - ErrorEquals: [ "States.ALL" ]
+                Next: CleanEnvironment
+            Branches:
+              - StartAt: HasALaunchProvisioned
+                States:
+                  HasALaunchProvisioned:
+                    Type: Task
+                    Resource: "arn:aws:states:::codebuild:startBuild.sync"
+                    Parameters:
+                      ProjectName: HasALaunchProvisioned
+                      EnvironmentVariablesOverride:
+                        - Name: SPOKE_ACCOUNT_ID
+                          Type: PARAMETER_STORE
+                          Value: /SCT/e2e-testing/account-in-ou-ten/account-id
+                    End: true
+              - StartAt: HasASpokeLocalShared
+                States:
+                  HasASpokeLocalShared:
+                    Type: Task
+                    Resource: "arn:aws:states:::codebuild:startBuild.sync"
+                    Parameters:
+                      ProjectName: HasASpokeLocalShared
+                      EnvironmentVariablesOverride:
+                        - Name: SPOKE_ACCOUNT_ID
+                          Type: PARAMETER_STORE
+                          Value: /SCT/e2e-testing/account-in-ou-ten/account-id
+                    End: true
+            Next: "CleanEnvironment"
+
+          CleanEnvironment:
+            Type: "Parallel"
+            InputPath:
+            Branches:
+              - StartAt: ResetManifestFile
+                States:
+                  ResetManifestFile:
+                    Type: Task
+                    Resource: "arn:aws:states:::lambda:invoke"
+                    Parameters:
+                      FunctionName:
+                        Ref: setup-deploy-to
+                      Payload:
+                        Scenario: "terminated"
+                    OutputPath: "$.Payload"
+                    Next: WaitForResetManifestFile
+
+
+                  WaitForResetManifestFile:
+                    Type: Wait
+                    Seconds: 5
+                    Next: HasResetManifestFileCompleted
+
+                  HasResetManifestFileCompleted:
+                    Type: Task
+                    Resource: "arn:aws:states:::lambda:invoke"
+                    Parameters:
+                      FunctionName:
+                        Ref: has-deployed-to
+                      Payload:
+                        Scenario: "terminated"
+                        newCommitHash.$: "$.newCommitHash"
+                        codepipelineExecutionId.$: "$.codepipelineExecutionId"
+                    OutputPath: "$.Payload"
+                    Next: CheckResetManifestFileCompleted
+
+                  CheckResetManifestFileCompleted:
+                    Type: Choice
+                    Choices:
+                      - Variable: "$.currentStatus"
+                        StringEquals: "Cancelled"
+                        Next: ResetManifestFileFailed
+                      - Variable: "$.currentStatus"
+                        StringEquals: "InProgress"
+                        Next: WaitForResetManifestFile
+                      - Variable: "$.currentStatus"
+                        StringEquals: "Stopped"
+                        Next: ResetManifestFileFailed
+                      - Variable: "$.currentStatus"
+                        StringEquals: "Stopping"
+                        Next: WaitForResetManifestFile
+                      - Variable: "$.currentStatus"
+                        StringEquals: "Succeeded"
+                        Next: VerifyCleanEnvironment
+                      - Variable: "$.currentStatus"
+                        StringEquals: "Superseded"
+                        Next: ResetManifestFileFailed
+                      - Variable: "$.currentStatus"
+                        StringEquals: "Failed"
+                        Next: ResetManifestFileFailed
+                    Default: WaitForResetManifestFile
+
+                  ResetManifestFileFailed:
+                    Type: Pass
+                    End: true
+
+                  VerifyCleanEnvironment:
+                    Type: Task
+                    Resource: "arn:aws:states:::codebuild:startBuild.sync"
+                    Parameters:
+                      ProjectName: HasNoLaunchesProvisioned
+                      EnvironmentVariablesOverride:
+                        - Name: SPOKE_ACCOUNT_ID
+                          Type: PARAMETER_STORE
+                          Value: /SCT/e2e-testing/account-in-ou-ten/account-id
+                    End: true
+            End: true
+
+
+
+plugins:
+  - serverless-step-functions
