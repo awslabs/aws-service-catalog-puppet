@@ -17,10 +17,7 @@ from servicecatalog_puppet import (
     manifest_utils,
     manifest_utils_for_launches,
 )
-from servicecatalog_puppet.workflow import (
-    launch as launch_tasks,
-    runner as runner,
-)
+from servicecatalog_puppet.workflow import runner
 from servicecatalog_puppet.workflow.assertions import assertions_section_task
 from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_section_task
 from servicecatalog_puppet.workflow.lambda_invocations import (
@@ -30,6 +27,7 @@ from servicecatalog_puppet.workflow.launch import launch_section_task
 from servicecatalog_puppet.workflow.spoke_local_portfolios import (
     spoke_local_portfolio_section_task,
 )
+from servicecatalog_puppet.workflow.launch.reset_provisioned_product_owner_task import ResetProvisionedProductOwnerTask
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -51,7 +49,7 @@ def reset_provisioned_product_owner(f):
         task_status = task.get("status")
         if task_status == constants.PROVISIONED:
             tasks_to_run.append(
-                launch_tasks.ResetProvisionedProductOwnerTask(
+                ResetProvisionedProductOwnerTask(
                     launch_name=task.get("launch_name"),
                     account_id=task.get("account_id"),
                     region=task.get("region"),

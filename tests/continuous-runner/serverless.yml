@@ -108,7 +108,7 @@ resources:
                   - export AWS_SECRET_ACCESS_KEY=$(cat output.json | jq -r '.Credentials''.SecretAccessKey')
                   - export AWS_SESSION_TOKEN=$(cat output.json | jq -r '.Credentials''.SessionToken')
                   - aws sts get-caller-identity
-                  - aws servicecatalog describe-portfolio --id=$(aws servicecatalog list-portfolios --query='PortfolioDetails[?DisplayName==`config-base-optional-all01s`].Id' --output text) && exit 1 || exit 0
+                  - aws servicecatalog describe-portfolio --id=$(aws servicecatalog list-portfolios --query='PortfolioDetails[?DisplayName==`config-base-optional-all01`].Id' --output text) && exit 1 || exit 0
 
     HasASpokeLocalShared:
       Type: AWS::CodeBuild::Project
@@ -128,7 +128,7 @@ resources:
                   - export AWS_SECRET_ACCESS_KEY=$(cat output.json | jq -r '.Credentials''.SecretAccessKey')
                   - export AWS_SESSION_TOKEN=$(cat output.json | jq -r '.Credentials''.SessionToken')
                   - aws sts get-caller-identity
-                  - aws servicecatalog describe-portfolio --id=$(aws servicecatalog list-portfolios --query='PortfolioDetails[?DisplayName==`config-base-optional-all01s`].Id' --output text) && exit 0 || exit 1
+                  - aws servicecatalog describe-portfolio --id=$(aws servicecatalog list-portfolios --query='PortfolioDetails[?DisplayName==`config-base-optional-all01`].Id' --output text) && exit 0 || exit 1
 
 
 functions:
