@@ -54,7 +54,6 @@ class CreateAssociationsForSpokeLocalPortfolioTaskTest(
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    
     def test_api_calls_used(self):
         # setup
         expected_result = [

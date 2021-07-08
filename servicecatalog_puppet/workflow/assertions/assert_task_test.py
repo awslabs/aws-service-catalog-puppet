@@ -46,7 +46,6 @@ class AssertTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    
     @skip
     def test_run(self):
         # setup
@@ -56,16 +55,20 @@ class AssertTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         raise NotImplementedError()
 
-    @mock.patch('servicecatalog_puppet.workflow.dependency.DependenciesMixin.get_section_dependencies')
-    def test_requires(self, get_section_dependencies_mock, ):
+    @mock.patch(
+        "servicecatalog_puppet.workflow.dependency.DependenciesMixin.get_section_dependencies"
+    )
+    def test_requires(
+        self, get_section_dependencies_mock,
+    ):
         # setup
-        get_section_dependencies_mock.return_value=['a']
+        get_section_dependencies_mock.return_value = ["a"]
         requirements = {"section_dependencies": self.sut.get_section_dependencies()}
 
         expected_result = requirements
 
         # exercise
-        actual_result=self.sut.requires()
+        actual_result = self.sut.requires()
 
         # assert
         self.assertEqual(expected_result, actual_result)

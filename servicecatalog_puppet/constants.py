@@ -43,7 +43,6 @@ AFFINITY_ACCOUNT = "account"
 AFFINITY_ACCOUNT_AND_REGION = "account-and-region"
 
 
-
 RESULTS_DIRECTORY = "results"
 
 NO_CHANGE = "NO_CHANGE"

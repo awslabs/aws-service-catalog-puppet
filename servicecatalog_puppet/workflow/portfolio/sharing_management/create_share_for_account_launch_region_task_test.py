@@ -45,7 +45,6 @@ class CreateShareForAccountLaunchRegionTest(tasks_unit_tests_helper.PuppetTaskUn
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    
     def test_run(self):
         # setup
         # exercise

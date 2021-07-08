@@ -28,7 +28,9 @@ from servicecatalog_puppet.workflow.stack import stack_section_task
 from servicecatalog_puppet.workflow.spoke_local_portfolios import (
     spoke_local_portfolio_section_task,
 )
-from servicecatalog_puppet.workflow.launch.reset_provisioned_product_owner_task import ResetProvisionedProductOwnerTask
+from servicecatalog_puppet.workflow.launch.reset_provisioned_product_owner_task import (
+    ResetProvisionedProductOwnerTask,
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

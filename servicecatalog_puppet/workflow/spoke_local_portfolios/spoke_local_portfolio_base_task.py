@@ -23,4 +23,3 @@ class SpokeLocalPortfolioBaseTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
     @property
     def item_name(self):
         return self.spoke_local_portfolio_name
-

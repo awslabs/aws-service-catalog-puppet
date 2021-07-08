@@ -75,7 +75,11 @@ def load(f, puppet_account_id):
                     raise Exception(
                         "You can only specify a version in the properties file"
                     )
-                if manifest.get(constants.LAUNCHES).get(launch_name, {}).get(property_name):
+                if (
+                    manifest.get(constants.LAUNCHES)
+                    .get(launch_name, {})
+                    .get(property_name)
+                ):
                     manifest[constants.LAUNCHES][launch_name][property_name] = value
             for name, value in parser.get(constants.STACKS, {}).items():
                 stack_name, property_name = name.split(".")
@@ -83,7 +87,11 @@ def load(f, puppet_account_id):
                     raise Exception(
                         "You can only specify a version_id in the properties file"
                     )
-                if manifest.get(constants.STACKS).get(stack_name, {}).get(property_name):
+                if (
+                    manifest.get(constants.STACKS)
+                    .get(stack_name, {})
+                    .get(property_name)
+                ):
                     manifest[constants.STACKS][stack_name][property_name] = value
     for section in [constants.LAUNCHES, constants.STACKS]:
         for name, details in manifest.get(section).items():
@@ -175,7 +183,9 @@ def expand_manifest(manifest, client):
                 "parameters", {}
             ).items():
                 if parameter_details.get("macro"):
-                    macro_to_run = macros.get(parameter_details.get("macro").get("method"))
+                    macro_to_run = macros.get(
+                        parameter_details.get("macro").get("method")
+                    )
                     result = macro_to_run(
                         client, parameter_details.get("macro").get("args")
                     )
@@ -962,7 +972,10 @@ def convert_to_graph(expanded_manifest, G):
                 if isinstance(d, str):
                     G.add_edge(uid, f"{constants.LAUNCHES}|{d}")
                 else:
-                    G.add_edge(uid, f"{constants.SECTION_SINGULAR_TO_PLURAL.get(d.get('type'))}|{d.get('name')}")
+                    G.add_edge(
+                        uid,
+                        f"{constants.SECTION_SINGULAR_TO_PLURAL.get(d.get('type'))}|{d.get('name')}",
+                    )
     return G
 
 

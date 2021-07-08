@@ -41,5 +41,3 @@ class LaunchForAccountAndRegionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
 
         # verify
         self.assertEqual(expected_result, actual_result)
-
-    

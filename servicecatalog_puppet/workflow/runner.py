@@ -164,18 +164,23 @@ def run_tasks(
                         "w",
                     ).write(json.dumps(failure))
 
-    dry_run_tasks = glob(
-        f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
-        recursive=True,
-    ) + glob(
-        f"output/TerminateProductDryRunTask/**/{cache_invalidator}.json",
-        recursive=True,
-    ) + glob(
-        f"output/ProvisionStackDryRunTask/**/{cache_invalidator}.json",
-        recursive=True,
-    ) + glob(
-        f"output/TerminateStackDryRunTask/**/{cache_invalidator}.json",
-        recursive=True,
+    dry_run_tasks = (
+        glob(
+            f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
+            recursive=True,
+        )
+        + glob(
+            f"output/TerminateProductDryRunTask/**/{cache_invalidator}.json",
+            recursive=True,
+        )
+        + glob(
+            f"output/ProvisionStackDryRunTask/**/{cache_invalidator}.json",
+            recursive=True,
+        )
+        + glob(
+            f"output/TerminateStackDryRunTask/**/{cache_invalidator}.json",
+            recursive=True,
+        )
     )
 
     if is_list_launches:
@@ -218,7 +223,9 @@ def run_tasks(
                     [
                         result.get("params").get("account_id"),
                         result.get("params").get("region"),
-                        f'Launch:{result.get("params").get("launch_name")}' if result.get("params").get("launch_name") else f'Stack:{result.get("params").get("stack_name")}',
+                        f'Launch:{result.get("params").get("launch_name")}'
+                        if result.get("params").get("launch_name")
+                        else f'Stack:{result.get("params").get("stack_name")}',
                         result.get("params").get("portfolio"),
                         result.get("params").get("product"),
                         result.get("new_version"),
@@ -276,7 +283,9 @@ def run_tasks(
                 table_data.append(
                     [
                         result.get("effect"),
-                        f'Launch:{result.get("params").get("launch_name")}' if result.get("params").get("launch_name") else f'Stack:{result.get("params").get("stack_name")}',
+                        f'Launch:{result.get("params").get("launch_name")}'
+                        if result.get("params").get("launch_name")
+                        else f'Stack:{result.get("params").get("stack_name")}',
                         result.get("params").get("account_id"),
                         result.get("params").get("region"),
                         result.get("current_version"),

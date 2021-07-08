@@ -60,12 +60,12 @@ class ProvisionStackTask(
         requirements = {
             "section_dependencies": self.get_section_dependencies(),
             "ssm_params": self.get_ssm_parameters(),
-            'template': get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
+            "template": get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
                 puppet_account_id=self.puppet_account_id,
                 bucket=self.bucket,
                 key=self.key,
                 version_id=self.version_id,
-            )
+            ),
         }
         return requirements
 
@@ -93,49 +93,51 @@ class ProvisionStackTask(
         current_stack = dict(StackStatus="DoesntExist")
         with self.spoke_regional_client("cloudformation") as cloudformation:
             try:
-                paginator = cloudformation.get_paginator('describe_stacks')
-                for page in paginator.paginate(
-                        StackName=self.stack_name,
-                ):
-                    for stack in page.get('Stacks', []):
-                        status = stack.get('StackStatus')
+                paginator = cloudformation.get_paginator("describe_stacks")
+                for page in paginator.paginate(StackName=self.stack_name,):
+                    for stack in page.get("Stacks", []):
+                        status = stack.get("StackStatus")
                         if status in [
-                            'CREATE_IN_PROGRESS',
-                            'ROLLBACK_IN_PROGRESS',
-                            'DELETE_IN_PROGRESS',
-                            'UPDATE_IN_PROGRESS',
-                            'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS',
-                            'UPDATE_ROLLBACK_IN_PROGRESS',
-                            'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS',
-                            'IMPORT_ROLLBACK_IN_PROGRESS',
-                            'REVIEW_IN_PROGRESS',
-                            'IMPORT_IN_PROGRESS',
-
-                            'CREATE_FAILED',
-                            'ROLLBACK_FAILED',
-                            'DELETE_FAILED',
-                            'UPDATE_ROLLBACK_FAILED',
-                            'IMPORT_ROLLBACK_FAILED',
+                            "CREATE_IN_PROGRESS",
+                            "ROLLBACK_IN_PROGRESS",
+                            "DELETE_IN_PROGRESS",
+                            "UPDATE_IN_PROGRESS",
+                            "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
+                            "UPDATE_ROLLBACK_IN_PROGRESS",
+                            "UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS",
+                            "IMPORT_ROLLBACK_IN_PROGRESS",
+                            "REVIEW_IN_PROGRESS",
+                            "IMPORT_IN_PROGRESS",
+                            "CREATE_FAILED",
+                            "ROLLBACK_FAILED",
+                            "DELETE_FAILED",
+                            "UPDATE_ROLLBACK_FAILED",
+                            "IMPORT_ROLLBACK_FAILED",
                         ]:
                             while status not in [
-                                'ROLLBACK_COMPLETE',
-                                'CREATE_COMPLETE',
-                                'UPDATE_ROLLBACK_COMPLETE',
-                                'DELETE_COMPLETE',
-                                'UPDATE_COMPLETE',
-                                'IMPORT_COMPLETE',
-                                'IMPORT_ROLLBACK_COMPLETE',
+                                "ROLLBACK_COMPLETE",
+                                "CREATE_COMPLETE",
+                                "UPDATE_ROLLBACK_COMPLETE",
+                                "DELETE_COMPLETE",
+                                "UPDATE_COMPLETE",
+                                "IMPORT_COMPLETE",
+                                "IMPORT_ROLLBACK_COMPLETE",
                             ]:
                                 time.sleep(5)
-                                sub_paginator = cloudformation.get_paginator('describe_stacks')
+                                sub_paginator = cloudformation.get_paginator(
+                                    "describe_stacks"
+                                )
                                 for sub_page in sub_paginator.paginate(
-                                        StackName=stack.get("StackId"),
+                                    StackName=stack.get("StackId"),
                                 ):
-                                    for sub_stack in sub_page.get('Stacks', []):
-                                        status = sub_stack.get('StackStatus')
+                                    for sub_stack in sub_page.get("Stacks", []):
+                                        status = sub_stack.get("StackStatus")
                             current_stack = stack
             except ClientError as error:
-                if error.response['Error']['Message'] != f"Stack with id {self.stack_name} does not exist":
+                if (
+                    error.response["Error"]["Message"]
+                    != f"Stack with id {self.stack_name} does not exist"
+                ):
                     raise error
         return current_stack
 
@@ -143,7 +145,7 @@ class ProvisionStackTask(
         stack = self.ensure_stack_is_in_complete_status()
         status = stack.get("StackStatus")
 
-        with self.spoke_regional_client('cloudformation') as cloudformation:
+        with self.spoke_regional_client("cloudformation") as cloudformation:
             if status == "ROLLBACK_COMPLETE":
                 cloudformation.ensure_deleted(StackName=self.stack_name)
 
@@ -156,20 +158,20 @@ class ProvisionStackTask(
 
         all_params = self.get_parameter_values()
 
-        template_to_provision_source = self.input().get("template").open('r').read()
+        template_to_provision_source = self.input().get("template").open("r").read()
         try:
             template_to_provision = cfn_tools.load_yaml(template_to_provision_source)
         except Exception:
             try:
-                template_to_provision = cfn_tools.load_json(template_to_provision_source)
+                template_to_provision = cfn_tools.load_json(
+                    template_to_provision_source
+                )
             except Exception:
                 raise Exception("Could not parse new template as YAML or JSON")
 
         params_to_use = dict()
         for param_name, p in template_to_provision.get("Parameters", {}).items():
-            if all_params.get(
-                    param_name, p.get("DefaultValue")
-            ) is not None:
+            if all_params.get(param_name, p.get("DefaultValue")) is not None:
                 params_to_use[param_name] = all_params.get(
                     param_name, p.get("DefaultValue")
                 )
@@ -177,32 +179,37 @@ class ProvisionStackTask(
         existing_stack_params_dict = dict()
         existing_template = ""
         if status in [
-            'CREATE_COMPLETE',
-            'UPDATE_ROLLBACK_COMPLETE',
-            'UPDATE_COMPLETE',
-            'IMPORT_COMPLETE',
-            'IMPORT_ROLLBACK_COMPLETE',
+            "CREATE_COMPLETE",
+            "UPDATE_ROLLBACK_COMPLETE",
+            "UPDATE_COMPLETE",
+            "IMPORT_COMPLETE",
+            "IMPORT_ROLLBACK_COMPLETE",
         ]:
             with self.spoke_regional_client("cloudformation") as cloudformation:
                 existing_stack_params_dict = {}
-                summary_response = cloudformation.get_template_summary(StackName=self.stack_name, )
+                summary_response = cloudformation.get_template_summary(
+                    StackName=self.stack_name,
+                )
                 for parameter in summary_response.get("Parameters"):
-                    existing_stack_params_dict[parameter.get("ParameterKey")] = parameter.get(
-                        "DefaultValue"
-                    )
+                    existing_stack_params_dict[
+                        parameter.get("ParameterKey")
+                    ] = parameter.get("DefaultValue")
                 for stack_param in stack.get("Parameters", []):
-                    existing_stack_params_dict[stack_param.get("ParameterKey")] = stack_param.get(
-                        "ParameterValue"
-                    )
-                template_body = cloudformation.get_template(StackName=self.stack_name, TemplateStage="Original").get(
-                    "TemplateBody")
+                    existing_stack_params_dict[
+                        stack_param.get("ParameterKey")
+                    ] = stack_param.get("ParameterValue")
+                template_body = cloudformation.get_template(
+                    StackName=self.stack_name, TemplateStage="Original"
+                ).get("TemplateBody")
                 try:
                     existing_template = cfn_tools.load_yaml(template_body)
                 except Exception:
                     try:
                         existing_template = cfn_tools.load_json(template_body)
                     except Exception:
-                        raise Exception("Could not parse existing template as YAML or JSON")
+                        raise Exception(
+                            "Could not parse existing template as YAML or JSON"
+                        )
 
         template_to_use = cfn_tools.dump_yaml(template_to_provision)
         if status == "UPDATE_ROLLBACK_COMPLETE":
@@ -235,24 +242,19 @@ class ProvisionStackTask(
                     Parameters=provisioning_parameters,
                 )
 
-        task_output['provisioned'] = need_to_provision
+        task_output["provisioned"] = need_to_provision
         self.info(f"self.execution is {self.execution}")
         if self.execution == constants.EXECUTION_MODE_HUB:
             self.info(
                 f"Running in execution mode: {self.execution}, checking for SSM outputs"
             )
-            with self.spoke_regional_client(
-                "cloudformation"
-            ) as spoke_cloudformation:
+            with self.spoke_regional_client("cloudformation") as spoke_cloudformation:
                 stack_details = aws.get_stack_output_for(
-                    spoke_cloudformation,
-                    self.stack_name,
+                    spoke_cloudformation, self.stack_name,
                 )
 
             for ssm_param_output in self.ssm_param_outputs:
-                self.info(
-                    f"writing SSM Param: {ssm_param_output.get('stack_output')}"
-                )
+                self.info(f"writing SSM Param: {ssm_param_output.get('stack_output')}")
                 with self.hub_client("ssm") as ssm:
                     found_match = False
                     # TODO push into another task
@@ -260,9 +262,7 @@ class ProvisionStackTask(
                         if output.get("OutputKey") == ssm_param_output.get(
                             "stack_output"
                         ):
-                            ssm_parameter_name = ssm_param_output.get(
-                                "param_name"
-                            )
+                            ssm_parameter_name = ssm_param_output.get("param_name")
                             ssm_parameter_name = ssm_parameter_name.replace(
                                 "${AWS::Region}", self.region
                             )
@@ -273,9 +273,7 @@ class ProvisionStackTask(
                             ssm.put_parameter_and_wait(
                                 Name=ssm_parameter_name,
                                 Value=output.get("OutputValue"),
-                                Type=ssm_param_output.get(
-                                    "param_type", "String"
-                                ),
+                                Type=ssm_param_output.get("param_type", "String"),
                                 Overwrite=True,
                             )
                     if not found_match:

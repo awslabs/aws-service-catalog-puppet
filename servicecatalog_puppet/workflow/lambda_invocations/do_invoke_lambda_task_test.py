@@ -56,7 +56,6 @@ class DoInvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    
     @mock.patch("servicecatalog_puppet.config.get_home_region")
     def test_run(self, get_home_region_mock):
         # setup

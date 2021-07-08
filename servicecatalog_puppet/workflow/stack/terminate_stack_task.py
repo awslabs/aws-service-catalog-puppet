@@ -52,12 +52,8 @@ class TerminateStackTask(
         if self.execution == constants.EXECUTION_MODE_HUB:
             for ssm_param_output in self.ssm_param_outputs:
                 param_name = ssm_param_output.get("param_name")
-                param_name = param_name.replace(
-                    "${AWS::Region}", self.region
-                )
-                param_name = param_name.replace(
-                    "${AWS::AccountId}", self.account_id
-                )
+                param_name = param_name.replace("${AWS::Region}", self.region)
+                param_name = param_name.replace("${AWS::AccountId}", self.account_id)
                 self.info(
                     f"[{self.stack_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
                 )

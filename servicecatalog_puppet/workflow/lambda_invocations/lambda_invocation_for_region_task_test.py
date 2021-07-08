@@ -39,8 +39,9 @@ class LambdaInvocationForRegionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    
-    @mock.patch('servicecatalog_puppet.workflow.manifest.manifest_mixin.ManifestMixen.manifest')
+    @mock.patch(
+        "servicecatalog_puppet.workflow.manifest.manifest_mixin.ManifestMixen.manifest"
+    )
     def test_requires(self, manifest_mock):
         # setup
         dependencies = list()
@@ -61,11 +62,10 @@ class LambdaInvocationForRegionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
                 klass(**task, manifest_file_path=self.sut.manifest_file_path)
             )
 
-
         expected_result = requirements
 
         # exercise
-        actual_result=self.sut.requires()
+        actual_result = self.sut.requires()
 
         # assert
         self.assertEqual(expected_result, actual_result)

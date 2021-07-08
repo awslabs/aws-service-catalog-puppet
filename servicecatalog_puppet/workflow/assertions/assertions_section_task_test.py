@@ -1,8 +1,12 @@
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 from unittest import skip, mock
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.assertions import assertion_for_region_task, assertion_for_account_task, \
-    assertion_for_account_and_region_task, assertion_task
+from servicecatalog_puppet.workflow.assertions import (
+    assertion_for_region_task,
+    assertion_for_account_task,
+    assertion_for_account_and_region_task,
+    assertion_task,
+)
 
 
 class AssertionsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
@@ -34,7 +38,6 @@ class AssertionsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    
     @skip
     def test_run(self):
         # setup
@@ -44,7 +47,9 @@ class AssertionsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         raise NotImplementedError()
 
-    @mock.patch('servicecatalog_puppet.workflow.manifest.manifest_mixin.ManifestMixen.manifest')
+    @mock.patch(
+        "servicecatalog_puppet.workflow.manifest.manifest_mixin.ManifestMixen.manifest"
+    )
     def test_requires(self, manifest_mock):
         # setup
         requirements = list()
@@ -65,11 +70,10 @@ class AssertionsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
                 ),
             )
 
-
         expected_result = requirements
 
         # exercise
-        actual_result=self.sut.requires()
+        actual_result = self.sut.requires()
 
         # assert
         self.assertEqual(expected_result, actual_result)

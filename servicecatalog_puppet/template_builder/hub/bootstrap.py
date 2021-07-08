@@ -125,9 +125,7 @@ def get_template(
     template.add_resource(
         s3.Bucket(
             "StacksRepository",
-            BucketName=t.Sub(
-                "sc-puppet-stacks-repository-${AWS::AccountId}"
-            ),
+            BucketName=t.Sub("sc-puppet-stacks-repository-${AWS::AccountId}"),
             VersioningConfiguration=s3.VersioningConfiguration(Status="Enabled"),
             BucketEncryption=s3.BucketEncryption(
                 ServerSideEncryptionConfiguration=[

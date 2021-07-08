@@ -105,9 +105,7 @@ def generate_dependency_tasks(
             if depends_on.get(constants.AFFINITY) == "region":
                 these_dependencies.append(
                     stack_for_region_task.StackForRegionTask(
-                        **common_args,
-                        stack_name=depends_on.get("name"),
-                        region=region,
+                        **common_args, stack_name=depends_on.get("name"), region=region,
                     )
                 )
             if depends_on.get(constants.AFFINITY) == "account-and-region":
@@ -262,7 +260,9 @@ def generate_dependency_tasks(
 class DependenciesMixin(object):
     def get_section_dependencies(self):
         dependencies = (
-            self.manifest.get(self.section_name).get(self.item_name).get("depends_on", [])
+            self.manifest.get(self.section_name)
+            .get(self.item_name)
+            .get("depends_on", [])
         )
 
         should_generate_shares = not (

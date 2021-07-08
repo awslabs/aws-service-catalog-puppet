@@ -7,8 +7,8 @@ from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.stack import provision_stack_task
 from botocore.exceptions import ClientError
 
-class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
 
+class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
     def api_calls_used(self):
         return [
             f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
@@ -42,38 +42,39 @@ class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
     def get_current_status(self):
         with self.spoke_regional_client("cloudformation") as cloudformation:
             try:
-                paginator = cloudformation.get_paginator('describe_stacks')
-                for page in paginator.paginate(
-                        StackName=self.stack_name,
-                ):
-                    for stack in page.get('Stacks', []):
-                        status = stack.get('StackStatus')
-                        if status != 'DELETE_COMPLETE':
+                paginator = cloudformation.get_paginator("describe_stacks")
+                for page in paginator.paginate(StackName=self.stack_name,):
+                    for stack in page.get("Stacks", []):
+                        status = stack.get("StackStatus")
+                        if status != "DELETE_COMPLETE":
                             return status
             except ClientError as error:
-                if error.response['Error']['Message'] != f"Stack with id {self.stack_name} does not exist":
+                if (
+                    error.response["Error"]["Message"]
+                    != f"Stack with id {self.stack_name} does not exist"
+                ):
                     raise error
-        return '-'
+        return "-"
 
     def run(self):
         status = self.get_current_status()
 
         if status == "-":
             self.write_result(
-                '-',
+                "-",
                 self.version_id,
                 effect=constants.CHANGE,
-                current_status='-',
-                active='N/A',
+                current_status="-",
+                active="N/A",
                 notes="Stack would be created",
             )
         elif status == "ROLLBACK_COMPLETE":
             self.write_result(
-                '-',
+                "-",
                 self.version_id,
                 effect=constants.CHANGE,
-                current_status='-',
-                active='N/A',
+                current_status="-",
+                active="N/A",
                 notes="Stack would be replaced",
             )
         else:
@@ -86,20 +87,22 @@ class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
 
             all_params = self.get_parameter_values()
 
-            template_to_provision_source = self.input().get("template").open('r').read()
+            template_to_provision_source = self.input().get("template").open("r").read()
             try:
-                template_to_provision = cfn_tools.load_yaml(template_to_provision_source)
+                template_to_provision = cfn_tools.load_yaml(
+                    template_to_provision_source
+                )
             except Exception:
                 try:
-                    template_to_provision = cfn_tools.load_json(template_to_provision_source)
+                    template_to_provision = cfn_tools.load_json(
+                        template_to_provision_source
+                    )
                 except Exception:
                     raise Exception("Could not parse new template as YAML or JSON")
 
             params_to_use = dict()
             for param_name, p in template_to_provision.get("Parameters", {}).items():
-                if all_params.get(
-                        param_name, p.get("DefaultValue")
-                ) is not None:
+                if all_params.get(param_name, p.get("DefaultValue")) is not None:
                     params_to_use[param_name] = all_params.get(
                         param_name, p.get("DefaultValue")
                     )
@@ -107,42 +110,49 @@ class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
             existing_stack_params_dict = dict()
             existing_template = ""
             if status in [
-                'CREATE_COMPLETE',
-                'UPDATE_ROLLBACK_COMPLETE',
-                'UPDATE_COMPLETE',
-                'IMPORT_COMPLETE',
-                'IMPORT_ROLLBACK_COMPLETE',
+                "CREATE_COMPLETE",
+                "UPDATE_ROLLBACK_COMPLETE",
+                "UPDATE_COMPLETE",
+                "IMPORT_COMPLETE",
+                "IMPORT_ROLLBACK_COMPLETE",
             ]:
                 with self.spoke_regional_client("cloudformation") as cloudformation:
                     existing_stack_params_dict = {}
-                    stack = cloudformation.describe_stacks(StackName=self.stack_name).get("Stacks")[0]
-                    summary_response = cloudformation.get_template_summary(StackName=self.stack_name, )
+                    stack = cloudformation.describe_stacks(
+                        StackName=self.stack_name
+                    ).get("Stacks")[0]
+                    summary_response = cloudformation.get_template_summary(
+                        StackName=self.stack_name,
+                    )
                     for parameter in summary_response.get("Parameters"):
-                        existing_stack_params_dict[parameter.get("ParameterKey")] = parameter.get(
-                            "DefaultValue"
-                        )
+                        existing_stack_params_dict[
+                            parameter.get("ParameterKey")
+                        ] = parameter.get("DefaultValue")
                     for stack_param in stack.get("Parameters", []):
-                        existing_stack_params_dict[stack_param.get("ParameterKey")] = stack_param.get(
-                            "ParameterValue"
-                        )
-                    template_body = cloudformation.get_template(StackName=self.stack_name, TemplateStage="Original").get(
-                        "TemplateBody")
+                        existing_stack_params_dict[
+                            stack_param.get("ParameterKey")
+                        ] = stack_param.get("ParameterValue")
+                    template_body = cloudformation.get_template(
+                        StackName=self.stack_name, TemplateStage="Original"
+                    ).get("TemplateBody")
                     try:
                         existing_template = cfn_tools.load_yaml(template_body)
                     except Exception:
                         try:
                             existing_template = cfn_tools.load_json(template_body)
                         except Exception:
-                            raise Exception("Could not parse existing template as YAML or JSON")
+                            raise Exception(
+                                "Could not parse existing template as YAML or JSON"
+                            )
 
             template_to_use = cfn_tools.dump_yaml(template_to_provision)
             if status == "UPDATE_ROLLBACK_COMPLETE":
                 self.write_result(
-                    '?',
+                    "?",
                     self.version_id,
                     effect=constants.CHANGE,
                     current_status=status,
-                    active='N/A',
+                    active="N/A",
                     notes="Stack would be updated",
                 )
             else:
@@ -151,31 +161,30 @@ class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
                     if template_to_use == cfn_tools.dump_yaml(existing_template):
                         self.info(f"template the same")
                         self.write_result(
-                            '?',
+                            "?",
                             self.version_id,
                             effect=constants.NO_CHANGE,
                             current_status=status,
-                            active='N/A',
+                            active="N/A",
                             notes="No change",
                         )
                     else:
                         self.info(f"template changed")
                         self.write_result(
-                            '?',
+                            "?",
                             self.version_id,
                             effect=constants.CHANGE,
                             current_status=status,
-                            active='N/A',
+                            active="N/A",
                             notes="Template has changed",
                         )
                 else:
                     self.info(f"params changed")
                     self.write_result(
-                        '?',
+                        "?",
                         self.version_id,
                         effect=constants.CHANGE,
                         current_status=status,
-                        active='N/A',
+                        active="N/A",
                         notes="Parameters have changed",
                     )
-

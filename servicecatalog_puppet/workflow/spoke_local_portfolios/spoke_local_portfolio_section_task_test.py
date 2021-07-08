@@ -35,7 +35,6 @@ class SpokeLocalPortfolioSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitT
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    
     @skip
     def test_run(self):
         # setup

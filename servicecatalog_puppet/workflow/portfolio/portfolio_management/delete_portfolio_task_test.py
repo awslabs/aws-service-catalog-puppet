@@ -48,7 +48,6 @@ class DeletePortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    
     @skip
     def test_run(self):
         # setup
