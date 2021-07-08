@@ -24,6 +24,7 @@ from servicecatalog_puppet.workflow.lambda_invocations import (
     lambda_invocation_section_task,
 )
 from servicecatalog_puppet.workflow.launch import launch_section_task
+from servicecatalog_puppet.workflow.stack import stack_section_task
 from servicecatalog_puppet.workflow.spoke_local_portfolios import (
     spoke_local_portfolio_section_task,
 )
@@ -262,6 +263,9 @@ def generate_tasks(
 ):
     tasks = [
         launch_section_task.LaunchSectionTask(
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        ),
+        stack_section_task.StackSectionTask(
             manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
     ]

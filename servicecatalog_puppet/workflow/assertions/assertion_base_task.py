@@ -10,3 +10,7 @@ class AssertionBaseTask(workflow_tasks.PuppetTask):
     @property
     def section_name(self):
         return constants.ASSERTIONS
+
+    @property
+    def item_name(self):
+        return self.assertion_name

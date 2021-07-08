@@ -21,3 +21,7 @@ class ProvisioningTask(
     @property
     def section_name(self):
         return constants.LAUNCHES
+
+    @property
+    def item_name(self):
+        return self.launch_name

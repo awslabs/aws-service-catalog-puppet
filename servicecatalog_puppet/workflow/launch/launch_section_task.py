@@ -68,4 +68,4 @@ class LaunchSectionTask(section_task.SectionTask):
         return requirements
 
     def run(self):
-        self.write_output(self.manifest.get("launches", {}))
+        self.write_output(self.manifest.get(constants.LAUNCHES, {}))

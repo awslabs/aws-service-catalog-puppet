@@ -10,3 +10,7 @@ class CodeBuildRunBaseTask(get_ssm_param_task.PuppetTaskWithParameters):
     @property
     def section_name(self):
         return constants.CODE_BUILD_RUNS
+
+    @property
+    def item_name(self):
+        return self.code_build_run_name

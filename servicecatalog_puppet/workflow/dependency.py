@@ -18,6 +18,12 @@ def generate_dependency_tasks(
         launch_for_region_task,
         launch_for_account_and_region_task,
     )
+    from servicecatalog_puppet.workflow.stack import (
+        stack_task,
+        stack_for_account_task,
+        stack_for_region_task,
+        stack_for_account_and_region_task,
+    )
     from servicecatalog_puppet.workflow.spoke_local_portfolios import (
         spoke_local_portfolio_task,
         spoke_local_portfolio_for_account_task,
@@ -76,6 +82,39 @@ def generate_dependency_tasks(
                     launch_for_account_and_region_task.LaunchForAccountAndRegionTask(
                         **common_args,
                         launch_name=depends_on.get("name"),
+                        account_id=account_id,
+                        region=region,
+                    )
+                )
+
+        elif depends_on.get("type") == constants.STACK:
+            if depends_on.get(constants.AFFINITY) == constants.STACK:
+                these_dependencies.append(
+                    stack_task.StackTask(
+                        **common_args, stack_name=depends_on.get("name"),
+                    )
+                )
+            if depends_on.get(constants.AFFINITY) == "account":
+                these_dependencies.append(
+                    stack_for_account_task.StackForAccountTask(
+                        **common_args,
+                        stack_name=depends_on.get("name"),
+                        account_id=account_id,
+                    )
+                )
+            if depends_on.get(constants.AFFINITY) == "region":
+                these_dependencies.append(
+                    stack_for_region_task.StackForRegionTask(
+                        **common_args,
+                        stack_name=depends_on.get("name"),
+                        region=region,
+                    )
+                )
+            if depends_on.get(constants.AFFINITY) == "account-and-region":
+                these_dependencies.append(
+                    stack_for_account_and_region_task.StackForAccountAndRegionTask(
+                        **common_args,
+                        stack_name=depends_on.get("name"),
                         account_id=account_id,
                         region=region,
                     )
@@ -222,38 +261,8 @@ def generate_dependency_tasks(
 
 class DependenciesMixin(object):
     def get_section_dependencies(self):
-
-        from servicecatalog_puppet.workflow.codebuild_runs.execute_code_build_run_task import (
-            ExecuteCodeBuildRunTask,
-        )
-        from servicecatalog_puppet.workflow.launch.provisioning_task import (
-            ProvisioningTask,
-        )
-        from servicecatalog_puppet.workflow.spoke_local_portfolios.spoke_local_portfolio_base_task import (
-            SpokeLocalPortfolioBaseTask,
-        )
-        from servicecatalog_puppet.workflow.assertions.assert_task import AssertTask
-        from servicecatalog_puppet.workflow.lambda_invocations.invoke_lambda_task import (
-            InvokeLambdaTask,
-        )
-
-        if isinstance(self, ExecuteCodeBuildRunTask):
-            item_name = self.code_build_run_name
-        elif isinstance(self, ProvisioningTask):
-            item_name = self.launch_name
-        elif isinstance(self, SpokeLocalPortfolioBaseTask):
-            item_name = self.spoke_local_portfolio_name
-        elif isinstance(self, AssertTask):
-            item_name = self.assertion_name
-        elif isinstance(self, InvokeLambdaTask):
-            item_name = self.lambda_invocation_name
-        else:
-            raise Exception(
-                f"Could not determine an item_name for {self.__class__.__name__}"
-            )
-
         dependencies = (
-            self.manifest.get(self.section_name).get(item_name).get("depends_on", [])
+            self.manifest.get(self.section_name).get(self.item_name).get("depends_on", [])
         )
 
         should_generate_shares = not (

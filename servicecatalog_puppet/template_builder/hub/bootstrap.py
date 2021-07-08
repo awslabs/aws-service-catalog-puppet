@@ -122,6 +122,32 @@ def get_template(
         "HasManualApprovals", t.Equals(t.Ref(with_manual_approvals_parameter), "Yes")
     )
 
+    template.add_resource(
+        s3.Bucket(
+            "StacksRepository",
+            BucketName=t.Sub(
+                "sc-puppet-stacks-repository-${AWS::AccountId}"
+            ),
+            VersioningConfiguration=s3.VersioningConfiguration(Status="Enabled"),
+            BucketEncryption=s3.BucketEncryption(
+                ServerSideEncryptionConfiguration=[
+                    s3.ServerSideEncryptionRule(
+                        ServerSideEncryptionByDefault=s3.ServerSideEncryptionByDefault(
+                            SSEAlgorithm="AES256"
+                        )
+                    )
+                ]
+            ),
+            PublicAccessBlockConfiguration=s3.PublicAccessBlockConfiguration(
+                BlockPublicAcls=True,
+                BlockPublicPolicy=True,
+                IgnorePublicAcls=True,
+                RestrictPublicBuckets=True,
+            ),
+            Tags=t.Tags({"ServiceCatalogPuppet:Actor": "Framework"}),
+        )
+    )
+
     manual_approvals_param = template.add_resource(
         ssm.Parameter(
             "ManualApprovalsParam",

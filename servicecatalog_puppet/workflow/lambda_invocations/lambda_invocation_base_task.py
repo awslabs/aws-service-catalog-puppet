@@ -10,3 +10,8 @@ class LambdaInvocationBaseTask(tasks.PuppetTask):
     @property
     def section_name(self):
         return constants.LAMBDA_INVOCATIONS
+
+
+    @property
+    def item_name(self):
+        return self.lambda_invocation_name
