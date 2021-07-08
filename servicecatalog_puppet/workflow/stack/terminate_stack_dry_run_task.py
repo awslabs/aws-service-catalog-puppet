@@ -4,43 +4,52 @@ import luigi
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.launch import provisioning_task
+from servicecatalog_puppet.workflow.stack import terminate_stack_task
+from botocore.client import ClientError
 
+class TerminateStackDryRunTask(terminate_stack_task.TerminateStackTask):
 
-class TerminateStackDryRunTask(provisioning_task.ProvisioningTask):
-    stack_name = luigi.Parameter()
-    portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
-    product = luigi.Parameter()
-    product_id = luigi.Parameter()
-    version = luigi.Parameter()
-    version_id = luigi.Parameter()
+    def get_current_status(self):
+        with self.spoke_regional_client("cloudformation") as cloudformation:
+            try:
+                paginator = cloudformation.get_paginator('describe_stacks')
+                for page in paginator.paginate(
+                        StackName=self.stack_name,
+                ):
+                    for stack in page.get('Stacks', []):
+                        status = stack.get('StackStatus')
+                        if status != 'DELETE_COMPLETE':
+                            return status
+            except ClientError as error:
+                if error.response['Error']['Message'] != f"Stack with id {self.stack_name} does not exist":
+                    raise error
+        return '-'
 
-    bucket = luigi.Parameter()
-    key = luigi.Parameter()
-    version_id = luigi.Parameter()
+    def run(self):
+        current_status = self.get_current_status()
 
-    retry_count = luigi.IntParameter(default=1)
+        if current_status == "-":
+            self.write_result(
+                '-',
+                '-',
+                effect=constants.NO_CHANGE,
+                current_status=current_status,
+                active='N/A',
+                notes="Stack already deleted",
+            )
+        else:
+            self.write_result(
+                '?',
+                '-',
+                effect=constants.CHANGE,
+                current_status=current_status,
+                active='N/A',
+                notes="Stack would be deleted",
+            )
 
-    ssm_param_outputs = luigi.ListParameter(default=[])
-
-    worker_timeout = luigi.IntParameter(default=0, significant=False)
-
-    parameters = luigi.ListParameter(default=[])
-    ssm_param_inputs = luigi.ListParameter(default=[])
-
-    try_count = 1
-
-    def params_for_results_display(self):
-        return {
-            "puppet_account_id": self.puppet_account_id,
-            "stack_name": self.stack_name,
-            "account_id": self.account_id,
-            "region": self.region,
-            "cache_invalidator": self.cache_invalidator,
-        }
-
-    def write_result(self, current_version, new_version, effect, notes=""):
+    def write_result(
+            self, current_version, new_version, effect, current_status, active, notes=""
+    ):
         with self.output().open("w") as f:
             f.write(
                 json.dumps(
@@ -48,6 +57,8 @@ class TerminateStackDryRunTask(provisioning_task.ProvisioningTask):
                         "current_version": current_version,
                         "new_version": new_version,
                         "effect": effect,
+                        "current_status": current_status,
+                        "active": active,
                         "notes": notes,
                         "params": self.param_kwargs,
                     },
@@ -55,51 +66,3 @@ class TerminateStackDryRunTask(provisioning_task.ProvisioningTask):
                     default=str,
                 )
             )
-
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioning_artifact_{self.account_id}_{self.region}",
-        ]
-
-    def run(self):
-        self.info(
-            f"starting dry run terminate try {self.try_count} of {self.retry_count}"
-        )
-
-        with self.spoke_regional_client("servicecatalog") as service_catalog:
-            self.info(
-                f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures"
-            )
-            r = aws.get_provisioned_product_details(
-                self.product_id, self.launch_name, service_catalog
-            )
-
-            if r is None:
-                self.write_result(
-                    "-", "-", constants.NO_CHANGE, notes="There is nothing to terminate"
-                )
-            else:
-                provisioned_product_name = (
-                    service_catalog.describe_provisioning_artifact(
-                        ProvisioningArtifactId=r.get("ProvisioningArtifactId"),
-                        ProductId=self.product_id,
-                    )
-                    .get("ProvisioningArtifactDetail")
-                    .get("Name")
-                )
-
-                if r.get("Status") != "TERMINATED":
-                    self.write_result(
-                        provisioned_product_name,
-                        "-",
-                        constants.CHANGE,
-                        notes="The product would be terminated",
-                    )
-                else:
-                    self.write_result(
-                        "-",
-                        "-",
-                        constants.CHANGE,
-                        notes="The product is already terminated",
-                    )

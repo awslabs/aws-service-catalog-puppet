@@ -1,8 +1,8 @@
 import luigi
 
 from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.launch import do_terminate_product_task
-from servicecatalog_puppet.workflow.launch import provisioning_task
+from servicecatalog_puppet import constants, aws
+from servicecatalog_puppet.workflow.stack import provisioning_task
 
 
 class TerminateStackTask(
@@ -17,6 +17,8 @@ class TerminateStackTask(
     bucket = luigi.Parameter()
     key = luigi.Parameter()
     version_id = luigi.Parameter()
+
+    capabilities = luigi.ListParameter()
 
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
@@ -36,7 +38,7 @@ class TerminateStackTask(
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "launch_name": self.stack_name,
+            "stack_name": self.stack_name,
             "account_id": self.account_id,
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
@@ -44,27 +46,34 @@ class TerminateStackTask(
 
     def requires(self):
         requirements = {"section_dependencies": self.get_section_dependencies()}
-
         return requirements
 
     def run(self):
-        yield do_terminate_product_task.DoTerminateProductTask(
-            manifest_file_path=self.manifest_file_path,
-            launch_name=self.launch_name,
-            puppet_account_id=self.puppet_account_id,
-            region=self.region,
-            account_id=self.account_id,
-            portfolio=self.portfolio,
-            product=self.product,
-            version=self.version,
-            ssm_param_inputs=self.ssm_param_inputs,
-            launch_parameters=self.launch_parameters,
-            manifest_parameters=self.manifest_parameters,
-            account_parameters=self.account_parameters,
-            retry_count=self.retry_count,
-            worker_timeout=self.worker_timeout,
-            ssm_param_outputs=self.ssm_param_outputs,
-            requested_priority=self.requested_priority,
-            execution=self.execution,
-        )
+        if self.execution == constants.EXECUTION_MODE_HUB:
+            for ssm_param_output in self.ssm_param_outputs:
+                param_name = ssm_param_output.get("param_name")
+                param_name = param_name.replace(
+                    "${AWS::Region}", self.region
+                )
+                param_name = param_name.replace(
+                    "${AWS::AccountId}", self.account_id
+                )
+                self.info(
+                    f"[{self.stack_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
+                )
+                with self.hub_client("ssm") as ssm:
+                    try:
+                        # todo push into another task
+                        ssm.delete_parameter(Name=param_name,)
+                        self.info(
+                            f"[{self.stack_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
+                        )
+                    except ssm.exceptions.ParameterNotFound:
+                        self.info(
+                            f"[{self.stack_name}] {self.account_id}:{self.region} :: SSM Param: {param_name} not found"
+                        )
+
+        with self.spoke_regional_client("cloudformation") as cloudformation:
+            cloudformation.ensure_deleted(StackName=self.stack_name)
+
         self.write_output(self.params_for_results_display())

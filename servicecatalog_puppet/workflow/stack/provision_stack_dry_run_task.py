@@ -1,19 +1,13 @@
 import json
 
-import luigi
+import cfn_tools
 
-from servicecatalog_puppet import aws
+from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.stack import provision_stack_task
-
+from botocore.exceptions import ClientError
 
 class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
-    def output(self):
-        return luigi.LocalTarget(self.output_location)
-
-    @property
-    def output_location(self):
-        return f"output/{self.uid}.{self.output_suffix}"
 
     def api_calls_used(self):
         return [
@@ -24,120 +18,6 @@ class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
             f"cloudformation.get_template_summary_{self.account_id}_{self.region}",
             f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
         ]
-
-    def run(self):
-        details = self.load_from_input("details")
-        product_id = details.get("product_details").get("ProductId")
-        version_id = details.get("version_details").get("Id")
-
-        self.info(f"starting deploy try {self.try_count} of {self.retry_count}")
-
-        all_params = self.get_parameter_values()
-        with self.spoke_regional_client("servicecatalog") as service_catalog:
-            self.info(f"looking for previous failures")
-            path_name = self.portfolio
-
-            response = service_catalog.scan_provisioned_products_single_page(
-                AccessLevelFilter={"Key": "Account", "Value": "self"},
-            )
-
-            provisioned_product_id = False
-            provisioning_artifact_id = None
-            current_status = "NOT_PROVISIONED"
-            for r in response.get("ProvisionedProducts", []):
-                if r.get("Name") == self.launch_name:
-                    current_status = r.get("Status")
-                    if current_status in ["AVAILABLE", "TAINTED"]:
-                        provisioned_product_id = r.get("Id")
-                        provisioning_artifact_id = r.get("ProvisioningArtifactId")
-
-            if provisioning_artifact_id is None:
-                self.info(f"params unchanged")
-                self.write_result(
-                    current_version="-",
-                    new_version=self.version,
-                    effect=constants.CHANGE,
-                    current_status="NOT_PROVISIONED",
-                    active="N/A",
-                    notes="New provisioning",
-                )
-            else:
-                self.info(
-                    f"pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}"
-                )
-                current_version_details = self.get_current_version(
-                    provisioning_artifact_id, product_id, service_catalog
-                )
-
-                with self.spoke_regional_client("cloudformation") as cloudformation:
-                    self.info(
-                        f"checking {product_id} {version_id} {path_name} in {self.account_id} {self.region}"
-                    )
-
-                    with self.input().get("provisioning_artifact_parameters").open(
-                        "r"
-                    ) as f:
-                        provisioning_artifact_parameters = json.loads(f.read())
-
-                    params_to_use = {}
-                    for p in provisioning_artifact_parameters:
-                        param_name = p.get("ParameterKey")
-                        params_to_use[param_name] = all_params.get(
-                            param_name, p.get("DefaultValue")
-                        )
-
-                    if provisioning_artifact_id == version_id:
-                        self.info(f"found previous good provision")
-                        if provisioned_product_id:
-                            self.info(f"checking params for diffs")
-                            provisioned_parameters = aws.get_parameters_for_stack(
-                                cloudformation,
-                                f"SC-{self.account_id}-{provisioned_product_id}",
-                            )
-                            self.info(f"current params: {provisioned_parameters}")
-                            self.info(f"new params: {params_to_use}")
-
-                            if provisioned_parameters == params_to_use:
-                                self.info(f"params unchanged")
-                                self.write_result(
-                                    current_version=self.version,
-                                    new_version=self.version,
-                                    effect=constants.NO_CHANGE,
-                                    current_status=current_status,
-                                    active=current_version_details.get("Active"),
-                                    notes="Versions and params are the same",
-                                )
-                            else:
-                                self.write_result(
-                                    current_version=self.version,
-                                    new_version=self.version,
-                                    effect=constants.CHANGE,
-                                    current_status=current_status,
-                                    active=current_version_details.get("Active"),
-                                    notes="Versions are the same but the params are different",
-                                )
-                    else:
-                        if provisioning_artifact_id:
-                            current_version = current_version_details.get("Name")
-                            active = current_version_details.get("Active")
-                        else:
-                            current_version = ""
-                            active = False
-                        self.write_result(
-                            current_version=current_version,
-                            new_version=self.version,
-                            effect=constants.CHANGE,
-                            current_status=current_status,
-                            active=active,
-                            notes="Version change",
-                        )
-
-    def get_current_version(
-        self, provisioning_artifact_id, product_id, service_catalog
-    ):
-        return service_catalog.describe_provisioning_artifact(
-            ProvisioningArtifactId=provisioning_artifact_id, ProductId=product_id,
-        ).get("ProvisioningArtifactDetail")
 
     def write_result(
         self, current_version, new_version, effect, current_status, active, notes=""
@@ -158,3 +38,144 @@ class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
                     default=str,
                 )
             )
+
+    def get_current_status(self):
+        with self.spoke_regional_client("cloudformation") as cloudformation:
+            try:
+                paginator = cloudformation.get_paginator('describe_stacks')
+                for page in paginator.paginate(
+                        StackName=self.stack_name,
+                ):
+                    for stack in page.get('Stacks', []):
+                        status = stack.get('StackStatus')
+                        if status != 'DELETE_COMPLETE':
+                            return status
+            except ClientError as error:
+                if error.response['Error']['Message'] != f"Stack with id {self.stack_name} does not exist":
+                    raise error
+        return '-'
+
+    def run(self):
+        status = self.get_current_status()
+
+        if status == "-":
+            self.write_result(
+                '-',
+                self.version_id,
+                effect=constants.CHANGE,
+                current_status='-',
+                active='N/A',
+                notes="Stack would be created",
+            )
+        elif status == "ROLLBACK_COMPLETE":
+            self.write_result(
+                '-',
+                self.version_id,
+                effect=constants.CHANGE,
+                current_status='-',
+                active='N/A',
+                notes="Stack would be replaced",
+            )
+        else:
+            task_output = dict(
+                **self.params_for_results_display(),
+                account_parameters=tasks.unwrap(self.account_parameters),
+                launch_parameters=tasks.unwrap(self.launch_parameters),
+                manifest_parameters=tasks.unwrap(self.manifest_parameters),
+            )
+
+            all_params = self.get_parameter_values()
+
+            template_to_provision_source = self.input().get("template").open('r').read()
+            try:
+                template_to_provision = cfn_tools.load_yaml(template_to_provision_source)
+            except Exception:
+                try:
+                    template_to_provision = cfn_tools.load_json(template_to_provision_source)
+                except Exception:
+                    raise Exception("Could not parse new template as YAML or JSON")
+
+            params_to_use = dict()
+            for param_name, p in template_to_provision.get("Parameters", {}).items():
+                if all_params.get(
+                        param_name, p.get("DefaultValue")
+                ) is not None:
+                    params_to_use[param_name] = all_params.get(
+                        param_name, p.get("DefaultValue")
+                    )
+
+            existing_stack_params_dict = dict()
+            existing_template = ""
+            if status in [
+                'CREATE_COMPLETE',
+                'UPDATE_ROLLBACK_COMPLETE',
+                'UPDATE_COMPLETE',
+                'IMPORT_COMPLETE',
+                'IMPORT_ROLLBACK_COMPLETE',
+            ]:
+                with self.spoke_regional_client("cloudformation") as cloudformation:
+                    existing_stack_params_dict = {}
+                    stack = cloudformation.describe_stacks(StackName=self.stack_name).get("Stacks")[0]
+                    summary_response = cloudformation.get_template_summary(StackName=self.stack_name, )
+                    for parameter in summary_response.get("Parameters"):
+                        existing_stack_params_dict[parameter.get("ParameterKey")] = parameter.get(
+                            "DefaultValue"
+                        )
+                    for stack_param in stack.get("Parameters", []):
+                        existing_stack_params_dict[stack_param.get("ParameterKey")] = stack_param.get(
+                            "ParameterValue"
+                        )
+                    template_body = cloudformation.get_template(StackName=self.stack_name, TemplateStage="Original").get(
+                        "TemplateBody")
+                    try:
+                        existing_template = cfn_tools.load_yaml(template_body)
+                    except Exception:
+                        try:
+                            existing_template = cfn_tools.load_json(template_body)
+                        except Exception:
+                            raise Exception("Could not parse existing template as YAML or JSON")
+
+            template_to_use = cfn_tools.dump_yaml(template_to_provision)
+            if status == "UPDATE_ROLLBACK_COMPLETE":
+                self.write_result(
+                    '?',
+                    self.version_id,
+                    effect=constants.CHANGE,
+                    current_status=status,
+                    active='N/A',
+                    notes="Stack would be updated",
+                )
+            else:
+                if existing_stack_params_dict == params_to_use:
+                    self.info(f"params unchanged")
+                    if template_to_use == cfn_tools.dump_yaml(existing_template):
+                        self.info(f"template the same")
+                        self.write_result(
+                            '?',
+                            self.version_id,
+                            effect=constants.NO_CHANGE,
+                            current_status=status,
+                            active='N/A',
+                            notes="No change",
+                        )
+                    else:
+                        self.info(f"template changed")
+                        self.write_result(
+                            '?',
+                            self.version_id,
+                            effect=constants.CHANGE,
+                            current_status=status,
+                            active='N/A',
+                            notes="Template has changed",
+                        )
+                else:
+                    self.info(f"params changed")
+                    self.write_result(
+                        '?',
+                        self.version_id,
+                        effect=constants.CHANGE,
+                        current_status=status,
+                        active='N/A',
+                        notes="Parameters have changed",
+                    )
+
