@@ -1,13 +1,16 @@
 import json
+import time
 
 import luigi
+import cfn_tools
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow.launch import provisioning_artifact_parameters_task
 from servicecatalog_puppet.workflow.stack import provisioning_task
+from servicecatalog_puppet.workflow.stack import get_cloud_formation_template_from_s3
+from botocore.exceptions import ClientError
 
 
 class ProvisionStackTask(
@@ -22,6 +25,8 @@ class ProvisionStackTask(
     bucket = luigi.Parameter()
     key = luigi.Parameter()
     version_id = luigi.Parameter()
+
+    capabilities = luigi.ListParameter()
 
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
@@ -55,14 +60,12 @@ class ProvisionStackTask(
         requirements = {
             "section_dependencies": self.get_section_dependencies(),
             "ssm_params": self.get_ssm_parameters(),
-            # "provisioning_artifact_parameters": provisioning_artifact_parameters_task.ProvisioningArtifactParametersTask(
-            #     manifest_file_path=self.manifest_file_path,
-            #     puppet_account_id=self.puppet_account_id,
-            #     portfolio=self.portfolio,
-            #     product=self.product,
-            #     version=self.version,
-            #     region=self.region,
-            # ),
+            'template': get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
+                puppet_account_id=self.puppet_account_id,
+                bucket=self.bucket,
+                key=self.key,
+                version_id=self.version_id,
+            )
         }
         return requirements
 
@@ -86,13 +89,63 @@ class ProvisionStackTask(
         ]
         return apis
 
-    def run(self):
-        self.write_output(self.param_kwargs)
+    def ensure_stack_is_in_complete_status(self):
+        current_stack = dict(StackStatus="DoesntExist")
+        with self.spoke_regional_client("cloudformation") as cloudformation:
+            try:
+                paginator = cloudformation.get_paginator('describe_stacks')
+                for page in paginator.paginate(
+                        StackName=self.stack_name,
+                ):
+                    for stack in page.get('Stacks', []):
+                        status = stack.get('StackStatus')
+                        if status in [
+                            'CREATE_IN_PROGRESS',
+                            'ROLLBACK_IN_PROGRESS',
+                            'DELETE_IN_PROGRESS',
+                            'UPDATE_IN_PROGRESS',
+                            'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS',
+                            'UPDATE_ROLLBACK_IN_PROGRESS',
+                            'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS',
+                            'IMPORT_ROLLBACK_IN_PROGRESS',
+                            'REVIEW_IN_PROGRESS',
+                            'IMPORT_IN_PROGRESS',
 
-    def run2(self):
-        details = self.load_from_input("details")
-        product_id = details.get("product_details").get("ProductId")
-        version_id = details.get("version_details").get("Id")
+                            'CREATE_FAILED',
+                            'ROLLBACK_FAILED',
+                            'DELETE_FAILED',
+                            'UPDATE_ROLLBACK_FAILED',
+                            'IMPORT_ROLLBACK_FAILED',
+                        ]:
+                            while status not in [
+                                'ROLLBACK_COMPLETE',
+                                'CREATE_COMPLETE',
+                                'UPDATE_ROLLBACK_COMPLETE',
+                                'DELETE_COMPLETE',
+                                'UPDATE_COMPLETE',
+                                'IMPORT_COMPLETE',
+                                'IMPORT_ROLLBACK_COMPLETE',
+                            ]:
+                                time.sleep(5)
+                                sub_paginator = cloudformation.get_paginator('describe_stacks')
+                                for sub_page in sub_paginator.paginate(
+                                        StackName=stack.get("StackId"),
+                                ):
+                                    for sub_stack in sub_page.get('Stacks', []):
+                                        status = sub_stack.get('StackStatus')
+                            current_stack = stack
+            except ClientError as error:
+                if error.response['Error']['Message'] != f"Stack with id {self.stack_name} does not exist":
+                    raise error
+        return current_stack
+
+    def run(self):
+        stack = self.ensure_stack_is_in_complete_status()
+        status = stack.get("StackStatus")
+
+        with self.spoke_regional_client('cloudformation') as cloudformation:
+            if status == "ROLLBACK_COMPLETE":
+                cloudformation.ensure_deleted(StackName=self.stack_name)
 
         task_output = dict(
             **self.params_for_results_display(),
@@ -103,188 +156,133 @@ class ProvisionStackTask(
 
         all_params = self.get_parameter_values()
 
-        with self.spoke_regional_client("servicecatalog") as service_catalog:
-            path_name = self.portfolio
+        template_to_provision_source = self.input().get("template").open('r').read()
+        try:
+            template_to_provision = cfn_tools.load_yaml(template_to_provision_source)
+        except Exception:
+            try:
+                template_to_provision = cfn_tools.load_json(template_to_provision_source)
+            except Exception:
+                raise Exception("Could not parse new template as YAML or JSON")
 
-            (
-                provisioned_product_id,
-                provisioning_artifact_id,
-                provisioned_product_status,
-            ) = aws.terminate_if_status_is_not_available(
-                service_catalog,
-                self.stack_name,
-                product_id,
-                self.account_id,
-                self.region,
-            )
-            self.info(
-                f"pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}"
-            )
-
-            with self.spoke_regional_client("cloudformation") as cloudformation:
-                need_to_provision = True
-
-                self.info(
-                    f"running ,checking {product_id} {version_id} {path_name} in {self.account_id} {self.region}"
+        params_to_use = dict()
+        for param_name, p in template_to_provision.get("Parameters", {}).items():
+            if all_params.get(
+                    param_name, p.get("DefaultValue")
+            ) is not None:
+                params_to_use[param_name] = all_params.get(
+                    param_name, p.get("DefaultValue")
                 )
 
-                with self.input().get("provisioning_artifact_parameters").open(
-                    "r"
-                ) as f:
-                    provisioning_artifact_parameters = json.loads(f.read())
-
-                params_to_use = {}
-                for p in provisioning_artifact_parameters:
-                    param_name = p.get("ParameterKey")
-                    params_to_use[param_name] = all_params.get(
-                        param_name, p.get("DefaultValue")
+        existing_stack_params_dict = dict()
+        existing_template = ""
+        if status in [
+            'CREATE_COMPLETE',
+            'UPDATE_ROLLBACK_COMPLETE',
+            'UPDATE_COMPLETE',
+            'IMPORT_COMPLETE',
+            'IMPORT_ROLLBACK_COMPLETE',
+        ]:
+            with self.spoke_regional_client("cloudformation") as cloudformation:
+                existing_stack_params_dict = {}
+                summary_response = cloudformation.get_template_summary(StackName=self.stack_name, )
+                for parameter in summary_response.get("Parameters"):
+                    existing_stack_params_dict[parameter.get("ParameterKey")] = parameter.get(
+                        "DefaultValue"
                     )
-
-                if provisioning_artifact_id == version_id:
-                    self.info(f"found previous good provision")
-                    if provisioned_product_id:
-                        self.info(f"checking params for diffs")
-                        provisioned_parameters = aws.get_parameters_for_stack(
-                            cloudformation,
-                            f"SC-{self.account_id}-{provisioned_product_id}",
-                        )
-                        self.info(f"current params: {provisioned_parameters}")
-
-                        self.info(f"new params: {params_to_use}")
-
-                        if provisioned_parameters == params_to_use:
-                            self.info(f"params unchanged")
-                            need_to_provision = False
-                        else:
-                            self.info(f"params changed")
-
-                if provisioned_product_status == "TAINTED":
-                    need_to_provision = True
-
-                if need_to_provision:
-                    self.info(
-                        f"about to provision with params: {json.dumps(tasks.unwrap(params_to_use))}"
+                for stack_param in stack.get("Parameters", []):
+                    existing_stack_params_dict[stack_param.get("ParameterKey")] = stack_param.get(
+                        "ParameterValue"
                     )
+                template_body = cloudformation.get_template(StackName=self.stack_name, TemplateStage="Original").get(
+                    "TemplateBody")
+                try:
+                    existing_template = cfn_tools.load_yaml(template_body)
+                except Exception:
+                    try:
+                        existing_template = cfn_tools.load_json(template_body)
+                    except Exception:
+                        raise Exception("Could not parse existing template as YAML or JSON")
 
-                    if provisioned_product_id:
-                        stack = aws.get_stack_output_for(
-                            cloudformation,
-                            f"SC-{self.account_id}-{provisioned_product_id}",
-                        )
-                        stack_status = stack.get("StackStatus")
-                        self.info(f"current cfn stack_status is {stack_status}")
-                        if stack_status not in [
-                            "UPDATE_COMPLETE",
-                            "CREATE_COMPLETE",
-                            "UPDATE_ROLLBACK_COMPLETE",
-                        ]:
-                            raise Exception(
-                                f"[{self.uid}] current cfn stack_status is {stack_status}"
-                            )
-                        if stack_status == "UPDATE_ROLLBACK_COMPLETE":
-                            self.warning(
-                                f"[{self.uid}] SC-{self.account_id}-{provisioned_product_id} has a status of "
-                                f"{stack_status}.  This may need manual resolution."
-                            )
-
-                    if provisioned_product_id:
-                        if self.should_use_product_plans:
-                            path_id = aws.get_path_for_product(
-                                service_catalog, product_id, self.portfolio
-                            )
-                            provisioned_product_id = aws.provision_product_with_plan(
-                                service_catalog,
-                                self.stack_name,
-                                self.account_id,
-                                self.region,
-                                product_id,
-                                version_id,
-                                self.puppet_account_id,
-                                path_id,
-                                params_to_use,
-                                self.version,
-                                self.should_use_sns,
-                            )
-                        else:
-                            provisioned_product_id = aws.update_provisioned_product(
-                                service_catalog,
-                                self.stack_name,
-                                self.account_id,
-                                self.region,
-                                product_id,
-                                version_id,
-                                self.puppet_account_id,
-                                path_name,
-                                params_to_use,
-                                self.version,
-                                self.execution,
-                            )
-
-                    else:
-                        provisioned_product_id = aws.provision_product(
-                            service_catalog,
-                            self.stack_name,
-                            self.account_id,
-                            self.region,
-                            product_id,
-                            version_id,
-                            self.puppet_account_id,
-                            path_name,
-                            params_to_use,
-                            self.version,
-                            self.should_use_sns,
-                            self.execution,
-                        )
-
-                self.info(f"self.execution is {self.execution}")
-                if self.execution == constants.EXECUTION_MODE_HUB:
-                    self.info(
-                        f"Running in execution mode: {self.execution}, checking for SSM outputs"
-                    )
-                    with self.spoke_regional_client(
-                        "cloudformation"
-                    ) as spoke_cloudformation:
-                        stack_details = aws.get_stack_output_for(
-                            spoke_cloudformation,
-                            f"SC-{self.account_id}-{provisioned_product_id}",
-                        )
-
-                    for ssm_param_output in self.ssm_param_outputs:
-                        self.info(
-                            f"writing SSM Param: {ssm_param_output.get('stack_output')}"
-                        )
-                        with self.hub_client("ssm") as ssm:
-                            found_match = False
-                            # TODO push into another task
-                            for output in stack_details.get("Outputs", []):
-                                if output.get("OutputKey") == ssm_param_output.get(
-                                    "stack_output"
-                                ):
-                                    ssm_parameter_name = ssm_param_output.get(
-                                        "param_name"
-                                    )
-                                    ssm_parameter_name = ssm_parameter_name.replace(
-                                        "${AWS::Region}", self.region
-                                    )
-                                    ssm_parameter_name = ssm_parameter_name.replace(
-                                        "${AWS::AccountId}", self.account_id
-                                    )
-                                    found_match = True
-                                    self.info(f"found value")
-                                    ssm.put_parameter_and_wait(
-                                        Name=ssm_parameter_name,
-                                        Value=output.get("OutputValue"),
-                                        Type=ssm_param_output.get(
-                                            "param_type", "String"
-                                        ),
-                                        Overwrite=True,
-                                    )
-                            if not found_match:
-                                raise Exception(
-                                    f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
-                                )
-
-                    self.write_output(task_output)
+        template_to_use = cfn_tools.dump_yaml(template_to_provision)
+        if status == "UPDATE_ROLLBACK_COMPLETE":
+            need_to_provision = True
+        else:
+            if existing_stack_params_dict == params_to_use:
+                self.info(f"params unchanged")
+                if template_to_use == cfn_tools.dump_yaml(existing_template):
+                    self.info(f"template the same")
+                    need_to_provision = False
                 else:
-                    self.write_output(task_output)
-                self.info("finished")
+                    self.info(f"template changed")
+                    need_to_provision = True
+            else:
+                self.info(f"params changed")
+                need_to_provision = True
+
+        if need_to_provision:
+            provisioning_parameters = []
+            for p in params_to_use.keys():
+                provisioning_parameters.append(
+                    {"Key": p, "Value": params_to_use.get(p),}
+                )
+            with self.spoke_regional_client("cloudformation") as cloudformation:
+                cloudformation.create_or_update(
+                    StackName=self.stack_name,
+                    TemplateBody=template_to_use,
+                    ShouldUseChangeSets=False,
+                    Capabilities=self.capabilities,
+                    Parameters=provisioning_parameters,
+                )
+
+        task_output['provisioned'] = need_to_provision
+        self.info(f"self.execution is {self.execution}")
+        if self.execution == constants.EXECUTION_MODE_HUB:
+            self.info(
+                f"Running in execution mode: {self.execution}, checking for SSM outputs"
+            )
+            with self.spoke_regional_client(
+                "cloudformation"
+            ) as spoke_cloudformation:
+                stack_details = aws.get_stack_output_for(
+                    spoke_cloudformation,
+                    self.stack_name,
+                )
+
+            for ssm_param_output in self.ssm_param_outputs:
+                self.info(
+                    f"writing SSM Param: {ssm_param_output.get('stack_output')}"
+                )
+                with self.hub_client("ssm") as ssm:
+                    found_match = False
+                    # TODO push into another task
+                    for output in stack_details.get("Outputs", []):
+                        if output.get("OutputKey") == ssm_param_output.get(
+                            "stack_output"
+                        ):
+                            ssm_parameter_name = ssm_param_output.get(
+                                "param_name"
+                            )
+                            ssm_parameter_name = ssm_parameter_name.replace(
+                                "${AWS::Region}", self.region
+                            )
+                            ssm_parameter_name = ssm_parameter_name.replace(
+                                "${AWS::AccountId}", self.account_id
+                            )
+                            found_match = True
+                            ssm.put_parameter_and_wait(
+                                Name=ssm_parameter_name,
+                                Value=output.get("OutputValue"),
+                                Type=ssm_param_output.get(
+                                    "param_type", "String"
+                                ),
+                                Overwrite=True,
+                            )
+                    if not found_match:
+                        raise Exception(
+                            f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
+                        )
+
+            self.write_output(task_output)
+        else:
+            self.write_output(task_output)

@@ -23,7 +23,8 @@ packages = \
  'servicecatalog_puppet.workflow.portfolio.constraints_management',
  'servicecatalog_puppet.workflow.portfolio.portfolio_management',
  'servicecatalog_puppet.workflow.portfolio.sharing_management',
- 'servicecatalog_puppet.workflow.spoke_local_portfolios']
+ 'servicecatalog_puppet.workflow.spoke_local_portfolios',
+ 'servicecatalog_puppet.workflow.stack']
 
 package_data = \
 {'': ['*'], 'servicecatalog_puppet': ['manifests/*', 'templates/*']}
