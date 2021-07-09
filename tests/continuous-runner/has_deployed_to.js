@@ -74,5 +74,7 @@ module.exports.handler = async (event) => {
         newCommitHash: newCommitHash,
         codepipelineExecutionId: codepipelineExecutionId,
         Scenario: scenario,
+        AccountToCheck: event['AccountToCheck'],
+        RegionToCheck: event['RegionToCheck'],
     };
 };

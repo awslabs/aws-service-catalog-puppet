@@ -52,6 +52,9 @@ resources:
             - Name: SPOKE_ACCOUNT_ID
               Type: PARAMETER_STORE
               Value: NOT_SET
+            - Name: REGION_TO_CHECK
+              Type: PLAINTEXT
+              Value: NOT_SET
         Source:
           Type: no_source
           BuildSpec: |
@@ -64,16 +67,16 @@ resources:
                   - export AWS_SECRET_ACCESS_KEY=$(cat output.json | jq -r '.Credentials''.SecretAccessKey')
                   - export AWS_SESSION_TOKEN=$(cat output.json | jq -r '.Credentials''.SessionToken')
                   - aws sts get-caller-identity
-                  - aws servicecatalog describe-provisioned-product --name basic-vpc && exit 1 || exit 0
+                  - aws servicecatalog --region $REGION_TO_CHECK describe-provisioned-product --name basic-vpc && exit 1 || exit 0
         TimeoutInMinutes: 10
 
 
-#  aws servicecatalog describe-portfolio --id=$(aws servicecatalog list-portfolios --query='PortfolioDetails[?DisplayName==`config-base-optional-all01s`].Id' --output text)
+    #  aws servicecatalog describe-portfolio --id=$(aws servicecatalog list-portfolios --query='PortfolioDetails[?DisplayName==`config-base-optional-all01s`].Id' --output text)
 
     HasALaunchProvisioned:
       Type: AWS::CodeBuild::Project
       Properties:
-        << : *properties
+        <<: *properties
         Name: HasALaunchProvisioned
         Description: "Project to verify HasALaunchProvisioned"
         Source:
@@ -88,12 +91,12 @@ resources:
                   - export AWS_SECRET_ACCESS_KEY=$(cat output.json | jq -r '.Credentials''.SecretAccessKey')
                   - export AWS_SESSION_TOKEN=$(cat output.json | jq -r '.Credentials''.SessionToken')
                   - aws sts get-caller-identity
-                  - aws servicecatalog describe-provisioned-product --name basic-vpc && exit 0 || exit 1
+                  - aws servicecatalog --region $REGION_TO_CHECK describe-provisioned-product --name basic-vpc && exit 0 || exit 1
 
     HasNoSpokeLocalShared:
       Type: AWS::CodeBuild::Project
       Properties:
-        << : *properties
+        <<: *properties
         Name: HasNoSpokeLocalShared
         Description: "Project to verify HasNoSpokeLocalShared"
         Source:
@@ -108,12 +111,12 @@ resources:
                   - export AWS_SECRET_ACCESS_KEY=$(cat output.json | jq -r '.Credentials''.SecretAccessKey')
                   - export AWS_SESSION_TOKEN=$(cat output.json | jq -r '.Credentials''.SessionToken')
                   - aws sts get-caller-identity
-                  - aws servicecatalog describe-portfolio --id=$(aws servicecatalog list-portfolios --query='PortfolioDetails[?DisplayName==`config-base-optional-all01`].Id' --output text) && exit 1 || exit 0
+                  - aws servicecatalog --region $REGION_TO_CHECK describe-portfolio --id=$(aws servicecatalog list-portfolios --query='PortfolioDetails[?DisplayName==`config-base-optional-all01`].Id' --output text) && exit 1 || exit 0
 
     HasASpokeLocalShared:
       Type: AWS::CodeBuild::Project
       Properties:
-        << : *properties
+        <<: *properties
         Name: HasASpokeLocalShared
         Description: "Project to verify HasASpokeLocalShared"
         Source:
@@ -128,7 +131,7 @@ resources:
                   - export AWS_SECRET_ACCESS_KEY=$(cat output.json | jq -r '.Credentials''.SecretAccessKey')
                   - export AWS_SESSION_TOKEN=$(cat output.json | jq -r '.Credentials''.SessionToken')
                   - aws sts get-caller-identity
-                  - aws servicecatalog describe-portfolio --id=$(aws servicecatalog list-portfolios --query='PortfolioDetails[?DisplayName==`config-base-optional-all01`].Id' --output text) && exit 0 || exit 1
+                  - aws servicecatalog --region $REGION_TO_CHECK describe-portfolio --id=$(aws servicecatalog list-portfolios --query='PortfolioDetails[?DisplayName==`config-base-optional-all01`].Id' --output text) && exit 0 || exit 1
 
 
 functions:
@@ -145,12 +148,11 @@ stepFunctions:
         Comment: "Runs service catalog puppet on a loop"
         StartAt: VerifyEnvironmentIsClean
         States:
-
           VerifyEnvironmentIsClean:
             Type: "Parallel"
             Catch:
               - ErrorEquals: [ "States.ALL" ]
-                Next: CleanEnvironment
+                Next: SetupTerminated
             Branches:
               - StartAt: HasNoLaunchesProvisioned
                 States:
@@ -163,6 +165,9 @@ stepFunctions:
                         - Name: SPOKE_ACCOUNT_ID
                           Type: PARAMETER_STORE
                           Value: /SCT/e2e-testing/account-in-ou-ten/account-id
+                        - Name: REGION_TO_CHECK
+                          Type: PLAINTEXT
+                          Value: eu-west-1
                     End: true
               - StartAt: HasNoSpokeLocalShared
                 States:
@@ -175,84 +180,122 @@ stepFunctions:
                         - Name: SPOKE_ACCOUNT_ID
                           Type: PARAMETER_STORE
                           Value: /SCT/e2e-testing/account-in-ou-ten/account-id
+                        - Name: REGION_TO_CHECK
+                          Type: PLAINTEXT
+                          Value: eu-west-1
                     End: true
             OutputPath: null
             Next: SetupDeployToTenSingleRegion
 
           SetupDeployToTenSingleRegion:
+            Type: Pass
+            Parameters:
+              Payload:
+                Scenario: "ten-accounts-one-region"
+                AccountToCheck: "/SCT/e2e-testing/account-in-ou-ten/account-id"
+                RegionToCheck: "eu-west-1"
+            Next: SetupDeployTo
+
+          SetupDeployToTenAllRegions:
+            Type: Pass
+            Parameters:
+              Payload:
+                Scenario: "ten-accounts-all-regions"
+                AccountToCheck: "/SCT/e2e-testing/account-in-ou-ten/account-id"
+                RegionToCheck: "eu-west-1" # TODO change to eu-west-2 when the port is setup there!
+            Next: SetupDeployTo
+
+          SetupTerminated:
+            Type: Pass
+            Parameters:
+              Payload:
+                Scenario: "terminated"
+                AccountToCheck: "/SCT/e2e-testing/account-in-ou-ten/account-id"
+                RegionToCheck: "eu-west-1"
+            Next: SetupDeployTo
+
+          SetupDeployTo:
             Type: Task
             Resource: "arn:aws:states:::lambda:invoke"
             Parameters:
               FunctionName:
                 Ref: setup-deploy-to
               Payload:
-                Scenario: "ten-accounts-one-region"
+                Scenario.$: "$.Payload.Scenario"
+                AccountToCheck.$: "$.Payload.AccountToCheck"
+                RegionToCheck.$: "$.Payload.RegionToCheck"
             Catch:
               - ErrorEquals: [ "States.ALL" ]
-                Next: CleanEnvironment
+                Next: SetupTerminated
             OutputPath: "$.Payload"
-            Next: WaitForDeployToTenSingleRegion
+            Next: WaitForDeployTo
 
-          WaitForDeployToTenSingleRegion:
+          WaitForDeployTo:
             Type: Wait
             Seconds: 5
-            Next: HasDeployToTenSingleRegionCompleted
+            Next: HasDeployToCompleted
 
-          HasDeployToTenSingleRegionCompleted:
+          HasDeployToCompleted:
             Type: Task
             Resource: "arn:aws:states:::lambda:invoke"
             Parameters:
               FunctionName:
                 Ref: has-deployed-to
               Payload:
-                Scenario: "ten-accounts-one-region"
+                Scenario.$: "$.Scenario"
                 newCommitHash.$: "$.newCommitHash"
                 codepipelineExecutionId.$: "$.codepipelineExecutionId"
+                AccountToCheck.$: "$.AccountToCheck"
+                RegionToCheck.$: "$.RegionToCheck"
             OutputPath: "$.Payload"
             Catch:
               - ErrorEquals: [ "States.ALL" ]
-                Next: CleanEnvironment
-            Next: CheckDeployToTenSingleRegionCompleted
+                Next: SetupTerminated
+            Next: CheckDeployToCompleted
 
-          CheckDeployToTenSingleRegionCompleted:
+          CheckDeployToCompleted:
             Type: Choice
             Choices:
               - Variable: "$.currentStatus"
                 StringEquals: "Cancelled"
-                Next: DeployToTenSingleRegionFailed
+                Next: DeployToFailed
               - Variable: "$.currentStatus"
                 StringEquals: "InProgress"
-                Next: WaitForDeployToTenSingleRegion
+                Next: WaitForDeployTo
               - Variable: "$.currentStatus"
                 StringEquals: "Stopped"
-                Next: DeployToTenSingleRegionFailed
+                Next: DeployToFailed
               - Variable: "$.currentStatus"
                 StringEquals: "Stopping"
-                Next: WaitForDeployToTenSingleRegion
+                Next: WaitForDeployTo
               - Variable: "$.currentStatus"
                 StringEquals: "Succeeded"
-                Next: DeployToTenSingleRegionCompleted
+                Next: DeployToCompleted
               - Variable: "$.currentStatus"
                 StringEquals: "Superseded"
-                Next: DeployToTenSingleRegionFailed
+                Next: DeployToFailed
               - Variable: "$.currentStatus"
                 StringEquals: "Failed"
-                Next: DeployToTenSingleRegionFailed
-            Default: WaitForDeployToTenSingleRegion
+                Next: DeployToFailed
+            Default: WaitForDeployTo
 
-          DeployToTenSingleRegionFailed:
+          DeployToFailed:
             Type: Pass
-            Next: CleanEnvironment
+            Next: SetupTerminated
 
-          DeployToTenSingleRegionCompleted:
-            Type: Pass
-            Next: VerifyTenAccountsSingleRegionWorked
+          DeployToCompleted:
+            Type: Choice
+            Choices:
+              - Variable: "$.Scenario"
+                StringEquals: "terminated"
+                Next: VerifyCleanEnvironment
+            Default: VerifyTenAccountsSingleRegionWorked
 
           VerifyTenAccountsSingleRegionWorked:
             Type: "Parallel"
             Catch:
               - ErrorEquals: [ "States.ALL" ]
-                Next: CleanEnvironment
+                Next: SetupTerminated
             Branches:
               - StartAt: HasALaunchProvisioned
                 States:
@@ -264,7 +307,10 @@ stepFunctions:
                       EnvironmentVariablesOverride:
                         - Name: SPOKE_ACCOUNT_ID
                           Type: PARAMETER_STORE
-                          Value: /SCT/e2e-testing/account-in-ou-ten/account-id
+                          Value.$: $.AccountToCheck
+                        - Name: REGION_TO_CHECK
+                          Type: PLAINTEXT
+                          Value.$: $.RegionToCheck
                     End: true
               - StartAt: HasASpokeLocalShared
                 States:
@@ -276,77 +322,31 @@ stepFunctions:
                       EnvironmentVariablesOverride:
                         - Name: SPOKE_ACCOUNT_ID
                           Type: PARAMETER_STORE
-                          Value: /SCT/e2e-testing/account-in-ou-ten/account-id
+                          Value.$: $.AccountToCheck
+                        - Name: REGION_TO_CHECK
+                          Type: PLAINTEXT
+                          Value.$: $.RegionToCheck
                     End: true
-            Next: "CleanEnvironment"
+            ResultPath: null
+            Next: "NextTest"
 
-          CleanEnvironment:
+          NextTest:
+            Type: Choice
+            Choices:
+              - Variable: "$.Scenario"
+                StringEquals: "ten-accounts-one-region"
+                Next: SetupDeployToTenAllRegions
+              - Variable: "$.Scenario"
+                StringEquals: "ten-accounts-all-regions"
+                Next: SetupTerminated
+            Default: SetupTerminated
+
+          VerifyCleanEnvironment:
             Type: "Parallel"
-            InputPath:
             Branches:
-              - StartAt: ResetManifestFile
+              - StartAt: HasNoLaunchesProvisioned2
                 States:
-                  ResetManifestFile:
-                    Type: Task
-                    Resource: "arn:aws:states:::lambda:invoke"
-                    Parameters:
-                      FunctionName:
-                        Ref: setup-deploy-to
-                      Payload:
-                        Scenario: "terminated"
-                    OutputPath: "$.Payload"
-                    Next: WaitForResetManifestFile
-
-
-                  WaitForResetManifestFile:
-                    Type: Wait
-                    Seconds: 5
-                    Next: HasResetManifestFileCompleted
-
-                  HasResetManifestFileCompleted:
-                    Type: Task
-                    Resource: "arn:aws:states:::lambda:invoke"
-                    Parameters:
-                      FunctionName:
-                        Ref: has-deployed-to
-                      Payload:
-                        Scenario: "terminated"
-                        newCommitHash.$: "$.newCommitHash"
-                        codepipelineExecutionId.$: "$.codepipelineExecutionId"
-                    OutputPath: "$.Payload"
-                    Next: CheckResetManifestFileCompleted
-
-                  CheckResetManifestFileCompleted:
-                    Type: Choice
-                    Choices:
-                      - Variable: "$.currentStatus"
-                        StringEquals: "Cancelled"
-                        Next: ResetManifestFileFailed
-                      - Variable: "$.currentStatus"
-                        StringEquals: "InProgress"
-                        Next: WaitForResetManifestFile
-                      - Variable: "$.currentStatus"
-                        StringEquals: "Stopped"
-                        Next: ResetManifestFileFailed
-                      - Variable: "$.currentStatus"
-                        StringEquals: "Stopping"
-                        Next: WaitForResetManifestFile
-                      - Variable: "$.currentStatus"
-                        StringEquals: "Succeeded"
-                        Next: VerifyCleanEnvironment
-                      - Variable: "$.currentStatus"
-                        StringEquals: "Superseded"
-                        Next: ResetManifestFileFailed
-                      - Variable: "$.currentStatus"
-                        StringEquals: "Failed"
-                        Next: ResetManifestFileFailed
-                    Default: WaitForResetManifestFile
-
-                  ResetManifestFileFailed:
-                    Type: Pass
-                    End: true
-
-                  VerifyCleanEnvironment:
+                  HasNoLaunchesProvisioned2:
                     Type: Task
                     Resource: "arn:aws:states:::codebuild:startBuild.sync"
                     Parameters:
@@ -355,9 +355,26 @@ stepFunctions:
                         - Name: SPOKE_ACCOUNT_ID
                           Type: PARAMETER_STORE
                           Value: /SCT/e2e-testing/account-in-ou-ten/account-id
+                        - Name: REGION_TO_CHECK
+                          Type: PLAINTEXT
+                          Value: eu-west-1
+                    End: true
+              - StartAt: HasNoSpokeLocalShared2
+                States:
+                  HasNoSpokeLocalShared2:
+                    Type: Task
+                    Resource: "arn:aws:states:::codebuild:startBuild.sync"
+                    Parameters:
+                      ProjectName: HasNoSpokeLocalShared
+                      EnvironmentVariablesOverride:
+                        - Name: SPOKE_ACCOUNT_ID
+                          Type: PARAMETER_STORE
+                          Value: /SCT/e2e-testing/account-in-ou-ten/account-id
+                        - Name: REGION_TO_CHECK
+                          Type: PLAINTEXT
+                          Value: eu-west-1
                     End: true
             End: true
-
 
 
 plugins:

@@ -26,6 +26,7 @@ def test_constants_values():
     assert constants.ACCOUNTS == "accounts"
     assert constants.MAPPINGS == "mappings"
     assert constants.LAUNCHES == "launches"
+    assert constants.STACKS == "stacks"
     assert constants.SPOKE_LOCAL_PORTFOLIOS == "spoke-local-portfolios"
     assert constants.LAMBDA_INVOCATIONS == "lambda-invocations"
     assert constants.ASSERTIONS == "assertions"
@@ -35,6 +36,7 @@ def test_constants_values():
     assert constants.ACTIONS == "actions"
 
     assert constants.LAUNCH == "launch"
+    assert constants.STACK == "stack"
     assert constants.LAMBDA_INVOCATION == "lambda-invocation"
     assert constants.SPOKE_LOCAL_PORTFOLIO == "spoke-local-portfolio"
     assert constants.ACTION == "action"
@@ -46,6 +48,7 @@ def test_constants_values():
 
     assert constants.ALL_SECTION_NAMES == [
         constants.LAUNCHES,
+        constants.STACKS,
         constants.SPOKE_LOCAL_PORTFOLIOS,
         constants.LAMBDA_INVOCATIONS,
         constants.CODE_BUILD_RUNS,
@@ -119,6 +122,7 @@ def test_constants_values():
     assert constants.LUIGI_DEFAULT_LOG_LEVEL == "INFO"
     assert constants.ALL_SECTION_NAME_SINGULAR_AND_PLURAL_LIST == [
         (constants.LAUNCH, constants.LAUNCHES),
+        (constants.STACK, constants.STACKS),
         (constants.SPOKE_LOCAL_PORTFOLIO, constants.SPOKE_LOCAL_PORTFOLIOS),
         (constants.LAMBDA_INVOCATION, constants.LAMBDA_INVOCATIONS),
         (constants.CODE_BUILD_RUN, constants.CODE_BUILD_RUNS),
@@ -126,11 +130,13 @@ def test_constants_values():
     ]
     assert constants.SECTION_NAME_SINGULAR_AND_PLURAL_LIST_THAT_SUPPORTS_PARAMETERS == [
         (constants.LAUNCH, constants.LAUNCHES),
+        (constants.STACK, constants.STACKS),
         (constants.LAMBDA_INVOCATION, constants.LAMBDA_INVOCATIONS),
         (constants.CODE_BUILD_RUN, constants.CODE_BUILD_RUNS),
     ]
     assert constants.SECTION_SINGULAR_TO_PLURAL == {
         constants.LAUNCH: constants.LAUNCHES,
+        constants.STACK: constants.STACKS,
         constants.SPOKE_LOCAL_PORTFOLIO: constants.SPOKE_LOCAL_PORTFOLIOS,
         constants.LAMBDA_INVOCATION: constants.LAMBDA_INVOCATIONS,
         constants.CODE_BUILD_RUN: constants.CODE_BUILD_RUNS,
