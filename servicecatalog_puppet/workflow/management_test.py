@@ -1,6 +1,6 @@
 from unittest import skip
 
-from . import tasks_unit_tests_helper
+from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
 class BootstrapSpokeAsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):

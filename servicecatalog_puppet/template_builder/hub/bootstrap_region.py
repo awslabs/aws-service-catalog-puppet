@@ -61,6 +61,7 @@ def get_template(version: str, default_region_value) -> t.Template:
             Tags=t.Tags({"ServiceCatalogPuppet:Actor": "Framework"}),
         )
     )
+
     regional_product_topic = template.add_resource(
         sns.Topic(
             "RegionalProductTopic",

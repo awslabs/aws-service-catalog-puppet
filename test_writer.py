@@ -1,9 +1,13 @@
+import os
+
 import parso
 import glob
 
 from parso.python import tree
 
 ignored = [
+    "section_name",
+    "get_klass_for_provisioning",
     "get_sharing_policies",
     "output_suffix",
     "get_all_params",
@@ -27,8 +31,7 @@ ignored = [
 ]
 
 HEADER = """from unittest import skip
-from . import tasks_unit_tests_helper
-
+from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 """
 
@@ -56,6 +59,11 @@ global_params = dict(
     ssm_param_outputs=list(),
     worker_timeout=3,
 
+    assertion_name="assertion_name",
+    expected=dict(),
+    actual=dict(),
+
+    code_build_run_name="code_build_run_name",
     account_id="account_id",
     cache_invalidator="cache_invalidator",
     execution="execution",
@@ -179,6 +187,7 @@ def handle(c, output, mod, classes):
         else:
             raise Exception(f"unhandled: {name}")
 
+
 def handle_function(f, output, mod, classes):
     name = f.name.value
     if name == "params_for_results_display":
@@ -193,6 +202,7 @@ def handle_function(f, output, mod, classes):
         pass
     else:
         raise Exception(f"unhandled: {name}")
+
 
 def get_initial_args_for(c):
     supers = c.get_super_arglist().get_code()
@@ -254,12 +264,22 @@ def get_initial_args_for(c):
     return dict()
 
 
-for input in glob.glob("servicecatalog_puppet/workflow/*.py", recursive=True):
-    if input.endswith("_tests.py") or input.endswith("_test.py") or input.endswith("tasks_unit_tests_helper.py") or input.endswith("__init__.py"):
+package = "spoke_local_portfolios"
+
+for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
+    print(input)
+    if input.endswith("_tests.py") or input.endswith("_test.py") or input.endswith(
+            "tasks_unit_tests_helper.py") or input.endswith("__init__.py"):
         continue
+
+    if package not in input:
+        continue
+
     mod = input.split('/')[-1].replace('.py', '')
     print(f"Starting {input}")
     output = input.replace(".py", "_test.py")
+    if os.path.exists(output):
+        continue
     open(output, 'w+').write(HEADER)
     code = open(input, 'r').read()
     module = parso.parse(code, version="3.7")
@@ -280,15 +300,17 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
 """)
         suite = c.children[-1]
         params = get_initial_args_for(c)
-        for p in params.keys():
-            if isinstance(params.get(p), str):
-                open(output, "a+").write(f"    {p} = \"{params.get(p)}\"\n")
-            else:
-                open(output, "a+").write(f"    {p} = {params.get(p)}\n")
+        # start of removal
+        # for p in params.keys():
+        #     if isinstance(params.get(p), str):
+        #         open(output, "a+").write(f"    {p} = \"{params.get(p)}\"\n")
+        #     else:
+        #         open(output, "a+").write(f"    {p} = {params.get(p)}\n")
+        # end of removal
         for child in suite.children:
             # if isinstance(child, tree.Function):
-                # handle_function(child, output, mod, classes)
-                # print(child.name.value)
+            # handle_function(child, output, mod, classes)
+            # print(child.name.value)
             if isinstance(child, tree.PythonNode):
                 if child.type == "simple_stmt":
                     parameter = child.children[0]
@@ -307,10 +329,10 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
                                 parameter_type = parameter_value.children[1].children[1].value
                                 parameter_value = global_params[parameter_name]
                                 params[parameter_name] = parameter_value
-                                if parameter_type == "Parameter":
-                                    open(output, "a+").write(f"    {parameter_name} = \"{parameter_value}\"\n")
-                                else:
-                                    open(output, "a+").write(f"    {parameter_name} = {parameter_value}\n")
+                                # if parameter_type == "Parameter":
+                                #     open(output, "a+").write(f"    {parameter_name} = \"{parameter_value}\"\n")
+                                # else:
+                                #     open(output, "a+").write(f"    {parameter_name} = {parameter_value}\n")
                             elif parameter_value.type == "atom":
                                 pass
                                 # parameter_value = global_params[parameter_name]
@@ -321,10 +343,15 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
                         else:
                             raise Exception(f"cannot handle {type(parameter_value)}")
 
+        for p in params.keys():
+            if isinstance(params.get(p), str):
+                open(output, "a+").write(f"    {p} = \"{params.get(p)}\"\n")
+            else:
+                open(output, "a+").write(f"    {p} = {params.get(p)}\n")
 
         open(output, "a+").write(f"""
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow import {mod}
+        from servicecatalog_puppet.workflow.{package} import {mod}
         self.module = {mod}
         
         self.sut = self.module.{c.name.value}(

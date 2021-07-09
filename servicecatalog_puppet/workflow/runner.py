@@ -1,3 +1,4 @@
+from servicecatalog_puppet import config
 import json
 import logging
 import os
@@ -16,7 +17,8 @@ from betterboto import client as betterboto_client
 from colorclass import Color
 from luigi import LuigiStatusCode
 
-from servicecatalog_puppet import config, constants
+from servicecatalog_puppet import config
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 
 logger = logging.getLogger()
@@ -162,13 +164,32 @@ def run_tasks(
                         "w",
                     ).write(json.dumps(failure))
 
+    dry_run_tasks = (
+        glob(
+            f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
+            recursive=True,
+        )
+        + glob(
+            f"output/TerminateProductDryRunTask/**/{cache_invalidator}.json",
+            recursive=True,
+        )
+        + glob(
+            f"output/ProvisionStackDryRunTask/**/{cache_invalidator}.json",
+            recursive=True,
+        )
+        + glob(
+            f"output/TerminateStackDryRunTask/**/{cache_invalidator}.json",
+            recursive=True,
+        )
+    )
+
     if is_list_launches:
         if is_list_launches == "table":
             table = [
                 [
                     "account_id",
                     "region",
-                    "launch",
+                    "launch/stack",
                     "portfolio",
                     "product",
                     "expected_version",
@@ -178,10 +199,7 @@ def run_tasks(
                 ]
             ]
 
-            for filename in glob(
-                f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
-                recursive=True,
-            ):
+            for filename in dry_run_tasks:
                 result = json.loads(open(filename, "r").read())
                 current_version = (
                     Color("{green}" + result.get("current_version") + "{/green}")
@@ -205,7 +223,9 @@ def run_tasks(
                     [
                         result.get("params").get("account_id"),
                         result.get("params").get("region"),
-                        result.get("params").get("launch_name"),
+                        f'Launch:{result.get("params").get("launch_name")}'
+                        if result.get("params").get("launch_name")
+                        else f'Stack:{result.get("params").get("stack_name")}',
                         result.get("params").get("portfolio"),
                         result.get("params").get("product"),
                         result.get("new_version"),
@@ -249,7 +269,7 @@ def run_tasks(
             table_data = [
                 [
                     "Result",
-                    "Launch",
+                    "Launch/Stack",
                     "Account",
                     "Region",
                     "Current Version",
@@ -258,31 +278,14 @@ def run_tasks(
                 ],
             ]
             table = terminaltables.AsciiTable(table_data)
-            for filename in glob(
-                f"output/TerminateProductDryRunTask/**/{cache_invalidator}.json",
-                recursive=True,
-            ):
+            for filename in dry_run_tasks:
                 result = json.loads(open(filename, "r").read())
                 table_data.append(
                     [
                         result.get("effect"),
-                        result.get("params").get("launch_name"),
-                        result.get("params").get("account_id"),
-                        result.get("params").get("region"),
-                        result.get("current_version"),
-                        result.get("new_version"),
-                        result.get("notes"),
-                    ]
-                )
-            for filename in glob(
-                f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
-                recursive=True,
-            ):
-                result = json.loads(open(filename, "r").read())
-                table_data.append(
-                    [
-                        result.get("effect"),
-                        result.get("params").get("launch_name"),
+                        f'Launch:{result.get("params").get("launch_name")}'
+                        if result.get("params").get("launch_name")
+                        else f'Stack:{result.get("params").get("stack_name")}',
                         result.get("params").get("account_id"),
                         result.get("params").get("region"),
                         result.get("current_version"),

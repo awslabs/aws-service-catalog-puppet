@@ -23,6 +23,7 @@ def load(f, puppet_account_id):
         "parameters": {},
         "accounts": [],
         "launches": {},
+        "stacks": {},
         "spoke-local-portfolios": {},
     }
     manifest.update(yaml.safe_load(f.read()))
@@ -31,6 +32,7 @@ def load(f, puppet_account_id):
     extendable = [
         "parameters",
         constants.LAUNCHES,
+        constants.STACKS,
         constants.SPOKE_LOCAL_PORTFOLIOS,
         constants.ACTIONS,
         constants.LAMBDA_INVOCATIONS,
@@ -67,16 +69,34 @@ def load(f, puppet_account_id):
         if os.path.exists(config_file):
             logger.info(f"reading {config_file}")
             parser.read(config_file)
-            for name, value in parser["launches"].items():
+            for name, value in parser.get(constants.LAUNCHES, {}).items():
                 launch_name, property_name = name.split(".")
                 if property_name != "version":
                     raise Exception(
                         "You can only specify a version in the properties file"
                     )
-                manifest["launches"][launch_name][property_name] = value
-    for launch_name, launch_details in manifest.get("launches").items():
-        if launch_details.get("execution") is None:
-            launch_details["execution"] = constants.EXECUTION_MODE_DEFAULT
+                if (
+                    manifest.get(constants.LAUNCHES)
+                    .get(launch_name, {})
+                    .get(property_name)
+                ):
+                    manifest[constants.LAUNCHES][launch_name][property_name] = value
+            for name, value in parser.get(constants.STACKS, {}).items():
+                stack_name, property_name = name.split(".")
+                if property_name != "version_id":
+                    raise Exception(
+                        "You can only specify a version_id in the properties file"
+                    )
+                if (
+                    manifest.get(constants.STACKS)
+                    .get(stack_name, {})
+                    .get(property_name)
+                ):
+                    manifest[constants.STACKS][stack_name][property_name] = value
+    for section in [constants.LAUNCHES, constants.STACKS]:
+        for name, details in manifest.get(section).items():
+            if details.get("execution") is None:
+                details["execution"] = constants.EXECUTION_MODE_DEFAULT
     return manifest
 
 
@@ -157,17 +177,20 @@ def expand_manifest(manifest, client):
                 )
     new_manifest["accounts"] = list(accounts_by_id.values())
 
-    for launch_name, launch_details in new_manifest.get(constants.LAUNCHES, {}).items():
-        for parameter_name, parameter_details in launch_details.get(
-            "parameters", {}
-        ).items():
-            if parameter_details.get("macro"):
-                macro_to_run = macros.get(parameter_details.get("macro").get("method"))
-                result = macro_to_run(
-                    client, parameter_details.get("macro").get("args")
-                )
-                parameter_details["default"] = result
-                del parameter_details["macro"]
+    for section in [constants.LAUNCHES, constants.STACKS]:
+        for name, details in new_manifest.get(section, {}).items():
+            for parameter_name, parameter_details in details.get(
+                "parameters", {}
+            ).items():
+                if parameter_details.get("macro"):
+                    macro_to_run = macros.get(
+                        parameter_details.get("macro").get("method")
+                    )
+                    result = macro_to_run(
+                        client, parameter_details.get("macro").get("args")
+                    )
+                    parameter_details["default"] = result
+                    del parameter_details["macro"]
 
     return new_manifest
 
@@ -327,6 +350,7 @@ class Manifest(dict):
 
         deploy_to = {
             "launches": "deploy_to",
+            "stacks": "deploy_to",
             "spoke-local-portfolios": "share_with",
             "lambda-invocations": "invoke_for",
             "code-build-runs": "run_for",
@@ -349,6 +373,19 @@ class Manifest(dict):
                 portfolio=item.get("portfolio"),
                 product=item.get("product"),
                 version=item.get("version"),
+                execution=item.get("execution"),
+                requested_priority=item.get("requested_priority", 0),
+            ),
+            "stacks": dict(
+                puppet_account_id=puppet_account_id,
+                stack_name=item_name,
+                launch_parameters=item.get("parameters", {}),
+                capabilities=item.get("capabilities", []),
+                manifest_parameters=self.get("parameters", {}),
+                ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
+                bucket=f"sc-puppet-stacks-repository-{puppet_account_id}",
+                key=item.get("key"),
+                version_id=item.get("version_id"),
                 execution=item.get("execution"),
                 requested_priority=item.get("requested_priority", 0),
             ),
@@ -401,6 +438,10 @@ class Manifest(dict):
                     continue
                 additional_parameters = {
                     "launches": dict(
+                        account_id=account_id,
+                        account_parameters=account.get("parameters", {}),
+                    ),
+                    "stacks": dict(
                         account_id=account_id,
                         account_parameters=account.get("parameters", {}),
                     ),
@@ -487,6 +528,10 @@ class Manifest(dict):
                 continue
             additional_parameters = {
                 "launches": dict(
+                    account_id=account_id,
+                    account_parameters=account.get("parameters", {}),
+                ),
+                "stacks": dict(
                     account_id=account_id,
                     account_parameters=account.get("parameters", {}),
                 ),
@@ -902,6 +947,7 @@ def create_minimal_manifest(manifest):
     minimal_manifest = deepcopy(manifest)
     # minimal_manifest[constants.ACCOUNTS] = dict()
     minimal_manifest[constants.LAUNCHES] = dict()
+    minimal_manifest[constants.STACKS] = dict()
     minimal_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
     minimal_manifest[constants.ACTIONS] = dict()
     minimal_manifest[constants.LAMBDA_INVOCATIONS] = dict()
@@ -910,15 +956,7 @@ def create_minimal_manifest(manifest):
 
 
 def convert_to_graph(expanded_manifest, G):
-    sections = [
-        constants.LAUNCHES,
-        constants.SPOKE_LOCAL_PORTFOLIOS,
-        constants.ACTIONS,
-        constants.LAMBDA_INVOCATIONS,
-        constants.ASSERTIONS,
-    ]
-
-    for section in sections:
+    for section in constants.ALL_SECTION_NAMES:
         for item_name, item_details in expanded_manifest.get(section, {}).items():
             uid = f"{section}|{item_name}"
             data = dict(section=section, item_name=item_name,)
@@ -927,21 +965,17 @@ def convert_to_graph(expanded_manifest, G):
                 [(uid, data),]
             )
 
-    mapping = dict()
-    mapping[constants.LAUNCH] = constants.LAUNCHES
-    mapping[constants.SPOKE_LOCAL_PORTFOLIO] = constants.SPOKE_LOCAL_PORTFOLIOS
-    mapping[constants.ACTION] = constants.ACTIONS
-    mapping[constants.LAMBDA_INVOCATION] = constants.LAMBDA_INVOCATIONS
-    mapping[constants.ASSERTION] = constants.ASSERTIONS
-
-    for section in sections:
+    for section in constants.ALL_SECTION_NAMES:
         for item_name, item_details in expanded_manifest.get(section, {}).items():
             uid = f"{section}|{item_name}"
             for d in item_details.get("depends_on", []):
                 if isinstance(d, str):
                     G.add_edge(uid, f"{constants.LAUNCHES}|{d}")
                 else:
-                    G.add_edge(uid, f"{mapping.get(d.get('type'))}|{d.get('name')}")
+                    G.add_edge(
+                        uid,
+                        f"{constants.SECTION_SINGULAR_TO_PLURAL.get(d.get('type'))}|{d.get('name')}",
+                    )
     return G
 
 
