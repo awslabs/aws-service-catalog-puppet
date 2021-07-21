@@ -599,7 +599,7 @@ def get_template(
             install=install_spec,
             build={
                 "commands": [
-                    'echo "single_account: ${SINGLE_ACCOUNT_ID}" > parameters.yaml',
+                    'echo "single_account: \\"${SINGLE_ACCOUNT_ID}\\"" > parameters.yaml',
                     "cat parameters.yaml",
                     "zip parameters.zip parameters.yaml",
                     "aws s3 cp parameters.zip s3://sc-puppet-parameterised-runs-${PUPPET_ACCOUNT_ID}/parameters.zip",
