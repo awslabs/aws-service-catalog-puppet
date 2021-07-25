@@ -45,9 +45,25 @@ class TestManifestForExpand(unittest.TestCase):
         "regions_enabled": ["eu-west-2",],
         "tags": ["group:A"]
     }
+    account_ou_b = {
+        "ou": "/OrgUnitB",
+        "default_region": "us-west-1",
+        "name": "oub",
+        "regions_enabled": ["us-west-2",],
+        "tags": ["group:B"]
+    }
+    account_ou_c = {
+        "ou": "ou-aaaa-cccccccc",
+        "default_region": "ap-west-1",
+        "name": "ouc",
+        "regions_enabled": ["ap-west-2",],
+        "tags": ["group:C"]
+    }
 
     org_units = [
         account_ou_a,
+        account_ou_b,
+        account_ou_c,
     ]
 
     def setUp(self):
@@ -110,12 +126,27 @@ class TestManifestForExpand(unittest.TestCase):
 
         expected_results = deepcopy(expanded_manifest)
         accounts = []
+
         account_a = deepcopy(self.account_a)
         account_a["email"] = f"{account_a['account_id']}@test.com"
         account_a["organization"] = self.organization_id
         account_a["expanded_from"] = "ou-aaaa-aaaaaaaa"
         account_a["name"] = account_a['account_id']
         accounts.append(account_a)
+
+        account_b = deepcopy(self.account_b)
+        account_b["email"] = f"{account_b['account_id']}@test.com"
+        account_b["organization"] = self.organization_id
+        account_b["expanded_from"] = "ou-aaaa-bbbbbbbb"
+        account_b["name"] = account_b['account_id']
+        accounts.append(account_b)
+
+        account_c = deepcopy(self.account_c)
+        account_c["email"] = f"{account_c['account_id']}@test.com"
+        account_c["organization"] = self.organization_id
+        account_c["expanded_from"] = "ou-aaaa-cccccccc"
+        account_c["name"] = account_c['account_id']
+        accounts.append(account_c)
 
         expected_results[constants.ACCOUNTS] = accounts
 
@@ -140,6 +171,7 @@ class TestManifestForExpand(unittest.TestCase):
 
         self.client_mock.describe_account = MagicMock(side_effect=describe_account_side_effect)
         self.client_mock.list_children_nested = MagicMock(side_effect=list_children_nested_side_effect)
+        self.client_mock.convert_path_to_ou = MagicMock(return_value="ou-aaaa-bbbbbbbb")
 
         # exercise
         actual_results = self.sut(expanded_manifest, self.client_mock)
