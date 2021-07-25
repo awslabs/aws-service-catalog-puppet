@@ -10,7 +10,18 @@ import sys
 import click
 import yaml
 
-from servicecatalog_puppet import core, config
+from servicecatalog_puppet.commands import bootstrap as bootstrap_commands
+from servicecatalog_puppet.commands import deploy as deploy_commands
+from servicecatalog_puppet.commands import graph as graph_commands
+from servicecatalog_puppet.commands import manifest as manifest_commands
+from servicecatalog_puppet.commands import spoke_management as spoke_management_commands
+
+from servicecatalog_puppet.commands import misc as misc_commands
+from servicecatalog_puppet.commands import management as management_commands
+from servicecatalog_puppet.commands import orgs as orgs_commands
+from servicecatalog_puppet.commands import version as version_commands
+
+from servicecatalog_puppet import config
 
 
 @click.group()
@@ -18,7 +29,7 @@ from servicecatalog_puppet import core, config
 @click.option("--info-line-numbers/--no-info-line-numbers", default=False)
 def cli(info, info_line_numbers):
     """cli for pipeline tools"""
-    core.cli(info, info_line_numbers)
+    misc_commands.cli(info, info_line_numbers)
 
 
 @cli.command()
@@ -67,7 +78,7 @@ def deploy(
                     )
                 )
             )
-        core.deploy(
+        deploy_commands.deploy(
             f,
             puppet_account_id,
             executor_account_id,
@@ -85,7 +96,7 @@ def deploy(
                 click.echo(f"Created and running {exploded_manifest}")
                 uid = re.search(".*exploded-(.*).yaml", exploded_manifest).group(1)
                 open(f.name, "w").write(open(exploded_manifest, "r").read())
-                core.deploy(
+                deploy_commands.deploy(
                     f,
                     puppet_account_id,
                     executor_account_id,
@@ -102,7 +113,7 @@ def deploy(
                         shutil.move(d, f"{output}{os.path.sep}")
 
         else:
-            core.deploy(
+            deploy_commands.deploy(
                 f,
                 puppet_account_id,
                 executor_account_id,
@@ -117,7 +128,7 @@ def deploy(
 @click.argument("f", type=click.File())
 @click.option("--single-account", default=None)
 def graph(f, single_account):
-    core.graph(f)
+    graph_commands.graph(f)
 
 
 @cli.command()
@@ -128,7 +139,7 @@ def dry_run(f, single_account, puppet_account_id):
     if puppet_account_id is None:
         puppet_account_id = config.get_puppet_account_id()
     executor_account_id = config.get_current_account_id()
-    core.deploy(
+    deploy_commands.deploy(
         f,
         executor_account_id,
         puppet_account_id,
@@ -152,7 +163,7 @@ def bootstrap_spoke_as(
     puppet_role_name,
     puppet_role_path,
 ):
-    core.bootstrap_spoke_as(
+    spoke_management_commands.bootstrap_spoke_as(
         puppet_account_id,
         iam_role_arns,
         permission_boundary,
@@ -171,7 +182,7 @@ def bootstrap_spoke_as(
 def bootstrap_spoke(
     puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path
 ):
-    core.bootstrap_spoke(
+    spoke_management_commands.bootstrap_spoke(
         puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path
     )
 
@@ -195,7 +206,7 @@ def bootstrap_spokes_in_ou(
     puppet_role_name,
     puppet_role_path,
 ):
-    core.bootstrap_spokes_in_ou(
+    spoke_management_commands.bootstrap_spokes_in_ou(
         ou_path_or_id,
         role_name,
         iam_role_arns,
@@ -361,14 +372,14 @@ def bootstrap(
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")
 
-    core.bootstrap(**parameters)
+    bootstrap_commands.bootstrap(**parameters)
 
 
 @cli.command()
 @click.argument("complexity", default="simple")
 @click.argument("p", type=click.Path(exists=True))
 def seed(complexity, p):
-    core.seed(complexity, p)
+    management_commands.seed(complexity, p)
 
 
 @cli.command()
@@ -376,7 +387,7 @@ def seed(complexity, p):
 @click.option("--format", "-f", type=click.Choice(["table", "json"]), default="table")
 def list_launches(expanded_manifest, format):
     current_account_id = puppet_account_id = config.get_puppet_account_id()
-    core.deploy(
+    deploy_commands.deploy(
         expanded_manifest,
         puppet_account_id,
         current_account_id,
@@ -395,58 +406,57 @@ def list_launches(expanded_manifest, format):
 )
 def expand(f, single_account, parameter_override_file, parameter_override_forced):
     params = dict(single_account=single_account)
-    if parameter_override_forced or core.is_a_parameter_override_execution():
+    if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
         overrides = dict(**yaml.safe_load(parameter_override_file.read()))
         params.update(overrides)
         click.echo(f"Overridden parameters {params}")
 
-    core.expand(f, **params)
+    manifest_commands.expand(f, **params)
     puppet_account_id = config.get_puppet_account_id()
     if config.get_should_explode_manifest(puppet_account_id):
-        core.explode(f)
+        manifest_commands.explode(f)
 
 
 @cli.command()
 @click.argument("f", type=click.File())
 def validate(f):
-    core.validate(f)
+    manifest_commands.validate(f)
 
 
 @cli.command()
 def version():
-    core.version()
+    version_commands.version()
 
 
 @cli.command()
 @click.argument("p", type=click.Path(exists=True))
 def upload_config(p):
     content = open(p, "r").read()
-    config = yaml.safe_load(content)
-    core.upload_config(config)
+    management_commands.upload_config(yaml.safe_load(content))
 
 
 @cli.command()
 @click.argument("org-iam-role-arn")
 def set_org_iam_role_arn(org_iam_role_arn):
-    core.set_org_iam_role_arn(org_iam_role_arn)
+    orgs_commands.set_org_iam_role_arn(org_iam_role_arn)
 
 
 @cli.command()
 @click.argument("puppet_account_id")
 def bootstrap_org_master(puppet_account_id):
-    core.bootstrap_org_master(puppet_account_id)
+    orgs_commands.bootstrap_org_master(puppet_account_id)
 
 
 @cli.command()
 @click.argument("what", default="puppet")
 @click.option("--tail/--no-tail", default=False)
 def run(what, tail):
-    core.run(what, tail)
+    misc_commands.run(what, tail)
 
 
 @cli.command()
 def list_resources():
-    core.list_resources()
+    management_commands.list_resources()
 
 
 @cli.command()
@@ -454,57 +464,57 @@ def list_resources():
 @click.argument("name")
 @click.argument("portfolio_name")
 def import_product_set(f, name, portfolio_name):
-    core.import_product_set(f, name, portfolio_name)
+    manifest_commands.import_product_set(f, name, portfolio_name)
 
 
 @cli.command()
 @click.argument("account_or_ou_file_path", type=click.File())
 def add_to_accounts(account_or_ou_file_path):
-    core.add_to_accounts(yaml.safe_load(account_or_ou_file_path))
+    manifest_commands.add_to_accounts(yaml.safe_load(account_or_ou_file_path))
 
 
 @cli.command()
 @click.argument("account_id_or_ou_id_or_ou_path")
 def remove_from_accounts(account_id_or_ou_id_or_ou_path):
-    core.remove_from_accounts(account_id_or_ou_id_or_ou_path)
+    manifest_commands.remove_from_accounts(account_id_or_ou_id_or_ou_path)
 
 
 @cli.command()
 @click.argument("launch_file_path", type=click.File())
 def add_to_launches(launch_name, launch_file_path):
-    core.add_to_launches(launch_name, yaml.safe_load(launch_file_path))
+    manifest_commands.add_to_launches(launch_name, yaml.safe_load(launch_file_path))
 
 
 @cli.command()
 @click.argument("launch_name")
 def remove_from_launches(launch_name):
-    core.remove_from_launches(launch_name)
+    manifest_commands.remove_from_launches(launch_name)
 
 
 @cli.command()
 @click.argument("f", type=click.File())
 def reset_provisioned_product_owner(f):
-    core.reset_provisioned_product_owner(f)
+    misc_commands.reset_provisioned_product_owner(f)
 
 
 @cli.command()
 @click.argument("regions", nargs=-1)
 def set_regions(regions):
-    core.set_config_value("regions", regions)
+    management_commands.set_config_value("regions", regions)
 
 
 @cli.command()
 @click.argument("name")
 @click.argument("value")
 def set_config_value(name, value):
-    core.set_config_value(name, value)
+    management_commands.set_config_value(name, value)
 
 
 @cli.command()
 @click.argument("name")
 @click.argument("value")
 def set_named_config_value(name, value):
-    core.set_named_config_value(name, value)
+    management_commands.set_named_config_value(name, value)
 
 
 @cli.command()
@@ -513,7 +523,7 @@ def set_named_config_value(name, value):
 def export_puppet_pipeline_logs(execution_id, puppet_account_id):
     if puppet_account_id is None:
         puppet_account_id = config.get_puppet_account_id()
-    core.export_puppet_pipeline_logs(execution_id, puppet_account_id)
+    management_commands.export_puppet_pipeline_logs(execution_id, puppet_account_id)
 
 
 @cli.command()
@@ -521,7 +531,7 @@ def export_puppet_pipeline_logs(execution_id, puppet_account_id):
 def uninstall(puppet_account_id):
     if puppet_account_id is None:
         puppet_account_id = config.get_puppet_account_id()
-    core.uninstall(puppet_account_id)
+    misc_commands.uninstall(puppet_account_id)
 
 
 @cli.command()
@@ -529,14 +539,14 @@ def uninstall(puppet_account_id):
 def release_spoke(puppet_account_id):
     if puppet_account_id is None:
         puppet_account_id = config.get_puppet_account_id()
-    core.release_spoke(puppet_account_id)
+    spoke_management_commands.release_spoke(puppet_account_id)
 
 
 @cli.command()
 @click.argument("iam_role_arns", nargs=-1)
 def wait_for_code_build_in(iam_role_arns):
-    core.wait_for_code_build_in(iam_role_arns)
-    core.wait_for_cloudformation_in(iam_role_arns)
+    misc_commands.wait_for_code_build_in(iam_role_arns)
+    misc_commands.wait_for_cloudformation_in(iam_role_arns)
     click.echo("AWS CodeBuild is available")
 
 
@@ -544,7 +554,7 @@ def wait_for_code_build_in(iam_role_arns):
 @click.option("--on-complete-url", default=None)
 def wait_for_parameterised_run_to_complete(on_complete_url):
     click.echo("Starting to wait for parameterised run to complete")
-    succeeded = core.wait_for_parameterised_run_to_complete(on_complete_url)
+    succeeded = misc_commands.wait_for_parameterised_run_to_complete(on_complete_url)
     if succeeded:
         click.echo(f"Finished: 'SUCCESS'")
         sys.exit(0)

@@ -71,7 +71,7 @@ with such.A("get_config") as it:
 
     @it.should("work")
     @params(
-        ("get_regions", "regions", ["eu-west-1", "eu-west-3",]),
+        ("get_regions", "regions", ["eu-west-1", "eu-west-3",],),
         ("get_should_use_sns", "should_collect_cloudformation_events", True),
         ("get_should_use_eventbridge", "should_forward_events_to_eventbridge", True),
         (

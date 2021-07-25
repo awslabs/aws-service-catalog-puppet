@@ -122,6 +122,30 @@ def get_template(
         "HasManualApprovals", t.Equals(t.Ref(with_manual_approvals_parameter), "Yes")
     )
 
+    template.add_resource(
+        s3.Bucket(
+            "StacksRepository",
+            BucketName=t.Sub("sc-puppet-stacks-repository-${AWS::AccountId}"),
+            VersioningConfiguration=s3.VersioningConfiguration(Status="Enabled"),
+            BucketEncryption=s3.BucketEncryption(
+                ServerSideEncryptionConfiguration=[
+                    s3.ServerSideEncryptionRule(
+                        ServerSideEncryptionByDefault=s3.ServerSideEncryptionByDefault(
+                            SSEAlgorithm="AES256"
+                        )
+                    )
+                ]
+            ),
+            PublicAccessBlockConfiguration=s3.PublicAccessBlockConfiguration(
+                BlockPublicAcls=True,
+                BlockPublicPolicy=True,
+                IgnorePublicAcls=True,
+                RestrictPublicBuckets=True,
+            ),
+            Tags=t.Tags({"ServiceCatalogPuppet:Actor": "Framework"}),
+        )
+    )
+
     manual_approvals_param = template.add_resource(
         ssm.Parameter(
             "ManualApprovalsParam",
@@ -575,7 +599,7 @@ def get_template(
             install=install_spec,
             build={
                 "commands": [
-                    'echo "single_account: ${SINGLE_ACCOUNT_ID}" > parameters.yaml',
+                    'echo "single_account: \\"${SINGLE_ACCOUNT_ID}\\"" > parameters.yaml',
                     "cat parameters.yaml",
                     "zip parameters.zip parameters.yaml",
                     "aws s3 cp parameters.zip s3://sc-puppet-parameterised-runs-${PUPPET_ACCOUNT_ID}/parameters.zip",

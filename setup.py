@@ -6,9 +6,25 @@ package_dir = \
 
 packages = \
 ['servicecatalog_puppet',
+ 'servicecatalog_puppet.commands',
  'servicecatalog_puppet.template_builder',
  'servicecatalog_puppet.template_builder.hub',
- 'servicecatalog_puppet.workflow']
+ 'servicecatalog_puppet.workflow',
+ 'servicecatalog_puppet.workflow.assertions',
+ 'servicecatalog_puppet.workflow.codebuild_runs',
+ 'servicecatalog_puppet.workflow.general',
+ 'servicecatalog_puppet.workflow.generate',
+ 'servicecatalog_puppet.workflow.lambda_invocations',
+ 'servicecatalog_puppet.workflow.launch',
+ 'servicecatalog_puppet.workflow.manifest',
+ 'servicecatalog_puppet.workflow.portfolio',
+ 'servicecatalog_puppet.workflow.portfolio.accessors',
+ 'servicecatalog_puppet.workflow.portfolio.associations',
+ 'servicecatalog_puppet.workflow.portfolio.constraints_management',
+ 'servicecatalog_puppet.workflow.portfolio.portfolio_management',
+ 'servicecatalog_puppet.workflow.portfolio.sharing_management',
+ 'servicecatalog_puppet.workflow.spoke_local_portfolios',
+ 'servicecatalog_puppet.workflow.stack']
 
 package_data = \
 {'': ['*'], 'servicecatalog_puppet': ['manifests/*', 'templates/*']}
@@ -38,7 +54,7 @@ entry_points = \
 
 setup_kwargs = {
     'name': 'aws-service-catalog-puppet',
-    'version': '0.107.0',
+    'version': '0.108.1',
     'description': 'Making it easier to deploy ServiceCatalog products',
     'long_description': '# aws-service-catalog-puppet\n\n![logo](./docs/logo.png) \n\n## Badges\n\n[![codecov](https://codecov.io/gh/awslabs/aws-service-catalog-puppet/branch/master/graph/badge.svg?token=e8M7mdsmy0)](https://codecov.io/gh/awslabs/aws-service-catalog-puppet)\n\n\n## What is it?\nThis is a python3 framework that makes it easier to share multi region AWS Service Catalog portfolios and makes it \npossible to provision products into accounts declaratively using a metadata based rules engine.\n\nWith this framework you define your accounts in a YAML file.  You give each account a set of tags, a default region and \na set of enabled regions.\n\nOnce you have done this you can define portfolios should be shared with each set of accounts using the tags and you \ncan specify which regions the shares occur in.\n\nIn addition to this, you can also define products that should be provisioned into accounts using the same tag based \napproach.  The framework will assume role into the target account and provision the product on your behalf.\n\n\n## Getting started\n\nYou can read the [installation how to](https://service-catalog-tools-workshop.com/30-how-tos/10-installation/30-service-catalog-puppet.html)\nor you can read through the [every day use](https://service-catalog-tools-workshop.com/30-how-tos/50-every-day-use.html)\nguides.\n\nYou can read the [documentation](https://aws-service-catalog-puppet.readthedocs.io/en/latest/) to understand the inner \nworkings. \n\n\n## Going further\n\nThe framework is one of a pair.  The other is [aws-service-catalog-factory](https://github.com/awslabs/aws-service-catalog-factory).\nWith Service Catalog Factory you can create pipelines that deploy multi region portfolios very easily. \n\n## License\n\nThis library is licensed under the Apache 2.0 License. \n \n',
     'author': 'Eamonn Faherty',

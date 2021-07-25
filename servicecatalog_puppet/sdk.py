@@ -1,7 +1,10 @@
 # Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-
-from servicecatalog_puppet import core
+from servicecatalog_puppet.commands import bootstrap as bootstrap_commands
+from servicecatalog_puppet.commands import manifest as manifest_commands
+from servicecatalog_puppet.commands import misc as misc_commands
+from servicecatalog_puppet.commands import spoke_management as spoke_management_commands
+from servicecatalog_puppet.commands import management as management_commands
 
 
 def run(what="puppet", wait_for_completion=False):
@@ -11,7 +14,7 @@ def run(what="puppet", wait_for_completion=False):
     :param what: what should be run.  The only parameter that will work is ``puppet``
     :param wait_for_completion: Whether the command should wait for the completion of the pipeline before it returns
     """
-    core.run(what, wait_for_completion)
+    misc_commands.run(what, wait_for_completion)
 
 
 def add_to_accounts(account_or_ou):
@@ -20,7 +23,7 @@ def add_to_accounts(account_or_ou):
 
     :param account_or_ou: A dict describing the the account or the ou to be added
     """
-    core.add_to_accounts(account_or_ou)
+    manifest_commands.add_to_accounts(account_or_ou)
 
 
 def remove_from_accounts(account_id_or_ou_id_or_ou_path):
@@ -30,7 +33,7 @@ def remove_from_accounts(account_id_or_ou_id_or_ou_path):
     :param account_id_or_ou_id_or_ou_path: the value can be an account_id, ou_id or an ou_path.  It should be present \
     in the accounts list within the manifest file or an error is generated
     """
-    core.remove_from_accounts(account_id_or_ou_id_or_ou_path)
+    manifest_commands.remove_from_accounts(account_id_or_ou_id_or_ou_path)
 
 
 def add_to_launches(launch_name, launch):
@@ -40,7 +43,7 @@ def add_to_launches(launch_name, launch):
     :param launch_name: The launch name to use when adding the launch to the manifest launches
     :param launch: The dict to add to the launches
     """
-    core.add_to_launches(launch_name, launch)
+    manifest_commands.add_to_launches(launch_name, launch)
 
 
 def remove_from_launches(launch_name):
@@ -49,7 +52,7 @@ def remove_from_launches(launch_name):
 
     :param launch_name: The name of the launch to be removed from the launches section of the manifest file
     """
-    core.remove_from_launches(launch_name)
+    manifest_commands.remove_from_launches(launch_name)
 
 
 def upload_config(config):
@@ -63,7 +66,7 @@ def upload_config(config):
 
     :param config: The dict containing the configuration used for puppet
     """
-    core.upload_config(config)
+    management_commands.upload_config(config)
 
 
 def bootstrap(
@@ -94,7 +97,7 @@ def bootstrap(
     :param deploy_num_workers: Number of workers that should be used when running a deploy
     """
 
-    core.bootstrap(
+    bootstrap_commands.bootstrap(
         with_manual_approvals,
         puppet_account_id,
         puppet_code_pipeline_role_permission_boundary,
@@ -116,7 +119,7 @@ def bootstrap_spoke(puppet_account_id, permission_boundary):
     :param puppet_account_id: this is the account id where you have installed aws-service-catalog-puppet
     :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
-    core.bootstrap_spoke(puppet_account_id, permission_boundary)
+    spoke_management_commands.bootstrap_spoke(puppet_account_id, permission_boundary)
 
 
 def bootstrap_spoke_as(
@@ -135,7 +138,7 @@ def bootstrap_spoke_as(
     ARN in the list should be the ARN of the spoke you want to bootstrap.
     :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
-    core.bootstrap_spoke_as(
+    spoke_management_commands.bootstrap_spoke_as(
         puppet_account_id,
         iam_role_arns,
         permission_boundary,
@@ -162,7 +165,7 @@ def bootstrap_spokes_in_ou(
     ARN in the list should be the ARN of account that can assume the role_name in the accounts to bootstrap.
     :param permission_boundary: the iam boundary to apply to the puppetrole in the spoke account
     """
-    core.bootstrap_spokes_in_ou(
+    spoke_management_commands.bootstrap_spokes_in_ou(
         ou_path_or_id,
         role_name,
         iam_role_arns,
@@ -180,7 +183,7 @@ def uninstall(puppet_account_id):
 
     :param puppet_account_id: AWS Account Id for your puppet account
     """
-    core.uninstall(puppet_account_id)
+    misc_commands.uninstall(puppet_account_id)
 
 
 def release_spoke(puppet_account_id):
@@ -189,4 +192,4 @@ def release_spoke(puppet_account_id):
 
     :param puppet_account_id: AWS Account Id for your puppet account
     """
-    core.release_spoke(puppet_account_id)
+    spoke_management_commands.release_spoke(puppet_account_id)

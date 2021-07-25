@@ -20,7 +20,7 @@ class CLITest(unittest.TestCase):
         executor_account_id = "01234567890"
 
         # exercise
-        with mock.patch.object(self.sut, "core") as core_mocked:
+        with mock.patch.object(self.sut, "deploy_commands") as core_mocked:
             with mock.patch.object(self.sut, "config") as config_mocked:
                 config_mocked.get_puppet_account_id.return_value = puppet_account_id
                 config_mocked.get_current_account_id.return_value = executor_account_id
