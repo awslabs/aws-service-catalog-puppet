@@ -71,21 +71,11 @@ class ProvisionStackTask(
 
     def api_calls_used(self):
         apis = [
-            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_record_{self.account_id}_{self.region}",
-            f"cloudformation.get_template_summary_{self.account_id}_{self.region}",
-            f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
-            f"servicecatalog.list_provisioned_product_plans_single_page_{self.account_id}_{self.region}",
-            f"servicecatalog.delete_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.create_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.execute_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.update_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.provision_product_{self.account_id}_{self.region}",
-            # f"ssm.put_parameter_and_wait_{self.region}",
+            f"servicecatalog.describe_stacks_{self.account_id}_{self.region}",
+            f"servicecatalog.ensure_deleted_{self.account_id}_{self.region}",
+            f"servicecatalog.get_template_summary_{self.account_id}_{self.region}",
+            f"servicecatalog.get_template_{self.account_id}_{self.region}",
+            f"servicecatalog.create_or_update_{self.account_id}_{self.region}",
         ]
         return apis
 
@@ -94,7 +84,7 @@ class ProvisionStackTask(
         with self.spoke_regional_client("cloudformation") as cloudformation:
             try:
                 paginator = cloudformation.get_paginator("describe_stacks")
-                for page in paginator.paginate(StackName=self.stack_name,):
+                for page in paginator.paginate(StackName=self.stack_name, ):
                     for stack in page.get("Stacks", []):
                         status = stack.get("StackStatus")
                         if status in [
@@ -128,15 +118,15 @@ class ProvisionStackTask(
                                     "describe_stacks"
                                 )
                                 for sub_page in sub_paginator.paginate(
-                                    StackName=stack.get("StackId"),
+                                        StackName=stack.get("StackId"),
                                 ):
                                     for sub_stack in sub_page.get("Stacks", []):
                                         status = sub_stack.get("StackStatus")
                             current_stack = stack
             except ClientError as error:
                 if (
-                    error.response["Error"]["Message"]
-                    != f"Stack with id {self.stack_name} does not exist"
+                        error.response["Error"]["Message"]
+                        != f"Stack with id {self.stack_name} does not exist"
                 ):
                     raise error
         return current_stack
@@ -231,7 +221,9 @@ class ProvisionStackTask(
             provisioning_parameters = []
             for p in params_to_use.keys():
                 provisioning_parameters.append(
-                    {"Key": p, "Value": params_to_use.get(p),}
+                    {"ParameterKey": p,
+                     "ParameterValue": params_to_use.get(p).replace("${AWS::AccountId}", self.account_id).replace(
+                         "${AWS::Region}", self.region), }
                 )
             with self.spoke_regional_client("cloudformation") as cloudformation:
                 cloudformation.create_or_update(
@@ -260,7 +252,7 @@ class ProvisionStackTask(
                     # TODO push into another task
                     for output in stack_details.get("Outputs", []):
                         if output.get("OutputKey") == ssm_param_output.get(
-                            "stack_output"
+                                "stack_output"
                         ):
                             ssm_parameter_name = ssm_param_output.get("param_name")
                             ssm_parameter_name = ssm_parameter_name.replace(
