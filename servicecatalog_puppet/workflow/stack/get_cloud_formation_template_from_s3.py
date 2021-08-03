@@ -18,9 +18,10 @@ class GetCloudFormationTemplateFromS3(tasks.PuppetTask):
 
     def run(self):
         with self.hub_client("s3") as s3:
-            response = s3.get_object(
-                Bucket=self.bucket, Key=self.key, VersionId=self.version_id,
-            )
+            p = dict(Bucket=self.bucket, Key=self.key, )
+            if self.version_id != "":
+                p['VersionId'] = self.version_id
+            response = s3.get_object(**p)
             self.write_output(
                 response.get("Body").read().decode("utf8"), skip_json_dump=True
             )

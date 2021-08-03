@@ -48,6 +48,12 @@ def generate_dependency_tasks(
         lambda_invocation_for_region_task,
         lambda_invocation_for_account_and_region_task,
     )
+    from servicecatalog_puppet.workflow.apps import (
+        app_task,
+        app_for_account_task,
+        app_for_region_task,
+        app_for_account_and_region_task,
+    )
 
     these_dependencies = list()
     common_args = dict(
@@ -113,6 +119,37 @@ def generate_dependency_tasks(
                     stack_for_account_and_region_task.StackForAccountAndRegionTask(
                         **common_args,
                         stack_name=depends_on.get("name"),
+                        account_id=account_id,
+                        region=region,
+                    )
+                )
+
+        elif depends_on.get("type") == constants.APP:
+            if depends_on.get(constants.AFFINITY) == constants.APP:
+                these_dependencies.append(
+                    app_task.AppTask(
+                        **common_args, app_name=depends_on.get("name"),
+                    )
+                )
+            if depends_on.get(constants.AFFINITY) == "account":
+                these_dependencies.append(
+                    app_for_account_task.AppForAccountTask(
+                        **common_args,
+                        app_name=depends_on.get("name"),
+                        account_id=account_id,
+                    )
+                )
+            if depends_on.get(constants.AFFINITY) == "region":
+                these_dependencies.append(
+                    app_for_region_task.AppForRegionTask(
+                        **common_args, app_name=depends_on.get("name"), region=region,
+                    )
+                )
+            if depends_on.get(constants.AFFINITY) == "account-and-region":
+                these_dependencies.append(
+                    app_for_account_and_region_task.AppForAccountAndRegionTask(
+                        **common_args,
+                        app_name=depends_on.get("name"),
                         account_id=account_id,
                         region=region,
                     )

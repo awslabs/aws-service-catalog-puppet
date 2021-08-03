@@ -1,15 +1,13 @@
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.apps import app_base_task
-from servicecatalog_puppet.workflow.apps import (
-    app_for_account_and_region_task,
-)
+from servicecatalog_puppet.workflow.apps import app_for_account_and_region_task
 from servicecatalog_puppet.workflow.apps import app_for_account_task
 from servicecatalog_puppet.workflow.apps import app_for_region_task
 from servicecatalog_puppet.workflow.apps import app_task
 from servicecatalog_puppet.workflow.manifest import section_task
 
 
-class AppsSectionTask(
+class AppSectionTask(
     app_base_task.AppBaseTask, section_task.SectionTask
 ):
     def params_for_results_display(self):

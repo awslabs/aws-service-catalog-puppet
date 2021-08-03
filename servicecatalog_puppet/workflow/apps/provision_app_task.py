@@ -4,7 +4,6 @@ from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow.apps import app_base_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
-
 class ProvisionAppTask(
     app_base_task.AppBaseTask,
     manifest_mixin.ManifestMixen,
@@ -14,12 +13,25 @@ class ProvisionAppTask(
     region = luigi.Parameter()
     account_id = luigi.Parameter()
 
+    bucket = luigi.Parameter()
+    key = luigi.Parameter()
+    version_id = luigi.Parameter()
+
     puppet_account_id = luigi.Parameter()
 
-    expected = luigi.DictParameter()
-    actual = luigi.DictParameter()
+    ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
-    requested_priority = luigi.IntParameter()
+    launch_parameters = luigi.DictParameter(default={}, significant=False)
+    manifest_parameters = luigi.DictParameter(default={}, significant=False)
+    account_parameters = luigi.DictParameter(default={}, significant=False)
+
+    retry_count = luigi.IntParameter(default=1, significant=False)
+    worker_timeout = luigi.IntParameter(default=0, significant=False)
+    ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
+    requested_priority = luigi.IntParameter(significant=False, default=0)
+
+    execution = luigi.Parameter()
+
 
     def params_for_results_display(self):
         return {
@@ -35,5 +47,4 @@ class ProvisionAppTask(
         return requirements
 
     def run(self):
-        raise Exception("We made it!")
         self.write_output(self.params_for_results_display())
