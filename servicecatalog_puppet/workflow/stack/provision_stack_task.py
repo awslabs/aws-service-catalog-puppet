@@ -221,9 +221,12 @@ class ProvisionStackTask(
             provisioning_parameters = []
             for p in params_to_use.keys():
                 provisioning_parameters.append(
-                    {"ParameterKey": p,
-                     "ParameterValue": params_to_use.get(p).replace("${AWS::AccountId}", self.account_id).replace(
-                         "${AWS::Region}", self.region), }
+                    {
+                        "ParameterKey": p,
+                        "ParameterValue": params_to_use.get(p)
+                            # .replace("${AWS::AccountId}", self.account_id) # TODO - check if replace is needed
+                            # .replace("${AWS::Region}", self.region), # TODO - check if replace is needed
+                    }
                 )
             with self.spoke_regional_client("cloudformation") as cloudformation:
                 cloudformation.create_or_update(
@@ -240,38 +243,39 @@ class ProvisionStackTask(
             self.info(
                 f"Running in execution mode: {self.execution}, checking for SSM outputs"
             )
-            with self.spoke_regional_client("cloudformation") as spoke_cloudformation:
-                stack_details = aws.get_stack_output_for(
-                    spoke_cloudformation, self.stack_name,
-                )
+            if len(self.ssm_param_outputs) > 0:
+                with self.spoke_regional_client("cloudformation") as spoke_cloudformation:
+                    stack_details = aws.get_stack_output_for(
+                        spoke_cloudformation, self.stack_name,
+                    )
 
-            for ssm_param_output in self.ssm_param_outputs:
-                self.info(f"writing SSM Param: {ssm_param_output.get('stack_output')}")
-                with self.hub_client("ssm") as ssm:
-                    found_match = False
-                    # TODO push into another task
-                    for output in stack_details.get("Outputs", []):
-                        if output.get("OutputKey") == ssm_param_output.get(
-                                "stack_output"
-                        ):
-                            ssm_parameter_name = ssm_param_output.get("param_name")
-                            ssm_parameter_name = ssm_parameter_name.replace(
-                                "${AWS::Region}", self.region
+                for ssm_param_output in self.ssm_param_outputs:
+                    self.info(f"writing SSM Param: {ssm_param_output.get('stack_output')}")
+                    with self.hub_client("ssm") as ssm:
+                        found_match = False
+                        # TODO push into another task
+                        for output in stack_details.get("Outputs", []):
+                            if output.get("OutputKey") == ssm_param_output.get(
+                                    "stack_output"
+                            ):
+                                ssm_parameter_name = ssm_param_output.get("param_name")
+                                ssm_parameter_name = ssm_parameter_name.replace(
+                                    "${AWS::Region}", self.region
+                                )
+                                ssm_parameter_name = ssm_parameter_name.replace(
+                                    "${AWS::AccountId}", self.account_id
+                                )
+                                found_match = True
+                                ssm.put_parameter_and_wait(
+                                    Name=ssm_parameter_name,
+                                    Value=output.get("OutputValue"),
+                                    Type=ssm_param_output.get("param_type", "String"),
+                                    Overwrite=True,
+                                )
+                        if not found_match:
+                            raise Exception(
+                                f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
                             )
-                            ssm_parameter_name = ssm_parameter_name.replace(
-                                "${AWS::AccountId}", self.account_id
-                            )
-                            found_match = True
-                            ssm.put_parameter_and_wait(
-                                Name=ssm_parameter_name,
-                                Value=output.get("OutputValue"),
-                                Type=ssm_param_output.get("param_type", "String"),
-                                Overwrite=True,
-                            )
-                    if not found_match:
-                        raise Exception(
-                            f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
-                        )
 
             self.write_output(task_output)
         else:

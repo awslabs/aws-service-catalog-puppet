@@ -1,5 +1,6 @@
 import troposphere as t
 import yaml
+from servicecatalog_puppet import constants
 from awacs import iam as awscs_iam
 from troposphere import codebuild
 from troposphere import codecommit
@@ -126,6 +127,30 @@ def get_template(
         s3.Bucket(
             "StacksRepository",
             BucketName=t.Sub("sc-puppet-stacks-repository-${AWS::AccountId}"),
+            VersioningConfiguration=s3.VersioningConfiguration(Status="Enabled"),
+            BucketEncryption=s3.BucketEncryption(
+                ServerSideEncryptionConfiguration=[
+                    s3.ServerSideEncryptionRule(
+                        ServerSideEncryptionByDefault=s3.ServerSideEncryptionByDefault(
+                            SSEAlgorithm="AES256"
+                        )
+                    )
+                ]
+            ),
+            PublicAccessBlockConfiguration=s3.PublicAccessBlockConfiguration(
+                BlockPublicAcls=True,
+                BlockPublicPolicy=True,
+                IgnorePublicAcls=True,
+                RestrictPublicBuckets=True,
+            ),
+            Tags=t.Tags({"ServiceCatalogPuppet:Actor": "Framework"}),
+        )
+    )
+
+    template.add_resource(
+        s3.Bucket(
+            "state",
+            BucketName=t.Sub("sc-puppet-state-${AWS::AccountId}"),
             VersioningConfiguration=s3.VersioningConfiguration(Status="Enabled"),
             BucketEncryption=s3.BucketEncryption(
                 ServerSideEncryptionConfiguration=[
@@ -1015,6 +1040,103 @@ def get_template(
     template.add_output(
         t.Output(
             "ManualApprovalsParam", Value=t.GetAtt(manual_approvals_param, "Value")
+        )
+    )
+
+    template.add_resource(
+        ssm.Parameter(
+            "DefaultTerraformVersion",
+            Type="String",
+            Name=constants.DEFAULT_TERRAFORM_VERSION_PARAMETER_NAME,
+            Value=constants.DEFAULT_TERRAFORM_VERSION_VALUE,
+        )
+    )
+
+    template.add_resource(
+        codebuild.Project(
+            "ExecuteTerraformProject",
+            Name=constants.EXECUTE_TERRAFORM_PROJECT_NAME,
+            ServiceRole=t.GetAtt("DeployRole", "Arn"),
+            Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
+            Artifacts=codebuild.Artifacts(
+                Type="S3",
+                Location=t.Sub("sc-puppet-state-${AWS::AccountId}"),
+                Path="terraform-executions",
+                Name="artifacts",
+                NamespaceType="BUILD_ID",
+            ),
+            TimeoutInMinutes=480,
+            Environment=codebuild.Environment(
+                ComputeType="BUILD_GENERAL1_SMALL",
+                Image=constants.CODEBUILD_DEFAULT_IMAGE,
+                Type="LINUX_CONTAINER",
+                EnvironmentVariables=[
+                    codebuild.EnvironmentVariable(
+                        Name="TERRAFORM_VERSION",
+                        Type="PARAMETER_STORE",
+                        Value=constants.DEFAULT_TERRAFORM_VERSION_PARAMETER_NAME,
+                    ),
+                ] + [
+                    codebuild.EnvironmentVariable(
+                        Name=name,
+                        Type="PLAINTEXT",
+                        Value="CHANGE_ME",
+                    ) for name in ["TARGET_ACCOUNT", "ZIP", "STATE_FILE"]
+                ],
+            ),
+            Source=codebuild.Source(
+                BuildSpec=yaml.safe_dump(dict(
+                    version="0.2",
+                    phases=dict(
+                        install=dict(
+                            commands=[
+                                "mkdir -p /root/downloads",
+                                "curl -s -qL -o /root/downloads/terraform_${TERRAFORM_VERSION}_linux_amd64.zip https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip",
+                                "unzip /root/downloads/terraform_${TERRAFORM_VERSION}_linux_amd64.zip -d /usr/bin/",
+                                "chmod +x /usr/bin/terraform",
+                                "terraform --version",
+                                "aws s3 cp $ZIP source.zip",
+                                "unzip source.zip",
+                            ],
+                        ),
+                        pre_build=dict(
+                            commands=[
+                                "aws s3 cp $STATE_FILE terraform.tfstate || echo 'no statefile copied'",
+                                'ASSUME_ROLE_ARN="arn:aws:iam::${TARGET_ACCOUNT}:role/servicecatalog-puppet/PuppetRole"',
+                                'TEMP_ROLE=$(aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name terraform)',
+                                'export TEMP_ROLE',
+                                'export AWS_ACCESS_KEY_ID=$(echo "${TEMP_ROLE}" | jq -r ".Credentials.AccessKeyId")',
+                                'export AWS_SECRET_ACCESS_KEY=$(echo "${TEMP_ROLE}" | jq -r ".Credentials.SecretAccessKey")',
+                                'export AWS_SESSION_TOKEN=$(echo "${TEMP_ROLE}" | jq -r ".Credentials.SessionToken")',
+                                'aws sts get-caller-identity',
+                                'terraform init',
+                            ],
+                        ),
+                        build=dict(
+                            commands=[
+                                'terraform apply -auto-approve',
+                            ]
+                        ),
+                        post_build=dict(
+                            commands=[
+                                'terraform output -json > outputs.json',
+                                'unset AWS_ACCESS_KEY_ID',
+                                'unset AWS_SECRET_ACCESS_KEY',
+                                'unset AWS_SESSION_TOKEN',
+                                'aws sts get-caller-identity',
+                                'aws s3 cp terraform.tfstate $STATE_FILE',
+                            ]
+                        )
+                    ),
+                    artifacts=dict(
+                        files=[
+                            "outputs.json",
+                        ],
+                    ),
+                )),
+                Type="NO_SOURCE",
+            ),
+            Description="Execute the given terraform in the given account using the given state file",
         )
     )
 

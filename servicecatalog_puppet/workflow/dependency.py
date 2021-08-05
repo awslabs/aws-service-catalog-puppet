@@ -54,6 +54,12 @@ def generate_dependency_tasks(
         app_for_region_task,
         app_for_account_and_region_task,
     )
+    from servicecatalog_puppet.workflow.workspaces import (
+        workspace_task,
+        workspace_for_account_task,
+        workspace_for_region_task,
+        workspace_for_account_and_region_task,
+    )
 
     these_dependencies = list()
     common_args = dict(
@@ -150,6 +156,37 @@ def generate_dependency_tasks(
                     app_for_account_and_region_task.AppForAccountAndRegionTask(
                         **common_args,
                         app_name=depends_on.get("name"),
+                        account_id=account_id,
+                        region=region,
+                    )
+                )
+                
+        elif depends_on.get("type") == constants.WORKSPACE:
+            if depends_on.get(constants.AFFINITY) == constants.WORKSPACE:
+                these_dependencies.append(
+                    workspace_task.WorkspaceTask(
+                        **common_args, workspace_name=depends_on.get("name"),
+                    )
+                )
+            if depends_on.get(constants.AFFINITY) == "account":
+                these_dependencies.append(
+                    workspace_for_account_task.WorkspaceForAccountTask(
+                        **common_args,
+                        workspace_name=depends_on.get("name"),
+                        account_id=account_id,
+                    )
+                )
+            if depends_on.get(constants.AFFINITY) == "region":
+                these_dependencies.append(
+                    workspace_for_region_task.WorkspaceForRegionTask(
+                        **common_args, workspace_name=depends_on.get("name"), region=region,
+                    )
+                )
+            if depends_on.get(constants.AFFINITY) == "account-and-region":
+                these_dependencies.append(
+                    workspace_for_account_and_region_task.WorkspaceForAccountAndRegionTask(
+                        **common_args,
+                        workspace_name=depends_on.get("name"),
                         account_id=account_id,
                         region=region,
                     )

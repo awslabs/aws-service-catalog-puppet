@@ -27,8 +27,8 @@ STACKS = "stacks"
 SPOKE_LOCAL_PORTFOLIOS = "spoke-local-portfolios"
 LAMBDA_INVOCATIONS = "lambda-invocations"
 ASSERTIONS = "assertions"
-WORKSPACES = "Workspaces"
-WORKSPACE = "Workspace"
+WORKSPACES = "workspaces"
+WORKSPACE = "workspace"
 APPS = "apps"
 APP = "app"
 ASSERTION = "assertion"
@@ -145,3 +145,10 @@ SECTION_SINGULAR_TO_PLURAL = {
     CODE_BUILD_RUN: CODE_BUILD_RUNS,
     ASSERTION: ASSERTIONS,
 }
+
+CODEBUILD_DEFAULT_IMAGE = "aws/codebuild/standard:4.0"
+
+DEFAULT_TERRAFORM_VERSION_PARAMETER_NAME = "/servicecatalog-puppet/terraform/default-version"
+DEFAULT_TERRAFORM_VERSION_VALUE = "1.0.4"
+
+EXECUTE_TERRAFORM_PROJECT_NAME = "servicecatalog-puppet-execute-terraform"

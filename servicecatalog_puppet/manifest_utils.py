@@ -392,7 +392,7 @@ class Manifest(dict):
                 portfolio=item.get("portfolio"),
                 product=item.get("product"),
                 version=item.get("version"),
-                execution=item.get("execution"),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
                 requested_priority=item.get("requested_priority", 0),
             ),
             "stacks": dict(
@@ -405,7 +405,7 @@ class Manifest(dict):
                 bucket=f"sc-puppet-stacks-repository-{puppet_account_id}",
                 key=item.get("key"),
                 version_id=item.get("version_id", ''),
-                execution=item.get("execution"),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
                 requested_priority=item.get("requested_priority", 0),
             ),
             "apps": dict(
@@ -417,7 +417,7 @@ class Manifest(dict):
                 bucket=f"sc-puppet-stacks-repository-{puppet_account_id}",
                 key=item.get("key"),
                 version_id=item.get("version_id", ''),
-                execution=item.get("execution"),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
                 requested_priority=item.get("requested_priority", 0),
             ),
             "workspaces": dict(
@@ -429,7 +429,7 @@ class Manifest(dict):
                 bucket=f"sc-puppet-stacks-repository-{puppet_account_id}",
                 key=item.get("key"),
                 version_id=item.get("version_id", ''),
-                execution=item.get("execution"),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
                 requested_priority=item.get("requested_priority", 0),
             ),
             "spoke-local-portfolios": dict(

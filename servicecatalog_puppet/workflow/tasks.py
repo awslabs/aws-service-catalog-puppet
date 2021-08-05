@@ -112,8 +112,13 @@ class PuppetTask(luigi.Task):
     @property
     def resources(self):
         result = {}
-        for a in self.api_calls_used():
-            result[a] = 1
+        api_calls = self.api_calls_used()
+        if isinstance(api_calls, list):
+            for a in self.api_calls_used():
+                result[a] = 1
+        elif isinstance(api_calls, dict):
+            for a, r in api_calls.items():
+                result[a] = r
         return result
 
     @property
