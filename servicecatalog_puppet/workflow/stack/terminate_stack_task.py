@@ -3,10 +3,11 @@ import luigi
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet import constants, aws
 from servicecatalog_puppet.workflow.stack import provisioning_task
+from servicecatalog_puppet.workflow.general import get_ssm_param_task
 
 
 class TerminateStackTask(
-    provisioning_task.ProvisioningTask, dependency.DependenciesMixin
+    provisioning_task.ProvisioningTask, dependency.DependenciesMixin, get_ssm_param_task.PuppetTaskWithParameters
 ):
     stack_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -50,24 +51,7 @@ class TerminateStackTask(
 
     def run(self):
         if self.execution == constants.EXECUTION_MODE_HUB:
-            for ssm_param_output in self.ssm_param_outputs:
-                param_name = ssm_param_output.get("param_name")
-                param_name = param_name.replace("${AWS::Region}", self.region)
-                param_name = param_name.replace("${AWS::AccountId}", self.account_id)
-                self.info(
-                    f"[{self.stack_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
-                )
-                with self.hub_client("ssm") as ssm:
-                    try:
-                        # todo push into another task
-                        ssm.delete_parameter(Name=param_name,)
-                        self.info(
-                            f"[{self.stack_name}] {self.account_id}:{self.region} :: deleting SSM Param: {param_name}"
-                        )
-                    except ssm.exceptions.ParameterNotFound:
-                        self.info(
-                            f"[{self.stack_name}] {self.account_id}:{self.region} :: SSM Param: {param_name} not found"
-                        )
+            self.terminate_ssm_outputs()
 
         with self.spoke_regional_client("cloudformation") as cloudformation:
             cloudformation.ensure_deleted(StackName=self.stack_name)

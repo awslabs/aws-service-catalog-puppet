@@ -4,10 +4,19 @@ import luigi
 import yaml
 
 from servicecatalog_puppet import manifest_utils
+from servicecatalog_puppet import constants
 
 
 class ManifestMixen(object):
     manifest_file_path = luigi.Parameter()
+
+    @property
+    def status(self):
+        return (
+            self.manifest.get(self.section_name)
+            .get(self.item_name)
+            .get("status", constants.PROVISIONED)
+        )
 
     @property
     @lru_cache()

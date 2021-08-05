@@ -5,14 +5,14 @@ import zipfile
 import luigi
 
 from servicecatalog_puppet.workflow import dependency
+from servicecatalog_puppet.workflow.workspaces import prepare_account_for_workspace_task
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.workspaces import workspace_base_task
-from servicecatalog_puppet.workflow.workspaces import prepare_account_for_workspace_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 from servicecatalog_puppet.workflow.general import get_ssm_param_task
 
 
-class ProvisionWorkspaceTask(
+class ProvisionDryRunWorkspaceTask(
     workspace_base_task.WorkspaceBaseTask,
     get_ssm_param_task.PuppetTaskWithParameters,
     manifest_mixin.ManifestMixen,
@@ -105,39 +105,9 @@ class ProvisionWorkspaceTask(
                 ),
             )
 
-            build = codebuild.start_build_and_wait_for_completion(
-                projectName=constants.EXECUTE_TERRAFORM_PROJECT_NAME,
+            codebuild.start_build_and_wait_for_completion(
+                projectName=constants.EXECUTE_DRY_RUN_TERRAFORM_PROJECT_NAME,
                 environmentVariablesOverride=parameters_to_use,
             )
-
-        if len(self.ssm_param_outputs) > 0:
-            with self.spoke_client('s3') as s3:
-                output_bucket = f"sc-puppet-state-{self.account_id}"
-                output_key = f"terraform-executions/{build.get('id').split(':')[1]}/artifacts-execute/outputs.json"
-                outputs = json.loads(s3.get_object(Bucket=output_bucket, Key=output_key).get("Body").read())
-
-                for ssm_param_output in self.ssm_param_outputs:
-                    self.info(f"writing SSM Param: {ssm_param_output.get('stack_output')}")
-                    with self.hub_client("ssm") as ssm:
-                        if outputs.get(ssm_param_output.get("stack_output")):
-                            output_value = outputs.get(ssm_param_output.get("stack_output")).get("value")
-
-                            ssm_parameter_name = ssm_param_output.get("param_name")
-                            ssm_parameter_name = ssm_parameter_name.replace(
-                                "${AWS::Region}", self.region
-                            )
-                            ssm_parameter_name = ssm_parameter_name.replace(
-                                "${AWS::AccountId}", self.account_id
-                            )
-                            ssm.put_parameter_and_wait(
-                                Name=ssm_parameter_name,
-                                Value=output_value,
-                                Type=ssm_param_output.get("param_type", "String"),
-                                Overwrite=True,
-                            )
-                        else:
-                            raise Exception(
-                                f"Could not find {ssm_param_output.get('stack_output')} in the outputs"
-                            )
 
         self.write_output(self.params_for_results_display())

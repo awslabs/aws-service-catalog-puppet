@@ -46,7 +46,6 @@ AFFINITY_REGION = "region"
 AFFINITY_ACCOUNT = "account"
 AFFINITY_ACCOUNT_AND_REGION = "account-and-region"
 
-
 RESULTS_DIRECTORY = "results"
 
 NO_CHANGE = "NO_CHANGE"
@@ -111,7 +110,6 @@ PRODUCT_GENERATION_METHOD_DEFAULT = "copy"
 
 LUIGI_DEFAULT_LOG_LEVEL = "INFO"
 
-
 ALL_SECTION_NAMES = [
     LAUNCHES,
     STACKS,
@@ -152,3 +150,7 @@ DEFAULT_TERRAFORM_VERSION_PARAMETER_NAME = "/servicecatalog-puppet/terraform/def
 DEFAULT_TERRAFORM_VERSION_VALUE = "1.0.4"
 
 EXECUTE_TERRAFORM_PROJECT_NAME = "servicecatalog-puppet-execute-terraform"
+EXECUTE_DRY_RUN_TERRAFORM_PROJECT_NAME = "servicecatalog-puppet-execute-dry-run-terraform"
+TERMINATE_TERRAFORM_PROJECT_NAME = "servicecatalog-puppet-terminate-terraform"
+TERMINATE_DRY_RUN_TERRAFORM_PROJECT_NAME = "servicecatalog-puppet-terminate-dry-run-terraform"
+TERRAFORM_SPOKE_PREP_STACK_NAME = f"{BOOTSTRAP_STACK_NAME}-terraform-execution"

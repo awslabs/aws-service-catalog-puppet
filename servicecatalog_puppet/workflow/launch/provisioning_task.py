@@ -11,14 +11,6 @@ class ProvisioningTask(
     manifest_file_path = luigi.Parameter()
 
     @property
-    def status(self):
-        return (
-            self.manifest.get(constants.LAUNCHES)
-            .get(self.launch_name)
-            .get("status", constants.PROVISIONED)
-        )
-
-    @property
     def section_name(self):
         return constants.LAUNCHES
 

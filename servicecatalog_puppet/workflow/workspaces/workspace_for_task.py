@@ -1,6 +1,10 @@
 import luigi
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.workspaces import provision_workspace_task
+from servicecatalog_puppet.workflow.workspaces import provision_dry_run_workspace_task
+from servicecatalog_puppet.workflow.workspaces import terminate_workspace_task
+from servicecatalog_puppet.workflow.workspaces import terminate_dry_run_workspace_task
 from servicecatalog_puppet.workflow.workspaces import workspace_base_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
@@ -19,8 +23,21 @@ class WorkspaceForTask(
         }
 
     def get_klass_for_provisioning(self):
-        #TODO need to add in dry run and deletion
-        return provision_workspace_task.ProvisionWorkspaceTask
+        if self.is_dry_run:
+            if self.status == constants.PROVISIONED:
+                return provision_dry_run_workspace_task.ProvisionDryRunWorkspaceTask
+            elif self.status == constants.TERMINATED:
+                return terminate_dry_run_workspace_task.TerminateDryRunWorkspaceTask
+            else:
+                raise Exception(f"Unknown status: {self.status}")
+
+        else:
+            if self.status == constants.PROVISIONED:
+                return provision_workspace_task.ProvisionWorkspaceTask
+            elif self.status == constants.TERMINATED:
+                return terminate_workspace_task.TerminateWorkspaceTask
+            else:
+                raise Exception(f"Unknown status: {self.status}")
 
     def run(self):
         self.write_output(self.params_for_results_display())
