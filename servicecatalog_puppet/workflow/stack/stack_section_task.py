@@ -2,9 +2,7 @@ from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.stack import stack_for_account_and_region_task
 from servicecatalog_puppet.workflow.stack import stack_for_account_task
 from servicecatalog_puppet.workflow.stack import stack_for_region_task
-from servicecatalog_puppet.workflow.stack import stack_for_spoke_execution_task
 from servicecatalog_puppet.workflow.stack import stack_task
-from servicecatalog_puppet.workflow.generate import generate_policies_task
 from servicecatalog_puppet.workflow.manifest import section_task
 from servicecatalog_puppet.workflow.launch import run_deploy_in_spoke_task
 
