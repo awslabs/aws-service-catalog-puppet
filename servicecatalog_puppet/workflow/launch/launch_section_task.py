@@ -21,50 +21,29 @@ class LaunchSectionTask(section_task.SectionTask):
         for name, details in self.manifest.get(constants.LAUNCHES, {}).items():
             execution = details.get("execution")
 
-            if self.is_running_in_spoke():
-                if execution == constants.EXECUTION_MODE_SPOKE:
-                    requirements += self.handle_requirements_for(
-                        name,
-                        constants.LAUNCH,
-                        constants.LAUNCHES,
-                        launch_for_region_task.LaunchForRegionTask,
-                        launch_for_account_task.LaunchForAccountTask,
-                        launch_for_account_and_region_task.LaunchForAccountAndRegionTask,
-                        launch_task.LaunchTask,
-                        dict(
-                            launch_name=name,
-                            puppet_account_id=self.puppet_account_id,
-                            manifest_file_path=self.manifest_file_path,
-                        ),
-                    )
-                else:
-                    continue
-
+            if self.is_running_in_spoke() and execution != constants.EXECUTION_MODE_SPOKE:
+                pass
             else:
-                if execution != constants.EXECUTION_MODE_SPOKE:
-                    requirements += self.handle_requirements_for(
-                        name,
-                        constants.LAUNCH,
-                        constants.LAUNCHES,
-                        launch_for_region_task.LaunchForRegionTask,
-                        launch_for_account_task.LaunchForAccountTask,
-                        launch_for_account_and_region_task.LaunchForAccountAndRegionTask,
-                        launch_task.LaunchTask,
-                        dict(
-                            launch_name=name,
-                            puppet_account_id=self.puppet_account_id,
-                            manifest_file_path=self.manifest_file_path,
-                        ),
-                    )
-                else:
-                    requirements.append(
-                        launch_for_spoke_execution_task.LaunchForSpokeExecutionTask(
-                            launch_name=name,
-                            puppet_account_id=self.puppet_account_id,
-                            manifest_file_path=self.manifest_file_path,
-                        )
-                    )
+                requirements += self.handle_requirements_for(
+                    name,
+                    constants.LAUNCH,
+                    constants.LAUNCHES,
+                    launch_for_region_task.LaunchForRegionTask,
+                    launch_for_account_task.LaunchForAccountTask,
+                    launch_for_account_and_region_task.LaunchForAccountAndRegionTask,
+                    launch_task.LaunchTask,
+                    dict(
+                        launch_name=name,
+                        puppet_account_id=self.puppet_account_id,
+                        manifest_file_path=self.manifest_file_path,
+                    ),
+                )
 
+                # launch_for_spoke_execution_task.LaunchForSpokeExecutionTask(
+                #     launch_name=name,
+                #     puppet_account_id=self.puppet_account_id,
+                #     manifest_file_path=self.manifest_file_path,
+                # )
         return requirements
 
     def run(self):

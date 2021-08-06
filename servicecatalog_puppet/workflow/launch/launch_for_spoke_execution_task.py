@@ -10,6 +10,8 @@ from servicecatalog_puppet.workflow.lambda_invocations import lambda_invocation_
 from servicecatalog_puppet.workflow.launch import launch_task
 from servicecatalog_puppet.workflow.launch import provisioning_task
 from servicecatalog_puppet.workflow.launch import run_deploy_in_spoke_task
+from servicecatalog_puppet.workflow.apps import app_task
+# from servicecatalog_puppet.workflow.apps import app_for_spoke_execution_task #TODO maybe cyclic
 from servicecatalog_puppet.workflow.spoke_local_portfolios import (
     spoke_local_portfolio_task,
 )
@@ -18,6 +20,9 @@ from servicecatalog_puppet.workflow.spoke_local_portfolios import (
 class LaunchForSpokeExecutionTask(
     provisioning_task.ProvisioningTask, dependency.DependenciesMixin
 ):
+    """
+    This is run in the hub when the launch is a spoke execution
+    """
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -39,6 +44,7 @@ class LaunchForSpokeExecutionTask(
         for depends_on in dependencies:
             depends_on_affinity = depends_on.get(constants.AFFINITY)
             depends_on_type = depends_on.get("type")
+
             if depends_on_type == constants.LAUNCH:
                 if depends_on_affinity == constants.LAUNCH:
                     dep = self.manifest.get_launch(depends_on.get("name"))
@@ -58,6 +64,27 @@ class LaunchForSpokeExecutionTask(
                     raise Exception(
                         "Could can only depend on a launch using affinity launch when using spoke execution mode"
                     )
+
+
+            # elif depends_on_type == constants.APP:
+            #     if depends_on_affinity == constants.APP:
+            #         dep = self.manifest.get_app(depends_on.get("name"))
+            #         if dep.get("execution") == constants.EXECUTION_MODE_SPOKE:
+            #             these_dependencies.append(
+            #                 app_for_spoke_execution_task.AppForSpokeExecutionTask(
+            #                     **common_args, app_name=depends_on.get("name"),
+            #                 )
+            #             )
+            #         else:
+            #             these_dependencies.append(
+            #                 app_task.AppTask(
+            #                     **common_args, app_name=depends_on.get("name"),
+            #                 )
+            #             )
+            #     else:
+            #         raise Exception(
+            #             "Could can only depend on a launch using affinity launch when using spoke execution mode"
+            #         )
 
             elif depends_on_type == constants.SPOKE_LOCAL_PORTFOLIO:
                 if depends_on_affinity == constants.SPOKE_LOCAL_PORTFOLIO:

@@ -357,6 +357,12 @@ class Manifest(dict):
     def get_launch(self, name):
         return self.get(constants.LAUNCHES).get(name)
 
+    def get_workspace(self, name):
+        return self.get(constants.WORKSPACES).get(name)
+
+    def get_app(self, name):
+        return self.get(constants.APPS).get(name)
+
     def get_tasks_for(
             self, puppet_account_id, section_name, item_name, single_account="None"
     ):

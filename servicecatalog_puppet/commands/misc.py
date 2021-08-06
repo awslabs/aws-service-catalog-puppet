@@ -266,18 +266,18 @@ def generate_tasks(
     f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
 ):
     tasks = [
-        launch_section_task.LaunchSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
+        # launch_section_task.LaunchSectionTask(
+        #     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        # ),
         stack_section_task.StackSectionTask(
             manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
-        app_section_task.AppSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        workspace_section_task.WorkspaceSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
+        # app_section_task.AppSectionTask(
+        #     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        # ),
+        # workspace_section_task.WorkspaceSectionTask(
+        #     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        # ),
     ]
     if execution_mode != constants.EXECUTION_MODE_SPOKE:
         if not is_dry_run:
