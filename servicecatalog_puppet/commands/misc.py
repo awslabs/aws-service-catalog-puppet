@@ -266,9 +266,9 @@ def generate_tasks(
     f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
 ):
     tasks = [
-        # launch_section_task.LaunchSectionTask(
-        #     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        # ),
+        launch_section_task.LaunchSectionTask(
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        ),
         stack_section_task.StackSectionTask(
             manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),

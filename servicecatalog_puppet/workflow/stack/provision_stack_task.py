@@ -250,7 +250,7 @@ class ProvisionStackTask(
 
                 for ssm_param_output in self.ssm_param_outputs:
                     self.info(f"writing SSM Param: {ssm_param_output.get('stack_output')}")
-                    with self.hub_client("ssm") as ssm:
+                    with self.client("ssm") as ssm:
                         found_match = False
                         # TODO push into another task
                         for output in stack_details.get("Outputs", []):
