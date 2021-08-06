@@ -106,7 +106,6 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.assertDictEqual(
             dict(
                 Type="AWS::Events::EventBusPolicy",
-                Condition="RunningInHomeRegion",
                 Properties=dict(
                     EventBusName="servicecatalog-puppet-event-bus",
                     Action="events:PutEvents",
@@ -120,7 +119,6 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.assertDictEqual(
             dict(
                 Type="AWS::Events::EventBusPolicy",
-                Condition="RunningInHomeRegion",
                 Properties=dict(
                     EventBusName="servicecatalog-puppet-event-bus",
                     Action="events:PutEvents",
