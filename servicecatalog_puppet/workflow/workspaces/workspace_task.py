@@ -1,5 +1,6 @@
 from servicecatalog_puppet.workflow.workspaces import workspace_for_task
 
+
 class WorkspaceTask(workspace_for_task.WorkspaceForTask):
     def params_for_results_display(self):
         return {

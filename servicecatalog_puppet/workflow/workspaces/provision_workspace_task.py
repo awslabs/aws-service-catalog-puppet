@@ -56,9 +56,10 @@ class ProvisionWorkspaceTask(
             "section_dependencies": self.get_section_dependencies(),
         }
         if not self.is_running_in_spoke():
-            requirements["account_ready"] = prepare_account_for_workspace_task.PrepareAccountForWorkspaceTask(
-                puppet_account_id=self.puppet_account_id,
-                account_id=self.account_id,
+            requirements[
+                "account_ready"
+            ] = prepare_account_for_workspace_task.PrepareAccountForWorkspaceTask(
+                puppet_account_id=self.puppet_account_id, account_id=self.account_id,
             )
         return requirements
 
@@ -68,25 +69,28 @@ class ProvisionWorkspaceTask(
         ]
 
     def run(self):
-        with self.hub_client('s3') as s3:
+        with self.hub_client("s3") as s3:
             options = (
                 zipfile.ZipFile(
-                    io.BytesIO(s3.get_object(Bucket=self.bucket, Key=self.key).get("Body").read())
+                    io.BytesIO(
+                        s3.get_object(Bucket=self.bucket, Key=self.key)
+                        .get("Body")
+                        .read()
+                    )
                 )
-                    .open(f"options.json", "r")
-                    .read()
+                .open(f"options.json", "r")
+                .read()
             )
 
         options = json.loads(options)
 
         zip_file_path = f"s3://{self.bucket}/{self.key}"
         state_file_path = f"s3://sc-puppet-state-{self.account_id}/workspace/{self.workspace_name}/{self.account_id}/{self.region}.zip"
-        with self.spoke_client('codebuild') as codebuild:
+        with self.spoke_client("codebuild") as codebuild:
             parameters_to_use = [
-                dict(name="TARGET_ACCOUNT", value=self.account_id, type="PLAINTEXT", ),
-
-                dict(name="STATE_FILE", value=state_file_path, type="PLAINTEXT", ),
-                dict(name="ZIP", value=zip_file_path, type="PLAINTEXT", ),
+                dict(name="TARGET_ACCOUNT", value=self.account_id, type="PLAINTEXT",),
+                dict(name="STATE_FILE", value=state_file_path, type="PLAINTEXT",),
+                dict(name="ZIP", value=zip_file_path, type="PLAINTEXT",),
             ]
 
             for parameter_name, parameter_value in self.get_parameter_values().items():
@@ -101,7 +105,9 @@ class ProvisionWorkspaceTask(
             parameters_to_use.append(
                 dict(
                     name="TERRAFORM_VERSION",
-                    value=options.get("Terraform", {}).get("Version", constants.DEFAULT_TERRAFORM_VERSION_VALUE),
+                    value=options.get("Terraform", {}).get(
+                        "Version", constants.DEFAULT_TERRAFORM_VERSION_VALUE
+                    ),
                     type="PLAINTEXT",
                 ),
             )
@@ -112,16 +118,24 @@ class ProvisionWorkspaceTask(
             )
 
         if len(self.ssm_param_outputs) > 0:
-            with self.spoke_client('s3') as s3:
+            with self.spoke_client("s3") as s3:
                 output_bucket = f"sc-puppet-state-{self.account_id}"
                 output_key = f"terraform-executions/{build.get('id').split(':')[1]}/artifacts-execute/outputs.json"
-                outputs = json.loads(s3.get_object(Bucket=output_bucket, Key=output_key).get("Body").read())
+                outputs = json.loads(
+                    s3.get_object(Bucket=output_bucket, Key=output_key)
+                    .get("Body")
+                    .read()
+                )
 
                 for ssm_param_output in self.ssm_param_outputs:
-                    self.info(f"writing SSM Param: {ssm_param_output.get('stack_output')}")
+                    self.info(
+                        f"writing SSM Param: {ssm_param_output.get('stack_output')}"
+                    )
                     with self.hub_client("ssm") as ssm:
                         if outputs.get(ssm_param_output.get("stack_output")):
-                            output_value = outputs.get(ssm_param_output.get("stack_output")).get("value")
+                            output_value = outputs.get(
+                                ssm_param_output.get("stack_output")
+                            ).get("value")
 
                             ssm_parameter_name = ssm_param_output.get("param_name")
                             ssm_parameter_name = ssm_parameter_name.replace(

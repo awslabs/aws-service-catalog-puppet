@@ -7,7 +7,9 @@ from servicecatalog_puppet.workflow.general import get_ssm_param_task
 
 
 class TerminateStackTask(
-    provisioning_task.ProvisioningTask, dependency.DependenciesMixin, get_ssm_param_task.PuppetTaskWithParameters
+    provisioning_task.ProvisioningTask,
+    dependency.DependenciesMixin,
+    get_ssm_param_task.PuppetTaskWithParameters,
 ):
     stack_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()

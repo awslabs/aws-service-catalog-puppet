@@ -79,7 +79,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
                         "value": self.puppet_account_id,
                         "type": "PLAINTEXT",
                     },
-                    {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT", },
+                    {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
                     {
                         "name": "REGIONS",
                         "value": ",".join(regions),

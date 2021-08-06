@@ -6,6 +6,6 @@ from servicecatalog_puppet.workflow.generic import generic_for_account_task
 
 class LambdaInvocationForAccountTask(
     generic_for_account_task.GenericForAccountTask,
-    lambda_invocation_for_task.LambdaInvocationForTask
+    lambda_invocation_for_task.LambdaInvocationForTask,
 ):
     account_id = luigi.Parameter()

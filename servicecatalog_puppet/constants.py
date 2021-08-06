@@ -154,11 +154,17 @@ SECTION_SINGULAR_TO_PLURAL = {
 
 CODEBUILD_DEFAULT_IMAGE = "aws/codebuild/standard:4.0"
 
-DEFAULT_TERRAFORM_VERSION_PARAMETER_NAME = "/servicecatalog-puppet/terraform/default-version"
+DEFAULT_TERRAFORM_VERSION_PARAMETER_NAME = (
+    "/servicecatalog-puppet/terraform/default-version"
+)
 DEFAULT_TERRAFORM_VERSION_VALUE = "1.0.4"
 
 EXECUTE_TERRAFORM_PROJECT_NAME = "servicecatalog-puppet-execute-terraform"
-EXECUTE_DRY_RUN_TERRAFORM_PROJECT_NAME = "servicecatalog-puppet-execute-dry-run-terraform"
+EXECUTE_DRY_RUN_TERRAFORM_PROJECT_NAME = (
+    "servicecatalog-puppet-execute-dry-run-terraform"
+)
 TERMINATE_TERRAFORM_PROJECT_NAME = "servicecatalog-puppet-terminate-terraform"
-TERMINATE_DRY_RUN_TERRAFORM_PROJECT_NAME = "servicecatalog-puppet-terminate-dry-run-terraform"
+TERMINATE_DRY_RUN_TERRAFORM_PROJECT_NAME = (
+    "servicecatalog-puppet-terminate-dry-run-terraform"
+)
 TERRAFORM_SPOKE_PREP_STACK_NAME = f"{BOOTSTRAP_STACK_NAME}-terraform-execution"

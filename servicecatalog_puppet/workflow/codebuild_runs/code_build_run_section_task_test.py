@@ -49,4 +49,3 @@ class CodeBuildRunsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         # verify
         raise NotImplementedError()
-

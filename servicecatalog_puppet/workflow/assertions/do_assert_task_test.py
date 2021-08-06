@@ -2,6 +2,7 @@ from unittest import skip
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 from servicecatalog_puppet import constants
 
+
 class DoAssertTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     assertion_name = "assertion_name"

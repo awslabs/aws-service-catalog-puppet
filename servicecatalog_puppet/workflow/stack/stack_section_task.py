@@ -12,7 +12,9 @@ class StackSectionTask(generic_section_task.GenericSectionTask):
     section_name = constants.STACKS
     for_region_task_klass = stack_for_region_task.StackForRegionTask
     for_account_task_klass = stack_for_account_task.StackForAccountTask
-    for_account_and_region_task_klass = stack_for_account_and_region_task.StackForAccountAndRegionTask
+    for_account_and_region_task_klass = (
+        stack_for_account_and_region_task.StackForAccountAndRegionTask
+    )
     task_klass = stack_task.StackTask
     item_name = "stack_name"
     supports_spoke_mode = True

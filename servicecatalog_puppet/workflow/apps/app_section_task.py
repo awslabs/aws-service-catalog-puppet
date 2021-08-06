@@ -6,14 +6,14 @@ from servicecatalog_puppet.workflow.apps import app_task
 from servicecatalog_puppet.workflow.generic import generic_section_task
 
 
-class AppSectionTask(
-    generic_section_task.GenericSectionTask
-):
+class AppSectionTask(generic_section_task.GenericSectionTask):
     section_name_singular = constants.APP
     section_name = constants.APPS
     for_region_task_klass = app_for_region_task.AppForRegionTask
     for_account_task_klass = app_for_account_task.AppForAccountTask
-    for_account_and_region_task_klass = app_for_account_and_region_task.AppForAccountAndRegionTask
+    for_account_and_region_task_klass = (
+        app_for_account_and_region_task.AppForAccountAndRegionTask
+    )
     task_klass = app_task.AppTask
     item_name = "app_name"
     supports_spoke_mode = True

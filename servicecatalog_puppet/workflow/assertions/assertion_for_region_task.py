@@ -24,7 +24,10 @@ class AssertionForRegionTask(assertion_for_task.AssertionForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-            self.puppet_account_id, self.section_name, self.assertion_name, self.region,
+            self.puppet_account_id,
+            self.section_name,
+            self.assertion_name,
+            self.region,
             single_account=self.single_account,
         ):
             dependencies.append(

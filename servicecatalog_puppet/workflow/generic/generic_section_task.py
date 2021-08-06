@@ -14,7 +14,6 @@ class GenericSectionTask(section_task.SectionTask):
     item_name = "not_set"
     supports_spoke_mode = False
 
-
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -39,7 +38,7 @@ class GenericSectionTask(section_task.SectionTask):
                 self.for_account_and_region_task_klass,
                 self.task_klass,
                 common_args,
-                self.supports_spoke_mode
+                self.supports_spoke_mode,
             )
 
         return requirements
@@ -48,9 +47,14 @@ class GenericSectionTask(section_task.SectionTask):
         if self.supports_spoke_mode and not self.is_running_in_spoke():
             tasks_to_run = list()
             for name, details in self.manifest.get(self.section_name, {}).items():
-                if details.get("execution", constants.EXECUTION_MODE_DEFAULT) == constants.EXECUTION_MODE_SPOKE:
-                    for account_id in self.manifest.get_account_ids_used_for_section_item(
-                            self.puppet_account_id, self.section_name, name
+                if (
+                    details.get("execution", constants.EXECUTION_MODE_DEFAULT)
+                    == constants.EXECUTION_MODE_SPOKE
+                ):
+                    for (
+                        account_id
+                    ) in self.manifest.get_account_ids_used_for_section_item(
+                        self.puppet_account_id, self.section_name, name
                     ):
                         tasks_to_run.append(
                             run_deploy_in_spoke_task.RunDeployInSpokeTask(

@@ -15,17 +15,17 @@ from troposphere import ssm
 
 
 def get_template(
-        puppet_version,
-        all_regions,
-        source,
-        is_caching_enabled,
-        is_manual_approvals: bool,
-        scm_skip_creation_of_repo: bool,
+    puppet_version,
+    all_regions,
+    source,
+    is_caching_enabled,
+    is_manual_approvals: bool,
+    scm_skip_creation_of_repo: bool,
 ) -> t.Template:
     is_codecommit = source.get("Provider", "").lower() == "codecommit"
     is_github = source.get("Provider", "").lower() == "github"
     is_codestarsourceconnection = (
-            source.get("Provider", "").lower() == "codestarsourceconnection"
+        source.get("Provider", "").lower() == "codestarsourceconnection"
     )
     is_s3 = source.get("Provider", "").lower() == "s3"
     description = f"""Bootstrap template used to bring up the main ServiceCatalog-Puppet AWS CodePipeline with dependencies
@@ -443,7 +443,7 @@ def get_template(
             "Name": "PUPPET_ACCOUNT_ID",
             "Value": t.Ref("AWS::AccountId"),
         },
-        {"Type": "PLAINTEXT", "Name": "PUPPET_REGION", "Value": t.Ref("AWS::Region"), },
+        {"Type": "PLAINTEXT", "Name": "PUPPET_REGION", "Value": t.Ref("AWS::Region"),},
         {
             "Type": "PARAMETER_STORE",
             "Name": "PARTITION",
@@ -632,20 +632,20 @@ def get_template(
         Description="Runs puppet for a single account - SINGLE_ACCOUNT_ID",
         ServiceRole=t.GetAtt(deploy_role, "Arn"),
         Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
-        Artifacts=codebuild.Artifacts(Type="NO_ARTIFACTS", ),
+        Artifacts=codebuild.Artifacts(Type="NO_ARTIFACTS",),
         TimeoutInMinutes=480,
         Environment=codebuild.Environment(
             ComputeType=t.Ref(deploy_environment_compute_type_parameter),
             Image="aws/codebuild/standard:4.0",
             Type="LINUX_CONTAINER",
             EnvironmentVariables=[
-                                     {
-                                         "Type": "PLAINTEXT",
-                                         "Name": "SINGLE_ACCOUNT_ID",
-                                         "Value": "CHANGE_ME",
-                                     },
-                                 ]
-                                 + deploy_env_vars,
+                {
+                    "Type": "PLAINTEXT",
+                    "Name": "SINGLE_ACCOUNT_ID",
+                    "Value": "CHANGE_ME",
+                },
+            ]
+            + deploy_env_vars,
         ),
         Source=codebuild.Source(
             Type="NO_SOURCE",
@@ -667,7 +667,7 @@ def get_template(
         "Description"
     ] = "Runs puppet for a single account - SINGLE_ACCOUNT_ID and then does a http put"
     single_account_run_project_args.get("Environment").EnvironmentVariables.append(
-        {"Type": "PLAINTEXT", "Name": "CALLBACK_URL", "Value": "CHANGE_ME", }
+        {"Type": "PLAINTEXT", "Name": "CALLBACK_URL", "Value": "CHANGE_ME",}
     )
     single_account_run_project_args["Source"] = codebuild.Source(
         Type="NO_SOURCE",
@@ -774,7 +774,7 @@ def get_template(
         codepipeline.Pipeline(
             "Pipeline",
             RoleArn=t.GetAtt("PipelineRole", "Arn"),
-            Stages=[source_stage, deploy_stage, ],
+            Stages=[source_stage, deploy_stage,],
             Name=t.Sub("${AWS::StackName}-pipeline"),
             ArtifactStore=codepipeline.ArtifactStore(
                 Type="S3",
@@ -804,7 +804,7 @@ def get_template(
                     codepipeline.WebhookFilterRule(
                         JsonPath="$.ref",
                         MatchEquals="refs/heads/"
-                                    + source.get("Configuration").get("Branch"),
+                        + source.get("Configuration").get("Branch"),
                     )
                 ],
                 Authentication="GITHUB_HMAC",
@@ -854,20 +854,20 @@ def get_template(
         Name="servicecatalog-puppet-deploy",
         ServiceRole=t.GetAtt(deploy_role, "Arn"),
         Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
-        Artifacts=codebuild.Artifacts(Type="CODEPIPELINE", ),
+        Artifacts=codebuild.Artifacts(Type="CODEPIPELINE",),
         TimeoutInMinutes=480,
         Environment=codebuild.Environment(
             ComputeType=t.Ref(deploy_environment_compute_type_parameter),
             Image="aws/codebuild/standard:4.0",
             Type="LINUX_CONTAINER",
             EnvironmentVariables=[
-                                     {
-                                         "Type": "PARAMETER_STORE",
-                                         "Name": "NUM_WORKERS",
-                                         "Value": t.Ref(num_workers_ssm_parameter),
-                                     },
-                                 ]
-                                 + deploy_env_vars,
+                {
+                    "Type": "PARAMETER_STORE",
+                    "Name": "NUM_WORKERS",
+                    "Value": t.Ref(num_workers_ssm_parameter),
+                },
+            ]
+            + deploy_env_vars,
         ),
         Source=codebuild.Source(
             Type="CODEPIPELINE", BuildSpec=yaml.safe_dump(deploy_project_build_spec),

@@ -85,7 +85,7 @@ class ProvisionStackTask(
         with self.spoke_regional_client("cloudformation") as cloudformation:
             try:
                 paginator = cloudformation.get_paginator("describe_stacks")
-                for page in paginator.paginate(StackName=self.stack_name, ):
+                for page in paginator.paginate(StackName=self.stack_name,):
                     for stack in page.get("Stacks", []):
                         status = stack.get("StackStatus")
                         if status in [
@@ -119,15 +119,15 @@ class ProvisionStackTask(
                                     "describe_stacks"
                                 )
                                 for sub_page in sub_paginator.paginate(
-                                        StackName=stack.get("StackId"),
+                                    StackName=stack.get("StackId"),
                                 ):
                                     for sub_stack in sub_page.get("Stacks", []):
                                         status = sub_stack.get("StackStatus")
                             current_stack = stack
             except ClientError as error:
                 if (
-                        error.response["Error"]["Message"]
-                        != f"Stack with id {self.stack_name} does not exist"
+                    error.response["Error"]["Message"]
+                    != f"Stack with id {self.stack_name} does not exist"
                 ):
                     raise error
         return current_stack
@@ -225,8 +225,8 @@ class ProvisionStackTask(
                     {
                         "ParameterKey": p,
                         "ParameterValue": params_to_use.get(p)
-                            # .replace("${AWS::AccountId}", self.account_id) # TODO - check if replace is needed
-                            # .replace("${AWS::Region}", self.region), # TODO - check if replace is needed
+                        # .replace("${AWS::AccountId}", self.account_id) # TODO - check if replace is needed
+                        # .replace("${AWS::Region}", self.region), # TODO - check if replace is needed
                     }
                 )
             with self.spoke_regional_client("cloudformation") as cloudformation:
@@ -245,19 +245,23 @@ class ProvisionStackTask(
                 f"Running in execution mode: {self.execution}, checking for SSM outputs"
             )
             if len(self.ssm_param_outputs) > 0:
-                with self.spoke_regional_client("cloudformation") as spoke_cloudformation:
+                with self.spoke_regional_client(
+                    "cloudformation"
+                ) as spoke_cloudformation:
                     stack_details = aws.get_stack_output_for(
                         spoke_cloudformation, self.stack_name,
                     )
 
                 for ssm_param_output in self.ssm_param_outputs:
-                    self.info(f"writing SSM Param: {ssm_param_output.get('stack_output')}")
+                    self.info(
+                        f"writing SSM Param: {ssm_param_output.get('stack_output')}"
+                    )
                     with self.hub_client("ssm") as ssm:
                         found_match = False
                         # TODO push into another task
                         for output in stack_details.get("Outputs", []):
                             if output.get("OutputKey") == ssm_param_output.get(
-                                    "stack_output"
+                                "stack_output"
                             ):
                                 ssm_parameter_name = ssm_param_output.get("param_name")
                                 ssm_parameter_name = ssm_parameter_name.replace(

@@ -9,7 +9,7 @@ class GenericForAccountTask:
             "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
-            self.item_identifier: self.item_name
+            self.item_identifier: self.item_name,
         }
 
     def requires(self):
@@ -28,9 +28,7 @@ class GenericForAccountTask:
             "account_id": self.account_id,
             "single_account": self.single_account,
         }
-        for task in self.manifest.get_tasks_for_launch_and_account(
-                **a
-        ):
+        for task in self.manifest.get_tasks_for_launch_and_account(**a):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
             )

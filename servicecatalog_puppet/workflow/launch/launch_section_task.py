@@ -12,7 +12,9 @@ class LaunchSectionTask(generic_section_task.GenericSectionTask):
     section_name = constants.LAUNCHES
     for_region_task_klass = launch_for_region_task.LaunchForRegionTask
     for_account_task_klass = launch_for_account_task.LaunchForAccountTask
-    for_account_and_region_task_klass = launch_for_account_and_region_task.LaunchForAccountAndRegionTask
+    for_account_and_region_task_klass = (
+        launch_for_account_and_region_task.LaunchForAccountAndRegionTask
+    )
     task_klass = launch_task.LaunchTask
     item_name = "launch_name"
     supports_spoke_mode = True

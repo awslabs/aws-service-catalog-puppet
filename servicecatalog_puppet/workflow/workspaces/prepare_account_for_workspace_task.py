@@ -14,7 +14,9 @@ class PrepareAccountForWorkspaceTask(tasks.PuppetTask):
         }
 
     def requires(self):
-        return create_template_for_workspace_task.CreateTemplateForWorkspaceTask(self.puppet_account_id)
+        return create_template_for_workspace_task.CreateTemplateForWorkspaceTask(
+            self.puppet_account_id
+        )
 
     def api_calls_used(self):
         return {
@@ -22,8 +24,11 @@ class PrepareAccountForWorkspaceTask(tasks.PuppetTask):
         }
 
     def run(self):
-        template = self.input().open('r').read()
-        with self.spoke_client('cloudformation') as cloudformation:
-            cloudformation.create_or_update(StackName=constants.TERRAFORM_SPOKE_PREP_STACK_NAME, TemplateBody=template)
+        template = self.input().open("r").read()
+        with self.spoke_client("cloudformation") as cloudformation:
+            cloudformation.create_or_update(
+                StackName=constants.TERRAFORM_SPOKE_PREP_STACK_NAME,
+                TemplateBody=template,
+            )
 
         self.write_output(self.params_for_results_display())

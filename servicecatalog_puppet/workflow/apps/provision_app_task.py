@@ -4,6 +4,7 @@ from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow.apps import app_base_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
+
 class ProvisionAppTask(
     app_base_task.AppBaseTask,
     manifest_mixin.ManifestMixen,
@@ -31,7 +32,6 @@ class ProvisionAppTask(
     requested_priority = luigi.IntParameter(significant=False, default=0)
 
     execution = luigi.Parameter()
-
 
     def params_for_results_display(self):
         return {

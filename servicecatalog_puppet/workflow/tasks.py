@@ -31,7 +31,7 @@ def unwrap(what):
 class PuppetTask(luigi.Task):
     @property
     def executor_account_id(self):
-        return os.environ.get('EXECUTOR_ACCOUNT_ID')
+        return os.environ.get("EXECUTOR_ACCOUNT_ID")
 
     @property
     def execution_mode(self):
@@ -147,7 +147,7 @@ class PuppetTask(luigi.Task):
                 result[a] = r
 
         for i, r in self.resources_used():
-            result[f"{i}-{r.name}"] = 1/r.value
+            result[f"{i}-{r.name}"] = 1 / r.value
         return result
 
     @property

@@ -5,9 +5,7 @@ from servicecatalog_puppet.workflow.apps import app_base_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 
-class AppForTask(
-    app_base_task.AppBaseTask, manifest_mixin.ManifestMixen
-):
+class AppForTask(app_base_task.AppBaseTask, manifest_mixin.ManifestMixen):
     app_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -19,7 +17,7 @@ class AppForTask(
         }
 
     def get_klass_for_provisioning(self):
-        #TODO need to add in dry run and deletion
+        # TODO need to add in dry run and deletion
         return provision_app_task.ProvisionAppTask
 
     def run(self):

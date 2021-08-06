@@ -13,7 +13,7 @@ class GenericForAccountAndRegionTask:
             "account_id": self.account_id,
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
-            self.item_identifier: self.item_name
+            self.item_identifier: self.item_name,
         }
 
     def requires(self):
@@ -33,9 +33,7 @@ class GenericForAccountAndRegionTask:
             "region": self.region,
             "single_account": self.single_account,
         }
-        for task in self.manifest.get_tasks_for_launch_and_account_and_region(
-                **a
-        ):
+        for task in self.manifest.get_tasks_for_launch_and_account_and_region(**a):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)
             )
