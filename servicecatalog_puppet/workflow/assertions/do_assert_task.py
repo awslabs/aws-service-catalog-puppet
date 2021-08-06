@@ -18,6 +18,7 @@ class DoAssertTask(
     account_id = luigi.Parameter()
 
     puppet_account_id = luigi.Parameter()
+    execution = luigi.Parameter()
 
     expected = luigi.DictParameter()
     actual = luigi.DictParameter()

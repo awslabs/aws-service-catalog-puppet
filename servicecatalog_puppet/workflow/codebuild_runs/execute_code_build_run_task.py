@@ -16,6 +16,8 @@ class ExecuteCodeBuildRunTask(
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()
+    
+    execution = luigi.Parameter()
 
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
@@ -51,5 +53,6 @@ class ExecuteCodeBuildRunTask(
             account_parameters=self.account_parameters,
             project_name=self.project_name,
             requested_priority=self.requested_priority,
+            execution=self.execution,
         )
         self.write_output(self.params_for_results_display())

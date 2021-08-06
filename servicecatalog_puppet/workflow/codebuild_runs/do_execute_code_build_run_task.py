@@ -16,6 +16,8 @@ class DoExecuteCodeBuildRunTask(
     region = luigi.Parameter()
     account_id = luigi.Parameter()
 
+    execution = luigi.Parameter()
+
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
     launch_parameters = luigi.DictParameter(default={}, significant=False)
