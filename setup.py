@@ -10,6 +10,7 @@ packages = \
  'servicecatalog_puppet.template_builder',
  'servicecatalog_puppet.template_builder.hub',
  'servicecatalog_puppet.workflow',
+ 'servicecatalog_puppet.workflow.apps',
  'servicecatalog_puppet.workflow.assertions',
  'servicecatalog_puppet.workflow.codebuild_runs',
  'servicecatalog_puppet.workflow.general',
@@ -24,7 +25,8 @@ packages = \
  'servicecatalog_puppet.workflow.portfolio.portfolio_management',
  'servicecatalog_puppet.workflow.portfolio.sharing_management',
  'servicecatalog_puppet.workflow.spoke_local_portfolios',
- 'servicecatalog_puppet.workflow.stack']
+ 'servicecatalog_puppet.workflow.stack',
+ 'servicecatalog_puppet.workflow.workspaces']
 
 package_data = \
 {'': ['*'], 'servicecatalog_puppet': ['manifests/*', 'templates/*']}

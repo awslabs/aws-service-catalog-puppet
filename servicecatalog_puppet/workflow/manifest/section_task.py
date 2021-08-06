@@ -32,7 +32,6 @@ class SectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
 
         return requirements
 
-
     def handle_requirements_for(
             self,
             name,
