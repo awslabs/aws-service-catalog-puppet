@@ -14,3 +14,7 @@ class AssertionBaseTask(workflow_tasks.PuppetTask):
     @property
     def item_name(self):
         return self.assertion_name
+
+    @property
+    def item_identifier(self):
+        return "assertion_name"
