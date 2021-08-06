@@ -31,9 +31,11 @@ def unwrap(what):
 class PuppetTask(luigi.Task):
     @property
     def execution_mode(self):
+        self.info(f"checking execution mode: {os.environ.get('SCT_EXECUTION_MODE')}")
         return os.environ.get("SCT_EXECUTION_MODE", constants.EXECUTION_MODE_HUB)
 
     def is_running_in_spoke(self):
+        self.info(f"is_running_in_spoke: {self.execution_mode == constants.EXECUTION_MODE_SPOKE}")
         return self.execution_mode == constants.EXECUTION_MODE_SPOKE
 
     @property
@@ -80,6 +82,7 @@ class PuppetTask(luigi.Task):
 
     def hub_client(self, service):
         if self.is_running_in_spoke():
+            self.info("Running in spoke mode, using spoke_client instead of hub_client")
             return self.spoke_client(service)
         else:
             return betterboto_client.CrossAccountClientContextManager(
@@ -91,6 +94,7 @@ class PuppetTask(luigi.Task):
     def hub_regional_client(self, service, region_name=None):
         region = region_name or self.region
         if self.is_running_in_spoke():
+            self.info("Running in spoke mode, using spoke_regional_client instead of hub_regional_client")
             return self.spoke_regional_client(service, region_name=region)
         else:
             return betterboto_client.CrossAccountClientContextManager(
