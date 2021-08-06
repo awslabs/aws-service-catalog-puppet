@@ -21,6 +21,13 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
             "cache_invalidator": self.cache_invalidator,
         }
 
+    def api_calls_used(self):
+        return {
+            f"s3.put_object_{self.puppet_account_id}": 1,
+            f"s3.generate_presigned_url_{self.puppet_account_id}": 1,
+            f"codebuild.start_build_{self.account_id}": 1,
+        }
+
     def requires(self):
         return dict(
             shares=generate_shares_task.GenerateSharesTask(
@@ -72,7 +79,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
                         "value": self.puppet_account_id,
                         "type": "PLAINTEXT",
                     },
-                    {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
+                    {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT", },
                     {
                         "name": "REGIONS",
                         "value": ",".join(regions),

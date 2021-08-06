@@ -132,6 +132,9 @@ class PuppetTask(luigi.Task):
     def api_calls_used(self):
         return []
 
+    def resources_used(self):
+        return []
+
     @property
     def resources(self):
         result = {}
@@ -142,6 +145,9 @@ class PuppetTask(luigi.Task):
         elif isinstance(api_calls, dict):
             for a, r in api_calls.items():
                 result[a] = r
+
+        for r in self.resources_used():
+            result[a.name] = r.value
         return result
 
     @property
