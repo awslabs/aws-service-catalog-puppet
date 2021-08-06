@@ -4,6 +4,8 @@ import unittest
 from copy import deepcopy
 from unittest import skip
 
+import constants
+
 
 class TestManifest(unittest.TestCase):
     account_a = {
@@ -199,6 +201,7 @@ class TestManifest(unittest.TestCase):
                 "assertion_name": item_name,
                 "puppet_account_id": puppet_account_id,
                 "region": region,
+                'execution': constants.EXECUTION_MODE_DEFAULT,
                 "requested_priority": 0,
                 "expected": {"foo": "bar"},
                 "actual": {"bar": "foo"},
