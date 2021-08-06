@@ -5,7 +5,7 @@ import zipfile
 import luigi
 
 from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.workspaces import prepare_account_for_workspace_task
+from servicecatalog_puppet.workflow.workspaces import prepare_account_for_workspace_task, Limits
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.workspaces import workspace_base_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
@@ -61,11 +61,10 @@ class TerminateDryRunWorkspaceTask(
             )
         return requirements
 
-    def api_calls_used(self):
-        return {
-            f"codebuild.start_build_{self.account_id}": 0.5,
-            f"codebuild.batch_get_projects_{self.account_id}": 0.5,
-        }
+    def resources_used(self):
+        return [
+            (self.account_id, Limits.CODEBUILD_CONCURRENT_PROJECTS),
+        ]
 
     def run(self):
         with self.hub_client('s3') as s3:
