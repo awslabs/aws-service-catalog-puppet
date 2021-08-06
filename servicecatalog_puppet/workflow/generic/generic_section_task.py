@@ -38,7 +38,8 @@ class GenericSectionTask(section_task.SectionTask):
                 self.for_account_task_klass,
                 self.for_account_and_region_task_klass,
                 self.task_klass,
-                common_args
+                common_args,
+                self.supports_spoke_mode
             )
 
         return requirements

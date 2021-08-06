@@ -42,6 +42,7 @@ class SectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
             for_account_and_region_task_klass,
             task_klass,
             kwargs_to_use,
+            supports_spoke_mode,
     ):
         """
         This creates the correct ForTask for the given section and it
@@ -53,6 +54,7 @@ class SectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
         :param for_account_and_region_task_klass:
         :param task_klass:
         :param kwargs_to_use:
+        :param supports_spoke_mode:
         :return:
         """
 
@@ -68,7 +70,7 @@ class SectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
         if self_execution == constants.EXECUTION_MODE_SPOKE and self.is_running_in_spoke():
             dependencies.append(task_klass(**kwargs_to_use))
 
-        if self_execution == constants.EXECUTION_MODE_SPOKE and not self.is_running_in_spoke():
+        if supports_spoke_mode and self_execution == constants.EXECUTION_MODE_SPOKE and not self.is_running_in_spoke():
             dependencies += self.handle_requirements_for_spoke_execution(name, details)
 
         elif self_execution != constants.EXECUTION_MODE_SPOKE and not self.is_running_in_spoke():
