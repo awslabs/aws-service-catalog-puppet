@@ -16,7 +16,7 @@ class ExecuteCodeBuildRunTask(
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()
-    
+
     execution = luigi.Parameter()
 
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
