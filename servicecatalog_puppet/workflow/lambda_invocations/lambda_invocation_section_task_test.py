@@ -40,18 +40,3 @@ class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTes
 
         # verify
         self.assertEqual(expected_result, actual_result)
-
-    def test_run(self):
-        # setup
-        lambda_invocations = dict(foo="bar")
-        manifest = {
-            "lambda-invocations": lambda_invocations,
-        }
-        manifest_mocked = mock.PropertyMock(return_value=manifest)
-        type(self.sut).manifest = manifest_mocked
-
-        # exercise
-        self.sut.run()
-
-        # verify
-        self.assert_output(lambda_invocations)

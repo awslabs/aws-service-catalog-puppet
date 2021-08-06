@@ -53,11 +53,12 @@ class TerminateDryRunWorkspaceTask(
     def requires(self):
         requirements = {
             "section_dependencies": self.get_section_dependencies(),
-            "account_ready": prepare_account_for_workspace_task.PrepareAccountForWorkspaceTask(
+        }
+        if not self.is_running_in_spoke():
+            requirements["account_ready"] = prepare_account_for_workspace_task.PrepareAccountForWorkspaceTask(
                 puppet_account_id=self.puppet_account_id,
                 account_id=self.account_id,
             )
-        }
         return requirements
 
     def api_calls_used(self):

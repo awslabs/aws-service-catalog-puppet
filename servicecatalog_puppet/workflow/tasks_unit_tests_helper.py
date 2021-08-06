@@ -82,6 +82,18 @@ class PuppetTaskUnitTest(unittest.TestCase):
             extra_args,
         )
 
+    def assert_regional_client_called_with(
+        self, client_used, function_name_called, function_parameters, extra_args={}
+    ):
+        self.assert_client_called_with(
+            self.sut.regional_client,
+            self.regional_client_mock,
+            client_used,
+            function_name_called,
+            function_parameters,
+            extra_args,
+        )
+
     def inject_client_with_response(self, client, function_name, response):
         f = getattr(client, function_name)
         f.return_value = response
@@ -91,6 +103,13 @@ class PuppetTaskUnitTest(unittest.TestCase):
     ):
         self.inject_client_with_response(
             self.hub_regional_client_mock, function_name_called, response
+        )
+
+    def inject_regional_client_called_with_response(
+        self, client_used, function_name_called, response
+    ):
+        self.inject_client_with_response(
+            self.regional_client_mock, function_name_called, response
         )
 
     def inject_spoke_regional_client_called_with_response(

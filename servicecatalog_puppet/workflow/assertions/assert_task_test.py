@@ -1,6 +1,6 @@
 from unittest import skip, mock
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
-
+from servicecatalog_puppet import constants
 
 class AssertTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
@@ -10,6 +10,7 @@ class AssertTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     expected = {}
     actual = {}
+    execution = constants.EXECUTION_MODE_HUB
     requested_priority = 1
 
     def setUp(self) -> None:
@@ -26,6 +27,7 @@ class AssertTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             expected=self.expected,
             actual=self.actual,
             requested_priority=self.requested_priority,
+            execution=self.execution,
         )
 
         self.wire_up_mocks()

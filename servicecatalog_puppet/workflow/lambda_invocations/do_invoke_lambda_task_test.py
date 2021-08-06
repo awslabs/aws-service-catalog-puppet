@@ -67,7 +67,7 @@ class DoInvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             parameters=self.sut.get_parameter_values(),
         )
         response = dict(StatusCode=200)
-        self.inject_hub_regional_client_called_with_response(
+        self.inject_regional_client_called_with_response(
             "lambda", "invoke", response,
         )
 
@@ -75,7 +75,7 @@ class DoInvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.sut.run()
 
         # verify
-        self.assert_hub_regional_client_called_with(
+        self.assert_regional_client_called_with(
             "lambda",
             "invoke",
             dict(
