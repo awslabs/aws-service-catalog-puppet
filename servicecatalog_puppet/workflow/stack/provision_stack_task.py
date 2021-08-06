@@ -64,6 +64,8 @@ class ProvisionStackTask(
                 bucket=self.bucket,
                 key=self.key,
                 version_id=self.version_id,
+                puppet_account_id=self.puppet_account_id,
+                account_id=self.puppet_account_id,
             ),
         }
         return requirements

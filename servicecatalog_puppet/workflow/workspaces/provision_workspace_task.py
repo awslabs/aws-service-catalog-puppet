@@ -112,7 +112,7 @@ class ProvisionWorkspaceTask(
             )
 
         if len(self.ssm_param_outputs) > 0:
-            with self.hub_client('s3') as s3:
+            with self.spoke_client('s3') as s3:
                 output_bucket = f"sc-puppet-state-{self.account_id}"
                 output_key = f"terraform-executions/{build.get('id').split(':')[1]}/artifacts-execute/outputs.json"
                 outputs = json.loads(s3.get_object(Bucket=output_bucket, Key=output_key).get("Body").read())

@@ -3,6 +3,8 @@ from servicecatalog_puppet.workflow import tasks
 
 
 class GetCloudFormationTemplateFromS3(tasks.PuppetTask):
+    puppet_account_id = luigi.Parameter()
+    account_id = luigi.Parameter()
     bucket = luigi.Parameter()
     key = luigi.Parameter()
     version_id = luigi.Parameter()
