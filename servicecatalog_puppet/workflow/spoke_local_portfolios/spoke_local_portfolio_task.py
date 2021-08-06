@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 from servicecatalog_puppet.workflow.spoke_local_portfolios import (
     spoke_local_portfolio_for_task,
 )

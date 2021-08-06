@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.generic import generic_section_task
 from servicecatalog_puppet.workflow.stack import stack_for_account_and_region_task

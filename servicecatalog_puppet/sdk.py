@@ -1,5 +1,5 @@
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
 from servicecatalog_puppet.commands import bootstrap as bootstrap_commands
 from servicecatalog_puppet.commands import management as management_commands
 from servicecatalog_puppet.commands import manifest as manifest_commands
