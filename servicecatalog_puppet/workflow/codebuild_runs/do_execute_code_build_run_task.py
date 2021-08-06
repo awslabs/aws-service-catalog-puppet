@@ -49,7 +49,7 @@ class DoExecuteCodeBuildRunTask(
         return requirements
 
     def run(self):
-        with self.client("codebuild") as codebuild:
+        with self.hub_client("codebuild") as codebuild:
             provided_parameters = self.get_parameter_values()
             parameters_to_use = list()
 

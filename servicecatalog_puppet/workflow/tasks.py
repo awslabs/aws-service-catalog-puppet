@@ -62,12 +62,6 @@ class PuppetTask(luigi.Task):
     def get_account_used(self):
         return self.account_id if self.is_running_in_spoke() else self.puppet_account_id
 
-    def execution_client(self, service):
-        if self.is_running_in_spoke():
-            return self.client(service)
-        else:
-            return self.spoke_client(service)
-
     def spoke_client(self, service):
         return betterboto_client.CrossAccountClientContextManager(
             service,
@@ -75,41 +69,36 @@ class PuppetTask(luigi.Task):
             f"{self.account_id}-{config.get_puppet_role_name()}",
         )
 
-    def spoke_regional_client(self, service):
+    def spoke_regional_client(self, service, region_name=None):
+        region = region_name or self.region
         return betterboto_client.CrossAccountClientContextManager(
             service,
             config.get_puppet_role_arn(self.account_id),
             f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
-            region_name=self.region,
+            region_name=region,
         )
 
     def hub_client(self, service):
-        return betterboto_client.CrossAccountClientContextManager(
-            service,
-            config.get_puppet_role_arn(self.puppet_account_id),
-            f"{self.puppet_account_id}-{config.get_puppet_role_name()}",
-        )
-
-    def client(self, service):
-        return betterboto_client.ClientContextManager(
-            service,
-        )
-
-    def regional_client(self, service, region_name=None):
-        region = region_name or self.region
-        return betterboto_client.ClientContextManager(
-            service,
-            region_name=region,
-        )
+        if self.is_running_in_spoke():
+            return self.spoke_client(service)
+        else:
+            return betterboto_client.CrossAccountClientContextManager(
+                service,
+                config.get_puppet_role_arn(self.puppet_account_id),
+                f"{self.puppet_account_id}-{config.get_puppet_role_name()}",
+            )
 
     def hub_regional_client(self, service, region_name=None):
         region = region_name or self.region
-        return betterboto_client.CrossAccountClientContextManager(
-            service,
-            config.get_puppet_role_arn(self.puppet_account_id),
-            f"{self.puppet_account_id}-{region}-{config.get_puppet_role_name()}",
-            region_name=region,
-        )
+        if self.is_running_in_spoke():
+            return self.spoke_regional_client(service, region_name=region)
+        else:
+            return betterboto_client.CrossAccountClientContextManager(
+                service,
+                config.get_puppet_role_arn(self.puppet_account_id),
+                f"{self.puppet_account_id}-{region}-{config.get_puppet_role_name()}",
+                region_name=region,
+            )
 
     def read_from_input(self, input_name):
         with self.input().get(input_name).open("r") as f:

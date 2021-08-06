@@ -45,7 +45,7 @@ class GetSSMParamTask(tasks.PuppetTask):
             return []
 
     def run(self):
-        with self.regional_client('ssm') as ssm:
+        with self.hub_regional_client('ssm') as ssm:
             try:
                 p = ssm.get_parameter(Name=self.name,)
                 self.write_output(

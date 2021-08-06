@@ -15,7 +15,7 @@ class GetCloudFormationTemplateFromS3(tasks.PuppetTask):
         }
 
     def run(self):
-        with self.client("s3") as s3:
+        with self.hub_client("s3") as s3:
             p = dict(Bucket=self.bucket, Key=self.key, )
             if self.version_id != "":
                 p['VersionId'] = self.version_id
