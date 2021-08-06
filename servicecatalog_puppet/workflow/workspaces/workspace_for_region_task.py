@@ -24,7 +24,7 @@ class WorkspaceForRegionTask(workspace_for_task.WorkspaceForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-            self.puppet_account_id, self.section_name, self.workspace_name, self.region
+            self.puppet_account_id, self.section_name, self.workspace_name, self.region, single_account=self.single_account,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)

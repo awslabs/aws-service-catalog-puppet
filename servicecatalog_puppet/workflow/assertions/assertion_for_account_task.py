@@ -25,6 +25,7 @@ class AssertionForAccountTask(assertion_for_task.AssertionForTask):
             self.section_name,
             self.assertion_name,
             self.account_id,
+            single_account=self.single_account,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)

@@ -25,6 +25,7 @@ class WorkspaceForAccountTask(workspace_for_task.WorkspaceForTask):
             self.section_name,
             self.workspace_name,
             self.account_id,
+            single_account=self.single_account,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)

@@ -28,6 +28,7 @@ class LambdaInvocationForRegionTask(lambda_invocation_for_task.LambdaInvocationF
             self.section_name,
             self.lambda_invocation_name,
             self.region,
+            single_account=self.single_account,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)

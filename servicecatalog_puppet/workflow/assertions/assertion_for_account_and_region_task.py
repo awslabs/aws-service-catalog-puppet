@@ -28,6 +28,7 @@ class AssertionForAccountAndRegionTask(assertion_for_task.AssertionForTask):
             self.assertion_name,
             self.account_id,
             self.region,
+            single_account=self.single_account,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)

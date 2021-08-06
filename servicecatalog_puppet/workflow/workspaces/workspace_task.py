@@ -25,6 +25,7 @@ class WorkspaceTask(workspace_for_task.WorkspaceForTask):
                     self.workspace_name,
                     account_id,
                     region,
+                    single_account=self.single_account,
                 ):
                     requirements.append(
                         klass(**task, manifest_file_path=self.manifest_file_path)
