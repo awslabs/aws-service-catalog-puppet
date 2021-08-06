@@ -67,7 +67,7 @@ class ProvisionWorkspaceTask(
         }
 
     def run(self):
-        with self.hub_client('s3') as s3:
+        with self.client('s3') as s3:
             options = (
                 zipfile.ZipFile(
                     io.BytesIO(s3.get_object(Bucket=self.bucket, Key=self.key).get("Body").read())
@@ -118,7 +118,7 @@ class ProvisionWorkspaceTask(
 
                 for ssm_param_output in self.ssm_param_outputs:
                     self.info(f"writing SSM Param: {ssm_param_output.get('stack_output')}")
-                    with self.hub_client("ssm") as ssm:
+                    with self.client("ssm") as ssm:
                         if outputs.get(ssm_param_output.get("stack_output")):
                             output_value = outputs.get(ssm_param_output.get("stack_output")).get("value")
 

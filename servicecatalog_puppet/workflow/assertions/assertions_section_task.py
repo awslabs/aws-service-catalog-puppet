@@ -15,4 +15,4 @@ class AssertionsSectionTask(generic_section_task.GenericSectionTask):
     for_account_and_region_task_klass = assertion_for_account_and_region_task.AssertionForAccountAndRegionTask
     task_klass = assertion_task.AssertionTask
     item_name = "assertion_name"
-    supports_spoke_mode = False
+    supports_spoke_mode = True

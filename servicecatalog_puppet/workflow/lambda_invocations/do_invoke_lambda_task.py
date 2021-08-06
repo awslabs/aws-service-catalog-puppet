@@ -38,9 +38,14 @@ class DoInvokeLambdaTask(
     def requires(self):
         return dict(ssm_params=self.get_ssm_parameters(),)
 
+    def api_calls_used(self):
+        return {
+            f"lambda.invoke_{self.get_account_used()}_{self.region}": 1,
+        }
+
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)
-        with self.hub_regional_client(
+        with self.regional_client(
             "lambda", region_name=home_region
         ) as lambda_client:
             payload = dict(

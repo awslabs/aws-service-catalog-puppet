@@ -15,4 +15,4 @@ class LambdaInvocationsSectionTask(generic_section_task.GenericSectionTask):
     for_account_and_region_task_klass = lambda_invocation_for_account_and_region_task.LambdaInvocationForAccountAndRegionTask
     task_klass = lambda_invocation_task.LambdaInvocationTask
     item_name = "lambda_invocation_name"
-    supports_spoke_mode = False
+    supports_spoke_mode = True

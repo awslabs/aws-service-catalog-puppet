@@ -16,4 +16,4 @@ class AppSectionTask(
     for_account_and_region_task_klass = app_for_account_and_region_task.AppForAccountAndRegionTask
     task_klass = app_task.AppTask
     item_name = "app_name"
-    supports_spoke_mode = False
+    supports_spoke_mode = True

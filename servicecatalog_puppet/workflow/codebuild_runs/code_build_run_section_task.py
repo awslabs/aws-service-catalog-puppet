@@ -17,4 +17,4 @@ class CodeBuildRunsSectionTask(
     for_account_and_region_task_klass = code_build_run_for_account_and_region_task.CodeBuildRunForAccountAndRegionTask
     task_klass = code_build_run_task.CodeBuildRunTask
     item_name = "code_build_run_name"
-    supports_spoke_mode = False
+    supports_spoke_mode = True

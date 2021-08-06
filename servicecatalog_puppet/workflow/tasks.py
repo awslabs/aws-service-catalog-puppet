@@ -59,6 +59,9 @@ class PuppetTask(luigi.Task):
     def should_use_sns(self):
         return os.environ.get("SCT_SHOULD_USE_SNS", "False") == "True"
 
+    def get_account_used(self):
+        return self.account_id if self.is_running_in_spoke() else self.puppet_account_id
+
     def spoke_client(self, service):
         return betterboto_client.CrossAccountClientContextManager(
             service,

@@ -36,8 +36,8 @@ class DoExecuteCodeBuildRunTask(
 
     def api_calls_used(self):
         return [
-            f"codebuild.start_build_{self.puppet_account_id}_{self.project_name}",
-            f"codebuild.batch_get_projects_{self.puppet_account_id}_{self.project_name}",
+            f"codebuild.start_build_{self.get_account_used()}_{self.project_name}",
+            f"codebuild.batch_get_projects_{self.get_account_used()}_{self.project_name}",
         ]
 
     def requires(self):
@@ -47,7 +47,7 @@ class DoExecuteCodeBuildRunTask(
         return requirements
 
     def run(self):
-        with self.hub_client("codebuild") as codebuild:
+        with self.client("codebuild") as codebuild:
             provided_parameters = self.get_parameter_values()
             parameters_to_use = list()
 

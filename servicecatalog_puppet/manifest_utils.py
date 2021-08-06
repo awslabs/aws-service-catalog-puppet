@@ -459,6 +459,7 @@ class Manifest(dict):
                 invocation_type=item.get("invocation_type"),
                 launch_parameters=item.get("parameters", {}),
                 manifest_parameters=self.get("parameters", {}),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
             "code-build-runs": dict(
                 puppet_account_id=puppet_account_id,
@@ -467,6 +468,7 @@ class Manifest(dict):
                 manifest_parameters=self.get("parameters", {}),
                 project_name=item.get("project_name"),
                 requested_priority=item.get("requested_priority", 0),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
             "assertions": dict(
                 puppet_account_id=puppet_account_id,
@@ -474,6 +476,7 @@ class Manifest(dict):
                 assertion_name=item_name,
                 expected=item.get("expected"),
                 actual=item.get("actual"),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
         }.get(section_name)
 
