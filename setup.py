@@ -15,6 +15,7 @@ packages = \
  'servicecatalog_puppet.workflow.codebuild_runs',
  'servicecatalog_puppet.workflow.general',
  'servicecatalog_puppet.workflow.generate',
+ 'servicecatalog_puppet.workflow.generic',
  'servicecatalog_puppet.workflow.lambda_invocations',
  'servicecatalog_puppet.workflow.launch',
  'servicecatalog_puppet.workflow.manifest',
