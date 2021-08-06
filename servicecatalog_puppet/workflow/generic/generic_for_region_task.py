@@ -1,8 +1,6 @@
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow import tasks
 
 
 class GenericForRegionTask:
@@ -39,7 +37,7 @@ class GenericForRegionTask:
                 klass(**task, manifest_file_path=self.manifest_file_path)
             )
 
-        item = self.manifest.get(self.section_name).get(self.item_name)
+        item = self.manifest.get(self.section_name).get(self.item_name) #TODO Should this be in the account and account-and-region or should this be removed
         for depends_on in item.get("depends_on", []):
             if depends_on.get("type") == self.section_name:
                 if depends_on.get(constants.AFFINITY) == "region":
