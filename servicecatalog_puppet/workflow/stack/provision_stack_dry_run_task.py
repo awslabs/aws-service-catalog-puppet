@@ -1,11 +1,14 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import json
 
 import cfn_tools
-
-from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.stack import provision_stack_task
 from botocore.exceptions import ClientError
+
+from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet.workflow.stack import provision_stack_task
 
 
 class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):

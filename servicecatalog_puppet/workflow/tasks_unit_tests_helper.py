@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import unittest
 from unittest import mock
 
@@ -35,6 +38,9 @@ class PuppetTaskUnitTest(unittest.TestCase):
 
         self.hub_client_mock, self.sut.hub_client = mocked_client()
         self.hub_regional_client_mock, self.sut.hub_regional_client = mocked_client()
+
+        self.client_mock, self.sut.client = mocked_client()
+        self.regional_client_mock, self.sut.regional_client = mocked_client()
 
         self.sut.write_output = mock.MagicMock()
         self.sut.input = mock.MagicMock()
@@ -79,6 +85,18 @@ class PuppetTaskUnitTest(unittest.TestCase):
             extra_args,
         )
 
+    def assert_regional_client_called_with(
+        self, client_used, function_name_called, function_parameters, extra_args={}
+    ):
+        self.assert_client_called_with(
+            self.sut.regional_client,
+            self.regional_client_mock,
+            client_used,
+            function_name_called,
+            function_parameters,
+            extra_args,
+        )
+
     def inject_client_with_response(self, client, function_name, response):
         f = getattr(client, function_name)
         f.return_value = response
@@ -88,6 +106,13 @@ class PuppetTaskUnitTest(unittest.TestCase):
     ):
         self.inject_client_with_response(
             self.hub_regional_client_mock, function_name_called, response
+        )
+
+    def inject_regional_client_called_with_response(
+        self, client_used, function_name_called, response
+    ):
+        self.inject_client_with_response(
+            self.regional_client_mock, function_name_called, response
         )
 
     def inject_spoke_regional_client_called_with_response(

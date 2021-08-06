@@ -1,4 +1,6 @@
-from unittest import skip, mock
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -37,32 +39,4 @@ class CodeBuildRunForAccountTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
         actual_result = self.sut.params_for_results_display()
 
         # verify
-        self.assertEqual(expected_result, actual_result)
-
-    @mock.patch(
-        "servicecatalog_puppet.workflow.manifest.manifest_mixin.ManifestMixen.manifest"
-    )
-    def test_requires(self, manifest_mock):
-        # setup
-        dependencies = list()
-        requirements = dict(dependencies=dependencies,)
-
-        klass = self.sut.get_klass_for_provisioning()
-
-        for task in self.sut.manifest.get_tasks_for_launch_and_account(
-            self.sut.puppet_account_id,
-            self.sut.section_name,
-            self.sut.code_build_run_name,
-            self.sut.account_id,
-        ):
-            dependencies.append(
-                klass(**task, manifest_file_path=self.sut.manifest_file_path)
-            )
-
-        expected_result = requirements
-
-        # exercise
-        actual_result = self.sut.requires()
-
-        # assert
         self.assertEqual(expected_result, actual_result)

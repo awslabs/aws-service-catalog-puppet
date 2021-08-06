@@ -1,5 +1,9 @@
-from servicecatalog_puppet.workflow import tasks_unit_tests_helper
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 from unittest import skip
+
+from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
 class LaunchSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):

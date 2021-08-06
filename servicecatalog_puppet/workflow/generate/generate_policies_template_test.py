@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 from unittest.mock import MagicMock
 
 from cfn_tools import load_yaml, dump_yaml
@@ -106,7 +109,6 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.assertDictEqual(
             dict(
                 Type="AWS::Events::EventBusPolicy",
-                Condition="RunningInHomeRegion",
                 Properties=dict(
                     EventBusName="servicecatalog-puppet-event-bus",
                     Action="events:PutEvents",
@@ -120,7 +122,6 @@ class GeneratePoliciesTemplateTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.assertDictEqual(
             dict(
                 Type="AWS::Events::EventBusPolicy",
-                Condition="RunningInHomeRegion",
                 Properties=dict(
                     EventBusName="servicecatalog-puppet-event-bus",
                     Action="events:PutEvents",

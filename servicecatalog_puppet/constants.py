@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import os
 
 import pkg_resources
@@ -27,6 +30,10 @@ STACKS = "stacks"
 SPOKE_LOCAL_PORTFOLIOS = "spoke-local-portfolios"
 LAMBDA_INVOCATIONS = "lambda-invocations"
 ASSERTIONS = "assertions"
+WORKSPACES = "workspaces"
+WORKSPACE = "workspace"
+APPS = "apps"
+APP = "app"
 ASSERTION = "assertion"
 CODE_BUILD_RUNS = "code-build-runs"
 CODE_BUILD_RUN = "code-build-run"
@@ -41,7 +48,6 @@ AFFINITY = "affinity"
 AFFINITY_REGION = "region"
 AFFINITY_ACCOUNT = "account"
 AFFINITY_ACCOUNT_AND_REGION = "account-and-region"
-
 
 RESULTS_DIRECTORY = "results"
 
@@ -107,7 +113,6 @@ PRODUCT_GENERATION_METHOD_DEFAULT = "copy"
 
 LUIGI_DEFAULT_LOG_LEVEL = "INFO"
 
-
 ALL_SECTION_NAMES = [
     LAUNCHES,
     STACKS,
@@ -115,6 +120,8 @@ ALL_SECTION_NAMES = [
     LAMBDA_INVOCATIONS,
     CODE_BUILD_RUNS,
     ASSERTIONS,
+    APPS,
+    WORKSPACES,
 ]
 
 ALL_SECTION_NAME_SINGULAR_AND_PLURAL_LIST = [
@@ -124,6 +131,8 @@ ALL_SECTION_NAME_SINGULAR_AND_PLURAL_LIST = [
     (LAMBDA_INVOCATION, LAMBDA_INVOCATIONS),
     (CODE_BUILD_RUN, CODE_BUILD_RUNS),
     (ASSERTION, ASSERTIONS),
+    (APP, APPS),
+    (WORKSPACE, WORKSPACES),
 ]
 
 SECTION_NAME_SINGULAR_AND_PLURAL_LIST_THAT_SUPPORTS_PARAMETERS = [
@@ -131,6 +140,8 @@ SECTION_NAME_SINGULAR_AND_PLURAL_LIST_THAT_SUPPORTS_PARAMETERS = [
     (STACK, STACKS),
     (LAMBDA_INVOCATION, LAMBDA_INVOCATIONS),
     (CODE_BUILD_RUN, CODE_BUILD_RUNS),
+    (APP, APPS),
+    (WORKSPACE, WORKSPACES),
 ]
 
 SECTION_SINGULAR_TO_PLURAL = {
@@ -140,4 +151,23 @@ SECTION_SINGULAR_TO_PLURAL = {
     LAMBDA_INVOCATION: LAMBDA_INVOCATIONS,
     CODE_BUILD_RUN: CODE_BUILD_RUNS,
     ASSERTION: ASSERTIONS,
+    APP: APPS,
+    WORKSPACE: WORKSPACES,
 }
+
+CODEBUILD_DEFAULT_IMAGE = "aws/codebuild/standard:4.0"
+
+DEFAULT_TERRAFORM_VERSION_PARAMETER_NAME = (
+    "/servicecatalog-puppet/terraform/default-version"
+)
+DEFAULT_TERRAFORM_VERSION_VALUE = "1.0.4"
+
+EXECUTE_TERRAFORM_PROJECT_NAME = "servicecatalog-puppet-execute-terraform"
+EXECUTE_DRY_RUN_TERRAFORM_PROJECT_NAME = (
+    "servicecatalog-puppet-execute-dry-run-terraform"
+)
+TERMINATE_TERRAFORM_PROJECT_NAME = "servicecatalog-puppet-terminate-terraform"
+TERMINATE_DRY_RUN_TERRAFORM_PROJECT_NAME = (
+    "servicecatalog-puppet-terminate-dry-run-terraform"
+)
+TERRAFORM_SPOKE_PREP_STACK_NAME = f"{BOOTSTRAP_STACK_NAME}-terraform-execution"

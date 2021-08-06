@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import os
 from datetime import datetime
 
@@ -22,6 +25,7 @@ def deploy(
     os.environ["SCT_EXECUTION_MODE"] = str(execution_mode)
     os.environ["SCT_SINGLE_ACCOUNT"] = str(single_account)
     os.environ["SCT_IS_DRY_RUN"] = str(is_dry_run)
+    os.environ["EXECUTOR_ACCOUNT_ID"] = str(executor_account_id)
     os.environ["SCT_SHOULD_USE_SNS"] = str(config.get_should_use_sns(puppet_account_id))
     os.environ["SCT_SHOULD_USE_PRODUCT_PLANS"] = str(
         config.get_should_use_product_plans(

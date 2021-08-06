@@ -1,9 +1,12 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
+import logging
+
 import click
 from betterboto import client as betterboto_client
 from jinja2 import Template
 
-
-import logging
 from servicecatalog_puppet import constants, asset_helpers
 
 logger = logging.getLogger()

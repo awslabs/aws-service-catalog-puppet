@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 def test_constants_values():
     # setup
     from servicecatalog_puppet import constants
@@ -53,6 +56,8 @@ def test_constants_values():
         constants.LAMBDA_INVOCATIONS,
         constants.CODE_BUILD_RUNS,
         constants.ASSERTIONS,
+        constants.APPS,
+        constants.WORKSPACES,
     ]
     assert constants.RESULTS_DIRECTORY == "results"
     assert constants.NO_CHANGE == "NO_CHANGE"
@@ -127,12 +132,16 @@ def test_constants_values():
         (constants.LAMBDA_INVOCATION, constants.LAMBDA_INVOCATIONS),
         (constants.CODE_BUILD_RUN, constants.CODE_BUILD_RUNS),
         (constants.ASSERTION, constants.ASSERTIONS),
+        (constants.APP, constants.APPS),
+        (constants.WORKSPACE, constants.WORKSPACES),
     ]
     assert constants.SECTION_NAME_SINGULAR_AND_PLURAL_LIST_THAT_SUPPORTS_PARAMETERS == [
         (constants.LAUNCH, constants.LAUNCHES),
         (constants.STACK, constants.STACKS),
         (constants.LAMBDA_INVOCATION, constants.LAMBDA_INVOCATIONS),
         (constants.CODE_BUILD_RUN, constants.CODE_BUILD_RUNS),
+        (constants.APP, constants.APPS),
+        (constants.WORKSPACE, constants.WORKSPACES),
     ]
     assert constants.SECTION_SINGULAR_TO_PLURAL == {
         constants.LAUNCH: constants.LAUNCHES,
@@ -141,4 +150,6 @@ def test_constants_values():
         constants.LAMBDA_INVOCATION: constants.LAMBDA_INVOCATIONS,
         constants.CODE_BUILD_RUN: constants.CODE_BUILD_RUNS,
         constants.ASSERTION: constants.ASSERTIONS,
+        constants.APP: constants.APPS,
+        constants.WORKSPACE: constants.WORKSPACES,
     }

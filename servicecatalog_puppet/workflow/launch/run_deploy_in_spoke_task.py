@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import os
 
 import luigi
@@ -19,6 +22,13 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
             "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
+        }
+
+    def api_calls_used(self):
+        return {
+            f"s3.put_object_{self.puppet_account_id}": 1,
+            f"s3.generate_presigned_url_{self.puppet_account_id}": 1,
+            f"codebuild.start_build_{self.account_id}": 1,
         }
 
     def requires(self):

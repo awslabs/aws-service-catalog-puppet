@@ -1,11 +1,12 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import json
 
-import luigi
+from botocore.client import ClientError
 
-from servicecatalog_puppet import aws
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.stack import terminate_stack_task
-from botocore.client import ClientError
 
 
 class TerminateStackDryRunTask(terminate_stack_task.TerminateStackTask):

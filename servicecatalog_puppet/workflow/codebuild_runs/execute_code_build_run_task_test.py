@@ -1,4 +1,9 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 from unittest import skip, mock
+
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -12,6 +17,7 @@ class ExecuteCodeBuildRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_parameters = {}
     account_parameters = {}
     project_name = "project_name"
+    execution = constants.EXECUTION_MODE_HUB
     requested_priority = 1
     manifest_file_path = "manifest_file_path"
 
@@ -34,6 +40,7 @@ class ExecuteCodeBuildRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             account_parameters=self.account_parameters,
             project_name=self.project_name,
             requested_priority=self.requested_priority,
+            execution=self.execution,
         )
 
         self.wire_up_mocks()

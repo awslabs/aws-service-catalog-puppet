@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 from servicecatalog_puppet.workflow.assertions import assertion_for_task
 
 
@@ -26,6 +29,7 @@ class AssertionTask(assertion_for_task.AssertionForTask):
                     self.assertion_name,
                     account_id,
                     region,
+                    single_account=self.single_account,
                 ):
                     requirements.append(
                         klass(**task, manifest_file_path=self.manifest_file_path)

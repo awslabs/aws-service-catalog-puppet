@@ -1,16 +1,18 @@
-import json
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import time
 
-import luigi
 import cfn_tools
+import luigi
+from botocore.exceptions import ClientError
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow.stack import provisioning_task
 from servicecatalog_puppet.workflow.stack import get_cloud_formation_template_from_s3
-from botocore.exceptions import ClientError
+from servicecatalog_puppet.workflow.stack import provisioning_task
 
 
 class ProvisionStackTask(
@@ -61,31 +63,22 @@ class ProvisionStackTask(
             "section_dependencies": self.get_section_dependencies(),
             "ssm_params": self.get_ssm_parameters(),
             "template": get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
-                puppet_account_id=self.puppet_account_id,
                 bucket=self.bucket,
                 key=self.key,
                 version_id=self.version_id,
+                puppet_account_id=self.puppet_account_id,
+                account_id=self.puppet_account_id,
             ),
         }
         return requirements
 
     def api_calls_used(self):
         apis = [
-            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_record_{self.account_id}_{self.region}",
-            f"cloudformation.get_template_summary_{self.account_id}_{self.region}",
-            f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
-            f"servicecatalog.list_provisioned_product_plans_single_page_{self.account_id}_{self.region}",
-            f"servicecatalog.delete_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.create_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.execute_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.update_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.provision_product_{self.account_id}_{self.region}",
-            # f"ssm.put_parameter_and_wait_{self.region}",
+            f"servicecatalog.describe_stacks_{self.account_id}_{self.region}",
+            f"servicecatalog.ensure_deleted_{self.account_id}_{self.region}",
+            f"servicecatalog.get_template_summary_{self.account_id}_{self.region}",
+            f"servicecatalog.get_template_{self.account_id}_{self.region}",
+            f"servicecatalog.create_or_update_{self.account_id}_{self.region}",
         ]
         return apis
 
@@ -231,7 +224,10 @@ class ProvisionStackTask(
             provisioning_parameters = []
             for p in params_to_use.keys():
                 provisioning_parameters.append(
-                    {"Key": p, "Value": params_to_use.get(p),}
+                    {
+                        "ParameterKey": p,
+                        "ParameterValue": params_to_use.get(p)
+                    }
                 )
             with self.spoke_regional_client("cloudformation") as cloudformation:
                 cloudformation.create_or_update(
@@ -248,38 +244,43 @@ class ProvisionStackTask(
             self.info(
                 f"Running in execution mode: {self.execution}, checking for SSM outputs"
             )
-            with self.spoke_regional_client("cloudformation") as spoke_cloudformation:
-                stack_details = aws.get_stack_output_for(
-                    spoke_cloudformation, self.stack_name,
-                )
+            if len(self.ssm_param_outputs) > 0:
+                with self.spoke_regional_client(
+                    "cloudformation"
+                ) as spoke_cloudformation:
+                    stack_details = aws.get_stack_output_for(
+                        spoke_cloudformation, self.stack_name,
+                    )
 
-            for ssm_param_output in self.ssm_param_outputs:
-                self.info(f"writing SSM Param: {ssm_param_output.get('stack_output')}")
-                with self.hub_client("ssm") as ssm:
-                    found_match = False
-                    # TODO push into another task
-                    for output in stack_details.get("Outputs", []):
-                        if output.get("OutputKey") == ssm_param_output.get(
-                            "stack_output"
-                        ):
-                            ssm_parameter_name = ssm_param_output.get("param_name")
-                            ssm_parameter_name = ssm_parameter_name.replace(
-                                "${AWS::Region}", self.region
+                for ssm_param_output in self.ssm_param_outputs:
+                    self.info(
+                        f"writing SSM Param: {ssm_param_output.get('stack_output')}"
+                    )
+                    with self.hub_client("ssm") as ssm:
+                        found_match = False
+                        # TODO push into another task
+                        for output in stack_details.get("Outputs", []):
+                            if output.get("OutputKey") == ssm_param_output.get(
+                                "stack_output"
+                            ):
+                                ssm_parameter_name = ssm_param_output.get("param_name")
+                                ssm_parameter_name = ssm_parameter_name.replace(
+                                    "${AWS::Region}", self.region
+                                )
+                                ssm_parameter_name = ssm_parameter_name.replace(
+                                    "${AWS::AccountId}", self.account_id
+                                )
+                                found_match = True
+                                ssm.put_parameter_and_wait(
+                                    Name=ssm_parameter_name,
+                                    Value=output.get("OutputValue"),
+                                    Type=ssm_param_output.get("param_type", "String"),
+                                    Overwrite=True,
+                                )
+                        if not found_match:
+                            raise Exception(
+                                f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
                             )
-                            ssm_parameter_name = ssm_parameter_name.replace(
-                                "${AWS::AccountId}", self.account_id
-                            )
-                            found_match = True
-                            ssm.put_parameter_and_wait(
-                                Name=ssm_parameter_name,
-                                Value=output.get("OutputValue"),
-                                Type=ssm_param_output.get("param_type", "String"),
-                                Overwrite=True,
-                            )
-                    if not found_match:
-                        raise Exception(
-                            f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
-                        )
 
             self.write_output(task_output)
         else:

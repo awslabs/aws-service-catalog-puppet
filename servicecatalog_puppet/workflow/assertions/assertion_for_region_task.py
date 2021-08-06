@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import luigi
 
 from servicecatalog_puppet.workflow.assertions import assertion_for_task
@@ -24,7 +27,11 @@ class AssertionForRegionTask(assertion_for_task.AssertionForTask):
         klass = self.get_klass_for_provisioning()
 
         for task in self.manifest.get_tasks_for_launch_and_region(
-            self.puppet_account_id, self.section_name, self.assertion_name, self.region
+            self.puppet_account_id,
+            self.section_name,
+            self.assertion_name,
+            self.region,
+            single_account=self.single_account,
         ):
             dependencies.append(
                 klass(**task, manifest_file_path=self.manifest_file_path)

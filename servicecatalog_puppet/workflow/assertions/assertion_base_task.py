@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import luigi
 
 from servicecatalog_puppet import constants
@@ -14,3 +17,7 @@ class AssertionBaseTask(workflow_tasks.PuppetTask):
     @property
     def item_name(self):
         return self.assertion_name
+
+    @property
+    def item_identifier(self):
+        return "assertion_name"

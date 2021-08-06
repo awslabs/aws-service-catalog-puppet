@@ -185,7 +185,8 @@ def handle(c, output, mod, classes):
         elif name in ignored:
             pass
         else:
-            raise Exception(f"unhandled: {name}")
+            pass
+        #     raise Exception(f"unhandled: {name}")
 
 
 def handle_function(f, output, mod, classes):
@@ -264,7 +265,7 @@ def get_initial_args_for(c):
     return dict()
 
 
-package = "spoke_local_portfolios"
+package = "apps"
 
 for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
     print(input)
@@ -327,8 +328,21 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
                         elif isinstance(parameter_value, tree.PythonNode):  # everything else
                             if parameter_value.type == "atom_expr":
                                 parameter_type = parameter_value.children[1].children[1].value
-                                parameter_value = global_params[parameter_name]
-                                params[parameter_name] = parameter_value
+
+                                if global_params.get(parameter_name):
+                                    parameter_value = global_params[parameter_name]
+                                else:
+                                    if parameter_type == "Parameter":
+                                        parameter_value = parameter_name
+                                    elif parameter_type == "ListParameter":
+                                        parameter_value = list()
+                                    elif parameter_type == "DictParameter":
+                                        parameter_value = dict()
+                                    else:
+                                        print(f"DIDNT HANDLE {parameter_type} in {parameter_name} in {input}")
+                                        # raise Exception("unhandlered parameter type:"+parameter_type)
+
+
                                 # if parameter_type == "Parameter":
                                 #     open(output, "a+").write(f"    {parameter_name} = \"{parameter_value}\"\n")
                                 # else:

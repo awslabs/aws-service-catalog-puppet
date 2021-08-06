@@ -1,4 +1,7 @@
-from unittest import skip, mock
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
+from unittest import mock
 
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 

@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import deepdiff
 import jmespath
 import luigi
@@ -18,6 +21,7 @@ class DoAssertTask(
     account_id = luigi.Parameter()
 
     puppet_account_id = luigi.Parameter()
+    execution = luigi.Parameter()
 
     expected = luigi.DictParameter()
     actual = luigi.DictParameter()

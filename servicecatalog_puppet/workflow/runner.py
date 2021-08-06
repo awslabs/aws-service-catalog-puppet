@@ -1,4 +1,6 @@
-from servicecatalog_puppet import config
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import json
 import logging
 import os

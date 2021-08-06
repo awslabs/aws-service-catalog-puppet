@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import os
 import shutil
 from datetime import datetime
@@ -9,7 +12,6 @@ import terminaltables
 import yaml
 from betterboto import client as betterboto_client
 from jinja2 import Template
-
 
 from servicecatalog_puppet import constants, config, asset_helpers
 

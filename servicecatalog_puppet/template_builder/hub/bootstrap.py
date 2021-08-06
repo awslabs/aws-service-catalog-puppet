@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import troposphere as t
 import yaml
 from awacs import iam as awscs_iam
@@ -9,6 +12,8 @@ from troposphere import s3
 from troposphere import sns
 from troposphere import sqs
 from troposphere import ssm
+
+from servicecatalog_puppet import constants
 
 
 def get_template(
@@ -1015,6 +1020,15 @@ def get_template(
     template.add_output(
         t.Output(
             "ManualApprovalsParam", Value=t.GetAtt(manual_approvals_param, "Value")
+        )
+    )
+
+    template.add_resource(
+        ssm.Parameter(
+            "DefaultTerraformVersion",
+            Type="String",
+            Name=constants.DEFAULT_TERRAFORM_VERSION_PARAMETER_NAME,
+            Value=constants.DEFAULT_TERRAFORM_VERSION_VALUE,
         )
     )
 

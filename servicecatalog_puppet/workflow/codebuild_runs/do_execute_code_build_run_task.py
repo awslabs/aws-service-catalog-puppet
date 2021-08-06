@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import luigi
 
 from servicecatalog_puppet.workflow import dependency
@@ -15,6 +18,8 @@ class DoExecuteCodeBuildRunTask(
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()
+
+    execution = luigi.Parameter()
 
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
@@ -36,8 +41,8 @@ class DoExecuteCodeBuildRunTask(
 
     def api_calls_used(self):
         return [
-            f"codebuild.start_build_{self.puppet_account_id}_{self.project_name}",
-            f"codebuild.batch_get_projects_{self.puppet_account_id}_{self.project_name}",
+            f"codebuild.start_build_{self.get_account_used()}_{self.project_name}",
+            f"codebuild.batch_get_projects_{self.get_account_used()}_{self.project_name}",
         ]
 
     def requires(self):

@@ -1,8 +1,11 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import luigi
 
 from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.assertions import do_assert_task
 from servicecatalog_puppet.workflow.assertions import assertion_base_task
+from servicecatalog_puppet.workflow.assertions import do_assert_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 
@@ -16,6 +19,7 @@ class AssertTask(
     account_id = luigi.Parameter()
 
     puppet_account_id = luigi.Parameter()
+    execution = luigi.Parameter()
 
     expected = luigi.DictParameter()
     actual = luigi.DictParameter()
@@ -45,5 +49,6 @@ class AssertTask(
             expected=self.expected,
             actual=self.actual,
             requested_priority=self.requested_priority,
+            execution=self.execution,
         )
         self.write_output(self.params_for_results_display())

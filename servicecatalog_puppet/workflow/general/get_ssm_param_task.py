@@ -1,7 +1,9 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import json
 
 import luigi
-from betterboto import client as betterboto_client
 from deepmerge import always_merger
 
 from servicecatalog_puppet import config
@@ -45,9 +47,7 @@ class GetSSMParamTask(tasks.PuppetTask):
             return []
 
     def run(self):
-        with betterboto_client.ClientContextManager(
-            "ssm", region_name=self.region
-        ) as ssm:
+        with self.hub_regional_client("ssm") as ssm:
             try:
                 p = ssm.get_parameter(Name=self.name,)
                 self.write_output(
@@ -110,7 +110,11 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                 with self.input().get("ssm_params").get(param_name).open() as f:
                     all_params[param_name] = json.loads(f.read()).get("Value")
             if param_details.get("default"):
-                all_params[param_name] = param_details.get("default")
+                all_params[param_name] = (
+                    param_details.get("default")
+                    .replace("${AWS::AccountId}", self.account_id)
+                    .replace("${AWS::Region}", self.region)
+                )
             if param_details.get("mapping"):
                 all_params[param_name] = self.manifest.get_mapping(
                     param_details.get("mapping"), self.account_id, self.region
@@ -118,3 +122,17 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
 
         self.info(f"finished collecting all_params: {all_params}")
         return all_params
+
+    def terminate_ssm_outputs(self):
+        for ssm_param_output in self.ssm_param_outputs:
+            param_name = ssm_param_output.get("param_name")
+            param_name = param_name.replace("${AWS::Region}", self.region)
+            param_name = param_name.replace("${AWS::AccountId}", self.account_id)
+            self.info(f"deleting SSM Param: {param_name}")
+            with self.hub_client("ssm") as ssm:
+                try:
+                    # todo push into another task
+                    ssm.delete_parameter(Name=param_name,)
+                    self.info(f"deleting SSM Param: {param_name}")
+                except ssm.exceptions.ParameterNotFound:
+                    self.info(f"SSM Param: {param_name} not found")

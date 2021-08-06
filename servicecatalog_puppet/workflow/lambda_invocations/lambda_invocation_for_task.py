@@ -1,10 +1,13 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import luigi
 
+from servicecatalog_puppet.workflow.lambda_invocations import invoke_lambda_task
 from servicecatalog_puppet.workflow.lambda_invocations import (
     lambda_invocation_base_task,
 )
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow.lambda_invocations import invoke_lambda_task
 
 
 class LambdaInvocationForTask(

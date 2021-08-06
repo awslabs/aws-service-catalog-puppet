@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import json
 import logging
 import math
@@ -30,6 +33,10 @@ def unwrap(what):
 
 class PuppetTask(luigi.Task):
     @property
+    def executor_account_id(self):
+        return os.environ.get("EXECUTOR_ACCOUNT_ID")
+
+    @property
     def execution_mode(self):
         return os.environ.get("SCT_EXECUTION_MODE", constants.EXECUTION_MODE_HUB)
 
@@ -59,6 +66,9 @@ class PuppetTask(luigi.Task):
     def should_use_sns(self):
         return os.environ.get("SCT_SHOULD_USE_SNS", "False") == "True"
 
+    def get_account_used(self):
+        return self.account_id if self.is_running_in_spoke() else self.puppet_account_id
+
     def spoke_client(self, service):
         return betterboto_client.CrossAccountClientContextManager(
             service,
@@ -66,29 +76,45 @@ class PuppetTask(luigi.Task):
             f"{self.account_id}-{config.get_puppet_role_name()}",
         )
 
-    def spoke_regional_client(self, service):
+    def spoke_regional_client(self, service, region_name=None):
+        region = region_name or self.region
         return betterboto_client.CrossAccountClientContextManager(
             service,
             config.get_puppet_role_arn(self.account_id),
             f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
-            region_name=self.region,
+            region_name=region,
         )
 
     def hub_client(self, service):
-        return betterboto_client.CrossAccountClientContextManager(
-            service,
-            config.get_puppet_role_arn(self.puppet_account_id),
-            f"{self.puppet_account_id}-{config.get_puppet_role_name()}",
-        )
+        if self.is_running_in_spoke():
+            return betterboto_client.CrossAccountClientContextManager(
+                service,
+                config.get_puppet_role_arn(self.executor_account_id),
+                f"{self.executor_account_id}-{config.get_puppet_role_name()}",
+            )
+        else:
+            return betterboto_client.CrossAccountClientContextManager(
+                service,
+                config.get_puppet_role_arn(self.puppet_account_id),
+                f"{self.puppet_account_id}-{config.get_puppet_role_name()}",
+            )
 
     def hub_regional_client(self, service, region_name=None):
         region = region_name or self.region
-        return betterboto_client.CrossAccountClientContextManager(
-            service,
-            config.get_puppet_role_arn(self.puppet_account_id),
-            f"{self.puppet_account_id}-{region}-{config.get_puppet_role_name()}",
-            region_name=region,
-        )
+        if self.is_running_in_spoke():
+            return betterboto_client.CrossAccountClientContextManager(
+                service,
+                config.get_puppet_role_arn(self.executor_account_id),
+                f"{self.executor_account_id}-{config.get_puppet_role_name()}",
+                region_name=region,
+            )
+        else:
+            return betterboto_client.CrossAccountClientContextManager(
+                service,
+                config.get_puppet_role_arn(self.puppet_account_id),
+                f"{self.puppet_account_id}-{region}-{config.get_puppet_role_name()}",
+                region_name=region,
+            )
 
     def read_from_input(self, input_name):
         with self.input().get(input_name).open("r") as f:
@@ -109,11 +135,22 @@ class PuppetTask(luigi.Task):
     def api_calls_used(self):
         return []
 
+    def resources_used(self):
+        return []
+
     @property
     def resources(self):
         result = {}
-        for a in self.api_calls_used():
-            result[a] = 1
+        api_calls = self.api_calls_used()
+        if isinstance(api_calls, list):
+            for a in self.api_calls_used():
+                result[a] = 1
+        elif isinstance(api_calls, dict):
+            for a, r in api_calls.items():
+                result[a] = r
+
+        for i, r in self.resources_used():
+            result[f"{i}-{r.name}"] = 1 / r.value
         return result
 
     @property

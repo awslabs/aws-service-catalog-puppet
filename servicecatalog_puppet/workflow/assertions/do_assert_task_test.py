@@ -1,4 +1,9 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 from unittest import skip
+
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -11,6 +16,7 @@ class DoAssertTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     expected = {}
     actual = {}
     requested_priority = 1
+    execution = constants.EXECUTION_MODE_HUB
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.assertions import do_assert_task
@@ -26,6 +32,7 @@ class DoAssertTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             expected=self.expected,
             actual=self.actual,
             requested_priority=self.requested_priority,
+            execution=self.execution,
         )
 
         self.wire_up_mocks()

@@ -1,8 +1,10 @@
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
 import unittest
 from copy import deepcopy
 from unittest import skip
+
+import constants
 
 
 class TestManifest(unittest.TestCase):
@@ -199,6 +201,7 @@ class TestManifest(unittest.TestCase):
                 "assertion_name": item_name,
                 "puppet_account_id": puppet_account_id,
                 "region": region,
+                "execution": constants.EXECUTION_MODE_DEFAULT,
                 "requested_priority": 0,
                 "expected": {"foo": "bar"},
                 "actual": {"bar": "foo"},

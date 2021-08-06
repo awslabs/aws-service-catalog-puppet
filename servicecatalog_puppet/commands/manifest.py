@@ -1,4 +1,8 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import json
+import logging
 
 import click
 import requests
@@ -11,14 +15,13 @@ from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import manifest_utils
 
-import logging
-
 logger = logging.getLogger(__name__)
 
 
 def expand(f, single_account, subset=None):
     click.echo("Expanding")
     puppet_account_id = config.get_puppet_account_id()
+    home_region = config.get_home_region(puppet_account_id)
     manifest = manifest_utils.load(f, puppet_account_id)
     org_iam_role_arn = config.get_org_iam_role_arn(puppet_account_id)
     if org_iam_role_arn is None:
@@ -44,6 +47,7 @@ def expand(f, single_account, subset=None):
 
     new_manifest = manifest_utils.rewrite_depends_on(new_manifest)
     new_manifest = manifest_utils.rewrite_ssm_parameters(new_manifest)
+    new_manifest = manifest_utils.rewrite_stacks(new_manifest)
 
     if subset:
         click.echo(f"Filtering for subset: {subset}")

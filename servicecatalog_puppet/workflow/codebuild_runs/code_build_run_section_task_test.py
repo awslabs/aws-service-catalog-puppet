@@ -1,12 +1,9 @@
-from unittest import skip, mock
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
+from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
-from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.codebuild_runs import (
-    code_build_run_for_region_task,
-    code_build_run_for_account_task,
-    code_build_run_for_account_and_region_task,
-    code_build_run_task,
-)
 
 
 class CodeBuildRunsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
@@ -49,36 +46,3 @@ class CodeBuildRunsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         # verify
         raise NotImplementedError()
-
-    @mock.patch(
-        "servicecatalog_puppet.workflow.manifest.manifest_mixin.ManifestMixen.manifest"
-    )
-    def test_requires(self, manifest_mock):
-        # setup
-        requirements = list()
-
-        for name, details in self.sut.manifest.get(
-            constants.CODE_BUILD_RUNS, {}
-        ).items():
-            requirements += self.sut.handle_requirements_for(
-                name,
-                constants.CODE_BUILD_RUN,
-                constants.CODE_BUILD_RUNS,
-                code_build_run_for_region_task.CodeBuildRunForRegionTask,
-                code_build_run_for_account_task.CodeBuildRunForAccountTask,
-                code_build_run_for_account_and_region_task.CodeBuildRunForAccountAndRegionTask,
-                code_build_run_task.CodeBuildRunTask,
-                dict(
-                    code_build_run_name=name,
-                    puppet_account_id=self.sut.puppet_account_id,
-                    manifest_file_path=self.sut.manifest_file_path,
-                ),
-            )
-
-        expected_result = requirements
-
-        # exercise
-        actual_result = self.sut.requires()
-
-        # assert
-        self.assertEqual(expected_result, actual_result)

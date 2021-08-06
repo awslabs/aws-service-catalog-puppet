@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import configparser
 import json
 import logging
@@ -248,6 +251,27 @@ def rewrite_ssm_parameters(manifest):
     return manifest
 
 
+def rewrite_stacks(manifest):
+    for category, section in [
+        (constants.STACK, constants.STACKS),
+        (constants.APP, constants.APPS),
+        (constants.WORKSPACE, constants.WORKSPACES),
+    ]:
+        for item, details in manifest.get(section, {}).items():
+            if not details.get("key"):
+                if category == constants.STACK:
+                    details[
+                        "key"
+                    ] = f"{category}/{details['name']}/{details['version']}/{category}.template.yaml"
+                else:
+                    details[
+                        "key"
+                    ] = f"{category}/{details['name']}/{details['version']}/{category}.zip"
+                del details["name"]
+                del details["version"]
+    return manifest
+
+
 def expand_path(account, client):
     ou = client.convert_path_to_ou(account.get("ou"))
     account["ou"] = ou
@@ -340,6 +364,12 @@ class Manifest(dict):
     def get_launch(self, name):
         return self.get(constants.LAUNCHES).get(name)
 
+    def get_workspace(self, name):
+        return self.get(constants.WORKSPACES).get(name)
+
+    def get_app(self, name):
+        return self.get(constants.APPS).get(name)
+
     def get_tasks_for(
         self, puppet_account_id, section_name, item_name, single_account="None"
     ):
@@ -351,6 +381,8 @@ class Manifest(dict):
         deploy_to = {
             "launches": "deploy_to",
             "stacks": "deploy_to",
+            "apps": "deploy_to",
+            "workspaces": "deploy_to",
             "spoke-local-portfolios": "share_with",
             "lambda-invocations": "invoke_for",
             "code-build-runs": "run_for",
@@ -373,7 +405,7 @@ class Manifest(dict):
                 portfolio=item.get("portfolio"),
                 product=item.get("product"),
                 version=item.get("version"),
-                execution=item.get("execution"),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
                 requested_priority=item.get("requested_priority", 0),
             ),
             "stacks": dict(
@@ -385,8 +417,32 @@ class Manifest(dict):
                 ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
                 bucket=f"sc-puppet-stacks-repository-{puppet_account_id}",
                 key=item.get("key"),
-                version_id=item.get("version_id"),
-                execution=item.get("execution"),
+                version_id=item.get("version_id", ""),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
+                requested_priority=item.get("requested_priority", 0),
+            ),
+            "apps": dict(
+                puppet_account_id=puppet_account_id,
+                app_name=item_name,
+                launch_parameters=item.get("parameters", {}),
+                manifest_parameters=self.get("parameters", {}),
+                ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
+                bucket=f"sc-puppet-stacks-repository-{puppet_account_id}",
+                key=item.get("key"),
+                version_id=item.get("version_id", ""),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
+                requested_priority=item.get("requested_priority", 0),
+            ),
+            "workspaces": dict(
+                puppet_account_id=puppet_account_id,
+                workspace_name=item_name,
+                launch_parameters=item.get("parameters", {}),
+                manifest_parameters=self.get("parameters", {}),
+                ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
+                bucket=f"sc-puppet-stacks-repository-{puppet_account_id}",
+                key=item.get("key"),
+                version_id=item.get("version_id", ""),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
                 requested_priority=item.get("requested_priority", 0),
             ),
             "spoke-local-portfolios": dict(
@@ -410,6 +466,7 @@ class Manifest(dict):
                 invocation_type=item.get("invocation_type"),
                 launch_parameters=item.get("parameters", {}),
                 manifest_parameters=self.get("parameters", {}),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
             "code-build-runs": dict(
                 puppet_account_id=puppet_account_id,
@@ -418,6 +475,7 @@ class Manifest(dict):
                 manifest_parameters=self.get("parameters", {}),
                 project_name=item.get("project_name"),
                 requested_priority=item.get("requested_priority", 0),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
             "assertions": dict(
                 puppet_account_id=puppet_account_id,
@@ -425,6 +483,7 @@ class Manifest(dict):
                 assertion_name=item_name,
                 expected=item.get("expected"),
                 actual=item.get("actual"),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
         }.get(section_name)
 
@@ -438,6 +497,14 @@ class Manifest(dict):
                     continue
                 additional_parameters = {
                     "launches": dict(
+                        account_id=account_id,
+                        account_parameters=account.get("parameters", {}),
+                    ),
+                    "apps": dict(
+                        account_id=account_id,
+                        account_parameters=account.get("parameters", {}),
+                    ),
+                    "workspaces": dict(
                         account_id=account_id,
                         account_parameters=account.get("parameters", {}),
                     ),

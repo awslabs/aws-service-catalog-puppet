@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import luigi
 
 from servicecatalog_puppet import constants
@@ -11,17 +14,13 @@ class ProvisioningTask(
     manifest_file_path = luigi.Parameter()
 
     @property
-    def status(self):
-        return (
-            self.manifest.get(constants.LAUNCHES)
-            .get(self.launch_name)
-            .get("status", constants.PROVISIONED)
-        )
-
-    @property
     def section_name(self):
         return constants.LAUNCHES
 
     @property
     def item_name(self):
         return self.launch_name
+
+    @property
+    def item_identifier(self):
+        return "launch_name"

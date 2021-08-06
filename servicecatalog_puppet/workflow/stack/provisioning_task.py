@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import luigi
 
 from servicecatalog_puppet import constants
@@ -25,3 +28,7 @@ class ProvisioningTask(
     @property
     def item_name(self):
         return self.stack_name
+
+    @property
+    def item_identifier(self):
+        return "stack_name"

@@ -1,3 +1,6 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import luigi
 
 from servicecatalog_puppet.workflow import dependency
@@ -16,6 +19,8 @@ class ExecuteCodeBuildRunTask(
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()
+
+    execution = luigi.Parameter()
 
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
@@ -51,5 +56,6 @@ class ExecuteCodeBuildRunTask(
             account_parameters=self.account_parameters,
             project_name=self.project_name,
             requested_priority=self.requested_priority,
+            execution=self.execution,
         )
         self.write_output(self.params_for_results_display())
