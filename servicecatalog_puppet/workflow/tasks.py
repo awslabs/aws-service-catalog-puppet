@@ -147,7 +147,7 @@ class PuppetTask(luigi.Task):
                 result[a] = r
 
         for r in self.resources_used():
-            result[a.name] = 1/r.value
+            result[r.name] = 1/r.value
         return result
 
     @property
