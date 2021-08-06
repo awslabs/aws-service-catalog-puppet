@@ -14,3 +14,7 @@ class WorkspaceBaseTask(workflow_tasks.PuppetTask):
     @property
     def item_name(self):
         return self.workspace_name
+
+    @property
+    def item_identifier(self):
+        return "workspace_name"

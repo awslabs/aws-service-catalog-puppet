@@ -25,3 +25,7 @@ class ProvisioningTask(
     @property
     def item_name(self):
         return self.stack_name
+
+    @property
+    def item_identifier(self):
+        return "stack_name"

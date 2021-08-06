@@ -17,3 +17,7 @@ class ProvisioningTask(
     @property
     def item_name(self):
         return self.launch_name
+
+    @property
+    def item_identifier(self):
+        return "launch_name"

@@ -14,3 +14,7 @@ class LambdaInvocationBaseTask(tasks.PuppetTask):
     @property
     def item_name(self):
         return self.lambda_invocation_name
+
+    @property
+    def item_identifier(self):
+        return "lambda_invocation_name"
