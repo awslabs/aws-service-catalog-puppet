@@ -61,7 +61,6 @@ class ProvisionStackTask(
             "section_dependencies": self.get_section_dependencies(),
             "ssm_params": self.get_ssm_parameters(),
             "template": get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
-                puppet_account_id=self.puppet_account_id,
                 bucket=self.bucket,
                 key=self.key,
                 version_id=self.version_id,

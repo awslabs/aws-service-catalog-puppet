@@ -81,6 +81,11 @@ class PuppetTask(luigi.Task):
             f"{self.puppet_account_id}-{config.get_puppet_role_name()}",
         )
 
+    def client(self, service):
+        return betterboto_client.ClientContextManager(
+            service,
+        )
+
     def hub_regional_client(self, service, region_name=None):
         region = region_name or self.region
         return betterboto_client.CrossAccountClientContextManager(

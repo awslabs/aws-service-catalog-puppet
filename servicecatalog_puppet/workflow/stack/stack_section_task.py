@@ -19,7 +19,6 @@ class StackSectionTask(section_task.SectionTask):
 
     def requires(self):
         requirements = list()
-        has_items = False
 
         for name, details in self.manifest.get(constants.STACKS, {}).items():
             requirements += self.handle_requirements_for(
@@ -36,21 +35,6 @@ class StackSectionTask(section_task.SectionTask):
                     manifest_file_path=self.manifest_file_path,
                 ),
             )
-            has_items = True
-
-        if has_items:
-            for (
-                    region_name,
-                    sharing_policies,
-            ) in self.manifest.get_sharing_policies_by_region().items():
-                requirements.append(
-                    generate_policies_task.GeneratePolicies(
-                        puppet_account_id=self.puppet_account_id,
-                        manifest_file_path=self.manifest_file_path,
-                        region=region_name,
-                        sharing_policies=sharing_policies,
-                    )
-                )
 
         return requirements
 
