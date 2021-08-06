@@ -3,6 +3,7 @@
 
 import luigi
 
+import constants
 from servicecatalog_puppet.workflow.apps import app_base_task
 from servicecatalog_puppet.workflow.apps import provision_app_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
@@ -20,7 +21,8 @@ class AppForTask(app_base_task.AppBaseTask, manifest_mixin.ManifestMixen):
         }
 
     def get_klass_for_provisioning(self):
-        # TODO need to add in dry run and deletion
+        if self.is_dry_run or self.execution_mode == constants.EXECUTION_MODE_SPOKE:
+            raise Exception("Dry run and spoke execution mode are not yet supported")
         return provision_app_task.ProvisionAppTask
 
     def run(self):

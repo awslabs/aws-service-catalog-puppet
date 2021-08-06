@@ -227,8 +227,6 @@ class ProvisionStackTask(
                     {
                         "ParameterKey": p,
                         "ParameterValue": params_to_use.get(p)
-                        # .replace("${AWS::AccountId}", self.account_id) # TODO - check if replace is needed
-                        # .replace("${AWS::Region}", self.region), # TODO - check if replace is needed
                     }
                 )
             with self.spoke_regional_client("cloudformation") as cloudformation:
