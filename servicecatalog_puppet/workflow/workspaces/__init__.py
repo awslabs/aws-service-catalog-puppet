@@ -2,4 +2,5 @@ from enum import Enum
 
 
 class Limits(Enum):
-    CODEBUILD_CONCURRENT_PROJECTS = 20
+    """1/number should be rational"""
+    CODEBUILD_CONCURRENT_PROJECTS = 5

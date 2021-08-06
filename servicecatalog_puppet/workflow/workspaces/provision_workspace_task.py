@@ -64,7 +64,7 @@ class ProvisionWorkspaceTask(
 
     def resources_used(self):
         return [
-            Limits.CODEBUILD_CONCURRENT_PROJECTS,
+            (self.account_id, Limits.CODEBUILD_CONCURRENT_PROJECTS),
         ]
 
     def run(self):
