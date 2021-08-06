@@ -62,6 +62,12 @@ class PuppetTask(luigi.Task):
     def get_account_used(self):
         return self.account_id if self.is_running_in_spoke() else self.puppet_account_id
 
+    def execution_client(self, service):
+        if self.is_running_in_spoke():
+            return self.client(service)
+        else:
+            return self.spoke_client(service)
+
     def spoke_client(self, service):
         return betterboto_client.CrossAccountClientContextManager(
             service,

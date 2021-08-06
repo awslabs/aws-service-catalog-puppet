@@ -81,7 +81,7 @@ class ProvisionWorkspaceTask(
 
         zip_file_path = f"s3://{self.bucket}/{self.key}"
         state_file_path = f"s3://sc-puppet-state-{self.account_id}/workspace/{self.workspace_name}/{self.account_id}/{self.region}.zip"
-        with self.spoke_client('codebuild') as codebuild:
+        with self.execution_client('codebuild') as codebuild:
             parameters_to_use = [
                 dict(name="TARGET_ACCOUNT", value=self.account_id, type="PLAINTEXT", ),
 
@@ -112,7 +112,7 @@ class ProvisionWorkspaceTask(
             )
 
         if len(self.ssm_param_outputs) > 0:
-            with self.spoke_client('s3') as s3:
+            with self.client('s3') as s3:
                 output_bucket = f"sc-puppet-state-{self.account_id}"
                 output_key = f"terraform-executions/{build.get('id').split(':')[1]}/artifacts-execute/outputs.json"
                 outputs = json.loads(s3.get_object(Bucket=output_bucket, Key=output_key).get("Body").read())
