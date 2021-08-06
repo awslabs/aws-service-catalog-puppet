@@ -1,10 +1,9 @@
 from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow.generic import generic_section_task
 from servicecatalog_puppet.workflow.stack import stack_for_account_and_region_task
 from servicecatalog_puppet.workflow.stack import stack_for_account_task
 from servicecatalog_puppet.workflow.stack import stack_for_region_task
 from servicecatalog_puppet.workflow.stack import stack_task
-
-from servicecatalog_puppet.workflow.generic import generic_section_task
 
 
 class StackSectionTask(generic_section_task.GenericSectionTask):

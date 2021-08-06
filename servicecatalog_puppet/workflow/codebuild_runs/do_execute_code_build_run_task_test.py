@@ -1,4 +1,5 @@
 from unittest import skip
+
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 

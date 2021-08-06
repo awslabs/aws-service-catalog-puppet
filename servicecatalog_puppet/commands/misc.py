@@ -9,7 +9,6 @@ from datetime import datetime
 import click
 from betterboto import client as betterboto_client
 
-
 from servicecatalog_puppet import (
     aws,
     config,
@@ -24,15 +23,14 @@ from servicecatalog_puppet.workflow.lambda_invocations import (
     lambda_invocation_section_task,
 )
 from servicecatalog_puppet.workflow.launch import launch_section_task
-from servicecatalog_puppet.workflow.stack import stack_section_task
-from servicecatalog_puppet.workflow.apps import app_section_task
-from servicecatalog_puppet.workflow.workspaces import workspace_section_task
-from servicecatalog_puppet.workflow.spoke_local_portfolios import (
-    spoke_local_portfolio_section_task,
-)
 from servicecatalog_puppet.workflow.launch.reset_provisioned_product_owner_task import (
     ResetProvisionedProductOwnerTask,
 )
+from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+    spoke_local_portfolio_section_task,
+)
+from servicecatalog_puppet.workflow.stack import stack_section_task
+from servicecatalog_puppet.workflow.workspaces import workspace_section_task
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

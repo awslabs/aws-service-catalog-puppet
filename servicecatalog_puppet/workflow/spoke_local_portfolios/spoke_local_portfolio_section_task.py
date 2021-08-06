@@ -1,4 +1,5 @@
 from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow.generic import generic_section_task
 from servicecatalog_puppet.workflow.spoke_local_portfolios import (
     spoke_local_portfolio_for_account_and_region_task,
 )
@@ -11,7 +12,6 @@ from servicecatalog_puppet.workflow.spoke_local_portfolios import (
 from servicecatalog_puppet.workflow.spoke_local_portfolios import (
     spoke_local_portfolio_task,
 )
-from servicecatalog_puppet.workflow.generic import generic_section_task
 
 
 class SpokeLocalPortfolioSectionTask(generic_section_task.GenericSectionTask):

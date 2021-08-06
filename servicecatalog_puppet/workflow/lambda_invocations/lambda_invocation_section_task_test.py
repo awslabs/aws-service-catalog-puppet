@@ -1,13 +1,4 @@
-from unittest import skip, mock
-
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
-from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.lambda_invocations import (
-    lambda_invocation_for_region_task,
-    lambda_invocation_for_account_task,
-    lambda_invocation_for_account_and_region_task,
-    lambda_invocation_task,
-)
 
 
 class LambdaInvocationsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):

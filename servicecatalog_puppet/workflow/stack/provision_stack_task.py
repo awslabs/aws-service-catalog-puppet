@@ -1,16 +1,15 @@
-import json
 import time
 
-import luigi
 import cfn_tools
+import luigi
+from botocore.exceptions import ClientError
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow.stack import provisioning_task
 from servicecatalog_puppet.workflow.stack import get_cloud_formation_template_from_s3
-from botocore.exceptions import ClientError
+from servicecatalog_puppet.workflow.stack import provisioning_task
 
 
 class ProvisionStackTask(

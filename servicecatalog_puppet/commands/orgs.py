@@ -1,9 +1,9 @@
+import logging
+
 import click
 from betterboto import client as betterboto_client
 from jinja2 import Template
 
-
-import logging
 from servicecatalog_puppet import constants, asset_helpers
 
 logger = logging.getLogger()

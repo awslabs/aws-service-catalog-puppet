@@ -1,7 +1,6 @@
 import json
 
 import luigi
-from betterboto import client as betterboto_client
 from deepmerge import always_merger
 
 from servicecatalog_puppet import config

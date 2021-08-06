@@ -1,10 +1,9 @@
 from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow.generic import generic_section_task
 from servicecatalog_puppet.workflow.launch import launch_for_account_and_region_task
 from servicecatalog_puppet.workflow.launch import launch_for_account_task
 from servicecatalog_puppet.workflow.launch import launch_for_region_task
 from servicecatalog_puppet.workflow.launch import launch_task
-
-from servicecatalog_puppet.workflow.generic import generic_section_task
 
 
 class LaunchSectionTask(generic_section_task.GenericSectionTask):

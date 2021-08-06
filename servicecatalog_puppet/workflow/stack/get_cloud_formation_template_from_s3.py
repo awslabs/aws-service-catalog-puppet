@@ -1,4 +1,5 @@
 import luigi
+
 from servicecatalog_puppet.workflow import tasks
 
 

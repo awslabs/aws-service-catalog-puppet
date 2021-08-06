@@ -1,4 +1,5 @@
-from unittest import skip, mock
+from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 

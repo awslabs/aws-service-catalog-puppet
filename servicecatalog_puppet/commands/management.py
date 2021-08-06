@@ -10,7 +10,6 @@ import yaml
 from betterboto import client as betterboto_client
 from jinja2 import Template
 
-
 from servicecatalog_puppet import constants, config, asset_helpers
 
 

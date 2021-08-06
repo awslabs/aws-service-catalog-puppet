@@ -1,7 +1,5 @@
 import luigi
 
-from servicecatalog_puppet import constants
-
 
 class GenericForAccountAndRegionTask:
     account_id = luigi.Parameter()

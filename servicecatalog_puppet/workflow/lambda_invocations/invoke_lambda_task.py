@@ -1,6 +1,3 @@
-from servicecatalog_puppet.workflow.lambda_invocations import (
-    lambda_invocation_base_task,
-)
 import luigi
 
 from servicecatalog_puppet.workflow import dependency

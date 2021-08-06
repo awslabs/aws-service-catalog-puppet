@@ -1,12 +1,6 @@
+from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
-from unittest import skip, mock
-from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.assertions import (
-    assertion_for_region_task,
-    assertion_for_account_task,
-    assertion_for_account_and_region_task,
-    assertion_task,
-)
 
 
 class AssertionsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):

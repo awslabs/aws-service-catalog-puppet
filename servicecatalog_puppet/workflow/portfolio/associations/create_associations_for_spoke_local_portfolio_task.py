@@ -1,7 +1,7 @@
 import luigi
 
-from servicecatalog_puppet import utils
 from servicecatalog_puppet import config
+from servicecatalog_puppet import utils
 from servicecatalog_puppet.workflow.general import delete_cloud_formation_stack_task
 from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
     create_spoke_local_portfolio_task,

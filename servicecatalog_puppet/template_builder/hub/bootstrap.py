@@ -1,8 +1,5 @@
-import copy
-
 import troposphere as t
 import yaml
-from servicecatalog_puppet import constants
 from awacs import iam as awscs_iam
 from troposphere import codebuild
 from troposphere import codecommit
@@ -12,6 +9,8 @@ from troposphere import s3
 from troposphere import sns
 from troposphere import sqs
 from troposphere import ssm
+
+from servicecatalog_puppet import constants
 
 
 def get_template(

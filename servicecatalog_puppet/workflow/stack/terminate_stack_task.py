@@ -1,9 +1,9 @@
 import luigi
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet import constants, aws
-from servicecatalog_puppet.workflow.stack import provisioning_task
 from servicecatalog_puppet.workflow.general import get_ssm_param_task
+from servicecatalog_puppet.workflow.stack import provisioning_task
 
 
 class TerminateStackTask(

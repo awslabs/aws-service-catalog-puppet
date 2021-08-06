@@ -1,11 +1,9 @@
 import json
 
-import luigi
+from botocore.client import ClientError
 
-from servicecatalog_puppet import aws
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.stack import terminate_stack_task
-from botocore.client import ClientError
 
 
 class TerminateStackDryRunTask(terminate_stack_task.TerminateStackTask):

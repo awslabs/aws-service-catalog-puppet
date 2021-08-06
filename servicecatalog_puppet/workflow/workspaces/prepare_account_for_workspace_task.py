@@ -1,5 +1,6 @@
-from servicecatalog_puppet import constants
 import luigi
+
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.workspaces import create_template_for_workspace_task
 

@@ -1,5 +1,6 @@
-from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 from unittest import skip
+
+from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
 class ResetProvisionedProductOwnerTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):

@@ -1,4 +1,3 @@
-from servicecatalog_puppet import config
 import json
 import logging
 import os

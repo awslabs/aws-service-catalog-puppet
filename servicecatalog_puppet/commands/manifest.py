@@ -1,4 +1,5 @@
 import json
+import logging
 
 import click
 import requests
@@ -10,8 +11,6 @@ from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import manifest_utils
-
-import logging
 
 logger = logging.getLogger(__name__)
 

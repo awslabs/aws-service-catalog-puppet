@@ -1,12 +1,6 @@
-from unittest import skip, mock
+from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
-from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.codebuild_runs import (
-    code_build_run_for_region_task,
-    code_build_run_for_account_task,
-    code_build_run_for_account_and_region_task,
-    code_build_run_task,
-)
 
 
 class CodeBuildRunsSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):

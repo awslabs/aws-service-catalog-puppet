@@ -1,9 +1,11 @@
-from servicecatalog_puppet import constants
-import troposphere as t
-from troposphere import s3, codebuild, iam
 import copy
-import yaml
+
 import luigi
+import troposphere as t
+import yaml
+from troposphere import s3, codebuild
+
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 
 

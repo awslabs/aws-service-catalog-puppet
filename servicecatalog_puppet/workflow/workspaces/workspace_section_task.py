@@ -1,11 +1,11 @@
 from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow.generic import generic_section_task
 from servicecatalog_puppet.workflow.workspaces import (
     workspace_for_account_and_region_task,
 )
 from servicecatalog_puppet.workflow.workspaces import workspace_for_account_task
 from servicecatalog_puppet.workflow.workspaces import workspace_for_region_task
 from servicecatalog_puppet.workflow.workspaces import workspace_task
-from servicecatalog_puppet.workflow.generic import generic_section_task
 
 
 class WorkspaceSectionTask(generic_section_task.GenericSectionTask):

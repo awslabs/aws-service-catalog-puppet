@@ -1,6 +1,7 @@
 from unittest import skip
-from servicecatalog_puppet.workflow import tasks_unit_tests_helper
+
 from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
 class DoAssertTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):

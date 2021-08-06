@@ -1,12 +1,12 @@
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.workspaces import provision_workspace_task
-from servicecatalog_puppet.workflow.workspaces import provision_dry_run_workspace_task
-from servicecatalog_puppet.workflow.workspaces import terminate_workspace_task
-from servicecatalog_puppet.workflow.workspaces import terminate_dry_run_workspace_task
-from servicecatalog_puppet.workflow.workspaces import workspace_base_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
+from servicecatalog_puppet.workflow.workspaces import provision_dry_run_workspace_task
+from servicecatalog_puppet.workflow.workspaces import provision_workspace_task
+from servicecatalog_puppet.workflow.workspaces import terminate_dry_run_workspace_task
+from servicecatalog_puppet.workflow.workspaces import terminate_workspace_task
+from servicecatalog_puppet.workflow.workspaces import workspace_base_task
 
 
 class WorkspaceForTask(

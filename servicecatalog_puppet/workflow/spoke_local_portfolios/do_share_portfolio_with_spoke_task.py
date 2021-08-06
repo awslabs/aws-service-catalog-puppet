@@ -3,6 +3,9 @@ import luigi
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
+from servicecatalog_puppet.workflow.portfolio.associations import (
+    create_associations_for_spoke_local_portfolio_task,
+)
 from servicecatalog_puppet.workflow.portfolio.constraints_management import (
     create_launch_role_constraints_for_spoke_local_portfolio_task,
 )
@@ -17,9 +20,6 @@ from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
 )
 from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
     import_into_spoke_local_portfolio_task,
-)
-from servicecatalog_puppet.workflow.portfolio.associations import (
-    create_associations_for_spoke_local_portfolio_task,
 )
 from servicecatalog_puppet.workflow.spoke_local_portfolios import (
     spoke_local_portfolio_base_task,
