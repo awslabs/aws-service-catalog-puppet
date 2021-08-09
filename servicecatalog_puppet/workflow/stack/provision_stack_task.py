@@ -75,7 +75,9 @@ class ProvisionStackTask(
             ),
         }
         if self.use_service_role:
-            requirements['prep'] = prepare_account_for_stack_task.PrepareAccountForWorkspaceTask(
+            requirements[
+                "prep"
+            ] = prepare_account_for_stack_task.PrepareAccountForWorkspaceTask(
                 account_id=self.account_id
             )
 
@@ -233,10 +235,7 @@ class ProvisionStackTask(
             provisioning_parameters = []
             for p in params_to_use.keys():
                 provisioning_parameters.append(
-                    {
-                        "ParameterKey": p,
-                        "ParameterValue": params_to_use.get(p)
-                    }
+                    {"ParameterKey": p, "ParameterValue": params_to_use.get(p)}
                 )
             with self.spoke_regional_client("cloudformation") as cloudformation:
                 a = dict(
@@ -247,10 +246,8 @@ class ProvisionStackTask(
                     Parameters=provisioning_parameters,
                 )
                 if self.use_service_role:
-                    a['RoleARN'] = config.get_puppet_stack_role_arn(self.account_id)
-                cloudformation.create_or_update(
-                    **a
-                )
+                    a["RoleARN"] = config.get_puppet_stack_role_arn(self.account_id)
+                cloudformation.create_or_update(**a)
 
         task_output["provisioned"] = need_to_provision
         self.info(f"self.execution is {self.execution}")

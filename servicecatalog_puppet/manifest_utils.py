@@ -270,8 +270,13 @@ def rewrite_stacks(manifest, puppet_account_id):
                 del details["name"]
                 del details["version"]
                 if category == constants.STACK:
-                    if details.get(constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE) is None:
-                        details[constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE] = config.get_should_use_stacks_service_role(puppet_account_id)
+                    if (
+                        details.get(constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE)
+                        is None
+                    ):
+                        details[
+                            constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE
+                        ] = config.get_should_use_stacks_service_role(puppet_account_id)
     return manifest
 
 
@@ -422,7 +427,10 @@ class Manifest(dict):
                 key=item.get("key"),
                 version_id=item.get("version_id", ""),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
-                use_service_role=item.get(constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE, constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE_DEFAULT),
+                use_service_role=item.get(
+                    constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE,
+                    constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE_DEFAULT,
+                ),
                 requested_priority=item.get("requested_priority", 0),
             ),
             "apps": dict(

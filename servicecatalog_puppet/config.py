@@ -59,7 +59,8 @@ def get_should_use_stacks_service_role(puppet_account_id, default_region=None):
         f"getting {constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE},  default_region: {default_region}"
     )
     return get_config(puppet_account_id, default_region).get(
-        constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE, constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE_DEFAULT
+        constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE,
+        constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE_DEFAULT,
     )
 
 

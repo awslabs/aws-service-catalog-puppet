@@ -10,7 +10,6 @@ from servicecatalog_puppet.workflow import tasks
 
 
 class CreateTemplateForStackTask(tasks.PuppetTask):
-
     def params_for_results_display(self):
         return {
             "cache_invalidator": self.cache_invalidator,

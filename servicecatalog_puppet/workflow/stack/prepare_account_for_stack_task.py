@@ -30,7 +30,7 @@ class PrepareAccountForWorkspaceTask(tasks.PuppetTask):
             cloudformation.create_or_update(
                 StackName=constants.STACK_SPOKE_PREP_STACK_NAME,
                 TemplateBody=template,
-                Capabilities=["CAPABILITY_NAMED_IAM"]
+                Capabilities=["CAPABILITY_NAMED_IAM"],
             )
 
         self.write_output(self.params_for_results_display())
