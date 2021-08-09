@@ -26,6 +26,8 @@ class TerminateStackTask(
 
     capabilities = luigi.ListParameter()
 
+    use_service_role = luigi.BoolParameter()
+
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
     launch_parameters = luigi.DictParameter(default={}, significant=False)

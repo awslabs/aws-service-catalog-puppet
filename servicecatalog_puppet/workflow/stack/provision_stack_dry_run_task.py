@@ -14,10 +14,6 @@ from servicecatalog_puppet.workflow.stack import provision_stack_task
 class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
     def api_calls_used(self):
         return [
-            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
-            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioning_artifact_{self.account_id}_{self.region}",
-            f"cloudformation.describe_provisioning_artifact_{self.account_id}_{self.region}",
             f"cloudformation.get_template_summary_{self.account_id}_{self.region}",
             f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
         ]

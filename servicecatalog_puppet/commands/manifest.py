@@ -47,7 +47,7 @@ def expand(f, single_account, subset=None):
 
     new_manifest = manifest_utils.rewrite_depends_on(new_manifest)
     new_manifest = manifest_utils.rewrite_ssm_parameters(new_manifest)
-    new_manifest = manifest_utils.rewrite_stacks(new_manifest)
+    new_manifest = manifest_utils.rewrite_stacks(new_manifest, puppet_account_id)
 
     if subset:
         click.echo(f"Filtering for subset: {subset}")
