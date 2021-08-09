@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.103.1", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.110.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -79,6 +79,14 @@ Parameters:
     Default: False
   ShouldForwardFailuresToOpscenter:
     Type: String
+    AllowedValues:
+      - True
+      - False
+    Default: True
+  ShouldUseStacksServiceRole:
+    Type: String
+    Description: |
+      Setting this to True will ensure stacks in your manifest use a service role (PuppetStackRole) instead of the PuppetRole
     AllowedValues:
       - True
       - False
@@ -217,6 +225,9 @@ Resources:
           - Name: SHOULD_FORWARD_FAILURES_TO_OPSCENTER
             Type: PLAINTEXT
             Value: !Ref ShouldForwardFailuresToOpscenter
+          - Name: SHOULD_USE_STACKS_SERVICE_ROLE
+            Type: PLAINTEXT
+            Value: !Ref ShouldUseStacksServiceRole
           - Name: PUPPET_ACCOUNT_ID
             Type: PLAINTEXT
             Value: !Ref AWS::AccountId
@@ -294,6 +305,7 @@ Resources:
                 - servicecatalog-puppet set-config-value should_collect_cloudformation_events ${SHOULD_COLLECT_CLOUDFORMATION_EVENTS}
                 - servicecatalog-puppet set-config-value should_forward_events_to_eventbridge ${SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE}
                 - servicecatalog-puppet set-config-value should_forward_failures_to_opscenter ${SHOULD_FORWARD_FAILURES_TO_OPSCENTER}
+                - servicecatalog-puppet set-config-value should_use_stacks_service_role ${SHOULD_USE_STACKS_SERVICE_ROLE}
                 - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID} --permission-boundary ${PUPPET_ROLE_PERMISSION_BOUNDARY} --puppet-role-name ${PUPPET_ROLE_NAME} --puppet-role-path ${PUPPET_ROLE_PATH}
             build:
               commands:

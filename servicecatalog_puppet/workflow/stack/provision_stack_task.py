@@ -7,12 +7,14 @@ import cfn_tools
 import luigi
 from botocore.exceptions import ClientError
 
+from servicecatalog_puppet import config
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.stack import get_cloud_formation_template_from_s3
 from servicecatalog_puppet.workflow.stack import provisioning_task
+from servicecatalog_puppet.workflow.stack import prepare_account_for_stack_task
 
 
 class ProvisionStackTask(
@@ -40,6 +42,8 @@ class ProvisionStackTask(
     worker_timeout = luigi.IntParameter(default=0, significant=False)
     ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
     requested_priority = luigi.IntParameter(significant=False, default=0)
+
+    use_service_role = luigi.BoolParameter()
 
     execution = luigi.Parameter()
 
@@ -70,6 +74,13 @@ class ProvisionStackTask(
                 account_id=self.puppet_account_id,
             ),
         }
+        if self.use_service_role:
+            requirements[
+                "prep"
+            ] = prepare_account_for_stack_task.PrepareAccountForWorkspaceTask(
+                account_id=self.account_id
+            )
+
         return requirements
 
     def api_calls_used(self):
@@ -224,19 +235,19 @@ class ProvisionStackTask(
             provisioning_parameters = []
             for p in params_to_use.keys():
                 provisioning_parameters.append(
-                    {
-                        "ParameterKey": p,
-                        "ParameterValue": params_to_use.get(p)
-                    }
+                    {"ParameterKey": p, "ParameterValue": params_to_use.get(p)}
                 )
             with self.spoke_regional_client("cloudformation") as cloudformation:
-                cloudformation.create_or_update(
+                a = dict(
                     StackName=self.stack_name,
                     TemplateBody=template_to_use,
                     ShouldUseChangeSets=False,
                     Capabilities=self.capabilities,
                     Parameters=provisioning_parameters,
                 )
+                if self.use_service_role:
+                    a["RoleARN"] = config.get_puppet_stack_role_arn(self.account_id)
+                cloudformation.create_or_update(**a)
 
         task_output["provisioned"] = need_to_provision
         self.info(f"self.execution is {self.execution}")

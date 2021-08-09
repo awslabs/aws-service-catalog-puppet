@@ -54,6 +54,17 @@ def get_should_use_sns(puppet_account_id, default_region=None):
 
 
 @functools.lru_cache(maxsize=32)
+def get_should_use_stacks_service_role(puppet_account_id, default_region=None):
+    logger.info(
+        f"getting {constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE},  default_region: {default_region}"
+    )
+    return get_config(puppet_account_id, default_region).get(
+        constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE,
+        constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE_DEFAULT,
+    )
+
+
+@functools.lru_cache(maxsize=32)
 def is_caching_enabled(puppet_account_id, default_region=None):
     logger.info(
         "getting is_caching_enabled,  default_region: {}".format(default_region)
@@ -152,6 +163,15 @@ def get_puppet_role_name():
 
 
 @functools.lru_cache()
+def get_puppet_stack_role_name():
+    logger.info("getting puppet_stack_role_name")
+    return os.getenv(
+        constants.PUPPET_STACK_ROLE_NAME_ENVIRONMENTAL_VARIABLE_NAME,
+        constants.PUPPET_STACK_ROLE_NAME_DEFAULT,
+    )
+
+
+@functools.lru_cache()
 def get_puppet_role_path():
     logger.info("getting puppet_role_path")
     return os.getenv(
@@ -164,6 +184,12 @@ def get_puppet_role_path():
 def get_puppet_role_arn(puppet_account_id):
     logger.info("getting puppet_role_arn")
     return f"arn:{get_partition()}:iam::{puppet_account_id}:role{get_puppet_role_path()}{get_puppet_role_name()}"
+
+
+@functools.lru_cache()
+def get_puppet_stack_role_arn(puppet_account_id):
+    logger.info("getting puppet_role_arn")
+    return f"arn:{get_partition()}:iam::{puppet_account_id}:role{get_puppet_role_path()}{get_puppet_stack_role_name()}"
 
 
 @functools.lru_cache(maxsize=32)
