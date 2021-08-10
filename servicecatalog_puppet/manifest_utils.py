@@ -111,8 +111,10 @@ def expand_manifest(manifest, client):
 
     for account in manifest.get("accounts"):
         if account.get("account_id"):
-            logger.info("Found an account: {}".format(account.get("account_id")))
-            temp_accounts.append(account)
+            account_id = account.get("account_id")
+            logger.info("Found an account: {}".format(account_id))
+            expanded_account = expand_account(account, client, account_id)
+            temp_accounts.append(expanded_account)
         elif account.get("ou"):
             ou = account.get("ou")
             logger.info("Found an ou: {}".format(ou))
@@ -286,6 +288,33 @@ def expand_path(account, client):
     return expand_ou(account, client)
 
 
+def expand_account(account, client, account_id):
+    response = client.describe_account(AccountId=account_id)
+    new_account = deepcopy(account)
+    ou_from_parent = None
+    if "ou" in new_account:
+        ou_from_parent = new_account["ou"]
+        del new_account["ou"]
+
+    account_details = response.get("Account")
+    if account_details.get("Status") == "ACTIVE":
+        if account_details.get("Name") is not None:
+            new_account["name"] = account_details.get("Name")
+        new_account["email"] = account_details.get("Email")
+        if ou_from_parent is not None:
+            new_account["expanded_from"] = ou_from_parent
+            new_account["account_id"] = account_id
+        new_account["organization"] = (
+            account_details.get("Arn").split(":")[5].split("/")[1]
+        )
+        return new_account
+    else:
+        logger.info(
+            f"Skipping account as it is not ACTIVE: {json.dumps(account_details, default=str)}"
+        )
+    return None
+
+
 def expand_ou(original_account, client):
     expanded = []
     exclusions = original_account.get("exclude", {}).get("accounts", [])
@@ -310,23 +339,9 @@ def expand_ou(original_account, client):
         if new_account_id in exclusions:
             logger.info(f"Skipping {new_account_id} as it is in the exclusion list")
             continue
-        response = client.describe_account(AccountId=new_account_id)
-        new_account = deepcopy(original_account)
-        del new_account["ou"]
-        if response.get("Account").get("Status") == "ACTIVE":
-            if response.get("Account").get("Name") is not None:
-                new_account["name"] = response.get("Account").get("Name")
-            new_account["email"] = response.get("Account").get("Email")
-            new_account["account_id"] = new_account_id
-            new_account["expanded_from"] = original_account.get("ou")
-            new_account["organization"] = (
-                response.get("Account").get("Arn").split(":")[5].split("/")[1]
-            )
+        new_account = expand_account(original_account, client, new_account_id)
+        if new_account:
             expanded.append(new_account)
-        else:
-            logger.info(
-                f"Skipping account as it is not ACTIVE: {json.dumps(response.get('Account'), default=str)}"
-            )
     return expanded
 
 
