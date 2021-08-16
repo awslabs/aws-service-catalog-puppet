@@ -48,6 +48,10 @@ Metadata:
           - CloudFormationDeployRolePermissionsBoundary
           - PuppetRolePermissionBoundary
       - Label:
+          default: "Stacks"
+        Parameters:
+          - ShouldUseStacksServiceRole
+      - Label:
           default: "Workflow"
         Parameters:
           - DeployEnvironmentComputeType
