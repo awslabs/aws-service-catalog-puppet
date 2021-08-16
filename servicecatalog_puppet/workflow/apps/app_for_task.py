@@ -3,7 +3,7 @@
 
 import luigi
 
-import constants
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.apps import app_base_task
 from servicecatalog_puppet.workflow.apps import provision_app_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
