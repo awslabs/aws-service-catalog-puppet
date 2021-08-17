@@ -24,6 +24,8 @@ class InvokeLambdaTask(
     qualifier = luigi.Parameter()
     invocation_type = luigi.Parameter()
 
+    execution = luigi.Parameter()
+
     puppet_account_id = luigi.Parameter()
 
     launch_parameters = luigi.DictParameter()
