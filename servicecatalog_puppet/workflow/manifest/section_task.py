@@ -58,19 +58,6 @@ class SectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
         kwargs_to_use,
         supports_spoke_mode,
     ):
-        """
-        This creates the correct ForTask for the given section and it
-        :param name:
-        :param section_name_singular:
-        :param section_name_plural:
-        :param for_region_task_klass:
-        :param for_account_task_klass:
-        :param for_account_and_region_task_klass:
-        :param task_klass:
-        :param kwargs_to_use:
-        :param supports_spoke_mode:
-        :return:
-        """
 
         dependencies = list()
 
