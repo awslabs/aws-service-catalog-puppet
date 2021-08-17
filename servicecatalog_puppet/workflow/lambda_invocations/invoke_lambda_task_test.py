@@ -14,6 +14,7 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     qualifier = "qualifier"
     invocation_type = "invocation_type"
     puppet_account_id = "puppet_account_id"
+    execution = "spoke"
     launch_parameters = {}
     manifest_parameters = {}
     account_parameters = {}
@@ -32,6 +33,7 @@ class InvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             qualifier=self.qualifier,
             invocation_type=self.invocation_type,
             puppet_account_id=self.puppet_account_id,
+            execution=self.execution,
             launch_parameters=self.launch_parameters,
             manifest_parameters=self.manifest_parameters,
             account_parameters=self.account_parameters,
