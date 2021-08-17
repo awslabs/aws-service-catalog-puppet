@@ -25,6 +25,7 @@ from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_section
 from servicecatalog_puppet.workflow.lambda_invocations import (
     lambda_invocation_section_task,
 )
+from servicecatalog_puppet.workflow.apps import app_section_task
 from servicecatalog_puppet.workflow.launch import launch_section_task
 from servicecatalog_puppet.workflow.launch.reset_provisioned_product_owner_task import (
     ResetProvisionedProductOwnerTask,
@@ -273,29 +274,32 @@ def generate_tasks(
         stack_section_task.StackSectionTask(
             manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
-        # app_section_task.AppSectionTask(
-        #     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        # ),
+        app_section_task.AppSectionTask(
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        ),
         workspace_section_task.WorkspaceSectionTask(
             manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
+        assertions_section_task.AssertionsSectionTask(
+            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        ),
     ]
-    if execution_mode != constants.EXECUTION_MODE_SPOKE:
-        if not is_dry_run:
-            tasks += [
-                assertions_section_task.AssertionsSectionTask(
-                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-                ),
+    if not is_dry_run:
+        tasks += [
+            lambda_invocation_section_task.LambdaInvocationsSectionTask(
+                manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+            ),
+            code_build_run_section_task.CodeBuildRunsSectionTask(
+                manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+            ),
+        ]
+        if execution_mode != constants.EXECUTION_MODE_SPOKE:
+            tasks.append(
                 spoke_local_portfolio_section_task.SpokeLocalPortfolioSectionTask(
                     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-                ),
-                lambda_invocation_section_task.LambdaInvocationsSectionTask(
-                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-                ),
-                code_build_run_section_task.CodeBuildRunsSectionTask(
-                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-                ),
-            ]
+                )
+            )
+
     return tasks
 
 
