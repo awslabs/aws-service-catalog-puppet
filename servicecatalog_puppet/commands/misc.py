@@ -94,7 +94,7 @@ def wait_for_code_build_in(iam_role_arns):
         index += 1
 
     with betterboto_client.CrossMultipleAccountsClientContextManager(
-            "codebuild", cross_accounts
+        "codebuild", cross_accounts
     ) as codebuild:
         while True:
             try:
@@ -114,7 +114,7 @@ def wait_for_cloudformation_in(iam_role_arns):
         index += 1
 
     with betterboto_client.CrossMultipleAccountsClientContextManager(
-            "cloudformation", cross_accounts
+        "cloudformation", cross_accounts
     ) as cloudformation:
         while True:
             try:
@@ -131,14 +131,14 @@ def is_a_parameter_override_execution() -> bool:
     with betterboto_client.ClientContextManager("codepipeline") as codepipeline:
         paginator = codepipeline.get_paginator("list_pipeline_executions")
         pages = paginator.paginate(
-            pipelineName=constants.PIPELINE_NAME, PaginationConfig={"PageSize": 100, },
+            pipelineName=constants.PIPELINE_NAME, PaginationConfig={"PageSize": 100,},
         )
         for page in pages:
             for pipeline_execution_summary in page.get(
-                    "pipelineExecutionSummaries", []
+                "pipelineExecutionSummaries", []
             ):
                 if codepipeline_execution_id == pipeline_execution_summary.get(
-                        "pipelineExecutionId"
+                    "pipelineExecutionId"
                 ):
                     trigger_detail = pipeline_execution_summary.get("trigger").get(
                         "triggerDetail"
@@ -160,7 +160,7 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                     while True:
                         time.sleep(5)
                         with betterboto_client.ClientContextManager(
-                                "codepipeline"
+                            "codepipeline"
                         ) as codepipeline:
                             click.echo(
                                 f"looking for execution for {parameters_file_version_id}"
@@ -170,26 +170,26 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                             )
                             pages = paginator.paginate(
                                 pipelineName=constants.PIPELINE_NAME,
-                                PaginationConfig={"PageSize": 100, },
+                                PaginationConfig={"PageSize": 100,},
                             )
                             for page in pages:
                                 for pipeline_execution_summary in page.get(
-                                        "pipelineExecutionSummaries", []
+                                    "pipelineExecutionSummaries", []
                                 ):
                                     if (
-                                            pipeline_execution_summary.get("trigger").get(
-                                                "triggerDetail"
-                                            )
-                                            == "ParameterisedSource"
+                                        pipeline_execution_summary.get("trigger").get(
+                                            "triggerDetail"
+                                        )
+                                        == "ParameterisedSource"
                                     ):
                                         for s in pipeline_execution_summary.get(
-                                                "sourceRevisions", []
+                                            "sourceRevisions", []
                                         ):
                                             if (
-                                                    s.get("actionName")
-                                                    == "ParameterisedSource"
-                                                    and s.get("revisionId")
-                                                    == parameters_file_version_id
+                                                s.get("actionName")
+                                                == "ParameterisedSource"
+                                                and s.get("revisionId")
+                                                == parameters_file_version_id
                                             ):
                                                 pipeline_execution_id = pipeline_execution_summary.get(
                                                     "pipelineExecutionId"
@@ -255,7 +255,7 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                                                                 method="PUT",
                                                             )
                                                             with urllib.request.urlopen(
-                                                                    req
+                                                                req
                                                             ) as f:
                                                                 pass
                                                             logger.info(f.status)
@@ -265,7 +265,7 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
 
 
 def generate_tasks(
-        f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
+    f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
 ):
     tasks = [
         launch_section_task.LaunchSectionTask(
@@ -314,6 +314,6 @@ def run(what, tail):
 
 def uninstall(puppet_account_id):
     with betterboto_client.ClientContextManager(
-            "cloudformation", region_name=config.get_home_region(puppet_account_id)
+        "cloudformation", region_name=config.get_home_region(puppet_account_id)
     ) as cloudformation:
         cloudformation.ensure_deleted(StackName=constants.BOOTSTRAP_STACK_NAME)
