@@ -31,7 +31,10 @@ class GenericSectionTask(section_task.SectionTask):
         )
 
         for name, details in self.manifest.get(self.section_name, {}).items():
-            if details.get(constants.MANIFEST_STATUS_FIELD_NAME) != constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED:
+            if (
+                details.get(constants.MANIFEST_STATUS_FIELD_NAME)
+                != constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED
+            ):
                 common_args[self.item_name] = name
                 requirements += self.handle_requirements_for(
                     name,
@@ -51,7 +54,10 @@ class GenericSectionTask(section_task.SectionTask):
         if self.supports_spoke_mode and not self.is_running_in_spoke():
             tasks_to_run = list()
             for name, details in self.manifest.get(self.section_name, {}).items():
-                if details.get(constants.MANIFEST_STATUS_FIELD_NAME) != constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED:
+                if (
+                    details.get(constants.MANIFEST_STATUS_FIELD_NAME)
+                    != constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED
+                ):
                     if (
                         details.get("execution", constants.EXECUTION_MODE_DEFAULT)
                         == constants.EXECUTION_MODE_SPOKE
