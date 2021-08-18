@@ -31,18 +31,19 @@ class GenericSectionTask(section_task.SectionTask):
         )
 
         for name, details in self.manifest.get(self.section_name, {}).items():
-            common_args[self.item_name] = name
-            requirements += self.handle_requirements_for(
-                name,
-                self.section_name_singular,
-                self.section_name,
-                self.for_region_task_klass,
-                self.for_account_task_klass,
-                self.for_account_and_region_task_klass,
-                self.task_klass,
-                common_args,
-                self.supports_spoke_mode,
-            )
+            if details.get(constants.MANIFEST_STATUS_FIELD_NAME) != constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED:
+                common_args[self.item_name] = name
+                requirements += self.handle_requirements_for(
+                    name,
+                    self.section_name_singular,
+                    self.section_name,
+                    self.for_region_task_klass,
+                    self.for_account_task_klass,
+                    self.for_account_and_region_task_klass,
+                    self.task_klass,
+                    common_args,
+                    self.supports_spoke_mode,
+                )
 
         return requirements
 
@@ -50,21 +51,22 @@ class GenericSectionTask(section_task.SectionTask):
         if self.supports_spoke_mode and not self.is_running_in_spoke():
             tasks_to_run = list()
             for name, details in self.manifest.get(self.section_name, {}).items():
-                if (
-                    details.get("execution", constants.EXECUTION_MODE_DEFAULT)
-                    == constants.EXECUTION_MODE_SPOKE
-                ):
-                    for (
-                        account_id
-                    ) in self.manifest.get_account_ids_used_for_section_item(
-                        self.puppet_account_id, self.section_name, name
+                if details.get(constants.MANIFEST_STATUS_FIELD_NAME) != constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED:
+                    if (
+                        details.get("execution", constants.EXECUTION_MODE_DEFAULT)
+                        == constants.EXECUTION_MODE_SPOKE
                     ):
-                        tasks_to_run.append(
-                            run_deploy_in_spoke_task.RunDeployInSpokeTask(
-                                manifest_file_path=self.manifest_file_path,
-                                puppet_account_id=self.puppet_account_id,
-                                account_id=account_id,
+                        for (
+                            account_id
+                        ) in self.manifest.get_account_ids_used_for_section_item(
+                            self.puppet_account_id, self.section_name, name
+                        ):
+                            tasks_to_run.append(
+                                run_deploy_in_spoke_task.RunDeployInSpokeTask(
+                                    manifest_file_path=self.manifest_file_path,
+                                    puppet_account_id=self.puppet_account_id,
+                                    account_id=account_id,
+                                )
                             )
-                        )
             yield tasks_to_run
         self.write_output(self.manifest.get(self.section_name, {}))
