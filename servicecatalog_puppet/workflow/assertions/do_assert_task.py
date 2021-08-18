@@ -49,7 +49,6 @@ class DoAssertTask(
                 call=config.get("call"),
                 arguments=config.get("arguments"),
                 filter=config.get("filter"),
-
                 requester_task_id=self.task_id,
                 requester_task_family=self.task_family,
             )

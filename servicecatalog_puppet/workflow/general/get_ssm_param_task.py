@@ -126,7 +126,6 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                     filter=boto3.get("filter")
                     .replace("${AWS::Region}", self.region)
                     .replace("${AWS::AccountId}", self.account_id),
-
                     requester_task_id=self.task_id,
                     requester_task_family=self.task_family,
                 )

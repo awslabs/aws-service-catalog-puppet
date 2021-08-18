@@ -24,11 +24,9 @@ class Boto3Task(tasks.PuppetTask):
         return {
             "account_id": self.account_id,
             "region": self.region,
-
             "client": self.client,
             "use_paginator": self.use_paginator,
             "call": self.call,
-
             "requester_task_id": self.requester_task_id,
             "requester_task_family": self.requester_task_family,
             "cache_invalidator": self.cache_invalidator,
