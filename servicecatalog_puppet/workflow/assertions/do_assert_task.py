@@ -2,13 +2,14 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import deepdiff
-import jmespath
+from datetime import datetime
 import luigi
-from deepmerge import always_merger
+
 
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow.assertions import assertion_base_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
+from servicecatalog_puppet.workflow.general import boto3_task
 
 
 class DoAssertTask(
@@ -37,25 +38,32 @@ class DoAssertTask(
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def run(self):
+    def requires(self):
         config = self.actual.get("config")
-        with self.spoke_regional_client(config.get("client")) as client:
-            if config.get("use_paginator"):
-                paginator = client.get_paginator(config.get("call"))
-                result = dict()
-                for page in paginator.paginate(**config.get("arguments")):
-                    always_merger.merge(result, page)
-            else:
-                f = getattr(client, config.get("call"))
-                result = f(**config.get("arguments"))
+        return dict(
+            result=boto3_task.Boto3Task(
+                account_id=self.account_id,
+                region=self.region,
+                client=config.get("client"),
+                use_paginator=config.get("use_paginator"),
+                call=config.get("call"),
+                arguments=config.get("arguments"),
+                filter=config.get("filter"),
+                requester_task_id=self.task_id,
+                requester_task_family=self.task_family,
+            )
+        )
 
-            actual_result = jmespath.search(config.get("filter"), result)
-            expected_result = self.expected.get("config").get("value")
-            if isinstance(expected_result, tuple):
-                expected_result = list(expected_result)
+    def run(self):
+        actual_result = self.read_from_input("result")
+        expected_result = self.expected.get("config").get("value")
+        if isinstance(expected_result, tuple):
+            expected_result = list(expected_result)
+        elif isinstance(actual_result, str):
+            expected_result = expected_result.strip()
 
-            ddiff = deepdiff.DeepDiff(actual_result, expected_result, ignore_order=True)
-            if len(ddiff.keys()) > 0:
-                raise Exception(ddiff)
-            else:
-                self.write_output(self.params_for_results_display())
+        ddiff = deepdiff.DeepDiff(actual_result, expected_result, ignore_order=True)
+        if len(ddiff.keys()) > 0:
+            raise Exception(ddiff)
+        else:
+            self.write_output(self.params_for_results_display())
