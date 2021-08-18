@@ -39,7 +39,7 @@ class DoInvokeLambdaTask(
         }
 
     def requires(self):
-        return dict(ssm_params=self.get_ssm_parameters(),)
+        return dict(ssm_params=self.get_parameters_tasks(),)
 
     def api_calls_used(self):
         return {

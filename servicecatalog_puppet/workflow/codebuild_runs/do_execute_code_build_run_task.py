@@ -47,7 +47,7 @@ class DoExecuteCodeBuildRunTask(
 
     def requires(self):
         requirements = {
-            "ssm_params": self.get_ssm_parameters(),
+            "ssm_params": self.get_parameters_tasks(),
         }
         return requirements
 

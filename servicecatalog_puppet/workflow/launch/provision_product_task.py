@@ -60,7 +60,7 @@ class ProvisionProductTask(
     def requires(self):
         requirements = {
             "section_dependencies": self.get_section_dependencies(),
-            "ssm_params": self.get_ssm_parameters(),
+            "ssm_params": self.get_parameters_tasks(),
             "provisioning_artifact_parameters": provisioning_artifact_parameters_task.ProvisioningArtifactParametersTask(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,

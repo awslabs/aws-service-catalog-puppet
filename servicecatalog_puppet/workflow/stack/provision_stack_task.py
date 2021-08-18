@@ -65,7 +65,7 @@ class ProvisionStackTask(
     def requires(self):
         requirements = {
             "section_dependencies": self.get_section_dependencies(),
-            "ssm_params": self.get_ssm_parameters(),
+            "ssm_params": self.get_parameters_tasks(),
             "template": get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
                 bucket=self.bucket,
                 key=self.key,

@@ -6,9 +6,11 @@ import json
 import luigi
 from deepmerge import always_merger
 
+from datetime import datetime
 from servicecatalog_puppet import config
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet.workflow.general import boto3_task
 
 
 class GetSSMParamTask(tasks.PuppetTask):
@@ -70,8 +72,10 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
         always_merger.merge(all_params, tasks.unwrap(self.account_parameters))
         return all_params
 
-    def get_ssm_parameters(self):
+    def get_parameters_tasks(self):
         ssm_params = dict()
+        boto3_params = dict()
+        requires = dict(ssm_params=ssm_params, boto3_params=boto3_params,)
 
         all_params = self.get_all_of_the_params()
 
@@ -99,7 +103,35 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                     spoke_region=self.region,
                 )
 
-        return ssm_params
+            if param_details.get("boto3"):
+                if param_details.get("default"):
+                    del param_details["default"]
+
+                boto3 = param_details.get("boto3")
+                account_id = boto3.get("account_id", self.puppet_account_id).replace(
+                    "${AWS::AccountId}", self.account_id
+                )
+
+                region = boto3.get(
+                    "region", config.get_home_region(self.puppet_account_id)
+                ).replace("${AWS::Region}", self.region)
+
+                boto3_params[param_name] = boto3_task.Boto3Task(
+                    account_id=account_id,
+                    region=region,
+                    client=boto3.get("client"),
+                    use_paginator=boto3.get("use_paginator", False),
+                    call=boto3.get("call"),
+                    arguments=boto3.get("arguments", {}),
+                    filter=boto3.get("filter")
+                    .replace("${AWS::Region}", self.region)
+                    .replace("${AWS::AccountId}", self.account_id),
+
+                    requester_task_id=self.task_id,
+                    requester_task_family=self.task_family,
+                )
+
+        return requires
 
     def get_parameter_values(self):
         all_params = {}
@@ -107,8 +139,15 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
         p = self.get_all_of_the_params()
         for param_name, param_details in p.items():
             if param_details.get("ssm"):
-                with self.input().get("ssm_params").get(param_name).open() as f:
+                with self.input().get("ssm_params").get("ssm_params").get(
+                    param_name
+                ).open() as f:
                     all_params[param_name] = json.loads(f.read()).get("Value")
+            if param_details.get("boto3"):
+                with self.input().get("ssm_params").get("boto3_params").get(
+                    param_name
+                ).open() as f:
+                    all_params[param_name] = f.read()
             if param_details.get("default"):
                 all_params[param_name] = (
                     param_details.get("default")
