@@ -57,6 +57,7 @@ class ProvisionWorkspaceTask(
     def requires(self):
         requirements = {
             "section_dependencies": self.get_section_dependencies(),
+            "ssm_params": self.get_parameters_tasks(),
         }
         if not self.is_running_in_spoke():
             requirements[
