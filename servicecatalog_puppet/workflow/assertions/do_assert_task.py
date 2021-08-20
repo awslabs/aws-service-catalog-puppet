@@ -55,7 +55,7 @@ class DoAssertTask(
         )
 
     def run(self):
-        actual_result = self.read_from_input("result")
+        actual_result = self.load_from_input("result")
         expected_result = self.expected.get("config").get("value")
         if isinstance(expected_result, tuple):
             expected_result = list(expected_result)
