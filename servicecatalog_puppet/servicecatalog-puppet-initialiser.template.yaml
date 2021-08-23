@@ -17,6 +17,10 @@ Metadata:
           - ShouldForwardEventsToEventbridge
           - ShouldForwardFailuresToOpscenter
       - Label:
+          default: "Testing"
+        Parameters:
+          - ShouldValidate
+      - Label:
           default: "Source Code Management - choose which one of the following sources you will use:"
         Parameters:
           - SCMSourceProvider
@@ -47,10 +51,6 @@ Metadata:
           - PuppetProvisioningRolePermissionsBoundary
           - CloudFormationDeployRolePermissionsBoundary
           - PuppetRolePermissionBoundary
-      - Label:
-          default: "Testing"
-        Parameters:
-          - ShouldValidate
       - Label:
           default: "Stacks"
         Parameters:
