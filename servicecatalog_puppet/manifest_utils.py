@@ -25,21 +25,19 @@ def load(f, puppet_account_id):
         "schema": "puppet-2019-04-01",
         "parameters": {},
         "accounts": [],
-        "launches": {},
-        "stacks": {},
-        "spoke-local-portfolios": {},
+        constants.LAUNCHES: {},
+        constants.STACKS: {},
+        constants.SPOKE_LOCAL_PORTFOLIOS: {},
+        constants.ASSERTIONS: {},
+        constants.CODE_BUILD_RUNS: {},
+        constants.LAMBDA_INVOCATIONS: {},
+        constants.APPS: {},
+        constants.WORKSPACES: {},
     }
     manifest.update(yaml.safe_load(f.read()))
     d = os.path.dirname(os.path.abspath(f.name))
 
-    extendable = [
-        "parameters",
-        constants.LAUNCHES,
-        constants.STACKS,
-        constants.SPOKE_LOCAL_PORTFOLIOS,
-        constants.ACTIONS,
-        constants.LAMBDA_INVOCATIONS,
-    ]
+    extendable = constants.ALL_SECTION_NAMES + ["parameters"]
     for t in extendable:
         t_path = f"{d}{os.path.sep}{t}"
         if os.path.exists(t_path):
@@ -96,7 +94,7 @@ def load(f, puppet_account_id):
                     .get(property_name)
                 ):
                     manifest[constants.STACKS][stack_name][property_name] = value
-    for section in [constants.LAUNCHES, constants.STACKS]:
+    for section in constants.ALL_SPOKE_EXECUTABLE_SECTION_NAMES:
         for name, details in manifest.get(section).items():
             if details.get("execution") is None:
                 details["execution"] = constants.EXECUTION_MODE_DEFAULT

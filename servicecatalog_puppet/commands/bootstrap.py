@@ -42,6 +42,7 @@ def bootstrap(
     scm_bucket_name,
     scm_object_key,
     scm_skip_creation_of_repo,
+    should_validate,
 ):
     click.echo("Starting bootstrap")
     should_use_eventbridge = config.get_should_use_eventbridge(
@@ -150,6 +151,7 @@ def bootstrap(
         ),
         with_manual_approvals,
         scm_skip_creation_of_repo,
+        should_validate,
     ).to_yaml(clean_up=True)
 
     args = {

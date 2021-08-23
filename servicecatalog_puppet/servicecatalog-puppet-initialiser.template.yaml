@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.110.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.113.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -47,6 +47,10 @@ Metadata:
           - PuppetProvisioningRolePermissionsBoundary
           - CloudFormationDeployRolePermissionsBoundary
           - PuppetRolePermissionBoundary
+      - Label:
+          default: "Testing"
+        Parameters:
+          - ShouldValidate
       - Label:
           default: "Stacks"
         Parameters:
@@ -169,6 +173,13 @@ Parameters:
       - "false"
     Default: "true"
     Description: "Setting this to True means the tool creates the repo and manages it. Changing from True to False will cause already created repos to be deleted."
+  ShouldValidate:
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "true"
+    Description: "Setting this to true adds a validate stage to the pipeline where the manifest file validated before the deploy occurs."
   Version:
     Type: String
     Default: aws-service-catalog-puppet
@@ -295,6 +306,9 @@ Resources:
           - Name: SCM_SHOULD_CREATE_REPO
             Type: PLAINTEXT
             Value: !Ref SCMShouldCreateRepo
+          - Name: SCT_SHOULD_VALIDATE
+            Type: PLAINTEXT
+            Value: !Ref ShouldValidate
       Source:
         Type: NO_SOURCE
         BuildSpec: |
