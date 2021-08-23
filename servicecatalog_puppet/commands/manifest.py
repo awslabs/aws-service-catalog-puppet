@@ -6,9 +6,9 @@ import logging
 
 import click
 import requests
+import yamale
 import yaml
 from betterboto import client as betterboto_client
-from pykwalify.core import Core
 
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import config
@@ -87,14 +87,43 @@ def explode(f):
 
 def validate(f):
     logger.info("Validating {}".format(f.name))
-    c = Core(
-        source_file=f.name,
-        schema_files=[asset_helpers.resolve_from_site_packages("schema.yaml")],
-        extensions=[
-            asset_helpers.resolve_from_site_packages("puppet_schema_extensions.py")
-        ],
-    )
-    c.validate(raise_exception=True)
+
+    schema = yamale.make_schema(asset_helpers.resolve_from_site_packages('schema.yaml'))
+    data = yamale.make_data(f.name)
+
+    yamale.validate(schema, data)
+
+    manifest = yaml.safe_load(f.read())
+
+    tags_defined_by_accounts = {}
+    for account in manifest.get("accounts"):
+        for tag in account.get("tags"):
+            tags_defined_by_accounts[tag] = True
+
+    for collection_type in constants.ALL_SECTION_NAMES:
+        collection_to_check = manifest.get(collection_type, {})
+        for collection_name, collection_item in collection_to_check.items():
+            for deploy_to in collection_item.get("deploy_to", {}).get("tags", []):
+                tag_to_check = deploy_to.get("tag")
+                if tags_defined_by_accounts.get(tag_to_check) is None:
+                    raise AssertionError(
+                        f"{collection_type}.{collection_name} uses tag {tag_to_check} in deploy_to that does not exist"
+                    )
+
+            for depends_on in collection_item.get("depends_on", []):
+                if isinstance(depends_on, str):
+                    if manifest.get(constants.LAUNCHES).get(depends_on) is None:
+                        raise AssertionError(
+                            f"{collection_type}.{collection_name} uses {depends_on} in depends_on that does not exist"
+                        )
+                else:
+                    tt = constants.SECTION_SINGULAR_TO_PLURAL.get(depends_on.get('type', constants.LAUNCH))
+                    dd = depends_on.get('name')
+                    if manifest.get(tt).get(dd) is None:
+                        raise AssertionError(
+                            f"{collection_type}.{collection_name} uses {depends_on} in depends_on that does not exist"
+                        )
+
     click.echo("Finished validating: {}".format(f.name))
     click.echo("Finished validating: OK")
 

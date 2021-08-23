@@ -1,211 +1,225 @@
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
-schema;seq_tags:
-  type: map
-  mapping:
-    Key:
-      type: str
-    Value:
-      type: str
+Schema: enum("factory-2019-04-01")
 
-schema;map_params:
-  type: map
-  mapping:
-    regex;(.+):
-      type: map
-      mapping:
-        default:
-          type: str
-        macro:
-          type: map
-          mapping:
-            method:
-              type: str
-              enum: ['get_accounts_for_path']
-            args:
-              type: str
-        ssm:
-          type: map
-          mapping:
-            name:
-              type: str
-            region:
-              type: str
+accounts: list(include('account_or_ou'), min=1)
+
+parameters: map(include('parameter'), required=False)
+
+mappings: map(include('mapping'), required=False)
+
+stacks: map(any(include('stack'), include('cfn')), required=False)
+
+lambda-invocations: map(include('lambda-invocation'), required=False)
+
+assertions: map(include('assertion'), required=False)
+
+launches: map(include('launch'), required=False)
+
+workspaces: map(include('workspace'), required=False)
+
+spoke-local-portfolios: map(include('spoke-local-portfolio'), required=False)
+
+code-build-runs: map(include('code-build-run'), required=False)
 
 
-schema;map_account_id:
-  type: map
-  mapping:
-    account_id:
-      type: str
-    name:
-      type: str
-    email:
-      type: str
-    default_region:
-      type: str
-    regions_enabled:
-      type: seq
-      sequence:
-        - type: str
-    tags:
-      type: seq
-      sequence:
-        - type: str
-    parameters:
-      include: map_params
-    exclude:
-      type: map
-      mapping:
-        accounts:
-          type: seq
-          sequence:
-            - type: str
-        ous:
-          type: seq
-          sequence:
-            - type: str
+---
+account_or_ou: any(include('account'),include('ou'))
+account:
+  account_id: include('account_id')
+  name: str()
+  default_region: include('region')
+  regions_enabled: list(include('region'))
+  tags: list(str())
+
+ou:
+  ou: include('ou_path_or_id')
+  name: str()
+  default_region: include('region')
+  regions_enabled: list(include('region'))
+  tags: list(str())
+  append: map(include('append_or_overwrite'), required=False)
+  overwrite: map(include('append_or_overwrite'), required=False)
+  exclude:
+    accounts: list(include('account_id'))
+    ous: list(include('ou_path_or_id'))
+
+account_id: str(min=12, max=12)
+ou_path_or_id: str()
+
+mapping: map()
+parameter: map(any(include('default_parameter'), include('ssm_parameter'), include('boto3_parameter')))
+
+default_parameter:
+  default: str()
+
+ssm_parameter:
+  ssm:
+    name: str()
+    region: include('region', required=False)
+
+boto3_parameter:
+  boto3:
+    account_id: any("${AWS::AccountId}", str(min=12, max=12), required=False)
+    region: any("${AWS::AccountId}", include('region'), required=False)
+    client: include('client')
+    call: str()
+    use_paginator: false
+    arguments: map()
+    use_paginator: bool()
+    filter: str()
+
+cfn:
+  key: str()
+  version_id: str(required=False)
+  parameters: include('parameters', required=False)
+  depends_on: list(include('depends_on'), required=False)
+  execution_mode: include('execution_mode', required=False)
+  deploy_to: any(include('tags'), include('accounts'))
+  outputs: include('outputs', required=False)
+  capabilities: list(enum("CAPABILITY_NAMED_IAM"), required=False)
+
+stack:
+  name: str()
+  version: str()
+  parameters: include('parameters', required=False)
+  depends_on: list(include('depends_on'), required=False)
+  execution_mode: include('execution_mode', required=False)
+  deploy_to: any(include('tags'), include('accounts'))
+  outputs: include('outputs', required=False)
+  capabilities: list(enum("CAPABILITY_NAMED_IAM"), required=False)
+
+outputs:
+  ssm: list(include('ssm_output'))
+
+ssm_output:
+  param_name: str()
+  stack_output: str()
+
+lambda-invocation:
+  function_name: str()
+  qualifier: str()
+  parameters: include('parameters', required=False)
+  execution_mode: include('execution_mode', required=False)
+  invocation_type: enum("Event", "RequestResponse", "DryRun")
+  depends_on: list(include('depends_on'), required=False)
+  invoke_for: any(include('tags'), include('accounts'))
+
+code-build-run:
+  project_name: str()
+  parameters: include('parameters', required=False)
+  execution_mode: include('execution_mode', required=False)
+  depends_on: list(include('depends_on'), required=False)
+  run_for: any(include('tags'), include('accounts'))
+
+launch:
+  portfolio: str()
+  product: str()
+  version: str()
+  parameters: include('parameters', required=False)
+  depends_on: list(include('depends_on'), required=False)
+  execution_mode: include('execution_mode', required=False)
+  deploy_to: any(include('tags'), include('accounts'))
+  outputs: include('outputs', required=False)
 
 
-schema;map_deploy_to:
-  type: map
-  mapping:
-    accounts:
-      type: seq
-      sequence:
-        - type: map
-          mapping:
-            account_id:
-              type: str
-            regions:
-              type: any
-    tags:
-      type: seq
-      sequence:
-        - type: map
-          mapping:
-            tag:
-              type: str
-            regions:
-              type: any
+workspace:
+  name: str()
+  version: str()
+  parameters: include('parameters', required=False)
+  depends_on: list(include('depends_on'), required=False)
+  execution_mode: include('execution_mode', required=False)
+  deploy_to: any(include('tags'), include('accounts'))
+  outputs: include('outputs', required=False)
+
+parameters: include('parameter')
+
+assertion:
+  expected:
+    source: enum('manifest')
+    config:
+      value: any()
+  actual:
+    source: enum('boto3')
+    config:
+      client: include('client')
+      call: str()
+      arguments: any()
+      use_paginator: bool()
+      filter: str()
+  depends_on: list(include('depends_on'), required=False)
+  assert_for: any(include('tags'), include('accounts'))
+
+spoke-local-portfolio:
+  portfolio: str()
+  sharing_mode: enum('AWS_ORGANIZATIONS', "ACCOUNT", required=False)
+  product_generation_method: enum('copy', 'import', required=False)
+  depends_on: list(include('depends_on'), required=False)
+  associations: list(include('associations_arns'), required=False)
+  constraints: include('constraints', required=False)
+  deploy_to: any(include('tags'), include('accounts'))
+
+constraints:
+  launch: list(include('constraints_launch'))
+
+constraints_launch:
+  product: str()
+  roles: list(include('constraints_launch_role_arns'))
+
+associations_arns: str()
+constraints_launch_role_arns: str()
+
+execution_mode: enum('spoke', "hub", "async")
+
+append_or_overwrite:
+  default_region: include('region')
+  regions_enabled: list(include('region'))
+  tags: list(str())
 
 
-schema;map_launches:
-  type: map
-  mapping:
-    regex;(.+):
-      type: map
-      mapping:
-        portfolio:
-          type: str
-        product:
-          type: str
-        version:
-          type: str
-        sharing_mode:
-          type: str
-        status:
-          type: str
-          enum: ['provisioned', 'terminated']
-        depends_on:
-          type: seq
-          sequence:
-            - type: str
-        parameters:
-          include: map_params
-        deploy_to:
-          include: map_deploy_to
+depends_on: any(str(), include('dependency'))
 
-schema;map_spoke_local_portfolios:
-  type: map
-  mapping:
-    regex;(.+):
-      type: map
-      mapping:
-        portfolio:
-          type: str
-        sharing_mode:
-          type: str
-        product_generation_method:
-          type: str
-          enum: ['import', 'copy']
-        associations:
-          type: seq
-          sequence:
-            - type: str
-        constraints:
-          type: map
-          mapping:
-            launch:
-              type: seq
-              sequence:
-                - type: map
-                  mapping:
-                    products:
-                      type: str
-                    product:
-                      type: str
-                    roles:
-                      type: seq
-                      sequence:
-                        - type: str
-        depends_on:
-          type: seq
-          sequence:
-            - type: str
-        deploy_to:
-          include: map_deploy_to
+dependency: any(include('stack_dependency'), include('launch_dependency'), include('workspace_dependency'), include('lambda_invocation_dependency'), include('code_build_run_dependency'), include('assertion_dependency'), )
 
-schema;map_account_ou:
-  type: map
-  mapping:
-    ou:
-      type: str
-      pattern: \/|(\/.{1,250})+|ou-[a-z0-9]{4,32}-[a-z0-9]{4,32}
-    name:
-      type: str
-    default_region:
-      type: str
-    regions_enabled:
-      type: seq
-      sequence:
-        - type: str
-    tags:
-      type: seq
-      sequence:
-        - type: str
-    parameters:
-      include: map_params
-    exclude:
-      type: map
-      mapping:
-        accounts:
-          type: seq
-          sequence:
-            - type: str
-        ous:
-          type: seq
-          sequence:
-            - type: str
+stack_dependency:
+  name: str()
+  type: enum('stack')
+  affinity: enum('account', 'region', 'account-and-region', 'stack')
 
+launch_dependency:
+  name: str()
+  type: enum('launch', required=False)
+  affinity: enum('account', 'region', 'account-and-region', 'launch')
 
-type: map
-func: ext_schema
-mapping:
-  schema:
-    type: str
-    enum: ['puppet-2019-04-01']
-    required: yes
-  parameters:
-    include: map_params
+workspace_dependency:
+  name: str()
+  type: enum('workspace')
+  affinity: enum('account', 'region', 'account-and-region', 'workspace')
+
+lambda_invocation_dependency:
+  name: str()
+  type: enum('lambda-invocation')
+  affinity: enum('account', 'region', 'account-and-region', 'lambda-invocation')
+
+code_build_run_dependency:
+  name: str()
+  type: enum('code-build-runs')
+  affinity: enum('account', 'region', 'account-and-region', 'code-build-runs')
+
+assertion_dependency:
+  name: str()
+  type: enum('assertion')
+  affinity: enum('account', 'region', 'account-and-region', 'assertion')
+
+tags:
+  tags:
+    - tag: str()
+      regions: include('regions')
+
+accounts:
   accounts:
-    type: seq
-    matching: "any"
-    sequence:
-      - include: map_account_id
-      - include: map_account_ou
-  spoke-local-portfolios:
-    include: map_spoke_local_portfolios
-  launches:
-    include: map_launches
+    - account_id: include('account_id')
+      regions: include('regions')
 
+regions: any(enum('enabled_regions', 'regions_enabled', 'default_region'), include('region'), list(include('region')))
+
+region: enum('us-east-1','us-east-2','us-west-1','us-west-2','af-south-1','ap-east-1','ap-south-1','ap-northeast-3','ap-northeast-2','ap-southeast-1','ap-southeast-2','ap-northeast-1','ca-central-1','eu-central-1','eu-west-1','eu-west-2','eu-south-1','eu-west-3','eu-north-1','me-south-1','sa-east-1','us-gov-east-1','us-gov-west-1','cn-north-1')
+client: enum('accessanalyzer','acm','acm-pca','alexaforbusiness','amp','amplify','amplifybackend','apigateway','apigatewaymanagementapi','apigatewayv2','appconfig','appflow','appintegrations','application-autoscaling','application-insights','appmesh','appstream','appsync','athena','auditmanager','autoscaling','autoscaling-plans','backup','batch','braket','budgets','ce','chime','cloud9','clouddirectory','cloudformation','cloudfront','cloudhsm','cloudhsmv2','cloudsearch','cloudsearchdomain','cloudtrail','cloudwatch','codeartifact','codebuild','codecommit','codedeploy','codeguru-reviewer','codeguruprofiler','codepipeline','codestar','codestar-connections','codestar-notifications','cognito-identity','cognito-idp','cognito-sync','comprehend','comprehendmedical','compute-optimizer','config','connect','connect-contact-lens','connectparticipant','cur','customer-profiles','databrew','dataexchange','datapipeline','datasync','dax','detective','devicefarm','devops-guru','directconnect','discovery','dlm','dms','docdb','ds','dynamodb','dynamodbstreams','ebs','ec2','ec2-instance-connect','ecr','ecr-public','ecs','efs','eks','elastic-inference','elasticache','elasticbeanstalk','elastictranscoder','elb','elbv2','emr','emr-containers','endpoints.json','es','events','firehose','fms','forecast','forecastquery','frauddetector','fsx','gamelift','glacier','globalaccelerator','glue','greengrass','greengrassv2','groundstation','guardduty','health','healthlake','honeycode','iam','identitystore','imagebuilder','importexport','inspector','iot','iot-data','iot-jobs-data','iot1click-devices','iot1click-projects','iotanalytics','iotdeviceadvisor','iotevents','iotevents-data','iotfleethub','iotsecuretunneling','iotsitewise','iotthingsgraph','iotwireless','ivs','kafka','kendra','kinesis','kinesis-video-archived-media','kinesis-video-media','kinesis-video-signaling','kinesisanalytics','kinesisanalyticsv2','kinesisvideo','kms','lakeformation','lambda','lex-models','lex-runtime','license-manager','lightsail','location','logs','lookoutvision','machinelearning','macie','macie2','managedblockchain','marketplace-catalog','marketplace-entitlement','marketplacecommerceanalytics','mediaconnect','mediaconvert','medialive','mediapackage','mediapackage-vod','mediastore','mediastore-data','mediatailor','meteringmarketplace','mgh','migrationhub-config','mobile','mq','mturk','mwaa','neptune','network-firewall','networkmanager','opsworks','opsworkscm','organizations','outposts','personalize','personalize-events','personalize-runtime','pi','pinpoint','pinpoint-email','pinpoint-sms-voice','polly','pricing','qldb','qldb-session','quicksight','ram','rds','rds-data','redshift','redshift-data','rekognition','resource-groups','resourcegroupstaggingapi','robomaker','route53','route53domains','route53resolver','s3','s3control','s3outposts','sagemaker','sagemaker-a2i-runtime','sagemaker-edge','sagemaker-featurestore-runtime','sagemaker-runtime','savingsplans','schemas','sdb','secretsmanager','securityhub','serverlessrepo','service-quotas','servicecatalog','servicecatalog-appregistry','servicediscovery','ses','sesv2','shield','signer','sms','sms-voice','snowball','sns','sqs','ssm','sso','sso-admin','sso-oidc','stepfunctions','storagegateway','sts','support','swf','synthetics','textract','timestream-query','timestream-write','transcribe','transfer','translate','waf','waf-regional','wafv2','wellarchitected','workdocs','worklink','workmail','workmailmessageflow','workspaces','xray')
