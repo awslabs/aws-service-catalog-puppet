@@ -3,7 +3,7 @@ schema: enum("puppet-2019-04-01", required=False)
 
 accounts: list(include('account_or_ou'), min=1)
 
-parameters: map(include('parameter'), required=False)
+parameters: map(any(include('default_parameter'), include('ssm_parameter'), include('boto3_parameter')), required=False)
 
 mappings: map(include('mapping'), required=False)
 
@@ -42,8 +42,8 @@ ou:
   append: map(include('append_or_overwrite'), required=False)
   overwrite: map(include('append_or_overwrite'), required=False)
   exclude:
-    accounts: list(include('account_id'))
-    ous: list(include('ou_path_or_id'))
+    accounts: list(include('account_id'), required=False)
+    ous: list(include('ou_path_or_id'), required=False)
 
 account_id: str(min=12, max=12)
 ou_path_or_id: str()
@@ -182,9 +182,9 @@ constraints_launch_role_arns: str()
 execution: enum('spoke', "hub", "async")
 
 append_or_overwrite:
-  default_region: include('region')
-  regions_enabled: list(include('region'))
-  tags: list(str())
+  default_region: include('region', required=False)
+  regions_enabled: list(include('region'), required=False)
+  tags: list(str(), required=False)
 
 
 depends_on: any(str(), include('dependency'))
