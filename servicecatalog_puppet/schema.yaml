@@ -1,4 +1,4 @@
-Schema: enum("factory-2019-04-01")
+Schema: enum("puppet-2019-04-01", required=False)
 
 accounts: list(include('account_or_ou'), min=1)
 
@@ -62,7 +62,6 @@ boto3_parameter:
     region: any("${AWS::AccountId}", include('region'), required=False)
     client: include('client')
     call: str()
-    use_paginator: false
     arguments: map()
     use_paginator: bool()
     filter: str()
