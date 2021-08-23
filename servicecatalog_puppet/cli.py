@@ -294,6 +294,11 @@ def bootstrap_spokes_in_ou(
 @click.option(
     "--create-repo/--no-create-repo", default=False, envvar="SCM_SHOULD_CREATE_REPO"
 )
+@click.option(
+    "--should-validate/--no-should-validate",
+    default=False,
+    envvar="SCT_SHOULD_VALIDATE",
+)
 def bootstrap(
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
@@ -320,6 +325,7 @@ def bootstrap(
     scm_bucket_name,
     scm_object_key,
     create_repo,
+    should_validate,
 ):
     puppet_account_id = config.get_puppet_account_id()
 
@@ -348,6 +354,7 @@ def bootstrap(
         scm_bucket_name=None,
         scm_object_key=None,
         scm_skip_creation_of_repo=not create_repo,
+        should_validate=should_validate,
     )
     if source_provider == "CodeCommit":
         parameters.update(dict(repo=repository_name, branch=branch_name,))

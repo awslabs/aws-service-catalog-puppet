@@ -1,4 +1,5 @@
 Schema: enum("puppet-2019-04-01", required=False)
+schema: enum("puppet-2019-04-01", required=False)
 
 accounts: list(include('account_or_ou'), min=1)
 
@@ -7,6 +8,8 @@ parameters: map(include('parameter'), required=False)
 mappings: map(include('mapping'), required=False)
 
 stacks: map(any(include('stack'), include('cfn')), required=False)
+
+apps: map(include('app'), required=False)
 
 lambda-invocations: map(include('lambda-invocation'), required=False)
 
@@ -71,17 +74,27 @@ cfn:
   version_id: str(required=False)
   parameters: include('parameters', required=False)
   depends_on: list(include('depends_on'), required=False)
-  execution_mode: include('execution_mode', required=False)
+  execution: include('execution', required=False)
   deploy_to: any(include('tags'), include('accounts'))
   outputs: include('outputs', required=False)
-  capabilities: list(enum("CAPABILITY_NAMED_IAM"), required=False)
+  capabilities: list(enum("CAPABILITY_IAM", "CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"), required=False)
 
 stack:
   name: str()
   version: str()
   parameters: include('parameters', required=False)
   depends_on: list(include('depends_on'), required=False)
-  execution_mode: include('execution_mode', required=False)
+  execution: include('execution', required=False)
+  deploy_to: any(include('tags'), include('accounts'))
+  outputs: include('outputs', required=False)
+  capabilities: list(enum("CAPABILITY_NAMED_IAM"), required=False)
+
+app:
+  name: str()
+  version: str()
+  parameters: include('parameters', required=False)
+  depends_on: list(include('depends_on'), required=False)
+  execution: include('execution', required=False)
   deploy_to: any(include('tags'), include('accounts'))
   outputs: include('outputs', required=False)
   capabilities: list(enum("CAPABILITY_NAMED_IAM"), required=False)
@@ -97,7 +110,7 @@ lambda-invocation:
   function_name: str()
   qualifier: str()
   parameters: include('parameters', required=False)
-  execution_mode: include('execution_mode', required=False)
+  execution: include('execution', required=False)
   invocation_type: enum("Event", "RequestResponse", "DryRun")
   depends_on: list(include('depends_on'), required=False)
   invoke_for: any(include('tags'), include('accounts'))
@@ -105,7 +118,7 @@ lambda-invocation:
 code-build-run:
   project_name: str()
   parameters: include('parameters', required=False)
-  execution_mode: include('execution_mode', required=False)
+  execution: include('execution', required=False)
   depends_on: list(include('depends_on'), required=False)
   run_for: any(include('tags'), include('accounts'))
 
@@ -115,7 +128,7 @@ launch:
   version: str()
   parameters: include('parameters', required=False)
   depends_on: list(include('depends_on'), required=False)
-  execution_mode: include('execution_mode', required=False)
+  execution: include('execution', required=False)
   deploy_to: any(include('tags'), include('accounts'))
   outputs: include('outputs', required=False)
 
@@ -125,7 +138,7 @@ workspace:
   version: str()
   parameters: include('parameters', required=False)
   depends_on: list(include('depends_on'), required=False)
-  execution_mode: include('execution_mode', required=False)
+  execution: include('execution', required=False)
   deploy_to: any(include('tags'), include('accounts'))
   outputs: include('outputs', required=False)
 
@@ -166,7 +179,7 @@ constraints_launch:
 associations_arns: str()
 constraints_launch_role_arns: str()
 
-execution_mode: enum('spoke', "hub", "async")
+execution: enum('spoke', "hub", "async")
 
 append_or_overwrite:
   default_region: include('region')

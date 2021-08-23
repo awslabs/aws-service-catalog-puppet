@@ -88,12 +88,12 @@ def explode(f):
 def validate(f):
     logger.info("Validating {}".format(f.name))
 
-    schema = yamale.make_schema(asset_helpers.resolve_from_site_packages('schema.yaml'))
-    data = yamale.make_data(f.name)
+    manifest = manifest_utils.load(f, config.get_puppet_account_id())
 
-    yamale.validate(schema, data)
+    schema = yamale.make_schema(asset_helpers.resolve_from_site_packages("schema.yaml"))
+    data = yamale.make_data(content=yaml.safe_dump(manifest))
 
-    manifest = yaml.safe_load(f.read())
+    yamale.validate(schema, data, strict=False)
 
     tags_defined_by_accounts = {}
     for account in manifest.get("accounts"):
@@ -106,21 +106,23 @@ def validate(f):
             for deploy_to in collection_item.get("deploy_to", {}).get("tags", []):
                 tag_to_check = deploy_to.get("tag")
                 if tags_defined_by_accounts.get(tag_to_check) is None:
-                    raise AssertionError(
+                    print(
                         f"{collection_type}.{collection_name} uses tag {tag_to_check} in deploy_to that does not exist"
                     )
 
             for depends_on in collection_item.get("depends_on", []):
                 if isinstance(depends_on, str):
                     if manifest.get(constants.LAUNCHES).get(depends_on) is None:
-                        raise AssertionError(
+                        print(
                             f"{collection_type}.{collection_name} uses {depends_on} in depends_on that does not exist"
                         )
                 else:
-                    tt = constants.SECTION_SINGULAR_TO_PLURAL.get(depends_on.get('type', constants.LAUNCH))
-                    dd = depends_on.get('name')
+                    tt = constants.SECTION_SINGULAR_TO_PLURAL.get(
+                        depends_on.get("type", constants.LAUNCH)
+                    )
+                    dd = depends_on.get("name")
                     if manifest.get(tt).get(dd) is None:
-                        raise AssertionError(
+                        print(
                             f"{collection_type}.{collection_name} uses {depends_on} in depends_on that does not exist"
                         )
 

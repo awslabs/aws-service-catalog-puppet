@@ -23,6 +23,7 @@ def get_template(
     is_caching_enabled,
     is_manual_approvals: bool,
     scm_skip_creation_of_repo: bool,
+    should_validate: bool,
 ) -> t.Template:
     is_codecommit = source.get("Provider", "").lower() == "codecommit"
     is_github = source.get("Provider", "").lower() == "github"
@@ -681,6 +682,72 @@ def get_template(
         )
     )
 
+    stages = [source_stage]
+
+    if should_validate:
+        template.add_resource(
+            codebuild.Project(
+                "ValidateProject",
+                Name="servicecatalog-puppet-validate",
+                ServiceRole=t.GetAtt("DeployRole", "Arn"),
+                Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
+                Artifacts=codebuild.Artifacts(Type="CODEPIPELINE"),
+                TimeoutInMinutes=60,
+                Environment=codebuild.Environment(
+                    ComputeType="BUILD_GENERAL1_SMALL",
+                    Image="aws/codebuild/standard:4.0",
+                    Type="LINUX_CONTAINER",
+                ),
+                Source=codebuild.Source(
+                    BuildSpec=yaml.safe_dump(
+                        dict(
+                            version="0.2",
+                            phases={
+                                "install": {
+                                    "runtime-versions": {"python": "3.7",},
+                                    "commands": [
+                                        "pip install aws-service-catalog-puppet",
+                                    ],
+                                },
+                                "build": {
+                                    "commands": [
+                                        "servicecatalog-puppet validate manifest.yaml"
+                                    ]
+                                },
+                            },
+                        )
+                    ),
+                    Type="CODEPIPELINE",
+                ),
+                Description="Validate the manifest.yaml file",
+            )
+        )
+        stages.append(
+            codepipeline.Stages(
+                Name="Validate",
+                Actions=[
+                    codepipeline.Actions(
+                        InputArtifacts=[codepipeline.InputArtifacts(Name="Source"),],
+                        Name="Validate",
+                        ActionTypeId=codepipeline.ActionTypeId(
+                            Category="Build",
+                            Owner="AWS",
+                            Version="1",
+                            Provider="CodeBuild",
+                        ),
+                        OutputArtifacts=[
+                            codepipeline.OutputArtifacts(Name="ValidateProject")
+                        ],
+                        Configuration={
+                            "ProjectName": t.Ref("ValidateProject"),
+                            "PrimarySource": "Source",
+                        },
+                        RunOrder=1,
+                    ),
+                ],
+            )
+        )
+
     if is_manual_approvals:
         deploy_stage = codepipeline.Stages(
             Name="Deploy",
@@ -772,11 +839,13 @@ def get_template(
             ],
         )
 
+    stages.append(deploy_stage)
+
     pipeline = template.add_resource(
         codepipeline.Pipeline(
             "Pipeline",
             RoleArn=t.GetAtt("PipelineRole", "Arn"),
-            Stages=[source_stage, deploy_stage,],
+            Stages=stages,
             Name=t.Sub("${AWS::StackName}-pipeline"),
             ArtifactStore=codepipeline.ArtifactStore(
                 Type="S3",
