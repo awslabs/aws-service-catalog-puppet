@@ -99,6 +99,8 @@ class ProvisionStackTask(
     @functools.lru_cache(maxsize=32)
     def stack_name_to_use(self):
         if self.launch_name == "":
+            return self.stack_name
+        else:
             with self.spoke_regional_client("servicecatalog") as servicecatalog:
                 pp_id = (
                     servicecatalog.describe_provisioned_product(Name=self.launch_name)
@@ -106,8 +108,6 @@ class ProvisionStackTask(
                     .get("Id")
                 )
                 return f"SC-{self.account_id}-{pp_id}"
-        else:
-            return self.stack_name
 
     def ensure_stack_is_in_complete_status(self):
         current_stack = dict(StackStatus="DoesntExist")

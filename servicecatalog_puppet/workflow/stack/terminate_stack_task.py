@@ -62,6 +62,8 @@ class TerminateStackTask(
     @functools.lru_cache(maxsize=24)
     def stack_name_to_use(self):
         if self.launch_name == "":
+            return self.stack_name
+        else:
             with self.spoke_regional_client("servicecatalog") as servicecatalog:
                 pp_id = (
                     servicecatalog.describe_provisioned_product(Name=self.launch_name)
@@ -69,8 +71,6 @@ class TerminateStackTask(
                     .get("Id")
                 )
                 return f"SC-{self.account_id}-{pp_id}"
-        else:
-            return self.stack_name
 
     def run(self):
         if self.execution == constants.EXECUTION_MODE_HUB:
