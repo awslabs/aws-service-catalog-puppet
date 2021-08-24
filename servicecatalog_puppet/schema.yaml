@@ -97,6 +97,7 @@ cfn:
 stack:
   name: str()
   version: str()
+  launch_name: str(required=False)
   parameters: include('parameters', required=False)
   depends_on: list(include('depends_on'), required=False)
   execution: include('execution', required=False)
