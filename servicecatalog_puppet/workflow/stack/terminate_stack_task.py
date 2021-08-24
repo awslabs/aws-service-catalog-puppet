@@ -59,17 +59,23 @@ class TerminateStackTask(
         return requirements
 
     @property
-    @functools.lru_cache(maxsize=24)
+    @functools.lru_cache(maxsize=32)
     def stack_name_to_use(self):
         if self.launch_name == "":
             return self.stack_name
         else:
             with self.spoke_regional_client("servicecatalog") as servicecatalog:
-                pp_id = (
-                    servicecatalog.describe_provisioned_product(Name=self.launch_name)
-                    .get("ProvisionedProductDetail")
-                    .get("Id")
-                )
+                try:
+                    pp_id = (
+                        servicecatalog.describe_provisioned_product(Name=self.launch_name)
+                        .get("ProvisionedProductDetail")
+                        .get("Id")
+                    )
+                except servicecatalog.exceptions.ResourceNotFoundException as e:
+                    if "Provisioned product not found" in e.response["Error"]["Message"]:
+                        return self.stack_name
+                    else:
+                        raise e
                 return f"SC-{self.account_id}-{pp_id}"
 
     def run(self):
