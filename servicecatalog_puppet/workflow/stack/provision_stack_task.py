@@ -93,6 +93,10 @@ class ProvisionStackTask(
             f"servicecatalog.get_template_{self.account_id}_{self.region}",
             f"servicecatalog.create_or_update_{self.account_id}_{self.region}",
         ]
+        if self.launch_name != "":
+            apis.append(
+                f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}"
+            )
         return apis
 
     @property
