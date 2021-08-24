@@ -97,7 +97,7 @@ def validate(f):
 
     tags_defined_by_accounts = {}
     for account in manifest.get("accounts"):
-        for tag in account.get("tags"):
+        for tag in account.get("tags", []):
             tags_defined_by_accounts[tag] = True
 
     for collection_type in constants.ALL_SECTION_NAMES:

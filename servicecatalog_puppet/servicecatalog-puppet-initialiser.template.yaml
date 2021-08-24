@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.113.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.113.3", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -456,6 +456,7 @@ Resources:
           - !Ref PuppetRolePath
           - !GetAtt InitialiserVersionParam.Value
           - !Ref Version
+          - !Ref ShouldValidate
 Outputs:
   ServiceCatalogPuppetRepoConsoleURL:
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codecommit/repositories/ServiceCatalogPuppet/browse"

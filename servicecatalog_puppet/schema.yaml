@@ -25,7 +25,10 @@ code-build-runs: map(include('code-build-run'), required=False)
 
 
 ---
-account_or_ou: any(include('account'),include('ou'))
+account_or_ou: any(include('account_def'),include('ou'))
+
+account_def: any(include('account'), include('account_with_overwrite'), include('account_with_append'))
+
 account:
   account_id: include('account_id')
   name: str()
@@ -33,17 +36,29 @@ account:
   regions_enabled: list(include('region'))
   tags: list(str())
 
+account_with_overwrite:
+  account_id: include('account_id')
+  name: str()
+  overwrite: include('append_or_overwrite')
+  append: include('append_or_overwrite', required=False)
+
+account_with_append:
+  account_id: include('account_id')
+  name: str()
+  append: include('append_or_overwrite')
+  overwrite: include('append_or_overwrite', required=False)
+
 ou:
   ou: include('ou_path_or_id')
   name: str()
   default_region: include('region')
   regions_enabled: list(include('region'))
   tags: list(str())
-  append: map(include('append_or_overwrite'), required=False)
-  overwrite: map(include('append_or_overwrite'), required=False)
-  exclude:
-    accounts: list(include('account_id'), required=False)
-    ous: list(include('ou_path_or_id'), required=False)
+  exclude: include('exclude', required=False)
+
+exclude:
+  accounts: list(include('account_id'), required=False)
+  ous: list(include('ou_path_or_id'), required=False)
 
 account_id: str(min=12, max=12)
 ou_path_or_id: str()
@@ -181,10 +196,22 @@ constraints_launch_role_arns: str()
 
 execution: enum('spoke', "hub", "async")
 
-append_or_overwrite:
-  default_region: include('region', required=False)
+append_or_overwrite: any(include('append_or_overwrite_default_region'), include('append_or_overwrite_regions_enabled'), include('append_or_overwrite_tags'))
+
+append_or_overwrite_default_region:
+  default_region: include('region')
   regions_enabled: list(include('region'), required=False)
   tags: list(str(), required=False)
+
+append_or_overwrite_regions_enabled:
+  default_region: include('region', required=False)
+  regions_enabled: list(include('region'))
+  tags: list(str(), required=False)
+
+append_or_overwrite_tags:
+  default_region: include('region', required=False)
+  regions_enabled: list(include('region'), required=False)
+  tags: list(str())
 
 
 depends_on: any(str(), include('dependency'))
