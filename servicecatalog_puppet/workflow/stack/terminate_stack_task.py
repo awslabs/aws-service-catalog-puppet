@@ -7,6 +7,7 @@ from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow.general import get_ssm_param_task
 from servicecatalog_puppet.workflow.stack import provisioning_task
+import functools
 
 
 class TerminateStackTask(
@@ -58,6 +59,7 @@ class TerminateStackTask(
         return requirements
 
     @property
+    @functools.lru_cache(maxsize=24)
     def stack_name_to_use(self):
         if self.launch_name == "":
             with self.spoke_regional_client("servicecatalog") as servicecatalog:
