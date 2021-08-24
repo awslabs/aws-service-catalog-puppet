@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import time
+import functools
 
 import cfn_tools
 import luigi
@@ -30,6 +31,7 @@ class ProvisionStackTask(
     key = luigi.Parameter()
     version_id = luigi.Parameter()
 
+    launch_name = luigi.Parameter()
     capabilities = luigi.ListParameter()
 
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
@@ -93,12 +95,26 @@ class ProvisionStackTask(
         ]
         return apis
 
+    @property
+    @functools.lru_cache(maxsize=32)
+    def stack_name_to_use(self):
+        if self.launch_name == "":
+            with self.spoke_regional_client("servicecatalog") as servicecatalog:
+                pp_id = (
+                    servicecatalog.describe_provisioned_product(Name=self.launch_name)
+                    .get("ProvisionedProductDetail")
+                    .get("Id")
+                )
+                return f"SC-{self.account_id}-{pp_id}"
+        else:
+            return self.stack_name
+
     def ensure_stack_is_in_complete_status(self):
         current_stack = dict(StackStatus="DoesntExist")
         with self.spoke_regional_client("cloudformation") as cloudformation:
             try:
                 paginator = cloudformation.get_paginator("describe_stacks")
-                for page in paginator.paginate(StackName=self.stack_name,):
+                for page in paginator.paginate(StackName=self.stack_name_to_use,):
                     for stack in page.get("Stacks", []):
                         status = stack.get("StackStatus")
                         if status in [
@@ -140,7 +156,7 @@ class ProvisionStackTask(
             except ClientError as error:
                 if (
                     error.response["Error"]["Message"]
-                    != f"Stack with id {self.stack_name} does not exist"
+                    != f"Stack with id {self.stack_name_to_use} does not exist"
                 ):
                     raise error
         return current_stack
@@ -151,7 +167,7 @@ class ProvisionStackTask(
 
         with self.spoke_regional_client("cloudformation") as cloudformation:
             if status == "ROLLBACK_COMPLETE":
-                cloudformation.ensure_deleted(StackName=self.stack_name)
+                cloudformation.ensure_deleted(StackName=self.stack_name_to_use)
 
         task_output = dict(
             **self.params_for_results_display(),
@@ -192,7 +208,7 @@ class ProvisionStackTask(
             with self.spoke_regional_client("cloudformation") as cloudformation:
                 existing_stack_params_dict = {}
                 summary_response = cloudformation.get_template_summary(
-                    StackName=self.stack_name,
+                    StackName=self.stack_name_to_use,
                 )
                 for parameter in summary_response.get("Parameters"):
                     existing_stack_params_dict[
@@ -203,7 +219,7 @@ class ProvisionStackTask(
                         stack_param.get("ParameterKey")
                     ] = stack_param.get("ParameterValue")
                 template_body = cloudformation.get_template(
-                    StackName=self.stack_name, TemplateStage="Original"
+                    StackName=self.stack_name_to_use, TemplateStage="Original"
                 ).get("TemplateBody")
                 try:
                     existing_template = cfn_tools.load_yaml(template_body)
@@ -239,7 +255,7 @@ class ProvisionStackTask(
                 )
             with self.spoke_regional_client("cloudformation") as cloudformation:
                 a = dict(
-                    StackName=self.stack_name,
+                    StackName=self.stack_name_to_use,
                     TemplateBody=template_to_use,
                     ShouldUseChangeSets=False,
                     Capabilities=self.capabilities,
@@ -260,7 +276,7 @@ class ProvisionStackTask(
                     "cloudformation"
                 ) as spoke_cloudformation:
                     stack_details = aws.get_stack_output_for(
-                        spoke_cloudformation, self.stack_name,
+                        spoke_cloudformation, self.stack_name_to_use,
                     )
 
                 for ssm_param_output in self.ssm_param_outputs:
