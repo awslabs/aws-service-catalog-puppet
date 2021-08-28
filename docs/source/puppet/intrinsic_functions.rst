@@ -30,26 +30,25 @@ Here is an example usage of it in the parameters section:
 
 .. code-block:: yaml
 
-  schema: puppet-2019-04-01
-
-parameters:
-  PuppetAccountId1:
-    default: "${AWS::PuppetAccountId}"
-  OrganizationAccountAccessRole:
-    default: OrganizationAccountAccessRole
+    schema: puppet-2019-04-01
+    parameters:
+      PuppetAccountId1:
+        default: "${AWS::PuppetAccountId}"
+      OrganizationAccountAccessRole:
+        default: OrganizationAccountAccessRole
 
 And here is an example in a stack:
 
 .. code-block:: yaml
 
-stacks:
-  networking-stack:
-    name: networking-stack
-    version: v1
-    parameters:
-      PuppetAccountId:
-        default: "${AWS::PuppetAccountId}"
-    deploy_to:
-      tags:
-        - regions: default_region
-          tag: role:puppethub
+    stacks:
+      networking-stack:
+        name: networking-stack
+        version: v1
+        parameters:
+          PuppetAccountId:
+            default: "${AWS::PuppetAccountId}"
+        deploy_to:
+          tags:
+            - regions: default_region
+              tag: role:puppethub
