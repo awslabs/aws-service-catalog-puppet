@@ -34,7 +34,9 @@ def load(f, puppet_account_id):
         constants.APPS: {},
         constants.WORKSPACES: {},
     }
-    manifest.update(yaml.safe_load(f.read()))
+    contents = f.read()
+    contents = contents.replace("${AWS::PuppetAccountId}", puppet_account_id)
+    manifest.update(yaml.safe_load(contents))
     d = os.path.dirname(os.path.abspath(f.name))
 
     extendable = constants.ALL_SECTION_NAMES + ["parameters"]
@@ -43,19 +45,25 @@ def load(f, puppet_account_id):
         if os.path.exists(t_path):
             for f in os.listdir(t_path):
                 with open(f"{t_path}{os.path.sep}{f}", "r") as file:
-                    manifest[t].update(yaml.safe_load(file.read()))
+                    contents = file.read()
+                    contents = contents.replace("${AWS::PuppetAccountId}", puppet_account_id)
+                    manifest[t].update(yaml.safe_load(contents))
 
     if os.path.exists(f"{d}{os.path.sep}manifests"):
         for f in os.listdir(f"{d}{os.path.sep}manifests"):
             with open(f"{d}{os.path.sep}manifests{os.path.sep}{f}", "r") as file:
-                ext = yaml.safe_load(file.read())
+                contents = file.read()
+                contents = contents.replace("${AWS::PuppetAccountId}", puppet_account_id)
+                ext = yaml.safe_load(contents)
                 for t in extendable:
                     manifest[t].update(ext.get(t, {}))
 
     if os.path.exists(f"{d}{os.path.sep}capabilities"):
         for f in os.listdir(f"{d}{os.path.sep}capabilities"):
             with open(f"{d}{os.path.sep}capabilities{os.path.sep}{f}", "r") as file:
-                ext = yaml.safe_load(file.read())
+                contents = file.read()
+                contents = contents.replace("${AWS::PuppetAccountId}", puppet_account_id)
+                ext = yaml.safe_load(contents)
                 always_merger.merge(manifest, ext)
 
     for config_file in [
