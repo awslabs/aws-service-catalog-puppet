@@ -134,6 +134,7 @@ class ProvisionProductTask(
                 product_id,
                 self.account_id,
                 self.region,
+                self.should_delete_rollback_complete_stacks
             )
             self.info(
                 f"pp_id: {provisioned_product_id}, paid : {provisioning_artifact_id}"
@@ -196,7 +197,6 @@ class ProvisionProductTask(
                             "CREATE_COMPLETE",
                             "UPDATE_ROLLBACK_COMPLETE",
                         ]:
-                            #EPF - add check here
                             raise Exception(
                                 f"[{self.uid}] current cfn stack_status is {stack_status}"
                             )
