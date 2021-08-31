@@ -65,6 +65,17 @@ def get_should_use_stacks_service_role(puppet_account_id, default_region=None):
 
 
 @functools.lru_cache(maxsize=32)
+def get_should_delete_rollback_complete_stacks(puppet_account_id, default_region=None):
+    logger.info(
+        f"getting {constants.CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS},  default_region: {default_region}"
+    )
+    return get_config(puppet_account_id, default_region).get(
+        constants.CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS,
+        constants.CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS_DEFAULT,
+    )
+
+
+@functools.lru_cache(maxsize=32)
 def is_caching_enabled(puppet_account_id, default_region=None):
     logger.info(
         "getting is_caching_enabled,  default_region: {}".format(default_region)
