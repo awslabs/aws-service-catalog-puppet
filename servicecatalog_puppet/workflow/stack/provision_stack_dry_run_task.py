@@ -6,8 +6,7 @@ import json
 import cfn_tools
 from botocore.exceptions import ClientError
 
-import config
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, config
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.stack import provision_stack_task
 

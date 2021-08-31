@@ -42,7 +42,7 @@ class PuppetTask(luigi.Task):
 
     @property
     def should_delete_rollback_complete_stacks(self):
-        return os.environ.get("SCT_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS", constants.CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS_DEFAULT)
+        return os.environ.get("SCT_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS", constants.CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS_DEFAULT).upper() == "TRUE"
 
     def is_running_in_spoke(self):
         return self.execution_mode == constants.EXECUTION_MODE_SPOKE
