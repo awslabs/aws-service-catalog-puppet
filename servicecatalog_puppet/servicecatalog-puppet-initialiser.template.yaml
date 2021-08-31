@@ -469,6 +469,7 @@ Resources:
           - !GetAtt InitialiserVersionParam.Value
           - !Ref Version
           - !Ref ShouldValidate
+          - !Ref ShouldDeleteRollbackCompleteStacks
 Outputs:
   ServiceCatalogPuppetRepoConsoleURL:
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codecommit/repositories/ServiceCatalogPuppet/browse"
