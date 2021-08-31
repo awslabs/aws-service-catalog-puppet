@@ -6,7 +6,7 @@ import json
 import cfn_tools
 from botocore.exceptions import ClientError
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, config
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.stack import provision_stack_task
 
@@ -68,14 +68,24 @@ class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
                 notes="Stack would be created",
             )
         elif status == "ROLLBACK_COMPLETE":
-            self.write_result(
-                "-",
-                self.version_id,
-                effect=constants.CHANGE,
-                current_status="-",
-                active="N/A",
-                notes="Stack would be replaced",
-            )
+            if self.should_delete_rollback_complete_stacks:
+                self.write_result(
+                    "-",
+                    self.version_id,
+                    effect=constants.CHANGE,
+                    current_status="-",
+                    active="N/A",
+                    notes="Stack would be replaced",
+                )
+            else:
+                self.write_result(
+                    "-",
+                    "-",
+                    effect=constants.NO_CHANGE,
+                    current_status="-",
+                    active="N/A",
+                    notes="Stack needs remediation - it's in ROLLBACK_COMPLETE",
+                )
         else:
             task_output = dict(
                 **self.params_for_results_display(),

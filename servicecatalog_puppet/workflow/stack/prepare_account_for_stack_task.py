@@ -31,6 +31,7 @@ class PrepareAccountForWorkspaceTask(tasks.PuppetTask):
                 StackName=constants.STACK_SPOKE_PREP_STACK_NAME,
                 TemplateBody=template,
                 Capabilities=["CAPABILITY_NAMED_IAM"],
+                ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
             )
 
         self.write_output(self.params_for_results_display())

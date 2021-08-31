@@ -7,7 +7,7 @@ import click
 from betterboto import client as betterboto_client
 from jinja2 import Template
 
-from servicecatalog_puppet import constants, asset_helpers
+from servicecatalog_puppet import constants, asset_helpers, config
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -25,7 +25,7 @@ def set_org_iam_role_arn(org_iam_role_arn):
 
 
 def bootstrap_org_master(puppet_account_id):
-    with betterboto_client.ClientContextManager("cloudformation",) as cloudformation:
+    with betterboto_client.ClientContextManager("cloudformation", ) as cloudformation:
         org_iam_role_arn = None
         logger.info("Starting bootstrap of org master")
         stack_name = f"{constants.BOOTSTRAP_STACK_NAME}-org-master-{puppet_account_id}"
@@ -50,7 +50,8 @@ def bootstrap_org_master(puppet_account_id):
                     "UsePreviousValue": False,
                 },
             ],
-            "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}],
+            "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework", }],
+            "ShouldDeleteRollbackComplete": config.get_should_delete_rollback_complete_stacks(puppet_account_id),
         }
         cloudformation.create_or_update(**args)
         response = cloudformation.describe_stacks(StackName=stack_name)

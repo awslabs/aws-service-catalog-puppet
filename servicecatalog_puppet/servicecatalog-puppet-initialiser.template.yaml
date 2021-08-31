@@ -17,9 +17,10 @@ Metadata:
           - ShouldForwardEventsToEventbridge
           - ShouldForwardFailuresToOpscenter
       - Label:
-          default: "Testing"
+          default: "Options"
         Parameters:
           - ShouldValidate
+          - ShouldDeleteRollbackCompleteStacks
       - Label:
           default: "Source Code Management - choose which one of the following sources you will use:"
         Parameters:
@@ -180,6 +181,13 @@ Parameters:
       - "false"
     Default: "true"
     Description: "Setting this to true adds a validate stage to the pipeline where the manifest file validated before the deploy occurs."
+  ShouldDeleteRollbackCompleteStacks:
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "true"
+    Description: "Setting this to true will tell the framework to delete stacks in ROLLBACK_COMPLETE status for you."
   Version:
     Type: String
     Default: aws-service-catalog-puppet
@@ -309,6 +317,9 @@ Resources:
           - Name: SCT_SHOULD_VALIDATE
             Type: PLAINTEXT
             Value: !Ref ShouldValidate
+          - Name: SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS
+            Type: PLAINTEXT
+            Value: !Ref ShouldDeleteRollbackCompleteStacks
       Source:
         Type: NO_SOURCE
         BuildSpec: |
@@ -324,6 +335,7 @@ Resources:
                 - servicecatalog-puppet set-config-value should_forward_events_to_eventbridge ${SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE}
                 - servicecatalog-puppet set-config-value should_forward_failures_to_opscenter ${SHOULD_FORWARD_FAILURES_TO_OPSCENTER}
                 - servicecatalog-puppet set-config-value should_use_stacks_service_role ${SHOULD_USE_STACKS_SERVICE_ROLE}
+                - servicecatalog-puppet set-config-value should_delete_rollback_complete_stacks ${SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS}
                 - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID} --permission-boundary ${PUPPET_ROLE_PERMISSION_BOUNDARY} --puppet-role-name ${PUPPET_ROLE_NAME} --puppet-role-path ${PUPPET_ROLE_PATH}
             build:
               commands:

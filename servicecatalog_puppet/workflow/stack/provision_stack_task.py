@@ -177,7 +177,10 @@ class ProvisionStackTask(
 
         with self.spoke_regional_client("cloudformation") as cloudformation:
             if status == "ROLLBACK_COMPLETE":
-                cloudformation.ensure_deleted(StackName=self.stack_name_to_use)
+                if self.should_delete_rollback_complete_stacks:
+                    cloudformation.ensure_deleted(StackName=self.stack_name_to_use)
+                else:
+                    raise Exception(f"Stack: {self.stack_name_to_use} is in ROLLBACK_COMPLETE and need remediation")
 
         task_output = dict(
             **self.params_for_results_display(),
@@ -270,6 +273,7 @@ class ProvisionStackTask(
                     ShouldUseChangeSets=False,
                     Capabilities=self.capabilities,
                     Parameters=provisioning_parameters,
+                    ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
                 )
                 if self.use_service_role:
                     a["RoleARN"] = config.get_puppet_stack_role_arn(self.account_id)
