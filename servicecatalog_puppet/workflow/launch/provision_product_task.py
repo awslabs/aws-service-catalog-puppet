@@ -196,6 +196,7 @@ class ProvisionProductTask(
                             "CREATE_COMPLETE",
                             "UPDATE_ROLLBACK_COMPLETE",
                         ]:
+                            #EPF - add check here
                             raise Exception(
                                 f"[{self.uid}] current cfn stack_status is {stack_status}"
                             )

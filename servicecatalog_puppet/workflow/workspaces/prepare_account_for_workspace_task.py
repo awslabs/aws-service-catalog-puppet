@@ -33,6 +33,7 @@ class PrepareAccountForWorkspaceTask(tasks.PuppetTask):
             cloudformation.create_or_update(
                 StackName=constants.TERRAFORM_SPOKE_PREP_STACK_NAME,
                 TemplateBody=template,
+                ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
             )
 
         self.write_output(self.params_for_results_display())

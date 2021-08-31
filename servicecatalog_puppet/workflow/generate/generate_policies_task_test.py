@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
+from servicecatalog_puppet import constants
 
 
 class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
@@ -68,5 +69,6 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
                 StackName="servicecatalog-puppet-policies",
                 TemplateBody=template,
                 NotificationARNs=[],
+                ShouldDeleteRollbackComplete=constants.CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS_DEFAULT,
             ),
         )

@@ -107,7 +107,6 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(
             )
             stack_name = f"launch-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
             cloudformation.create_or_update(
-                ShouldDeleteRollbackComplete=True, 
                 StackName=stack_name,
                 TemplateBody=template,
                 NotificationARNs=[
@@ -115,6 +114,7 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(
                 ]
                 if self.should_use_sns
                 else [],
+                ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
             )
             result = cloudformation.describe_stacks(StackName=stack_name,).get(
                 "Stacks"

@@ -27,6 +27,7 @@ def deploy(
     os.environ["SCT_IS_DRY_RUN"] = str(is_dry_run)
     os.environ["EXECUTOR_ACCOUNT_ID"] = str(executor_account_id)
     os.environ["SCT_SHOULD_USE_SNS"] = str(config.get_should_use_sns(puppet_account_id))
+    os.environ["SCT_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS"] = str(config.get_should_delete_rollback_complete_stacks(puppet_account_id))
     os.environ["SCT_SHOULD_USE_PRODUCT_PLANS"] = str(
         config.get_should_use_product_plans(
             puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
