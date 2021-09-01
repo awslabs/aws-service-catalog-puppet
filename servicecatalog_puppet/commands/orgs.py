@@ -7,7 +7,7 @@ import click
 from betterboto import client as betterboto_client
 from jinja2 import Template
 
-from servicecatalog_puppet import constants, asset_helpers, config
+from servicecatalog_puppet import constants, asset_helpers
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -51,7 +51,6 @@ def bootstrap_org_master(puppet_account_id):
                 },
             ],
             "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework", }],
-            "ShouldDeleteRollbackComplete": config.get_should_delete_rollback_complete_stacks(puppet_account_id),
         }
         cloudformation.create_or_update(**args)
         response = cloudformation.describe_stacks(StackName=stack_name)

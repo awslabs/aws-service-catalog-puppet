@@ -61,7 +61,6 @@ def _do_bootstrap_spoke(
             },
         ],
         "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}],
-        "ShouldDeleteRollbackComplete": config.get_should_delete_rollback_complete_stacks(puppet_account_id),
     }
     cloudformation.create_or_update(**args)
     logger.info("Finished bootstrap of spoke")

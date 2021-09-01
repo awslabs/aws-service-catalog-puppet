@@ -225,7 +225,6 @@ def bootstrap(
                 "UsePreviousValue": False,
             },
         ],
-        "ShouldDeleteRollbackComplete": config.get_should_delete_rollback_complete_stacks(puppet_account_id),
     }
     with betterboto_client.ClientContextManager("cloudformation") as cloudformation:
         click.echo("Creating {}".format(constants.BOOTSTRAP_STACK_NAME))
