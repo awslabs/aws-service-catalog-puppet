@@ -78,30 +78,32 @@ def load(f, puppet_account_id):
         if os.path.exists(config_file):
             logger.info(f"reading {config_file}")
             parser.read(config_file)
-            for name, value in parser.get(constants.LAUNCHES, {}).items():
-                launch_name, property_name = name.split(".")
-                if property_name != "version":
-                    raise Exception(
-                        "You can only specify a version in the properties file"
-                    )
-                if (
-                    manifest.get(constants.LAUNCHES)
-                    .get(launch_name, {})
-                    .get(property_name)
-                ):
-                    manifest[constants.LAUNCHES][launch_name][property_name] = value
-            for name, value in parser.get(constants.STACKS, {}).items():
-                stack_name, property_name = name.split(".")
-                if property_name != "version_id":
-                    raise Exception(
-                        "You can only specify a version_id in the properties file"
-                    )
-                if (
-                    manifest.get(constants.STACKS)
-                    .get(stack_name, {})
-                    .get(property_name)
-                ):
-                    manifest[constants.STACKS][stack_name][property_name] = value
+            if parser.has_section(constants.LAUNCHES):
+                for name, value in parser.items(constants.LAUNCHES):
+                    launch_name, property_name = name.split(".")
+                    if property_name != "version":
+                        raise Exception(
+                            "You can only specify a version in the properties file"
+                        )
+                    if (
+                        manifest.get(constants.LAUNCHES)
+                        .get(launch_name, {})
+                        .get(property_name)
+                    ):
+                        manifest[constants.LAUNCHES][launch_name][property_name] = value
+            if parser.has_section(constants.STACKS):
+                for name, value in parser.items(constants.STACKS):
+                    stack_name, property_name = name.split(".")
+                    if property_name != "version_id":
+                        raise Exception(
+                            "You can only specify a version_id in the properties file"
+                        )
+                    if (
+                        manifest.get(constants.STACKS)
+                        .get(stack_name, {})
+                        .get(property_name)
+                    ):
+                        manifest[constants.STACKS][stack_name][property_name] = value
     for section in constants.ALL_SPOKE_EXECUTABLE_SECTION_NAMES:
         for name, details in manifest.get(section).items():
             if details.get("execution") is None:
