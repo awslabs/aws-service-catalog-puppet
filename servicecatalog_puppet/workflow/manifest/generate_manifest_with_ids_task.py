@@ -153,7 +153,9 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                             )
                             name = parameter_details.get("ssm").get("name")
                             key = f"{parameter_name}||{name}||{r}"
-                            param_cache[key] = json.loads(self.input().get("parameters").get(key).open('r').read())
+                            param_cache[key] = json.loads(
+                                self.input().get("parameters").get(key).open("r").read()
+                            )
 
         self.write_output(
             yaml.safe_dump(json.loads(json.dumps(new_manifest))), skip_json_dump=True
