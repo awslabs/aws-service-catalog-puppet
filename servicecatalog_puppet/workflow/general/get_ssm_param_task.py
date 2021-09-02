@@ -99,14 +99,9 @@ class GetSSMParamFromManifestTask(tasks.PuppetTask):
     def run(self):
         m = yaml.safe_load(open(self.manifest_file_path, "r").read())
         self.write_output(
-            {
-                "Name": self.name,
-                "Region": self.region,
-                "Value": m.get("param_cache").get(
-                    f"{self.parameter_name}||{self.name}||{self.region}"
-                ),
-                "Version": "N/A",
-            }
+            m.get("param_cache").get(
+                f"{self.parameter_name}||{self.name}||{self.region}"
+            )
         )
 
 

@@ -80,20 +80,26 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                                 "region", config.get_home_region(self.puppet_account_id)
                             )
                             name = parameter_details.get("ssm").get("name")
-                            params[
-                                f"{parameter_name}||{name}||{r}"
-                            ] = get_ssm_param_task.GetSSMParamTask(
-                                parameter_name=parameter_name,
-                                name=name,
-                                region=r,
-                                depends_on=parameter_details.get("ssm").get(
-                                    "depends_on", []
-                                ),
-                                manifest_file_path=self.manifest_file_path,
-                                puppet_account_id=self.puppet_account_id,
-                                spoke_account_id=self.puppet_account_id,
-                                spoke_region=r,
-                            )
+
+                            accounts_and_regions = self.manifest.get_account_ids_and_regions_used_for_section_item(self.puppet_account_id, section, item_name)
+                            for account_id, regions in accounts_and_regions.items():
+                                for region in regions:
+                                    n = name.replace("${AWS::AccountId}", account_id).replace("${AWS::Region}", region)
+
+                                    params[
+                                        f"{parameter_name}||{n}||{r}"
+                                    ] = get_ssm_param_task.GetSSMParamTask(
+                                        parameter_name=parameter_name,
+                                        name=n,
+                                        region=r,
+                                        depends_on=parameter_details.get("ssm").get(
+                                            "depends_on", []
+                                        ),
+                                        manifest_file_path=self.manifest_file_path,
+                                        puppet_account_id=self.puppet_account_id,
+                                        spoke_account_id=self.puppet_account_id,
+                                        spoke_region=r,
+                                    )
 
         return requirements
 
@@ -152,10 +158,15 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                                 "region", config.get_home_region(self.puppet_account_id)
                             )
                             name = parameter_details.get("ssm").get("name")
-                            key = f"{parameter_name}||{name}||{r}"
-                            param_cache[key] = json.loads(
-                                self.input().get("parameters").get(key).open("r").read()
-                            )
+                            accounts_and_regions = self.manifest.get_account_ids_and_regions_used_for_section_item(
+                                self.puppet_account_id, section, item_name)
+                            for account_id, regions in accounts_and_regions.items():
+                                for region in regions:
+                                    n = name.replace("${AWS::AccountId}", account_id).replace("${AWS::Region}", region)
+                                    key = f"{parameter_name}||{n}||{r}"
+                                    param_cache[key] = json.loads(
+                                        self.input().get("parameters").get(key).open("r").read()
+                                    )
 
         self.write_output(
             yaml.safe_dump(json.loads(json.dumps(new_manifest))), skip_json_dump=True
