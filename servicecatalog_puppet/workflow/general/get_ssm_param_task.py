@@ -4,10 +4,10 @@
 import json
 
 import luigi
+import yaml
 from deepmerge import always_merger
 
-from datetime import datetime
-from servicecatalog_puppet import config
+from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.general import boto3_task
@@ -64,6 +64,52 @@ class GetSSMParamTask(tasks.PuppetTask):
                 raise e
 
 
+class GetSSMParamFromManifestTask(tasks.PuppetTask):
+    parameter_name = luigi.Parameter()
+    name = luigi.Parameter()
+    region = luigi.Parameter(default=None)
+
+    depends_on = luigi.ListParameter(default=[])
+    manifest_file_path = luigi.Parameter(default="")
+    puppet_account_id = luigi.Parameter(default="")
+    spoke_account_id = luigi.Parameter(default="")
+    spoke_region = luigi.Parameter(default="")
+
+    def params_for_results_display(self):
+        return {
+            "parameter_name": self.parameter_name,
+            "name": self.name,
+            "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def requires(self):
+        if len(self.depends_on) > 0:
+            return dependency.generate_dependency_tasks(
+                self.depends_on,
+                self.manifest_file_path,
+                self.puppet_account_id,
+                self.spoke_account_id,
+                self.spoke_region,
+                self.execution_mode,
+            )
+        else:
+            return []
+
+    def run(self):
+        m = yaml.safe_load(open(self.manifest_file_path, "r").read())
+        self.write_output(
+            {
+                "Name": self.name,
+                "Region": self.region,
+                "Value": m.get("param_cache").get(
+                    f"{self.parameter_name}||{self.name}||{self.region}"
+                ),
+                "Version": "N/A",
+            }
+        )
+
+
 class PuppetTaskWithParameters(tasks.PuppetTask):
     def get_all_of_the_params(self):
         all_params = dict()
@@ -90,7 +136,17 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                 ssm_parameter_name = ssm_parameter_name.replace(
                     "${AWS::AccountId}", self.account_id
                 )
-                ssm_params[param_name] = GetSSMParamTask(
+                parameter_is_in_hub = str(
+                    param_details.get("ssm").get("account_id", "")
+                ) == str(self.puppet_account_id)
+                if (
+                    constants.EXECUTION_MODE_SPOKE == self.execution
+                    and parameter_is_in_hub
+                ):
+                    klass = GetSSMParamFromManifestTask
+                else:
+                    klass = GetSSMParamTask
+                ssm_params[param_name] = klass(
                     parameter_name=param_name,
                     name=ssm_parameter_name,
                     region=param_details.get("ssm").get(
