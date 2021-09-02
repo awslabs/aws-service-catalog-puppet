@@ -67,12 +67,17 @@ class TerminateStackTask(
             with self.spoke_regional_client("servicecatalog") as servicecatalog:
                 try:
                     pp_id = (
-                        servicecatalog.describe_provisioned_product(Name=self.launch_name)
+                        servicecatalog.describe_provisioned_product(
+                            Name=self.launch_name
+                        )
                         .get("ProvisionedProductDetail")
                         .get("Id")
                     )
                 except servicecatalog.exceptions.ResourceNotFoundException as e:
-                    if "Provisioned product not found" in e.response["Error"]["Message"]:
+                    if (
+                        "Provisioned product not found"
+                        in e.response["Error"]["Message"]
+                    ):
                         return self.stack_name
                     else:
                         raise e

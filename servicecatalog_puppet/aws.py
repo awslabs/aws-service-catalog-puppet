@@ -62,7 +62,12 @@ def get_provisioned_product_from_scan(
 
 
 def terminate_if_status_is_not_available(
-    service_catalog, provisioned_product_name, product_id, account_id, region, should_delete_rollback_complete_stacks
+    service_catalog,
+    provisioned_product_name,
+    product_id,
+    account_id,
+    region,
+    should_delete_rollback_complete_stacks,
 ):
     prefix = f"[{provisioned_product_name}] {account_id}:{region}"
     logger.info(f"{prefix} :: checking if should be terminated")
@@ -97,7 +102,7 @@ def terminate_if_status_is_not_available(
                         product_id,
                         account_id,
                         region,
-                        should_delete_rollback_complete_stacks
+                        should_delete_rollback_complete_stacks,
                     )
 
         elif current_status == "ERROR":
@@ -108,7 +113,10 @@ def terminate_if_status_is_not_available(
                 prefix, service_catalog, provisioned_product.get("Id")
             )
 
-        elif current_status == "ROLLBACK_COMPLETE" and should_delete_rollback_complete_stacks:
+        elif (
+            current_status == "ROLLBACK_COMPLETE"
+            and should_delete_rollback_complete_stacks
+        ):
             logger.info(
                 f"{prefix} :: should_delete_rollback_complete_stacks so terminating {provisioned_product.get('Status')}"
             )

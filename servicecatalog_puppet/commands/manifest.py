@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 def expand(f, single_account, subset=None):
     click.echo("Expanding")
     puppet_account_id = config.get_puppet_account_id()
-    home_region = config.get_home_region(puppet_account_id)
     manifest = manifest_utils.load(f, puppet_account_id)
     org_iam_role_arn = config.get_org_iam_role_arn(puppet_account_id)
     if org_iam_role_arn is None:

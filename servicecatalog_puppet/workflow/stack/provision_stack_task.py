@@ -108,12 +108,17 @@ class ProvisionStackTask(
             with self.spoke_regional_client("servicecatalog") as servicecatalog:
                 try:
                     pp_id = (
-                        servicecatalog.describe_provisioned_product(Name=self.launch_name)
+                        servicecatalog.describe_provisioned_product(
+                            Name=self.launch_name
+                        )
                         .get("ProvisionedProductDetail")
                         .get("Id")
                     )
                 except servicecatalog.exceptions.ResourceNotFoundException as e:
-                    if "Provisioned product not found" in e.response["Error"]["Message"]:
+                    if (
+                        "Provisioned product not found"
+                        in e.response["Error"]["Message"]
+                    ):
                         return self.stack_name
                     else:
                         raise e
@@ -180,7 +185,9 @@ class ProvisionStackTask(
                 if self.should_delete_rollback_complete_stacks:
                     cloudformation.ensure_deleted(StackName=self.stack_name_to_use)
                 else:
-                    raise Exception(f"Stack: {self.stack_name_to_use} is in ROLLBACK_COMPLETE and need remediation")
+                    raise Exception(
+                        f"Stack: {self.stack_name_to_use} is in ROLLBACK_COMPLETE and need remediation"
+                    )
 
         task_output = dict(
             **self.params_for_results_display(),

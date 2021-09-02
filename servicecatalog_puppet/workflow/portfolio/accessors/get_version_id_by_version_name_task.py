@@ -55,7 +55,7 @@ class GetVersionIdByVersionName(
                 product = self.manifest["id_cache"][self.region][self.portfolio][
                     "products"
                 ][self.product]
-                if product.get("versions", {}).get(self.version):
+                if product.get("versions", {}).get(str(self.version)):
                     self.product_id = product["id"]
                     self.version_id = product["versions"][self.version]
                     return []
