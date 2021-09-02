@@ -7,7 +7,7 @@ import json
 import luigi
 import yaml
 
-from servicecatalog_puppet import config
+from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 from servicecatalog_puppet.workflow.portfolio.accessors import (
@@ -16,6 +16,7 @@ from servicecatalog_puppet.workflow.portfolio.accessors import (
 from servicecatalog_puppet.workflow.portfolio.accessors import (
     get_products_and_provisioning_artifacts_task,
 )
+from servicecatalog_puppet.workflow.general import get_ssm_param_task
 
 
 class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
@@ -63,6 +64,37 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                         portfolio=portfolio,
                         puppet_account_id=self.puppet_account_id,
                     )
+
+        params = dict()
+        requirements["parameters"] = params
+        for section in constants.SECTION_NAMES_THAT_SUPPORTS_PARAMETERS:
+            for item_name, item_details in self.manifest.get(section, {}).items():
+                if item_details.get("execution") == constants.EXECUTION_MODE_SPOKE:
+                    for parameter_name, parameter_details in item_details.get(
+                        "parameters", {}
+                    ).items():
+                        if parameter_details.get("ssm") and str(
+                            parameter_details.get("ssm").get("account_id", "")
+                        ) == str(self.puppet_account_id):
+                            r = parameter_details.get("ssm").get(
+                                "region", config.get_home_region(self.puppet_account_id)
+                            )
+                            name = parameter_details.get("ssm").get("name")
+                            params[
+                                f"{parameter_name}||{name}||{r}"
+                            ] = get_ssm_param_task.GetSSMParamTask(
+                                parameter_name=parameter_name,
+                                name=name,
+                                region=r,
+                                depends_on=parameter_details.get("ssm").get(
+                                    "depends_on", []
+                                ),
+                                manifest_file_path=self.manifest_file_path,
+                                puppet_account_id=self.puppet_account_id,
+                                spoke_account_id=self.puppet_account_id,
+                                spoke_region=r,
+                            )
+
         return requirements
 
     def run(self):
@@ -104,6 +136,24 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                         ][a.get("Name")] = a.get("Id")
 
             global_id_cache[region] = regional_id_cache
+
+        param_cache = dict()
+        new_manifest["param_cache"] = param_cache
+        for section in constants.SECTION_NAMES_THAT_SUPPORTS_PARAMETERS:
+            for item_name, item_details in self.manifest.get(section, {}).items():
+                if item_details.get("execution") == constants.EXECUTION_MODE_SPOKE:
+                    for parameter_name, parameter_details in item_details.get(
+                        "parameters", {}
+                    ).items():
+                        if parameter_details.get("ssm") and str(
+                            parameter_details.get("ssm").get("account_id", "")
+                        ) == str(self.puppet_account_id):
+                            r = parameter_details.get("ssm").get(
+                                "region", config.get_home_region(self.puppet_account_id)
+                            )
+                            name = parameter_details.get("ssm").get("name")
+                            key = f"{parameter_name}||{name}||{r}"
+                            param_cache[key] = json.loads(self.input().get("parameters").get(key).open('r').read())
 
         self.write_output(
             yaml.safe_dump(json.loads(json.dumps(new_manifest))), skip_json_dump=True

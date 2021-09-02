@@ -46,14 +46,18 @@ def load(f, puppet_account_id):
             for f in os.listdir(t_path):
                 with open(f"{t_path}{os.path.sep}{f}", "r") as file:
                     contents = file.read()
-                    contents = contents.replace("${AWS::PuppetAccountId}", puppet_account_id)
+                    contents = contents.replace(
+                        "${AWS::PuppetAccountId}", puppet_account_id
+                    )
                     manifest[t].update(yaml.safe_load(contents))
 
     if os.path.exists(f"{d}{os.path.sep}manifests"):
         for f in os.listdir(f"{d}{os.path.sep}manifests"):
             with open(f"{d}{os.path.sep}manifests{os.path.sep}{f}", "r") as file:
                 contents = file.read()
-                contents = contents.replace("${AWS::PuppetAccountId}", puppet_account_id)
+                contents = contents.replace(
+                    "${AWS::PuppetAccountId}", puppet_account_id
+                )
                 ext = yaml.safe_load(contents)
                 for t in extendable:
                     manifest[t].update(ext.get(t, {}))
@@ -62,7 +66,9 @@ def load(f, puppet_account_id):
         for f in os.listdir(f"{d}{os.path.sep}capabilities"):
             with open(f"{d}{os.path.sep}capabilities{os.path.sep}{f}", "r") as file:
                 contents = file.read()
-                contents = contents.replace("${AWS::PuppetAccountId}", puppet_account_id)
+                contents = contents.replace(
+                    "${AWS::PuppetAccountId}", puppet_account_id
+                )
                 ext = yaml.safe_load(contents)
                 always_merger.merge(manifest, ext)
 
@@ -80,17 +86,20 @@ def load(f, puppet_account_id):
             parser.read(config_file)
 
             for section_name, section_values in parser.items():
-                if section_name == "DEFAULT": continue
+                if section_name == "DEFAULT":
+                    continue
                 for item_name, item_value in section_values.items():
                     name, property_name = item_name.split(".")
                     if property_name != "version":
                         raise Exception(
                             "You can only specify a version in the properties file"
                         )
-                    if manifest.get(section_name,{}).get(name):
+                    if manifest.get(section_name, {}).get(name):
                         manifest[section_name][name][property_name] = item_value
                     else:
-                        logger.warning(f"Could not find manifest[{section_name}][{name}]")
+                        logger.warning(
+                            f"Could not find manifest[{section_name}][{name}]"
+                        )
 
     for section in constants.ALL_SPOKE_EXECUTABLE_SECTION_NAMES:
         for name, details in manifest.get(section, {}).items():
