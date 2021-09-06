@@ -496,6 +496,51 @@ Resources:
         - Key: "ServiceCatalogPuppet:Actor"
           Value: "Framework"
 
+  BootstrapASpokeProject:
+    Type: AWS::CodeBuild::Project
+    Description: |
+      Wrapper project that:
+        - installs aws-service-catalog-puppet
+        - runs bootstrap-spoke-as
+    Properties:
+      Name: servicecatalog-puppet-bootstrap-spoke
+      Description: "Bootstraps an account for use with ServiceCatalog-Puppet"
+      ServiceRole: !GetAtt DeployRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: linuxContainer
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        EnvironmentVariables:
+          - Name: PUPPET_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: !Sub "${AWS::AccountId}"
+          - Name: ORGANIZATION_ACCOUNT_ACCESS_ROLE_ARN
+            Type: PLAINTEXT
+            Value: CHANGE_ME
+          - Name: ASSUMABLE_ROLE_IN_ROOT_ACCOUNT
+            Type: PLAINTEXT
+            Value: CHANGE_ME
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                python: 3.x
+              commands:
+          {% if 'http' in VERSION %}
+                - pip install {{ VERSION }}
+          {% else %}
+                - pip install aws-service-catalog-puppet=={{ VERSION }}
+          {% endif %}
+            build:
+              commands:
+                - servicecatalog-puppet bootstrap-spoke-as ${PUPPET_ACCOUNT_ID} ${ASSUMABLE_ROLE_IN_ROOT_ACCOUNT} ${ORGANIZATION_ACCOUNT_ACCESS_ROLE_ARN}
+      TimeoutInMinutes: 30
+
   BootstrapProject:
     Type: AWS::CodeBuild::Project
     Properties:
