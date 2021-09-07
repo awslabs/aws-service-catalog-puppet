@@ -33,16 +33,19 @@ class SectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
                     f"{name} has an invalid affinity of {depends_on.get(constants.AFFINITY)} when using spoke execution mode"
                 )
             else:
-                requirements.append(
-                    generate_dependency_task(
-                        depends_on,
-                        self.manifest_file_path,
-                        self.puppet_account_id,
-                        None,
-                        None,
-                        not self.is_running_in_spoke(),
+                section_name = constants.SECTION_SINGULAR_TO_PLURAL.get(depends_on.get("type"))
+                item = self.manifest.get(section_name).get(depends_on.get("name"))
+                if item.get("execution", constants.EXECUTION_MODE_DEFAULT) != constants.EXECUTION_MODE_SPOKE:
+                    requirements.append(
+                        generate_dependency_task(
+                            depends_on,
+                            self.manifest_file_path,
+                            self.puppet_account_id,
+                            None,
+                            None,
+                            not self.is_running_in_spoke(),
+                        )
                     )
-                )
 
         return requirements
 
