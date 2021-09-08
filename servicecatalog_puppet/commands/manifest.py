@@ -18,9 +18,8 @@ from servicecatalog_puppet import manifest_utils
 logger = logging.getLogger(__name__)
 
 
-def expand(f, single_account, subset=None):
+def expand(f, puppet_account_id, single_account, subset=None):
     click.echo("Expanding")
-    puppet_account_id = config.get_puppet_account_id()
     manifest = manifest_utils.load(f, puppet_account_id)
     org_iam_role_arn = config.get_org_iam_role_arn(puppet_account_id)
     if org_iam_role_arn is None:
@@ -58,6 +57,20 @@ def expand(f, single_account, subset=None):
 
     if new_manifest.get(constants.LAMBDA_INVOCATIONS) is None:
         new_manifest[constants.LAMBDA_INVOCATIONS] = dict()
+
+    home_region = config.get_home_region(puppet_account_id)
+    with betterboto_client.ClientContextManager('ssm') as ssm:
+        response = ssm.get_parameter(Name="service-catalog-puppet-version")
+        version = response.get("Parameter").get("Value")
+
+    new_manifest['config_cache'] = dict(
+        home_region=home_region,
+        regions=config.get_regions(puppet_account_id, home_region),
+        should_collect_cloudformation_events=config.get_should_use_sns(puppet_account_id, home_region),
+        should_forward_events_to_eventbridge=config.get_should_use_eventbridge(puppet_account_id, home_region),
+        should_forward_failures_to_opscenter=config.get_should_forward_failures_to_opscenter(puppet_account_id, home_region),
+        puppet_version=version,
+    )
 
     new_name = f.name.replace(".yaml", "-expanded.yaml")
     logger.info("Writing new manifest: {}".format(new_name))

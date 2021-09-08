@@ -416,8 +416,8 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
         params.update(overrides)
         click.echo(f"Overridden parameters {params}")
 
-    manifest_commands.expand(f, **params)
     puppet_account_id = config.get_puppet_account_id()
+    manifest_commands.expand(f, puppet_account_id, **params)
     if config.get_should_explode_manifest(puppet_account_id):
         manifest_commands.explode(f)
 

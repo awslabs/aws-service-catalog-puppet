@@ -3,6 +3,7 @@
 
 import copy
 import json
+import os
 
 import luigi
 import yaml
@@ -100,7 +101,6 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                                         spoke_account_id=self.puppet_account_id,
                                         spoke_region=r,
                                     )
-
         return requirements
 
     def run(self):
@@ -168,6 +168,21 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                                         self.input().get("parameters").get(key).open("r").read()
                                     )
 
+        manifest_content = yaml.safe_dump(json.loads(json.dumps(new_manifest)))
+        with self.hub_client("s3") as s3:
+            bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
+            key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
+            s3.put_object(
+                Body=manifest_content,
+                Bucket=bucket,
+                Key=key,
+            )
+            signed_url = s3.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": bucket, "Key": key},
+                ExpiresIn=60 * 60 * 24,
+            )
+
         self.write_output(
-            yaml.safe_dump(json.loads(json.dumps(new_manifest))), skip_json_dump=True
+            dict(manifest_content=manifest_content, signed_url=signed_url)
         )

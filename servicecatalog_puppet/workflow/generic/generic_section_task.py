@@ -2,9 +2,8 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.launch import run_deploy_in_spoke_task
 from servicecatalog_puppet.workflow.manifest import section_task
-
+from servicecatalog_puppet.workflow.generic import generic_schedule_run_deploy_in_spoke_task
 
 class GenericSectionTask(section_task.SectionTask):
 
@@ -52,27 +51,9 @@ class GenericSectionTask(section_task.SectionTask):
 
     def run(self):
         if self.supports_spoke_mode and not self.is_running_in_spoke():
-            tasks_to_run = list()
-            for name, details in self.manifest.get(self.section_name, {}).items():
-                if (
-                    details.get(constants.MANIFEST_STATUS_FIELD_NAME)
-                    != constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED
-                ):
-                    if (
-                        details.get("execution", constants.EXECUTION_MODE_DEFAULT)
-                        == constants.EXECUTION_MODE_SPOKE
-                    ):
-                        for (
-                            account_id
-                        ) in self.manifest.get_account_ids_used_for_section_item(
-                            self.puppet_account_id, self.section_name, name
-                        ):
-                            tasks_to_run.append(
-                                run_deploy_in_spoke_task.RunDeployInSpokeTask(
-                                    manifest_file_path=self.manifest_file_path,
-                                    puppet_account_id=self.puppet_account_id,
-                                    account_id=account_id,
-                                )
-                            )
-            yield tasks_to_run
+            yield generic_schedule_run_deploy_in_spoke_task.GenericScheduleRunDeployInSpokeTask(
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                section_name=self.section_name,
+            )
         self.write_output(self.manifest.get(self.section_name, {}))
