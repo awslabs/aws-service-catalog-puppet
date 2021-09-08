@@ -2,7 +2,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import copy
-import functools
 import json
 import os
 
@@ -31,14 +30,7 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
         }
 
     def requires(self):
-        # self.debug("not cached requires ---- PART 1 START ----" + str(self.puppet_account_id) + " | " +str(id(self)))
-        # return self.requires_cached()
-    #
-    #
-    # @functools.lru_cache(maxsize=256)
-    # def requires_cached(self):
         requirements = dict()
-        self.debug("requires ---- PART 1 START ----" + str(self.puppet_account_id) + " | " +str(id(self)))
         regions = config.get_regions(self.puppet_account_id)
         for launch_name, launch_details in self.manifest.get_launches_items():
             portfolio = launch_details.get("portfolio")
@@ -73,9 +65,7 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                         portfolio=portfolio,
                         puppet_account_id=self.puppet_account_id,
                     )
-        self.debug("requires ---- PART 1 END ----" + str(self.puppet_account_id) + " | " +str(id(self)))
 
-        self.debug("requires ---- PART 2 START ----" + str(self.puppet_account_id) + " | " +str(id(self)))
         params = dict()
         requirements["parameters"] = params
         for section in constants.SECTION_NAMES_THAT_SUPPORTS_PARAMETERS:
@@ -111,11 +101,9 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                                         spoke_account_id=self.puppet_account_id,
                                         spoke_region=r,
                                     )
-        self.debug("requires ---- PART 2 END ----" + str(self.puppet_account_id) + " | " +str(id(self)))
         return requirements
 
     def run(self):
-        self.debug("run ---- PART 1 START ----" + str(self.puppet_account_id) + " | " +str(id(self)))
         new_manifest = copy.deepcopy(self.manifest)
         regions = config.get_regions(self.puppet_account_id)
         global_id_cache = dict()
@@ -154,9 +142,7 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                         ][a.get("Name")] = a.get("Id")
 
             global_id_cache[region] = regional_id_cache
-        self.debug("run ---- PART 1 END ----" + str(self.puppet_account_id) + " | " +str(id(self)))
 
-        self.debug("run ---- PART 2 START ----" + str(self.puppet_account_id) + " | " +str(id(self)))
         param_cache = dict()
         new_manifest["param_cache"] = param_cache
         for section in constants.SECTION_NAMES_THAT_SUPPORTS_PARAMETERS:
@@ -181,8 +167,6 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                                     param_cache[key] = json.loads(
                                         self.input().get("parameters").get(key).open("r").read()
                                     )
-
-        self.debug("run ---- PART 2 END ----" + str(self.puppet_account_id) + " | " +str(id(self)))
 
         manifest_content = yaml.safe_dump(json.loads(json.dumps(new_manifest)))
         with self.hub_client("s3") as s3:

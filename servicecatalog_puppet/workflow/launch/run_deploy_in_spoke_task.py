@@ -1,11 +1,8 @@
 #  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
-import os
-
 import luigi
 
-from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.generate import generate_shares_task
@@ -27,8 +24,6 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
 
     def api_calls_used(self):
         return {
-            # f"s3.put_object_{self.puppet_account_id}": 1,
-            # f"s3.generate_presigned_url_{self.puppet_account_id}": 1,
             f"codebuild.start_build_{self.account_id}": 1,
         }
 
@@ -46,8 +41,6 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
         )
 
     def run(self):
-        self.info("running")
-        print("running")
         cached_config = self.manifest.get('config_cache')
         home_region = cached_config.get('home_region')
         regions = cached_config.get('regions')
@@ -55,26 +48,6 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
         should_forward_failures_to_opscenter = cached_config.get('should_forward_failures_to_opscenter')
         should_forward_events_to_eventbridge = cached_config.get('should_forward_events_to_eventbridge')
         version = cached_config.get('puppet_version')
-
-        # print("before sign")
-        # with self.hub_client("s3") as s3:
-        #     bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
-        #     key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
-        #     s3.put_object(
-        #         Body=self.input().get("new_manifest").open("r").read(),
-        #         Bucket=bucket,
-        #         Key=key,
-        #     )
-        #     signed_url = s3.generate_presigned_url(
-        #         "get_object",
-        #         Params={"Bucket": bucket, "Key": key},
-        #         ExpiresIn=60 * 60 * 24,
-        #     )
-        # print("after sign")
-
-        # with self.hub_client("ssm") as ssm:
-        #     response = ssm.get_parameter(Name="service-catalog-puppet-version")
-        #     version = response.get("Parameter").get("Value")
 
         signed_url = self.load_from_input("new_manifest").get("signed_url")
         vars = [
