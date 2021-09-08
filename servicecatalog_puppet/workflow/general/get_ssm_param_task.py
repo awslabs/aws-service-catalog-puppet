@@ -11,6 +11,7 @@ from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.general import boto3_task
+from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 class GetSSMParamTask(tasks.PuppetTask):
@@ -32,8 +33,11 @@ class GetSSMParamTask(tasks.PuppetTask):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return ["ssm.get_parameter"]
+    def resources_used(self):
+        identifier = f"{self.region}-{self.puppet_account_id}"
+        return [
+            (identifier, Limits.SSM_GET_PARAMETER_PER_REGION_OF_ACCOUNT),
+        ]
 
     def requires(self):
         if len(self.depends_on) > 0:

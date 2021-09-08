@@ -8,3 +8,4 @@ class Limits(Enum):
     """1/number should be rational"""
 
     CODEBUILD_CONCURRENT_PROJECTS = 5
+    SSM_GET_PARAMETER_PER_REGION_OF_ACCOUNT = 5
