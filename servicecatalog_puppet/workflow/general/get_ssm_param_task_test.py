@@ -56,16 +56,6 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             parameter_name=self.parameter_name, name=self.name, region=self.region,
         )
 
-    def test_api_calls_used(self):
-        # setup
-        expected_result = ["ssm.get_parameter"]
-
-        # exercise
-        actual_result = self.sut.api_calls_used()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
-
     @skip
     def test_run(self):
         # setup
