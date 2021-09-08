@@ -36,8 +36,7 @@ from servicecatalog_puppet.workflow.spoke_local_portfolios import (
 from servicecatalog_puppet.workflow.stack import stack_section_task
 from servicecatalog_puppet.workflow.workspaces import workspace_section_task
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
 def reset_provisioned_product_owner(f):
@@ -74,17 +73,29 @@ def reset_provisioned_product_owner(f):
 
 
 def cli(info, info_line_numbers):
+    boto_level = os.environ.get("BOTO_LOG_LEVEL", logging.CRITICAL)
+
+    logging.getLogger('boto').setLevel(boto_level)
+    logging.getLogger('boto3').setLevel(boto_level)
+    logging.getLogger('botocore').setLevel(boto_level)
+    logging.getLogger('urllib3').setLevel(boto_level)
+
     if info:
         logging.basicConfig(
             format="%(levelname)s %(threadName)s %(message)s", level=logging.INFO
         )
     if info_line_numbers:
         logging.basicConfig(
-            format="%(levelname)s %(threadName)s [%(filename)s:%(lineno)d] %(message)s",
+            format="%(asctime)s %(levelname)s %(threadName)s [%(filename)s:%(lineno)d] %(message)s",
             datefmt="%Y-%m-%d:%H:%M:%S",
             level=logging.INFO,
         )
 
+    if info or info_line_numbers:
+        logging.getLogger(constants.PUPPET_LOGGER_NAME).setLevel(logging.INFO)
+
+    if os.environ.get("PUPPET_LOG_LEVEL"):
+        logging.getLogger(constants.PUPPET_LOGGER_NAME).setLevel(os.environ.get("PUPPET_LOG_LEVEL"))
 
 def wait_for_code_build_in(iam_role_arns):
     cross_accounts = []

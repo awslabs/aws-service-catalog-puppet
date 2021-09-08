@@ -15,8 +15,7 @@ from servicecatalog_puppet.workflow import (
     runner as runner,
 )
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
 def _do_bootstrap_spoke(

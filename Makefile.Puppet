@@ -30,7 +30,7 @@ expand:
 
 ## @Puppet_commands Runs servicecatalog-puppet --info deploy
 deploy:
-	time poetry run servicecatalog-puppet --info deploy \
+	time poetry run servicecatalog-puppet --info-line-numbers deploy \
 		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
 
 deploy-with-put:

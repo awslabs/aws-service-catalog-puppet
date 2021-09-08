@@ -9,8 +9,7 @@ from jinja2 import Template
 
 from servicecatalog_puppet import constants, asset_helpers
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
 def set_org_iam_role_arn(org_iam_role_arn):

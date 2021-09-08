@@ -10,9 +10,10 @@ from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.generate import generate_shares_task
 from servicecatalog_puppet.workflow.manifest import generate_manifest_with_ids_task
+from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 
-class RunDeployInSpokeTask(tasks.PuppetTask):
+class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
     manifest_file_path = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -26,8 +27,8 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
 
     def api_calls_used(self):
         return {
-            f"s3.put_object_{self.puppet_account_id}": 1,
-            f"s3.generate_presigned_url_{self.puppet_account_id}": 1,
+            # f"s3.put_object_{self.puppet_account_id}": 1,
+            # f"s3.generate_presigned_url_{self.puppet_account_id}": 1,
             f"codebuild.start_build_{self.account_id}": 1,
         }
 
@@ -45,36 +46,38 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
         )
 
     def run(self):
-        home_region = config.get_home_region(self.puppet_account_id)
-        regions = config.get_regions(self.puppet_account_id)
-        should_collect_cloudformation_events = self.should_use_sns
-        should_forward_events_to_eventbridge = config.get_should_use_eventbridge(
-            self.puppet_account_id
-        )
-        should_forward_failures_to_opscenter = config.get_should_forward_failures_to_opscenter(
-            self.puppet_account_id
-        )
+        self.info("running")
+        print("running")
+        cached_config = self.manifest.get('config_cache')
+        home_region = cached_config.get('home_region')
+        regions = cached_config.get('regions')
+        should_collect_cloudformation_events = cached_config.get('should_collect_cloudformation_events')
+        should_forward_failures_to_opscenter = cached_config.get('should_forward_failures_to_opscenter')
+        should_forward_events_to_eventbridge = cached_config.get('should_forward_events_to_eventbridge')
+        version = cached_config.get('puppet_version')
 
-        with self.hub_client("s3") as s3:
-            bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
-            key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
-            s3.put_object(
-                Body=self.input().get("new_manifest").open("r").read(),
-                Bucket=bucket,
-                Key=key,
-            )
-            signed_url = s3.generate_presigned_url(
-                "get_object",
-                Params={"Bucket": bucket, "Key": key},
-                ExpiresIn=60 * 60 * 24,
-            )
-        with self.hub_client("ssm") as ssm:
-            response = ssm.get_parameter(Name="service-catalog-puppet-version")
-            version = response.get("Parameter").get("Value")
-        with self.spoke_client("codebuild") as codebuild:
-            response = codebuild.start_build(
-                projectName=constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME,
-                environmentVariablesOverride=[
+        # print("before sign")
+        # with self.hub_client("s3") as s3:
+        #     bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
+        #     key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
+        #     s3.put_object(
+        #         Body=self.input().get("new_manifest").open("r").read(),
+        #         Bucket=bucket,
+        #         Key=key,
+        #     )
+        #     signed_url = s3.generate_presigned_url(
+        #         "get_object",
+        #         Params={"Bucket": bucket, "Key": key},
+        #         ExpiresIn=60 * 60 * 24,
+        #     )
+        # print("after sign")
+
+        # with self.hub_client("ssm") as ssm:
+        #     response = ssm.get_parameter(Name="service-catalog-puppet-version")
+        #     version = response.get("Parameter").get("Value")
+
+        signed_url = self.load_from_input("new_manifest").get("signed_url")
+        vars = [
                     {"name": "VERSION", "value": version, "type": "PLAINTEXT"},
                     {"name": "MANIFEST_URL", "value": signed_url, "type": "PLAINTEXT"},
                     {
@@ -103,6 +106,10 @@ class RunDeployInSpokeTask(tasks.PuppetTask):
                         "value": str(should_forward_failures_to_opscenter),
                         "type": "PLAINTEXT",
                     },
-                ],
+                ]
+        with self.spoke_client("codebuild") as codebuild:
+            response = codebuild.start_build(
+                projectName=constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME,
+                environmentVariablesOverride=vars,
             )
         self.write_output(dict(account_id=self.account_id, **response))

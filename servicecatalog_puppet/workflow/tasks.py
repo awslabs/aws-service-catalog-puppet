@@ -16,8 +16,7 @@ from luigi.contrib import s3
 
 from servicecatalog_puppet import constants, config
 
-logger = logging.getLogger("tasks")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
 def unwrap(what):
@@ -137,6 +136,9 @@ class PuppetTask(luigi.Task):
 
     def info(self, message):
         logger.info(f"{self.uid}: {message}")
+
+    def debug(self, message):
+        logger.debug(f"{self.uid}: {message}")
 
     def error(self, message):
         logger.error(f"{self.uid}: {message}")
