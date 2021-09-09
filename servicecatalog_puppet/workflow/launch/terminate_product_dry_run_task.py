@@ -7,41 +7,35 @@ import luigi
 
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.launch import provisioning_task
+from servicecatalog_puppet.workflow.launch import do_terminate_product_task
 
 
-class TerminateProductDryRunTask(provisioning_task.ProvisioningTask):
+class TerminateProductDryRunTask(do_terminate_product_task.DoTerminateProductTask):
     launch_name = luigi.Parameter()
-    portfolio = luigi.Parameter()
-    portfolio_id = luigi.Parameter()
-    product = luigi.Parameter()
-    product_id = luigi.Parameter()
-    version = luigi.Parameter()
-    version_id = luigi.Parameter()
-
-    account_id = luigi.Parameter()
-    region = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
-    retry_count = luigi.IntParameter(default=1)
+    region = luigi.Parameter()
+    account_id = luigi.Parameter()
 
-    ssm_param_outputs = luigi.ListParameter(default=[])
+    portfolio = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
+
+    ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
+
+    launch_parameters = luigi.DictParameter(default={}, significant=False)
+    manifest_parameters = luigi.DictParameter(default={}, significant=False)
+    account_parameters = luigi.DictParameter(default={}, significant=False)
+
+    retry_count = luigi.IntParameter(default=1, significant=False)
 
     worker_timeout = luigi.IntParameter(default=0, significant=False)
+    ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
+    requested_priority = luigi.IntParameter(significant=False, default=0)
 
-    parameters = luigi.ListParameter(default=[])
-    ssm_param_inputs = luigi.ListParameter(default=[])
+    execution = luigi.Parameter()
 
     try_count = 1
-
-    def params_for_results_display(self):
-        return {
-            "puppet_account_id": self.puppet_account_id,
-            "launch_name": self.launch_name,
-            "account_id": self.account_id,
-            "region": self.region,
-            "cache_invalidator": self.cache_invalidator,
-        }
 
     def write_result(self, current_version, new_version, effect, notes=""):
         with self.output().open("w") as f:
@@ -66,6 +60,9 @@ class TerminateProductDryRunTask(provisioning_task.ProvisioningTask):
         ]
 
     def run(self):
+        details = self.load_from_input("details")
+        product_id = details.get("product_details").get("ProductId")
+
         self.info(
             f"starting dry run terminate try {self.try_count} of {self.retry_count}"
         )
@@ -75,7 +72,7 @@ class TerminateProductDryRunTask(provisioning_task.ProvisioningTask):
                 f"[{self.launch_name}] {self.account_id}:{self.region} :: looking for previous failures"
             )
             r = aws.get_provisioned_product_details(
-                self.product_id, self.launch_name, service_catalog
+                product_id, self.launch_name, service_catalog
             )
 
             if r is None:
@@ -86,7 +83,7 @@ class TerminateProductDryRunTask(provisioning_task.ProvisioningTask):
                 provisioned_product_name = (
                     service_catalog.describe_provisioning_artifact(
                         ProvisioningArtifactId=r.get("ProvisioningArtifactId"),
-                        ProductId=self.product_id,
+                        ProductId=product_id,
                     )
                     .get("ProvisioningArtifactDetail")
                     .get("Name")
