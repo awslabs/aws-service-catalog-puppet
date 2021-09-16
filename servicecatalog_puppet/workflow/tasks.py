@@ -267,7 +267,7 @@ def print_stats():
 
 
 @luigi.Task.event_handler(luigi.Event.START)
-def on_task_success(task):
+def on_task_start(task):
     task_name = task.__class__.__name__
     to_string = f"{task_name}: "
     for name, value in task.param_kwargs.items():
@@ -312,7 +312,10 @@ def on_task_processing_time(task, duration):
         "cloudwatch-puppethub",
     ) as cloudwatch:
 
-        dimensions = [dict(Name="task_type", Value=task.__class__.__name__,)]
+        dimensions = [
+            dict(Name="task_type", Value=task.__class__.__name__,),
+            dict(Name="codebuild_build_id", Value=os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD"),),
+        ]
         for note_worthy in [
             "launch_name",
             "region",
@@ -330,22 +333,11 @@ def on_task_processing_time(task, duration):
                 )
 
         cloudwatch.put_metric_data(
-            Namespace=f"ServiceCatalogTools/Puppet/v1/ProcessingTime/{task.__class__.__name__}",
-            MetricData=[
-                dict(
-                    MetricName=task.__class__.__name__,
-                    Dimensions=dimensions,
-                    Value=duration,
-                    Unit="Seconds",
-                ),
-            ],
-        )
-        cloudwatch.put_metric_data(
-            Namespace=f"ServiceCatalogTools/Puppet/v1/ProcessingTime/Tasks",
+            Namespace=f"ServiceCatalogTools/Puppet/v2/ProcessingTime/Tasks",
             MetricData=[
                 dict(
                     MetricName="Tasks",
-                    Dimensions=[dict(Name="TaskType", Value=task.__class__.__name__)],
+                    Dimensions=[dict(Name="TaskType", Value=task.__class__.__name__)] + dimensions,
                     Value=duration,
                     Unit="Seconds",
                 ),
