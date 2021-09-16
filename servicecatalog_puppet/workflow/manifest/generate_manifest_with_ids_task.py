@@ -4,7 +4,6 @@
 import copy
 import json
 import os
-import logging
 
 import luigi
 import yaml
@@ -20,7 +19,6 @@ from servicecatalog_puppet.workflow.portfolio.accessors import (
 )
 from servicecatalog_puppet.workflow.general import get_ssm_param_task
 
-logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
     puppet_account_id = luigi.Parameter()
@@ -106,17 +104,17 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
         return requirements
 
     def run(self):
+        self.debug("starting")
         new_manifest = copy.deepcopy(self.manifest)
         regions = config.get_regions(self.puppet_account_id)
         global_id_cache = dict()
         new_manifest["id_cache"] = global_id_cache
 
-        logger.info("Starting id_cache generation")
         for region in regions:
             regional_id_cache = dict()
             r = self.input().get(region)
             for launch_name, launch_details in self.manifest.get_launches_items():
-                logger.debug(f"processing launch_name={launch_name} in {region} for id_cache generation")
+                self.debug(f"processing launch_name={launch_name} in {region} for id_cache generation")
                 target = r.get(launch_details.get("portfolio")).get("details")
                 portfolio_id = json.loads(target.open("r").read()).get("portfolio_id")
                 portfolio_name = launch_details.get("portfolio")
@@ -124,7 +122,7 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                     regional_id_cache[portfolio_name] = dict(
                         id=portfolio_id, products=dict()
                     )
-                    logger.debug(f"added {portfolio_name}={portfolio_id} to id_cache")
+                    self.debug(f"added {portfolio_name}={portfolio_id} to id_cache")
 
                 product = launch_details.get("product")
                 target = (
@@ -134,7 +132,7 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                 all_products_and_their_versions = all_details
                 for p in all_products_and_their_versions:
                     product_name = p.get("Name")
-                    logger.debug(f"processing product_name={product_name}")
+                    self.debug(f"processing product_name={product_name}")
                     if (
                         regional_id_cache[portfolio_name]["products"].get(product_name)
                         is None
@@ -142,12 +140,12 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                         regional_id_cache[portfolio_name]["products"][
                             product_name
                         ] = dict(id=p.get("ProductId"), versions=dict())
-                        logger.debug(f"added {product_name} to id_cache")
+                        self.debug(f"added {product_name} to id_cache")
 
                     for a in p.get("provisioning_artifact_details"):
                         version_id = a.get("Id")
                         version_name = a.get("Name")
-                        logger.debug(f"added version {version_name}={version_id} to id_cache")
+                        self.debug(f"added version {version_name}={version_id} to id_cache")
                         regional_id_cache[portfolio_name]["products"][product_name][
                             "versions"
                         ][version_name] = version_id
@@ -156,49 +154,49 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
 
         param_cache = dict()
         new_manifest["param_cache"] = param_cache
-        logger.info("Starting param_cache generation")
+        self.debug("Starting param_cache generation")
         for section in constants.SECTION_NAMES_THAT_SUPPORTS_PARAMETERS:
-            logger.debug(f"processing section={section} for param_cache generation")
+            self.debug(f"processing section={section} for param_cache generation")
             for item_name, item_details in self.manifest.get(section, {}).items():
-                logger.debug(f"processing item={item_name} for section={section}")
+                self.debug(f"processing item={item_name} for section={section}")
                 if item_details.get("execution") == constants.EXECUTION_MODE_SPOKE:
-                    logger.debug(f"{item_name} is spoke execution mode, getting details")
+                    self.debug(f"{item_name} is spoke execution mode, getting details")
                     for parameter_name, parameter_details in item_details.get(
                         "parameters", {}
                     ).items():
-                        logger.debug(f"processing parameter_name={parameter_name} for {item_name}")
+                        self.debug(f"processing parameter_name={parameter_name} for {item_name}")
                         if parameter_details.get("ssm") and str(
                             parameter_details.get("ssm").get("account_id", "")
                         ) == str(self.puppet_account_id):
-                            logger.debug(f"parameter {parameter_name} is in puppet account - retrieving")
+                            self.debug(f"parameter {parameter_name} is in puppet account - retrieving")
                             r = parameter_details.get("ssm").get(
                                 "region", config.get_home_region(self.puppet_account_id)
                             )
                             name = parameter_details.get("ssm").get("name")
                             accounts_and_regions = self.manifest.get_account_ids_and_regions_used_for_section_item(
                                 self.puppet_account_id, section, item_name)
-                            logger.debug(f"retrieved accounts and regions for {item_name} : {accounts_and_regions}")
+                            self.debug(f"retrieved accounts and regions for {item_name} : {accounts_and_regions}")
                             for account_id, regions in accounts_and_regions.items():    
                                 for region in regions:
-                                    logger.debug(f"processing parameter {parameter_name} for account={account_id}, region={region}")
+                                    self.debug(f"processing parameter {parameter_name} for account={account_id}, region={region}")
                                     n = name.replace("${AWS::AccountId}", account_id).replace("${AWS::Region}", region)
                                     key = f"{parameter_name}||{n}||{r}"
                                     param_cache[key] = json.loads(
                                         self.input().get("parameters").get(key).open("r").read()
                                     )
-                                    logger.debug(f"added key={key}, value={param_cache[key]} to param_cache")
+                                    self.debug(f"added key={key}, value={param_cache[key]} to param_cache")
 
         manifest_content = yaml.safe_dump(json.loads(json.dumps(new_manifest)))
         with self.hub_client("s3") as s3:
             bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
             key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
-            logger.debug(f"Uploading generated manifest {key} to {bucket}")
+            self.debug(f"Uploading generated manifest {key} to {bucket}")
             s3.put_object(
                 Body=manifest_content,
                 Bucket=bucket,
                 Key=key,
             )
-            logger.debug(f"Generating presigned URL for {key}")
+            self.debug(f"Generating presigned URL for {key}")
             signed_url = s3.generate_presigned_url(
                 "get_object",
                 Params={"Bucket": bucket, "Key": key},
