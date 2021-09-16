@@ -191,25 +191,40 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                             self.debug(
                                 f"retrieved accounts and regions for {item_name} : {accounts_and_regions}"
                             )
-                            for account_id, regions in accounts_and_regions.items():
-                                for region in regions:
-                                    self.debug(
-                                        f"processing parameter {parameter_name} for account={account_id}, region={region}"
+                            if "${AWS::AccountId}" in name:
+                                for account_id, regions in accounts_and_regions.items():
+                                    for region in regions:
+                                        self.cache_parameter(
+                                            param_cache,
+                                            parameter_name,
+                                            name,
+                                            r,
+                                            region=region,
+                                            account_id=account_id,
+                                        )
+                            elif "${AWS::Region}" in name:
+                                regions_values = accounts_and_regions.values()
+                                all_regions = []
+                                for regions in regions_values:
+                                    if type(regions) is list:
+                                        for region in regions:
+                                            if region not in all_regions:
+                                                all_regions.append(region)
+                                    else:
+                                        all_regions.append(regions)
+
+                                for region in all_regions:
+                                    self.cache_parameter(
+                                        param_cache,
+                                        parameter_name,
+                                        name,
+                                        r,
+                                        region=region,
                                     )
-                                    n = name.replace(
-                                        "${AWS::AccountId}", account_id
-                                    ).replace("${AWS::Region}", region)
-                                    key = f"{parameter_name}||{n}||{r}"
-                                    param_cache[key] = json.loads(
-                                        self.input()
-                                        .get("parameters")
-                                        .get(key)
-                                        .open("r")
-                                        .read()
-                                    )
-                                    self.debug(
-                                        f"added key={key}, value={param_cache[key]} to param_cache"
-                                    )
+                            else:
+                                self.cache_parameter(
+                                    param_cache, parameter_name, name, r
+                                )
 
         manifest_content = yaml.safe_dump(json.loads(json.dumps(new_manifest)))
         with self.hub_client("s3") as s3:
@@ -229,3 +244,31 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
         self.write_output(
             dict(manifest_content=manifest_content, signed_url=signed_url)
         )
+
+    def cache_parameter(
+        self,
+        param_cache,
+        cfn_parameter_name,
+        ssm_parameter_name,
+        ssm_parameter_region,
+        region=None,
+        account_id=None,
+    ):
+        self.debug(
+            f"processing parameter {cfn_parameter_name} for account={account_id}, region={region}"
+        )
+        n = ssm_parameter_name
+        if account_id is not None:
+            n = n.replace("${AWS::AccountId}", account_id)
+        if region is not None:
+            n = n.replace("${AWS::Region}", region)
+        key = f"{cfn_parameter_name}||{n}||{ssm_parameter_region}"
+        if key not in param_cache:
+            param_cache[key] = json.loads(
+                self.input().get("parameters").get(key).open("r").read()
+            )
+            self.debug(f"added key={key}, value={param_cache[key]} to param_cache")
+        else:
+            self.debug(
+                f"skipped adding key={key} to param_cache as already exists with value={param_cache[key]}"
+            )
