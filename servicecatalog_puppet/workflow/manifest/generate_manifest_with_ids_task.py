@@ -185,20 +185,45 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                                 "region", config.get_home_region(self.puppet_account_id)
                             )
                             name = parameter_details.get("ssm").get("name")
-                            accounts_and_regions = self.manifest.get_account_ids_and_regions_used_for_section_item(
-                                self.puppet_account_id, section, item_name
-                            )
-                            self.debug(
-                                f"retrieved accounts and regions for {item_name} : {accounts_and_regions}"
-                            )
-                            for account_id, regions in accounts_and_regions.items():
-                                for region in regions:
+
+                            if "${AWS::AccountId}" in name and "${AWS::Region}" in name:
+                                accounts_and_regions = self.manifest.get_account_ids_and_regions_used_for_section_item(
+                                    self.puppet_account_id, section, item_name
+                                )
+                                self.debug(
+                                    f"retrieved accounts and regions for {item_name} : {accounts_and_regions}"
+                                )
+                                for account_id, regions in accounts_and_regions.items():
+                                    for region in regions:
+                                        self.debug(
+                                            f"processing parameter {parameter_name} for account={account_id}, region={region}"
+                                        )
+                                        n = name.replace(
+                                            "${AWS::AccountId}", account_id
+                                        ).replace("${AWS::Region}", region)
+                                        key = f"{parameter_name}||{n}||{r}"
+                                        param_cache[key] = json.loads(
+                                            self.input()
+                                            .get("parameters")
+                                            .get(key)
+                                            .open("r")
+                                            .read()
+                                        )
+                                        self.debug(
+                                            f"added key={key}, value={param_cache[key]} to param_cache"
+                                        )
+                            elif "${AWS::AccountId}" in name:
+                                accounts = self.manifest.get_account_ids_used_for_section_item(
+                                    self.puppet_account_id, section, item_name
+                                )
+                                self.debug(
+                                    f"retrieved accounts for {item_name} : {accounts}"
+                                )
+                                for account_id in accounts:
                                     self.debug(
-                                        f"processing parameter {parameter_name} for account={account_id}, region={region}"
+                                        f"processing parameter {parameter_name} for account={account_id}"
                                     )
-                                    n = name.replace(
-                                        "${AWS::AccountId}", account_id
-                                    ).replace("${AWS::Region}", region)
+                                    n = name.replace("${AWS::AccountId}", account_id)
                                     key = f"{parameter_name}||{n}||{r}"
                                     param_cache[key] = json.loads(
                                         self.input()
@@ -210,6 +235,43 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                                     self.debug(
                                         f"added key={key}, value={param_cache[key]} to param_cache"
                                     )
+                            elif "${AWS::Region}" in name:
+                                regions = self.manifest.get_regions_used_for_section_item(
+                                    self.puppet_account_id, section, item_name
+                                )
+                                self.debug(
+                                    f"retrieved regions for {item_name} : {regions}"
+                                )
+                                for region in regions:
+                                    self.debug(
+                                        f"processing parameter {parameter_name} for region={region}"
+                                    )
+                                    n = name.replace("${AWS::Region}", region)
+                                    key = f"{parameter_name}||{n}||{r}"
+                                    param_cache[key] = json.loads(
+                                        self.input()
+                                        .get("parameters")
+                                        .get(key)
+                                        .open("r")
+                                        .read()
+                                    )
+                                    self.debug(
+                                        f"added key={key}, value={param_cache[key]} to param_cache"
+                                    )
+                            else:
+                                self.debug(f"processing parameter {parameter_name}")
+                                n = name
+                                key = f"{parameter_name}||{n}||{r}"
+                                param_cache[key] = json.loads(
+                                    self.input()
+                                    .get("parameters")
+                                    .get(key)
+                                    .open("r")
+                                    .read()
+                                )
+                                self.debug(
+                                    f"added key={key}, value={param_cache[key]} to param_cache"
+                                )
 
         manifest_content = yaml.safe_dump(json.loads(json.dumps(new_manifest)))
         with self.hub_client("s3") as s3:
