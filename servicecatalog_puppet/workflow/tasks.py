@@ -321,11 +321,9 @@ def on_task_processing_time(task, duration):
             "region",
             "account_id",
             "puppet_account_id",
-            "sharing_mode",
             "portfolio",
             "product",
             "version",
-            "execution",
         ]:
             if task_params.get(note_worthy):
                 dimensions.append(
