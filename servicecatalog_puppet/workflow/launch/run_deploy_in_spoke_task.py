@@ -41,45 +41,47 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
         )
 
     def run(self):
-        cached_config = self.manifest.get('config_cache')
-        home_region = cached_config.get('home_region')
-        regions = cached_config.get('regions')
-        should_collect_cloudformation_events = cached_config.get('should_collect_cloudformation_events')
-        should_forward_failures_to_opscenter = cached_config.get('should_forward_failures_to_opscenter')
-        should_forward_events_to_eventbridge = cached_config.get('should_forward_events_to_eventbridge')
-        version = cached_config.get('puppet_version')
+        cached_config = self.manifest.get("config_cache")
+        home_region = cached_config.get("home_region")
+        regions = cached_config.get("regions")
+        should_collect_cloudformation_events = cached_config.get(
+            "should_collect_cloudformation_events"
+        )
+        should_forward_failures_to_opscenter = cached_config.get(
+            "should_forward_failures_to_opscenter"
+        )
+        should_forward_events_to_eventbridge = cached_config.get(
+            "should_forward_events_to_eventbridge"
+        )
+        version = cached_config.get("puppet_version")
 
         signed_url = self.load_from_input("new_manifest").get("signed_url")
         vars = [
-                    {"name": "VERSION", "value": version, "type": "PLAINTEXT"},
-                    {"name": "MANIFEST_URL", "value": signed_url, "type": "PLAINTEXT"},
-                    {
-                        "name": "PUPPET_ACCOUNT_ID",
-                        "value": self.puppet_account_id,
-                        "type": "PLAINTEXT",
-                    },
-                    {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
-                    {
-                        "name": "REGIONS",
-                        "value": ",".join(regions),
-                        "type": "PLAINTEXT",
-                    },
-                    {
-                        "name": "SHOULD_COLLECT_CLOUDFORMATION_EVENTS",
-                        "value": str(should_collect_cloudformation_events),
-                        "type": "PLAINTEXT",
-                    },
-                    {
-                        "name": "SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE",
-                        "value": str(should_forward_events_to_eventbridge),
-                        "type": "PLAINTEXT",
-                    },
-                    {
-                        "name": "SHOULD_FORWARD_FAILURES_TO_OPSCENTER",
-                        "value": str(should_forward_failures_to_opscenter),
-                        "type": "PLAINTEXT",
-                    },
-                ]
+            {"name": "VERSION", "value": version, "type": "PLAINTEXT"},
+            {"name": "MANIFEST_URL", "value": signed_url, "type": "PLAINTEXT"},
+            {
+                "name": "PUPPET_ACCOUNT_ID",
+                "value": self.puppet_account_id,
+                "type": "PLAINTEXT",
+            },
+            {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
+            {"name": "REGIONS", "value": ",".join(regions), "type": "PLAINTEXT",},
+            {
+                "name": "SHOULD_COLLECT_CLOUDFORMATION_EVENTS",
+                "value": str(should_collect_cloudformation_events),
+                "type": "PLAINTEXT",
+            },
+            {
+                "name": "SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE",
+                "value": str(should_forward_events_to_eventbridge),
+                "type": "PLAINTEXT",
+            },
+            {
+                "name": "SHOULD_FORWARD_FAILURES_TO_OPSCENTER",
+                "value": str(should_forward_failures_to_opscenter),
+                "type": "PLAINTEXT",
+            },
+        ]
         with self.spoke_client("codebuild") as codebuild:
             response = codebuild.start_build(
                 projectName=constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME,

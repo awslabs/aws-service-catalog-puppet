@@ -75,10 +75,10 @@ def reset_provisioned_product_owner(f):
 def cli(info, info_line_numbers):
     boto_level = os.environ.get("BOTO_LOG_LEVEL", logging.CRITICAL)
 
-    logging.getLogger('boto').setLevel(boto_level)
-    logging.getLogger('boto3').setLevel(boto_level)
-    logging.getLogger('botocore').setLevel(boto_level)
-    logging.getLogger('urllib3').setLevel(boto_level)
+    logging.getLogger("boto").setLevel(boto_level)
+    logging.getLogger("boto3").setLevel(boto_level)
+    logging.getLogger("botocore").setLevel(boto_level)
+    logging.getLogger("urllib3").setLevel(boto_level)
 
     if info:
         logging.basicConfig(
@@ -95,7 +95,10 @@ def cli(info, info_line_numbers):
         logging.getLogger(constants.PUPPET_LOGGER_NAME).setLevel(logging.INFO)
 
     if os.environ.get("PUPPET_LOG_LEVEL"):
-        logging.getLogger(constants.PUPPET_LOGGER_NAME).setLevel(os.environ.get("PUPPET_LOG_LEVEL"))
+        logging.getLogger(constants.PUPPET_LOGGER_NAME).setLevel(
+            os.environ.get("PUPPET_LOG_LEVEL")
+        )
+
 
 def wait_for_code_build_in(iam_role_arns):
     cross_accounts = []

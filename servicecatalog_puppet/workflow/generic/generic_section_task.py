@@ -3,7 +3,10 @@
 
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.manifest import section_task
-from servicecatalog_puppet.workflow.generic import generic_schedule_run_deploy_in_spoke_task
+from servicecatalog_puppet.workflow.generic import (
+    generic_schedule_run_deploy_in_spoke_task,
+)
+
 
 class GenericSectionTask(section_task.SectionTask):
 

@@ -314,7 +314,10 @@ def on_task_processing_time(task, duration):
 
         dimensions = [
             dict(Name="task_type", Value=task.__class__.__name__,),
-            dict(Name="codebuild_build_id", Value=os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD"),),
+            dict(
+                Name="codebuild_build_id",
+                Value=os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD"),
+            ),
         ]
         for note_worthy in [
             "launch_name",
@@ -335,7 +338,8 @@ def on_task_processing_time(task, duration):
             MetricData=[
                 dict(
                     MetricName="Tasks",
-                    Dimensions=[dict(Name="TaskType", Value=task.__class__.__name__)] + dimensions,
+                    Dimensions=[dict(Name="TaskType", Value=task.__class__.__name__)]
+                    + dimensions,
                     Value=duration,
                     Unit="Seconds",
                 ),
