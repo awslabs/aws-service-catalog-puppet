@@ -139,7 +139,7 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                     param_details.get("ssm").get("account_id", "")
                 ) == str(self.puppet_account_id)
                 if (
-                    constants.EXECUTION_MODE_SPOKE == self.execution
+                    constants.EXECUTION_MODE_SPOKE == self.execution_mode
                     and parameter_is_in_hub
                 ):
                     klass = GetSSMParamFromManifestTask
