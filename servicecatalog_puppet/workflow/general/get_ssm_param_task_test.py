@@ -57,7 +57,11 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # setup
         # exercise
         self.module.GetSSMParamTask(
-            parameter_name=self.parameter_name, name=self.name, region=self.region, path=self.path, recursive=self.recursive,
+            parameter_name=self.parameter_name,
+            name=self.name,
+            region=self.region,
+            path=self.path,
+            recursive=self.recursive,
         )
 
     @skip
