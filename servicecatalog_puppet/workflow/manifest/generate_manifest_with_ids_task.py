@@ -97,6 +97,12 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                                         parameter_name=parameter_name,
                                         name=n,
                                         region=r,
+                                        path=parameter_details.get("ssm").get(
+                                            "path", ""
+                                        ),
+                                        recursive=parameter_details.get("ssm").get(
+                                            "recursive", True
+                                        ),
                                         depends_on=parameter_details.get("ssm").get(
                                             "depends_on", []
                                         ),

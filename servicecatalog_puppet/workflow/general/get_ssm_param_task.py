@@ -14,9 +14,10 @@ from servicecatalog_puppet.workflow.general import boto3_task
 from servicecatalog_puppet.workflow.workspaces import Limits
 
 
-class GetSSMParamTask(tasks.PuppetTask):
-    parameter_name = luigi.Parameter()
-    name = luigi.Parameter()
+class GetSSMParamByPathTask(tasks.PuppetTask):
+    path = luigi.Parameter()
+    recursive = luigi.BoolParameter()
+
     region = luigi.Parameter(default=None)
 
     depends_on = luigi.ListParameter(default=[])
@@ -27,8 +28,8 @@ class GetSSMParamTask(tasks.PuppetTask):
 
     def params_for_results_display(self):
         return {
-            "parameter_name": self.parameter_name,
-            "name": self.name,
+            "path": self.path,
+            "recursive": self.recursive,
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
         }
@@ -53,25 +54,99 @@ class GetSSMParamTask(tasks.PuppetTask):
             return []
 
     def run(self):
+        parameters = dict()
         with self.hub_regional_client("ssm") as ssm:
-            try:
-                p = ssm.get_parameter(Name=self.name,)
-                self.write_output(
-                    {
-                        "Name": self.name,
-                        "Region": self.region,
-                        "Value": p.get("Parameter").get("Value"),
-                        "Version": p.get("Parameter").get("Version"),
-                    }
-                )
-            except ssm.exceptions.ParameterNotFound as e:
-                raise e
+            paginator = ssm.get_paginator("get_parameters_by_path")
+            for page in paginator.paginate(Path=self.path, Recursive=self.recursive):
+                for parameter in page.get("Parameters", []):
+                    parameters[parameter.get("Name")] = parameter
+
+        self.write_output(parameters)
+
+
+class GetSSMParamTask(tasks.PuppetTask):
+    parameter_name = luigi.Parameter()
+    name = luigi.Parameter()
+    region = luigi.Parameter(default=None)
+
+    path = luigi.Parameter()
+    recursive = luigi.BoolParameter()
+
+    depends_on = luigi.ListParameter(default=[])
+    manifest_file_path = luigi.Parameter(default="")
+    puppet_account_id = luigi.Parameter(default="")
+    spoke_account_id = luigi.Parameter(default="")
+    spoke_region = luigi.Parameter(default="")
+
+    def params_for_results_display(self):
+        return {
+            "parameter_name": self.parameter_name,
+            "name": self.name,
+            "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def resources_used(self):
+        if self.path:
+            return []
+        else:
+            identifier = f"{self.region}-{self.puppet_account_id}"
+            return [
+                (identifier, Limits.SSM_GET_PARAMETER_PER_REGION_OF_ACCOUNT),
+            ]
+
+    def requires(self):
+        deps = dict()
+        if self.path != "":
+            deps["ssm"] = GetSSMParamByPathTask(
+                path=self.path,
+                recursive=self.recursive,
+                region=self.region,
+                depends_on=self.depends_on,
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+                spoke_account_id=self.spoke_account_id,
+                spoke_region=self.spoke_region,
+            )
+
+        if len(self.depends_on) > 0:
+            deps["dependencies"] = dependency.generate_dependency_tasks(
+                self.depends_on,
+                self.manifest_file_path,
+                self.puppet_account_id,
+                self.spoke_account_id,
+                self.spoke_region,
+                self.execution_mode,
+            )
+        return deps
+
+    def run(self):
+        if self.path == "":
+            with self.hub_regional_client("ssm") as ssm:
+                try:
+                    p = ssm.get_parameter(Name=self.name,)
+                    self.write_output(
+                        {
+                            "Name": self.name,
+                            "Region": self.region,
+                            "Value": p.get("Parameter").get("Value"),
+                            "Version": p.get("Parameter").get("Version"),
+                        }
+                    )
+                except ssm.exceptions.ParameterNotFound as e:
+                    raise e
+        else:
+            params = self.load_from_input("ssm")
+            self.write_output(params.get(self.name))
 
 
 class GetSSMParamFromManifestTask(tasks.PuppetTask):
     parameter_name = luigi.Parameter()
     name = luigi.Parameter()
     region = luigi.Parameter(default=None)
+
+    path = luigi.Parameter()
+    recursive = luigi.BoolParameter()
 
     depends_on = luigi.ListParameter(default=[])
     manifest_file_path = luigi.Parameter(default="")
@@ -151,6 +226,8 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                     region=param_details.get("ssm").get(
                         "region", config.get_home_region(self.puppet_account_id)
                     ),
+                    path=param_details.get("ssm").get("path", ""),
+                    recursive=param_details.get("ssm").get("recursive", True),
                     depends_on=param_details.get("ssm").get("depends_on", []),
                     manifest_file_path=self.manifest_file_path,
                     puppet_account_id=self.puppet_account_id,
