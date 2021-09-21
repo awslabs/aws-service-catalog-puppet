@@ -187,9 +187,9 @@ def provision_product_with_plan(
             f"{uid} :: Found plan for {provisioned_product_plan.get('ProvisionProductName')}"
         )
         if provisioned_product_plan.get("ProvisionProductName") == launch_name:
-            f"{uid} :: Found existing plan, going to terminate it"
+            logger.info(f"{uid} :: Found existing plan, going to terminate it")
             service_catalog.delete_provisioned_product_plan(
-                PlanId=provisioned_product_plan.get("PlanId")
+                PlanId=provisioned_product_plan.get("PlanId"), IgnoreErrors=True,
             )
 
     logger.info(f"{uid} :: Creating a plan")
@@ -270,7 +270,9 @@ def provision_product_with_plan(
                 if execute_status in ["AVAILABLE", "EXECUTE_SUCCESS"]:
                     break
                 elif execute_status == "TAINTED":
-                    service_catalog.delete_provisioned_product_plan(PlanId=plan_id)
+                    service_catalog.delete_provisioned_product_plan(
+                        PlanId=plan_id, IgnoreErrors=True,
+                    )
                     raise Exception(
                         f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
                     )
@@ -281,7 +283,9 @@ def provision_product_with_plan(
                 else:
                     time.sleep(5)
 
-            service_catalog.delete_provisioned_product_plan(PlanId=plan_id)
+            service_catalog.delete_provisioned_product_plan(
+                PlanId=plan_id, IgnoreErrors=True,
+            )
             return provisioned_product_id
 
         else:
