@@ -15,6 +15,8 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     spoke_account_id = "spoke_account_id"
     spoke_region = "spoke_region"
+    path = "path"
+    recursive = "recursive"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.general import get_ssm_param_task
@@ -25,6 +27,8 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             parameter_name=self.parameter_name,
             name=self.name,
             region=self.region,
+            path=self.path,
+            recursive=self.recursive,
             depends_on=self.depends_on,
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
@@ -53,7 +57,7 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # setup
         # exercise
         self.module.GetSSMParamTask(
-            parameter_name=self.parameter_name, name=self.name, region=self.region,
+            parameter_name=self.parameter_name, name=self.name, region=self.region, path=self.path, recursive=self.recursive,
         )
 
     @skip
