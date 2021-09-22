@@ -67,7 +67,10 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                     )
 
         params = dict()
+        parameter_by_paths = dict()
         requirements["parameters"] = params
+        requirements["parameter_by_paths"] = parameter_by_paths
+        home_region = config.get_home_region(self.puppet_account_id)
         for section in constants.SECTION_NAMES_THAT_SUPPORTS_PARAMETERS:
             for item_name, item_details in self.manifest.get(section, {}).items():
                 if item_details.get("execution") == constants.EXECUTION_MODE_SPOKE:
@@ -81,36 +84,58 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                                 "region", config.get_home_region(self.puppet_account_id)
                             )
                             name = parameter_details.get("ssm").get("name")
+                            path = parameter_details.get("ssm").get("path", "")
 
-                            accounts_and_regions = self.manifest.get_account_ids_and_regions_used_for_section_item(
-                                self.puppet_account_id, section, item_name
-                            )
-                            for account_id, regions in accounts_and_regions.items():
-                                for region in regions:
-                                    n = name.replace(
-                                        "${AWS::AccountId}", account_id
-                                    ).replace("${AWS::Region}", region)
+                            if path == "":
+                                accounts_and_regions = self.manifest.get_account_ids_and_regions_used_for_section_item(
+                                    self.puppet_account_id, section, item_name
+                                )
+                                for account_id, regions in accounts_and_regions.items():
+                                    for region in regions:
+                                        n = name.replace(
+                                            "${AWS::AccountId}", account_id
+                                        ).replace("${AWS::Region}", region)
 
-                                    params[
-                                        f"{parameter_name}||{n}||{r}"
-                                    ] = get_ssm_param_task.GetSSMParamTask(
-                                        parameter_name=parameter_name,
-                                        name=n,
-                                        region=r,
-                                        path=parameter_details.get("ssm").get(
-                                            "path", ""
-                                        ),
-                                        recursive=parameter_details.get("ssm").get(
-                                            "recursive", True
-                                        ),
-                                        depends_on=parameter_details.get("ssm").get(
-                                            "depends_on", []
-                                        ),
-                                        manifest_file_path=self.manifest_file_path,
-                                        puppet_account_id=self.puppet_account_id,
-                                        spoke_account_id=self.puppet_account_id,
-                                        spoke_region=r,
-                                    )
+                                        params[
+                                            f"{parameter_name}||{n}||{r}"
+                                        ] = get_ssm_param_task.GetSSMParamTask(
+                                            parameter_name=parameter_name,
+                                            name=n,
+                                            region=r,
+                                            path=parameter_details.get("ssm").get(
+                                                "path", ""
+                                            ),
+                                            recursive=parameter_details.get("ssm").get(
+                                                "recursive", True
+                                            ),
+                                            depends_on=parameter_details.get("ssm").get(
+                                                "depends_on", []
+                                            ),
+                                            manifest_file_path=self.manifest_file_path,
+                                            puppet_account_id=self.puppet_account_id,
+                                            spoke_account_id=self.puppet_account_id,
+                                            spoke_region=r,
+                                        )
+                            else:
+                                parameter_by_paths[
+                                    path
+                                ] = get_ssm_param_task.GetSSMParamByPathTask(
+                                    path=parameter_details.get("ssm").get("path", ""),
+                                    recursive=parameter_details.get("ssm").get(
+                                        "recursive", True
+                                    ),
+                                    region=parameter_details.get("ssm").get(
+                                        "recursive", home_region
+                                    ),
+                                    depends_on=parameter_details.get("ssm").get(
+                                        "depends_on", []
+                                    ),
+                                    manifest_file_path=self.manifest_file_path,
+                                    puppet_account_id=self.puppet_account_id,
+                                    spoke_account_id=self.puppet_account_id,
+                                    spoke_region=home_region,
+                                )
+
         return requirements
 
     def run(self):
@@ -171,9 +196,14 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
         self.debug("Starting param_cache generation")
         input_parameters = self.input().get("parameters", {})
         for key, i in input_parameters.items():
-            param_cache[key] = json.loads(
-                i.open("r").read()
-            )
+            param_cache[key] = json.loads(i.open("r").read())
+
+        param_by_path_cache = dict()
+        new_manifest["param_by_path_cache"] = param_by_path_cache
+        self.debug("Starting param_by_path_cache generation")
+        input_parameters = self.input().get("parameter_by_paths", {})
+        for key, i in input_parameters.items():
+            param_by_path_cache[key] = json.loads(i.open("r").read())
 
         manifest_content = yaml.safe_dump(json.loads(json.dumps(new_manifest)))
         with self.hub_client("s3") as s3:
