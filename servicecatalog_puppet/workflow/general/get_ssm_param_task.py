@@ -59,7 +59,7 @@ class GetSSMParamByPathTask(tasks.PuppetTask):
             paginator = ssm.get_paginator("get_parameters_by_path")
             for page in paginator.paginate(Path=self.path, Recursive=self.recursive):
                 for parameter in page.get("Parameters", []):
-                    parameters[parameter.get("Name")] = parameter
+                    parameters[parameter.get("Name")] = dict(Value=parameter.get("Value"))
 
         self.write_output(parameters)
 
