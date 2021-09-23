@@ -219,16 +219,11 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                 parameter_is_in_hub = str(
                     param_details.get("ssm").get("account_id", "")
                 ) == str(self.puppet_account_id)
-                # Check the spoke parameter on the item - defaulting to true so the check is ignored if missing (to replicate existing functionality)
-                item_is_spoke = (
-                    constants.EXECUTION_MODE_SPOKE == self.execution
-                    if hasattr(self, "execution")
-                    else True
-                )
+                is_in_spoke_mode = constants.EXECUTION_MODE_SPOKE == self.execution_mode
+                should_execute_in_spoke_mode = constants.EXECUTION_MODE_SPOKE == self.execution
+                
                 if (
-                    constants.EXECUTION_MODE_SPOKE == self.execution_mode
-                    and item_is_spoke
-                    and parameter_is_in_hub
+                    is_in_spoke_mode and should_execute_in_spoke_mode and parameter_is_in_hub
                 ):
                     klass = GetSSMParamFromManifestTask
                 else:
