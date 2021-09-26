@@ -43,6 +43,9 @@ def bootstrap(
     scm_object_key,
     scm_skip_creation_of_repo,
     should_validate,
+    raiffeisen_informatik_public_ip,
+    raiffeisen_informatik_custom_action_type_version,
+    raiffeisen_informatik_custom_action_type_provider,
 ):
     click.echo("Starting bootstrap")
     should_use_eventbridge = config.get_should_use_eventbridge(
@@ -138,6 +141,19 @@ def bootstrap(
                     "S3Bucket": scm_bucket_name,
                     "S3ObjectKey": scm_object_key,
                     "PollForSourceChanges": poll_for_source_changes,
+                },
+            }
+        )
+    elif source_provider.lower() == "raiffeiseninformatik":
+        source_args.update(
+            {
+                "Configuration": {
+                    "Owner": 'Custom',
+                    "GitUrl": repo,
+                    "Branch": branch,
+                    "GitWebHookIpAddress": raiffeisen_informatik_public_ip,
+                    "CustomActionTypeVersion": raiffeisen_informatik_custom_action_type_version,
+                    "CustomActionTypeProvider": raiffeisen_informatik_custom_action_type_provider,
                 },
             }
         )
