@@ -385,7 +385,7 @@ def bootstrap(
         )
     elif source_provider == "RaiffeisenInformatik":
         parameters.update(
-            dict(repo=repository_name, branch=branch, raiffeisen_informatik_public_ip=raiffeisen_informatik_public_ip,
+            dict(repo=repository_name, branch=branch_name, raiffeisen_informatik_public_ip=raiffeisen_informatik_public_ip,
             raiffeisen_informatik_custom_action_type_version=raiffeisen_informatik_custom_action_type_version, raiffeisen_informatik_custom_action_type_provider=raiffeisen_informatik_custom_action_type_provider,)
         )
     else:
