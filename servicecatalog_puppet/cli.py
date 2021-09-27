@@ -42,6 +42,7 @@ def cli(info, info_line_numbers):
 @click.option("--should-forward-events-to-eventbridge", default=None, type=bool)
 @click.option("--should-forward-failures-to-opscenter", default=None, type=bool)
 @click.option("--on-complete-url", default=None)
+@click.option("--output-cache-starting-point", default="", show_default=True, envvar="OUTPUT_CACHE_STARTING_POINT")
 def deploy(
     f,
     single_account,
@@ -54,6 +55,7 @@ def deploy(
     should_forward_events_to_eventbridge,
     should_forward_failures_to_opscenter,
     on_complete_url,
+    output_cache_starting_point
 ):
     click.echo(
         f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"
@@ -84,6 +86,7 @@ def deploy(
             num_workers=num_workers,
             execution_mode=execution_mode,
             on_complete_url=on_complete_url,
+            output_cache_starting_point=output_cache_starting_point,
         )
     else:
         if config.get_should_explode_manifest(puppet_account_id):
@@ -103,6 +106,7 @@ def deploy(
                     execution_mode=execution_mode,
                     on_complete_url=on_complete_url,
                     running_exploded=True,
+                    output_cache_starting_point=output_cache_starting_point,
                 )
                 output = f"exploded_results{os.path.sep}{uid}"
                 os.makedirs(output)
@@ -119,6 +123,7 @@ def deploy(
                 num_workers=num_workers,
                 execution_mode=execution_mode,
                 on_complete_url=on_complete_url,
+                output_cache_starting_point=output_cache_starting_point,
             )
 
 

@@ -4,8 +4,10 @@
 import json
 import logging
 import os
+import shutil
 import sys
 import time
+from urllib.request import urlretrieve
 import urllib
 from glob import glob
 from pathlib import Path
@@ -36,6 +38,7 @@ def run_tasks(
     execution_mode="hub",
     on_complete_url=None,
     running_exploded=False,
+    output_cache_starting_point="",
 ):
     codebuild_id = os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD")
     if is_list_launches:
@@ -73,6 +76,8 @@ def run_tasks(
     ]:
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type)
 
+    os.makedirs(Path(constants.OUTPUT))
+
     logger.info(f"About to run workflow with {num_workers} workers")
 
     if not (running_exploded or is_list_launches):
@@ -98,6 +103,11 @@ def run_tasks(
 
     if should_use_shared_scheduler:
         logger.info(f"should_use_shared_scheduler: {should_use_shared_scheduler}")
+
+    if output_cache_starting_point != "":
+        dst = 'output/GetSSMParamTask.zip'
+        urlretrieve(output_cache_starting_point, dst)
+        shutil.unpack_archive("output/GetSSMParamTask.zip", "output/GetSSMParamTask/", 'zip')
 
     run_result = luigi.build(tasks_to_run, **build_params)
 

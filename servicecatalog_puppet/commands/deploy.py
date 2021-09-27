@@ -4,9 +4,12 @@
 import os
 from datetime import datetime
 
-from servicecatalog_puppet import config
+from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.commands.misc import generate_tasks
 from servicecatalog_puppet.workflow import runner as runner
+import logging
+
+logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
 def deploy(
@@ -20,8 +23,13 @@ def deploy(
     execution_mode="hub",
     on_complete_url=None,
     running_exploded=False,
+    output_cache_starting_point="",
 ):
-    os.environ["SCT_CACHE_INVALIDATOR"] = str(datetime.now())
+    if os.environ.get("SCT_CACHE_INVALIDATOR"):
+        logger.info(f"Found existing SCT_CACHE_INVALIDATOR: {os.environ.get('SCT_CACHE_INVALIDATOR')}")
+    else:
+        os.environ["SCT_CACHE_INVALIDATOR"] = str(datetime.now())
+
     os.environ["SCT_EXECUTION_MODE"] = str(execution_mode)
     os.environ["SCT_SINGLE_ACCOUNT"] = str(single_account)
     os.environ["SCT_IS_DRY_RUN"] = str(is_dry_run)
@@ -48,4 +56,5 @@ def deploy(
         execution_mode,
         on_complete_url,
         running_exploded,
+        output_cache_starting_point=output_cache_starting_point,
     )

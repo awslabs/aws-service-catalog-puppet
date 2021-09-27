@@ -228,6 +228,9 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                     klass = GetSSMParamFromManifestTask
                 else:
                     klass = GetSSMParamTask
+
+                klass = GetSSMParamTask
+
                 ssm_params[param_name] = klass(
                     parameter_name=param_name,
                     name=ssm_parameter_name,
