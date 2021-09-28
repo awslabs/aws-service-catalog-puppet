@@ -310,9 +310,9 @@ def bootstrap_spokes_in_ou(
     envvar="SCT_SHOULD_VALIDATE",
 )
 @click.option(
-    "--raiffeisen-informatik-public-ip",
+    "--custom-source-action-git-web-hook-ip-address",
     default="0.0.0.0/0",
-    envvar="RAIFFEISEN_INFORMATIK_PUBLIC_IP",
+    envvar="SCM_CUSTOM_SOURCE_ACTION_GIT_WEB_HOOK_IP_ADDRESS",
 )
 @click.option(
     "--raiffeisen-informatik-custom-action-type-version",
@@ -351,7 +351,7 @@ def bootstrap(
     scm_object_key,
     create_repo,
     should_validate,
-    raiffeisen_informatik_public_ip,
+    custom_source_action_git_web_hook_ip_address,
     raiffeisen_informatik_custom_action_type_version,
     raiffeisen_informatik_custom_action_type_provider,
 ):
@@ -383,7 +383,7 @@ def bootstrap(
         scm_object_key=None,
         scm_skip_creation_of_repo=not create_repo,
         should_validate=should_validate,
-        raiffeisen_informatik_public_ip=raiffeisen_informatik_public_ip,
+        custom_source_action_git_web_hook_ip_address=custom_source_action_git_web_hook_ip_address,
         raiffeisen_informatik_custom_action_type_version=raiffeisen_informatik_custom_action_type_version,
         raiffeisen_informatik_custom_action_type_provider=raiffeisen_informatik_custom_action_type_provider,
     )
@@ -410,7 +410,7 @@ def bootstrap(
             dict(
                 repo=repository_name,
                 branch=branch_name,
-                raiffeisen_informatik_public_ip=raiffeisen_informatik_public_ip,
+                custom_source_action_git_web_hook_ip_address=custom_source_action_git_web_hook_ip_address,
                 raiffeisen_informatik_custom_action_type_version=raiffeisen_informatik_custom_action_type_version,
                 raiffeisen_informatik_custom_action_type_provider=raiffeisen_informatik_custom_action_type_provider,
             )
