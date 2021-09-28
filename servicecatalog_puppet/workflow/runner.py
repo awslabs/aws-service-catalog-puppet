@@ -105,10 +105,10 @@ def run_tasks(
         logger.info(f"should_use_shared_scheduler: {should_use_shared_scheduler}")
 
     if output_cache_starting_point != "":
-        dst = "output/GetSSMParamTask.zip"
+        dst = "GetSSMParamTask.zip"
         urlretrieve(output_cache_starting_point, dst)
         shutil.unpack_archive(
-            "output/GetSSMParamTask.zip", "output/", "zip"
+            "GetSSMParamTask.zip", ".", "zip"
         )
 
     run_result = luigi.build(tasks_to_run, **build_params)
