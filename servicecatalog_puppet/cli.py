@@ -355,7 +355,7 @@ def bootstrap(
     scm_object_key,
     create_repo,
     should_validate,
-    custom_source_git_url,
+    custom_source_action_git_url,
     custom_source_action_git_web_hook_ip_address,
     custom_source_action_custom_action_type_version,
     custom_source_action_custom_action_type_provider,
@@ -410,7 +410,7 @@ def bootstrap(
     elif source_provider == "Custom":
         parameters.update(
             dict(
-                custom_source_git_url=custom_source_git_url,
+                custom_source_action_git_url=custom_source_action_git_url,
                 branch=branch_name,
                 custom_source_action_git_web_hook_ip_address=custom_source_action_git_web_hook_ip_address,
                 custom_source_action_custom_action_type_version=custom_source_action_custom_action_type_version,
