@@ -142,54 +142,6 @@ class GetSSMParamTask(tasks.PuppetTask):
             self.write_output(params.get(self.name))
 
 
-class GetSSMParamFromManifestTask(tasks.PuppetTask):
-    parameter_name = luigi.Parameter()
-    name = luigi.Parameter()
-    region = luigi.Parameter(default=None)
-
-    path = luigi.Parameter()
-    recursive = luigi.BoolParameter()
-
-    depends_on = luigi.ListParameter(default=[])
-    manifest_file_path = luigi.Parameter(default="")
-    puppet_account_id = luigi.Parameter(default="")
-    spoke_account_id = luigi.Parameter(default="")
-    spoke_region = luigi.Parameter(default="")
-
-    def params_for_results_display(self):
-        return {
-            "parameter_name": self.parameter_name,
-            "name": self.name,
-            "region": self.region,
-            "cache_invalidator": self.cache_invalidator,
-        }
-
-    def requires(self):
-        if len(self.depends_on) > 0:
-            return dependency.generate_dependency_tasks(
-                self.depends_on,
-                self.manifest_file_path,
-                self.puppet_account_id,
-                self.spoke_account_id,
-                self.spoke_region,
-                self.execution_mode,
-            )
-        else:
-            return []
-
-    def run(self):
-        m = yaml.safe_load(open(self.manifest_file_path, "r").read())
-
-        if self.path == "":
-            result = m.get("param_cache").get(
-                f"{self.parameter_name}||{self.name}||{self.region}"
-            )
-        else:
-            result = m.get("param_by_path_cache").get(self.path).get(self.name)
-
-        self.write_output(result)
-
-
 class PuppetTaskWithParameters(tasks.PuppetTask):
     def get_all_of_the_params(self):
         all_params = dict()
@@ -216,22 +168,8 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                 ssm_parameter_name = ssm_parameter_name.replace(
                     "${AWS::AccountId}", self.account_id
                 )
-                parameter_is_in_hub = str(
-                    param_details.get("ssm").get("account_id", "")
-                ) == str(self.puppet_account_id)
-                is_in_spoke_mode = constants.EXECUTION_MODE_SPOKE == self.execution_mode
-                should_execute_in_spoke_mode = constants.EXECUTION_MODE_SPOKE == self.execution
-                
-                if (
-                    is_in_spoke_mode and should_execute_in_spoke_mode and parameter_is_in_hub
-                ):
-                    klass = GetSSMParamFromManifestTask
-                else:
-                    klass = GetSSMParamTask
 
-                klass = GetSSMParamTask
-
-                ssm_params[param_name] = klass(
+                ssm_params[param_name] = GetSSMParamTask(
                     parameter_name=param_name,
                     name=ssm_parameter_name,
                     region=param_details.get("ssm").get(
