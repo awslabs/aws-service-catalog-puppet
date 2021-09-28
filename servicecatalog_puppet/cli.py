@@ -355,7 +355,7 @@ def bootstrap(
     scm_object_key,
     create_repo,
     should_validate,
-    custom_source_git_url,
+    custom_source_action_git_url,
     custom_source_action_git_web_hook_ip_address,
     custom_source_action_custom_action_type_version,
     custom_source_action_custom_action_type_provider,
@@ -388,6 +388,12 @@ def bootstrap(
         scm_object_key=None,
         scm_skip_creation_of_repo=not create_repo,
         should_validate=should_validate,
+
+        custom_source_action_git_url=None,
+        custom_source_action_git_web_hook_ip_address=None,
+        custom_source_action_custom_action_type_version=None,
+        custom_source_action_custom_action_type_provider=None,
+
     )
     if source_provider == "CodeCommit":
         parameters.update(dict(repo=repository_name, branch=branch_name,))
@@ -410,7 +416,7 @@ def bootstrap(
     elif source_provider == "Custom":
         parameters.update(
             dict(
-                custom_source_git_url=custom_source_git_url,
+                custom_source_action_git_url=custom_source_action_git_url,
                 branch=branch_name,
                 custom_source_action_git_web_hook_ip_address=custom_source_action_git_web_hook_ip_address,
                 custom_source_action_custom_action_type_version=custom_source_action_custom_action_type_version,
