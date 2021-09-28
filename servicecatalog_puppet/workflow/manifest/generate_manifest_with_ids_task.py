@@ -7,6 +7,7 @@ import os
 
 import luigi
 import yaml
+import shutil
 
 from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow import tasks
@@ -191,23 +192,26 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
 
             global_id_cache[region] = regional_id_cache
 
-        param_cache = dict()
-        new_manifest["param_cache"] = param_cache
-        self.debug("Starting param_cache generation")
-        input_parameters = self.input().get("parameters", {})
-        for key, i in input_parameters.items():
-            param_cache[key] = json.loads(i.open("r").read())
+        bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
 
-        param_by_path_cache = dict()
-        new_manifest["param_by_path_cache"] = param_by_path_cache
-        self.debug("Starting param_by_path_cache generation")
-        input_parameters = self.input().get("parameter_by_paths", {})
-        for key, i in input_parameters.items():
-            param_by_path_cache[key] = json.loads(i.open("r").read())
+        cached_output_signed_url = None
+        if self.input().get("parameters") or self.input().get("parameter_by_paths"):
+            shutil.make_archive(
+                "output/GetSSMParamTask", "zip", "output/GetSSMParamTask/"
+            )
+            with self.hub_client("s3") as s3:
+                key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-cached-output.zip"
+                s3.upload_file(
+                    Filename="output/GetSSMParamTask.zip", Bucket=bucket, Key=key,
+                )
+                cached_output_signed_url = s3.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": bucket, "Key": key},
+                    ExpiresIn=60 * 60 * 24,
+                )
 
-        manifest_content = yaml.safe_dump(json.loads(json.dumps(new_manifest)))
         with self.hub_client("s3") as s3:
-            bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
+            manifest_content = yaml.safe_dump(json.loads(json.dumps(new_manifest)))
             key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
             self.debug(f"Uploading generated manifest {key} to {bucket}")
             s3.put_object(
@@ -221,5 +225,9 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
             )
 
         self.write_output(
-            dict(manifest_content=manifest_content, signed_url=signed_url)
+            dict(
+                manifest_content=manifest_content,
+                signed_url=signed_url,
+                cached_output_signed_url=cached_output_signed_url,
+            )
         )

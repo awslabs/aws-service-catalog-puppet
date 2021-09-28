@@ -55,8 +55,14 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
         )
         version = cached_config.get("puppet_version")
 
-        signed_url = self.load_from_input("new_manifest").get("signed_url")
+        new_manifest = self.load_from_input("new_manifest")
+        signed_url = new_manifest.get("signed_url")
         vars = [
+            {
+                "name": "SCT_CACHE_INVALIDATOR",
+                "value": self.cache_invalidator,
+                "type": "PLAINTEXT",
+            },
             {"name": "VERSION", "value": version, "type": "PLAINTEXT"},
             {"name": "MANIFEST_URL", "value": signed_url, "type": "PLAINTEXT"},
             {
@@ -82,6 +88,14 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
                 "type": "PLAINTEXT",
             },
         ]
+        if new_manifest.get("cached_output_signed_url"):
+            vars.append(
+                {
+                    "name": "OUTPUT_CACHE_STARTING_POINT",
+                    "value": new_manifest.get("cached_output_signed_url"),
+                    "type": "PLAINTEXT",
+                },
+            )
         with self.spoke_client("codebuild") as codebuild:
             response = codebuild.start_build(
                 projectName=constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME,
