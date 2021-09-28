@@ -45,7 +45,7 @@ def bootstrap(
     should_validate,
     custom_source_action_git_web_hook_ip_address,
     custom_source_action_custom_action_type_version,
-    raiffeisen_informatik_custom_action_type_provider,
+    custom_source_action_custom_action_type_provider,
 ):
     click.echo("Starting bootstrap")
     should_use_eventbridge = config.get_should_use_eventbridge(
@@ -153,7 +153,7 @@ def bootstrap(
                     "Branch": branch,
                     "GitWebHookIpAddress": custom_source_action_git_web_hook_ip_address,
                     "CustomActionTypeVersion": custom_source_action_custom_action_type_version,
-                    "CustomActionTypeProvider": raiffeisen_informatik_custom_action_type_provider,
+                    "CustomActionTypeProvider": custom_source_action_custom_action_type_provider,
                 },
             }
         )
