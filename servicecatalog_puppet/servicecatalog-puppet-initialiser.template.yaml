@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.116.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.126.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -26,22 +26,29 @@ Metadata:
         Parameters:
           - SCMSourceProvider
       - Label:
-          default: "Option 1: CodeCommit"
+          default: "SCM Option 1: CodeCommit"
         Parameters:
           - SCMRepositoryName
           - SCMBranchName
       - Label:
-          default: "Option 2: CodeStarSourceConnection"
+          default: "SCM Option 2: CodeStarSourceConnection"
         Parameters:
           - SCMConnectionArn
           - SCMFullRepositoryId
           - SCMBranchName
       - Label:
-          default: "Option 3: S3"
+          default: "SCM Option 3: S3"
         Parameters:
           - SCMBucketName
           - SCMObjectKey
           - SCMShouldCreateRepo
+      - Label:
+          default: "SCM Option 4: Custom"
+        Parameters:
+          - SCMCustomSourceActionGitUrl
+          - SCMCustomSourceActionGitWebHookIPAddress
+          - SCMCustomSourceActionCustomActionTypeVersion
+          - SCMCustomSourceActionCustomActionTypeProvider
       - Label:
           default: "Permissions"
         Parameters:
@@ -148,6 +155,7 @@ Parameters:
       - CodeCommit
       - S3
       - CodeStarSourceConnection
+      - Custom
     Description: For Github.com, GitHub Enterprise and BitBucket Cloud support use CodeStarSourceConnection
     Default: CodeCommit
   SCMRepositoryName:
@@ -167,6 +175,16 @@ Parameters:
     Type: String
   SCMObjectKey:
     Type: String
+  SCMCustomSourceActionGitUrl:
+    Type: String
+  SCMCustomSourceActionGitWebHookIPAddress:
+    Type: String
+  SCMCustomSourceActionCustomActionTypeVersion:
+    Type: String
+    Default: CustomVersion1
+  SCMCustomSourceActionCustomActionTypeProvider:
+    Type: String
+    Default: CustomProvider1
   SCMShouldCreateRepo:
     Type: String
     AllowedValues:
@@ -311,6 +329,18 @@ Resources:
           - Name: SCM_OBJECT_KEY
             Type: PLAINTEXT
             Value: !Ref SCMObjectKey
+          - Name: SCM_CUSTOM_SOURCE_ACTION_GIT_URL
+            Type: PLAINTEXT
+            Value: !Ref SCMCustomSourceActionGitUrl
+          - Name: SCM_CUSTOM_SOURCE_ACTION_GIT_WEB_HOOK_IP_ADDRESS
+            Type: PLAINTEXT
+            Value: !Ref SCMCustomSourceActionGitWebHookIPAddress
+          - Name: SCM_CUSTOM_SOURCE_ACTION_CUSTOM_ACTION_TYPE_VERSION
+            Type: PLAINTEXT
+            Value: !Ref SCMCustomSourceActionCustomActionTypeVersion
+          - Name: SCM_CUSTOM_SOURCE_ACTION_CUSTOM_ACTION_TYPE_PROVIDER
+            Type: PLAINTEXT
+            Value: !Ref SCMCustomSourceActionCustomActionTypeProvider
           - Name: SCM_SHOULD_CREATE_REPO
             Type: PLAINTEXT
             Value: !Ref SCMShouldCreateRepo
@@ -468,6 +498,10 @@ Resources:
           - !Ref PuppetRolePath
           - !GetAtt InitialiserVersionParam.Value
           - !Ref Version
+          - !Ref SCMCustomSourceActionGitUrl
+          - !Ref SCMCustomSourceActionGitWebHookIPAddress
+          - !Ref SCMCustomSourceActionCustomActionTypeVersion
+          - !Ref SCMCustomSourceActionCustomActionTypeProvider
           - !Ref ShouldValidate
           - !Ref ShouldDeleteRollbackCompleteStacks
 Outputs:

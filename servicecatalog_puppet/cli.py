@@ -309,6 +309,25 @@ def bootstrap_spokes_in_ou(
     default=False,
     envvar="SCT_SHOULD_VALIDATE",
 )
+@click.option(
+    "--custom-source-action-git-url",
+    envvar="SCM_CUSTOM_SOURCE_ACTION_GIT_URL",
+)
+@click.option(
+    "--custom-source-action-git-web-hook-ip-address",
+    default="0.0.0.0/0",
+    envvar="SCM_CUSTOM_SOURCE_ACTION_GIT_WEB_HOOK_IP_ADDRESS",
+)
+@click.option(
+    "--custom-source-action-custom-action-type-version",
+    default="CustomVersion1",
+    envvar="SCM_CUSTOM_SOURCE_ACTION_CUSTOM_ACTION_TYPE_VERSION",
+)
+@click.option(
+    "--custom-source-action-custom-action-type-provider",
+    default="CustomProvider1",
+    envvar="SCM_CUSTOM_SOURCE_ACTION_CUSTOM_ACTION_TYPE_PROVIDER",
+)
 def bootstrap(
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
@@ -336,6 +355,10 @@ def bootstrap(
     scm_object_key,
     create_repo,
     should_validate,
+    custom_source_git_url,
+    custom_source_action_git_web_hook_ip_address,
+    custom_source_action_custom_action_type_version,
+    custom_source_action_custom_action_type_provider,
 ):
     puppet_account_id = config.get_puppet_account_id()
 
@@ -383,6 +406,16 @@ def bootstrap(
     elif source_provider == "S3":
         parameters.update(
             dict(scm_bucket_name=scm_bucket_name, scm_object_key=scm_object_key,)
+        )
+    elif source_provider == "Custom":
+        parameters.update(
+            dict(
+                custom_source_git_url=custom_source_git_url,
+                branch=branch_name,
+                custom_source_action_git_web_hook_ip_address=custom_source_action_git_web_hook_ip_address,
+                custom_source_action_custom_action_type_version=custom_source_action_custom_action_type_version,
+                custom_source_action_custom_action_type_provider=custom_source_action_custom_action_type_provider,
+            )
         )
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")
