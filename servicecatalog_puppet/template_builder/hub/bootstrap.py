@@ -30,8 +30,8 @@ def get_template(
     is_codestarsourceconnection = (
         source.get("Provider", "").lower() == "codestarsourceconnection"
     )
-    is_raiffeiseninformatik = (
-        source.get("Provider", "").lower() == "raiffeiseninformatik"
+    is_custom = (
+        source.get("Provider", "").lower() == "custom"
     )
     is_s3 = source.get("Provider", "").lower() == "s3"
     description = f"""Bootstrap template used to bring up the main ServiceCatalog-Puppet AWS CodePipeline with dependencies
@@ -527,7 +527,7 @@ def get_template(
             )
         )
 
-    if is_raiffeiseninformatik:
+    if is_custom:
         source_stage.Actions.append(
             codepipeline.Actions(
                 RunOrder=1,

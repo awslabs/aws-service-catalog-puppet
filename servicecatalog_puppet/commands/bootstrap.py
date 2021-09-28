@@ -43,6 +43,7 @@ def bootstrap(
     scm_object_key,
     scm_skip_creation_of_repo,
     should_validate,
+    custom_source_git_url,
     custom_source_action_git_web_hook_ip_address,
     custom_source_action_custom_action_type_version,
     custom_source_action_custom_action_type_provider,
@@ -144,12 +145,12 @@ def bootstrap(
                 },
             }
         )
-    elif source_provider.lower() == "raiffeiseninformatik":
+    elif source_provider.lower() == "custom":
         source_args.update(
             {
                 "Configuration": {
                     "Owner": "Custom",
-                    "GitUrl": repo,
+                    "GitUrl": custom_source_git_url,
                     "Branch": branch,
                     "GitWebHookIpAddress": custom_source_action_git_web_hook_ip_address,
                     "CustomActionTypeVersion": custom_source_action_custom_action_type_version,

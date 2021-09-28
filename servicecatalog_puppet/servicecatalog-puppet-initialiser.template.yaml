@@ -26,25 +26,26 @@ Metadata:
         Parameters:
           - SCMSourceProvider
       - Label:
-          default: "Option 1: CodeCommit"
+          default: "SCM Option 1: CodeCommit"
         Parameters:
           - SCMRepositoryName
           - SCMBranchName
       - Label:
-          default: "Option 2: CodeStarSourceConnection"
+          default: "SCM Option 2: CodeStarSourceConnection"
         Parameters:
           - SCMConnectionArn
           - SCMFullRepositoryId
           - SCMBranchName
       - Label:
-          default: "Option 3: S3"
+          default: "SCM Option 3: S3"
         Parameters:
           - SCMBucketName
           - SCMObjectKey
           - SCMShouldCreateRepo
       - Label:
-          default: "Option 4: Custom"
+          default: "SCM Option 4: Custom"
         Parameters:
+          - SCMCustomSourceActionGitUrl
           - SCMCustomSourceActionGitWebHookIPAddress
           - SCMCustomSourceActionCustomActionTypeVersion
           - SCMCustomSourceActionCustomActionTypeProvider
@@ -173,6 +174,8 @@ Parameters:
   SCMBucketName:
     Type: String
   SCMObjectKey:
+    Type: String
+  SCMCustomSourceActionGitUrl:
     Type: String
   SCMCustomSourceActionGitWebHookIPAddress:
     Type: String
@@ -326,6 +329,9 @@ Resources:
           - Name: SCM_OBJECT_KEY
             Type: PLAINTEXT
             Value: !Ref SCMObjectKey
+          - Name: SCM_CUSTOM_SOURCE_ACTION_GIT_URL
+            Type: PLAINTEXT
+            Value: !Ref SCMCustomSourceActionGitUrl
           - Name: SCM_CUSTOM_SOURCE_ACTION_GIT_WEB_HOOK_IP_ADDRESS
             Type: PLAINTEXT
             Value: !Ref SCMCustomSourceActionGitWebHookIPAddress
@@ -492,6 +498,7 @@ Resources:
           - !Ref PuppetRolePath
           - !GetAtt InitialiserVersionParam.Value
           - !Ref Version
+          - !Ref SCMCustomSourceActionGitUrl
           - !Ref SCMCustomSourceActionGitWebHookIPAddress
           - !Ref SCMCustomSourceActionCustomActionTypeVersion
           - !Ref SCMCustomSourceActionCustomActionTypeProvider
