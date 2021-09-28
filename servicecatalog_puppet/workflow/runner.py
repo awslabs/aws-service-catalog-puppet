@@ -108,7 +108,7 @@ def run_tasks(
         dst = "output/GetSSMParamTask.zip"
         urlretrieve(output_cache_starting_point, dst)
         shutil.unpack_archive(
-            "output/GetSSMParamTask.zip", "output/GetSSMParamTask/", "zip"
+            "output/GetSSMParamTask.zip", "output/", "zip"
         )
 
     run_result = luigi.build(tasks_to_run, **build_params)
