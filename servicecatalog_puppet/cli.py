@@ -315,9 +315,9 @@ def bootstrap_spokes_in_ou(
     envvar="SCM_CUSTOM_SOURCE_ACTION_GIT_WEB_HOOK_IP_ADDRESS",
 )
 @click.option(
-    "--raiffeisen-informatik-custom-action-type-version",
-    default="OnPrem_v2",
-    envvar="RAIFFEISEN_INFORMATIK_CUSTOM_ACTION_TYPE_VERSION",
+    "--custom-source-action-custom-action-type-version",
+    default="CustomVersion1",
+    envvar="SCM_CUSTOM_SOURCE_ACTION_CUSTOM_ACTION_TYPE_VERSION",
 )
 @click.option(
     "--raiffeisen-informatik-custom-action-type-provider",
@@ -352,7 +352,7 @@ def bootstrap(
     create_repo,
     should_validate,
     custom_source_action_git_web_hook_ip_address,
-    raiffeisen_informatik_custom_action_type_version,
+    custom_source_action_custom_action_type_version,
     raiffeisen_informatik_custom_action_type_provider,
 ):
     puppet_account_id = config.get_puppet_account_id()
@@ -384,7 +384,7 @@ def bootstrap(
         scm_skip_creation_of_repo=not create_repo,
         should_validate=should_validate,
         custom_source_action_git_web_hook_ip_address=custom_source_action_git_web_hook_ip_address,
-        raiffeisen_informatik_custom_action_type_version=raiffeisen_informatik_custom_action_type_version,
+        custom_source_action_custom_action_type_version=custom_source_action_custom_action_type_version,
         raiffeisen_informatik_custom_action_type_provider=raiffeisen_informatik_custom_action_type_provider,
     )
     if source_provider == "CodeCommit":
@@ -411,7 +411,7 @@ def bootstrap(
                 repo=repository_name,
                 branch=branch_name,
                 custom_source_action_git_web_hook_ip_address=custom_source_action_git_web_hook_ip_address,
-                raiffeisen_informatik_custom_action_type_version=raiffeisen_informatik_custom_action_type_version,
+                custom_source_action_custom_action_type_version=custom_source_action_custom_action_type_version,
                 raiffeisen_informatik_custom_action_type_provider=raiffeisen_informatik_custom_action_type_provider,
             )
         )

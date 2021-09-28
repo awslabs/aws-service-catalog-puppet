@@ -44,7 +44,7 @@ def bootstrap(
     scm_skip_creation_of_repo,
     should_validate,
     custom_source_action_git_web_hook_ip_address,
-    raiffeisen_informatik_custom_action_type_version,
+    custom_source_action_custom_action_type_version,
     raiffeisen_informatik_custom_action_type_provider,
 ):
     click.echo("Starting bootstrap")
@@ -152,7 +152,7 @@ def bootstrap(
                     "GitUrl": repo,
                     "Branch": branch,
                     "GitWebHookIpAddress": custom_source_action_git_web_hook_ip_address,
-                    "CustomActionTypeVersion": raiffeisen_informatik_custom_action_type_version,
+                    "CustomActionTypeVersion": custom_source_action_custom_action_type_version,
                     "CustomActionTypeProvider": raiffeisen_informatik_custom_action_type_provider,
                 },
             }
