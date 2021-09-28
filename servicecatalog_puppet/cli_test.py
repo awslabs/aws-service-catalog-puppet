@@ -50,6 +50,7 @@ class CLITest(unittest.TestCase):
                                 execution_mode="hub",
                                 single_account=None,
                                 num_workers=10,
+                                output_cache_starting_point="",
                                 on_complete_url=None,
                             ),
                         )

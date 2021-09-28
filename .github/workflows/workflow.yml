@@ -18,10 +18,9 @@ jobs:
         uses: abatilo/actions-poetry@v2.0.0
         with:
           poetry-version: ${{ matrix.poetry-version }}
-      # https://github.com/pypa/setuptools/issues/1120 2to3 error
+      # https://github.com/python-poetry/poetry/issues/4511
       - name: setuptools < 58.0.0
-        run: |
-          poetry run pip install -U setuptools==57.5.0
+        run: poetry run pip install 'setuptools==57.5.0'
       - name: Install
         run: make install
       - name: run tests
