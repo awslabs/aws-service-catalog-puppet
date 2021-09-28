@@ -2,12 +2,14 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import copy
+import glob
 import json
 import os
 
 import luigi
 import yaml
 import shutil
+import zipfile
 
 from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow import tasks
@@ -196,9 +198,12 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
 
         cached_output_signed_url = None
         if self.input().get("parameters") or self.input().get("parameter_by_paths"):
-            shutil.make_archive(
-                "output/GetSSMParamTask", "zip", "output/GetSSMParamTask/"
-            )
+
+            with zipfile.ZipFile("output/GetSSMParamTask.zip", "w", zipfile.ZIP_DEFLATED) as zip:
+                files = glob.glob("output/GetSSMParam*/**", recursive=True)
+                for filename in files:
+                    zip.write(filename, filename)
+
             with self.hub_client("s3") as s3:
                 key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-cached-output.zip"
                 s3.upload_file(
