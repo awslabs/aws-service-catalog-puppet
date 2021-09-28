@@ -388,6 +388,12 @@ def bootstrap(
         scm_object_key=None,
         scm_skip_creation_of_repo=not create_repo,
         should_validate=should_validate,
+
+        custom_source_action_git_url=None,
+        custom_source_action_git_web_hook_ip_address=None,
+        custom_source_action_custom_action_type_version=None,
+        custom_source_action_custom_action_type_provider=None,
+
     )
     if source_provider == "CodeCommit":
         parameters.update(dict(repo=repository_name, branch=branch_name,))
