@@ -196,7 +196,9 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
 
         cached_output_signed_url = None
         if self.input().get("parameters") or self.input().get("parameter_by_paths"):
-            shutil.make_archive("output/GetSSMParamTask", 'zip', "output/GetSSMParamTask/")
+            shutil.make_archive(
+                "output/GetSSMParamTask", "zip", "output/GetSSMParamTask/"
+            )
             with self.hub_client("s3") as s3:
                 key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-cached-output.zip"
                 s3.upload_file(
@@ -223,5 +225,9 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
             )
 
         self.write_output(
-            dict(manifest_content=manifest_content, signed_url=signed_url, cached_output_signed_url=cached_output_signed_url)
+            dict(
+                manifest_content=manifest_content,
+                signed_url=signed_url,
+                cached_output_signed_url=cached_output_signed_url,
+            )
         )

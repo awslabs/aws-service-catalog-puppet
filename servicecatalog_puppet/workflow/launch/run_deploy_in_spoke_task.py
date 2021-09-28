@@ -58,7 +58,11 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
         new_manifest = self.load_from_input("new_manifest")
         signed_url = new_manifest.get("signed_url")
         vars = [
-            {"name": "SCT_CACHE_INVALIDATOR", "value": self.cache_invalidator, "type": "PLAINTEXT"},
+            {
+                "name": "SCT_CACHE_INVALIDATOR",
+                "value": self.cache_invalidator,
+                "type": "PLAINTEXT",
+            },
             {"name": "VERSION", "value": version, "type": "PLAINTEXT"},
             {"name": "MANIFEST_URL", "value": signed_url, "type": "PLAINTEXT"},
             {

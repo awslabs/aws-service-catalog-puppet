@@ -26,7 +26,9 @@ def deploy(
     output_cache_starting_point="",
 ):
     if os.environ.get("SCT_CACHE_INVALIDATOR"):
-        logger.info(f"Found existing SCT_CACHE_INVALIDATOR: {os.environ.get('SCT_CACHE_INVALIDATOR')}")
+        logger.info(
+            f"Found existing SCT_CACHE_INVALIDATOR: {os.environ.get('SCT_CACHE_INVALIDATOR')}"
+        )
     else:
         os.environ["SCT_CACHE_INVALIDATOR"] = str(datetime.now())
 

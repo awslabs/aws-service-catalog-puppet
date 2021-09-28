@@ -59,9 +59,7 @@ class CreateAssociationsForSpokeLocalPortfolioTask(
         ]
         used_wildcard = "*" in "".join(self.associations)
         if used_wildcard:
-            calls.append(
-                f"iam.list_roles_{self.account_id}_{self.region}"
-            )
+            calls.append(f"iam.list_roles_{self.account_id}_{self.region}")
         return calls
 
     def run(self):
@@ -83,14 +81,16 @@ class CreateAssociationsForSpokeLocalPortfolioTask(
         if used_wildcard:
             roles = list()
             with self.spoke_regional_client("iam") as iam:
-                paginator = iam.get_paginator('list_roles')
+                paginator = iam.get_paginator("list_roles")
                 for page in paginator.paginate():
                     roles += page.get("Roles", [])
 
             associations_to_use = list()
             for association in self.associations:
                 if "*" in association:
-                    association_as_a_regex = re.escape(association.replace("${AWS::AccountId}", self.account_id)).replace("\\*", "(.*)")
+                    association_as_a_regex = re.escape(
+                        association.replace("${AWS::AccountId}", self.account_id)
+                    ).replace("\\*", "(.*)")
                     for role_object in roles:
                         role = role_object.get("Arn")
                         if re.match(association_as_a_regex, role):
