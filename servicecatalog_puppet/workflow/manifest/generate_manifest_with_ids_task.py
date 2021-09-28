@@ -192,20 +192,6 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
 
             global_id_cache[region] = regional_id_cache
 
-        # param_cache = dict()
-        # new_manifest["param_cache"] = param_cache
-        # self.debug("Starting param_cache generation")
-        # input_parameters = self.input().get("parameters", {})
-        # for key, i in input_parameters.items():
-        #     param_cache[key] = json.loads(i.open("r").read())
-        #
-        # param_by_path_cache = dict()
-        # new_manifest["param_by_path_cache"] = param_by_path_cache
-        # self.debug("Starting param_by_path_cache generation")
-        # input_parameters = self.input().get("parameter_by_paths", {})
-        # for key, i in input_parameters.items():
-        #     param_by_path_cache[key] = json.loads(i.open("r").read())
-
         bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
 
         cached_output_signed_url = None
