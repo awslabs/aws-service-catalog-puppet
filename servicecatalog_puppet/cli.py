@@ -309,9 +309,21 @@ def bootstrap_spokes_in_ou(
     default=False,
     envvar="SCT_SHOULD_VALIDATE",
 )
-@click.option("--raiffeisen-informatik-public-ip", default="0.0.0.0/0", envvar="RAIFFEISEN_INFORMATIK_PUBLIC_IP")
-@click.option("--raiffeisen-informatik-custom-action-type-version", default="OnPrem_v2", envvar="RAIFFEISEN_INFORMATIK_CUSTOM_ACTION_TYPE_VERSION")
-@click.option("--raiffeisen-informatik-custom-action-type-provider", default="BitBucketServer", envvar="RAIFFEISEN_INFORMATIK_CUSTOM_ACTION_TYPE_PROVIDER")
+@click.option(
+    "--raiffeisen-informatik-public-ip",
+    default="0.0.0.0/0",
+    envvar="RAIFFEISEN_INFORMATIK_PUBLIC_IP",
+)
+@click.option(
+    "--raiffeisen-informatik-custom-action-type-version",
+    default="OnPrem_v2",
+    envvar="RAIFFEISEN_INFORMATIK_CUSTOM_ACTION_TYPE_VERSION",
+)
+@click.option(
+    "--raiffeisen-informatik-custom-action-type-provider",
+    default="BitBucketServer",
+    envvar="RAIFFEISEN_INFORMATIK_CUSTOM_ACTION_TYPE_PROVIDER",
+)
 def bootstrap(
     with_manual_approvals,
     puppet_code_pipeline_role_permission_boundary,
@@ -395,8 +407,13 @@ def bootstrap(
         )
     elif source_provider == "RaiffeisenInformatik":
         parameters.update(
-            dict(repo=repository_name, branch=branch_name, raiffeisen_informatik_public_ip=raiffeisen_informatik_public_ip,
-            raiffeisen_informatik_custom_action_type_version=raiffeisen_informatik_custom_action_type_version, raiffeisen_informatik_custom_action_type_provider=raiffeisen_informatik_custom_action_type_provider,)
+            dict(
+                repo=repository_name,
+                branch=branch_name,
+                raiffeisen_informatik_public_ip=raiffeisen_informatik_public_ip,
+                raiffeisen_informatik_custom_action_type_version=raiffeisen_informatik_custom_action_type_version,
+                raiffeisen_informatik_custom_action_type_provider=raiffeisen_informatik_custom_action_type_provider,
+            )
         )
     else:
         raise Exception(f"Unsupported source provider: {source_provider}")

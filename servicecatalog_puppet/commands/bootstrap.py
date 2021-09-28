@@ -148,7 +148,7 @@ def bootstrap(
         source_args.update(
             {
                 "Configuration": {
-                    "Owner": 'Custom',
+                    "Owner": "Custom",
                     "GitUrl": repo,
                     "Branch": branch,
                     "GitWebHookIpAddress": raiffeisen_informatik_public_ip,
