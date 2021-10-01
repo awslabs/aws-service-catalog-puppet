@@ -103,7 +103,7 @@ stack:
   execution: include('execution', required=False)
   deploy_to: any(include('tags'), include('accounts'))
   outputs: include('outputs', required=False)
-  capabilities: list(enum("CAPABILITY_NAMED_IAM"), required=False)
+  capabilities: list(enum("CAPABILITY_IAM", "CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"), required=False)
 
 app:
   name: str()
@@ -113,7 +113,7 @@ app:
   execution: include('execution', required=False)
   deploy_to: any(include('tags'), include('accounts'))
   outputs: include('outputs', required=False)
-  capabilities: list(enum("CAPABILITY_NAMED_IAM"), required=False)
+  capabilities: list(enum("CAPABILITY_IAM", "CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"), required=False)
 
 outputs:
   ssm: list(include('ssm_output'))
