@@ -44,12 +44,17 @@ def load(f, puppet_account_id):
         t_path = f"{d}{os.path.sep}{t}"
         if os.path.exists(t_path):
             for f in os.listdir(t_path):
-                with open(f"{t_path}{os.path.sep}{f}", "r") as file:
+                source = f"{t_path}{os.path.sep}{f}"
+                with open(source, "r") as file:
                     contents = file.read()
                     contents = contents.replace(
                         "${AWS::PuppetAccountId}", puppet_account_id
                     )
-                    manifest[t].update(yaml.safe_load(contents))
+                    new = yaml.safe_load(contents)
+                    for n, v in new.items():
+                        if manifest[t].get(n):
+                            raise Exception(f"{source} declares a duplicate {t}: {n}")
+                    manifest[t].update(new)
 
     if os.path.exists(f"{d}{os.path.sep}manifests"):
         for f in os.listdir(f"{d}{os.path.sep}manifests"):
