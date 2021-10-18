@@ -70,8 +70,9 @@ Spoke
 .. note::
 
     This will require you to bootstrap your spokes again if you bootstrapped your spokes with a version prior to 0.78.0 - which was July 8, 2020.  
-    You can use the AWS Codebuild project
-    ``servicecatalog-puppet-bootstrap-spokes-in-ou`` to bootstrap spokes after installing version 0.78.0+
+    You can check the version of the spoke in AWS SSM Parameter store (a parameter named service-catalog-puppet-spoke-version in your home region
+    should be present).  If you need to bootstrap your spokes again you can bootstrap each in the same way you initially did it otherwise you can
+    use the AWS Codebuild project ``servicecatalog-puppet-bootstrap-spokes-in-ou``
 
 With spoke the provisioning starts in the puppet account as normal.  Once a launch with spoke execution mode is found
 an AWS Codebuild project is triggered in the spoke account to perform the provisioning. The framework will run the
