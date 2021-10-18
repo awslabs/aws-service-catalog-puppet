@@ -85,6 +85,7 @@ the spoke there is no cross account permission added, the values of the paramete
 spoke account AWS CodeBuild project.
 
 Here is an example using a parameter in the hub account to share values with the spoke.
+
 .. code-block:: yaml
 
       IAM-1:
