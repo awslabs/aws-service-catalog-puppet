@@ -270,6 +270,12 @@ def bootstrap_spokes_in_ou(
     envvar="DEPLOY_ENVIRONMENT_COMPUTE_TYPE",
 )
 @click.option(
+    "--spoke_deploy_environment_compute_type",
+    default="BUILD_GENERAL1_SMALL",
+    show_default=True,
+    envvar="SPOKE_DEPLOY_ENVIRONMENT_COMPUTE_TYPE",
+)
+@click.option(
     "--deploy_num_workers",
     default=10,
     type=click.INT,
@@ -337,6 +343,7 @@ def bootstrap(
     puppet_provisioning_role_permissions_boundary,
     cloud_formation_deploy_role_permissions_boundary,
     deploy_environment_compute_type,
+    spoke_deploy_environment_compute_type,
     deploy_num_workers,
     source_provider,
     repository_name,
@@ -372,6 +379,7 @@ def bootstrap(
         puppet_provisioning_role_permissions_boundary=puppet_provisioning_role_permissions_boundary,
         cloud_formation_deploy_role_permissions_boundary=cloud_formation_deploy_role_permissions_boundary,
         deploy_environment_compute_type=deploy_environment_compute_type,
+        spoke_deploy_environment_compute_type=spoke_deploy_environment_compute_type,
         deploy_num_workers=deploy_num_workers,
         source_provider=source_provider,
         owner=None,

@@ -27,6 +27,7 @@ def bootstrap(
     puppet_provisioning_role_permissions_boundary,
     cloud_formation_deploy_role_permissions_boundary,
     deploy_environment_compute_type,
+    spoke_deploy_environment_compute_type,
     deploy_num_workers,
     source_provider,
     owner,
@@ -224,6 +225,11 @@ def bootstrap(
             {
                 "ParameterKey": "DeployEnvironmentComputeType",
                 "ParameterValue": deploy_environment_compute_type,
+                "UsePreviousValue": False,
+            },
+            {
+                "ParameterKey": "SpokeDeployEnvironmentComputeType",
+                "ParameterValue": spoke_deploy_environment_compute_type,
                 "UsePreviousValue": False,
             },
             {

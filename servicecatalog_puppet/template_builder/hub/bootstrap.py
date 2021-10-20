@@ -109,6 +109,14 @@ def get_template(
             Default="BUILD_GENERAL1_SMALL",
         )
     )
+    spoke_deploy_environment_compute_type_parameter = template.add_parameter(
+        t.Parameter(
+            "SpokeDeployEnvironmentComputeType",
+            Type="String",
+            Description="The AWS CodeBuild Environment Compute Type for spoke execution mode",
+            Default="BUILD_GENERAL1_SMALL",
+        )
+    )
     deploy_num_workers_parameter = template.add_parameter(
         t.Parameter(
             "DeployNumWorkers",
@@ -161,6 +169,14 @@ def get_template(
             Type="String",
             Name="/servicecatalog-puppet/manual-approvals",
             Value=t.Ref(with_manual_approvals_parameter),
+        )
+    )
+    template.add_resource(
+        ssm.Parameter(
+            "SpokeDeployEnvParameter",
+            Type="String",
+            Name=constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_PARAMETER_NAME,
+            Value=t.Ref(spoke_deploy_environment_compute_type_parameter),
         )
     )
     param = template.add_resource(

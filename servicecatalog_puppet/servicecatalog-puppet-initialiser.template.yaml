@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.126.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.129.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -67,6 +67,7 @@ Metadata:
           default: "Workflow"
         Parameters:
           - DeployEnvironmentComputeType
+          - SpokeDeployEnvironmentComputeType
           - DeployNumWorkers
           - PuppetRoleName
           - PuppetRolePath
@@ -138,6 +139,10 @@ Parameters:
   DeployEnvironmentComputeType:
     Type: String
     Description: The AWS CodeBuild Environment Compute Type
+    Default: BUILD_GENERAL1_SMALL
+  SpokeDeployEnvironmentComputeType:
+    Type: String
+    Description: The AWS CodeBuild Environment Compute Type to use in spokes with spoke execution mode
     Default: BUILD_GENERAL1_SMALL
   DeployNumWorkers:
     Type: Number
@@ -296,6 +301,9 @@ Resources:
           - Name: DEPLOY_ENVIRONMENT_COMPUTE_TYPE
             Type: PLAINTEXT
             Value: !Ref DeployEnvironmentComputeType
+          - Name: SPOKE_DEPLOY_ENVIRONMENT_COMPUTE_TYPE
+            Type: PLAINTEXT
+            Value: !Ref SpokeDeployEnvironmentComputeType
           - Name: DEPLOY_NUM_WORKERS
             Type: PLAINTEXT
             Value: !Ref DeployNumWorkers
@@ -493,6 +501,7 @@ Resources:
           - !Ref CloudFormationDeployRolePermissionsBoundary
           - !Ref PuppetRolePermissionBoundary
           - !Ref DeployEnvironmentComputeType
+          - !Ref SpokeDeployEnvironmentComputeType
           - !Ref DeployNumWorkers
           - !Ref PuppetRoleName
           - !Ref PuppetRolePath

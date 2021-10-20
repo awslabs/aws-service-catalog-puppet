@@ -5,6 +5,7 @@ import luigi
 
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet.workflow.general import get_ssm_param_task
 from servicecatalog_puppet.workflow.generate import generate_shares_task
 from servicecatalog_puppet.workflow.manifest import generate_manifest_with_ids_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
@@ -38,9 +39,16 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
                 puppet_account_id=self.puppet_account_id,
                 manifest_file_path=self.manifest_file_path,
             ),
+            p=get_ssm_param_task.GetSSMParamTask(
+                parameter_name=constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_PARAMETER_NAME,
+                name=constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_PARAMETER_NAME,
+                manifest_file_path=self.manifest_file_path,
+                puppet_account_id=self.puppet_account_id,
+            )
         )
 
     def run(self):
+        spoke_execution_mode_deploy_env_parameter = self.load_from_input('p').get("Value")
         cached_config = self.manifest.get("config_cache")
         home_region = cached_config.get("home_region")
         regions = cached_config.get("regions")
@@ -70,8 +78,8 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
                 "value": self.puppet_account_id,
                 "type": "PLAINTEXT",
             },
-            {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
-            {"name": "REGIONS", "value": ",".join(regions), "type": "PLAINTEXT",},
+            {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT", },
+            {"name": "REGIONS", "value": ",".join(regions), "type": "PLAINTEXT", },
             {
                 "name": "SHOULD_COLLECT_CLOUDFORMATION_EVENTS",
                 "value": str(should_collect_cloudformation_events),
@@ -100,5 +108,9 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
             response = codebuild.start_build(
                 projectName=constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME,
                 environmentVariablesOverride=vars,
+                computeTypeOverride=spoke_execution_mode_deploy_env_parameter,
+                artifactsOverride=dict(
+                    type='CODEPIPELINE',
+                )
             )
         self.write_output(dict(account_id=self.account_id, **response))
