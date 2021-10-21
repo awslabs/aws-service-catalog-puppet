@@ -1004,6 +1004,11 @@ def get_template(
                     "Name": "NUM_WORKERS",
                     "Value": t.Ref(num_workers_ssm_parameter),
                 },
+                {
+                    "Type": "PARAMETER_STORE",
+                    "Name": "SPOKE_EXECUTION_MODE_DEPLOY_ENV",
+                    "Value": constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_PARAMETER_NAME,
+                },
             ]
             + deploy_env_vars,
         ),

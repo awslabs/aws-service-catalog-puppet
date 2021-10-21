@@ -213,3 +213,4 @@ PUPPET_LOGGER_NAME = "puppet-logger"
 
 
 SPOKE_EXECUTION_MODE_DEPLOY_ENV_PARAMETER_NAME = "/servicecatalog-puppet/spoke/deploy-environment-compute-type"
+SPOKE_EXECUTION_MODE_DEPLOY_ENV_DEFAULT = "BUILD_GENERAL1_SMALL"
