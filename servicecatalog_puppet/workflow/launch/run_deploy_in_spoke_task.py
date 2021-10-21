@@ -103,10 +103,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
                 environmentVariablesOverride=vars,
                 computeTypeOverride=spoke_execution_mode_deploy_env,
                 artifactsOverride=dict(
-                    type='CODEPIPELINE',
-                    artifactIdentifier='DeployInSpokeProject',
-                    name='DeployInSpokeProject',
-                    overrideArtifactName='DeployInSpokeProject',
+                    type='S3',
                 )
             )
         self.write_output(dict(account_id=self.account_id, **response))
