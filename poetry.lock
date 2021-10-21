@@ -36,11 +36,14 @@ tests = ["coverage", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "zope.i
 
 [[package]]
 name = "awacs"
-version = "1.0.2"
+version = "2.0.2"
 description = "AWS Access Policy Language creation library"
 category = "main"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
+python-versions = ">=3.6.2"
+
+[package.dependencies]
+typing-extensions = {version = ">=3.7.4.3", markers = "python_version < \"3.8\""}
 
 [[package]]
 name = "behave"
@@ -601,7 +604,7 @@ pyyaml = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<4" 
-content-hash = "9d6cdf19f08d1feee4e50c71f5faee1c1260fafa6f7b0c8a41abe716f1d4c81a"
+content-hash = "6079c205049ab4e74c8a0621d84915704a97cf6a0caf918234143a63dce19ec8"
 
 [metadata.files]
 appdirs = [
@@ -617,7 +620,8 @@ attrs = [
     {file = "attrs-19.3.0.tar.gz", hash = "sha256:f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72"},
 ]
 awacs = [
-    {file = "awacs-1.0.2.tar.gz", hash = "sha256:a23e4f45093970013464cde5c3950c2ccb048cf97b7f21e354c638362ee38cf1"},
+    {file = "awacs-2.0.2-py3-none-any.whl", hash = "sha256:91b4e9039f6c84876b33fc8383e92e8cda4635792d238b70f14735a4ceb558fe"},
+    {file = "awacs-2.0.2.tar.gz", hash = "sha256:018138c10f82e11734aee7f9e7fff5dbfe1245ddaf15d5927f60f3b16e01ad7e"},
 ]
 behave = [
     {file = "behave-1.2.6-py2.py3-none-any.whl", hash = "sha256:ebda1a6c9e5bfe95c5f9f0a2794e01c7098b3dde86c10a95d8621c5907ff6f1c"},
