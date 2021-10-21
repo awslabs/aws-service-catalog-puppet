@@ -41,6 +41,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
         )
 
     def run(self):
+        spoke_execution_mode_deploy_env = self.spoke_execution_mode_deploy_env
         cached_config = self.manifest.get("config_cache")
         home_region = cached_config.get("home_region")
         regions = cached_config.get("regions")
@@ -70,8 +71,8 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
                 "value": self.puppet_account_id,
                 "type": "PLAINTEXT",
             },
-            {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
-            {"name": "REGIONS", "value": ",".join(regions), "type": "PLAINTEXT",},
+            {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT", },
+            {"name": "REGIONS", "value": ",".join(regions), "type": "PLAINTEXT", },
             {
                 "name": "SHOULD_COLLECT_CLOUDFORMATION_EVENTS",
                 "value": str(should_collect_cloudformation_events),
@@ -100,5 +101,6 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
             response = codebuild.start_build(
                 projectName=constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME,
                 environmentVariablesOverride=vars,
+                computeTypeOverride=spoke_execution_mode_deploy_env,
             )
         self.write_output(dict(account_id=self.account_id, **response))

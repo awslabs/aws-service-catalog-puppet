@@ -40,6 +40,10 @@ class PuppetTask(luigi.Task):
         return os.environ.get("SCT_EXECUTION_MODE", constants.EXECUTION_MODE_HUB)
 
     @property
+    def spoke_execution_mode_deploy_env(self):
+        return os.environ.get("SPOKE_EXECUTION_MODE_DEPLOY_ENV", constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_DEFAULT)
+
+    @property
     def should_delete_rollback_complete_stacks(self):
         return (
             str(
