@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.129.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.130.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -20,6 +20,7 @@ Metadata:
           default: "Options"
         Parameters:
           - ShouldValidate
+          - PollForSourceChanges
           - ShouldDeleteRollbackCompleteStacks
       - Label:
           default: "Source Code Management - choose which one of the following sources you will use:"
@@ -204,6 +205,13 @@ Parameters:
       - "false"
     Default: "true"
     Description: "Setting this to true adds a validate stage to the pipeline where the manifest file validated before the deploy occurs."
+  PollForSourceChanges:
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "true"
+    Description: "Should the main pipeline poll SCM for changes"
   ShouldDeleteRollbackCompleteStacks:
     Type: String
     AllowedValues:
@@ -355,6 +363,9 @@ Resources:
           - Name: SCT_SHOULD_VALIDATE
             Type: PLAINTEXT
             Value: !Ref ShouldValidate
+          - Name: SCT_POLL_FOR_SOURCE_CHANGES
+            Type: PLAINTEXT
+            Value: !Ref PollForSourceChanges
           - Name: SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS
             Type: PLAINTEXT
             Value: !Ref ShouldDeleteRollbackCompleteStacks
@@ -512,6 +523,7 @@ Resources:
           - !Ref SCMCustomSourceActionCustomActionTypeVersion
           - !Ref SCMCustomSourceActionCustomActionTypeProvider
           - !Ref ShouldValidate
+          - !Ref PollForSourceChanges
           - !Ref ShouldDeleteRollbackCompleteStacks
 Outputs:
   ServiceCatalogPuppetRepoConsoleURL:
