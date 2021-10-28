@@ -290,7 +290,7 @@ def bootstrap_spokes_in_ou(
 @click.option("--owner")
 @click.option("--repo")
 @click.option("--branch")
-@click.option("--poll-for-source-changes/--no-poll-for-source-changes", default=True)
+@click.option("--poll-for-source-changes/--no-poll-for-source-changes", default=True, envvar="SCT_POLL_FOR_SOURCE_CHANGES")
 @click.option("--webhook-secret")
 @click.option("--puppet-role-name", default="PuppetRole", envvar="PUPPET_ROLE_NAME")
 @click.option(
