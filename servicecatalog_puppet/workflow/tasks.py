@@ -41,7 +41,10 @@ class PuppetTask(luigi.Task):
 
     @property
     def spoke_execution_mode_deploy_env(self):
-        return os.environ.get("SPOKE_EXECUTION_MODE_DEPLOY_ENV", constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_DEFAULT)
+        return os.environ.get(
+            "SPOKE_EXECUTION_MODE_DEPLOY_ENV",
+            constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_DEFAULT,
+        )
 
     @property
     def should_delete_rollback_complete_stacks(self):
@@ -85,50 +88,67 @@ class PuppetTask(luigi.Task):
         return self.account_id if self.is_running_in_spoke() else self.puppet_account_id
 
     def spoke_client(self, service):
+        kwargs = dict()
+        if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
+            kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
         return betterboto_client.CrossAccountClientContextManager(
             service,
             config.get_puppet_role_arn(self.account_id),
             f"{self.account_id}-{config.get_puppet_role_name()}",
+            **kwargs,
         )
 
     def spoke_regional_client(self, service, region_name=None):
         region = region_name or self.region
+        kwargs = dict(region=region)
+        if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
+            kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
+
         return betterboto_client.CrossAccountClientContextManager(
             service,
             config.get_puppet_role_arn(self.account_id),
             f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
-            region_name=region,
+            **kwargs,
         )
 
     def hub_client(self, service):
+        kwargs = dict()
+        if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
+            kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
         if self.is_running_in_spoke():
             return betterboto_client.CrossAccountClientContextManager(
                 service,
                 config.get_puppet_role_arn(self.executor_account_id),
                 f"{self.executor_account_id}-{config.get_puppet_role_name()}",
+                **kwargs,
             )
         else:
             return betterboto_client.CrossAccountClientContextManager(
                 service,
                 config.get_puppet_role_arn(self.puppet_account_id),
                 f"{self.puppet_account_id}-{config.get_puppet_role_name()}",
+                **kwargs,
             )
 
     def hub_regional_client(self, service, region_name=None):
         region = region_name or self.region
+        kwargs = dict(region=region)
+        if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
+            kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
+
         if self.is_running_in_spoke():
             return betterboto_client.CrossAccountClientContextManager(
                 service,
                 config.get_puppet_role_arn(self.executor_account_id),
                 f"{self.executor_account_id}-{config.get_puppet_role_name()}",
-                region_name=region,
+                **kwargs,
             )
         else:
             return betterboto_client.CrossAccountClientContextManager(
                 service,
                 config.get_puppet_role_arn(self.puppet_account_id),
                 f"{self.puppet_account_id}-{region}-{config.get_puppet_role_name()}",
-                region_name=region,
+                **kwargs,
             )
 
     def read_from_input(self, input_name):
