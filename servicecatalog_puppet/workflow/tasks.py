@@ -100,7 +100,7 @@ class PuppetTask(luigi.Task):
 
     def spoke_regional_client(self, service, region_name=None):
         region = region_name or self.region
-        kwargs = dict(region=region)
+        kwargs = dict(region_name=region)
         if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
             kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
 
@@ -132,7 +132,7 @@ class PuppetTask(luigi.Task):
 
     def hub_regional_client(self, service, region_name=None):
         region = region_name or self.region
-        kwargs = dict(region=region)
+        kwargs = dict(region_name=region)
         if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
             kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
 
