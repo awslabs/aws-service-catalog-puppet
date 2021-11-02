@@ -1,7 +1,10 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import functools
+import logging
 import os
 
-import pkg_resources
 import yaml
 from betterboto import client as betterboto_client
 from jinja2 import Environment, FileSystemLoader
@@ -9,10 +12,7 @@ from jinja2 import Environment, FileSystemLoader
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import constants
 
-import logging
-
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
 
 
 @functools.lru_cache(maxsize=32)
@@ -49,6 +49,28 @@ def get_should_use_sns(puppet_account_id, default_region=None):
     )
     return get_config(puppet_account_id, default_region).get(
         constants.CONFIG_SHOULD_COLLECT_CLOUDFORMATION_EVENTS, True
+    )
+
+
+@functools.lru_cache(maxsize=32)
+def get_should_use_stacks_service_role(puppet_account_id, default_region=None):
+    logger.info(
+        f"getting {constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE},  default_region: {default_region}"
+    )
+    return get_config(puppet_account_id, default_region).get(
+        constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE,
+        constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE_DEFAULT,
+    )
+
+
+@functools.lru_cache(maxsize=32)
+def get_should_delete_rollback_complete_stacks(puppet_account_id, default_region=None):
+    logger.info(
+        f"getting {constants.CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS},  default_region: {default_region}"
+    )
+    return get_config(puppet_account_id, default_region).get(
+        constants.CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS,
+        constants.CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS_DEFAULT,
     )
 
 
@@ -151,6 +173,15 @@ def get_puppet_role_name():
 
 
 @functools.lru_cache()
+def get_puppet_stack_role_name():
+    logger.info("getting puppet_stack_role_name")
+    return os.getenv(
+        constants.PUPPET_STACK_ROLE_NAME_ENVIRONMENTAL_VARIABLE_NAME,
+        constants.PUPPET_STACK_ROLE_NAME_DEFAULT,
+    )
+
+
+@functools.lru_cache()
 def get_puppet_role_path():
     logger.info("getting puppet_role_path")
     return os.getenv(
@@ -163,6 +194,12 @@ def get_puppet_role_path():
 def get_puppet_role_arn(puppet_account_id):
     logger.info("getting puppet_role_arn")
     return f"arn:{get_partition()}:iam::{puppet_account_id}:role{get_puppet_role_path()}{get_puppet_role_name()}"
+
+
+@functools.lru_cache()
+def get_puppet_stack_role_arn(puppet_account_id):
+    logger.info("getting puppet_role_arn")
+    return f"arn:{get_partition()}:iam::{puppet_account_id}:role{get_puppet_role_path()}{get_puppet_stack_role_name()}"
 
 
 @functools.lru_cache(maxsize=32)
@@ -222,7 +259,6 @@ def get_current_account_id():
         return sts.get_caller_identity().get("Account")
 
 
-# TODO - not used?
 def get_ssm_config_for_parameter(account_ssm_param, required_parameter_name):
     if account_ssm_param.get("region") is not None:
         return {

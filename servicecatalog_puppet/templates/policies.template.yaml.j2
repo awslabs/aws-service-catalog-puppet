@@ -74,6 +74,37 @@ Resources:
             Condition:
               StringEquals:
                 aws:PrincipalOrgID: {{ organization }}{% endfor %}
+
+  BucketPoliciesForRepo:
+    Condition: RunningInHomeRegion
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Sub "sc-puppet-stacks-repository-${AWS::AccountId}"
+      PolicyDocument:
+        Statement:{% for account_id in sharing_policies.get('accounts') %}
+          - Sid: ShareFor{{ account_id }}
+            Action:
+              - "s3:Get*"
+              - "s3:List*"
+            Effect: "Allow"
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::sc-puppet-stacks-repository-${AWS::AccountId}/*"
+              - !Sub "arn:${AWS::Partition}:s3:::sc-puppet-stacks-repository-${AWS::AccountId}"
+            Principal:
+              AWS: !Sub "arn:${AWS::Partition}:iam::{{ account_id }}:root"{% endfor %}
+        {% for organization in sharing_policies.get('organizations') %}
+          - Sid: OrganizationalShareFor{{ organization }}
+            Action:
+              - "s3:Get*"
+              - "s3:List*"
+            Effect: "Allow"
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::sc-puppet-stacks-repository-${AWS::AccountId}/*"
+              - !Sub "arn:${AWS::Partition}:s3:::sc-puppet-stacks-repository-${AWS::AccountId}"
+            Principal: "*"
+            Condition:
+              StringEquals:
+                aws:PrincipalOrgID: {{ organization }}{% endfor %}
   {% endif %}
 
   {% if sharing_policies.get('accounts')|length > 0 or sharing_policies.get('organizations')|length > 0 %}
@@ -81,7 +112,6 @@ Resources:
   {% for account_id in sharing_policies.get('accounts') %}
   EventBusPolicy{{account_id}}:
     Type: AWS::Events::EventBusPolicy
-    Condition: RunningInHomeRegion
     Properties:
       EventBusName: "servicecatalog-puppet-event-bus"
       Action: "events:PutEvents"
@@ -93,7 +123,6 @@ Resources:
   {% for organization in sharing_policies.get('organizations') %}
   EventBusPolicy{{organization|replace("-","")}}:
     Type: AWS::Events::EventBusPolicy
-    Condition: RunningInHomeRegion
     Properties:
       EventBusName: "servicecatalog-puppet-event-bus"
       Action: "events:PutEvents"

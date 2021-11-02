@@ -97,19 +97,6 @@ mappings:
     eu-west-1:
       "ami": "ami-16506cd98"
 
-# actions are wrappers around codebuild projects.  they allow you to run the project and only continue exection
-# should the project be successful
-actions:
-  ping-on-prem-host:
-    type: codebuild
-    project_name: &ping_on_prem_host ping-on-prem-host
-    account_id: *service_catalog_tools_account
-    region: 'eu-west-1'
-    parameters:
-      HOST_TO_PING:
-        default: 192.168.1.2
-
-
 launches:
   # provision v1 of account-bootstrap-shared-org-bootstrap from demo-central-it-team-portfolio into the role_org_manager
   # account
@@ -186,10 +173,6 @@ launches:
     portfolio: networking
     product: vpc
     version: v8
-    # before provisioning this product into the specified accounts run the pre_action.  If that project fails this
-    # launch will not be provisioned
-    pre_actions:
-      - name: *ping_on_prem_host
     deploy_to:
       tags:
         - regions:

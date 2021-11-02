@@ -2,6 +2,11 @@
 
 ![logo](./docs/logo.png) 
 
+## Badges
+
+[![codecov](https://codecov.io/gh/awslabs/aws-service-catalog-puppet/branch/master/graph/badge.svg?token=e8M7mdsmy0)](https://codecov.io/gh/awslabs/aws-service-catalog-puppet)
+
+
 ## What is it?
 This is a python3 framework that makes it easier to share multi region AWS Service Catalog portfolios and makes it 
 possible to provision products into accounts declaratively using a metadata based rules engine.

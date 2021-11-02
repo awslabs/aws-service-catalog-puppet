@@ -69,12 +69,41 @@ Spoke
 
 .. note::
 
-    This will require you to bootstrap your spokes again.  You can use the AWS Codebuild project
-    ``servicecatalog-puppet-bootstrap-spokes-in-ou`` to bootstrap spokes after installing version 0.78.0+
+    This will require you to bootstrap your spokes again if you bootstrapped your spokes with a version prior to 0.78.0 - which was July 8, 2020.  
+    You can check the version of the spoke in AWS SSM Parameter store (a parameter named service-catalog-puppet-spoke-version in your home region
+    should be present).  If you need to bootstrap your spokes again you can bootstrap each in the same way you initially did it otherwise you can
+    use the AWS Codebuild project ``servicecatalog-puppet-bootstrap-spokes-in-ou``
 
 With spoke the provisioning starts in the puppet account as normal.  Once a launch with spoke execution mode is found
 an AWS Codebuild project is triggered in the spoke account to perform the provisioning. The framework will run the
 project only once per account per run of the main puppet run to avoid wasteful execution times.  The depends_on
-statements are adhered to within the same account but depending on launches across accounts are not adhered to. AWS SSM
-parameters and outputs will not work and nor will actions.  The goal of spoke executions is to split the provisioning
-workflow across multiple accounts to reduce the overall execution time.
+statements are adhered to within the same account but depending on launches across accounts are not adhered to. When
+using AWS SSM parameters in spoke execution mode you will need to declare which account the SSM parameter is available
+in.  You can use ${AWS::PuppetAccountId} or ${AWS::AccountId} to specific the hub or the spoke.  If you specify the hub
+account the SSM parameter will be retrieved and its value will be shared with the spoke. When sharing from the hub to 
+the spoke there is no cross account permission added, the values of the parameters are shared in text files with the 
+spoke account AWS CodeBuild project.
+
+Here is an example using a parameter in the hub account to share values with the spoke.
+
+.. code-block:: yaml
+
+      IAM-1:
+        portfolio: e-mandatory
+        product: aws-iam-administrator-access-assumable-role-account
+        version: v1
+        execution: async
+        parameters:
+          AccountToTrust:
+            ssm: 
+              name: '/accounts/tooling/accountId'
+              account_id: '${AWS::PuppetAccountId}'
+          RoleName:
+            default: 'SuperAdmin'
+          Path:
+            default: '/'
+        deploy_to:
+          tags:
+            - tag: role:spokes
+              regions: default_region
+

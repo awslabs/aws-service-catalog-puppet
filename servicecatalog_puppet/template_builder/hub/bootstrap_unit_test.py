@@ -1,3 +1,7 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
+
 def test_codecommit_provider():
     # setup
     from . import bootstrap
@@ -16,6 +20,7 @@ def test_codecommit_provider():
     is_caching_enabled = False
     is_manual_approvals = False
     scm_skip_creation_of_repo = False
+    should_validate = False
 
     # exercise
     actual_result = bootstrap.get_template(
@@ -25,6 +30,7 @@ def test_codecommit_provider():
         is_caching_enabled,
         is_manual_approvals,
         scm_skip_creation_of_repo,
+        should_validate,
     )
 
     source_stage = actual_result.resources.get("Pipeline").Stages[0]

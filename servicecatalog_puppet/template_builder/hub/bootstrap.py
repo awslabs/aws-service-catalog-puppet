@@ -1,16 +1,19 @@
-import yaml
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
 
 import troposphere as t
-
-from troposphere import ssm
+import yaml
+from awacs import iam as awscs_iam
+from troposphere import codebuild
+from troposphere import codecommit
+from troposphere import codepipeline
+from troposphere import iam
 from troposphere import s3
 from troposphere import sns
-from troposphere import codepipeline
 from troposphere import sqs
-from troposphere import iam
-from troposphere import codecommit
-from troposphere import codebuild
-from awacs import iam as awscs_iam
+from troposphere import ssm
+
+from servicecatalog_puppet import constants
 
 
 def get_template(
@@ -20,11 +23,15 @@ def get_template(
     is_caching_enabled,
     is_manual_approvals: bool,
     scm_skip_creation_of_repo: bool,
+    should_validate: bool,
 ) -> t.Template:
     is_codecommit = source.get("Provider", "").lower() == "codecommit"
     is_github = source.get("Provider", "").lower() == "github"
     is_codestarsourceconnection = (
         source.get("Provider", "").lower() == "codestarsourceconnection"
+    )
+    is_custom = (
+        source.get("Provider", "").lower() == "custom"
     )
     is_s3 = source.get("Provider", "").lower() == "s3"
     description = f"""Bootstrap template used to bring up the main ServiceCatalog-Puppet AWS CodePipeline with dependencies
@@ -102,6 +109,14 @@ def get_template(
             Default="BUILD_GENERAL1_SMALL",
         )
     )
+    spoke_deploy_environment_compute_type_parameter = template.add_parameter(
+        t.Parameter(
+            "SpokeDeployEnvironmentComputeType",
+            Type="String",
+            Description="The AWS CodeBuild Environment Compute Type for spoke execution mode",
+            Default="BUILD_GENERAL1_SMALL",
+        )
+    )
     deploy_num_workers_parameter = template.add_parameter(
         t.Parameter(
             "DeployNumWorkers",
@@ -124,12 +139,44 @@ def get_template(
         "HasManualApprovals", t.Equals(t.Ref(with_manual_approvals_parameter), "Yes")
     )
 
+    template.add_resource(
+        s3.Bucket(
+            "StacksRepository",
+            BucketName=t.Sub("sc-puppet-stacks-repository-${AWS::AccountId}"),
+            VersioningConfiguration=s3.VersioningConfiguration(Status="Enabled"),
+            BucketEncryption=s3.BucketEncryption(
+                ServerSideEncryptionConfiguration=[
+                    s3.ServerSideEncryptionRule(
+                        ServerSideEncryptionByDefault=s3.ServerSideEncryptionByDefault(
+                            SSEAlgorithm="AES256"
+                        )
+                    )
+                ]
+            ),
+            PublicAccessBlockConfiguration=s3.PublicAccessBlockConfiguration(
+                BlockPublicAcls=True,
+                BlockPublicPolicy=True,
+                IgnorePublicAcls=True,
+                RestrictPublicBuckets=True,
+            ),
+            Tags=t.Tags({"ServiceCatalogPuppet:Actor": "Framework"}),
+        )
+    )
+
     manual_approvals_param = template.add_resource(
         ssm.Parameter(
             "ManualApprovalsParam",
             Type="String",
             Name="/servicecatalog-puppet/manual-approvals",
             Value=t.Ref(with_manual_approvals_parameter),
+        )
+    )
+    template.add_resource(
+        ssm.Parameter(
+            "SpokeDeployEnvParameter",
+            Type="String",
+            Name=constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_PARAMETER_NAME,
+            Value=t.Ref(spoke_deploy_environment_compute_type_parameter),
         )
     )
     param = template.add_resource(
@@ -496,6 +543,52 @@ def get_template(
             )
         )
 
+    if is_custom:
+        source_stage.Actions.append(
+            codepipeline.Actions(
+                RunOrder=1,
+                ActionTypeId=codepipeline.ActionTypeId(
+                    Category="Source",
+                    Owner="Custom",
+                    Version=source.get("Configuration").get("CustomActionTypeVersion"),
+                    Provider=source.get("Configuration").get(
+                        "CustomActionTypeProvider"
+                    ),
+                ),
+                OutputArtifacts=[codepipeline.OutputArtifacts(Name="Source")],
+                Configuration={
+                    "GitUrl": source.get("Configuration").get("GitUrl"),
+                    "Branch": source.get("Configuration").get("Branch"),
+                    "PipelineName": t.Sub("${AWS::StackName}-pipeline"),
+                },
+                Name="Source",
+            )
+        )
+        webhook = codepipeline.Webhook(
+            "Webhook",
+            Authentication="IP",
+            TargetAction="Source",
+            AuthenticationConfiguration=codepipeline.WebhookAuthConfiguration(
+                AllowedIPRange=source.get("Configuration").get("GitWebHookIpAddress")
+            ),
+            Filters=[
+                codepipeline.WebhookFilterRule(
+                    JsonPath="$.changes[0].ref.id", MatchEquals="refs/heads/{Branch}"
+                )
+            ],
+            TargetPipelineVersion=1,
+            TargetPipeline=t.Sub("${AWS::StackName}-pipeline"),
+        )
+        template.add_resource(webhook)
+        values_for_sub = {
+            "GitUrl": source.get("Configuration").get("GitUrl"),
+            "WebhookUrl": t.GetAtt(webhook, "Url"),
+        }
+        output_to_add = t.Output("WebhookUrl")
+        output_to_add.Value = t.Sub("${GitUrl}||${WebhookUrl}", **values_for_sub)
+        output_to_add.Export = t.Export(t.Sub("${AWS::StackName}-pipeline"))
+        template.add_output(output_to_add)
+
     if is_codestarsourceconnection:
         source_stage.Actions.append(
             codepipeline.Actions(
@@ -577,7 +670,7 @@ def get_template(
             install=install_spec,
             build={
                 "commands": [
-                    'echo "single_account: ${SINGLE_ACCOUNT_ID}" > parameters.yaml',
+                    'echo "single_account: \\"${SINGLE_ACCOUNT_ID}\\"" > parameters.yaml',
                     "cat parameters.yaml",
                     "zip parameters.zip parameters.yaml",
                     "aws s3 cp parameters.zip s3://sc-puppet-parameterised-runs-${PUPPET_ACCOUNT_ID}/parameters.zip",
@@ -653,6 +746,74 @@ def get_template(
             "SingleAccountRunWithCallbackProject", **single_account_run_project_args
         )
     )
+
+    stages = [source_stage]
+
+    if should_validate:
+        template.add_resource(
+            codebuild.Project(
+                "ValidateProject",
+                Name="servicecatalog-puppet-validate",
+                ServiceRole=t.GetAtt("DeployRole", "Arn"),
+                Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
+                Artifacts=codebuild.Artifacts(Type="CODEPIPELINE"),
+                TimeoutInMinutes=60,
+                Environment=codebuild.Environment(
+                    ComputeType="BUILD_GENERAL1_SMALL",
+                    Image="aws/codebuild/standard:4.0",
+                    Type="LINUX_CONTAINER",
+                ),
+                Source=codebuild.Source(
+                    BuildSpec=yaml.safe_dump(
+                        dict(
+                            version="0.2",
+                            phases={
+                                "install": {
+                                    "runtime-versions": {"python": "3.7",},
+                                    "commands": [
+                                        f"pip install {puppet_version}"
+                                        if "http" in puppet_version
+                                        else f"pip install aws-service-catalog-puppet=={puppet_version}",
+                                    ],
+                                },
+                                "build": {
+                                    "commands": [
+                                        "servicecatalog-puppet validate manifest.yaml"
+                                    ]
+                                },
+                            },
+                        )
+                    ),
+                    Type="CODEPIPELINE",
+                ),
+                Description="Validate the manifest.yaml file",
+            )
+        )
+        stages.append(
+            codepipeline.Stages(
+                Name="Validate",
+                Actions=[
+                    codepipeline.Actions(
+                        InputArtifacts=[codepipeline.InputArtifacts(Name="Source"),],
+                        Name="Validate",
+                        ActionTypeId=codepipeline.ActionTypeId(
+                            Category="Build",
+                            Owner="AWS",
+                            Version="1",
+                            Provider="CodeBuild",
+                        ),
+                        OutputArtifacts=[
+                            codepipeline.OutputArtifacts(Name="ValidateProject")
+                        ],
+                        Configuration={
+                            "ProjectName": t.Ref("ValidateProject"),
+                            "PrimarySource": "Source",
+                        },
+                        RunOrder=1,
+                    ),
+                ],
+            )
+        )
 
     if is_manual_approvals:
         deploy_stage = codepipeline.Stages(
@@ -745,11 +906,13 @@ def get_template(
             ],
         )
 
+    stages.append(deploy_stage)
+
     pipeline = template.add_resource(
         codepipeline.Pipeline(
             "Pipeline",
             RoleArn=t.GetAtt("PipelineRole", "Arn"),
-            Stages=[source_stage, deploy_stage,],
+            Stages=stages,
             Name=t.Sub("${AWS::StackName}-pipeline"),
             ArtifactStore=codepipeline.ArtifactStore(
                 Type="S3",
@@ -841,6 +1004,11 @@ def get_template(
                     "Name": "NUM_WORKERS",
                     "Value": t.Ref(num_workers_ssm_parameter),
                 },
+                {
+                    "Type": "PARAMETER_STORE",
+                    "Name": "SPOKE_EXECUTION_MODE_DEPLOY_ENV",
+                    "Value": constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_PARAMETER_NAME,
+                },
             ]
             + deploy_env_vars,
         ),
@@ -895,6 +1063,56 @@ def get_template(
                 Type="NO_SOURCE",
             ),
             Description="Bootstrap all the accounts in an OU",
+        )
+    )
+
+    template.add_resource(
+        codebuild.Project(
+            "BootstrapASpokeProject",
+            Name="servicecatalog-puppet-bootstrap-spoke",
+            ServiceRole=t.GetAtt("DeployRole", "Arn"),
+            Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
+            Artifacts=codebuild.Artifacts(Type="NO_ARTIFACTS"),
+            TimeoutInMinutes=60,
+            Environment=codebuild.Environment(
+                ComputeType="BUILD_GENERAL1_SMALL",
+                Image="aws/codebuild/standard:4.0",
+                Type="LINUX_CONTAINER",
+                EnvironmentVariables=[
+                    {
+                        "Type": "PLAINTEXT",
+                        "Name": "PUPPET_ACCOUNT_ID",
+                        "Value": t.Sub("${AWS::AccountId}"),
+                    },
+                    {
+                        "Type": "PLAINTEXT",
+                        "Name": "ORGANIZATION_ACCOUNT_ACCESS_ROLE_ARN",
+                        "Value": "CHANGE_ME",
+                    },
+                    {
+                        "Type": "PLAINTEXT",
+                        "Name": "ASSUMABLE_ROLE_IN_ROOT_ACCOUNT",
+                        "Value": "CHANGE_ME",
+                    },
+                ],
+            ),
+            Source=codebuild.Source(
+                BuildSpec=yaml.safe_dump(
+                    dict(
+                        version=0.2,
+                        phases=dict(
+                            install=install_spec,
+                            build={
+                                "commands": [
+                                    "servicecatalog-puppet bootstrap-spoke-as ${PUPPET_ACCOUNT_ID} ${ASSUMABLE_ROLE_IN_ROOT_ACCOUNT} ${ORGANIZATION_ACCOUNT_ACCESS_ROLE_ARN}"
+                                ]
+                            },
+                        ),
+                    )
+                ),
+                Type="NO_SOURCE",
+            ),
+            Description="Bootstrap given account as a spoke",
         )
     )
 
@@ -993,6 +1211,15 @@ def get_template(
     template.add_output(
         t.Output(
             "ManualApprovalsParam", Value=t.GetAtt(manual_approvals_param, "Value")
+        )
+    )
+
+    template.add_resource(
+        ssm.Parameter(
+            "DefaultTerraformVersion",
+            Type="String",
+            Name=constants.DEFAULT_TERRAFORM_VERSION_PARAMETER_NAME,
+            Value=constants.DEFAULT_TERRAFORM_VERSION_VALUE,
         )
     )
 

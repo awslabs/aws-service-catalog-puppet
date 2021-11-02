@@ -1,12 +1,15 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import logging
-import time
 import os
+import time
 
 import click
 import yaml
+from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import config, constants
-from betterboto import client as betterboto_client
 
 logger = logging.getLogger(__file__)
 
@@ -40,48 +43,88 @@ def terminate_provisioned_product(prefix, service_catalog, provisioned_product_i
         raise Exception(f"Failed to terminate provisioned product: Status = {status}")
 
 
+def get_provisioned_product_from_scan(
+    service_catalog, provisioned_product_name, logging_prefix
+):
+    logger.info(f"{logging_prefix}: running get_provisioned_product_from_scan")
+    paginator = service_catalog.get_paginator("scan_provisioned_products")
+    pages = paginator.paginate(AccessLevelFilter={"Key": "Account", "Value": "self"},)
+
+    for page in pages:
+        logger.info(
+            f"{logging_prefix}: running get_provisioned_product_from_scan paging"
+        )
+        for provisioned_product in page.get("ProvisionedProducts", []):
+            if provisioned_product.get("Name") == provisioned_product_name:
+                return provisioned_product
+
+    return None
+
+
 def terminate_if_status_is_not_available(
-    service_catalog, provisioned_product_name, product_id, account_id, region
+    service_catalog,
+    provisioned_product_name,
+    product_id,
+    account_id,
+    region,
+    should_delete_rollback_complete_stacks,
 ):
     prefix = f"[{provisioned_product_name}] {account_id}:{region}"
     logger.info(f"{prefix} :: checking if should be terminated")
-    response = service_catalog.scan_provisioned_products_single_page(
-        AccessLevelFilter={"Key": "Account", "Value": "self"},
+    provisioned_product = get_provisioned_product_from_scan(
+        service_catalog, provisioned_product_name, prefix
     )
+
     provisioned_product_id = False
     provisioning_artifact_id = False
-    for r in response.get("ProvisionedProducts", []):
-        if r.get("Name") == provisioned_product_name:
-            current_status = r.get("Status")
-            if current_status in ["AVAILABLE", "TAINTED"]:
-                provisioned_product_id = r.get("Id")
-                provisioning_artifact_id = r.get("ProvisioningArtifactId")
-            elif current_status in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
-                logger.info(f"{prefix} :: current status is {current_status}")
-                while True:
-                    status = (
-                        service_catalog.describe_provisioned_product(Id=r.get("Id"))
-                        .get("ProvisionedProductDetail")
-                        .get("Status")
+    current_status = False
+    if provisioned_product is not None:
+        current_status = provisioned_product.get("Status")
+        logger.info(f"{prefix} :: current status is {current_status}")
+        if current_status in ["AVAILABLE", "TAINTED"]:
+            provisioned_product_id = provisioned_product.get("Id")
+            provisioning_artifact_id = provisioned_product.get("ProvisioningArtifactId")
+        elif current_status in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
+            while True:
+                status = (
+                    service_catalog.describe_provisioned_product(
+                        Id=provisioned_product.get("Id")
                     )
-                    logger.info(f"{prefix} :: waiting to complete: {status}")
-                    time.sleep(5)
-                    if status not in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
-                        return terminate_if_status_is_not_available(
-                            service_catalog,
-                            provisioned_product_name,
-                            product_id,
-                            account_id,
-                            region,
-                        )
-
-            elif current_status == "ERROR":
-                logger.info(
-                    f"{prefix} :: terminating as its status is {r.get('Status')}"
+                    .get("ProvisionedProductDetail")
+                    .get("Status")
                 )
-                terminate_provisioned_product(prefix, service_catalog, r.get("Id"))
-    logger.info(f"{prefix} :: Finished waiting for termination")
-    return provisioned_product_id, provisioning_artifact_id
+                logger.info(f"{prefix} :: waiting to complete: {status}")
+                time.sleep(5)
+                if status not in ["UNDER_CHANGE", "PLAN_IN_PROGRESS"]:
+                    return terminate_if_status_is_not_available(
+                        service_catalog,
+                        provisioned_product_name,
+                        product_id,
+                        account_id,
+                        region,
+                        should_delete_rollback_complete_stacks,
+                    )
+
+        elif current_status == "ERROR":
+            logger.info(
+                f"{prefix} :: terminating as its status is {provisioned_product.get('Status')}"
+            )
+            terminate_provisioned_product(
+                prefix, service_catalog, provisioned_product.get("Id")
+            )
+
+        elif (
+            current_status == "ROLLBACK_COMPLETE"
+            and should_delete_rollback_complete_stacks
+        ):
+            logger.info(
+                f"{prefix} :: should_delete_rollback_complete_stacks so terminating {provisioned_product.get('Status')}"
+            )
+            terminate_provisioned_product(
+                prefix, service_catalog, provisioned_product.get("Id")
+            )
+    logger.info(f"{prefix} :: Finished terminate_if_status_is_not_available")
+    return provisioned_product_id, provisioning_artifact_id, current_status
 
 
 def get_stack_output_for(cloudformation, stack_name):
@@ -144,9 +187,9 @@ def provision_product_with_plan(
             f"{uid} :: Found plan for {provisioned_product_plan.get('ProvisionProductName')}"
         )
         if provisioned_product_plan.get("ProvisionProductName") == launch_name:
-            f"{uid} :: Found existing plan, going to terminate it"
+            logger.info(f"{uid} :: Found existing plan, going to terminate it")
             service_catalog.delete_provisioned_product_plan(
-                PlanId=provisioned_product_plan.get("PlanId")
+                PlanId=provisioned_product_plan.get("PlanId"), IgnoreErrors=True,
             )
 
     logger.info(f"{uid} :: Creating a plan")
@@ -192,12 +235,6 @@ def provision_product_with_plan(
             f"{uid} :: Plan created, "
             f"changes: {yaml.safe_dump(describe_provisioned_product_plan_response.get('ResourceChanges'))}"
         )
-        if len(describe_provisioned_product_plan_response.get("ResourceChanges")) == 0:
-            logger.warning(
-                f"{uid} :: There are no resource changes in this plan, "
-                f"running this anyway - your product will be marked as tainted as your CloudFormation changeset"
-                f"will fail but your product will be the correct version and in tact."
-            )
 
         logger.info(f"{uid} :: executing changes")
         service_catalog.execute_provisioned_product_plan(PlanId=plan_id)
@@ -230,8 +267,15 @@ def provision_product_with_plan(
                 )
                 provisioned_product_detail = response.get("ProvisionedProductDetail")
                 execute_status = provisioned_product_detail.get("Status")
-                if execute_status in ["AVAILABLE", "TAINTED", "EXECUTE_SUCCESS"]:
+                if execute_status in ["AVAILABLE", "EXECUTE_SUCCESS"]:
                     break
+                elif execute_status == "TAINTED":
+                    service_catalog.delete_provisioned_product_plan(
+                        PlanId=plan_id, IgnoreErrors=True,
+                    )
+                    raise Exception(
+                        f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
+                    )
                 elif execute_status == "ERROR":
                     raise Exception(
                         f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
@@ -239,7 +283,9 @@ def provision_product_with_plan(
                 else:
                     time.sleep(5)
 
-            service_catalog.delete_provisioned_product_plan(PlanId=plan_id)
+            service_catalog.delete_provisioned_product_plan(
+                PlanId=plan_id, IgnoreErrors=True,
+            )
             return provisioned_product_id
 
         else:
@@ -283,7 +329,7 @@ def provision_product(
     product_id,
     provisioning_artifact_id,
     puppet_account_id,
-    path_id,
+    path_name,
     params,
     version,
     should_use_sns,
@@ -304,7 +350,7 @@ def provision_product(
         service_catalog.provision_product(
             ProductId=product_id,
             ProvisioningArtifactId=provisioning_artifact_id,
-            PathId=path_id,
+            PathName=path_name,
             ProvisionedProductName=launch_name,
             ProvisioningParameters=provisioning_parameters,
             Tags=[
@@ -336,9 +382,9 @@ def provision_product(
             )
             provisioned_product_detail = response.get("ProvisionedProductDetail")
             execute_status = provisioned_product_detail.get("Status")
-            if execute_status in ["AVAILABLE", "TAINTED", "EXECUTE_SUCCESS"]:
+            if execute_status in ["AVAILABLE", "EXECUTE_SUCCESS"]:
                 break
-            elif execute_status == "ERROR":
+            elif execute_status in ["ERROR", "TAINTED"]:
                 raise Exception(
                     f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
                 )
@@ -355,7 +401,7 @@ def update_provisioned_product(
     product_id,
     provisioning_artifact_id,
     puppet_account_id,
-    path_id,
+    path_name,
     params,
     version,
     execution,
@@ -370,7 +416,7 @@ def update_provisioned_product(
         service_catalog.update_provisioned_product(
             ProductId=product_id,
             ProvisioningArtifactId=provisioning_artifact_id,
-            PathId=path_id,
+            PathName=path_name,
             ProvisionedProductName=launch_name,
             ProvisioningParameters=provisioning_parameters,
         )
@@ -392,9 +438,9 @@ def update_provisioned_product(
             )
             provisioned_product_detail = response.get("ProvisionedProductDetail")
             execute_status = provisioned_product_detail.get("Status")
-            if execute_status in ["AVAILABLE", "TAINTED", "EXECUTE_SUCCESS"]:
+            if execute_status in ["AVAILABLE", "EXECUTE_SUCCESS"]:
                 break
-            elif execute_status == "ERROR":
+            elif execute_status in ["ERROR", "TAINTED"]:
                 raise Exception(
                     f"{uid} :: Execute failed: {execute_status}: {provisioned_product_detail.get('StatusMessage')}"
                 )
@@ -507,15 +553,3 @@ def run_pipeline(pipeline_name, tail):
                 else:
                     time.sleep(5)
         return pipeline_execution_id
-
-
-def get_version_id_for(servicecatalog, product_id, version_name):
-    version_id = None
-    response = servicecatalog.list_provisioning_artifacts_single_page(
-        ProductId=product_id
-    )
-    for provisioning_artifact_detail in response.get("ProvisioningArtifactDetails"):
-        if provisioning_artifact_detail.get("Name") == version_name:
-            version_id = provisioning_artifact_detail.get("Id")
-    assert version_id is not None, "Did not find version looking for"
-    return version_id

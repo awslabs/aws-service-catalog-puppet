@@ -11,9 +11,9 @@ Welcome to aws-service-catalog-puppets's documentation!
    puppet/bootstrapping_spokes
    puppet/sharing_a_portfolio
    puppet/execution_modes
-   puppet/actions
    puppet/notifications
    puppet/caching
+   puppet/intrinsic_functions
    puppet/splitting
    puppet/upgrading
    puppet/faq

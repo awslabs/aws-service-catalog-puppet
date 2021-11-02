@@ -4,4 +4,7 @@ def get_accounts_for_path(client, path):
     return ",".join([r.get("Id") for r in response])
 
 
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 macros = {"get_accounts_for_path": get_accounts_for_path}

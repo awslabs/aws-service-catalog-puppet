@@ -1,20 +1,14 @@
-# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+import os
+from unittest import mock as mocker
 from unittest.mock import call
 
-from pytest import fixture
-import os
 
-
-@fixture
-def sut():
-    from . import asset_helpers
-
-    return asset_helpers
-
-
-def test_resolve_from_site_packages(sut):
+def test_resolve_from_site_packages():
     # setup
+    from servicecatalog_puppet import asset_helpers as sut
+
     expected_result = os.path.sep.join(
         [os.path.dirname(os.path.abspath(__file__)), "foo"]
     )
@@ -26,9 +20,11 @@ def test_resolve_from_site_packages(sut):
     assert actual_result == expected_result
 
 
-def test_read_from_site_packages(sut, mocker):
+@mocker.patch("builtins.open", new_callable=mocker.MagicMock())
+def test_read_from_site_packages(mocked_open):
     # setup
-    mocked_open = mocker.patch.object(sut, "open")
+    from servicecatalog_puppet import asset_helpers as sut
+
     expected_param = os.path.sep.join(
         [os.path.dirname(os.path.abspath(__file__)), "foo"]
     )
@@ -39,4 +35,3 @@ def test_read_from_site_packages(sut, mocker):
     # verify
     assert mocked_open.call_count == 1
     assert mocked_open.call_args == call(expected_param, "r")
-    # assert mocked_open.assert_called_once_with(expected_param)

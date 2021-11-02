@@ -1,8 +1,10 @@
-import troposphere as t
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
 
-from troposphere import ssm
+import troposphere as t
 from troposphere import s3
 from troposphere import sns
+from troposphere import ssm
 
 
 def get_template(version: str, default_region_value) -> t.Template:
@@ -62,6 +64,7 @@ def get_template(version: str, default_region_value) -> t.Template:
             Tags=t.Tags({"ServiceCatalogPuppet:Actor": "Framework"}),
         )
     )
+
     regional_product_topic = template.add_resource(
         sns.Topic(
             "RegionalProductTopic",

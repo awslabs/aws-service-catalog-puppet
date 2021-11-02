@@ -27,21 +27,10 @@ You can enable the caching of the following tasks:
 * DeleteCloudFormationStackTask
 * EnsureEventBridgeEventBusTask
 * BootstrapSpokeAsTask
-* CreateLaunchRoleConstraintsForPortfolio
-* RequestPolicyTask
-* SharePortfolioTask
 * ShareAndAcceptPortfolioTask
 * CreateAssociationsInPythonForPortfolioTask
 * CreateShareForAccountLaunchRegion
-* DisassociateProductFromPortfolio
-* DisassociateProductsFromPortfolio
-* DeleteLocalPortfolio
-* DeletePortfolioShare
-* DeletePortfolio
-* ProvisioningArtifactParametersTask
-* ResetProvisionedProductOwnerTask
-* RunDeployInSpokeTask
-* LaunchInSpokeTask
+* DoDescribeProvisioningParameters
 
 .. warning::
 
@@ -79,12 +68,6 @@ In order to use this feature you will need to enable caching using the CLI:
 
     servicecatalog-puppet set-config-value is_caching_enabled True
 
-Following that you will need to bootstrap using the settings you previously used:
-
-.. code:: shell
-
-    servicecatalog-puppet bootstrap ..... ...... ......
-
 
 ----------------------
 How do I disable this?
@@ -95,9 +78,3 @@ In order to use disable feature you will need to disable caching using the CLI:
 .. code:: shell
 
     servicecatalog-puppet set-config-value is_caching_enabled False
-
-Following that you will need to bootstrap using the settings you previously used:
-
-.. code:: shell
-
-    servicecatalog-puppet bootstrap ..... ...... ......

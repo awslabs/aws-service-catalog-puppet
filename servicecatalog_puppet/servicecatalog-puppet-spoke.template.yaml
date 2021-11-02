@@ -176,13 +176,13 @@ Resources:
             Value: "CHANGE_ME"
 
           - Name: PARTITION
-            Type: PARAMETER_STORE
+            Type: PLAINTEXT
             Value: !Ref AWS::Partition
           - Name: PUPPET_ROLE_NAME
-            Type: PARAMETER_STORE
+            Type: PLAINTEXT
             Value: !Ref PuppetRoleName
           - Name: PUPPET_ROLE_PATH
-            Type: PARAMETER_STORE
+            Type: PLAINTEXT
             Value: !Ref PuppetRolePath
 
       Source:

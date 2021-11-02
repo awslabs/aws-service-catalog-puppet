@@ -1,7 +1,13 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import json
+import logging
 import os
+import shutil
 import sys
 import time
+from urllib.request import urlretrieve
 import urllib
 from glob import glob
 from pathlib import Path
@@ -15,13 +21,11 @@ from betterboto import client as betterboto_client
 from colorclass import Color
 from luigi import LuigiStatusCode
 
-from servicecatalog_puppet import config, constants
+from servicecatalog_puppet import config
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 
-import logging
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
 def run_tasks(
@@ -32,9 +36,9 @@ def run_tasks(
     is_dry_run=False,
     is_list_launches=None,
     execution_mode="hub",
-    cache_invalidator="now",
     on_complete_url=None,
     running_exploded=False,
+    output_cache_starting_point="",
 ):
     codebuild_id = os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD")
     if is_list_launches:
@@ -62,6 +66,7 @@ def run_tasks(
     entries = []
 
     for result_type in [
+        "start",
         "failure",
         "success",
         "timeout",
@@ -70,6 +75,8 @@ def run_tasks(
         "broken_task",
     ]:
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type)
+
+    os.makedirs(Path(constants.OUTPUT))
 
     logger.info(f"About to run workflow with {num_workers} workers")
 
@@ -83,7 +90,11 @@ def run_tasks(
             puppet_account_id
         )
 
-    build_params = dict(detailed_summary=True, workers=num_workers, log_level="INFO",)
+    build_params = dict(
+        detailed_summary=True,
+        workers=num_workers,
+        log_level=os.environ.get("LUIGI_LOG_LEVEL", constants.LUIGI_DEFAULT_LOG_LEVEL),
+    )
 
     if should_use_shared_scheduler:
         os.system(constants.START_SHARED_SCHEDULER_COMMAND)
@@ -92,6 +103,13 @@ def run_tasks(
 
     if should_use_shared_scheduler:
         logger.info(f"should_use_shared_scheduler: {should_use_shared_scheduler}")
+
+    if output_cache_starting_point != "":
+        dst = "GetSSMParamTask.zip"
+        urlretrieve(output_cache_starting_point, dst)
+        shutil.unpack_archive(
+            "GetSSMParamTask.zip", ".", "zip"
+        )
 
     run_result = luigi.build(tasks_to_run, **build_params)
 
@@ -105,13 +123,86 @@ def run_tasks(
         LuigiStatusCode.MISSING_EXT: 5,
     }
 
+    cache_invalidator = os.environ.get("SCT_CACHE_INVALIDATOR")
+
+    has_spoke_failures = False
+
+    if execution_mode == constants.EXECUTION_MODE_HUB:
+        logger.info("Checking spoke executions...")
+        all_run_deploy_in_spoke_tasks = glob(
+            f"output/RunDeployInSpokeTask/**/{cache_invalidator}.json", recursive=True,
+        )
+        n_all_run_deploy_in_spoke_tasks = len(all_run_deploy_in_spoke_tasks)
+        index = 0
+        for filename in all_run_deploy_in_spoke_tasks:
+            result = json.loads(open(filename, "r").read())
+            spoke_account_id = result.get("account_id")
+            build = result.get("build")
+            build_id = build.get("id")
+            logger.info(
+                f"[{index}/{n_all_run_deploy_in_spoke_tasks}] Checking spoke execution for account: {spoke_account_id} build: {build_id}"
+            )
+            index += 1
+            with betterboto_client.CrossAccountClientContextManager(
+                "codebuild",
+                config.get_puppet_role_arn(spoke_account_id),
+                f"{spoke_account_id}-{config.get_puppet_role_name()}",
+            ) as codebuild_client:
+                response = codebuild_client.batch_get_builds(ids=[build_id])
+                build = response.get("builds")[0]
+                while build.get("buildStatus") == "IN_PROGRESS":
+                    response = codebuild_client.batch_get_builds(ids=[build_id])
+                    build = response.get("builds")[0]
+                    time.sleep(10)
+                    logger.info("Current status: {}".format(build.get("buildStatus")))
+                if build.get("buildStatus") != "SUCCEEDED":
+                    has_spoke_failures = True
+                    params_for_results = dict(
+                        account_id=spoke_account_id, build_id=build_id
+                    )
+                    for ev in build.get("environment").get("environmentVariables", []):
+                        params_for_results[ev.get("name")] = ev.get("value")
+                    failure = dict(
+                        event_type="failure",
+                        task_type="RunDeployInSpokeTask",
+                        task_params=params_for_results,
+                        params_for_results=params_for_results,
+                        exception_type="<class 'Exception'>",
+                        exception_stack_trace=[
+                            f"Codebuild in spoke did not succeed: {build.get('buildStatus')}"
+                        ],
+                    )
+                    open(
+                        f"results/failure/RunDeployInSpokeTask-{spoke_account_id}.json",
+                        "w",
+                    ).write(json.dumps(failure))
+
+    dry_run_tasks = (
+        glob(
+            f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
+            recursive=True,
+        )
+        + glob(
+            f"output/TerminateProductDryRunTask/**/{cache_invalidator}.json",
+            recursive=True,
+        )
+        + glob(
+            f"output/ProvisionStackDryRunTask/**/{cache_invalidator}.json",
+            recursive=True,
+        )
+        + glob(
+            f"output/TerminateStackDryRunTask/**/{cache_invalidator}.json",
+            recursive=True,
+        )
+    )
+
     if is_list_launches:
         if is_list_launches == "table":
             table = [
                 [
                     "account_id",
                     "region",
-                    "launch",
+                    "launch/stack",
                     "portfolio",
                     "product",
                     "expected_version",
@@ -121,10 +212,7 @@ def run_tasks(
                 ]
             ]
 
-            for filename in glob(
-                f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
-                recursive=True,
-            ):
+            for filename in dry_run_tasks:
                 result = json.loads(open(filename, "r").read())
                 current_version = (
                     Color("{green}" + result.get("current_version") + "{/green}")
@@ -148,7 +236,9 @@ def run_tasks(
                     [
                         result.get("params").get("account_id"),
                         result.get("params").get("region"),
-                        result.get("params").get("launch_name"),
+                        f'Launch:{result.get("params").get("launch_name")}'
+                        if result.get("params").get("launch_name")
+                        else f'Stack:{result.get("params").get("stack_name")}',
                         result.get("params").get("portfolio"),
                         result.get("params").get("product"),
                         result.get("new_version"),
@@ -192,7 +282,7 @@ def run_tasks(
             table_data = [
                 [
                     "Result",
-                    "Launch",
+                    "Launch/Stack",
                     "Account",
                     "Region",
                     "Current Version",
@@ -201,31 +291,14 @@ def run_tasks(
                 ],
             ]
             table = terminaltables.AsciiTable(table_data)
-            for filename in glob(
-                f"output/TerminateProductDryRunTask/**/{cache_invalidator}.json",
-                recursive=True,
-            ):
+            for filename in dry_run_tasks:
                 result = json.loads(open(filename, "r").read())
                 table_data.append(
                     [
                         result.get("effect"),
-                        result.get("params").get("launch_name"),
-                        result.get("params").get("account_id"),
-                        result.get("params").get("region"),
-                        result.get("current_version"),
-                        result.get("new_version"),
-                        result.get("notes"),
-                    ]
-                )
-            for filename in glob(
-                f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
-                recursive=True,
-            ):
-                result = json.loads(open(filename, "r").read())
-                table_data.append(
-                    [
-                        result.get("effect"),
-                        result.get("params").get("launch_name"),
+                        f'Launch:{result.get("params").get("launch_name")}'
+                        if result.get("params").get("launch_name")
+                        else f'Stack:{result.get("params").get("stack_name")}',
                         result.get("params").get("account_id"),
                         result.get("params").get("region"),
                         result.get("current_version"),
@@ -321,6 +394,7 @@ def run_tasks(
                 logging.info(f"Finished sending {len(entries)} events to eventbridge")
 
     exit_status_code = exit_status_codes.get(run_result.status)
+
     if on_complete_url:
         logger.info(f"About to post results")
         if exit_status_code == 0:
@@ -348,11 +422,15 @@ def run_tasks(
     if running_exploded:
         pass
     else:
-        sys.exit(exit_status_code)
+        if has_spoke_failures:
+            sys.exit(1)
+        else:
+            sys.exit(exit_status_code)
 
 
 def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
     for result_type in [
+        "start",
         "failure",
         "success",
         "timeout",
@@ -367,7 +445,7 @@ def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
         local_scheduler=True,
         detailed_summary=True,
         workers=num_workers,
-        log_level="INFO",
+        log_level=os.environ.get("LUIGI_LOG_LEVEL", constants.LUIGI_DEFAULT_LOG_LEVEL),
     )
 
     for filename in glob("results/failure/*.json"):
@@ -387,4 +465,5 @@ def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
         LuigiStatusCode.NOT_RUN: 4,
         LuigiStatusCode.MISSING_EXT: 5,
     }
+
     sys.exit(exit_status_codes.get(run_result.status))

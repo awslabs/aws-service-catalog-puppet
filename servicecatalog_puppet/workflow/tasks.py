@@ -1,20 +1,22 @@
+#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import json
+import logging
+import math
 import os
 import traceback
 from pathlib import Path
 
 import luigi
+import psutil
 from betterboto import client as betterboto_client
-from luigi.contrib import s3
 from luigi import format
+from luigi.contrib import s3
 
 from servicecatalog_puppet import constants, config
-import psutil
-import logging
-import math
 
-logger = logging.getLogger("tasks")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
 def unwrap(what):
@@ -29,6 +31,126 @@ def unwrap(what):
 
 
 class PuppetTask(luigi.Task):
+    @property
+    def executor_account_id(self):
+        return os.environ.get("EXECUTOR_ACCOUNT_ID")
+
+    @property
+    def execution_mode(self):
+        return os.environ.get("SCT_EXECUTION_MODE", constants.EXECUTION_MODE_HUB)
+
+    @property
+    def spoke_execution_mode_deploy_env(self):
+        return os.environ.get(
+            "SPOKE_EXECUTION_MODE_DEPLOY_ENV",
+            constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_DEFAULT,
+        )
+
+    @property
+    def should_delete_rollback_complete_stacks(self):
+        return (
+            str(
+                os.environ.get(
+                    "SCT_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS",
+                    constants.CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS_DEFAULT,
+                )
+            ).upper()
+            == "TRUE"
+        )
+
+    def is_running_in_spoke(self):
+        return self.execution_mode == constants.EXECUTION_MODE_SPOKE
+
+    @property
+    def single_account(self):
+        return os.environ.get("SCT_SINGLE_ACCOUNT", "None")
+
+    @property
+    def should_use_product_plans(self):
+        if self.execution_mode == constants.EXECUTION_MODE_HUB:
+            return os.environ.get("SCT_SHOULD_USE_PRODUCT_PLANS", "True") == "True"
+        else:
+            return False
+
+    @property
+    def cache_invalidator(self):
+        return os.environ.get("SCT_CACHE_INVALIDATOR", "NOW")
+
+    @property
+    def is_dry_run(self):
+        return os.environ.get("SCT_IS_DRY_RUN", "False") == "True"
+
+    @property
+    def should_use_sns(self):
+        return os.environ.get("SCT_SHOULD_USE_SNS", "False") == "True"
+
+    def get_account_used(self):
+        return self.account_id if self.is_running_in_spoke() else self.puppet_account_id
+
+    def spoke_client(self, service):
+        kwargs = dict()
+        if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
+            kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
+        return betterboto_client.CrossAccountClientContextManager(
+            service,
+            config.get_puppet_role_arn(self.account_id),
+            f"{self.account_id}-{config.get_puppet_role_name()}",
+            **kwargs,
+        )
+
+    def spoke_regional_client(self, service, region_name=None):
+        region = region_name or self.region
+        kwargs = dict(region_name=region)
+        if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
+            kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
+
+        return betterboto_client.CrossAccountClientContextManager(
+            service,
+            config.get_puppet_role_arn(self.account_id),
+            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
+            **kwargs,
+        )
+
+    def hub_client(self, service):
+        kwargs = dict()
+        if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
+            kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
+        if self.is_running_in_spoke():
+            return betterboto_client.CrossAccountClientContextManager(
+                service,
+                config.get_puppet_role_arn(self.executor_account_id),
+                f"{self.executor_account_id}-{config.get_puppet_role_name()}",
+                **kwargs,
+            )
+        else:
+            return betterboto_client.CrossAccountClientContextManager(
+                service,
+                config.get_puppet_role_arn(self.puppet_account_id),
+                f"{self.puppet_account_id}-{config.get_puppet_role_name()}",
+                **kwargs,
+            )
+
+    def hub_regional_client(self, service, region_name=None):
+        region = region_name or self.region
+        kwargs = dict(region_name=region)
+        if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
+            kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
+
+        if self.is_running_in_spoke():
+            return betterboto_client.CrossAccountClientContextManager(
+                service,
+                config.get_puppet_role_arn(self.executor_account_id),
+                f"{self.executor_account_id}-{config.get_puppet_role_name()}",
+                **kwargs,
+            )
+        else:
+            return betterboto_client.CrossAccountClientContextManager(
+                service,
+                config.get_puppet_role_arn(self.puppet_account_id),
+                f"{self.puppet_account_id}-{region}-{config.get_puppet_role_name()}",
+                **kwargs,
+            )
+
     def read_from_input(self, input_name):
         with self.input().get(input_name).open("r") as f:
             return f.read()
@@ -39,6 +161,9 @@ class PuppetTask(luigi.Task):
     def info(self, message):
         logger.info(f"{self.uid}: {message}")
 
+    def debug(self, message):
+        logger.debug(f"{self.uid}: {message}")
+
     def error(self, message):
         logger.error(f"{self.uid}: {message}")
 
@@ -48,24 +173,45 @@ class PuppetTask(luigi.Task):
     def api_calls_used(self):
         return []
 
+    def resources_used(self):
+        return []
+
     @property
     def resources(self):
         result = {}
-        for a in self.api_calls_used():
-            result[a] = 1
+        api_calls = self.api_calls_used()
+        if isinstance(api_calls, list):
+            for a in self.api_calls_used():
+                result[a] = 1
+        elif isinstance(api_calls, dict):
+            for a, r in api_calls.items():
+                result[a] = r
+
+        for i, r in self.resources_used():
+            result[f"{i}-{r.name}"] = 1 / r.value
         return result
 
     @property
     def output_location(self):
         puppet_account_id = config.get_puppet_account_id()
         path = f"output/{self.uid}.{self.output_suffix}"
-        if config.is_caching_enabled(puppet_account_id):
+        should_use_s3_target_if_caching_is_on = (
+            "cache_invalidator" not in self.params_for_results_display().keys()
+        )
+        if should_use_s3_target_if_caching_is_on and config.is_caching_enabled(
+            puppet_account_id
+        ):
             return f"s3://sc-puppet-caching-bucket-{config.get_puppet_account_id()}-{config.get_home_region(puppet_account_id)}/{path}"
         else:
             return path
 
     def output(self):
-        if config.is_caching_enabled(config.get_puppet_account_id()):
+        should_use_s3_target_if_caching_is_on = (
+            "cache_invalidator" not in self.params_for_results_display().keys()
+        )
+        if should_use_s3_target_if_caching_is_on and config.is_caching_enabled(
+            config.get_puppet_account_id()
+        ):
             return s3.S3Target(self.output_location, format=format.UTF8)
         else:
             return luigi.LocalTarget(self.output_location)
@@ -81,13 +227,18 @@ class PuppetTask(luigi.Task):
     def params_for_results_display(self):
         return {}
 
-    def write_output(self, content):
+    def write_output(self, content, skip_json_dump=False):
         with self.output().open("w") as f:
-            f.write(json.dumps(content, indent=4, default=str,))
+            if skip_json_dump:
+                f.write(content)
+            else:
+                f.write(json.dumps(content, indent=4, default=str,))
 
     @property
     def node_id(self):
-        values = [str(v) for v in self.params_for_results_display().values()]
+        values = [self.__class__.__name__.replace("Task", "")] + [
+            str(v) for v in self.params_for_results_display().values()
+        ]
         return "/".join(values)
 
     def graph_node(self):
@@ -97,57 +248,6 @@ class PuppetTask(luigi.Task):
             task_description += f"<br/>{param}: {value}"
         label = f"<b>{task_friendly_name}</b>{task_description}"
         return f'"{self.node_id}" [fillcolor=lawngreen style=filled label= < {label} >]'
-
-    def get_lines(self, haystack):
-        lines = []
-        if isinstance(haystack, list):
-            for i in haystack:
-                lines += self.get_lines(i)
-        elif isinstance(haystack, dict):
-            for i in haystack.values():
-                lines += self.get_lines(i)
-        else:
-            lines.append(f'"{self.node_id}" -> "{haystack.node_id}"')
-        return lines
-
-    def get_graph_lines(self):
-        return self.get_lines(self.requires())
-
-
-class GetSSMParamTask(PuppetTask):
-    parameter_name = luigi.Parameter()
-    name = luigi.Parameter()
-    region = luigi.Parameter(default=None)
-
-    cache_invalidator = luigi.Parameter()
-
-    def params_for_results_display(self):
-        return {
-            "parameter_name": self.parameter_name,
-            "name": self.name,
-            "region": self.region,
-            "cache_invalidator": self.cache_invalidator,
-        }
-
-    def api_calls_used(self):
-        return ["ssm.get_parameter"]
-
-    def run(self):
-        with betterboto_client.ClientContextManager(
-            "ssm", region_name=self.region
-        ) as ssm:
-            try:
-                p = ssm.get_parameter(Name=self.name,)
-                self.write_output(
-                    {
-                        "Name": self.name,
-                        "Region": self.region,
-                        "Value": p.get("Parameter").get("Value"),
-                        "Version": p.get("Parameter").get("Version"),
-                    }
-                )
-            except ssm.exceptions.ParameterNotFound as e:
-                raise e
 
 
 def record_event(event_type, task, extra_event_data=None):
@@ -190,6 +290,16 @@ def print_stats():
     )
 
 
+@luigi.Task.event_handler(luigi.Event.START)
+def on_task_start(task):
+    task_name = task.__class__.__name__
+    to_string = f"{task_name}: "
+    for name, value in task.param_kwargs.items():
+        to_string += f"{name}={value}, "
+    logger.info(f"{to_string} started")
+    record_event("start", task)
+
+
 @luigi.Task.event_handler(luigi.Event.SUCCESS)
 def on_task_success(task):
     print_stats()
@@ -226,40 +336,34 @@ def on_task_processing_time(task, duration):
         "cloudwatch-puppethub",
     ) as cloudwatch:
 
-        dimensions = [dict(Name="task_type", Value=task.__class__.__name__,)]
+        dimensions = [
+            dict(Name="task_type", Value=task.__class__.__name__,),
+            dict(
+                Name="codebuild_build_id",
+                Value=os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD"),
+            ),
+        ]
         for note_worthy in [
             "launch_name",
             "region",
             "account_id",
             "puppet_account_id",
-            "sharing_mode",
             "portfolio",
             "product",
             "version",
-            "execution",
         ]:
             if task_params.get(note_worthy):
                 dimensions.append(
-                    dict(Name=note_worthy, Value=task_params.get(note_worthy))
+                    dict(Name=str(note_worthy), Value=str(task_params.get(note_worthy)))
                 )
 
         cloudwatch.put_metric_data(
-            Namespace=f"ServiceCatalogTools/Puppet/v1/ProcessingTime/{task.__class__.__name__}",
-            MetricData=[
-                dict(
-                    MetricName=task.__class__.__name__,
-                    Dimensions=dimensions,
-                    Value=duration,
-                    Unit="Seconds",
-                ),
-            ],
-        )
-        cloudwatch.put_metric_data(
-            Namespace=f"ServiceCatalogTools/Puppet/v1/ProcessingTime/Tasks",
+            Namespace=f"ServiceCatalogTools/Puppet/v2/ProcessingTime/Tasks",
             MetricData=[
                 dict(
                     MetricName="Tasks",
-                    Dimensions=[dict(Name="TaskType", Value=task.__class__.__name__)],
+                    Dimensions=[dict(Name="TaskType", Value=task.__class__.__name__)]
+                    + dimensions,
                     Value=duration,
                     Unit="Seconds",
                 ),

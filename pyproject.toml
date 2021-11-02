@@ -3,7 +3,7 @@
 
 [tool.poetry]
 name = "aws-service-catalog-puppet"
-version = "0.101.3"
+version = "0.131.0"
 description = "Making it easier to deploy ServiceCatalog products"
 classifiers = ["Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "Programming Language :: Python :: 3", "License :: OSI Approved :: Apache Software License", "Operating System :: OS Independent", "Natural Language :: English"]
 homepage = "https://service-catalog-tools-workshop.com/"
@@ -22,15 +22,12 @@ servicecatalog-puppet = "servicecatalog_puppet.cli:cli"
 issues = "https://github.com/awslabs/aws-service-catalog-puppet-framework/issues"
 
 [tool.poetry.dev-dependencies]
-pytest = ">=5.3.2"
-pytest-cov = "^2.10.0"
 codecov = "^2.1.7"
-pytest-mock = "^3.1.1"
-pytest-datadir = "^1.3.1"
 behave = "^1.2.6"
 pylint = "^2.5.3"
 black = "^19.10b0"
 pycodestyle = "^2.6.0"
+nose2 = "^0.10.0"
 
 [tool.dephell.main]
 versioning = "semver"
@@ -40,18 +37,21 @@ to = {format = "poetry", path = "pyproject.toml"}
 
 [tool.poetry.dependencies]
 python = ">=3.7,<4" 
-requests = "==2.22.0"
+requests = "2.26.0"
 pyyaml = "==5.4"
 jinja2 = "==2.11.3"
 click = "==7.0"
 boto3 = "1.16.56"
-pykwalify = "==1.7.0"
-better-boto = "0.35.0"
+better-boto = "0.42.0"
 terminaltables = "==3.1.0"
 colorclass = "==2.2.0"
 luigi = "3.0.2"
 psutil = "==5.7.0"
 cfn-flip = "==1.2.3"
 networkx = "^2.5"
-troposphere = "^2.6.3"
-awacs = "^1.0.2"
+troposphere = "3.1.0"
+awacs = "2.0.2"
+jmespath = "^0.10.0"
+deepdiff = "^5.3.0"
+deepmerge = "^0.2.1"
+yamale = "^3.0.8"
