@@ -47,9 +47,9 @@ The file containing the account or ou should be structured like this:
 
 .. code-block:: yaml
 
-    account_id: '753572411233'
+    account_id: '<AccountID>'
     default_region: eu-west-1
-    name: '753572411233'
+    name: '<AccountID>'
     regions_enabled:
       - eu-west-1
       - eu-west-2
@@ -98,7 +98,7 @@ The file containing the launch should be structured like this:
     version: v1
     parameters:
       SecurityAccountId:
-        default: '753572411233'
+        default: '<AccountID>'
     deploy_to:
       tags:
         - regions: default_region
@@ -329,3 +329,46 @@ depends_on or deploy_to.tags that do not exist.
 .. note::
 
     This only works with the non expanded manifest file
+
+
+export-full-puppet-stats
+--------------------
+
+.. note::
+
+    This was added in version 0.132.0
+
+The export-full-puppet-stats command will query the AWS CodeBuild APIs to gather the statistics for every execution of the 
+project "servicecatalog-puppet-deploy". This data will be saved to the local filesystem in the chosen output format, 
+for subsequent analysis via external tools.
+
+.. code-block:: bash
+
+    servicecatalog-puppet export-full-puppet-stats -f <output_type>
+
+.. note::
+
+    If using Excel to analyze the data stored in CSV format, the "X Y" chart type provides a suitable visualization of build
+    duration over time.
+
+
+export-singleaccount-stats
+--------------------
+
+.. note::
+
+    This was added in version 0.132.0
+
+The export-singleaccount-stats command will query the AWS CodeBuild APIs to gather the statistics for every execution of the 
+project "servicecatalog-puppet-single-account-run". This data will be saved to the local filesystem in the chosen output format, 
+for subsequent analysis via external tools.
+
+.. code-block:: bash
+
+    servicecatalog-puppet export-singleaccount-stats -f <output_type>
+
+.. note::
+
+    If using Excel to analyze the data stored in CSV format, the "X Y" chart type provides a suitable visualization of build
+    duration over time.
+
