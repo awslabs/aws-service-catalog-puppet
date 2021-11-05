@@ -65,3 +65,7 @@ validate:
 list-launches:
 	time poetry run servicecatalog-puppet --info list-launches \
 		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
+
+## @puppet_commands Runs servicecatalog-puppet --info show-pipelines
+show-pipelines:
+	poetry run servicecatalog-puppet --info show-pipelines
