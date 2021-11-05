@@ -491,15 +491,14 @@ def validate(f):
 def version():
     version_commands.version()
 
-@cli.command()
-@click.option("--format", "-f", type=click.Choice(["csv"]), default="csv")
-def export_full_puppet_stats(format):
-    export_stats_commands.export_full_stats()
 
 @cli.command()
-@click.option("--format", "-f", type=click.Choice(["csv"]), default="csv")
-def export_singleaccount_stats(format):
-    export_stats_commands.export_singleaccount_stats()
+@click.option("--filter", type=click.Choice(["none", "single-runs", "full-runs"]), default="none")
+@click.option("--format", type=click.Choice(["csv", "json"]), default="csv")
+@click.option("--limit", type=click.INT, default=20)
+def show_codebuilds(filter, format, limit):
+    export_stats_commands.export_stats(filter, limit, format)
+
 
 @cli.command()
 @click.argument("p", type=click.Path(exists=True))
