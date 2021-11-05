@@ -215,7 +215,7 @@ PUPPET_LOGGER_NAME = "puppet-logger"
 SPOKE_EXECUTION_MODE_DEPLOY_ENV_PARAMETER_NAME = "/servicecatalog-puppet/spoke/deploy-environment-compute-type"
 SPOKE_EXECUTION_MODE_DEPLOY_ENV_DEFAULT = "BUILD_GENERAL1_SMALL"
 
-
+STATIC_HTML_PAGE = "static-html-page.html"
 
 CODEBUILD_PROJECT_NAME_FULL_PIPELINE = 'servicecatalog-puppet-deploy'
 CODEBUILD_PROJECT_NAME_SINGLE_ACCOUNT = 'servicecatalog-puppet-single-account-run'

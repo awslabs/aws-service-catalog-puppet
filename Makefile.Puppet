@@ -73,3 +73,8 @@ export-full-puppet-stats:
 ## @Puppet_commands Runs servicecatalog-puppet codebuild single-account export functionality
 export-singleaccount-stats:
 	poetry run servicecatalog-puppet export-singleaccount-stats -f csv
+
+## @puppet_commands Runs servicecatalog-puppet --info show-pipelines
+show-pipelines:
+	poetry run servicecatalog-puppet --info show-pipelines
+

@@ -17,6 +17,7 @@ from servicecatalog_puppet.commands import graph as graph_commands
 from servicecatalog_puppet.commands import management as management_commands
 from servicecatalog_puppet.commands import manifest as manifest_commands
 from servicecatalog_puppet.commands import misc as misc_commands
+from servicecatalog_puppet.commands import show_pipelines as show_pipelines_commands
 from servicecatalog_puppet.commands import orgs as orgs_commands
 from servicecatalog_puppet.commands import spoke_management as spoke_management_commands
 from servicecatalog_puppet.commands import version as version_commands
@@ -633,6 +634,12 @@ def wait_for_parameterised_run_to_complete(on_complete_url):
     else:
         click.echo(f"Finished: 'FAILED'")
         sys.exit(1)
+
+
+@cli.command()
+@click.option("--format", "-f", type=click.Choice(["table", "json", "html"]), default="table")
+def show_pipelines(format):
+    show_pipelines_commands.show_pipelines(format)
 
 
 if __name__ == "__main__":

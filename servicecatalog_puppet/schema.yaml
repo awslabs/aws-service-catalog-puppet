@@ -188,8 +188,14 @@ spoke-local-portfolio:
 constraints:
   launch: list(include('constraints_launch'))
 
-constraints_launch:
+constraints_launch: any(include('constraints_launch_for_product'), include('constraints_launch_for_products'))
+
+constraints_launch_for_product:
   product: str()
+  roles: list(include('constraints_launch_role_arns'))
+
+constraints_launch_for_products:
+  products: list(str())
   roles: list(include('constraints_launch_role_arns'))
 
 associations_arns: str()
