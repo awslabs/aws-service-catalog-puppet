@@ -27,5 +27,3 @@ parameters.yaml
 htmlcov/
 coverage.xml
 .DS_Store
-build_details_full.csv
-build_details_single.csv
