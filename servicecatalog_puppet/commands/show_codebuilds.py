@@ -94,7 +94,7 @@ def sort_and_trim(what, limit):
     return result[:limit]
 
 
-def export_stats(filter, limit, format):
+def show_codebuilds(filter, limit, format):
     """
     Exports the CodeBuild job statistics to CSV for the single account Puppet execution
     """

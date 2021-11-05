@@ -21,7 +21,7 @@ from servicecatalog_puppet.commands import show_pipelines as show_pipelines_comm
 from servicecatalog_puppet.commands import orgs as orgs_commands
 from servicecatalog_puppet.commands import spoke_management as spoke_management_commands
 from servicecatalog_puppet.commands import version as version_commands
-from servicecatalog_puppet.commands import export_stats as export_stats_commands
+from servicecatalog_puppet.commands import show_codebuilds as show_codebuilds_commands
 
 
 @click.group()
@@ -497,7 +497,7 @@ def version():
 @click.option("--format", type=click.Choice(["csv", "json"]), default="csv")
 @click.option("--limit", type=click.INT, default=20)
 def show_codebuilds(filter, format, limit):
-    export_stats_commands.export_stats(filter, limit, format)
+    show_codebuilds_commands.show_codebuilds(filter, limit, format)
 
 
 @cli.command()

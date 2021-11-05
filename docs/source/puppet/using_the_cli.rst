@@ -331,44 +331,28 @@ depends_on or deploy_to.tags that do not exist.
     This only works with the non expanded manifest file
 
 
-export-full-puppet-stats
---------------------
+show-codebuilds
+---------------
 
 .. note::
 
-    This was added in version 0.132.0
+    This was added in version 0.133.0
 
-The export-full-puppet-stats command will query the AWS CodeBuild APIs to gather the statistics for every execution of the 
-project "servicecatalog-puppet-deploy". This data will be saved to the local filesystem in the chosen output format, 
-for subsequent analysis via external tools.
+The show-codebuilds command will query the AWS CodeBuild APIs to gather the statistics for every execution of the
+AWS CodeBuild projects used by the solution.
 
 .. code-block:: bash
 
-    servicecatalog-puppet export-full-puppet-stats -f <output_type>
+    servicecatalog-puppet show-codebuilds
+
+The following options are available for the command:
+
+
+--filter - you can filter for single-runs, full-runs or none
+--format - you can output as csv or json format
+--limit - you can limit the number of results you want to be returned
 
 .. note::
 
     If using Excel to analyze the data stored in CSV format, the "X Y" chart type provides a suitable visualization of build
     duration over time.
-
-
-export-singleaccount-stats
---------------------
-
-.. note::
-
-    This was added in version 0.132.0
-
-The export-singleaccount-stats command will query the AWS CodeBuild APIs to gather the statistics for every execution of the 
-project "servicecatalog-puppet-single-account-run". This data will be saved to the local filesystem in the chosen output format, 
-for subsequent analysis via external tools.
-
-.. code-block:: bash
-
-    servicecatalog-puppet export-singleaccount-stats -f <output_type>
-
-.. note::
-
-    If using Excel to analyze the data stored in CSV format, the "X Y" chart type provides a suitable visualization of build
-    duration over time.
-
