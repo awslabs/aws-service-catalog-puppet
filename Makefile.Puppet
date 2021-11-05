@@ -66,6 +66,15 @@ list-launches:
 	time poetry run servicecatalog-puppet --info list-launches \
 		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
 
+## @Puppet_commands Runs servicecatalog-puppet codebuild full-pipeline export functionality
+export-full-puppet-stats:
+	poetry run servicecatalog-puppet export-full-puppet-stats -f csv
+
+## @Puppet_commands Runs servicecatalog-puppet codebuild single-account export functionality
+export-singleaccount-stats:
+	poetry run servicecatalog-puppet export-singleaccount-stats -f csv
+
 ## @puppet_commands Runs servicecatalog-puppet --info show-pipelines
 show-pipelines:
 	poetry run servicecatalog-puppet --info show-pipelines
+

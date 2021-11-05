@@ -21,6 +21,7 @@ from servicecatalog_puppet.commands import show_pipelines as show_pipelines_comm
 from servicecatalog_puppet.commands import orgs as orgs_commands
 from servicecatalog_puppet.commands import spoke_management as spoke_management_commands
 from servicecatalog_puppet.commands import version as version_commands
+from servicecatalog_puppet.commands import export_stats as export_stats_commands
 
 
 @click.group()
@@ -490,6 +491,15 @@ def validate(f):
 def version():
     version_commands.version()
 
+@cli.command()
+@click.option("--format", "-f", type=click.Choice(["csv"]), default="csv")
+def export_full_puppet_stats(format):
+    export_stats_commands.export_full_stats()
+
+@cli.command()
+@click.option("--format", "-f", type=click.Choice(["csv"]), default="csv")
+def export_singleaccount_stats(format):
+    export_stats_commands.export_singleaccount_stats()
 
 @cli.command()
 @click.argument("p", type=click.Path(exists=True))
