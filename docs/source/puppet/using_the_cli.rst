@@ -47,9 +47,9 @@ The file containing the account or ou should be structured like this:
 
 .. code-block:: yaml
 
-    account_id: '753572411233'
+    account_id: '<AccountID>'
     default_region: eu-west-1
-    name: '753572411233'
+    name: '<AccountID>'
     regions_enabled:
       - eu-west-1
       - eu-west-2
@@ -98,7 +98,7 @@ The file containing the launch should be structured like this:
     version: v1
     parameters:
       SecurityAccountId:
-        default: '753572411233'
+        default: '<AccountID>'
     deploy_to:
       tags:
         - regions: default_region
@@ -329,3 +329,30 @@ depends_on or deploy_to.tags that do not exist.
 .. note::
 
     This only works with the non expanded manifest file
+
+
+show-codebuilds
+---------------
+
+.. note::
+
+    This was added in version 0.133.0
+
+The show-codebuilds command will query the AWS CodeBuild APIs to gather the statistics for every execution of the
+AWS CodeBuild projects used by the solution.
+
+.. code-block:: bash
+
+    servicecatalog-puppet show-codebuilds
+
+The following options are available for the command:
+
+
+--filter - you can filter for single-runs, full-runs or none
+--format - you can output as csv or json format
+--limit - you can limit the number of results you want to be returned
+
+.. note::
+
+    If using Excel to analyze the data stored in CSV format, the "X Y" chart type provides a suitable visualization of build
+    duration over time.
