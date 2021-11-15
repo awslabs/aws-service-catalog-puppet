@@ -30,9 +30,7 @@ def get_template(
     is_codestarsourceconnection = (
         source.get("Provider", "").lower() == "codestarsourceconnection"
     )
-    is_custom = (
-        source.get("Provider", "").lower() == "custom"
-    )
+    is_custom = source.get("Provider", "").lower() == "custom"
     is_s3 = source.get("Provider", "").lower() == "s3"
     description = f"""Bootstrap template used to bring up the main ServiceCatalog-Puppet AWS CodePipeline with dependencies
 {{"version": "{puppet_version}", "framework": "servicecatalog-puppet", "role": "bootstrap-master"}}"""

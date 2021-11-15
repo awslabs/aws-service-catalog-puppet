@@ -199,7 +199,9 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
         cached_output_signed_url = None
         if self.input().get("parameters") or self.input().get("parameter_by_paths"):
 
-            with zipfile.ZipFile("output/GetSSMParamTask.zip", "w", zipfile.ZIP_DEFLATED) as zip:
+            with zipfile.ZipFile(
+                "output/GetSSMParamTask.zip", "w", zipfile.ZIP_DEFLATED
+            ) as zip:
                 files = glob.glob("output/GetSSMParam*/**", recursive=True)
                 for filename in files:
                     zip.write(filename, filename)

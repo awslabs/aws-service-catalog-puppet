@@ -292,7 +292,11 @@ def bootstrap_spokes_in_ou(
 @click.option("--owner")
 @click.option("--repo")
 @click.option("--branch")
-@click.option("--poll-for-source-changes/--no-poll-for-source-changes", default=True, envvar="SCT_POLL_FOR_SOURCE_CHANGES")
+@click.option(
+    "--poll-for-source-changes/--no-poll-for-source-changes",
+    default=True,
+    envvar="SCT_POLL_FOR_SOURCE_CHANGES",
+)
 @click.option("--webhook-secret")
 @click.option("--puppet-role-name", default="PuppetRole", envvar="PUPPET_ROLE_NAME")
 @click.option(
@@ -318,8 +322,7 @@ def bootstrap_spokes_in_ou(
     envvar="SCT_SHOULD_VALIDATE",
 )
 @click.option(
-    "--custom-source-action-git-url",
-    envvar="SCM_CUSTOM_SOURCE_ACTION_GIT_URL",
+    "--custom-source-action-git-url", envvar="SCM_CUSTOM_SOURCE_ACTION_GIT_URL",
 )
 @click.option(
     "--custom-source-action-git-web-hook-ip-address",
@@ -398,12 +401,10 @@ def bootstrap(
         scm_object_key=None,
         scm_skip_creation_of_repo=not create_repo,
         should_validate=should_validate,
-
         custom_source_action_git_url=None,
         custom_source_action_git_web_hook_ip_address=None,
         custom_source_action_custom_action_type_version=None,
         custom_source_action_custom_action_type_provider=None,
-
     )
     if source_provider == "CodeCommit":
         parameters.update(dict(repo=repository_name, branch=branch_name,))
@@ -493,7 +494,9 @@ def version():
 
 
 @cli.command()
-@click.option("--filter", type=click.Choice(["none", "single-runs", "full-runs"]), default="none")
+@click.option(
+    "--filter", type=click.Choice(["none", "single-runs", "full-runs"]), default="none"
+)
 @click.option("--format", type=click.Choice(["csv", "json"]), default="csv")
 @click.option("--limit", type=click.INT, default=20)
 def show_codebuilds(filter, format, limit):
@@ -636,7 +639,9 @@ def wait_for_parameterised_run_to_complete(on_complete_url):
 
 
 @cli.command()
-@click.option("--format", "-f", type=click.Choice(["table", "json", "html"]), default="table")
+@click.option(
+    "--format", "-f", type=click.Choice(["table", "json", "html"]), default="table"
+)
 def show_pipelines(format):
     show_pipelines_commands.show_pipelines(format)
 
