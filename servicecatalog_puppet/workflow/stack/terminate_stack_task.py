@@ -26,6 +26,7 @@ class TerminateStackTask(
     version_id = luigi.Parameter()
 
     launch_name = luigi.Parameter()
+    stack_set_name = luigi.Parameter()
     capabilities = luigi.ListParameter()
 
     use_service_role = luigi.BoolParameter()
@@ -61,9 +62,7 @@ class TerminateStackTask(
     @property
     @functools.lru_cache(maxsize=32)
     def stack_name_to_use(self):
-        if self.launch_name == "":
-            return self.stack_name
-        else:
+        if self.launch_name != "":
             with self.spoke_regional_client("servicecatalog") as servicecatalog:
                 try:
                     pp_id = (
@@ -82,6 +81,17 @@ class TerminateStackTask(
                     else:
                         raise e
                 return f"SC-{self.account_id}-{pp_id}"
+
+        elif self.stack_set_name != "":
+            with self.spoke_regional_client("cloudformation") as cloudformation:
+                paginator = cloudformation.get_paginator('list_stacks')
+                for page in paginator.paginate():
+                    for summary in page.get("StackSummaries", []):
+                        if summary.get("StackName").startswith(f"StackSet-{self.stack_set_name}-"):
+                            return summary.get("StackName")
+                raise Exception(f"Could not find a stack beginning with StackSet-{self.stack_set_name}- in {self.region} of {self.account_id}")
+
+        return self.stack_name
 
     def run(self):
         if self.execution == constants.EXECUTION_MODE_HUB:

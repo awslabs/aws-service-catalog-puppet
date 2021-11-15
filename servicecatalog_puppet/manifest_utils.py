@@ -445,6 +445,7 @@ class Manifest(dict):
                 puppet_account_id=puppet_account_id,
                 stack_name=item_name,
                 launch_name=item.get("launch_name", ""),
+                stack_set_name=item.get("stack_set_name", ""),
                 launch_parameters=item.get("parameters", {}),
                 capabilities=item.get("capabilities", []),
                 manifest_parameters=self.get("parameters", {}),
