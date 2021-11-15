@@ -71,8 +71,8 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
                 "value": self.puppet_account_id,
                 "type": "PLAINTEXT",
             },
-            {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT", },
-            {"name": "REGIONS", "value": ",".join(regions), "type": "PLAINTEXT", },
+            {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
+            {"name": "REGIONS", "value": ",".join(regions), "type": "PLAINTEXT",},
             {
                 "name": "SHOULD_COLLECT_CLOUDFORMATION_EVENTS",
                 "value": str(should_collect_cloudformation_events),

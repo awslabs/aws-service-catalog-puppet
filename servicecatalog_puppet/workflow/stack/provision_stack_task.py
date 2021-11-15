@@ -32,6 +32,7 @@ class ProvisionStackTask(
     version_id = luigi.Parameter()
 
     launch_name = luigi.Parameter()
+    stack_set_name = luigi.Parameter()
     capabilities = luigi.ListParameter()
 
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
@@ -97,14 +98,16 @@ class ProvisionStackTask(
             apis.append(
                 f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}"
             )
+        if self.stack_set_name != "":
+            apis.append(
+                f"cloudformation.list_stacks_{self.account_id}_{self.region}"
+            )
         return apis
 
     @property
     @functools.lru_cache(maxsize=32)
     def stack_name_to_use(self):
-        if self.launch_name == "":
-            return self.stack_name
-        else:
+        if self.launch_name != "":
             with self.spoke_regional_client("servicecatalog") as servicecatalog:
                 try:
                     pp_id = (
@@ -123,6 +126,17 @@ class ProvisionStackTask(
                     else:
                         raise e
                 return f"SC-{self.account_id}-{pp_id}"
+
+        elif self.stack_set_name != "":
+            with self.spoke_regional_client("cloudformation") as cloudformation:
+                paginator = cloudformation.get_paginator('list_stacks')
+                for page in paginator.paginate():
+                    for summary in page.get("StackSummaries", []):
+                        if summary.get("StackName").startswith(f"StackSet-{self.stack_set_name}-"):
+                            return summary.get("StackName")
+                raise Exception(f"Could not find a stack beginning with StackSet-{self.stack_set_name}- in {self.region} of {self.account_id}")
+
+        return self.stack_name
 
     def ensure_stack_is_in_complete_status(self):
         current_stack = dict(StackStatus="DoesntExist")
