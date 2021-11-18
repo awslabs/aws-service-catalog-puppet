@@ -84,12 +84,16 @@ class TerminateStackTask(
 
         elif self.stack_set_name != "":
             with self.spoke_regional_client("cloudformation") as cloudformation:
-                paginator = cloudformation.get_paginator('list_stacks')
+                paginator = cloudformation.get_paginator("list_stacks")
                 for page in paginator.paginate():
                     for summary in page.get("StackSummaries", []):
-                        if summary.get("StackName").startswith(f"StackSet-{self.stack_set_name}-"):
+                        if summary.get("StackName").startswith(
+                            f"StackSet-{self.stack_set_name}-"
+                        ):
                             return summary.get("StackName")
-                raise Exception(f"Could not find a stack beginning with StackSet-{self.stack_set_name}- in {self.region} of {self.account_id}")
+                raise Exception(
+                    f"Could not find a stack beginning with StackSet-{self.stack_set_name}- in {self.region} of {self.account_id}"
+                )
 
         return self.stack_name
 
