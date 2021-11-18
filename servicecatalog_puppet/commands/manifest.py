@@ -53,13 +53,21 @@ def expand(f, puppet_account_id, single_account, subset=None):
             manifest_utils.Manifest(new_manifest), subset
         )
 
-    manifest_accounts_all = [a.get("account_id") for a in new_manifest.get("accounts", [])]
-    manifest_accounts_excluding = manifest_accounts_all.copy()
-    manifest_accounts_excluding.remove(puppet_account_id)
+    manifest_accounts_all = [
+        {"account_id": a.get("account_id"), "email": a.get("email")}
+        for a in new_manifest.get("accounts", [])
+    ]
+    manifest_accounts_excluding = [
+        a for a in manifest_accounts_all if a.get("account_id") != puppet_account_id
+    ]
 
     dumped = json.dumps(new_manifest)
-    dumped = dumped.replace("${AWS::ManifestAccountsAll}", ",".join(manifest_accounts_all))
-    dumped = dumped.replace("${AWS::ManifestAccountsSpokes}", ",".join(manifest_accounts_excluding))
+    dumped = dumped.replace(
+        "${AWS::ManifestAccountsAll}", json.dumps(manifest_accounts_all).replace('"', '\\"')
+    )
+    dumped = dumped.replace(
+        "${AWS::ManifestAccountsSpokes}", json.dumps(manifest_accounts_excluding).replace('"', '\\"')
+    )
     new_manifest = json.loads(dumped)
 
     if new_manifest.get(constants.LAMBDA_INVOCATIONS) is None:

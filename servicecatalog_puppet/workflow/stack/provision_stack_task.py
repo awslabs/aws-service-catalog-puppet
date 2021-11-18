@@ -99,9 +99,7 @@ class ProvisionStackTask(
                 f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}"
             )
         if self.stack_set_name != "":
-            apis.append(
-                f"cloudformation.list_stacks_{self.account_id}_{self.region}"
-            )
+            apis.append(f"cloudformation.list_stacks_{self.account_id}_{self.region}")
         return apis
 
     @property
@@ -129,12 +127,16 @@ class ProvisionStackTask(
 
         elif self.stack_set_name != "":
             with self.spoke_regional_client("cloudformation") as cloudformation:
-                paginator = cloudformation.get_paginator('list_stacks')
+                paginator = cloudformation.get_paginator("list_stacks")
                 for page in paginator.paginate():
                     for summary in page.get("StackSummaries", []):
-                        if summary.get("StackName").startswith(f"StackSet-{self.stack_set_name}-"):
+                        if summary.get("StackName").startswith(
+                            f"StackSet-{self.stack_set_name}-"
+                        ):
                             return summary.get("StackName")
-                raise Exception(f"Could not find a stack beginning with StackSet-{self.stack_set_name}- in {self.region} of {self.account_id}")
+                raise Exception(
+                    f"Could not find a stack beginning with StackSet-{self.stack_set_name}- in {self.region} of {self.account_id}"
+                )
 
         return self.stack_name
 
