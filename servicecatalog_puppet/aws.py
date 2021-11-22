@@ -552,7 +552,7 @@ def get_version_id_for(servicecatalog, product_id, version_name):
 def get_portfolio_for(servicecatalog, portfolio_name):
     result = None
 
-    response = servicecatalog.list_accepted_portfolio_shares()
+    response = servicecatalog.list_accepted_portfolio_shares(PortfolioShareType='AWS_ORGANIZATIONS')
     assert response.get('NextPageToken') is None, "Pagination not supported"
     for portfolio_detail in response.get('PortfolioDetails'):
         if portfolio_detail.get('DisplayName') == portfolio_name:
