@@ -5,7 +5,8 @@ package_dir = \
 {'': '.'}
 
 packages = \
-['servicecatalog_puppet']
+['servicecatalog_puppet',
+ 'servicecatalog_puppet.workflow']
 
 package_data = \
 {'': ['*'], 'servicecatalog_puppet': ['manifests/*', 'templates/*']}
