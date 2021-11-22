@@ -41,7 +41,7 @@ install_requires = \
 's3transfer==0.3.3',
 'six==1.15.0',
 'tornado==5.1.1',
-'urllib3==^1.25.9']
+'urllib3==1.25.9']
 
 entry_points = \
 {'console_scripts': ['servicecatalog-puppet = servicecatalog_puppet.cli:cli']}
