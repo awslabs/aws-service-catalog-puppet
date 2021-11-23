@@ -62,13 +62,24 @@ def expand(f, puppet_account_id, single_account, subset=None):
     ]
 
     dumped = json.dumps(new_manifest)
-    dumped = dumped.replace(
-        "${AWS::ManifestAccountsAll}", json.dumps(manifest_accounts_all).replace('"', '\\"')
+    sct_manifest_accounts = json.dumps(manifest_accounts_all).replace('"', '\\"')
+    dumped = dumped.replace("${AWS::ManifestAccountsAll}", "${SCT::Manifest::Accounts}").replace(
+        "${SCT::Manifest::Accounts}", sct_manifest_accounts
     )
+    sct_manifest_spokes = json.dumps(manifest_accounts_excluding).replace('"', '\\"')
+    dumped = dumped.replace("${AWS::ManifestAccountsSpokes}", "${SCT::Manifest::Spokes}").replace(
+        "${SCT::Manifest::Spokes}", sct_manifest_spokes
+    )
+    regions = config.get_regions(puppet_account_id)
+    sct_config_regions = json.dumps(regions).replace('"', '\\"')
     dumped = dumped.replace(
-        "${AWS::ManifestAccountsSpokes}", json.dumps(manifest_accounts_excluding).replace('"', '\\"')
+        "${SCT::Config::Regions}", sct_config_regions
     )
     new_manifest = json.loads(dumped)
+    new_manifest['parameters']['SCTManifestAccounts'] = dict(default=sct_manifest_accounts)
+    new_manifest['parameters']['SCTManifestSpokes'] = dict(default=sct_manifest_spokes)
+    new_manifest['parameters']['SCTConfigRegions'] = dict(default=sct_config_regions)
+    new_manifest['parameters']['SCTAccountId'] = dict(default=puppet_account_id)
 
     if new_manifest.get(constants.LAMBDA_INVOCATIONS) is None:
         new_manifest[constants.LAMBDA_INVOCATIONS] = dict()
@@ -80,7 +91,7 @@ def expand(f, puppet_account_id, single_account, subset=None):
 
     new_manifest["config_cache"] = dict(
         home_region=home_region,
-        regions=config.get_regions(puppet_account_id, home_region),
+        regions=regions,
         should_collect_cloudformation_events=config.get_should_use_sns(
             puppet_account_id, home_region
         ),
