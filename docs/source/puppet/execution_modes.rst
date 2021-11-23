@@ -92,7 +92,7 @@ Here is an example using a parameter in the hub account to share values with the
         portfolio: e-mandatory
         product: aws-iam-administrator-access-assumable-role-account
         version: v1
-        execution: async
+        execution: spoke
         parameters:
           AccountToTrust:
             ssm: 
