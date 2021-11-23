@@ -559,17 +559,17 @@ def get_portfolio_for(servicecatalog, portfolio_name):
             result = portfolio_detail
             break
 
-    if result is None:
-        response = servicecatalog.list_portfolios_single_page()
-        for portfolio_detail in response.get('PortfolioDetails', []):
-            if portfolio_detail.get('DisplayName') == portfolio_name:
-                result = portfolio_detail
-                break
-
     if result is None:            
         response = servicecatalog.list_accepted_portfolio_shares(PortfolioShareType='AWS_ORGANIZATIONS')
         assert response.get('NextPageToken') is None, "Pagination not supported"
         for portfolio_detail in response.get('PortfolioDetails'):
+            if portfolio_detail.get('DisplayName') == portfolio_name:
+                result = portfolio_detail
+                break
+
+    if result is None:
+        response = servicecatalog.list_portfolios_single_page()
+        for portfolio_detail in response.get('PortfolioDetails', []):
             if portfolio_detail.get('DisplayName') == portfolio_name:
                 result = portfolio_detail
                 break
