@@ -37,4 +37,11 @@ prepare-deploy-aws:
 	pipenv-setup sync
 	python setup.py sdist
 
-.PHONY: help activate test setup prepare-deploy test-aws setup-aws prepare-deploy-aws
+.PHONY: help activate test setup prepare-deploy test-aws setup-aws prepare-deploy-aws build prepare-for-testing
+
+build:
+	poetry build -f sdist
+
+prepare-for-testing: build
+	tar -zxvf dist/$$(poetry version  | sed 's/ /-/g').tar.gz -C dist $$(poetry version  | sed 's/ /-/g')/setup.py
+	mv dist/aws-service-catalog-puppet-*/setup.py setup.py
