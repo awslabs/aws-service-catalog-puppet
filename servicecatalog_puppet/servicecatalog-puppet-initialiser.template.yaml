@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.130.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.137.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -231,6 +231,15 @@ Resources:
       Name: service-catalog-puppet-initialiser-version
       Type: String
       Value: '0.103.1--zzz' #InitialiserVersion
+      Tags:
+        "ServiceCatalogPuppet:Actor": "Framework"
+
+  InitialiserStackNameParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: service-catalog-puppet-initialiser-stack-name
+      Type: String
+      Value: !Ref AWS::StackName
       Tags:
         "ServiceCatalogPuppet:Actor": "Framework"
 

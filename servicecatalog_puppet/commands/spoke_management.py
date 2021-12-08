@@ -24,6 +24,7 @@ def _do_bootstrap_spoke(
     permission_boundary,
     puppet_role_name,
     puppet_role_path,
+    tag,
 ):
     template = asset_helpers.read_from_site_packages(
         "{}-spoke.template.yaml".format(constants.BOOTSTRAP_STACK_NAME)
@@ -59,7 +60,8 @@ def _do_bootstrap_spoke(
                 "UsePreviousValue": False,
             },
         ],
-        "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}],
+        "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}]
+        + [{"Key": t.get("Key"), "Value": t.get("Value"),} for t in tag],
     }
     cloudformation.create_or_update(**args)
     logger.info("Finished bootstrap of spoke")
@@ -71,6 +73,7 @@ def bootstrap_spoke_as(
     permission_boundary,
     puppet_role_name,
     puppet_role_path,
+    tag,
 ):
     cross_accounts = []
     index = 0
@@ -87,11 +90,12 @@ def bootstrap_spoke_as(
             permission_boundary,
             puppet_role_name,
             puppet_role_path,
+            tag,
         )
 
 
 def bootstrap_spoke(
-    puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path
+    puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path, tag
 ):
     with betterboto_client.ClientContextManager("cloudformation") as cloudformation:
         _do_bootstrap_spoke(
@@ -100,6 +104,7 @@ def bootstrap_spoke(
             permission_boundary,
             puppet_role_name,
             puppet_role_path,
+            tag,
         )
 
 
@@ -120,6 +125,7 @@ def bootstrap_spokes_in_ou(
     num_workers,
     puppet_role_name,
     puppet_role_path,
+    tag,
 ):
     puppet_account_id = config.get_puppet_account_id()
     org_iam_role_arn = config.get_org_iam_role_arn(puppet_account_id)
@@ -147,6 +153,7 @@ def bootstrap_spokes_in_ou(
                         permission_boundary=permission_boundary,
                         puppet_role_name=puppet_role_name,
                         puppet_role_path=puppet_role_path,
+                        tag=tag,
                     )
                 )
 

@@ -34,6 +34,7 @@ class PrepareAccountForWorkspaceTask(tasks.PuppetTask):
                 StackName=constants.TERRAFORM_SPOKE_PREP_STACK_NAME,
                 TemplateBody=template,
                 ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
+                Tags=self.initialiser_stack_tags,
             )
 
         self.write_output(self.params_for_results_display())

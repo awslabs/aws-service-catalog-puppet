@@ -54,6 +54,7 @@ class GeneratePolicies(tasks.PuppetTask):
                 if self.should_use_sns
                 else [],
                 ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
+                Tags=self.initialiser_stack_tags,
             )
         self.write_output(self.get_sharing_policies())
 

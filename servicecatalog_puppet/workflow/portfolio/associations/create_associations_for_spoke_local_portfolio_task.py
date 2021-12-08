@@ -119,6 +119,7 @@ class CreateAssociationsForSpokeLocalPortfolioTask(
                 if self.should_use_sns
                 else [],
                 ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
+                Tags=self.initialiser_stack_tags,
             )
             result = cloudformation.describe_stacks(StackName=stack_name,).get(
                 "Stacks"

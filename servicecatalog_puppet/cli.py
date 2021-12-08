@@ -158,6 +158,14 @@ def dry_run(f, single_account, puppet_account_id):
     )
 
 
+def parse_tags(ctx, param, value):
+    tags = list()
+    for val in value:
+        k, v = val.split("=")
+        tags.append(dict(Key=k, Value=v))
+    return tags
+
+
 @cli.command()
 @click.argument("puppet_account_id")
 @click.argument("iam_role_arns", nargs=-1)
@@ -166,12 +174,14 @@ def dry_run(f, single_account, puppet_account_id):
 )
 @click.option("--puppet-role-name", default="PuppetRole")
 @click.option("--puppet-role-path", default="/servicecatalog-puppet/")
+@click.option("--tag", multiple=True, callback=parse_tags, default=[])
 def bootstrap_spoke_as(
     puppet_account_id,
     iam_role_arns,
     permission_boundary,
     puppet_role_name,
     puppet_role_path,
+    tag,
 ):
     spoke_management_commands.bootstrap_spoke_as(
         puppet_account_id,
@@ -179,6 +189,7 @@ def bootstrap_spoke_as(
         permission_boundary,
         puppet_role_name,
         puppet_role_path,
+        tag,
     )
 
 
@@ -189,11 +200,12 @@ def bootstrap_spoke_as(
 )
 @click.option("--puppet-role-name", default="PuppetRole")
 @click.option("--puppet-role-path", default="/servicecatalog-puppet/")
+@click.option("--tag", multiple=True, callback=parse_tags, default=[])
 def bootstrap_spoke(
-    puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path
+    puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path, tag
 ):
     spoke_management_commands.bootstrap_spoke(
-        puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path
+        puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path, tag
     )
 
 
@@ -207,6 +219,7 @@ def bootstrap_spoke(
 @click.option("--num-workers", default=10)
 @click.option("--puppet-role-name", default="PuppetRole")
 @click.option("--puppet-role-path", default="/servicecatalog-puppet/")
+@click.option("--tag", multiple=True, callback=parse_tags, default=[])
 def bootstrap_spokes_in_ou(
     ou_path_or_id,
     role_name,
@@ -215,6 +228,7 @@ def bootstrap_spokes_in_ou(
     num_workers,
     puppet_role_name,
     puppet_role_path,
+    tag,
 ):
     spoke_management_commands.bootstrap_spokes_in_ou(
         ou_path_or_id,
@@ -224,6 +238,7 @@ def bootstrap_spokes_in_ou(
         num_workers,
         puppet_role_name,
         puppet_role_path,
+        tag,
     )
 
 
@@ -518,8 +533,9 @@ def set_org_iam_role_arn(org_iam_role_arn):
 
 @cli.command()
 @click.argument("puppet_account_id")
-def bootstrap_org_master(puppet_account_id):
-    orgs_commands.bootstrap_org_master(puppet_account_id)
+@click.option("--tag", multiple=True, callback=parse_tags, default=[])
+def bootstrap_org_master(puppet_account_id, tag):
+    orgs_commands.bootstrap_org_master(puppet_account_id, tag)
 
 
 @cli.command()
