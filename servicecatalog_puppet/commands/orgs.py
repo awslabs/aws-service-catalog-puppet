@@ -23,7 +23,7 @@ def set_org_iam_role_arn(org_iam_role_arn):
     click.echo("Uploaded config")
 
 
-def bootstrap_org_master(puppet_account_id):
+def bootstrap_org_master(puppet_account_id, tag):
     with betterboto_client.ClientContextManager("cloudformation",) as cloudformation:
         org_iam_role_arn = None
         logger.info("Starting bootstrap of org master")
@@ -49,7 +49,8 @@ def bootstrap_org_master(puppet_account_id):
                     "UsePreviousValue": False,
                 },
             ],
-            "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}],
+            "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}]
+            + tag,
         }
         cloudformation.create_or_update(**args)
         response = cloudformation.describe_stacks(StackName=stack_name)

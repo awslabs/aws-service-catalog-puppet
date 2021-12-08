@@ -128,6 +128,7 @@ def bootstrap_spoke_as(
     permission_boundary,
     puppet_role_name="PuppetRole",
     puppet_role_path="/servicecatalog-puppet/",
+    tag=[],
 ):
     """
     Bootstrap a spoke so that it can be used by the puppet account to share portfolios and provision products.  This
@@ -144,6 +145,7 @@ def bootstrap_spoke_as(
         permission_boundary,
         puppet_role_name,
         puppet_role_path,
+        tag,
     )
 
 

@@ -1,6 +1,6 @@
 #  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-
+import json
 import os
 from datetime import datetime
 
@@ -44,6 +44,9 @@ def deploy(
         config.get_should_use_product_plans(
             puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
         )
+    )
+    os.environ["SCT_INITIALISER_STACK_TAGS"] = json.dumps(
+        config.get_initialiser_stack_tags()
     )
     tasks_to_run = generate_tasks(
         f, puppet_account_id, executor_account_id, execution_mode, is_dry_run

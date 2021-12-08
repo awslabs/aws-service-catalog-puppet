@@ -221,3 +221,5 @@ STATIC_HTML_PAGE = "static-html-page.html"
 
 FULL_RUN_CODEBUILD_PROJECT_NAME = "servicecatalog-puppet-deploy"
 SINGLE_ACCOUNT_RUN_CODEBUILD_PROJECT_NAME = "servicecatalog-puppet-single-account-run"
+
+INITIALISER_STACK_NAME_SSM_PARAMETER = "service-catalog-puppet-initialiser-stack-name"

@@ -297,6 +297,7 @@ class ProvisionStackTask(
                     Capabilities=self.capabilities,
                     Parameters=provisioning_parameters,
                     ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
+                    Tags=self.initialiser_stack_tags,
                 )
                 if self.use_service_role:
                     a["RoleARN"] = config.get_puppet_stack_role_arn(self.account_id)

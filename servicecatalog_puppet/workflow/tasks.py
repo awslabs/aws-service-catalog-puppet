@@ -32,6 +32,15 @@ def unwrap(what):
 
 class PuppetTask(luigi.Task):
     @property
+    def initialiser_stack_tags(self):
+        initialiser_stack_tags_value = os.environ.get(
+            "SCT_INITIALISER_STACK_TAGS", None
+        )
+        if initialiser_stack_tags_value is None:
+            raise Exception("You must export SCT_INITIALISER_STACK_TAGS")
+        return json.loads(initialiser_stack_tags_value)
+
+    @property
     def executor_account_id(self):
         return os.environ.get("EXECUTOR_ACCOUNT_ID")
 

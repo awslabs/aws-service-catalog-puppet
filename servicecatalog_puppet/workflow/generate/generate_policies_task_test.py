@@ -3,6 +3,7 @@
 
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 from servicecatalog_puppet import constants
+import os
 
 
 class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
@@ -58,6 +59,7 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.inject_into_input("template", template)
 
         # exercise
+        os.environ["SCT_INITIALISER_STACK_TAGS"] = "{}"
         self.sut.run()
 
         # verify
@@ -70,5 +72,6 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
                 TemplateBody=template,
                 NotificationARNs=[],
                 ShouldDeleteRollbackComplete=constants.CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS_DEFAULT,
+                Tags={},
             ),
         )

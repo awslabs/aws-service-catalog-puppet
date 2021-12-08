@@ -53,6 +53,7 @@ def bootstrap(
     should_use_eventbridge = config.get_should_use_eventbridge(
         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
     )
+    initialiser_stack_tags = config.get_initialiser_stack_tags()
     if should_use_eventbridge:
         with betterboto_client.ClientContextManager("events") as events:
             try:
@@ -87,7 +88,8 @@ def bootstrap(
                     "UsePreviousValue": False,
                 },
             ],
-            "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}],
+            "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}]
+            + initialiser_stack_tags,
         }
         for client_region, client in clients.items():
             process = Thread(
@@ -248,6 +250,8 @@ def bootstrap(
                 "UsePreviousValue": False,
             },
         ],
+        "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}]
+        + initialiser_stack_tags,
     }
     with betterboto_client.ClientContextManager("cloudformation") as cloudformation:
         click.echo("Creating {}".format(constants.BOOTSTRAP_STACK_NAME))

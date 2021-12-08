@@ -15,6 +15,7 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
     permission_boundary = luigi.Parameter()
     puppet_role_name = luigi.Parameter()
     puppet_role_path = luigi.Parameter()
+    tag = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {
@@ -34,5 +35,6 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
             self.permission_boundary,
             self.puppet_role_name,
             self.puppet_role_path,
+            self.tag,
         )
         self.write_output(self.params_for_results_display())
