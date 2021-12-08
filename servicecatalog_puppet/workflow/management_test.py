@@ -28,6 +28,7 @@ class BootstrapSpokeAsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             permission_boundary=self.permission_boundary,
             puppet_role_name=self.puppet_role_name,
             puppet_role_path=self.puppet_role_path,
+            tag=[],
         )
 
         self.wire_up_mocks()
