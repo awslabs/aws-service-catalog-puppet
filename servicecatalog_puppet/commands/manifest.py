@@ -43,6 +43,7 @@ def expand(f, puppet_account_id, single_account, subset=None):
 
         click.echo("Filtered")
 
+    new_manifest = manifest_utils.rewrite_cfct(new_manifest)
     new_manifest = manifest_utils.rewrite_depends_on(new_manifest)
     new_manifest = manifest_utils.rewrite_ssm_parameters(new_manifest)
     new_manifest = manifest_utils.rewrite_stacks(new_manifest, puppet_account_id)
@@ -61,7 +62,7 @@ def expand(f, puppet_account_id, single_account, subset=None):
         a for a in manifest_accounts_all if a.get("account_id") != puppet_account_id
     ]
 
-    dumped = json.dumps(new_manifest)
+    dumped = json.dumps(new_manifest, default=str)
     sct_manifest_accounts = json.dumps(manifest_accounts_all).replace('"', '\\"')
     dumped = dumped.replace(
         "${AWS::ManifestAccountsAll}", "${SCT::Manifest::Accounts}"
