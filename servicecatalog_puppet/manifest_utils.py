@@ -16,6 +16,7 @@ from deepmerge import always_merger
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.macros import macros
+from betterboto import client as betterboto_client
 
 logger = logging.getLogger(__file__)
 
@@ -247,6 +248,22 @@ def rewrite_cfct(manifest):
                 else:
                     raise Exception(f"All resource files should begin with s3:// of https://: {resource_file}")
 
+                if resource.get("parameter_file"):
+                    parameter_file = resource.get("parameter_file")
+                    if parameter_file.startswith("s3://"):
+                        m = re.match(r"s3://(.*)/(.*)", parameter_file)
+                        bucket = m.group(1)
+                        key = m.group(2)
+                    elif parameter_file.startswith("https://"):
+                        m = re.match(r"https://([a-z0-9-]+)(.*)/(.*)", parameter_file)
+                        bucket = m.group(1)
+                        key = m.group(3)
+                    else:
+                        raise Exception(f"All parameter_files should begin with s3:// of https://: {parameter_file}")
+                    with betterboto_client('s3') as s3:
+                        p = s3.get_object(Bucket=bucket, Key=key).read()
+                        resource["parameters"] = json.loads(p)
+
                 for p in resource.get("parameters", []):
                     parameter_key = p.get("parameter_key")
                     parameter_value = p.get("parameter_value")
@@ -266,7 +283,6 @@ def rewrite_cfct(manifest):
                     )
 
                 for output in resource.get("export_outputs", []):
-                    # TODO - check if the value is always of the format $[output_ApplicationId]
                     output_value = re.match(r"\$\[output_(.*)\]", output.get("value")).group(1)
                     ssm.append(dict(param_name=output.get("name"), stack_output=output_value))
 
@@ -290,6 +306,7 @@ def rewrite_cfct(manifest):
 
                 stack = dict(
                     name=name,
+                    stack_set_name=name,
                     bucket=bucket,
                     key=key,
                     execution=constants.EXECUTION_MODE_HUB,
@@ -307,6 +324,10 @@ def rewrite_cfct(manifest):
                 manifest[constants.STACKS][name] = stack
 
                 prev = name
+            elif deploy_method == "scp":
+                raise Exception(f"Unsupported deploy_method of {deploy_method}")
+            else:
+                raise Exception(f"Unknown deploy_method of {deploy_method}")
 
     return manifest
 
