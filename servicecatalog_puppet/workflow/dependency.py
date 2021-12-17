@@ -88,6 +88,12 @@ def generate_dependency_task(
         workspace_for_region_task,
         workspace_for_account_and_region_task,
     )
+    from servicecatalog_puppet.workflow.service_control_policies import (
+        service_control_policies_task,
+        service_control_policies_for_account_task,
+        service_control_policies_for_region_task,
+        service_control_policies_for_account_and_region_task,
+    )
 
     common_args = dict(
         manifest_file_path=manifest_file_path, puppet_account_id=puppet_account_id,
@@ -175,6 +181,29 @@ def generate_dependency_task(
             return workspace_for_account_and_region_task.WorkspaceForAccountAndRegionTask(
                 **common_args,
                 workspace_name=depends_on.get("name"),
+                account_id=account_id,
+                region=region,
+            )
+
+    elif depends_on.get("type") == constants.SERVICE_CONTROL_POLICY:
+        if depends_on.get(constants.AFFINITY) == constants.SERVICE_CONTROL_POLICY:
+            return service_control_policies_task.ServiceControlPoliciesTask(
+                **common_args, service_control_policies_name=depends_on.get("name"),
+            )
+        if depends_on.get(constants.AFFINITY) == "account":
+            return service_control_policies_for_account_task.ServiceControlPoliciesForAccountTask(
+                **common_args,
+                service_control_policies_name=depends_on.get("name"),
+                account_id=account_id,
+            )
+        if depends_on.get(constants.AFFINITY) == "region":
+            return service_control_policies_for_region_task.ServiceControlPoliciesForRegionTask(
+                **common_args, service_control_policies_name=depends_on.get("name"), region=region,
+            )
+        if depends_on.get(constants.AFFINITY) == "account-and-region":
+            return service_control_policies_for_account_and_region_task.ServiceControlPoliciesForAccountAndRegionTask(
+                **common_args,
+                service_control_policies_name=depends_on.get("name"),
                 account_id=account_id,
                 region=region,
             )

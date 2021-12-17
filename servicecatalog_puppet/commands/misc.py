@@ -33,8 +33,12 @@ from servicecatalog_puppet.workflow.launch.reset_provisioned_product_owner_task 
 from servicecatalog_puppet.workflow.spoke_local_portfolios import (
     spoke_local_portfolio_section_task,
 )
+from servicecatalog_puppet.workflow.service_control_policies import (
+    service_control_policies_section_task,
+)
 from servicecatalog_puppet.workflow.stack import stack_section_task
 from servicecatalog_puppet.workflow.workspaces import workspace_section_task
+
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
@@ -310,6 +314,11 @@ def generate_tasks(
         if execution_mode != constants.EXECUTION_MODE_SPOKE:
             tasks.append(
                 spoke_local_portfolio_section_task.SpokeLocalPortfolioSectionTask(
+                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+                )
+            )
+            tasks.append(
+                service_control_policies_section_task.ServiceControlPoliciesSectionTask(
                     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
                 )
             )

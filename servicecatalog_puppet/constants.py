@@ -14,6 +14,7 @@ TEMPLATES = os.path.sep.join([OUTPUT, "templates"])
 LAUNCHES_PATH = os.path.sep.join([OUTPUT, "launches"])
 CONFIG_PARAM_NAME = "/servicecatalog-puppet/config"
 CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN = "/servicecatalog-puppet/org-iam-role-arn"
+CONFIG_PARAM_NAME_ORG_SCP_ROLE_ARN = "/servicecatalog-puppet/org-scp-role-arn"
 PUPPET_ORG_ROLE_FOR_EXPANDS_ARN = "PuppetOrgRoleForExpandsArn"
 HOME_REGION_PARAM_NAME = "/servicecatalog-puppet/home-region"
 
@@ -38,6 +39,8 @@ APP = "app"
 ASSERTION = "assertion"
 CODE_BUILD_RUNS = "code-build-runs"
 CODE_BUILD_RUN = "code-build-run"
+SERVICE_CONTROL_POLICIES = "service-control-policies"
+SERVICE_CONTROL_POLICY = "service-control-policy"
 ACTIONS = "actions"
 
 LAUNCH = "launch"
@@ -128,6 +131,7 @@ ALL_SECTION_NAMES = [
     ASSERTIONS,
     APPS,
     WORKSPACES,
+    SERVICE_CONTROL_POLICIES,
 ]
 
 ALL_SPOKE_EXECUTABLE_SECTION_NAMES = [
@@ -224,3 +228,6 @@ FULL_RUN_CODEBUILD_PROJECT_NAME = "servicecatalog-puppet-deploy"
 SINGLE_ACCOUNT_RUN_CODEBUILD_PROJECT_NAME = "servicecatalog-puppet-single-account-run"
 
 INITIALISER_STACK_NAME_SSM_PARAMETER = "service-catalog-puppet-initialiser-stack-name"
+
+
+SERVICE_CONTROL_POLICIES = "service-control-policies"

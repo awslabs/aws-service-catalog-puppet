@@ -23,14 +23,35 @@ def set_org_iam_role_arn(org_iam_role_arn):
     click.echo("Uploaded config")
 
 
+def set_org_scp_role_arn(org_iam_role_arn):
+    with betterboto_client.ClientContextManager("ssm") as ssm:
+        ssm.put_parameter(
+            Name=constants.CONFIG_PARAM_NAME_ORG_SCP_ROLE_ARN,
+            Type="String",
+            Value=org_iam_role_arn,
+            Overwrite=True,
+        )
+    click.echo("Uploaded config")
+
+
 def bootstrap_org_master(puppet_account_id, tag):
+    stack_name = f"{constants.BOOTSTRAP_STACK_NAME}-org-master-{puppet_account_id}"
+    template_name = f"{constants.BOOTSTRAP_STACK_NAME}-org-master.template.yaml"
+    bootstrap_master(puppet_account_id, tag, stack_name, template_name)
+
+
+def bootstrap_scp_master(puppet_account_id, tag):
+    stack_name = f"{constants.BOOTSTRAP_STACK_NAME}-scp-master-{puppet_account_id}"
+    template_name = f"{constants.BOOTSTRAP_STACK_NAME}-scp-master.template.yaml"
+    bootstrap_master(puppet_account_id, tag, stack_name, template_name)
+
+
+def bootstrap_master(puppet_account_id, tag, stack_name, template_name):
     with betterboto_client.ClientContextManager("cloudformation",) as cloudformation:
         org_iam_role_arn = None
         logger.info("Starting bootstrap of org master")
-        stack_name = f"{constants.BOOTSTRAP_STACK_NAME}-org-master-{puppet_account_id}"
-        template = asset_helpers.read_from_site_packages(
-            f"{constants.BOOTSTRAP_STACK_NAME}-org-master.template.yaml"
-        )
+
+        template = asset_helpers.read_from_site_packages(template_name)
         template = Template(template).render(
             VERSION=constants.VERSION, puppet_account_id=puppet_account_id
         )

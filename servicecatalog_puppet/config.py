@@ -243,6 +243,24 @@ def get_org_iam_role_arn(puppet_account_id):
             return None
 
 
+@functools.lru_cache(maxsize=32)
+def get_org_scp_role_arn(puppet_account_id):
+    with betterboto_client.CrossAccountClientContextManager(
+        "ssm",
+        get_puppet_role_arn(puppet_account_id),
+        f"{puppet_account_id}-{get_puppet_role_name()}",
+        region_name=get_home_region(puppet_account_id),
+    ) as ssm:
+        try:
+            response = ssm.get_parameter(
+                Name=constants.CONFIG_PARAM_NAME_ORG_SCP_ROLE_ARN
+            )
+            return response.get("Parameter").get("Value")
+        except ssm.exceptions.ParameterNotFound:
+            logger.info("No org role set")
+            return None
+
+
 template_dir = asset_helpers.resolve_from_site_packages("templates")
 env = Environment(loader=FileSystemLoader(template_dir), extensions=["jinja2.ext.do"],)
 

@@ -12,6 +12,7 @@ import luigi
 import psutil
 from betterboto import client as betterboto_client
 from luigi import format
+from luigi.freezing import FrozenOrderedDict
 from luigi.contrib import s3
 
 from servicecatalog_puppet import constants, config
@@ -21,13 +22,27 @@ logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 def unwrap(what):
     if hasattr(what, "get_wrapped"):
-        thing = what.get_wrapped()
-    else:
-        thing = what
+        return unwrap(what.get_wrapped())
+
     if isinstance(what, dict):
-        for k, v in thing.items():
+        thing = dict()
+        for k, v in what.items():
             thing[k] = unwrap(v)
-    return thing
+        return thing
+
+    if isinstance(what, tuple):
+        thing = list()
+        for v in what:
+            thing.append(unwrap(v))
+        return thing
+
+    if isinstance(what, list):
+        thing = list()
+        for v in what:
+            thing.append(unwrap(v))
+        return thing
+
+    return what
 
 
 class PuppetTask(luigi.Task):

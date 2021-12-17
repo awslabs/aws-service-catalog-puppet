@@ -14,6 +14,7 @@ import yaml
 from deepmerge import always_merger
 
 from servicecatalog_puppet import config
+from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.macros import macros
 from betterboto import client as betterboto_client
@@ -222,7 +223,9 @@ def rewrite_cfct(manifest):
     prev = None
     for instance in manifest.get(constants.CFCT, []):
         if str(instance.get("version")) != "2021-03-15":
-            raise Exception(f"not supported version of cfct manifest {instance.get('version')}")
+            raise Exception(
+                f"not supported version of cfct manifest {instance.get('version')}"
+            )
         default_region = instance.get("region")
         for resource in instance.get("resources", []):
             deploy_method = resource.get("deploy_method")
@@ -246,7 +249,9 @@ def rewrite_cfct(manifest):
                     bucket = m.group(1)
                     key = m.group(3)
                 else:
-                    raise Exception(f"All resource files should begin with s3:// of https://: {resource_file}")
+                    raise Exception(
+                        f"All resource files should begin with s3:// of https://: {resource_file}"
+                    )
 
                 if resource.get("parameter_file"):
                     parameter_file = resource.get("parameter_file")
@@ -259,8 +264,10 @@ def rewrite_cfct(manifest):
                         bucket = m.group(1)
                         key = m.group(3)
                     else:
-                        raise Exception(f"All parameter_files should begin with s3:// of https://: {parameter_file}")
-                    with betterboto_client('s3') as s3:
+                        raise Exception(
+                            f"All parameter_files should begin with s3:// of https://: {parameter_file}"
+                        )
+                    with betterboto_client("s3") as s3:
                         p = s3.get_object(Bucket=bucket, Key=key).read()
                         resource["parameters"] = json.loads(p)
 
@@ -269,39 +276,52 @@ def rewrite_cfct(manifest):
                     parameter_value = p.get("parameter_value")
                     m = re.match(r"\$\[alfred_ssm_(.*)\]", parameter_value)
                     if m:
-                        parameters[parameter_key] = dict(ssm=dict(name=m.group(1), region=default_region,))
+                        parameters[parameter_key] = dict(
+                            ssm=dict(name=m.group(1), region=default_region, )
+                        )
                     else:
                         parameters[parameter_key] = dict(default=parameter_value)
 
                 if prev is not None:
                     depends_on.append(
-                        dict(
-                            name=prev,
-                            type=constants.STACK,
-                            affinity=constants.STACK,
-                        )
+                        dict(name=prev, type=constants.STACK, affinity=constants.STACK, )
                     )
 
                 for output in resource.get("export_outputs", []):
-                    output_value = re.match(r"\$\[output_(.*)\]", output.get("value")).group(1)
-                    ssm.append(dict(param_name=output.get("name"), stack_output=output_value))
+                    output_value = re.match(
+                        r"\$\[output_(.*)\]", output.get("value")
+                    ).group(1)
+                    ssm.append(
+                        dict(param_name=output.get("name"), stack_output=output_value)
+                    )
 
                 regions = resource.get("regions", [default_region])
-                for account in resource.get("deployment_targets", {}).get("accounts", []):
+                for account in resource.get("deployment_targets", {}).get(
+                        "accounts", []
+                ):
                     if re.match(r"[0-9]{12}", str(account)):
                         deploy_to_accounts.append(
                             dict(account_id=account, regions=regions)
                         )
                     else:
                         if manifest_accounts.get(account) is None:
-                            raise Exception(f"You are using CFCT resource: {name} to deploy to account: {account} which is not defined in your accounts section")
+                            raise Exception(
+                                f"You are using CFCT resource: {name} to deploy to account: {account} which is not defined in your accounts section"
+                            )
                         deploy_to_accounts.append(
-                            dict(account_id=manifest_accounts.get(account), regions=regions)
+                            dict(
+                                account_id=manifest_accounts.get(account),
+                                regions=regions,
+                            )
                         )
 
-                for organizational_unit in resource.get("deployment_targets", {}).get("organizational_units", []):
+                for organizational_unit in resource.get("deployment_targets", {}).get(
+                        "organizational_units", []
+                ):
                     deploy_to_tags.append(
-                        dict(tag=f"autogenerated:{organizational_unit}", regions=regions)
+                        dict(
+                            tag=f"autogenerated:{organizational_unit}", regions=regions
+                        )
                     )
 
                 stack = dict(
@@ -320,7 +340,9 @@ def rewrite_cfct(manifest):
                 if manifest.get(constants.STACKS) is None:
                     manifest[constants.STACKS] = dict()
                 if manifest[constants.STACKS].get(name) is not None:
-                    raise Exception(f"You have a stack and a cfct resource with the same name: {name}")
+                    raise Exception(
+                        f"You have a stack and a cfct resource with the same name: {name}"
+                    )
                 manifest[constants.STACKS][name] = stack
 
                 prev = name
@@ -411,6 +433,15 @@ def rewrite_stacks(manifest, puppet_account_id):
                         details[
                             constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE
                         ] = config.get_should_use_stacks_service_role(puppet_account_id)
+    return manifest
+
+
+def rewrite_scps(manifest, puppet_account_id):
+    for item, details in manifest.get(constants.SERVICE_CONTROL_POLICIES, {}).items():
+        for attribute in ["tags", "accounts", "ous"]:
+            apply_to = details.get("apply_to")
+            for d in apply_to.get(attribute, []):
+                d['regions'] = 'default_region'
     return manifest
 
 
@@ -543,6 +574,7 @@ class Manifest(dict):
             "lambda-invocations": "invoke_for",
             "code-build-runs": "run_for",
             "assertions": "assert_for",
+            "service-control-policies": "apply_to",
         }.get(section_name)
 
         if (
@@ -647,6 +679,14 @@ class Manifest(dict):
                 actual=item.get("actual"),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
+            "service-control-policies": dict(
+                puppet_account_id=puppet_account_id,
+                requested_priority=item.get("requested_priority", 0),
+                service_control_policy_name=item_name,
+                description=item.get("description"),
+                content=tasks.unwrap(item.get("content")),
+                should_minimize=item.get("should_minimize"),
+            ),
         }.get(section_name)
 
         tags = item.get(deploy_to).get("tags", [])
@@ -683,6 +723,9 @@ class Manifest(dict):
                     "code-build-runs": dict(
                         account_id=account_id,
                         account_parameters=account.get("parameters", {}),
+                    ),
+                    "service-control-policies": dict(
+                        account_id=account_id,
                     ),
                 }.get(section_name)
                 if tag_name in account.get("tags"):
@@ -721,7 +764,7 @@ class Manifest(dict):
 
                         else:
                             raise Exception(
-                                f"Unsupported regions {regions} setting for {constants.LAUNCHES}: {item_name}"
+                                f"Unsupported regions {regions} setting for {section_name}: {item_name}"
                             )
                     elif isinstance(regions, list):
                         for region_ in regions:
@@ -744,7 +787,7 @@ class Manifest(dict):
 
                     else:
                         raise Exception(
-                            f"Unsupported regions {regions} setting for {constants.LAUNCHES}: {item_name}"
+                            f"Unsupported regions {regions} setting for {section_name}: {item_name}"
                         )
 
         for account_to_deploy_to in item.get(deploy_to).get("accounts", []):
@@ -773,6 +816,9 @@ class Manifest(dict):
                 "code-build-runs": dict(
                     account_id=account_id,
                     account_parameters=account.get("parameters", {}),
+                ),
+                "service-control-policies": dict(
+                    account_id=account_id,
                 ),
             }.get(section_name)
 
@@ -1059,6 +1105,8 @@ class Manifest(dict):
             raise Exception(f"launch_details is None for {launch_name}")
         if launch_or_spoke_local_portfolio == "lambda-invocations":
             deploy_to = launch_details.get("invoke_for")
+        if launch_or_spoke_local_portfolio == constants.SERVICE_CONTROL_POLICIES:
+            deploy_to = launch_details.get("apply_to")
         elif launch_or_spoke_local_portfolio == "launches":
             deploy_to = launch_details.get("deploy_to")
         elif launch_or_spoke_local_portfolio == "spoke-local-portfolios":
