@@ -34,6 +34,7 @@ class SimulatePolicyTask(simulate_policy_for_task.SimulatePolicyForTask):
                     self.simulate_policy_name,
                     account_id,
                     region,
+                    single_account=self.single_account,
                 ):
                     requirements.append(
                         klass(**task, manifest_file_path=self.manifest_file_path)

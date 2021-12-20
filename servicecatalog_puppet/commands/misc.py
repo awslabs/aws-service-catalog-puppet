@@ -304,9 +304,6 @@ def generate_tasks(
         assertions_section_task.AssertionsSectionTask(
             manifest_file_path=f.name, puppet_account_id=puppet_account_id,
         ),
-        simulate_policy_section_task.SimulatePolicysSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
     ]
     if not is_dry_run:
         tasks += [
@@ -314,6 +311,9 @@ def generate_tasks(
                 manifest_file_path=f.name, puppet_account_id=puppet_account_id,
             ),
             code_build_run_section_task.CodeBuildRunsSectionTask(
+                manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+            ),
+            simulate_policy_section_task.SimulatePolicysSectionTask(
                 manifest_file_path=f.name, puppet_account_id=puppet_account_id,
             ),
         ]
