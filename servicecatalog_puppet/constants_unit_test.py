@@ -59,6 +59,8 @@ def test_constants_values():
         constants.ASSERTIONS,
         constants.APPS,
         constants.WORKSPACES,
+        constants.SERVICE_CONTROL_POLICIES,
+        constants.SIMULATE_POLICIES,
     ]
     assert constants.RESULTS_DIRECTORY == "results"
     assert constants.NO_CHANGE == "NO_CHANGE"

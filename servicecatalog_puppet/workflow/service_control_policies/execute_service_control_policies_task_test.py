@@ -3,23 +3,23 @@
 
 from unittest import skip, mock
 
-from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
 class ExecuteServiceControlPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
-    service_control_policies_name = "service_control_policies_name"
+    manifest_file_path = "manifest_file_path"
+
+    service_control_policy_name = "service_control_policy_name"
     puppet_account_id = "puppet_account_id"
+
     region = "region"
     account_id = "account_id"
-    ssm_param_inputs = []
-    launch_parameters = {}
-    manifest_parameters = {}
-    account_parameters = {}
-    project_name = "project_name"
-    execution = constants.EXECUTION_MODE_HUB
-    requested_priority = 1
-    manifest_file_path = "manifest_file_path"
+    ou_name = "ou_name"
+
+    content = {}
+    description = "description"
+
+    requested_priority = 9
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.service_control_policies import (
@@ -30,17 +30,14 @@ class ExecuteServiceControlPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUn
 
         self.sut = self.module.ExecuteServiceControlPoliciesTask(
             manifest_file_path=self.manifest_file_path,
-            service_control_policies_name=self.service_control_policies_name,
+            service_control_policy_name=self.service_control_policy_name,
             puppet_account_id=self.puppet_account_id,
             region=self.region,
             account_id=self.account_id,
-            ssm_param_inputs=self.ssm_param_inputs,
-            launch_parameters=self.launch_parameters,
-            manifest_parameters=self.manifest_parameters,
-            account_parameters=self.account_parameters,
-            project_name=self.project_name,
             requested_priority=self.requested_priority,
-            execution=self.execution,
+            ou_name=self.ou_name,
+            content=self.content,
+            description=self.description,
         )
 
         self.wire_up_mocks()
@@ -49,9 +46,10 @@ class ExecuteServiceControlPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUn
         # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
-            "service_control_policies_name": self.service_control_policies_name,
+            "service_control_policy_name": self.service_control_policy_name,
             "region": self.region,
             "account_id": self.account_id,
+            "ou_name": self.ou_name,
             "cache_invalidator": self.cache_invalidator,
         }
 
