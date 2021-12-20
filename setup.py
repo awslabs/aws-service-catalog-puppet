@@ -25,6 +25,8 @@ packages = \
  'servicecatalog_puppet.workflow.portfolio.constraints_management',
  'servicecatalog_puppet.workflow.portfolio.portfolio_management',
  'servicecatalog_puppet.workflow.portfolio.sharing_management',
+ 'servicecatalog_puppet.workflow.service_control_policies',
+ 'servicecatalog_puppet.workflow.simulate_policies',
  'servicecatalog_puppet.workflow.spoke_local_portfolios',
  'servicecatalog_puppet.workflow.stack',
  'servicecatalog_puppet.workflow.workspaces']

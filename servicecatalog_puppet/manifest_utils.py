@@ -228,9 +228,24 @@ def rewrite_cfct(manifest):
             )
         default_region = instance.get("region")
         for resource in instance.get("resources", []):
+            resource_file = resource.get("resource_file").lower()
+            if resource_file.startswith("s3://"):
+                m = re.match(r"s3://(.*)/(.*)", resource_file)
+                bucket = m.group(1)
+                key = m.group(2)
+            elif resource_file.startswith("https://"):
+                m = re.match(r"https://([a-z0-9-]+)(.*)/(.*)", resource_file)
+                bucket = m.group(1)
+                key = m.group(3)
+            else:
+                raise Exception(
+                    f"All resource files should begin with s3:// of https://: {resource_file}"
+                )
+
+            name = resource.get("name")
             deploy_method = resource.get("deploy_method")
+
             if deploy_method == "stack_set":
-                name = resource.get("name")
                 parameters = dict()
                 depends_on = list()
                 ssm = list()
@@ -238,20 +253,6 @@ def rewrite_cfct(manifest):
                 deploy_to_accounts = list()
                 deploy_to_tags = list()
                 deploy_to = dict(tags=deploy_to_tags, accounts=deploy_to_accounts)
-
-                resource_file = resource.get("resource_file").lower()
-                if resource_file.startswith("s3://"):
-                    m = re.match(r"s3://(.*)/(.*)", resource_file)
-                    bucket = m.group(1)
-                    key = m.group(2)
-                elif resource_file.startswith("https://"):
-                    m = re.match(r"https://([a-z0-9-]+)(.*)/(.*)", resource_file)
-                    bucket = m.group(1)
-                    key = m.group(3)
-                else:
-                    raise Exception(
-                        f"All resource files should begin with s3:// of https://: {resource_file}"
-                    )
 
                 if resource.get("parameter_file"):
                     parameter_file = resource.get("parameter_file")
@@ -267,7 +268,7 @@ def rewrite_cfct(manifest):
                         raise Exception(
                             f"All parameter_files should begin with s3:// of https://: {parameter_file}"
                         )
-                    with betterboto_client("s3") as s3:
+                    with betterboto_client.ClientContextManager("s3") as s3:
                         p = s3.get_object(Bucket=bucket, Key=key).read()
                         resource["parameters"] = json.loads(p)
 
@@ -346,8 +347,68 @@ def rewrite_cfct(manifest):
                 manifest[constants.STACKS][name] = stack
 
                 prev = name
+
             elif deploy_method == "scp":
-                raise Exception(f"Unsupported deploy_method of {deploy_method}")
+                with betterboto_client.ClientContextManager("s3") as s3:
+                    p = s3.get_object(Bucket=bucket, Key=key).read()
+                    content = json.loads(p)
+
+                depends_on = list()
+                deploy_to_accounts = list()
+                deploy_to_ous = list()
+                deploy_to = dict(accounts=deploy_to_accounts, ous=deploy_to_ous)
+
+                if prev is not None:
+                    depends_on.append(
+                        dict(
+                            name=prev,
+                            type=constants.SERVICE_CONTROL_POLICY,
+                            affinity=constants.SERVICE_CONTROL_POLICY,
+                        )
+                    )
+
+                regions = "home_region"
+                for account in resource.get("deployment_targets", {}).get(
+                    "accounts", []
+                ):
+                    if re.match(r"[0-9]{12}", str(account)):
+                        deploy_to_accounts.append(
+                            dict(account_id=account, regions=regions)
+                        )
+                    else:
+                        if manifest_accounts.get(account) is None:
+                            raise Exception(
+                                f"You are using CFCT resource: {name} to deploy to account: {account} which is not defined in your accounts section"
+                            )
+                        deploy_to_accounts.append(
+                            dict(
+                                account_id=manifest_accounts.get(account),
+                                regions=regions,
+                            )
+                        )
+
+                for organizational_unit in resource.get("deployment_targets", {}).get(
+                    "organizational_units", []
+                ):
+                    deploy_to_ous.append(dict(ou=organizational_unit, regions=regions))
+
+                scp = dict(
+                    description=resource.get("description", "auto generated from CfCT"),
+                    content=dict(default=content),
+                    depends_on=depends_on,
+                    apply_to=deploy_to,
+                )
+
+                if manifest.get(constants.SERVICE_CONTROL_POLICIES) is None:
+                    manifest[constants.SERVICE_CONTROL_POLICIES] = dict()
+                if manifest[constants.SERVICE_CONTROL_POLICIES].get(name) is not None:
+                    raise Exception(
+                        f"You have an SCP and a cfct resource with the same name: {name}"
+                    )
+                manifest[constants.SERVICE_CONTROL_POLICIES][name] = scp
+
+                prev = name
+
             else:
                 raise Exception(f"Unknown deploy_method of {deploy_method}")
 
