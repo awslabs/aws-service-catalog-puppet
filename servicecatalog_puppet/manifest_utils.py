@@ -158,9 +158,9 @@ def expand_manifest(manifest, client):
         account_id = account.get("account_id")
         if account.get("append") or account.get("overwrite"):
             if (
-                    account.get("default_region")
-                    or account.get("regions_enabled")
-                    or account.get("tags")
+                account.get("default_region")
+                or account.get("regions_enabled")
+                or account.get("tags")
             ):
                 raise Exception(
                     f"{account_id}: If using append or overwrite you cannot set default_region, regions_enabled or tags"
@@ -199,7 +199,7 @@ def expand_manifest(manifest, client):
     for section in [constants.LAUNCHES, constants.STACKS]:
         for name, details in new_manifest.get(section, {}).items():
             for parameter_name, parameter_details in details.get(
-                    "parameters", {}
+                "parameters", {}
             ).items():
                 if parameter_details.get("macro"):
                     macro_to_run = macros.get(
@@ -277,14 +277,14 @@ def rewrite_cfct(manifest):
                     m = re.match(r"\$\[alfred_ssm_(.*)\]", parameter_value)
                     if m:
                         parameters[parameter_key] = dict(
-                            ssm=dict(name=m.group(1), region=default_region, )
+                            ssm=dict(name=m.group(1), region=default_region,)
                         )
                     else:
                         parameters[parameter_key] = dict(default=parameter_value)
 
                 if prev is not None:
                     depends_on.append(
-                        dict(name=prev, type=constants.STACK, affinity=constants.STACK, )
+                        dict(name=prev, type=constants.STACK, affinity=constants.STACK,)
                     )
 
                 for output in resource.get("export_outputs", []):
@@ -297,7 +297,7 @@ def rewrite_cfct(manifest):
 
                 regions = resource.get("regions", [default_region])
                 for account in resource.get("deployment_targets", {}).get(
-                        "accounts", []
+                    "accounts", []
                 ):
                     if re.match(r"[0-9]{12}", str(account)):
                         deploy_to_accounts.append(
@@ -316,7 +316,7 @@ def rewrite_cfct(manifest):
                         )
 
                 for organizational_unit in resource.get("deployment_targets", {}).get(
-                        "organizational_units", []
+                    "organizational_units", []
                 ):
                     deploy_to_tags.append(
                         dict(
@@ -356,8 +356,8 @@ def rewrite_cfct(manifest):
 
 def rewrite_depends_on(manifest):
     for (
-            section_item_name,
-            section_name,
+        section_item_name,
+        section_name,
     ) in constants.ALL_SECTION_NAME_SINGULAR_AND_PLURAL_LIST:
         for item, details in manifest.get(section_name, {}).items():
             for i in range(len(details.get("depends_on", []))):
@@ -381,12 +381,12 @@ def rewrite_ssm_parameters(manifest):
     :return:
     """
     for (
-            section_item_name,
-            section_name,
+        section_item_name,
+        section_name,
     ) in constants.SECTION_NAME_SINGULAR_AND_PLURAL_LIST_THAT_SUPPORTS_PARAMETERS:
         for item, details in manifest.get(section_name, {}).items():
             for parameter_name, parameter_details in details.get(
-                    "parameters", {}
+                "parameters", {}
             ).items():
                 if parameter_details.get("ssm"):
                     for d in details.get("depends_on", []):
@@ -395,7 +395,7 @@ def rewrite_ssm_parameters(manifest):
                         ).get(d.get("name"))
                         for output in dependency.get("outputs", {}).get("ssm", []):
                             if output.get("param_name") == parameter_details.get(
-                                    "ssm"
+                                "ssm"
                             ).get("name"):
                                 parameter_depends_on = parameter_details["ssm"].get(
                                     "depends_on", []
@@ -427,8 +427,8 @@ def rewrite_stacks(manifest, puppet_account_id):
                 del details["version"]
                 if category == constants.STACK:
                     if (
-                            details.get(constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE)
-                            is None
+                        details.get(constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE)
+                        is None
                     ):
                         details[
                             constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE
@@ -441,7 +441,7 @@ def rewrite_scps(manifest, puppet_account_id):
         for attribute in ["tags", "accounts", "ous"]:
             apply_to = details.get("apply_to")
             for d in apply_to.get(attribute, []):
-                d['regions'] = 'default_region'
+                d["regions"] = "home_region"
     return manifest
 
 
@@ -558,7 +558,7 @@ class Manifest(dict):
         return self.get(constants.APPS).get(name)
 
     def get_tasks_for(
-            self, puppet_account_id, section_name, item_name, single_account="None"
+        self, puppet_account_id, section_name, item_name, single_account="None"
     ):
         accounts = self.get(constants.ACCOUNTS)
         section = self.get(section_name)
@@ -575,11 +575,12 @@ class Manifest(dict):
             "code-build-runs": "run_for",
             "assertions": "assert_for",
             "service-control-policies": "apply_to",
+            "simulate-policies": "simulate_for",
         }.get(section_name)
 
         if (
-                section_name == constants.SPOKE_LOCAL_PORTFOLIOS
-                and item.get(deploy_to) is None
+            section_name == constants.SPOKE_LOCAL_PORTFOLIOS
+            and item.get(deploy_to) is None
         ):
             deploy_to = "deploy_to"
 
@@ -685,10 +686,30 @@ class Manifest(dict):
                 service_control_policy_name=item_name,
                 description=item.get("description"),
                 content=tasks.unwrap(item.get("content")),
-                should_minimize=item.get("should_minimize"),
+            ),
+            constants.SIMULATE_POLICIES: dict(
+                puppet_account_id=puppet_account_id,
+                requested_priority=item.get("requested_priority", 0),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
+                simulate_policy_name=item_name,
+                simulation_type=item.get("simulation_type"),
+                policy_source_arn=item.get("policy_source_arn", ""),
+                policy_input_list=item.get("policy_input_list", []),
+                permissions_boundary_policy_input_list=item.get(
+                    "permissions_boundary_policy_input_list", []
+                ),
+                action_names=item.get("action_names"),
+                expected_decision=item.get("expected_decision"),
+                resource_arns=item.get("resource_arns", []),
+                resource_policy=item.get("resource_policy", ""),
+                resource_owner=item.get("resource_owner", ""),
+                caller_arn=item.get("caller_arn", ""),
+                context_entries=item.get("context_entries", []),
+                resource_handling_option=item.get("resource_handling_option", ""),
             ),
         }.get(section_name)
 
+        # handle deploy_to tags
         tags = item.get(deploy_to).get("tags", [])
         for tag in tags:
             tag_name = tag.get("tag")
@@ -714,8 +735,8 @@ class Manifest(dict):
                         account_id=account_id,
                         account_parameters=account.get("parameters", {}),
                     ),
-                    "spoke-local-portfolios": dict(account_id=account_id, ),
-                    "assertions": dict(account_id=account_id, ),
+                    "spoke-local-portfolios": dict(account_id=account_id,),
+                    "assertions": dict(account_id=account_id,),
                     "lambda-invocations": dict(
                         account_id=account_id,
                         account_parameters=account.get("parameters", {}),
@@ -725,8 +746,9 @@ class Manifest(dict):
                         account_parameters=account.get("parameters", {}),
                     ),
                     "service-control-policies": dict(
-                        account_id=account_id,
+                        account_id=account_id, ou_name="",
                     ),
+                    constants.SIMULATE_POLICIES: dict(account_id=account_id,),
                 }.get(section_name)
                 if tag_name in account.get("tags"):
                     if isinstance(regions, str):
@@ -749,6 +771,14 @@ class Manifest(dict):
                                     **common_parameters,
                                     **additional_parameters,
                                     region=account.get("default_region"),
+                                )
+                            )
+                        elif regions == "home_region":
+                            provisioning_tasks.append(
+                                dict(
+                                    **common_parameters,
+                                    **additional_parameters,
+                                    region=config.get_home_region(puppet_account_id),
                                 )
                             )
                         elif regions == "all":
@@ -790,6 +820,7 @@ class Manifest(dict):
                             f"Unsupported regions {regions} setting for {section_name}: {item_name}"
                         )
 
+        # handle deploy_to accounts
         for account_to_deploy_to in item.get(deploy_to).get("accounts", []):
             account_id_of_account_to_deploy_to = account_to_deploy_to.get("account_id")
             regions = account_to_deploy_to.get("regions")
@@ -807,8 +838,8 @@ class Manifest(dict):
                     account_id=account_id,
                     account_parameters=account.get("parameters", {}),
                 ),
-                "spoke-local-portfolios": dict(account_id=account_id, ),
-                "assertions": dict(account_id=account_id, ),
+                "spoke-local-portfolios": dict(account_id=account_id,),
+                "assertions": dict(account_id=account_id,),
                 "lambda-invocations": dict(
                     account_id=account_id,
                     account_parameters=account.get("parameters", {}),
@@ -817,9 +848,8 @@ class Manifest(dict):
                     account_id=account_id,
                     account_parameters=account.get("parameters", {}),
                 ),
-                "service-control-policies": dict(
-                    account_id=account_id,
-                ),
+                "service-control-policies": dict(account_id=account_id, ou_name="",),
+                constants.SIMULATE_POLICIES: dict(account_id=account_id,),
             }.get(section_name)
 
             if isinstance(regions, str):
@@ -844,6 +874,14 @@ class Manifest(dict):
                             region=account.get("default_region"),
                         )
                     )
+                elif regions == "home_region":
+                    provisioning_tasks.append(
+                        dict(
+                            **common_parameters,
+                            **additional_parameters,
+                            region=config.get_home_region(puppet_account_id),
+                        )
+                    )
                 elif regions == "all":
                     all_regions = config.get_regions(puppet_account_id)
                     for region_enabled in all_regions:
@@ -857,7 +895,7 @@ class Manifest(dict):
 
                 else:
                     raise Exception(
-                        f"Unsupported regions {regions} setting for {constants.LAUNCHES}: {item_name}"
+                        f"Unsupported regions {regions} setting for {section_name}: {item_name}"
                     )
             elif isinstance(regions, list):
                 for region_ in regions:
@@ -880,17 +918,43 @@ class Manifest(dict):
 
             else:
                 raise Exception(
-                    f"Unsupported regions {regions} setting for {constants.LAUNCHES}: {item_name}"
+                    f"Unsupported regions {regions} setting for {section_name}: {item_name}"
                 )
+
+        # handle deploy_to ous
+        for ou_to_deploy_to in item.get(deploy_to).get("ous", []):
+            ou_name = ou_to_deploy_to.get("ou")
+            regions = ou_to_deploy_to.get("regions")
+
+            if single_account != "None":
+                continue
+
+            additional_parameters = {
+                "service-control-policies": dict(account_id="", ou_name=ou_name,),
+            }.get(section_name)
+
+            if isinstance(regions, str) and regions == "home_region":
+                provisioning_tasks.append(
+                    dict(
+                        **common_parameters,
+                        **additional_parameters,
+                        region=config.get_home_region(puppet_account_id),
+                    )
+                )
+            else:
+                raise Exception(
+                    f"Unsupported regions {regions} setting for {section_name}: {item_name}"
+                )
+
         return provisioning_tasks
 
     def get_tasks_for_launch_and_region(
-            self,
-            puppet_account_id,
-            section_name,
-            launch_name,
-            region,
-            single_account="None",
+        self,
+        puppet_account_id,
+        section_name,
+        launch_name,
+        region,
+        single_account="None",
     ):
         return [
             task
@@ -904,12 +968,12 @@ class Manifest(dict):
         ]
 
     def get_tasks_for_launch_and_account(
-            self,
-            puppet_account_id,
-            section_nam,
-            launch_name,
-            account_id,
-            single_account="None",
+        self,
+        puppet_account_id,
+        section_nam,
+        launch_name,
+        account_id,
+        single_account="None",
     ):
         return [
             task
@@ -923,13 +987,13 @@ class Manifest(dict):
         ]
 
     def get_tasks_for_launch_and_account_and_region(
-            self,
-            puppet_account_id,
-            section_name,
-            launch_name,
-            account_id,
-            region,
-            single_account="None",
+        self,
+        puppet_account_id,
+        section_name,
+        launch_name,
+        account_id,
+        region,
+        single_account="None",
     ):
         return [
             task
@@ -943,7 +1007,7 @@ class Manifest(dict):
         ]
 
     def get_regions_used_for_section_item(
-            self, puppet_account_id, section_name, item_name
+        self, puppet_account_id, section_name, item_name
     ):
         return list(
             set(
@@ -955,7 +1019,7 @@ class Manifest(dict):
         )
 
     def get_account_ids_used_for_section_item(
-            self, puppet_account_id, section_name, item_name
+        self, puppet_account_id, section_name, item_name
     ):
         return list(
             set(
@@ -967,7 +1031,7 @@ class Manifest(dict):
         )
 
     def get_account_ids_and_regions_used_for_section_item(
-            self, puppet_account_id, section_name, item_name
+        self, puppet_account_id, section_name, item_name
     ):
         result = dict()
         for task in self.get_tasks_for(puppet_account_id, section_name, item_name):
@@ -1026,9 +1090,9 @@ class Manifest(dict):
             account_regions.append(account.get("default_region"))
 
             enabled_regions = (
-                    account.get("enabled", [])
-                    + account.get("regions_enabled", [])
-                    + account.get("enabled_regions", [])
+                account.get("enabled", [])
+                + account.get("regions_enabled", [])
+                + account.get("enabled_regions", [])
             )
             if len(enabled_regions) == 0:
                 raise Exception(
@@ -1042,8 +1106,8 @@ class Manifest(dict):
                 if account.get("organization", "") != "":
                     organization = account.get("organization")
                     if (
-                            organization
-                            not in sharing_policies_by_region[r]["organizations"]
+                        organization
+                        not in sharing_policies_by_region[r]["organizations"]
                     ):
                         sharing_policies_by_region[r]["organizations"].append(
                             organization
@@ -1093,11 +1157,11 @@ class Manifest(dict):
         return accounts_by_region
 
     def get_task_defs_from_details(
-            self,
-            puppet_account_id,
-            launch_name,
-            configuration,
-            launch_or_spoke_local_portfolio,
+        self,
+        puppet_account_id,
+        launch_name,
+        configuration,
+        launch_or_spoke_local_portfolio,
     ):
         launch_details = self.get(launch_or_spoke_local_portfolio).get(launch_name)
         accounts = self.get("accounts")
@@ -1236,10 +1300,10 @@ def convert_to_graph(expanded_manifest, G):
     for section in constants.ALL_SECTION_NAMES:
         for item_name, item_details in expanded_manifest.get(section, {}).items():
             uid = f"{section}|{item_name}"
-            data = dict(section=section, item_name=item_name, )
+            data = dict(section=section, item_name=item_name,)
             data.update(item_details)
             G.add_nodes_from(
-                [(uid, data), ]
+                [(uid, data),]
             )
 
     for section in constants.ALL_SECTION_NAMES:

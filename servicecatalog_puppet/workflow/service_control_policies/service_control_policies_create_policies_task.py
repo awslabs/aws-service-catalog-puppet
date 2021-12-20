@@ -44,11 +44,7 @@ class ServiceControlPolicySectionTask(tasks.PuppetTask, manifest_mixin.ManifestM
                 if already_created_policies.get(policy_name) is None:
                     description = policy.get("description", policy_name)
                     tags = policy.get("tags", [])
-                    should_minimize = policy.get("should_minimize", True)
-                    if should_minimize:
-                        content = json.dumps(json.loads(policy.get("content")))
-                    else:
-                        content = policy.get("content")
+                    content = json.dumps(json.loads(policy.get("content")))
                     policy_id = (
                         orgs.create_policy(
                             Name=policy_name,

@@ -23,9 +23,9 @@ class ExecuteServiceControlPoliciesTask(
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()
+    ou_name = luigi.Parameter()
 
     content = luigi.DictParameter()
-    should_minimize = luigi.BoolParameter()
     description = luigi.Parameter()
 
     requested_priority = luigi.IntParameter()
@@ -36,6 +36,7 @@ class ExecuteServiceControlPoliciesTask(
             "service_control_policy_name": self.service_control_policy_name,
             "region": self.region,
             "account_id": self.account_id,
+            "ou_name": self.ou_name,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -49,11 +50,9 @@ class ExecuteServiceControlPoliciesTask(
             puppet_account_id=self.puppet_account_id,
             region=self.region,
             account_id=self.account_id,
-
+            ou_name=self.ou_name,
             content=self.content,
-            should_minimize=self.should_minimize,
             description=self.description,
-
             requested_priority=self.requested_priority,
         )
         self.write_output(self.params_for_results_display())

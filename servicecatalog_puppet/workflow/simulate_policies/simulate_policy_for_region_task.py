@@ -3,14 +3,12 @@
 
 import luigi
 
-from servicecatalog_puppet.workflow.service_control_policies import (
-    service_control_policies_for_task,
-)
+from servicecatalog_puppet.workflow.simulate_policies import simulate_policy_for_task
 from servicecatalog_puppet.workflow.generic import generic_for_region_task
 
 
-class ServiceControlPoliciesForRegionTask(
+class SimulatePolicyForRegionTask(
     generic_for_region_task.GenericForRegionTask,
-    service_control_policies_for_task.ServiceControlPoliciesForTask,
+    simulate_policy_for_task.SimulatePolicyForTask,
 ):
     region = luigi.Parameter()

@@ -12,7 +12,6 @@ class GetOrCreatePolicyTask(tasks.PuppetTask):
     policy_name = luigi.Parameter()
     policy_description = luigi.Parameter()
     policy_content = luigi.DictParameter()
-    should_minimize = luigi.BoolParameter()
     tags = luigi.ListParameter()
 
     def params_for_results_display(self):
@@ -37,18 +36,22 @@ class GetOrCreatePolicyTask(tasks.PuppetTask):
                         self.write_output(policy)
                         return
 
-            unwrapped = tasks.unwrap(self.policy_content)
+            unwrapped = tasks.unwrap(self.policy_content.get("default"))
             content = json.dumps(unwrapped, indent=0, default=str)
 
-            tags = []
+            tags = [dict(Key="ServiceCatalogPuppet:Actor", Value="generated")]
             for tag in self.tags:
                 tags.append(dict(Key=tag.get("Key"), Value=tag.get("Value")))
 
-            result = orgs.create_policy(
-                Name=self.policy_name,
-                Description=self.policy_description,
-                Type="SERVICE_CONTROL_POLICY",
-                Tags=tags,
-                Content=content,
-            ).get("Policy").get("PolicySummary")
+            result = (
+                orgs.create_policy(
+                    Name=self.policy_name,
+                    Description=self.policy_description,
+                    Type="SERVICE_CONTROL_POLICY",
+                    Tags=tags,
+                    Content=content,
+                )
+                .get("Policy")
+                .get("PolicySummary")
+            )
             self.write_output(result)

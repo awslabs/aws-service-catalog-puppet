@@ -6,19 +6,19 @@ from unittest import skip
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
-class ServiceControlPoliciesSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
+class SimulatePolicysSectionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
     cache_invalidator = "NOW"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.service_control_policies import (
-            service_control_policies_section_task,
+        from servicecatalog_puppet.workflow.simulate_policies import (
+            simulate_policy_section_task,
         )
 
-        self.module = service_control_policies_section_task
+        self.module = simulate_policy_section_task
 
-        self.sut = self.module.ServiceControlPoliciesSectionTask(
+        self.sut = self.module.SimulatePolicysSectionTask(
             manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
         )

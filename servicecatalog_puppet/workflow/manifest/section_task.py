@@ -48,6 +48,7 @@ class SectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
                             self.puppet_account_id,
                             None,
                             None,
+                            None,
                             not self.is_running_in_spoke(),
                         )
                     )

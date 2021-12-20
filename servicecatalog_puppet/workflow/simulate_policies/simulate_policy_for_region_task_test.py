@@ -6,24 +6,22 @@ from unittest import mock
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
-class ServiceControlPoliciesForRegionTaskTest(
-    tasks_unit_tests_helper.PuppetTaskUnitTest
-):
+class SimulatePolicyForRegionTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     region = "region"
     puppet_account_id = "puppet_account_id"
-    service_control_policies_name = "service_control_policies_name"
+    simulate_policy_name = "simulate_policy_name"
     manifest_file_path = "manifest_file_path"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.service_control_policies import (
-            service_control_policies_for_region_task,
+        from servicecatalog_puppet.workflow.simulate_policies import (
+            simulate_policy_for_region_task,
         )
 
-        self.module = service_control_policies_for_region_task
+        self.module = simulate_policy_for_region_task
 
-        self.sut = self.module.ServiceControlPoliciesForRegionTask(
+        self.sut = self.module.SimulatePolicyForRegionTask(
             manifest_file_path=self.manifest_file_path,
-            service_control_policies_name=self.service_control_policies_name,
+            simulate_policy_name=self.simulate_policy_name,
             puppet_account_id=self.puppet_account_id,
             region=self.region,
         )
@@ -34,7 +32,7 @@ class ServiceControlPoliciesForRegionTaskTest(
         # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
-            "service_control_policies_name": self.service_control_policies_name,
+            "simulate_policy_name": self.simulate_policy_name,
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
         }
@@ -61,7 +59,7 @@ class ServiceControlPoliciesForRegionTaskTest(
         for task in self.sut.manifest.get_tasks_for_launch_and_region(
             self.sut.puppet_account_id,
             self.sut.section_name,
-            self.sut.service_control_policies_name,
+            self.sut.simulate_policy_name,
             self.sut.region,
         ):
             dependencies.append(

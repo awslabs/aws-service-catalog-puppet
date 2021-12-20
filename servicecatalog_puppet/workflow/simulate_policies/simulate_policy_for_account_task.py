@@ -3,14 +3,12 @@
 
 import luigi
 
-from servicecatalog_puppet.workflow.service_control_policies import (
-    service_control_policies_for_task,
-)
+from servicecatalog_puppet.workflow.simulate_policies import simulate_policy_for_task
 from servicecatalog_puppet.workflow.generic import generic_for_account_task
 
 
-class ServiceControlPoliciesForAccountTask(
+class SimulatePolicyForAccountTask(
     generic_for_account_task.GenericForAccountTask,
-    service_control_policies_for_task.ServiceControlPoliciesForTask,
+    simulate_policy_for_task.SimulatePolicyForTask,
 ):
     account_id = luigi.Parameter()
