@@ -1,0 +1,64 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+AWSTemplateFormatVersion: "2010-09-09"
+Description: |
+  Bootstrap template used to bootstrap the org master for ServiceCatalog-Puppet use
+  {"version": "{{ VERSION }}", "framework": "servicecatalog-puppet", "role": "bootstrap-org-master"}
+
+Parameters:
+  PuppetAccountId:
+    Type: String
+    MinLength: 12
+    MaxLength: 12
+  Version:
+    Type: String
+    Default: "{{ VERSION }}"
+
+Resources:
+  Param:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "service-catalog-puppet-scp-master-version-${PuppetAccountId}"
+      Type: String
+      Value: !Ref Version
+      Tags:
+        "ServiceCatalogPuppet:Actor": "Framework"
+
+  PuppetOrgRoleForExpands:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "PuppetOrgRoleForSCP${PuppetAccountId}"
+      Path: /servicecatalog-puppet/
+      Policies:
+        - PolicyName: "allowExpands"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - organizations:ListRoots
+                  - organizations:DescribeAccount
+                  - organizations:ListOrganizationalUnitsForParent
+                  - organizations:ListChildren
+
+                  - organizations:CreatePolicy
+                  - organizations:AttachPolicy
+                  - organizations:ListPoliciesForTarget
+                  - organizations:ListPolicies
+                Resource: "*"
+
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Sub "arn:${AWS::Partition}:iam::${PuppetAccountId}:root"
+            Action:
+              - "sts:AssumeRole"
+
+Outputs:
+  PuppetOrgRoleForExpandsArn:
+    Value: !GetAtt PuppetOrgRoleForExpands.Arn
+
+  Version:
+    Value: !GetAtt Param.Value

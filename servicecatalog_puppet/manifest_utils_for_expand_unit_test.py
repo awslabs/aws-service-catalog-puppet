@@ -47,6 +47,7 @@ class TestManifestForExpand(unittest.TestCase):
     }
     account_ou_b = {
         "ou": "/OrgUnitB",
+        "ou_name": "/OrgUnitB",
         "default_region": "us-west-1",
         "name": "oub",
         "regions_enabled": ["us-west-2",],
@@ -140,6 +141,7 @@ class TestManifestForExpand(unittest.TestCase):
         account_b["email"] = f"{account_b['account_id']}@test.com"
         account_b["organization"] = self.organization_id
         account_b["expanded_from"] = "ou-aaaa-bbbbbbbb"
+        account_b["ou_name"] = "/OrgUnitB"
         account_b["name"] = account_b["account_id"]
         accounts.append(account_b)
 

@@ -47,6 +47,7 @@ class GetSSMParamByPathTask(tasks.PuppetTask):
                 self.manifest_file_path,
                 self.puppet_account_id,
                 self.spoke_account_id,
+                self.ou_name if hasattr(self, "ou_name") else "",
                 self.spoke_region,
                 self.execution_mode,
             )
@@ -117,6 +118,7 @@ class GetSSMParamTask(tasks.PuppetTask):
                 self.manifest_file_path,
                 self.puppet_account_id,
                 self.spoke_account_id,
+                self.ou_name if hasattr(self, "ou_name") else "",
                 self.spoke_region,
                 self.execution_mode,
             )

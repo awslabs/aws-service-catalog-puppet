@@ -5,6 +5,7 @@ import configparser
 import json
 import logging
 import os
+import re
 from copy import deepcopy
 
 import click
@@ -13,8 +14,10 @@ import yaml
 from deepmerge import always_merger
 
 from servicecatalog_puppet import config
+from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.macros import macros
+from betterboto import client as betterboto_client
 
 logger = logging.getLogger(__file__)
 
@@ -33,6 +36,7 @@ def load(f, puppet_account_id):
         constants.LAMBDA_INVOCATIONS: {},
         constants.APPS: {},
         constants.WORKSPACES: {},
+        constants.CFCT: {},
     }
     contents = f.read()
     contents = contents.replace("${AWS::PuppetAccountId}", puppet_account_id)
@@ -210,6 +214,207 @@ def expand_manifest(manifest, client):
     return new_manifest
 
 
+def rewrite_cfct(manifest):
+    manifest_accounts = dict()
+    for account in manifest.get("accounts", []):
+        if account.get("account_id"):
+            manifest_accounts[account.get("name")] = account.get("account_id")
+
+    prev = None
+    for instance in manifest.get(constants.CFCT, []):
+        if str(instance.get("version")) != "2021-03-15":
+            raise Exception(
+                f"not supported version of cfct manifest {instance.get('version')}"
+            )
+        default_region = instance.get("region")
+        for resource in instance.get("resources", []):
+            resource_file = resource.get("resource_file").lower()
+            if resource_file.startswith("s3://"):
+                m = re.match(r"s3://(.*)/(.*)", resource_file)
+                bucket = m.group(1)
+                key = m.group(2)
+            elif resource_file.startswith("https://"):
+                m = re.match(r"https://([a-z0-9-]+)(.*)/(.*)", resource_file)
+                bucket = m.group(1)
+                key = m.group(3)
+            else:
+                raise Exception(
+                    f"All resource files should begin with s3:// of https://: {resource_file}"
+                )
+
+            name = resource.get("name")
+            deploy_method = resource.get("deploy_method")
+
+            if deploy_method == "stack_set":
+                parameters = dict()
+                depends_on = list()
+                ssm = list()
+                outputs = dict(ssm=ssm)
+                deploy_to_accounts = list()
+                deploy_to_tags = list()
+                deploy_to = dict(tags=deploy_to_tags, accounts=deploy_to_accounts)
+
+                if resource.get("parameter_file"):
+                    parameter_file = resource.get("parameter_file")
+                    if parameter_file.startswith("s3://"):
+                        m = re.match(r"s3://(.*)/(.*)", parameter_file)
+                        bucket = m.group(1)
+                        key = m.group(2)
+                    elif parameter_file.startswith("https://"):
+                        m = re.match(r"https://([a-z0-9-]+)(.*)/(.*)", parameter_file)
+                        bucket = m.group(1)
+                        key = m.group(3)
+                    else:
+                        raise Exception(
+                            f"All parameter_files should begin with s3:// of https://: {parameter_file}"
+                        )
+                    with betterboto_client.ClientContextManager("s3") as s3:
+                        p = s3.get_object(Bucket=bucket, Key=key).read()
+                        resource["parameters"] = json.loads(p)
+
+                for p in resource.get("parameters", []):
+                    parameter_key = p.get("parameter_key")
+                    parameter_value = p.get("parameter_value")
+                    m = re.match(r"\$\[alfred_ssm_(.*)\]", parameter_value)
+                    if m:
+                        parameters[parameter_key] = dict(
+                            ssm=dict(name=m.group(1), region=default_region,)
+                        )
+                    else:
+                        parameters[parameter_key] = dict(default=parameter_value)
+
+                if prev is not None:
+                    depends_on.append(
+                        dict(name=prev, type=constants.STACK, affinity=constants.STACK,)
+                    )
+
+                for output in resource.get("export_outputs", []):
+                    output_value = re.match(
+                        r"\$\[output_(.*)\]", output.get("value")
+                    ).group(1)
+                    ssm.append(
+                        dict(param_name=output.get("name"), stack_output=output_value)
+                    )
+
+                regions = resource.get("regions", [default_region])
+                for account in resource.get("deployment_targets", {}).get(
+                    "accounts", []
+                ):
+                    if re.match(r"[0-9]{12}", str(account)):
+                        deploy_to_accounts.append(
+                            dict(account_id=account, regions=regions)
+                        )
+                    else:
+                        if manifest_accounts.get(account) is None:
+                            raise Exception(
+                                f"You are using CFCT resource: {name} to deploy to account: {account} which is not defined in your accounts section"
+                            )
+                        deploy_to_accounts.append(
+                            dict(
+                                account_id=manifest_accounts.get(account),
+                                regions=regions,
+                            )
+                        )
+
+                for organizational_unit in resource.get("deployment_targets", {}).get(
+                    "organizational_units", []
+                ):
+                    deploy_to_tags.append(
+                        dict(
+                            tag=f"autogenerated:{organizational_unit}", regions=regions
+                        )
+                    )
+
+                stack = dict(
+                    name=name,
+                    stack_set_name=name,
+                    bucket=bucket,
+                    key=key,
+                    execution=constants.EXECUTION_MODE_HUB,
+                    capabilities=["CAPABILITY_NAMED_IAM"],
+                    parameters=parameters,
+                    depends_on=depends_on,
+                    outputs=outputs,
+                    deploy_to=deploy_to,
+                )
+
+                if manifest.get(constants.STACKS) is None:
+                    manifest[constants.STACKS] = dict()
+                if manifest[constants.STACKS].get(name) is not None:
+                    raise Exception(
+                        f"You have a stack and a cfct resource with the same name: {name}"
+                    )
+                manifest[constants.STACKS][name] = stack
+
+                prev = name
+
+            elif deploy_method == "scp":
+                with betterboto_client.ClientContextManager("s3") as s3:
+                    p = s3.get_object(Bucket=bucket, Key=key).read()
+                    content = json.loads(p)
+
+                depends_on = list()
+                deploy_to_accounts = list()
+                deploy_to_ous = list()
+                deploy_to = dict(accounts=deploy_to_accounts, ous=deploy_to_ous)
+
+                if prev is not None:
+                    depends_on.append(
+                        dict(
+                            name=prev,
+                            type=constants.SERVICE_CONTROL_POLICY,
+                            affinity=constants.SERVICE_CONTROL_POLICY,
+                        )
+                    )
+
+                regions = "home_region"
+                for account in resource.get("deployment_targets", {}).get(
+                    "accounts", []
+                ):
+                    if re.match(r"[0-9]{12}", str(account)):
+                        deploy_to_accounts.append(
+                            dict(account_id=account, regions=regions)
+                        )
+                    else:
+                        if manifest_accounts.get(account) is None:
+                            raise Exception(
+                                f"You are using CFCT resource: {name} to deploy to account: {account} which is not defined in your accounts section"
+                            )
+                        deploy_to_accounts.append(
+                            dict(
+                                account_id=manifest_accounts.get(account),
+                                regions=regions,
+                            )
+                        )
+
+                for organizational_unit in resource.get("deployment_targets", {}).get(
+                    "organizational_units", []
+                ):
+                    deploy_to_ous.append(dict(ou=organizational_unit, regions=regions))
+
+                scp = dict(
+                    description=resource.get("description", "auto generated from CfCT"),
+                    content=dict(default=content),
+                    depends_on=depends_on,
+                    apply_to=deploy_to,
+                )
+
+                if manifest.get(constants.SERVICE_CONTROL_POLICIES) is None:
+                    manifest[constants.SERVICE_CONTROL_POLICIES] = dict()
+                if manifest[constants.SERVICE_CONTROL_POLICIES].get(name) is not None:
+                    raise Exception(
+                        f"You have an SCP and a cfct resource with the same name: {name}"
+                    )
+                manifest[constants.SERVICE_CONTROL_POLICIES][name] = scp
+
+                prev = name
+
+            else:
+                raise Exception(f"Unknown deploy_method of {deploy_method}")
+
+    return manifest
+
+
 def rewrite_depends_on(manifest):
     for (
         section_item_name,
@@ -292,8 +497,18 @@ def rewrite_stacks(manifest, puppet_account_id):
     return manifest
 
 
+def rewrite_scps(manifest, puppet_account_id):
+    for item, details in manifest.get(constants.SERVICE_CONTROL_POLICIES, {}).items():
+        for attribute in ["tags", "accounts", "ous"]:
+            apply_to = details.get("apply_to")
+            for d in apply_to.get(attribute, []):
+                d["regions"] = "home_region"
+    return manifest
+
+
 def expand_path(account, client):
     ou = client.convert_path_to_ou(account.get("ou"))
+    account["ou_name"] = account["ou"]
     account["ou"] = ou
     return expand_ou(account, client)
 
@@ -420,6 +635,8 @@ class Manifest(dict):
             "lambda-invocations": "invoke_for",
             "code-build-runs": "run_for",
             "assertions": "assert_for",
+            "service-control-policies": "apply_to",
+            "simulate-policies": "simulate_for",
         }.get(section_name)
 
         if (
@@ -524,8 +741,36 @@ class Manifest(dict):
                 actual=item.get("actual"),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
+            "service-control-policies": dict(
+                puppet_account_id=puppet_account_id,
+                requested_priority=item.get("requested_priority", 0),
+                service_control_policy_name=item_name,
+                description=item.get("description"),
+                content=tasks.unwrap(item.get("content")),
+            ),
+            constants.SIMULATE_POLICIES: dict(
+                puppet_account_id=puppet_account_id,
+                requested_priority=item.get("requested_priority", 0),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
+                simulate_policy_name=item_name,
+                simulation_type=item.get("simulation_type"),
+                policy_source_arn=item.get("policy_source_arn", ""),
+                policy_input_list=item.get("policy_input_list", []),
+                permissions_boundary_policy_input_list=item.get(
+                    "permissions_boundary_policy_input_list", []
+                ),
+                action_names=item.get("action_names"),
+                expected_decision=item.get("expected_decision"),
+                resource_arns=item.get("resource_arns", []),
+                resource_policy=item.get("resource_policy", ""),
+                resource_owner=item.get("resource_owner", ""),
+                caller_arn=item.get("caller_arn", ""),
+                context_entries=item.get("context_entries", []),
+                resource_handling_option=item.get("resource_handling_option", ""),
+            ),
         }.get(section_name)
 
+        # handle deploy_to tags
         tags = item.get(deploy_to).get("tags", [])
         for tag in tags:
             tag_name = tag.get("tag")
@@ -561,6 +806,10 @@ class Manifest(dict):
                         account_id=account_id,
                         account_parameters=account.get("parameters", {}),
                     ),
+                    "service-control-policies": dict(
+                        account_id=account_id, ou_name="",
+                    ),
+                    constants.SIMULATE_POLICIES: dict(account_id=account_id,),
                 }.get(section_name)
                 if tag_name in account.get("tags"):
                     if isinstance(regions, str):
@@ -585,6 +834,14 @@ class Manifest(dict):
                                     region=account.get("default_region"),
                                 )
                             )
+                        elif regions == "home_region":
+                            provisioning_tasks.append(
+                                dict(
+                                    **common_parameters,
+                                    **additional_parameters,
+                                    region=config.get_home_region(puppet_account_id),
+                                )
+                            )
                         elif regions == "all":
                             all_regions = config.get_regions(puppet_account_id)
                             for region_enabled in all_regions:
@@ -598,7 +855,7 @@ class Manifest(dict):
 
                         else:
                             raise Exception(
-                                f"Unsupported regions {regions} setting for {constants.LAUNCHES}: {item_name}"
+                                f"Unsupported regions {regions} setting for {section_name}: {item_name}"
                             )
                     elif isinstance(regions, list):
                         for region_ in regions:
@@ -621,9 +878,10 @@ class Manifest(dict):
 
                     else:
                         raise Exception(
-                            f"Unsupported regions {regions} setting for {constants.LAUNCHES}: {item_name}"
+                            f"Unsupported regions {regions} setting for {section_name}: {item_name}"
                         )
 
+        # handle deploy_to accounts
         for account_to_deploy_to in item.get(deploy_to).get("accounts", []):
             account_id_of_account_to_deploy_to = account_to_deploy_to.get("account_id")
             regions = account_to_deploy_to.get("regions")
@@ -651,6 +909,8 @@ class Manifest(dict):
                     account_id=account_id,
                     account_parameters=account.get("parameters", {}),
                 ),
+                "service-control-policies": dict(account_id=account_id, ou_name="",),
+                constants.SIMULATE_POLICIES: dict(account_id=account_id,),
             }.get(section_name)
 
             if isinstance(regions, str):
@@ -675,6 +935,14 @@ class Manifest(dict):
                             region=account.get("default_region"),
                         )
                     )
+                elif regions == "home_region":
+                    provisioning_tasks.append(
+                        dict(
+                            **common_parameters,
+                            **additional_parameters,
+                            region=config.get_home_region(puppet_account_id),
+                        )
+                    )
                 elif regions == "all":
                     all_regions = config.get_regions(puppet_account_id)
                     for region_enabled in all_regions:
@@ -688,7 +956,7 @@ class Manifest(dict):
 
                 else:
                     raise Exception(
-                        f"Unsupported regions {regions} setting for {constants.LAUNCHES}: {item_name}"
+                        f"Unsupported regions {regions} setting for {section_name}: {item_name}"
                     )
             elif isinstance(regions, list):
                 for region_ in regions:
@@ -711,8 +979,34 @@ class Manifest(dict):
 
             else:
                 raise Exception(
-                    f"Unsupported regions {regions} setting for {constants.LAUNCHES}: {item_name}"
+                    f"Unsupported regions {regions} setting for {section_name}: {item_name}"
                 )
+
+        # handle deploy_to ous
+        for ou_to_deploy_to in item.get(deploy_to).get("ous", []):
+            ou_name = ou_to_deploy_to.get("ou")
+            regions = ou_to_deploy_to.get("regions")
+
+            if single_account != "None":
+                continue
+
+            additional_parameters = {
+                "service-control-policies": dict(account_id="", ou_name=ou_name,),
+            }.get(section_name)
+
+            if isinstance(regions, str) and regions == "home_region":
+                provisioning_tasks.append(
+                    dict(
+                        **common_parameters,
+                        **additional_parameters,
+                        region=config.get_home_region(puppet_account_id),
+                    )
+                )
+            else:
+                raise Exception(
+                    f"Unsupported regions {regions} setting for {section_name}: {item_name}"
+                )
+
         return provisioning_tasks
 
     def get_tasks_for_launch_and_region(
@@ -936,6 +1230,8 @@ class Manifest(dict):
             raise Exception(f"launch_details is None for {launch_name}")
         if launch_or_spoke_local_portfolio == "lambda-invocations":
             deploy_to = launch_details.get("invoke_for")
+        if launch_or_spoke_local_portfolio == constants.SERVICE_CONTROL_POLICIES:
+            deploy_to = launch_details.get("apply_to")
         elif launch_or_spoke_local_portfolio == "launches":
             deploy_to = launch_details.get("deploy_to")
         elif launch_or_spoke_local_portfolio == "spoke-local-portfolios":

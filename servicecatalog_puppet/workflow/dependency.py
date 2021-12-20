@@ -10,6 +10,7 @@ def generate_dependency_tasks(
     manifest_file_path,
     puppet_account_id,
     account_id,
+    ou_name,
     region,
     execution_mode,
 ):
@@ -24,6 +25,7 @@ def generate_dependency_tasks(
                 manifest_file_path,
                 puppet_account_id,
                 account_id,
+                ou_name,
                 region,
                 is_running_in_hub,
             )
@@ -37,6 +39,7 @@ def generate_dependency_task(
     manifest_file_path,
     puppet_account_id,
     account_id,
+    ou_name,
     region,
     is_running_in_hub,
 ):
@@ -64,6 +67,12 @@ def generate_dependency_task(
         assertion_for_region_task,
         assertion_for_account_and_region_task,
     )
+    from servicecatalog_puppet.workflow.simulate_policies import (
+        simulate_policy_task,
+        simulate_policy_for_account_task,
+        simulate_policy_for_region_task,
+        simulate_policy_for_account_and_region_task,
+    )
     from servicecatalog_puppet.workflow.codebuild_runs import (
         code_build_run_task,
         code_build_run_for_account_task,
@@ -87,6 +96,9 @@ def generate_dependency_task(
         workspace_for_account_task,
         workspace_for_region_task,
         workspace_for_account_and_region_task,
+    )
+    from servicecatalog_puppet.workflow.service_control_policies import (
+        service_control_policies_task,
     )
 
     common_args = dict(
@@ -179,6 +191,16 @@ def generate_dependency_task(
                 region=region,
             )
 
+    elif depends_on.get("type") == constants.SERVICE_CONTROL_POLICY:
+        if depends_on.get(constants.AFFINITY) == constants.SERVICE_CONTROL_POLICY:
+            return service_control_policies_task.ServiceControlPoliciesTask(
+                **common_args, service_control_policies_name=depends_on.get("name"),
+            )
+        else:
+            raise Exception(
+                f"Affinity of {depends_on.get(constants.AFFINITY)} is not supported for this action"
+            )
+
     elif (
         is_running_in_hub and depends_on.get("type") == constants.SPOKE_LOCAL_PORTFOLIO
     ):
@@ -224,6 +246,30 @@ def generate_dependency_task(
             return assertion_for_account_and_region_task.AssertionForAccountAndRegionTask(
                 **common_args,
                 assertion_name=depends_on.get("name"),
+                account_id=account_id,
+                region=region,
+            )
+    elif is_running_in_hub and depends_on.get("type") == constants.SIMULATE_POLICY:
+        if depends_on.get(constants.AFFINITY) == constants.SIMULATE_POLICY:
+            return simulate_policy_task.SimulatePolicyTask(
+                **common_args, simulate_policy_name=depends_on.get("name"),
+            )
+        if depends_on.get(constants.AFFINITY) == "account":
+            return simulate_policy_for_account_task.SimulatePolicyForAccountTask(
+                **common_args,
+                simulate_policy_name=depends_on.get("name"),
+                account_id=account_id,
+            )
+        if depends_on.get(constants.AFFINITY) == "region":
+            return simulate_policy_for_region_task.SimulatePolicyForRegionTask(
+                **common_args,
+                simulate_policy_name=depends_on.get("name"),
+                region=region,
+            )
+        if depends_on.get(constants.AFFINITY) == "account-and-region":
+            return simulate_policy_for_account_and_region_task.SimulatePolicyForAccountAndRegionTask(
+                **common_args,
+                simulate_policy_name=depends_on.get("name"),
                 account_id=account_id,
                 region=region,
             )
@@ -298,6 +344,7 @@ class DependenciesMixin(object):
             self.manifest_file_path,
             self.puppet_account_id,
             self.account_id,
+            self.ou_name if hasattr(self, "ou_name") else "",
             self.region,
             self.execution_mode,
         )

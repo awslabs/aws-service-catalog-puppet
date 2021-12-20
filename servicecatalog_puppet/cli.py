@@ -532,10 +532,23 @@ def set_org_iam_role_arn(org_iam_role_arn):
 
 
 @cli.command()
+@click.argument("org-iam-role-arn")
+def set_org_scp_role_arn(org_iam_role_arn):
+    orgs_commands.set_org_scp_role_arn(org_iam_role_arn)
+
+
+@cli.command()
 @click.argument("puppet_account_id")
 @click.option("--tag", multiple=True, callback=parse_tags, default=[])
 def bootstrap_org_master(puppet_account_id, tag):
     orgs_commands.bootstrap_org_master(puppet_account_id, tag)
+
+
+@cli.command()
+@click.argument("puppet_account_id")
+@click.option("--tag", multiple=True, callback=parse_tags, default=[])
+def bootstrap_scp_master(puppet_account_id, tag):
+    orgs_commands.bootstrap_scp_master(puppet_account_id, tag)
 
 
 @cli.command()

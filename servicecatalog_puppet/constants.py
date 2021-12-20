@@ -14,6 +14,7 @@ TEMPLATES = os.path.sep.join([OUTPUT, "templates"])
 LAUNCHES_PATH = os.path.sep.join([OUTPUT, "launches"])
 CONFIG_PARAM_NAME = "/servicecatalog-puppet/config"
 CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN = "/servicecatalog-puppet/org-iam-role-arn"
+CONFIG_PARAM_NAME_ORG_SCP_ROLE_ARN = "/servicecatalog-puppet/org-scp-role-arn"
 PUPPET_ORG_ROLE_FOR_EXPANDS_ARN = "PuppetOrgRoleForExpandsArn"
 HOME_REGION_PARAM_NAME = "/servicecatalog-puppet/home-region"
 
@@ -31,12 +32,19 @@ SPOKE_LOCAL_PORTFOLIOS = "spoke-local-portfolios"
 LAMBDA_INVOCATIONS = "lambda-invocations"
 ASSERTIONS = "assertions"
 WORKSPACES = "workspaces"
+CFCT = "cfct"
 WORKSPACE = "workspace"
 APPS = "apps"
 APP = "app"
 ASSERTION = "assertion"
 CODE_BUILD_RUNS = "code-build-runs"
 CODE_BUILD_RUN = "code-build-run"
+SERVICE_CONTROL_POLICIES = "service-control-policies"
+SERVICE_CONTROL_POLICY = "service-control-policy"
+
+SIMULATE_POLICIES = "simulate-policies"
+SIMULATE_POLICY = "simulate-policy"
+
 ACTIONS = "actions"
 
 LAUNCH = "launch"
@@ -127,6 +135,8 @@ ALL_SECTION_NAMES = [
     ASSERTIONS,
     APPS,
     WORKSPACES,
+    SERVICE_CONTROL_POLICIES,
+    SIMULATE_POLICIES,
 ]
 
 ALL_SPOKE_EXECUTABLE_SECTION_NAMES = [
@@ -137,6 +147,7 @@ ALL_SPOKE_EXECUTABLE_SECTION_NAMES = [
     ASSERTIONS,
     APPS,
     WORKSPACES,
+    SIMULATE_POLICIES,
 ]
 
 ALL_SECTION_NAME_SINGULAR_AND_PLURAL_LIST = [
@@ -197,20 +208,15 @@ TERMINATE_DRY_RUN_TERRAFORM_PROJECT_NAME = (
 TERRAFORM_SPOKE_PREP_STACK_NAME = f"{BOOTSTRAP_STACK_NAME}-terraform-execution"
 STACK_SPOKE_PREP_STACK_NAME = f"{BOOTSTRAP_STACK_NAME}-stack-execution"
 
-
 USE_SERVICE_ROLE_DEFAULT = False
-
 
 MANIFEST_STATUS_FIELD_NAME = "status"
 MANIFEST_STATUS_FIELD_VALUE_IGNORED = "ignored"
 
-
 CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS = "should_delete_rollback_complete_stacks"
 CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS_DEFAULT = False
 
-
 PUPPET_LOGGER_NAME = "puppet-logger"
-
 
 SPOKE_EXECUTION_MODE_DEPLOY_ENV_PARAMETER_NAME = (
     "/servicecatalog-puppet/spoke/deploy-environment-compute-type"

@@ -25,14 +25,16 @@ class GenericScheduleRunDeployInSpokeTask(
     def requires(self):
         tasks_to_run = list()
         for name, details in self.manifest.get(self.section_name, {}).items():
-            if (
+            should_item_be_ignored = (
                 details.get(constants.MANIFEST_STATUS_FIELD_NAME)
                 != constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED
-            ):
-                if (
+            )
+            if should_item_be_ignored:
+                should_be_executed_in_a_spoke = (
                     details.get("execution", constants.EXECUTION_MODE_DEFAULT)
                     == constants.EXECUTION_MODE_SPOKE
-                ):
+                )
+                if should_be_executed_in_a_spoke:
                     for (
                         account_id
                     ) in self.manifest.get_account_ids_used_for_section_item(
