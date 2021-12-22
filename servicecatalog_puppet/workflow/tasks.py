@@ -12,7 +12,6 @@ import luigi
 import psutil
 from betterboto import client as betterboto_client
 from luigi import format
-from luigi.freezing import FrozenOrderedDict
 from luigi.contrib import s3
 
 from servicecatalog_puppet import constants, config
