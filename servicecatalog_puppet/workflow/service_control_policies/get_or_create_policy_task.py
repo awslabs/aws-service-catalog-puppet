@@ -22,14 +22,30 @@ class GetOrCreatePolicyTask(tasks.PuppetTask):
         }
 
     def api_calls_used(self):
-        return [
+        calls = [
             f"organizations.list_policies_{self.region}",
             f"organizations.create_policy_{self.region}",
+            f"organizations.describe_policy_{self.region}",
+            f"organizations.update_policy_{self.region}",
         ]
+        if self.policy_content.get("s3"):
+            calls.append(
+                f"s3.get_object_{self.policy_content.get('s3').get('bucket')}",
+            )
+        return calls
 
     def run(self):
         with self.hub_regional_client("organizations") as orgs:
-            unwrapped = tasks.unwrap(self.policy_content.get("default"))
+            if self.policy_content.get("default") is not None:
+                unwrapped = tasks.unwrap(self.policy_content.get("default"))
+            elif self.policy_content.get("s3") is not None:
+                with self.hub_client("s3") as s3:
+                    bucket = self.policy_content.get("s3").get("bucket")
+                    key = self.policy_content.get("s3").get("key")
+                    unwrapped = s3.get_object(Bucket=bucket, Key=key).read()
+            else:
+                raise Exception("Not supported policy content structure")
+
             content = json.dumps(unwrapped, indent=0, default=str)
             tags = [dict(Key="ServiceCatalogPuppet:Actor", Value="generated")]
             for tag in self.tags:
