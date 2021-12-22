@@ -22,26 +22,64 @@ class GetOrCreatePolicyTask(tasks.PuppetTask):
         }
 
     def api_calls_used(self):
-        return [
+        calls = [
             f"organizations.list_policies_{self.region}",
             f"organizations.create_policy_{self.region}",
+            f"organizations.describe_policy_{self.region}",
+            f"organizations.update_policy_{self.region}",
         ]
+        if self.policy_content.get("s3"):
+            calls.append(
+                f"s3.get_object_{self.policy_content.get('s3').get('bucket')}",
+            )
+        return calls
 
     def run(self):
         with self.hub_regional_client("organizations") as orgs:
+            if self.policy_content.get("default") is not None:
+                unwrapped = tasks.unwrap(self.policy_content.get("default"))
+            elif self.policy_content.get("s3") is not None:
+                with self.hub_client("s3") as s3:
+                    bucket = self.policy_content.get("s3").get("bucket")
+                    key = self.policy_content.get("s3").get("key")
+                    unwrapped = s3.get_object(Bucket=bucket, Key=key).read()
+            else:
+                raise Exception("Not supported policy content structure")
+
+            content = json.dumps(unwrapped, indent=0, default=str)
+            tags = [dict(Key="ServiceCatalogPuppet:Actor", Value="generated")]
+            for tag in self.tags:
+                tags.append(dict(Key=tag.get("Key"), Value=tag.get("Value")))
+
             paginator = orgs.get_paginator("list_policies")
             for page in paginator.paginate(Filter="SERVICE_CONTROL_POLICY"):
                 for policy in page.get("Policies", []):
                     if policy.get("Name") == self.policy_name:
-                        self.write_output(policy)
-                        return
+                        kwargs = dict(PolicyId=policy.get("Id"))
 
-            unwrapped = tasks.unwrap(self.policy_content.get("default"))
-            content = json.dumps(unwrapped, indent=0, default=str)
+                        if policy.get("Description") != self.policy_description:
+                            kwargs["Description"] = self.policy_description
 
-            tags = [dict(Key="ServiceCatalogPuppet:Actor", Value="generated")]
-            for tag in self.tags:
-                tags.append(dict(Key=tag.get("Key"), Value=tag.get("Value")))
+                        remote_policy_content = (
+                            orgs.describe_policy(PolicyId=policy.get("Id"))
+                            .get("Policy")
+                            .get("Content")
+                        )
+
+                        if unwrapped != json.loads(remote_policy_content):
+                            kwargs["Content"] = content
+
+                        if len(kwargs.keys()) > 1:
+                            result = (
+                                orgs.update_policy(**kwargs)
+                                .get("Policy")
+                                .get("PolicySummary")
+                            )
+                            self.write_output(result)
+                            return
+                        else:
+                            self.write_output(policy)
+                            return
 
             result = (
                 orgs.create_policy(
