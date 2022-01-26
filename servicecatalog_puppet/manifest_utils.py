@@ -37,6 +37,8 @@ def load(f, puppet_account_id):
         constants.APPS: {},
         constants.WORKSPACES: {},
         constants.CFCT: {},
+        constants.SERVICE_CONTROL_POLICIES: {},
+        constants.SIMULATE_POLICIES: {},
     }
     contents = f.read()
     contents = contents.replace("${AWS::PuppetAccountId}", puppet_account_id)
