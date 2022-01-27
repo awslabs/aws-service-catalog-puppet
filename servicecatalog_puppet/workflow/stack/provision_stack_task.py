@@ -72,6 +72,7 @@ class ProvisionStackTask(
             "template": get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
                 bucket=self.bucket,
                 key=self.key,
+                region=self.region,
                 version_id=self.version_id,
                 puppet_account_id=self.puppet_account_id,
                 account_id=self.puppet_account_id,

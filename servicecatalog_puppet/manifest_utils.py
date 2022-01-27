@@ -37,6 +37,8 @@ def load(f, puppet_account_id):
         constants.APPS: {},
         constants.WORKSPACES: {},
         constants.CFCT: {},
+        constants.SERVICE_CONTROL_POLICIES: {},
+        constants.SIMULATE_POLICIES: {},
     }
     contents = f.read()
     contents = contents.replace("${AWS::PuppetAccountId}", puppet_account_id)
@@ -479,7 +481,7 @@ def rewrite_stacks(manifest, puppet_account_id):
                 if category == constants.STACK:
                     details[
                         "key"
-                    ] = f"{category}/{details['name']}/{details['version']}/{category}.template.yaml"
+                    ] = f"{category}/{details['name']}/{details['version']}/{category}.template-${{AWS::Region}}.yaml"
                 else:
                     details[
                         "key"
