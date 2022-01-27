@@ -481,7 +481,7 @@ def rewrite_stacks(manifest, puppet_account_id):
                 if category == constants.STACK:
                     details[
                         "key"
-                    ] = f"{category}/{details['name']}/{details['version']}/{category}.template.yaml"
+                    ] = f"{category}/{details['name']}/{details['version']}/{category}.template-${{AWS::Region}}.yaml"
                 else:
                     details[
                         "key"
