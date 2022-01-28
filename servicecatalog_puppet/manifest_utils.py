@@ -8,9 +8,10 @@ import os
 import re
 from copy import deepcopy
 
+from servicecatalog_puppet import yaml_utils
+
 import click
 import networkx as nx
-import yaml
 from deepmerge import always_merger
 
 from servicecatalog_puppet import config
@@ -20,6 +21,45 @@ from servicecatalog_puppet.macros import macros
 from betterboto import client as betterboto_client
 
 logger = logging.getLogger(__file__)
+
+
+def get_intrinsic_functions_map(manifest_name, puppet_account_id):
+    replacements = dict(AWS=dict(PuppetAccountId=puppet_account_id))
+    for intrinsic_function_file in [
+        manifest_name.replace("manifest.yaml", "intrinsic-functions.properties"),
+        manifest_name.replace(
+            "manifest.yaml", f"intrinsic-functions-{puppet_account_id}.properties"
+        ),
+    ]:
+        parser = configparser.SafeConfigParser(
+            interpolation=configparser.BasicInterpolation()
+        )
+        parser.optionxform = str
+        if os.path.exists(intrinsic_function_file):
+            logger.info(f"reading {intrinsic_function_file}")
+            intrinsic_function_file_content = (
+                "[Custom]\n" + open(intrinsic_function_file).read()
+            )
+            parser.read_string(intrinsic_function_file_content)
+            for section_name, section_values in parser.items():
+                if section_name == "DEFAULT":
+                    continue
+
+                if replacements.get(section_name) is None:
+                    replacements[section_name] = dict()
+
+                for item_name, item_value in section_values.items():
+                    replacements[section_name][item_name] = item_value
+    return replacements
+
+
+def interpolate_intrinsic_functions(contents, intrinsic_functions_map):
+    new_contents = contents.replace("", "")
+    for section_name, section in intrinsic_functions_map.items():
+        for name, value in section.items():
+            function_name = "${" + section_name + "::" + name + "}"
+            new_contents = new_contents.replace(function_name, value)
+    return new_contents
 
 
 def load(f, puppet_account_id):
@@ -40,9 +80,13 @@ def load(f, puppet_account_id):
         constants.SERVICE_CONTROL_POLICIES: {},
         constants.SIMULATE_POLICIES: {},
     }
+    intrinsic_functions_map = get_intrinsic_functions_map(
+        manifest_name, puppet_account_id
+    )
+
     contents = f.read()
-    contents = contents.replace("${AWS::PuppetAccountId}", puppet_account_id)
-    manifest.update(yaml.safe_load(contents))
+    contents = interpolate_intrinsic_functions(contents, intrinsic_functions_map)
+    manifest.update(yaml_utils.load(contents))
     d = os.path.dirname(os.path.abspath(f.name))
 
     extendable = constants.ALL_SECTION_NAMES + ["parameters"]
@@ -53,10 +97,10 @@ def load(f, puppet_account_id):
                 source = f"{t_path}{os.path.sep}{f}"
                 with open(source, "r") as file:
                     contents = file.read()
-                    contents = contents.replace(
-                        "${AWS::PuppetAccountId}", puppet_account_id
+                    contents = interpolate_intrinsic_functions(
+                        contents, intrinsic_functions_map
                     )
-                    new = yaml.safe_load(contents)
+                    new = yaml_utils.load(contents)
                     for n, v in new.items():
                         if manifest[t].get(n):
                             raise Exception(f"{source} declares a duplicate {t}: {n}")
@@ -66,10 +110,10 @@ def load(f, puppet_account_id):
         for f in os.listdir(f"{d}{os.path.sep}manifests"):
             with open(f"{d}{os.path.sep}manifests{os.path.sep}{f}", "r") as file:
                 contents = file.read()
-                contents = contents.replace(
-                    "${AWS::PuppetAccountId}", puppet_account_id
+                contents = interpolate_intrinsic_functions(
+                    contents, intrinsic_functions_map
                 )
-                ext = yaml.safe_load(contents)
+                ext = yaml_utils.load(contents)
                 for t in extendable:
                     manifest[t].update(ext.get(t, {}))
 
@@ -77,10 +121,10 @@ def load(f, puppet_account_id):
         for f in os.listdir(f"{d}{os.path.sep}capabilities"):
             with open(f"{d}{os.path.sep}capabilities{os.path.sep}{f}", "r") as file:
                 contents = file.read()
-                contents = contents.replace(
-                    "${AWS::PuppetAccountId}", puppet_account_id
+                contents = interpolate_intrinsic_functions(
+                    contents, intrinsic_functions_map
                 )
-                ext = yaml.safe_load(contents)
+                ext = yaml_utils.load(contents)
                 always_merger.merge(manifest, ext)
 
     for config_file in [
@@ -1433,3 +1477,18 @@ def isolate(expanded_manifest, subset):
             m[node.get("section")][node.get("item_name")] = data
 
     return m
+
+
+def parse_conditions(manifest):
+    for section_name in constants.SECTIONS_THAT_SUPPORT_CONDITIONS:
+        for item_name, item in manifest.get(section_name, {}).items():
+            if item.get("condition"):
+                condition = manifest.get("conditions").get(item.get("condition"))
+                if not condition.get_result():
+                    manifest[section_name][item_name][
+                        constants.MANIFEST_STATUS_FIELD_NAME
+                    ] = constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED
+                    logger.info(
+                        f"Removed {item_name} from {section_name} because condition ({item.get('condition')}) evaluated to false"
+                    )
+    return manifest

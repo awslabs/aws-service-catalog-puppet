@@ -7,9 +7,9 @@ import logging
 import click
 import requests
 import yamale
-import yaml
 from betterboto import client as betterboto_client
 
+from servicecatalog_puppet import yaml_utils
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
@@ -48,6 +48,7 @@ def expand(f, puppet_account_id, single_account, subset=None):
     new_manifest = manifest_utils.rewrite_ssm_parameters(new_manifest)
     new_manifest = manifest_utils.rewrite_stacks(new_manifest, puppet_account_id)
     new_manifest = manifest_utils.rewrite_scps(new_manifest, puppet_account_id)
+    new_manifest = manifest_utils.parse_conditions(new_manifest)
 
     if subset:
         click.echo(f"Filtering for subset: {subset}")
@@ -63,19 +64,12 @@ def expand(f, puppet_account_id, single_account, subset=None):
         a for a in manifest_accounts_all if a.get("account_id") != puppet_account_id
     ]
 
-    dumped = json.dumps(new_manifest, default=str)
+    # handle all accounts
     sct_manifest_accounts = json.dumps(manifest_accounts_all).replace('"', '\\"')
-    dumped = dumped.replace(
-        "${AWS::ManifestAccountsAll}", "${SCT::Manifest::Accounts}"
-    ).replace("${SCT::Manifest::Accounts}", sct_manifest_accounts)
     sct_manifest_spokes = json.dumps(manifest_accounts_excluding).replace('"', '\\"')
-    dumped = dumped.replace(
-        "${AWS::ManifestAccountsSpokes}", "${SCT::Manifest::Spokes}"
-    ).replace("${SCT::Manifest::Spokes}", sct_manifest_spokes)
     regions = config.get_regions(puppet_account_id)
     sct_config_regions = json.dumps(regions).replace('"', '\\"')
-    dumped = dumped.replace("${SCT::Config::Regions}", sct_config_regions)
-    new_manifest = json.loads(dumped)
+
     new_manifest["parameters"]["SCTManifestAccounts"] = dict(
         default=sct_manifest_accounts
     )
@@ -109,7 +103,7 @@ def expand(f, puppet_account_id, single_account, subset=None):
     new_name = f.name.replace(".yaml", "-expanded.yaml")
     logger.info("Writing new manifest: {}".format(new_name))
     with open(new_name, "w") as output:
-        output.write(yaml.safe_dump(new_manifest, default_flow_style=False))
+        output.write(yaml_utils.dump(new_manifest))
 
 
 def explode(f):
@@ -127,7 +121,7 @@ def explode(f):
     count = 0
     for mani in exploded:
         with open(original_name.replace(".yaml", f"-exploded-{count}.yaml"), "w") as f:
-            f.write(yaml.safe_dump(json.loads(json.dumps(mani))))
+            f.write(yaml_utils.dump(mani))
         count += 1
 
 
@@ -137,7 +131,7 @@ def validate(f):
     manifest = manifest_utils.load(f, config.get_puppet_account_id())
 
     schema = yamale.make_schema(asset_helpers.resolve_from_site_packages("schema.yaml"))
-    data = yamale.make_data(content=yaml.safe_dump(manifest))
+    data = yamale.make_data(content=yaml_utils.dump(manifest))
 
     yamale.validate(schema, data, strict=False)
 
@@ -180,15 +174,15 @@ def import_product_set(f, name, portfolio_name):
     url = f"https://raw.githubusercontent.com/awslabs/aws-service-catalog-products/master/{name}/manifest.yaml"
     response = requests.get(url)
     logger.info(f"Getting {url}")
-    manifest = yaml.safe_load(f.read())
+    manifest = yaml_utils.load(f.read())
     if manifest.get("launches") is None:
         manifest["launches"] = {}
-    manifest_segment = yaml.safe_load(response.text)
+    manifest_segment = yaml_utils.load(response.text)
     for launch_name, details in manifest_segment.get("launches").items():
         details["portfolio"] = portfolio_name
         manifest["launches"][launch_name] = details
     with open(f.name, "w") as f:
-        f.write(yaml.safe_dump(manifest))
+        f.write(yaml_utils.dump(manifest))
 
 
 def get_manifest():
@@ -197,7 +191,7 @@ def get_manifest():
             repositoryName=constants.SERVICE_CATALOG_PUPPET_REPO_NAME,
             filePath="manifest.yaml",
         ).get("fileContent")
-        return yaml.safe_load(content)
+        return yaml_utils.load(content)
 
 
 def save_manifest(manifest):
@@ -213,7 +207,7 @@ def save_manifest(manifest):
         codecommit.put_file(
             repositoryName=constants.SERVICE_CATALOG_PUPPET_REPO_NAME,
             branchName="master",
-            fileContent=yaml.safe_dump(manifest),
+            fileContent=yaml_utils.dump(manifest),
             parentCommitId=parent_commit_id,
             commitMessage="Auto generated commit",
             filePath=f"manifest.yaml",
