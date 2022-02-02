@@ -1483,12 +1483,26 @@ def parse_conditions(manifest):
     for section_name in constants.SECTIONS_THAT_SUPPORT_CONDITIONS:
         for item_name, item in manifest.get(section_name, {}).items():
             if item.get("condition"):
-                condition = manifest.get("conditions").get(item.get("condition"))
-                if not condition.get_result():
-                    manifest[section_name][item_name][
-                        constants.MANIFEST_STATUS_FIELD_NAME
-                    ] = constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED
-                    logger.info(
-                        f"Removed {item_name} from {section_name} because condition ({item.get('condition')}) evaluated to false"
-                    )
+                if isinstance(item.get("condition"), str):
+                    condition = manifest.get("conditions").get(item.get("condition"))
+                    if not condition.get_result():
+                        manifest[section_name][item_name][
+                            constants.MANIFEST_STATUS_FIELD_NAME
+                        ] = constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED
+                        logger.info(
+                            f"Removed {item_name} from {section_name} because condition ({item.get('condition')}) evaluated to false"
+                        )
+                else:
+                    should_ignore = True
+                    for condition_to_check in item.get("condition"):
+                        condition = manifest.get("conditions").get(condition_to_check)
+                        if condition.get_result():
+                            should_ignore = False
+                    if should_ignore:
+                        manifest[section_name][item_name][
+                            constants.MANIFEST_STATUS_FIELD_NAME
+                        ] = constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED
+                        logger.info(
+                            f"Removed {item_name} from {section_name} because condition ({item.get('condition')}) evaluated to false"
+                        )
     return manifest
