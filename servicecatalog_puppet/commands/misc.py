@@ -36,6 +36,9 @@ from servicecatalog_puppet.workflow.spoke_local_portfolios import (
 from servicecatalog_puppet.workflow.service_control_policies import (
     service_control_policies_section_task,
 )
+from servicecatalog_puppet.workflow.tag_policies import (
+    tag_policies_section_task,
+)
 from servicecatalog_puppet.workflow.simulate_policies import (
     simulate_policy_section_task,
 )
@@ -325,6 +328,11 @@ def generate_tasks(
             )
             tasks.append(
                 service_control_policies_section_task.ServiceControlPoliciesSectionTask(
+                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+                )
+            )
+            tasks.append(
+                tag_policies_section_task.TagPoliciesSectionTask(
                     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
                 )
             )
