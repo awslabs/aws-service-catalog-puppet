@@ -79,6 +79,7 @@ def load(f, puppet_account_id):
         constants.CFCT: {},
         constants.SERVICE_CONTROL_POLICIES: {},
         constants.SIMULATE_POLICIES: {},
+        constants.TAG_POLICIES: {},
     }
     intrinsic_functions_map = get_intrinsic_functions_map(
         manifest_name, puppet_account_id
@@ -549,6 +550,11 @@ def rewrite_scps(manifest, puppet_account_id):
             apply_to = details.get("apply_to")
             for d in apply_to.get(attribute, []):
                 d["regions"] = "home_region"
+    for item, details in manifest.get(constants.TAG_POLICIES, {}).items():
+        for attribute in ["tags", "accounts", "ous"]:
+            apply_to = details.get("apply_to")
+            for d in apply_to.get(attribute, []):
+                d["regions"] = "home_region"
     return manifest
 
 
@@ -682,6 +688,7 @@ class Manifest(dict):
             "code-build-runs": "run_for",
             "assertions": "assert_for",
             "service-control-policies": "apply_to",
+            "tag-policies": "apply_to",
             "simulate-policies": "simulate_for",
         }.get(section_name)
 
@@ -794,6 +801,13 @@ class Manifest(dict):
                 description=item.get("description"),
                 content=tasks.unwrap(item.get("content")),
             ),
+            "tag-policies": dict(
+                puppet_account_id=puppet_account_id,
+                requested_priority=item.get("requested_priority", 0),
+                tag_policy_name=item_name,
+                description=item.get("description"),
+                content=tasks.unwrap(item.get("content")),
+            ),
             constants.SIMULATE_POLICIES: dict(
                 puppet_account_id=puppet_account_id,
                 requested_priority=item.get("requested_priority", 0),
@@ -853,6 +867,9 @@ class Manifest(dict):
                         account_parameters=account.get("parameters", {}),
                     ),
                     "service-control-policies": dict(
+                        account_id=account_id, ou_name="",
+                    ),
+                    "tag-policies": dict(
                         account_id=account_id, ou_name="",
                     ),
                     constants.SIMULATE_POLICIES: dict(account_id=account_id,),
@@ -956,6 +973,7 @@ class Manifest(dict):
                     account_parameters=account.get("parameters", {}),
                 ),
                 "service-control-policies": dict(account_id=account_id, ou_name="",),
+                "tag-policies": dict(account_id=account_id, ou_name="",),
                 constants.SIMULATE_POLICIES: dict(account_id=account_id,),
             }.get(section_name)
 
@@ -1038,6 +1056,7 @@ class Manifest(dict):
 
             additional_parameters = {
                 "service-control-policies": dict(account_id="", ou_name=ou_name,),
+                "tag-policies": dict(account_id="", ou_name=ou_name,),
             }.get(section_name)
 
             if isinstance(regions, str) and regions == "home_region":

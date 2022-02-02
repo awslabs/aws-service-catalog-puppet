@@ -100,6 +100,9 @@ def generate_dependency_task(
     from servicecatalog_puppet.workflow.service_control_policies import (
         service_control_policies_task,
     )
+    from servicecatalog_puppet.workflow.tag_policies import (
+        tag_policies_task,
+    )
 
     common_args = dict(
         manifest_file_path=manifest_file_path, puppet_account_id=puppet_account_id,
@@ -195,6 +198,16 @@ def generate_dependency_task(
         if depends_on.get(constants.AFFINITY) == constants.SERVICE_CONTROL_POLICY:
             return service_control_policies_task.ServiceControlPoliciesTask(
                 **common_args, service_control_policies_name=depends_on.get("name"),
+            )
+        else:
+            raise Exception(
+                f"Affinity of {depends_on.get(constants.AFFINITY)} is not supported for this action"
+            )
+
+    elif depends_on.get("type") == constants.TAG_POLICY:
+        if depends_on.get(constants.AFFINITY) == constants.TAG_POLICY:
+            return tag_policies_task.TagPoliciesTask(
+                **common_args, tag_policies_name=depends_on.get("name"),
             )
         else:
             raise Exception(
