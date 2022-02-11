@@ -3,6 +3,7 @@
 
 import json
 import logging
+import os
 
 import click
 import requests
@@ -18,8 +19,42 @@ from servicecatalog_puppet import manifest_utils
 logger = logging.getLogger(__name__)
 
 
+def assemble_manifest_from_ssm(target_directory):
+    with betterboto_client.ClientContextManager("ssm") as ssm:
+        paginator = ssm.get_paginator('get_parameters_by_path')
+        manifest = {
+            "schema": "puppet-2019-04-01",
+            constants.LAUNCHES: dict(),
+            constants.STACKS: dict(),
+            constants.SPOKE_LOCAL_PORTFOLIOS: dict(),
+            constants.ASSERTIONS: {},
+            constants.CODE_BUILD_RUNS: {},
+            constants.LAMBDA_INVOCATIONS: {},
+            constants.APPS: {},
+            constants.WORKSPACES: {},
+            constants.CFCT: {},
+            constants.SERVICE_CONTROL_POLICIES: {},
+            constants.SIMULATE_POLICIES: {},
+            constants.TAG_POLICIES: {},
+        }
+        for page in paginator.paginate(
+            Path=constants.SERVICE_CATALOG_PUPPET_MANIFEST_SSM_PREFIX,
+            Recursive=True,
+        ):
+            for parameter in page.get("Parameters", []):
+                parts = parameter.get("Name").split("/")
+                action_type = parts[3]
+                action_name = parts[4]
+                manifest[action_type][action_name] = yaml_utils.load(parameter.get("Value"))
+        open(f"{target_directory}{os.path.sep}ssm_manifest.yaml", "w").write(
+            yaml_utils.dump(manifest)
+        )
+
+
 def expand(f, puppet_account_id, single_account, subset=None):
     click.echo("Expanding")
+    target_directory = f.name.replace(f"{os.path.sep}manifest.yaml", f"{os.path.sep}manifests")
+    assemble_manifest_from_ssm(target_directory)
     manifest = manifest_utils.load(f, puppet_account_id)
     org_iam_role_arn = config.get_org_iam_role_arn(puppet_account_id)
     if org_iam_role_arn is None:
