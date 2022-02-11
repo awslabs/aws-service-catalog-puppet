@@ -146,7 +146,7 @@ def load(f, puppet_account_id):
                     continue
                 for item_name, item_value in section_values.items():
                     name, property_name = item_name.split(".")
-                    if property_name != "version":
+                    if property_name not in ["version", "condition", "status"]:
                         raise Exception(
                             "You can only specify a version in the properties file"
                         )
