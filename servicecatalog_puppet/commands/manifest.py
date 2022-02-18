@@ -46,6 +46,8 @@ def assemble_manifest_from_ssm(target_directory):
                 action_type = parts[3]
                 action_name = parts[4]
                 manifest[action_type][action_name] = yaml_utils.load(parameter.get("Value"))
+        if not os.path.exists(target_directory):
+            os.makedirs(target_directory)
         open(f"{target_directory}{os.path.sep}ssm_manifest.yaml", "w").write(
             yaml_utils.dump(manifest)
         )
@@ -53,7 +55,7 @@ def assemble_manifest_from_ssm(target_directory):
 
 def expand(f, puppet_account_id, single_account, subset=None):
     click.echo("Expanding")
-    target_directory = f.name.replace(f"{os.path.sep}manifest.yaml", f"{os.path.sep}manifests")
+    target_directory = os.path.sep.join([os.path.dirname(f.name), "manifests"])
     assemble_manifest_from_ssm(target_directory)
     manifest = manifest_utils.load(f, puppet_account_id)
     org_iam_role_arn = config.get_org_iam_role_arn(puppet_account_id)
