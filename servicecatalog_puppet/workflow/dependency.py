@@ -100,9 +100,7 @@ def generate_dependency_task(
     from servicecatalog_puppet.workflow.service_control_policies import (
         service_control_policies_task,
     )
-    from servicecatalog_puppet.workflow.tag_policies import (
-        tag_policies_task,
-    )
+    from servicecatalog_puppet.workflow.tag_policies import tag_policies_task
 
     common_args = dict(
         manifest_file_path=manifest_file_path, puppet_account_id=puppet_account_id,

@@ -3,14 +3,10 @@
 
 import luigi
 
-from servicecatalog_puppet.workflow.tag_policies import (
-    tag_policies_for_task,
-)
+from servicecatalog_puppet.workflow.tag_policies import tag_policies_for_task
 
 
-class TagPoliciesTask(
-    tag_policies_for_task.TagPoliciesForTask
-):
+class TagPoliciesTask(tag_policies_for_task.TagPoliciesForTask):
     tag_policies_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -29,9 +25,7 @@ class TagPoliciesTask(
             account_id,
             regions,
         ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-            self.puppet_account_id,
-            self.section_name,
-            self.tag_policies_name,
+            self.puppet_account_id, self.section_name, self.tag_policies_name,
         ).items():
             for region in regions:
                 for task in self.manifest.get_tasks_for_launch_and_account_and_region(

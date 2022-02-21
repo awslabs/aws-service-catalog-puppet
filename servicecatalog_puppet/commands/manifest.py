@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def assemble_manifest_from_ssm(target_directory):
     with betterboto_client.ClientContextManager("ssm") as ssm:
-        paginator = ssm.get_paginator('get_parameters_by_path')
+        paginator = ssm.get_paginator("get_parameters_by_path")
         manifest = {
             "schema": "puppet-2019-04-01",
             constants.LAUNCHES: dict(),
@@ -38,14 +38,15 @@ def assemble_manifest_from_ssm(target_directory):
             constants.TAG_POLICIES: {},
         }
         for page in paginator.paginate(
-            Path=constants.SERVICE_CATALOG_PUPPET_MANIFEST_SSM_PREFIX,
-            Recursive=True,
+            Path=constants.SERVICE_CATALOG_PUPPET_MANIFEST_SSM_PREFIX, Recursive=True,
         ):
             for parameter in page.get("Parameters", []):
                 parts = parameter.get("Name").split("/")
                 action_type = parts[3]
                 action_name = parts[4]
-                manifest[action_type][action_name] = yaml_utils.load(parameter.get("Value"))
+                manifest[action_type][action_name] = yaml_utils.load(
+                    parameter.get("Value")
+                )
         if not os.path.exists(target_directory):
             os.makedirs(target_directory)
         open(f"{target_directory}{os.path.sep}ssm_manifest.yaml", "w").write(

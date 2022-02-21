@@ -869,9 +869,7 @@ class Manifest(dict):
                     "service-control-policies": dict(
                         account_id=account_id, ou_name="",
                     ),
-                    "tag-policies": dict(
-                        account_id=account_id, ou_name="",
-                    ),
+                    "tag-policies": dict(account_id=account_id, ou_name="",),
                     constants.SIMULATE_POLICIES: dict(account_id=account_id,),
                 }.get(section_name)
                 if tag_name in account.get("tags"):

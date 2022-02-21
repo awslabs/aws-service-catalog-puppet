@@ -6,9 +6,7 @@ from unittest import skip
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
-class DoExecuteTagPoliciesTaskTest(
-    tasks_unit_tests_helper.PuppetTaskUnitTest
-):
+class DoExecuteTagPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
 
     tag_policy_name = "tag_policy_name"
