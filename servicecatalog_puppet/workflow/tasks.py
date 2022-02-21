@@ -174,6 +174,20 @@ class PuppetTask(luigi.Task):
                 **kwargs,
             )
 
+    def organizations_client(self):
+        kwargs = dict()
+        if os.environ.get(f"CUSTOM_ENDPOINT_organizations"):
+            kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_organizations")
+
+        if self.is_running_in_spoke():
+            raise Exception("Cannot use organizations client in spoke execution")
+        else:
+            return betterboto_client.CrossAccountClientContextManager(
+                    "organizations",
+                    config.get_org_scp_role_arn(self.puppet_account_id),
+                    "org_scp_role_arn",
+            )
+
     def read_from_input(self, input_name):
         with self.input().get(input_name).open("r") as f:
             return f.read()

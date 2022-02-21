@@ -25,11 +25,7 @@ class TagPolicySectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
     def run(self):
         section = self.manifest.get(constants.TAG_POLICIES, {})
         already_created_policies = dict()
-        with betterboto_client.CrossAccountClientContextManager(
-            "organizations",
-            config.get_org_scp_role_arn(self.puppet_account_id),
-            "org_scp_role_arn",
-        ) as orgs:
+        with self.organizations_client() as orgs:
             self.info("Ensuring policies are created")
             paginator = orgs.get_paginator("list_policies")
             for page in paginator.paginate(Filter="TAG_POLICIES"):

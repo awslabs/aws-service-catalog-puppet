@@ -61,7 +61,7 @@ class DoExecuteServiceControlPoliciesTask(
 
     @functools.lru_cache(maxsize=32)
     def target(self):
-        with self.hub_regional_client("organizations") as orgs:
+        with self.organizations_client() as orgs:
             if self.account_id != "":
                 return self.account_id
             else:
@@ -81,7 +81,7 @@ class DoExecuteServiceControlPoliciesTask(
         return False
 
     def run(self):
-        with self.hub_regional_client("organizations") as orgs:
+        with self.organizations_client() as orgs:
             self.info("Ensuring attachments for policies")
             policy_id = self.load_from_input("policy").get("Id")
             if self.has_policy_attached(orgs):
