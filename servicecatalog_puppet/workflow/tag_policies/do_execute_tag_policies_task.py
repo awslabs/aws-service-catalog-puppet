@@ -61,7 +61,7 @@ class DoExecuteTagPoliciesTask(
 
     @functools.lru_cache(maxsize=32)
     def target(self):
-        with self.organizations_client() as orgs:
+        with self.organizations_policy_client() as orgs:
             if self.account_id != "":
                 return self.account_id
             else:
@@ -79,7 +79,7 @@ class DoExecuteTagPoliciesTask(
         return False
 
     def run(self):
-        with self.organizations_client() as orgs:
+        with self.organizations_policy_client() as orgs:
             self.info("Ensuring attachments for policies")
             policy_id = self.load_from_input("policy").get("Id")
             if self.has_policy_attached(orgs):

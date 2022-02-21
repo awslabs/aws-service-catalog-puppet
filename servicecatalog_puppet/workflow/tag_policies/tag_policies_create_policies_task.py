@@ -25,7 +25,7 @@ class TagPolicySectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
     def run(self):
         section = self.manifest.get(constants.TAG_POLICIES, {})
         already_created_policies = dict()
-        with self.organizations_client() as orgs:
+        with self.organizations_policy_client() as orgs:
             self.info("Ensuring policies are created")
             paginator = orgs.get_paginator("list_policies")
             for page in paginator.paginate(Filter="TAG_POLICIES"):

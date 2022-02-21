@@ -35,7 +35,7 @@ class GetOrCreatePolicyTask(tasks.PuppetTask):
         return calls
 
     def run(self):
-        with self.organizations_client() as orgs:
+        with self.organizations_policy_client() as orgs:
             if self.policy_content.get("default") is not None:
                 unwrapped = tasks.unwrap(self.policy_content.get("default"))
             elif self.policy_content.get("s3") is not None:

@@ -174,7 +174,7 @@ class PuppetTask(luigi.Task):
                 **kwargs,
             )
 
-    def organizations_client(self):
+    def organizations_policy_client(self):
         kwargs = dict()
         if os.environ.get(f"CUSTOM_ENDPOINT_organizations"):
             kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_organizations")
