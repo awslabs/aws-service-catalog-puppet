@@ -36,9 +36,7 @@ from servicecatalog_puppet.workflow.spoke_local_portfolios import (
 from servicecatalog_puppet.workflow.service_control_policies import (
     service_control_policies_section_task,
 )
-from servicecatalog_puppet.workflow.tag_policies import (
-    tag_policies_section_task,
-)
+from servicecatalog_puppet.workflow.tag_policies import tag_policies_section_task
 from servicecatalog_puppet.workflow.simulate_policies import (
     simulate_policy_section_task,
 )

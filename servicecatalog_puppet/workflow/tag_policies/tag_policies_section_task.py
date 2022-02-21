@@ -2,9 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.tag_policies import (
-    tag_policies_task,
-)
+from servicecatalog_puppet.workflow.tag_policies import tag_policies_task
 
 from servicecatalog_puppet.workflow.generic import generic_section_task
 

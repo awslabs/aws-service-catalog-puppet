@@ -4,12 +4,8 @@
 import luigi
 
 from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.tag_policies import (
-    tag_policies_base_task,
-)
-from servicecatalog_puppet.workflow.tag_policies import (
-    do_execute_tag_policies_task,
-)
+from servicecatalog_puppet.workflow.tag_policies import tag_policies_base_task
+from servicecatalog_puppet.workflow.tag_policies import do_execute_tag_policies_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 

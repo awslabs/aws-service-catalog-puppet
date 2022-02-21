@@ -256,7 +256,7 @@ class ProvisionProductTask(
                         )
 
                 self.info(f"self.execution is {self.execution}")
-                if self.execution == constants.EXECUTION_MODE_HUB:
+                if self.execution in [constants.EXECUTION_MODE_HUB, constants.EXECUTION_MODE_SPOKE]:
                     self.info(
                         f"Running in execution mode: {self.execution}, checking for SSM outputs"
                     )

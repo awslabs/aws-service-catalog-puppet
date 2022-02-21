@@ -72,9 +72,7 @@ class DoExecuteTagPoliciesTask(
 
     def has_policy_attached(self, orgs):
         paginator = orgs.get_paginator("list_policies_for_target")
-        for page in paginator.paginate(
-            TargetId=self.target(), Filter="TAG_POLICY"
-        ):
+        for page in paginator.paginate(TargetId=self.target(), Filter="TAG_POLICY"):
             for policy in page.get("Policies", []):
                 if policy.get("Name") == self.tag_policy_name:
                     return True

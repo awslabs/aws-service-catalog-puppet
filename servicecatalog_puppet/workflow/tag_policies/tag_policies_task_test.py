@@ -12,9 +12,7 @@ class TagPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_file_path = "manifest_file_path"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.tag_policies import (
-            tag_policies_task,
-        )
+        from servicecatalog_puppet.workflow.tag_policies import tag_policies_task
 
         self.module = tag_policies_task
 

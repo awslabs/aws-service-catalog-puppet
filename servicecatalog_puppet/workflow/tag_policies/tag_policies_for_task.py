@@ -3,18 +3,13 @@
 
 import luigi
 
-from servicecatalog_puppet.workflow.tag_policies import (
-    tag_policies_base_task,
-)
-from servicecatalog_puppet.workflow.tag_policies import (
-    execute_tag_policies_task,
-)
+from servicecatalog_puppet.workflow.tag_policies import tag_policies_base_task
+from servicecatalog_puppet.workflow.tag_policies import execute_tag_policies_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 
 class TagPoliciesForTask(
-    tag_policies_base_task.TagPoliciesBaseTask,
-    manifest_mixin.ManifestMixen,
+    tag_policies_base_task.TagPoliciesBaseTask, manifest_mixin.ManifestMixen,
 ):
     tag_policies_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
