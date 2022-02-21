@@ -123,8 +123,30 @@ Resources:
                 - "codebuild.amazonaws.com"
             Action:
               - "sts:AssumeRole"
-      ManagedPolicyArns:
-        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
+      Policies:
+        - PolicyName: "CodeBuildSetup"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: sts:AssumeRole
+                Resource: !GetAtt PuppetRole.Arn
+              - Effect: "Allow"
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                  - ssm:ListParameters
+                  - ssm:PutParameter
+                  - ssm:DeleteParameter
+                  - ssm:DeleteParameters
+                Resource: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
 
   DeployInSpokeProject:
     Type: AWS::CodeBuild::Project
