@@ -47,6 +47,8 @@ Resources:
                   - organizations:ListPolicies
                   - organizations:DescribePolicy
                   - organizations:UpdatePolicy
+
+                  - organizations:TagResource
                 Resource: "*"
 
       AssumeRolePolicyDocument:
