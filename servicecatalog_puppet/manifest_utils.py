@@ -559,7 +559,12 @@ def rewrite_scps(manifest, puppet_account_id):
 
 
 def expand_path(account, client):
-    ou = client.convert_path_to_ou(account.get("ou"))
+    try:
+        ou = client.convert_path_to_ou(account.get("ou"))
+    except Exception:
+        if account.get("optional", False):
+            return []
+        raise
     account["ou_name"] = account["ou"]
     account["ou"] = ou
     return expand_ou(account, client)

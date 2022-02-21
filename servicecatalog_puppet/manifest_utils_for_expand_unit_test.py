@@ -53,6 +53,14 @@ class TestManifestForExpand(unittest.TestCase):
         "regions_enabled": ["us-west-2",],
         "tags": ["group:B"],
     }
+    account_ou_b_optional = {
+        "ou": "/OrgUnitB",
+        "default_region": "us-west-1",
+        "optional": True,
+        "name": "oub",
+        "regions_enabled": ["us-west-2",],
+        "tags": ["group:B"],
+    }
     account_ou_c = {
         "ou": "ou-aaaa-cccccccc",
         "default_region": "ap-west-1",
@@ -64,6 +72,12 @@ class TestManifestForExpand(unittest.TestCase):
     org_units = [
         account_ou_a,
         account_ou_b,
+        account_ou_c,
+    ]
+
+    org_units_optional = [
+        account_ou_a,
+        account_ou_b_optional,
         account_ou_c,
     ]
 
@@ -119,7 +133,7 @@ class TestManifestForExpand(unittest.TestCase):
     def test_expand_for_ou(self):
         # setup
         expanded_manifest = dict()
-        expanded_manifest[constants.ACCOUNTS] = self.org_units
+        expanded_manifest[constants.ACCOUNTS] = deepcopy(self.org_units)
         expanded_manifest[constants.LAUNCHES] = dict()
         expanded_manifest[constants.STACKS] = dict()
         expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
@@ -186,3 +200,117 @@ class TestManifestForExpand(unittest.TestCase):
 
         # verify
         self.assertDictEqual(expected_results, actual_results)
+
+    def test_expand_for_path_with_optional(self):
+        # setup
+        expanded_manifest = dict()
+        expanded_manifest[constants.ACCOUNTS] = deepcopy(self.org_units_optional)
+        expanded_manifest[constants.LAUNCHES] = dict()
+        expanded_manifest[constants.STACKS] = dict()
+        expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
+        expanded_manifest[constants.ACTIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
+        expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict()
+
+        expected_results = deepcopy(expanded_manifest)
+        accounts = []
+
+        account_a = deepcopy(self.account_a)
+        account_a["email"] = f"{account_a['account_id']}@test.com"
+        account_a["organization"] = self.organization_id
+        account_a["expanded_from"] = "ou-aaaa-aaaaaaaa"
+        account_a["name"] = account_a["account_id"]
+        accounts.append(account_a)
+
+        account_c = deepcopy(self.account_c)
+        account_c["email"] = f"{account_c['account_id']}@test.com"
+        account_c["organization"] = self.organization_id
+        account_c["expanded_from"] = "ou-aaaa-cccccccc"
+        account_c["name"] = account_c["account_id"]
+        accounts.append(account_c)
+
+        expected_results[constants.ACCOUNTS] = accounts
+
+        def describe_account_side_effect(AccountId):
+            return {
+                "Account": {
+                    "Id": AccountId,
+                    "Arn": f"arn:aws:organizations::000000000000:account/{self.organization_id}/{AccountId}",
+                    "Email": f"{AccountId}@test.com",
+                    "Status": "ACTIVE",
+                    "Name": AccountId,
+                }
+            }
+
+        def list_children_nested_side_effect(ParentId, ChildType):
+            ou_mapping = {
+                "ou-aaaa-aaaaaaaa": [{"Id": "012345678910"}],
+                "ou-aaaa-bbbbbbbb": [{"Id": "009876543210"}],
+                "ou-aaaa-cccccccc": [{"Id": "432100098765"}],
+            }
+            return ou_mapping.get(ParentId, [])
+
+        self.client_mock.describe_account = MagicMock(
+            side_effect=describe_account_side_effect
+        )
+        self.client_mock.list_children_nested = MagicMock(
+            side_effect=list_children_nested_side_effect
+        )
+        self.client_mock.convert_path_to_ou = MagicMock(
+            side_effect=Exception("not found")
+        )
+
+        # exercise
+        actual_results = self.sut(expanded_manifest, self.client_mock)
+
+        # verify
+        self.assertDictEqual(expected_results, actual_results)
+
+    def test_expand_for_path_not_optional(self):
+        # setup
+        expanded_manifest = dict()
+        expanded_manifest[constants.ACCOUNTS] = deepcopy(self.org_units)
+        expanded_manifest[constants.LAUNCHES] = dict()
+        expanded_manifest[constants.STACKS] = dict()
+        expanded_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
+        expanded_manifest[constants.ACTIONS] = dict()
+        expanded_manifest[constants.ASSERTIONS] = dict()
+        expanded_manifest[constants.LAMBDA_INVOCATIONS] = dict()
+
+        def describe_account_side_effect(AccountId):
+            return {
+                "Account": {
+                    "Id": AccountId,
+                    "Arn": f"arn:aws:organizations::000000000000:account/{self.organization_id}/{AccountId}",
+                    "Email": f"{AccountId}@test.com",
+                    "Status": "ACTIVE",
+                    "Name": AccountId,
+                }
+            }
+
+        def list_children_nested_side_effect(ParentId, ChildType):
+            ou_mapping = {
+                "ou-aaaa-aaaaaaaa": [{"Id": "012345678910"}],
+                "ou-aaaa-cccccccc": [{"Id": "432100098765"}],
+            }
+            return ou_mapping.get(ParentId, [])
+
+        self.client_mock.describe_account = MagicMock(
+            side_effect=describe_account_side_effect
+        )
+        self.client_mock.list_children_nested = MagicMock(
+            side_effect=list_children_nested_side_effect
+        )
+        self.client_mock.convert_path_to_ou = MagicMock(
+            side_effect=Exception("not found")
+        )
+
+        # exercise
+        actual_results = None
+        with self.assertRaises(Exception) as context:
+            actual_results = self.sut(expanded_manifest, self.client_mock)
+
+        self.assertEquals(str(context.exception), "not found")
+
+        # # verify
+        self.assertEquals(actual_results, None)
