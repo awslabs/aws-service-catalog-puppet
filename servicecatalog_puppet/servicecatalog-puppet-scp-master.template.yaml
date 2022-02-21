@@ -45,6 +45,8 @@ Resources:
                   - organizations:AttachPolicy
                   - organizations:ListPoliciesForTarget
                   - organizations:ListPolicies
+                  - organizations:DescribePolicy
+                  - organizations:UpdatePolicy
                 Resource: "*"
 
       AssumeRolePolicyDocument:
