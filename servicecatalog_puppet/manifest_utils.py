@@ -512,6 +512,25 @@ def rewrite_ssm_parameters(manifest):
                                 parameter_details["ssm"][
                                     "depends_on"
                                 ] = parameter_depends_on
+                if parameter_details.get("cloudformation_stack_output"):
+                    existing_parameter = parameter_details.get(
+                        "cloudformation_stack_output"
+                    )
+                    stack_name = existing_parameter.get("stack_name")
+                    output_key = existing_parameter.get("output_key")
+                    new_parameter = dict(
+                        account_id=existing_parameter.get(
+                            "account_id", "${AWS::AccountId}"
+                        ),
+                        region=existing_parameter.get("account_id", "${AWS::Region}"),
+                        client="cloudformation",
+                        call="describe_stacks",
+                        use_paginator=True,
+                        arguments=dict(StackName=stack_name),
+                        filter=f"Stacks[?StackStatus==`CREATE_COMPLETE` || StackStatus==`UPDATE_COMPLETE`|| StackStatus==`UPDATE_ROLLBACK_COMPLETE`].Outputs[] | [?OutputKey==`{output_key}`].OutputValue | [0]",
+                    )
+                    parameter_details["boto3"] = new_parameter
+
     return manifest
 
 
