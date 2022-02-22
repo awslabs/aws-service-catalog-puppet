@@ -183,9 +183,9 @@ class PuppetTask(luigi.Task):
             raise Exception("Cannot use organizations client in spoke execution")
         else:
             return betterboto_client.CrossAccountClientContextManager(
-                    "organizations",
-                    config.get_org_scp_role_arn(self.puppet_account_id),
-                    "org_scp_role_arn",
+                "organizations",
+                config.get_org_scp_role_arn(self.puppet_account_id),
+                "org_scp_role_arn",
             )
 
     def read_from_input(self, input_name):
