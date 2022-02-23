@@ -30,20 +30,20 @@ account_or_ou: any(include('account_def'),include('ou'))
 account_def: any(include('account'), include('account_with_overwrite'), include('account_with_append'))
 
 account:
-  account_id: include('account_id')
+  account_id: include('account_id_str')
   name: str()
   default_region: include('region')
   regions_enabled: list(include('region'))
   tags: list(str())
 
 account_with_overwrite:
-  account_id: include('account_id')
+  account_id: include('account_id_str')
   name: str()
   overwrite: include('append_or_overwrite')
   append: include('append_or_overwrite', required=False)
 
 account_with_append:
-  account_id: include('account_id')
+  account_id: include('account_id_str')
   name: str()
   append: include('append_or_overwrite')
   overwrite: include('append_or_overwrite', required=False)
@@ -57,14 +57,14 @@ ou:
   exclude: include('exclude', required=False)
 
 exclude:
-  accounts: list(include('account_id'), required=False)
+  accounts: list(include('account_id_str'), required=False)
   ous: list(include('ou_path_or_id'), required=False)
 
-account_id: str(min=12, max=12)
+#account_id: str(min=12, max=12)
 ou_path_or_id: str()
 
 mapping: map()
-parameter: map(any(include('default_parameter'), include('ssm_parameter'), include('boto3_parameter')))
+parameter: map(any(include('default_parameter'), include('ssm_parameter'), include('boto3_parameter'), include('cloudformation_stack_output_parameter'), include('servicecatalog_provisioned_product_output_parameter')))
 
 default_parameter:
   default: str()
@@ -74,15 +74,36 @@ ssm_parameter:
     name: str()
     region: include('region', required=False)
 
+account_id_str: str(min=12, max=12)
+
+account_id_func: enum("${AWS::AccountId}")
+
+account_id: any(include('account_id_func'), include('account_id_str'), required=False)
+
 boto3_parameter:
   boto3:
-    account_id: any("${AWS::AccountId}", str(min=12, max=12), required=False)
-    region: any("${AWS::AccountId}", include('region'), required=False)
+    account_id: include('account_id')
+    region: any("${AWS::Region}", include('region'), required=False)
     client: include('client')
     call: str()
-    arguments: map()
+    arguments: map(required=False)
     use_paginator: bool()
     filter: str()
+
+cloudformation_stack_output_parameter:
+  cloudformation_stack_output:
+    account_id: include('account_id')
+    region: any("${AWS::Region}", include('region'), required=False)
+    stack_name: str()
+    output_key: str()
+
+
+servicecatalog_provisioned_product_output_parameter:
+  servicecatalog_provisioned_product_output:
+    account_id: include('account_id')
+    region: any("${AWS::Region}", include('region'), required=False)
+    provisioned_product_name: str()
+    output_key: str()
 
 cfn:
   key: str()
@@ -267,5 +288,5 @@ accounts:
 
 regions: any(enum('enabled_regions', 'regions_enabled', 'default_region'), include('region'), list(include('region')))
 
-region: enum('us-east-1','us-east-2','us-west-1','us-west-2','af-south-1','ap-east-1','ap-south-1','ap-northeast-3','ap-northeast-2','ap-southeast-1','ap-southeast-2','ap-northeast-1','ca-central-1','eu-central-1','eu-west-1','eu-west-2','eu-south-1','eu-west-3','eu-north-1','me-south-1','sa-east-1','us-gov-east-1','us-gov-west-1','cn-north-1')
+region: enum('${AWS::Region}','us-east-1','us-east-2','us-west-1','us-west-2','af-south-1','ap-east-1','ap-south-1','ap-northeast-3','ap-northeast-2','ap-southeast-1','ap-southeast-2','ap-northeast-1','ca-central-1','eu-central-1','eu-west-1','eu-west-2','eu-south-1','eu-west-3','eu-north-1','me-south-1','sa-east-1','us-gov-east-1','us-gov-west-1','cn-north-1')
 client: enum('accessanalyzer','acm','acm-pca','alexaforbusiness','amp','amplify','amplifybackend','apigateway','apigatewaymanagementapi','apigatewayv2','appconfig','appflow','appintegrations','application-autoscaling','application-insights','appmesh','appstream','appsync','athena','auditmanager','autoscaling','autoscaling-plans','backup','batch','braket','budgets','ce','chime','cloud9','clouddirectory','cloudformation','cloudfront','cloudhsm','cloudhsmv2','cloudsearch','cloudsearchdomain','cloudtrail','cloudwatch','codeartifact','codebuild','codecommit','codedeploy','codeguru-reviewer','codeguruprofiler','codepipeline','codestar','codestar-connections','codestar-notifications','cognito-identity','cognito-idp','cognito-sync','comprehend','comprehendmedical','compute-optimizer','config','connect','connect-contact-lens','connectparticipant','cur','customer-profiles','databrew','dataexchange','datapipeline','datasync','dax','detective','devicefarm','devops-guru','directconnect','discovery','dlm','dms','docdb','ds','dynamodb','dynamodbstreams','ebs','ec2','ec2-instance-connect','ecr','ecr-public','ecs','efs','eks','elastic-inference','elasticache','elasticbeanstalk','elastictranscoder','elb','elbv2','emr','emr-containers','endpoints.json','es','events','firehose','fms','forecast','forecastquery','frauddetector','fsx','gamelift','glacier','globalaccelerator','glue','greengrass','greengrassv2','groundstation','guardduty','health','healthlake','honeycode','iam','identitystore','imagebuilder','importexport','inspector','iot','iot-data','iot-jobs-data','iot1click-devices','iot1click-projects','iotanalytics','iotdeviceadvisor','iotevents','iotevents-data','iotfleethub','iotsecuretunneling','iotsitewise','iotthingsgraph','iotwireless','ivs','kafka','kendra','kinesis','kinesis-video-archived-media','kinesis-video-media','kinesis-video-signaling','kinesisanalytics','kinesisanalyticsv2','kinesisvideo','kms','lakeformation','lambda','lex-models','lex-runtime','license-manager','lightsail','location','logs','lookoutvision','machinelearning','macie','macie2','managedblockchain','marketplace-catalog','marketplace-entitlement','marketplacecommerceanalytics','mediaconnect','mediaconvert','medialive','mediapackage','mediapackage-vod','mediastore','mediastore-data','mediatailor','meteringmarketplace','mgh','migrationhub-config','mobile','mq','mturk','mwaa','neptune','network-firewall','networkmanager','opsworks','opsworkscm','organizations','outposts','personalize','personalize-events','personalize-runtime','pi','pinpoint','pinpoint-email','pinpoint-sms-voice','polly','pricing','qldb','qldb-session','quicksight','ram','rds','rds-data','redshift','redshift-data','rekognition','resource-groups','resourcegroupstaggingapi','robomaker','route53','route53domains','route53resolver','s3','s3control','s3outposts','sagemaker','sagemaker-a2i-runtime','sagemaker-edge','sagemaker-featurestore-runtime','sagemaker-runtime','savingsplans','schemas','sdb','secretsmanager','securityhub','serverlessrepo','service-quotas','servicecatalog','servicecatalog-appregistry','servicediscovery','ses','sesv2','shield','signer','sms','sms-voice','snowball','sns','sqs','ssm','sso','sso-admin','sso-oidc','stepfunctions','storagegateway','sts','support','swf','synthetics','textract','timestream-query','timestream-write','transcribe','transfer','translate','waf','waf-regional','wafv2','wellarchitected','workdocs','worklink','workmail','workmailmessageflow','workspaces','xray')
