@@ -1,6 +1,6 @@
 #  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-
+import re
 import time
 import functools
 
@@ -96,9 +96,14 @@ class ProvisionStackTask(
             f"servicecatalog.create_or_update_{self.account_id}_{self.region}",
         ]
         if self.launch_name != "":
-            apis.append(
-                f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}"
-            )
+            if "*" in self.launch_name:
+                apis.append(
+                    f"servicecatalog.scan_provisioned_products_{self.account_id}_{self.region}"
+                )
+            else:
+                apis.append(
+                    f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}"
+                )
         if self.stack_set_name != "":
             apis.append(f"cloudformation.list_stacks_{self.account_id}_{self.region}")
         return apis
@@ -108,23 +113,39 @@ class ProvisionStackTask(
     def stack_name_to_use(self):
         if self.launch_name != "":
             with self.spoke_regional_client("servicecatalog") as servicecatalog:
-                try:
-                    pp_id = (
-                        servicecatalog.describe_provisioned_product(
-                            Name=self.launch_name
-                        )
-                        .get("ProvisionedProductDetail")
-                        .get("Id")
+                if "*" in self.launch_name:
+                    paginator = servicecatalog.get_paginator(
+                        "scan_provisioned_products"
                     )
-                except servicecatalog.exceptions.ResourceNotFoundException as e:
-                    if (
-                        "Provisioned product not found"
-                        in e.response["Error"]["Message"]
+                    for page in paginator.paginate(
+                        AccessLevelFilter={"Key": "Account", "Value": "self"},
                     ):
-                        return self.stack_name
-                    else:
-                        raise e
-                return f"SC-{self.account_id}-{pp_id}"
+                        for provisioned_product in page.get("ProvisionedProducts", []):
+                            name_as_a_regex = self.launch_name.replace("*", "(.*)")
+                            if re.match(
+                                name_as_a_regex, provisioned_product.get("Name")
+                            ):
+                                return f"SC-{self.account_id}-{provisioned_product.get('Id')}"
+
+                    return self.stack_name
+                else:
+                    try:
+                        pp_id = (
+                            servicecatalog.describe_provisioned_product(
+                                Name=self.launch_name
+                            )
+                            .get("ProvisionedProductDetail")
+                            .get("Id")
+                        )
+                    except servicecatalog.exceptions.ResourceNotFoundException as e:
+                        if (
+                            "Provisioned product not found"
+                            in e.response["Error"]["Message"]
+                        ):
+                            return self.stack_name
+                        else:
+                            raise e
+                    return f"SC-{self.account_id}-{pp_id}"
 
         elif self.stack_set_name != "":
             with self.spoke_regional_client("cloudformation") as cloudformation:
