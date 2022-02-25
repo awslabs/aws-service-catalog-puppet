@@ -125,7 +125,8 @@ class ProvisionStackTask(
                             if re.match(
                                 name_as_a_regex, provisioned_product.get("Name")
                             ):
-                                return f"SC-{self.account_id}-{provisioned_product.get('Id')}"
+                                pp_stack_name = aws.get_stack_name_for_pp_id(servicecatalog, provisioned_product.get('Id'))
+                                return pp_stack_name
 
                     return self.stack_name
                 else:
@@ -145,7 +146,8 @@ class ProvisionStackTask(
                             return self.stack_name
                         else:
                             raise e
-                    return f"SC-{self.account_id}-{pp_id}"
+                    pp_stack_name = aws.get_stack_name_for_pp_id(servicecatalog, pp_id)
+                    return pp_stack_name
 
         elif self.stack_set_name != "":
             with self.spoke_regional_client("cloudformation") as cloudformation:

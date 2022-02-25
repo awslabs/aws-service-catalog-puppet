@@ -163,9 +163,10 @@ class ProvisionProductTask(
                     self.info(f"found previous good provision")
                     if provisioned_product_id:
                         self.info(f"checking params for diffs")
+                        pp_stack_name = aws.get_stack_name_for_pp_id(service_catalog, provisioned_product_id)
                         provisioned_parameters = aws.get_parameters_for_stack(
                             cloudformation,
-                            f"SC-{self.account_id}-{provisioned_product_id}",
+                            pp_stack_name,
                         )
                         self.info(f"current params: {provisioned_parameters}")
 
@@ -186,9 +187,10 @@ class ProvisionProductTask(
                     )
 
                     if provisioned_product_id:
+                        pp_stack_name = aws.get_stack_name_for_pp_id(service_catalog, provisioned_product_id)
                         stack = aws.get_stack_output_for(
                             cloudformation,
-                            f"SC-{self.account_id}-{provisioned_product_id}",
+                            pp_stack_name,
                         )
                         stack_status = stack.get("StackStatus")
                         self.info(f"current cfn stack_status is {stack_status}")
@@ -202,7 +204,7 @@ class ProvisionProductTask(
                             )
                         if stack_status == "UPDATE_ROLLBACK_COMPLETE":
                             self.warning(
-                                f"[{self.uid}] SC-{self.account_id}-{provisioned_product_id} has a status of "
+                                f"[{self.uid}] {pp_stack_name} has a status of "
                                 f"{stack_status}.  This may need manual resolution."
                             )
 
@@ -263,14 +265,7 @@ class ProvisionProductTask(
                     self.info(
                         f"Running in execution mode: {self.execution}, checking for SSM outputs"
                     )
-                    with self.spoke_regional_client(
-                        "cloudformation"
-                    ) as spoke_cloudformation:
-                        stack_details = aws.get_stack_output_for(
-                            spoke_cloudformation,
-                            f"SC-{self.account_id}-{provisioned_product_id}",
-                        )
-
+                    outputs = service_catalog.get_provisioned_product_outputs(ProvisionedProductId=provisioned_product_id).get("Outputs", [])
                     for ssm_param_output in self.ssm_param_outputs:
                         self.info(
                             f"writing SSM Param: {ssm_param_output.get('stack_output')}"
@@ -278,7 +273,7 @@ class ProvisionProductTask(
                         with self.hub_client("ssm") as ssm:
                             found_match = False
                             # TODO push into another task
-                            for output in stack_details.get("Outputs", []):
+                            for output in outputs:
                                 if output.get("OutputKey") == ssm_param_output.get(
                                     "stack_output"
                                 ):

@@ -7,6 +7,7 @@ from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow.general import get_ssm_param_task
 from servicecatalog_puppet.workflow.stack import provisioning_task
+from servicecatalog_puppet import aws
 import functools
 
 
@@ -80,7 +81,8 @@ class TerminateStackTask(
                         return self.stack_name
                     else:
                         raise e
-                return f"SC-{self.account_id}-{pp_id}"
+                stack_name = aws.get_stack_name_for_pp_id(servicecatalog, pp_id)
+                return stack_name
 
         elif self.stack_set_name != "":
             with self.spoke_regional_client("cloudformation") as cloudformation:

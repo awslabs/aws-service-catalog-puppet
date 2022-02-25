@@ -93,9 +93,10 @@ class ProvisionProductDryRunTask(provision_product_task.ProvisionProductTask):
                         self.info(f"found previous good provision")
                         if provisioned_product_id:
                             self.info(f"checking params for diffs")
+                            pp_stack_name = aws.get_stack_name_for_pp_id(service_catalog, provisioned_product_id)
                             provisioned_parameters = aws.get_parameters_for_stack(
                                 cloudformation,
-                                f"SC-{self.account_id}-{provisioned_product_id}",
+                                pp_stack_name,
                             )
                             self.info(f"current params: {provisioned_parameters}")
                             self.info(f"new params: {params_to_use}")
