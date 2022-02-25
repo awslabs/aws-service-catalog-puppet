@@ -163,10 +163,11 @@ class ProvisionProductTask(
                     self.info(f"found previous good provision")
                     if provisioned_product_id:
                         self.info(f"checking params for diffs")
-                        pp_stack_name = aws.get_stack_name_for_pp_id(service_catalog, provisioned_product_id)
+                        pp_stack_name = aws.get_stack_name_for_pp_id(
+                            service_catalog, provisioned_product_id
+                        )
                         provisioned_parameters = aws.get_parameters_for_stack(
-                            cloudformation,
-                            pp_stack_name,
+                            cloudformation, pp_stack_name,
                         )
                         self.info(f"current params: {provisioned_parameters}")
 
@@ -187,11 +188,10 @@ class ProvisionProductTask(
                     )
 
                     if provisioned_product_id:
-                        pp_stack_name = aws.get_stack_name_for_pp_id(service_catalog, provisioned_product_id)
-                        stack = aws.get_stack_output_for(
-                            cloudformation,
-                            pp_stack_name,
+                        pp_stack_name = aws.get_stack_name_for_pp_id(
+                            service_catalog, provisioned_product_id
                         )
+                        stack = aws.get_stack_output_for(cloudformation, pp_stack_name,)
                         stack_status = stack.get("StackStatus")
                         self.info(f"current cfn stack_status is {stack_status}")
                         if stack_status not in [
@@ -265,7 +265,9 @@ class ProvisionProductTask(
                     self.info(
                         f"Running in execution mode: {self.execution}, checking for SSM outputs"
                     )
-                    outputs = service_catalog.get_provisioned_product_outputs(ProvisionedProductId=provisioned_product_id).get("Outputs", [])
+                    outputs = service_catalog.get_provisioned_product_outputs(
+                        ProvisionedProductId=provisioned_product_id
+                    ).get("Outputs", [])
                     for ssm_param_output in self.ssm_param_outputs:
                         self.info(
                             f"writing SSM Param: {ssm_param_output.get('stack_output')}"

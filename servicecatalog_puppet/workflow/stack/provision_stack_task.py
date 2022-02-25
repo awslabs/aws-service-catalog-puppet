@@ -125,7 +125,9 @@ class ProvisionStackTask(
                             if re.match(
                                 name_as_a_regex, provisioned_product.get("Name")
                             ):
-                                pp_stack_name = aws.get_stack_name_for_pp_id(servicecatalog, provisioned_product.get('Id'))
+                                pp_stack_name = aws.get_stack_name_for_pp_id(
+                                    servicecatalog, provisioned_product.get("Id")
+                                )
                                 return pp_stack_name
 
                     return self.stack_name
@@ -329,7 +331,10 @@ class ProvisionStackTask(
 
         task_output["provisioned"] = need_to_provision
         self.info(f"self.execution is {self.execution}")
-        if self.execution in [constants.EXECUTION_MODE_HUB, constants.EXECUTION_MODE_SPOKE]:
+        if self.execution in [
+            constants.EXECUTION_MODE_HUB,
+            constants.EXECUTION_MODE_SPOKE,
+        ]:
             self.info(
                 f"Running in execution mode: {self.execution}, checking for SSM outputs"
             )

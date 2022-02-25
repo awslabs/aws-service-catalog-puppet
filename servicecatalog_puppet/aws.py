@@ -558,11 +558,12 @@ def run_pipeline(pipeline_name, tail):
 def get_stack_name_for_pp_id(servicecatalog, pp_id):
     provisioned_products = servicecatalog.search_provisioned_products(
         AccessLevelFilter={"Key": "Account", "Value": "self"},
-        Filters={"SearchQuery": ["id:" + pp_id]}
+        Filters={"SearchQuery": ["id:" + pp_id]},
     ).get("ProvisionedProducts", [])
     if len(provisioned_products) != 1:
         raise Exception(
-            f"Search provisioned products for pp_id:{pp_id} resulted in {len(provisioned_products)} matches")
+            f"Search provisioned products for pp_id:{pp_id} resulted in {len(provisioned_products)} matches"
+        )
     physical_id = provisioned_products[0].get("PhysicalId")
     stack_name = physical_id.split("/")[1]
     return stack_name

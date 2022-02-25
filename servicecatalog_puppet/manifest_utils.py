@@ -536,7 +536,9 @@ def rewrite_ssm_parameters(manifest):
                     existing_parameter = parameter_details.get(
                         "servicecatalog_provisioned_product_output"
                     )
-                    provisioned_product_name = existing_parameter.get("provisioned_product_name")
+                    provisioned_product_name = existing_parameter.get(
+                        "provisioned_product_name"
+                    )
                     output_key = existing_parameter.get("output_key")
                     new_parameter = dict(
                         account_id=existing_parameter.get(
