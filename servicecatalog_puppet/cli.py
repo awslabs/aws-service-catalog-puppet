@@ -488,7 +488,10 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
     params = dict(single_account=single_account)
     if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
         overrides = dict(**yaml.safe_load(parameter_override_file.read()))
-        params.update(overrides)
+        params.update(dict(
+            single_account=overrides.get("single_account"),
+            subset=overrides,
+        ))
         click.echo(f"Overridden parameters {params}")
 
     puppet_account_id = config.get_puppet_account_id()

@@ -1455,9 +1455,12 @@ def create_minimal_manifest(manifest):
     minimal_manifest[constants.LAUNCHES] = dict()
     minimal_manifest[constants.STACKS] = dict()
     minimal_manifest[constants.SPOKE_LOCAL_PORTFOLIOS] = dict()
-    minimal_manifest[constants.ACTIONS] = dict()
     minimal_manifest[constants.LAMBDA_INVOCATIONS] = dict()
     minimal_manifest[constants.ASSERTIONS] = dict()
+    minimal_manifest[constants.SERVICE_CONTROL_POLICIES] = dict()
+    minimal_manifest[constants.TAG_POLICIES] = dict()
+    minimal_manifest[constants.APPS] = dict()
+    minimal_manifest[constants.WORKSPACES] = dict()
     return minimal_manifest
 
 
@@ -1503,8 +1506,8 @@ def explode(expanded_manifest):
 
 def isolate(expanded_manifest, subset):
     section = subset["section"]
-    name = subset["name"]
-    uid = f"{section}|{name}"
+    item = subset["item"]
+    uid = f"{section}|{item}"
 
     m = create_minimal_manifest(expanded_manifest)
     G = convert_to_graph(expanded_manifest, nx.DiGraph())
