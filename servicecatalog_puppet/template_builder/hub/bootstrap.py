@@ -662,87 +662,20 @@ def get_template(
             )
         )
 
-    single_account_run_project_build_spec = dict(
-        version=0.2,
-        phases=dict(
-            install=install_spec,
-            build={
-                "commands": [
-                    'echo "single_account: \\"${SINGLE_ACCOUNT_ID}\\"" > parameters.yaml',
-                    "cat parameters.yaml",
-                    "zip parameters.zip parameters.yaml",
-                    "aws s3 cp parameters.zip s3://sc-puppet-parameterised-runs-${PUPPET_ACCOUNT_ID}/parameters.zip",
-                ]
-            },
-            post_build={
-                "commands": [
-                    "servicecatalog-puppet wait-for-parameterised-run-to-complete",
-                ]
-            },
-        ),
-        artifacts=dict(
-            name="DeployProject",
-            files=[
-                "ServiceCatalogPuppet/manifest.yaml",
-                "ServiceCatalogPuppet/manifest-expanded.yaml",
-                "results/*/*",
-                "output/*/*",
-                "exploded_results/*/*",
-                "tasks.log",
-            ],
-        ),
+    generate_single_account_run_projects(
+        deploy_env_vars,
+        deploy_environment_compute_type_parameter,
+        deploy_role,
+        install_spec,
+        template,
     )
 
-    single_account_run_project_args = dict(
-        Name="servicecatalog-puppet-single-account-run",
-        Description="Runs puppet for a single account - SINGLE_ACCOUNT_ID",
-        ServiceRole=t.GetAtt(deploy_role, "Arn"),
-        Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
-        Artifacts=codebuild.Artifacts(Type="NO_ARTIFACTS",),
-        TimeoutInMinutes=480,
-        Environment=codebuild.Environment(
-            ComputeType=t.Ref(deploy_environment_compute_type_parameter),
-            Image="aws/codebuild/standard:4.0",
-            Type="LINUX_CONTAINER",
-            EnvironmentVariables=[
-                {
-                    "Type": "PLAINTEXT",
-                    "Name": "SINGLE_ACCOUNT_ID",
-                    "Value": "CHANGE_ME",
-                },
-            ]
-            + deploy_env_vars,
-        ),
-        Source=codebuild.Source(
-            Type="NO_SOURCE",
-            BuildSpec=yaml.safe_dump(single_account_run_project_build_spec),
-        ),
-    )
-
-    single_account_run_project = template.add_resource(
-        codebuild.Project("SingleAccountRunProject", **single_account_run_project_args)
-    )
-
-    single_account_run_project_build_spec["phases"]["post_build"]["commands"] = [
-        "servicecatalog-puppet wait-for-parameterised-run-to-complete --on-complete-url $CALLBACK_URL"
-    ]
-    single_account_run_project_args[
-        "Name"
-    ] = "servicecatalog-puppet-single-account-run-with-callback"
-    single_account_run_project_args[
-        "Description"
-    ] = "Runs puppet for a single account - SINGLE_ACCOUNT_ID and then does a http put"
-    single_account_run_project_args.get("Environment").EnvironmentVariables.append(
-        {"Type": "PLAINTEXT", "Name": "CALLBACK_URL", "Value": "CHANGE_ME",}
-    )
-    single_account_run_project_args["Source"] = codebuild.Source(
-        Type="NO_SOURCE",
-        BuildSpec=yaml.safe_dump(single_account_run_project_build_spec),
-    )
-    single_account_run_project_with_callback = template.add_resource(
-        codebuild.Project(
-            "SingleAccountRunWithCallbackProject", **single_account_run_project_args
-        )
+    generate_single_action_run_projects(
+        deploy_env_vars,
+        deploy_environment_compute_type_parameter,
+        deploy_role,
+        install_spec,
+        template,
     )
 
     stages = [source_stage]
@@ -1224,3 +1157,197 @@ def get_template(
     )
 
     return template
+
+
+def generate_single_account_run_projects(
+    deploy_env_vars,
+    deploy_environment_compute_type_parameter,
+    deploy_role,
+    install_spec,
+    template,
+):
+    single_account_run_project_build_spec = dict(
+        version=0.2,
+        phases=dict(
+            install=install_spec,
+            build={
+                "commands": [
+                    'echo "single_account: \\"${SINGLE_ACCOUNT_ID}\\"" > parameters.yaml',
+                    "cat parameters.yaml",
+                    "zip parameters.zip parameters.yaml",
+                    "aws s3 cp parameters.zip s3://sc-puppet-parameterised-runs-${PUPPET_ACCOUNT_ID}/parameters.zip",
+                ]
+            },
+            post_build={
+                "commands": [
+                    "servicecatalog-puppet wait-for-parameterised-run-to-complete",
+                ]
+            },
+        ),
+        artifacts=dict(
+            name="DeployProject",
+            files=[
+                "ServiceCatalogPuppet/manifest.yaml",
+                "ServiceCatalogPuppet/manifest-expanded.yaml",
+                "results/*/*",
+                "output/*/*",
+                "exploded_results/*/*",
+                "tasks.log",
+            ],
+        ),
+    )
+    single_account_run_project_args = dict(
+        Name="servicecatalog-puppet-single-account-run",
+        Description="Runs puppet for a single account - SINGLE_ACCOUNT_ID",
+        ServiceRole=t.GetAtt(deploy_role, "Arn"),
+        Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
+        Artifacts=codebuild.Artifacts(Type="NO_ARTIFACTS",),
+        TimeoutInMinutes=480,
+        Environment=codebuild.Environment(
+            ComputeType=t.Ref(deploy_environment_compute_type_parameter),
+            Image="aws/codebuild/standard:4.0",
+            Type="LINUX_CONTAINER",
+            EnvironmentVariables=[
+                {
+                    "Type": "PLAINTEXT",
+                    "Name": "SINGLE_ACCOUNT_ID",
+                    "Value": "CHANGE_ME",
+                },
+            ]
+            + deploy_env_vars,
+        ),
+        Source=codebuild.Source(
+            Type="NO_SOURCE",
+            BuildSpec=yaml.safe_dump(single_account_run_project_build_spec),
+        ),
+    )
+    single_account_run_project = template.add_resource(
+        codebuild.Project("SingleAccountRunProject", **single_account_run_project_args)
+    )
+    single_account_run_project_build_spec["phases"]["post_build"]["commands"] = [
+        "servicecatalog-puppet wait-for-parameterised-run-to-complete --on-complete-url $CALLBACK_URL"
+    ]
+    single_account_run_project_args[
+        "Name"
+    ] = "servicecatalog-puppet-single-account-run-with-callback"
+    single_account_run_project_args[
+        "Description"
+    ] = "Runs puppet for a single account - SINGLE_ACCOUNT_ID and then does a http put"
+    single_account_run_project_args.get("Environment").EnvironmentVariables.append(
+        {"Type": "PLAINTEXT", "Name": "CALLBACK_URL", "Value": "CHANGE_ME",}
+    )
+    single_account_run_project_args["Source"] = codebuild.Source(
+        Type="NO_SOURCE",
+        BuildSpec=yaml.safe_dump(single_account_run_project_build_spec),
+    )
+    single_account_run_project_with_callback = template.add_resource(
+        codebuild.Project(
+            "SingleAccountRunWithCallbackProject", **single_account_run_project_args
+        )
+    )
+
+
+def generate_single_action_run_projects(
+    deploy_env_vars,
+    deploy_environment_compute_type_parameter,
+    deploy_role,
+    install_spec,
+    template,
+):
+    single_action_run_project_build_spec = dict(
+        version=0.2,
+        phases=dict(
+            install=install_spec,
+            build={
+                "commands": [
+                    'echo "section: \\"${SECTION}\\"" > parameters.yaml',
+                    'echo "item: \\"${ITEM}\\"" >> parameters.yaml',
+                    'echo "include_dependencies: \\"${INCLUDE_DEPENDENCIES}\\"" >> parameters.yaml',
+                    'echo "include_reverse_dependencies: \\"${INCLUDE_REVERSE_DEPENDENCIES}\\"" >> parameters.yaml',
+                    "cat parameters.yaml",
+                    "zip parameters.zip parameters.yaml",
+                    "aws s3 cp parameters.zip s3://sc-puppet-parameterised-runs-${PUPPET_ACCOUNT_ID}/parameters.zip",
+                ]
+            },
+            post_build={
+                "commands": [
+                    "servicecatalog-puppet wait-for-parameterised-run-to-complete",
+                ]
+            },
+        ),
+        artifacts=dict(
+            name="DeployProject",
+            files=[
+                "ServiceCatalogPuppet/manifest.yaml",
+                "ServiceCatalogPuppet/manifest-expanded.yaml",
+                "results/*/*",
+                "output/*/*",
+                "exploded_results/*/*",
+                "tasks.log",
+            ],
+        ),
+    )
+    single_action_run_project_args = dict(
+        Name="servicecatalog-puppet-single-action-run",
+        Description="Runs puppet for a single action",
+        ServiceRole=t.GetAtt(deploy_role, "Arn"),
+        Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
+        Artifacts=codebuild.Artifacts(Type="NO_ARTIFACTS",),
+        TimeoutInMinutes=480,
+        Environment=codebuild.Environment(
+            ComputeType=t.Ref(deploy_environment_compute_type_parameter),
+            Image="aws/codebuild/standard:4.0",
+            Type="LINUX_CONTAINER",
+            EnvironmentVariables=[
+                {
+                    "Type": "PLAINTEXT",
+                    "Name": "SECTION",
+                    "Value": "CHANGE_ME - launches|stacks|assertions|spoke-local-portfolios|etc",
+                },
+                {
+                    "Type": "PLAINTEXT",
+                    "Name": "ITEM",
+                    "Value": "CHANGE_ME - name of the launch|stack|assertion|etc",
+                },
+                {
+                    "Type": "PLAINTEXT",
+                    "Name": "INCLUDE_DEPENDENCIES",
+                    "Value": "CHANGE_ME - should include your specified items dependencies true|false",
+                },
+                {
+                    "Type": "PLAINTEXT",
+                    "Name": "INCLUDE_REVERSE_DEPENDENCIES",
+                    "Value": "CHANGE_ME - should include things that depend on your specified item true|false",
+                },
+            ]
+            + deploy_env_vars,
+        ),
+        Source=codebuild.Source(
+            Type="NO_SOURCE",
+            BuildSpec=yaml.safe_dump(single_action_run_project_build_spec),
+        ),
+    )
+    single_action_run_project = template.add_resource(
+        codebuild.Project("SingleActionRunProject", **single_action_run_project_args)
+    )
+    single_action_run_project_build_spec["phases"]["post_build"]["commands"] = [
+        "servicecatalog-puppet wait-for-parameterised-run-to-complete --on-complete-url $CALLBACK_URL"
+    ]
+    single_action_run_project_args[
+        "Name"
+    ] = "servicecatalog-puppet-single-action-run-with-callback"
+    single_action_run_project_args[
+        "Description"
+    ] = "Runs puppet for a single action and then does a http put"
+    single_action_run_project_args.get("Environment").EnvironmentVariables.append(
+        {"Type": "PLAINTEXT", "Name": "CALLBACK_URL", "Value": "CHANGE_ME",}
+    )
+    single_action_run_project_args["Source"] = codebuild.Source(
+        Type="NO_SOURCE",
+        BuildSpec=yaml.safe_dump(single_action_run_project_build_spec),
+    )
+    single_action_run_project_with_callback = template.add_resource(
+        codebuild.Project(
+            "SingleActionRunWithCallbackProject", **single_action_run_project_args
+        )
+    )
