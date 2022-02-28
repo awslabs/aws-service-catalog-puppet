@@ -19,6 +19,7 @@ Metadata:
       - Label:
           default: "Options"
         Parameters:
+          - IsCachingEnabled
           - ShouldValidate
           - PollForSourceChanges
           - ShouldDeleteRollbackCompleteStacks
@@ -205,6 +206,13 @@ Parameters:
       - "false"
     Default: "true"
     Description: "Setting this to true adds a validate stage to the pipeline where the manifest file validated before the deploy occurs."
+  IsCachingEnabled:
+    Type: String
+    AllowedValues:
+      - "True"
+      - "False"
+    Default: "False"
+    Description: "Setting this to true enables the caching of some workflow tasks, reducing overall execution times."
   PollForSourceChanges:
     Type: String
     AllowedValues:
@@ -372,6 +380,9 @@ Resources:
           - Name: SCT_SHOULD_VALIDATE
             Type: PLAINTEXT
             Value: !Ref ShouldValidate
+          - Name: IS_CACHING_ENABLED
+            Type: PLAINTEXT
+            Value: !Ref IsCachingEnabled
           - Name: SCT_POLL_FOR_SOURCE_CHANGES
             Type: PLAINTEXT
             Value: !Ref PollForSourceChanges
@@ -394,6 +405,7 @@ Resources:
                 - servicecatalog-puppet set-config-value should_forward_failures_to_opscenter ${SHOULD_FORWARD_FAILURES_TO_OPSCENTER}
                 - servicecatalog-puppet set-config-value should_use_stacks_service_role ${SHOULD_USE_STACKS_SERVICE_ROLE}
                 - servicecatalog-puppet set-config-value should_delete_rollback_complete_stacks ${SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS}
+                - servicecatalog-puppet set-config-value is_caching_enabled ${IS_CACHING_ENABLED}
                 - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID} --permission-boundary ${PUPPET_ROLE_PERMISSION_BOUNDARY} --puppet-role-name ${PUPPET_ROLE_NAME} --puppet-role-path ${PUPPET_ROLE_PATH}
             build:
               commands:
@@ -532,6 +544,7 @@ Resources:
           - !Ref SCMCustomSourceActionCustomActionTypeVersion
           - !Ref SCMCustomSourceActionCustomActionTypeProvider
           - !Ref ShouldValidate
+          - !Ref IsCachingEnabled
           - !Ref PollForSourceChanges
           - !Ref ShouldDeleteRollbackCompleteStacks
 Outputs:
