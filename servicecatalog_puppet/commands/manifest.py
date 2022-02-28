@@ -1,6 +1,6 @@
 #  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-
+import copy
 import json
 import logging
 import os
@@ -8,6 +8,7 @@ import os
 import click
 import requests
 import yamale
+import yaml
 from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import yaml_utils
@@ -90,9 +91,7 @@ def expand(f, puppet_account_id, single_account, subset=None):
 
     if subset:
         click.echo(f"Filtering for subset: {subset}")
-        new_manifest = manifest_utils.isolate(
-            manifest_utils.Manifest(new_manifest), subset
-        )
+        new_manifest = manifest_utils.isolate(new_manifest, subset)
 
     manifest_accounts_all = [
         {"account_id": a.get("account_id"), "email": a.get("email")}
