@@ -1529,8 +1529,6 @@ def isolate(expanded_manifest, subset):
 
     if subset.get("include_reverse_dependencies", False):
         click.echo("Including reverse dependencies")
-        print("DEBUGGG")
-        print(f"uid is: {uid}")
         for reverse_dependency in nx.edge_dfs(G, uid, orientation="reverse"):
             reverse_dependency_name, link, direction = reverse_dependency
             node = G.nodes.get(reverse_dependency_name)
