@@ -91,9 +91,7 @@ def expand(f, puppet_account_id, single_account, subset=None):
 
     if subset:
         click.echo(f"Filtering for subset: {subset}")
-        new_manifest = manifest_utils.isolate(
-            new_manifest, subset
-        )
+        new_manifest = manifest_utils.isolate(new_manifest, subset)
 
     manifest_accounts_all = [
         {"account_id": a.get("account_id"), "email": a.get("email")}
