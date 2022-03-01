@@ -167,6 +167,13 @@ def validate(f):
 
     manifest = manifest_utils.load(f, config.get_puppet_account_id())
 
+    try:
+        Loader = yaml.CSafeLoader
+    except AttributeError:  # System does not have libyaml
+        Loader = yaml.SafeLoader
+    Loader.add_constructor("!Equals", yaml_utils.Equals.from_yaml)
+    Loader.add_constructor("!Not", yaml_utils.Not.from_yaml)
+
     schema = yamale.make_schema(asset_helpers.resolve_from_site_packages("schema.yaml"))
     data = yamale.make_data(content=yaml_utils.dump(manifest))
 
