@@ -24,6 +24,9 @@ class Equals(yaml.YAMLObject):
     def get_result(self):
         return all(element == self.values[0] for element in self.values)
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}[{','.join(self.values)}]"
+
 
 class Not(yaml.YAMLObject):
     yaml_loader = yaml.SafeLoader
@@ -47,14 +50,9 @@ class Not(yaml.YAMLObject):
         return not self.values[0]
 
 
-yaml.add_constructor('!Equals', Equals.from_yaml)
-yaml.add_constructor('!Not', Not.from_yaml)
-
-
 def load(what):
     return yaml.load(what, Loader=yaml.SafeLoader)
 
 
 def dump(what):
-
     return yaml.dump(what, default_flow_style=False, Dumper=yaml.SafeDumper)
