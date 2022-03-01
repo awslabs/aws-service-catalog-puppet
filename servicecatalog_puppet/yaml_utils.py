@@ -47,9 +47,14 @@ class Not(yaml.YAMLObject):
         return not self.values[0]
 
 
+yaml.add_constructor('!Equals', Equals.from_yaml)
+yaml.add_constructor('!Not', Not.from_yaml)
+
+
 def load(what):
     return yaml.load(what, Loader=yaml.SafeLoader)
 
 
 def dump(what):
+
     return yaml.dump(what, default_flow_style=False, Dumper=yaml.SafeDumper)

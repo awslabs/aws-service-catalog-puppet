@@ -36,7 +36,8 @@ package_data = \
 {'': ['*'], 'servicecatalog_puppet': ['manifests/*', 'templates/*']}
 
 install_requires = \
-['awacs==2.0.2',
+['PyYAML==5.4',
+ 'awacs==2.0.2',
  'better-boto==0.42.0',
  'boto3==1.20.5',
  'cfn-flip==1.2.3',
@@ -49,7 +50,7 @@ install_requires = \
  'luigi==3.0.2',
  'networkx>=2.5,<3.0',
  'psutil==5.7.0',
- 'pyyaml==6.0',
+ 'pyyaml==5.4',
  'requests==2.26.0',
  'terminaltables==3.1.0',
  'troposphere==3.1.0',
