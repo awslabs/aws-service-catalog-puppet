@@ -49,7 +49,7 @@ install_requires = \
  'luigi==3.0.2',
  'networkx>=2.5,<3.0',
  'psutil==5.7.0',
- 'pyyaml==5.4',
+ 'pyyaml==6.0',
  'requests==2.26.0',
  'terminaltables==3.1.0',
  'troposphere==3.1.0',
