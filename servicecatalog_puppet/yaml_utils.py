@@ -24,9 +24,6 @@ class Equals(yaml.YAMLObject):
     def get_result(self):
         return all(element == self.values[0] for element in self.values)
 
-    def __repr__(self):
-        return f"{self.__class__.__name__}[{','.join(self.values)}]"
-
 
 class Not(yaml.YAMLObject):
     yaml_loader = yaml.SafeLoader
