@@ -74,7 +74,7 @@ ssm_parameter:
     name: str()
     region: include('region', required=False)
 
-account_id_str: str(min=12, max=12)
+account_id_str: any(str(min=12, max=12), int(min=100000000000, max=999999999999))
 
 account_id_func: enum("${AWS::AccountId}")
 
