@@ -48,8 +48,8 @@ class Not(yaml.YAMLObject):
 
 
 def load(what):
-    return yaml.load(what, Loader=yaml.SafeLoader)
+    return yaml.safe_load(what)
 
 
 def dump(what):
-    return yaml.dump(what, default_flow_style=False, Dumper=yaml.SafeDumper)
+    return yaml.safe_dump(what, default_flow_style=False)
