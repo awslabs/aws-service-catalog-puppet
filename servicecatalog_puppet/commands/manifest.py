@@ -89,7 +89,7 @@ def expand(f, puppet_account_id, single_account, subset=None):
     new_manifest = manifest_utils.rewrite_scps(new_manifest, puppet_account_id)
     new_manifest = manifest_utils.parse_conditions(new_manifest)
 
-    if subset.get("section"):
+    if subset and subset.get("section"):
         click.echo(f"Filtering for subset: {subset}")
         new_manifest = manifest_utils.isolate(new_manifest, subset)
 
