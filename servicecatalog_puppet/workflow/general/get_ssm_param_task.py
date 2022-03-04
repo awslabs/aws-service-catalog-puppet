@@ -229,7 +229,7 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                 with self.input().get("ssm_params").get("boto3_params").get(
                     param_name
                 ).open() as f:
-                    all_params[param_name] = f.read()
+                    all_params[param_name] = json.loads(f.read())
             if param_details.get("default"):
                 all_params[param_name] = (
                     param_details.get("default")
