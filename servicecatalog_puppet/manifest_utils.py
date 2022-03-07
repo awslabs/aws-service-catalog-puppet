@@ -552,6 +552,19 @@ def rewrite_ssm_parameters(manifest):
                         filter=f"Outputs[?OutputKey==`{output_key}`].OutputValue | [0]",
                     )
                     parameter_details["boto3"] = new_parameter
+                    for section_item_name, section_item_details in manifest.get(constants.LAUNCHES, {}).items():
+                        if section_item_name == provisioned_product_name:
+                            for output in section_item_details.get("outputs", {}).get("ssm", []):
+                                if output.get("stack_output") == output_key:
+                                    if details.get("depends_on") is None:
+                                        details["depends_on"] = list()
+                                    details["depends_on"].append(
+                                        dict(
+                                            name=provisioned_product_name,
+                                            type=constants.LAUNCH,
+                                            affinity=constants.LAUNCH,
+                                        )
+                                    )
 
     return manifest
 
