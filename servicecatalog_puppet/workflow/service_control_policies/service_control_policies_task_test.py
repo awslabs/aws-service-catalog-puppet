@@ -7,7 +7,7 @@ from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
 class ServiceControlPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
-    service_control_policies_name = "service_control_policies_name"
+    service_control_policy_name = "service_control_policy_name"
     puppet_account_id = "puppet_account_id"
     manifest_file_path = "manifest_file_path"
 
@@ -20,7 +20,7 @@ class ServiceControlPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
 
         self.sut = self.module.ServiceControlPoliciesTask(
             manifest_file_path=self.manifest_file_path,
-            service_control_policies_name=self.service_control_policies_name,
+            service_control_policy_name=self.service_control_policy_name,
             puppet_account_id=self.puppet_account_id,
         )
 
@@ -30,7 +30,7 @@ class ServiceControlPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
         # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
-            "service_control_policies_name": self.service_control_policies_name,
+            "service_control_policy_name": self.service_control_policy_name,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -63,7 +63,7 @@ class ServiceControlPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
         ) in self.sut.manifest.get_account_ids_and_regions_used_for_section_item(
             self.sut.puppet_account_id,
             self.sut.section_name,
-            self.sut.service_control_policies_name,
+            self.sut.service_control_policy_name,
         ).items():
             for region in regions:
                 for (
@@ -71,7 +71,7 @@ class ServiceControlPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest)
                 ) in self.sut.manifest.get_tasks_for_launch_and_account_and_region(
                     self.sut.puppet_account_id,
                     self.sut.section_name,
-                    self.sut.service_control_policies_name,
+                    self.sut.service_control_policy_name,
                     account_id,
                     region,
                 ):

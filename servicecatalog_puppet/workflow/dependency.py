@@ -195,7 +195,7 @@ def generate_dependency_task(
     elif depends_on.get("type") == constants.SERVICE_CONTROL_POLICY:
         if depends_on.get(constants.AFFINITY) == constants.SERVICE_CONTROL_POLICY:
             return service_control_policies_task.ServiceControlPoliciesTask(
-                **common_args, service_control_policies_name=depends_on.get("name"),
+                **common_args, service_control_policy_name=depends_on.get("name"),
             )
         else:
             raise Exception(
