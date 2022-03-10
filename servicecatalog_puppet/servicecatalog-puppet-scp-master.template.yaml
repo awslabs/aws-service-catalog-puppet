@@ -43,6 +43,7 @@ Resources:
 
                   - organizations:CreatePolicy
                   - organizations:AttachPolicy
+                  - organizations:DetachPolicy
                   - organizations:ListPoliciesForTarget
                   - organizations:ListPolicies
                   - organizations:DescribePolicy

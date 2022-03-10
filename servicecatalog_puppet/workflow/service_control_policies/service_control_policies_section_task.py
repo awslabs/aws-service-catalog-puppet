@@ -16,5 +16,5 @@ class ServiceControlPoliciesSectionTask(generic_section_task.GenericSectionTask)
     for_account_task_klass = None
     for_account_and_region_task_klass = None
     task_klass = service_control_policies_task.ServiceControlPoliciesTask
-    item_name = "service_control_policies_name"
+    item_name = "service_control_policy_name"
     supports_spoke_mode = False

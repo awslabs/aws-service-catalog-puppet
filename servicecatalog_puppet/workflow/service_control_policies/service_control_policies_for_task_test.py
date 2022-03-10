@@ -7,7 +7,7 @@ from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
 class ServiceControlPoliciesForTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
-    service_control_policies_name = "service_control_policies_name"
+    service_control_policy_name = "service_control_policy_name"
     puppet_account_id = "puppet_account_id"
     manifest_file_path = "manifest_file_path"
 
@@ -20,7 +20,7 @@ class ServiceControlPoliciesForTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
 
         self.sut = self.module.ServiceControlPoliciesForTask(
             manifest_file_path=self.manifest_file_path,
-            service_control_policies_name=self.service_control_policies_name,
+            service_control_policy_name=self.service_control_policy_name,
             puppet_account_id=self.puppet_account_id,
         )
 
@@ -30,7 +30,7 @@ class ServiceControlPoliciesForTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
         # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
-            "service_control_policies_name": self.service_control_policies_name,
+            "service_control_policy_name": self.service_control_policy_name,
             "cache_invalidator": self.cache_invalidator,
         }
 
