@@ -5,6 +5,7 @@ from deepmerge import always_merger
 import jmespath
 
 from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet.workflow import dependency
 
 
 class Boto3Task(tasks.PuppetTask):
@@ -20,6 +21,12 @@ class Boto3Task(tasks.PuppetTask):
     requester_task_id = luigi.Parameter()
     requester_task_family = luigi.Parameter()
 
+    depends_on = luigi.ListParameter(default=[])
+    manifest_file_path = luigi.Parameter(default="")
+    puppet_account_id = luigi.Parameter(default="")
+    spoke_account_id = luigi.Parameter(default="")
+    spoke_region = luigi.Parameter(default="")
+
     def params_for_results_display(self):
         return {
             "account_id": self.account_id,
@@ -31,6 +38,22 @@ class Boto3Task(tasks.PuppetTask):
             "requester_task_family": self.requester_task_family,
             "cache_invalidator": self.cache_invalidator,
         }
+
+    def requires(self):
+        deps = dict()
+        if len(self.depends_on) > 0:
+            deps["dependencies"] = dependency.generate_dependency_tasks(
+                self.depends_on,
+                self.manifest_file_path,
+                self.puppet_account_id,
+                self.spoke_account_id,
+                self.ou_name if hasattr(self, "ou_name") else "",
+                self.spoke_region,
+                self.execution_mode,
+            )
+        print("debugging!!!")
+        print(deps)
+        return deps
 
     def run(self):
         with self.spoke_regional_client(self.client) as client:

@@ -4,10 +4,9 @@
 import json
 
 import luigi
-import yaml
 from deepmerge import always_merger
 
-from servicecatalog_puppet import config, constants
+from servicecatalog_puppet import config
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.general import boto3_task
@@ -211,6 +210,12 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                     .replace("${AWS::AccountId}", self.account_id),
                     requester_task_id=self.task_id,
                     requester_task_family=self.task_family,
+
+                    depends_on=param_details.get("boto3").get("depends_on", []),
+                    manifest_file_path=self.manifest_file_path,
+                    puppet_account_id=self.puppet_account_id,
+                    spoke_account_id=self.account_id,
+                    spoke_region=self.region,
                 )
 
         return requires
