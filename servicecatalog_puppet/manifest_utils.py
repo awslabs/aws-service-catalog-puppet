@@ -563,6 +563,13 @@ def rewrite_ssm_parameters(manifest):
                                     affinity=constants.LAUNCH,
                                 )
                             )
+                            parameter_details["boto3"]["depends_on"] = [
+                                dict(
+                                    name=provisioned_product_name,
+                                    type=constants.LAUNCH,
+                                    affinity=constants.LAUNCH,
+                                )
+                            ]
 
     return manifest
 
