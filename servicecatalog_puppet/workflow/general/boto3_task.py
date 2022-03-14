@@ -51,8 +51,6 @@ class Boto3Task(tasks.PuppetTask):
                 self.spoke_region,
                 self.execution_mode,
             )
-        print("debugging!!!")
-        print(deps)
         return deps
 
     def run(self):
