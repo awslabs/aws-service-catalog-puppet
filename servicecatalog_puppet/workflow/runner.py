@@ -148,7 +148,13 @@ def run_tasks(
             ) as codebuild_client:
                 response = codebuild_client.batch_get_builds(ids=[build_id])
                 build = response.get("builds")[0]
-                while build.get("buildStatus") == "IN_PROGRESS":
+
+            while build.get("buildStatus") == "IN_PROGRESS":
+                with betterboto_client.CrossAccountClientContextManager(
+                        "codebuild",
+                        config.get_puppet_role_arn(spoke_account_id),
+                        f"{spoke_account_id}-{config.get_puppet_role_name()}-looped",
+                ) as codebuild_client:
                     response = codebuild_client.batch_get_builds(ids=[build_id])
                     build = response.get("builds")[0]
                     time.sleep(10)
