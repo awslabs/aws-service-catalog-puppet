@@ -72,7 +72,7 @@ def expand(f, puppet_account_id, single_account, subset=None):
             new_manifest = manifest_utils.expand_manifest(manifest, client)
     click.echo("Expanded")
 
-    new_manifest = manifest_utils.rewrite_as_share_to(new_manifest)
+    new_manifest = manifest_utils.rewrite_deploy_as_share_to_for_spoke_local_portfolios(new_manifest)
     if single_account:
         click.echo(f"Filtering for single account: {single_account}")
 
@@ -89,29 +89,19 @@ def expand(f, puppet_account_id, single_account, subset=None):
                 accounts = list()
                 for deploy_details in item.get(deploy_to_name, {}).get("accounts", []):
                     if str(deploy_details.get("account_id")) == str(single_account):
-                        print("found a single account in this one!")
                         accounts.append(deploy_details)
 
                 print(f"{item_name}: there are " + str(len(accounts)))
                 if item.get(deploy_to_name).get("accounts"):
                     if len(accounts) > 0:
-                        print(f"{item_name} there are accounts")
                         item[deploy_to_name]["accounts"] = accounts
                     else:
-                        print(f"{item_name} there are no accounts")
                         if item[deploy_to_name].get("tags") or item[deploy_to_name].get("ous"):
-                            print(f"{item_name} there are tags or ous")
                             del item[deploy_to_name]["accounts"]
                         else:
-                            print(f"{item_name} there is nothing!")
-                            print("about to del this")
                             items_to_delete.append(f"{section_name}:{item_name}")
-        print("HERE I AM!!!")
-        print(items_to_delete)
         for item_to_delete in items_to_delete:
-            print("LLLLOOOPPPP")
             section_name, item_name = item_to_delete.split(":")
-            print(section_name, item_name)
             del new_manifest[section_name][item_name]
 
         click.echo("Filtered")

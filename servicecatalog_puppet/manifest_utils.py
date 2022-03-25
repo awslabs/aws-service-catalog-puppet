@@ -261,7 +261,7 @@ def expand_manifest(manifest, client):
     return new_manifest
 
 
-def rewrite_as_share_to(manifest):
+def rewrite_deploy_as_share_to_for_spoke_local_portfolios(manifest):
     for item_name, item in manifest.get(constants.SPOKE_LOCAL_PORTFOLIOS, {}).items():
         if item.get("deploy_to"):
             item["share_with"] = item["deploy_to"]
