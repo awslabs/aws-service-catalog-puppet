@@ -261,6 +261,14 @@ def expand_manifest(manifest, client):
     return new_manifest
 
 
+def rewrite_as_share_to(manifest):
+    for item_name, item in manifest.get(constants.SPOKE_LOCAL_PORTFOLIOS, {}).items():
+        if item.get("deploy_to"):
+            item["share_with"] = item["deploy_to"]
+            del item["deploy_to"]
+    return manifest
+
+
 def rewrite_cfct(manifest):
     manifest_accounts = dict()
     for account in manifest.get("accounts", []):
