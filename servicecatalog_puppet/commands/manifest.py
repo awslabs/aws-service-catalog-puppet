@@ -71,6 +71,8 @@ def expand(f, puppet_account_id, single_account, subset=None):
         ) as client:
             new_manifest = manifest_utils.expand_manifest(manifest, client)
     click.echo("Expanded")
+
+    new_manifest = manifest_utils.rewrite_deploy_as_share_to_for_spoke_local_portfolios(new_manifest)
     if single_account:
         click.echo(f"Filtering for single account: {single_account}")
 
@@ -79,6 +81,28 @@ def expand(f, puppet_account_id, single_account, subset=None):
                 click.echo(f"Found single account: {single_account}")
                 new_manifest["accounts"] = [account]
                 break
+
+        items_to_delete = list()
+        for section_name in constants.ALL_SECTION_NAMES:
+            deploy_to_name = constants.DEPLOY_TO_NAMES[section_name]
+            for item_name, item in new_manifest.get(section_name, {}).items():
+                accounts = list()
+                for deploy_details in item.get(deploy_to_name, {}).get("accounts", []):
+                    if str(deploy_details.get("account_id")) == str(single_account):
+                        accounts.append(deploy_details)
+
+                print(f"{item_name}: there are " + str(len(accounts)))
+                if item.get(deploy_to_name).get("accounts"):
+                    if len(accounts) > 0:
+                        item[deploy_to_name]["accounts"] = accounts
+                    else:
+                        if item[deploy_to_name].get("tags") or item[deploy_to_name].get("ous"):
+                            del item[deploy_to_name]["accounts"]
+                        else:
+                            items_to_delete.append(f"{section_name}:{item_name}")
+        for item_to_delete in items_to_delete:
+            section_name, item_name = item_to_delete.split(":")
+            del new_manifest[section_name][item_name]
 
         click.echo("Filtered")
 

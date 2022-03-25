@@ -248,3 +248,17 @@ SECTIONS_THAT_SUPPORT_CONDITIONS = [
 ]
 
 SERVICE_CATALOG_PUPPET_MANIFEST_SSM_PREFIX = "/servicecatalog-puppet/manifest"
+
+DEPLOY_TO_NAMES = {
+    LAUNCHES: "deploy_to",
+    STACKS: "deploy_to",
+    SPOKE_LOCAL_PORTFOLIOS: "share_with",
+    LAMBDA_INVOCATIONS: "invoke_for",
+    CODE_BUILD_RUNS: "run_for",
+    ASSERTIONS: "assert_for",
+    APPS: "deploy_to",
+    WORKSPACES: "deploy_to",
+    SERVICE_CONTROL_POLICIES: "apply_to",
+    SIMULATE_POLICIES: "simulate_for",
+    TAG_POLICIES: "apply_to",
+}
