@@ -27,7 +27,7 @@ code-build-runs: map(include('code-build-run'), required=False)
 ---
 account_or_ou: any(include('account_def'),include('ou'))
 
-account_def: any(include('account'), include('account_with_overwrite'), include('account_with_append'))
+account_def: any(include('account'), include('account_with_overwrite'), include('account_with_append'), include('ou_with_overwrite'), include('ou_with_append'))
 
 account:
   account_id: include('account_id_str')
@@ -55,6 +55,18 @@ ou:
   regions_enabled: list(include('region'))
   tags: list(str())
   exclude: include('exclude', required=False)
+
+ou_with_overwrite:
+  ou: include('ou_path_or_id')
+  name: str()
+  append: include('append_or_overwrite', required=False)
+  overwrite: include('append_or_overwrite')
+
+ou_with_append:
+  ou: include('ou_path_or_id')
+  name: str()
+  append: include('append_or_overwrite')
+  overwrite: include('append_or_overwrite', required=False)
 
 exclude:
   accounts: list(include('account_id_str'), required=False)
