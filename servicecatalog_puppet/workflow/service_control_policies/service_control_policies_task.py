@@ -29,9 +29,7 @@ class ServiceControlPoliciesTask(
             account_id,
             regions,
         ) in self.manifest.get_account_ids_and_regions_used_for_section_item(
-            self.puppet_account_id,
-            self.section_name,
-            self.service_control_policy_name,
+            self.puppet_account_id, self.section_name, self.service_control_policy_name,
         ).items():
             for region in regions:
                 for task in self.manifest.get_tasks_for_launch_and_account_and_region(

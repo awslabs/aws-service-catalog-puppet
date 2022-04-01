@@ -5,7 +5,6 @@ import json
 
 import luigi
 from deepmerge import always_merger
-from botocore.exceptions import ClientError
 
 from servicecatalog_puppet import config
 from servicecatalog_puppet.workflow import dependency
@@ -223,7 +222,6 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                     .replace("${AWS::AccountId}", self.account_id),
                     requester_task_id=self.task_id,
                     requester_task_family=self.task_family,
-
                     depends_on=param_details.get("boto3").get("depends_on", []),
                     manifest_file_path=self.manifest_file_path,
                     puppet_account_id=self.puppet_account_id,
@@ -246,9 +244,13 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                     if ppp is None:
                         default_value = param_details.get("ssm").get("default_value")
                         if default_value is None:
-                            raise Exception(f'{param_details.get("ssm").get("name")} could not be found and no default_value was provided')
+                            raise Exception(
+                                f'{param_details.get("ssm").get("name")} could not be found and no default_value was provided'
+                            )
                         else:
-                            self.info(f"param {param_name} did not exist in the path, we decided to use default_value of {default_value}")
+                            self.info(
+                                f"param {param_name} did not exist in the path, we decided to use default_value of {default_value}"
+                            )
                             all_params[param_name] = default_value
                     else:
                         all_params[param_name] = ppp.get("Value")

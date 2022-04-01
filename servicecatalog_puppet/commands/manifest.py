@@ -72,7 +72,9 @@ def expand(f, puppet_account_id, single_account, subset=None):
             new_manifest = manifest_utils.expand_manifest(manifest, client)
     click.echo("Expanded")
 
-    new_manifest = manifest_utils.rewrite_deploy_as_share_to_for_spoke_local_portfolios(new_manifest)
+    new_manifest = manifest_utils.rewrite_deploy_as_share_to_for_spoke_local_portfolios(
+        new_manifest
+    )
     if single_account:
         click.echo(f"Filtering for single account: {single_account}")
 
@@ -96,7 +98,9 @@ def expand(f, puppet_account_id, single_account, subset=None):
                     if len(accounts) > 0:
                         item[deploy_to_name]["accounts"] = accounts
                     else:
-                        if item[deploy_to_name].get("tags") or item[deploy_to_name].get("ous"):
+                        if item[deploy_to_name].get("tags") or item[deploy_to_name].get(
+                            "ous"
+                        ):
                             del item[deploy_to_name]["accounts"]
                         else:
                             items_to_delete.append(f"{section_name}:{item_name}")
