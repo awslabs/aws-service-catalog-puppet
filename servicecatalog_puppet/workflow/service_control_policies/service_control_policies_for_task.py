@@ -30,9 +30,13 @@ class ServiceControlPoliciesForTask(
 
     def get_klass_for_provisioning(self):
         if self.status == constants.PROVISIONED:
-            return execute_service_control_policies_task.ExecuteServiceControlPoliciesTask
+            return (
+                execute_service_control_policies_task.ExecuteServiceControlPoliciesTask
+            )
         elif self.status == constants.TERMINATED:
-            return terminate_service_control_policies_task.TerminateServiceControlPoliciesTask
+            return (
+                terminate_service_control_policies_task.TerminateServiceControlPoliciesTask
+            )
         else:
             raise Exception(f"Unknown status: {self.status}")
 

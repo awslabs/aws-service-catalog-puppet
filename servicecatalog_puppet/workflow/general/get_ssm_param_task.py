@@ -69,6 +69,7 @@ class GetSSMParamByPathTask(tasks.PuppetTask):
 class GetSSMParamTask(tasks.PuppetTask):
     parameter_name = luigi.Parameter()
     name = luigi.Parameter()
+    default_value = luigi.Parameter()
     region = luigi.Parameter(default=None)
 
     path = luigi.Parameter()
@@ -137,7 +138,17 @@ class GetSSMParamTask(tasks.PuppetTask):
                         }
                     )
                 except ssm.exceptions.ParameterNotFound as e:
-                    raise e
+                    if self.default_value is not None:
+                        self.write_output(
+                            {
+                                "Name": self.name,
+                                "Region": self.region,
+                                "Value": self.default_value,
+                                "Version": 0,
+                            }
+                        )
+                    else:
+                        raise e
         else:
             params = self.load_from_input("ssm")
             self.write_output(params.get(self.name))
@@ -176,6 +187,7 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                     region=param_details.get("ssm").get(
                         "region", config.get_home_region(self.puppet_account_id)
                     ),
+                    default_value=param_details.get("ssm").get("default_value"),
                     path=param_details.get("ssm").get("path", ""),
                     recursive=param_details.get("ssm").get("recursive", True),
                     depends_on=param_details.get("ssm").get("depends_on", []),
@@ -210,7 +222,6 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                     .replace("${AWS::AccountId}", self.account_id),
                     requester_task_id=self.task_id,
                     requester_task_family=self.task_family,
-
                     depends_on=param_details.get("boto3").get("depends_on", []),
                     manifest_file_path=self.manifest_file_path,
                     puppet_account_id=self.puppet_account_id,
@@ -229,7 +240,20 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                 with self.input().get("ssm_params").get("ssm_params").get(
                     param_name
                 ).open() as f:
-                    all_params[param_name] = json.loads(f.read()).get("Value")
+                    ppp = json.loads(f.read())
+                    if ppp is None:
+                        default_value = param_details.get("ssm").get("default_value")
+                        if default_value is None:
+                            raise Exception(
+                                f'{param_details.get("ssm").get("name")} could not be found and no default_value was provided'
+                            )
+                        else:
+                            self.info(
+                                f"param {param_name} did not exist in the path, we decided to use default_value of {default_value}"
+                            )
+                            all_params[param_name] = default_value
+                    else:
+                        all_params[param_name] = ppp.get("Value")
             if param_details.get("boto3"):
                 with self.input().get("ssm_params").get("boto3_params").get(
                     param_name
