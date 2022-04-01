@@ -85,6 +85,8 @@ ssm_parameter:
   ssm:
     name: str()
     region: include('region', required=False)
+    path: str(required=False)
+    default_value: str(required=False)
 
 account_id_str: any(str(min=12, max=12), int(min=100000000000, max=999999999999))
 

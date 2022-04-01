@@ -105,6 +105,7 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                                             parameter_name=parameter_name,
                                             name=n,
                                             region=r,
+                                            default_value=parameter_details.get("ssm").get("default_value"),
                                             path=parameter_details.get("ssm").get(
                                                 "path", ""
                                             ),
