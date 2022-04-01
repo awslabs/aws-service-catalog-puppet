@@ -10,6 +10,7 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     parameter_name = "parameter_name"
     name = "name"
     region = "region"
+    default_value = "default_value"
     depends_on = []
     manifest_file_path = "manifest_file_path"
     puppet_account_id = "puppet_account_id"
@@ -26,6 +27,7 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.sut = self.module.GetSSMParamTask(
             parameter_name=self.parameter_name,
             name=self.name,
+            default_value=self.default_value,
             region=self.region,
             path=self.path,
             recursive=self.recursive,
@@ -59,6 +61,7 @@ class GetSSMParamTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.module.GetSSMParamTask(
             parameter_name=self.parameter_name,
             name=self.name,
+            default_value=self.default_value,
             region=self.region,
             path=self.path,
             recursive=self.recursive,
