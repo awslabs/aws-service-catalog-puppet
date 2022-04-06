@@ -1534,8 +1534,8 @@ def explode(expanded_manifest):
 
 def isolate(expanded_manifest, subset):
     section = subset["section"]
-    item = subset["item"]
-    uid = f"{section}|{item}"
+    name = subset["name"]
+    uid = f"{section}|{name}"
 
     m = create_minimal_manifest(expanded_manifest)
     G = convert_to_graph(expanded_manifest, nx.DiGraph())
