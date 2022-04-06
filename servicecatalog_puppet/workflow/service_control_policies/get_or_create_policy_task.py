@@ -34,19 +34,29 @@ class GetOrCreatePolicyTask(tasks.PuppetTask):
             )
         return calls
 
+    def get_unwrapped_policy(self):
+        if self.policy_content.get("default") is not None:
+            unwrapped = tasks.unwrap(self.policy_content.get("default"))
+        elif self.policy_content.get("s3") is not None:
+            with self.hub_client("s3") as s3:
+                bucket = self.policy_content.get("s3").get("bucket")
+                key = self.policy_content.get("s3").get("key")
+                raw_data = (
+                    s3.get_object(Bucket=bucket, Key=key)
+                    .get("Body")
+                    .read()
+                    .decode("utf-8")
+                )
+                unwrapped = json.loads(raw_data)
+        else:
+            raise Exception("Not supported policy content structure")
+        return unwrapped
+
     def run(self):
         with self.organizations_policy_client() as orgs:
-            if self.policy_content.get("default") is not None:
-                unwrapped = tasks.unwrap(self.policy_content.get("default"))
-            elif self.policy_content.get("s3") is not None:
-                with self.hub_client("s3") as s3:
-                    bucket = self.policy_content.get("s3").get("bucket")
-                    key = self.policy_content.get("s3").get("key")
-                    unwrapped = s3.get_object(Bucket=bucket, Key=key).read()
-            else:
-                raise Exception("Not supported policy content structure")
-
+            unwrapped = self.get_unwrapped_policy()
             content = json.dumps(unwrapped, indent=0, default=str)
+
             tags = [dict(Key="ServiceCatalogPuppet:Actor", Value="generated")]
             for tag in self.tags:
                 tags.append(dict(Key=tag.get("Key"), Value=tag.get("Value")))
