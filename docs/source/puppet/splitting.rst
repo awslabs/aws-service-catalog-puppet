@@ -61,19 +61,18 @@ Running the pipeline for a subset of operations
 
 .. note::
 
-    This was added in version 0.101.0
+    This was added in version 0.101.0 and the syntax changed in 0.165.0 but backwards compatability is maintained
 
 You can use the following attribute:
 
 .. code:: yaml
 
-    subset:
-      name: "remove-default-vpc-function"
-      section: "launches"
-      include_dependencies: true
-      include_reverse_dependencies: true
+    item: "remove-default-vpc-function"
+    section: "launches"
+    include_dependencies: true
+    include_reverse_dependencies: true
 
-name and section correspond to which operation you want to run in your pipeline.  Here we are saying run the launch
+item and section correspond to which operation you want to run in your pipeline.  Here we are saying run the launch
 named remove-default-vpc-function.
 
 include_dependencies is optional and defaults to false.  When set to false it does nothing.  When set to true if will
