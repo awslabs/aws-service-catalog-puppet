@@ -28,6 +28,22 @@ from servicecatalog_puppet.workflow import tasks
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
+def get_build_status_for_in(build_id, spoke_account_id):
+    with betterboto_client.CrossAccountClientContextManager(
+        "codebuild",
+        config.get_puppet_role_arn(spoke_account_id),
+        f"{spoke_account_id}-{config.get_puppet_role_name()}",
+    ) as codebuild_client:
+        response = codebuild_client.batch_get_builds(ids=[build_id])
+        build = response.get("builds")[0]
+        status = build.get("buildStatus")
+        has_failed = status not in ["IN_PROGRESS", "SUCCEEDED"]
+        logger.info(
+            f"Checking for status of {build_id} in {spoke_account_id}. status: {status}, has failed: {has_failed}"
+        )
+        return status, build, has_failed
+
+
 def run_tasks(
     puppet_account_id,
     current_account_id,
@@ -141,25 +157,15 @@ def run_tasks(
                 f"[{index}/{n_all_run_deploy_in_spoke_tasks}] Checking spoke execution for account: {spoke_account_id} build: {build_id}"
             )
             index += 1
-            with betterboto_client.CrossAccountClientContextManager(
-                "codebuild",
-                config.get_puppet_role_arn(spoke_account_id),
-                f"{spoke_account_id}-{config.get_puppet_role_name()}",
-            ) as codebuild_client:
-                response = codebuild_client.batch_get_builds(ids=[build_id])
-                build = response.get("builds")[0]
 
-            while build.get("buildStatus") == "IN_PROGRESS":
-                with betterboto_client.CrossAccountClientContextManager(
-                    "codebuild",
-                    config.get_puppet_role_arn(spoke_account_id),
-                    f"{spoke_account_id}-{config.get_puppet_role_name()}-looped",
-                ) as codebuild_client:
-                    response = codebuild_client.batch_get_builds(ids=[build_id])
-                    build = response.get("builds")[0]
-                    time.sleep(10)
-                    logger.info("Current status: {}".format(build.get("buildStatus")))
-                if build.get("buildStatus") != "SUCCEEDED":
+            status = "IN_PROGRESS"
+
+            while status == "IN_PROGRESS":
+                time.sleep(10)
+                status, build, has_failed = get_build_status_for_in(
+                    build_id, spoke_account_id
+                )
+                if has_failed:
                     has_spoke_failures = True
                     params_for_results = dict(
                         account_id=spoke_account_id, build_id=build_id
