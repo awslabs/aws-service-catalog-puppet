@@ -3,9 +3,16 @@
 import luigi
 from deepmerge import always_merger
 import jmespath
+import json
 
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow import dependency
+
+remove_punctuation_map = dict((ord(char), None) for char in '\/*?:"<>|\n')
+
+
+def hash(what):
+    return json.dumps(tasks.unwrap(what), indent=0).translate(remove_punctuation_map)
 
 
 class Boto3Task(tasks.PuppetTask):
@@ -34,6 +41,8 @@ class Boto3Task(tasks.PuppetTask):
             "client": self.client,
             "use_paginator": self.use_paginator,
             "call": self.call,
+            "arguments": hash(self.arguments),
+            "filter": hash(self.filter),
             "requester_task_id": self.requester_task_id,
             "requester_task_family": self.requester_task_family,
             "cache_invalidator": self.cache_invalidator,

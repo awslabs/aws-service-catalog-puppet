@@ -38,10 +38,11 @@ def get_build_status_for_in(build_id, spoke_account_id):
         build = response.get("builds")[0]
         status = build.get("buildStatus")
         has_failed = status not in ["IN_PROGRESS", "SUCCEEDED"]
+        is_running = status == "IN_PROGRESS"
         logger.info(
-            f"Checking for status of {build_id} in {spoke_account_id}. status: {status}, has failed: {has_failed}"
+            f"Checking for status of {build_id} in {spoke_account_id}. status: {status}, has failed: {has_failed}, is running: {is_running}"
         )
-        return status, build, has_failed
+        return status, build, has_failed, is_running
 
 
 def run_tasks(
@@ -161,8 +162,7 @@ def run_tasks(
             status = "IN_PROGRESS"
 
             while status == "IN_PROGRESS":
-                time.sleep(10)
-                status, build, has_failed = get_build_status_for_in(
+                status, build, has_failed, is_running = get_build_status_for_in(
                     build_id, spoke_account_id
                 )
                 if has_failed:
@@ -186,6 +186,8 @@ def run_tasks(
                         f"results/failure/RunDeployInSpokeTask-{spoke_account_id}.json",
                         "w",
                     ).write(json.dumps(failure))
+                elif is_running:
+                    time.sleep(10)
 
     dry_run_tasks = (
         glob(
