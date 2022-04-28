@@ -106,6 +106,10 @@ class ProvisionStackTask(
                 )
         if self.stack_set_name != "":
             apis.append(f"cloudformation.list_stacks_{self.account_id}_{self.region}")
+
+        if len(self.ssm_param_outputs) > 0:
+            apis.append(f"ssm.put_parameter_and_wait_{self.region}")
+
         return apis
 
     @property

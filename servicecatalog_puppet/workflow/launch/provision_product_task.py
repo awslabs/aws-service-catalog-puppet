@@ -99,12 +99,15 @@ class ProvisionProductTask(
             f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
             f"servicecatalog.update_provisioned_product_{self.account_id}_{self.region}",
             f"servicecatalog.provision_product_{self.account_id}_{self.region}",
-            # f"ssm.put_parameter_and_wait_{self.region}",
         ]
         if self.should_use_product_plans:
             apis.append(
                 f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
             )
+
+        if len(self.ssm_param_outputs) > 0:
+            apis.append(f"ssm.put_parameter_and_wait_{self.region}")
+
         return apis
 
     def run(self):
