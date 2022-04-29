@@ -174,15 +174,15 @@ def expand_manifest(manifest, client):
         if account.get("account_id"):
             account_id = account.get("account_id")
             logger.info("Found an account: {}".format(account_id))
-            expanded_account = expand_account(account, client, account_id)
+            expanded_account = expand_account(account, client, account_id, manifest)
             temp_accounts.append(expanded_account)
         elif account.get("ou"):
             ou = account.get("ou")
             logger.info("Found an ou: {}".format(ou))
             if ou.startswith("/"):
-                temp_accounts += expand_path(account, client)
+                temp_accounts += expand_path(account, client, manifest)
             else:
-                temp_accounts += expand_ou(account, client)
+                temp_accounts += expand_ou(account, client, manifest)
 
     for parameter_name, parameter_details in new_manifest.get("parameters", {}).items():
         if parameter_details.get("macro"):
@@ -627,16 +627,19 @@ def rewrite_scps(manifest, puppet_account_id):
     return manifest
 
 
-def expand_path(account, client):
+def expand_path(account, client, manifest):
     ou = client.convert_path_to_ou(account.get("ou"))
     account["ou_name"] = account["ou"]
     account["ou"] = ou
-    return expand_ou(account, client)
+    return expand_ou(account, client, manifest)
 
 
-def expand_account(account, client, account_id):
+def expand_account(account, client, account_id, manifest):
     response = client.describe_account(AccountId=account_id)
-    new_account = deepcopy(account)
+
+    new_account = deepcopy(manifest.get("defaults", {}).get("accounts", {}))
+    new_account.update(account)
+
     ou_from_parent = None
     if "ou" in new_account:
         ou_from_parent = new_account["ou"]
@@ -661,7 +664,7 @@ def expand_account(account, client, account_id):
     return None
 
 
-def expand_ou(original_account, client):
+def expand_ou(original_account, client, manifest):
     expanded = []
     exclusions = original_account.get("exclude", {}).get("accounts", [])
     ou_exclusions = original_account.get("exclude", {}).get("ous", [])
@@ -685,7 +688,7 @@ def expand_ou(original_account, client):
         if new_account_id in exclusions:
             logger.info(f"Skipping {new_account_id} as it is in the exclusion list")
             continue
-        new_account = expand_account(original_account, client, new_account_id)
+        new_account = expand_account(original_account, client, new_account_id, manifest)
         if new_account:
             expanded.append(new_account)
     return expanded
