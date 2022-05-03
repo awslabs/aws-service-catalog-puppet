@@ -184,8 +184,6 @@ def expand_manifest(manifest, client):
                 temp_accounts += expand_path(account, client, manifest)
             else:
                 temp_accounts += expand_ou(account, client, manifest)
-        else:
-            raise Exception("You have specified an account entry without an account_id or ou attribute")
 
     for parameter_name, parameter_details in new_manifest.get("parameters", {}).items():
         if parameter_details.get("macro"):
