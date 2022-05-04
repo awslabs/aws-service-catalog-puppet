@@ -207,8 +207,23 @@ def validate(f):
 
     yamale.validate(schema, data, strict=False)
 
+    has_default_default_region = (
+        manifest.get("defaults", {}).get("accounts", {}).get("default_region", False)
+    )
+    has_default_regions_enabled = (
+        manifest.get("defaults", {}).get("accounts", {}).get("regions_enabled", False)
+    )
+
     tags_defined_by_accounts = {}
     for account in manifest.get("accounts"):
+        if account.get("default_region") is None and not has_default_default_region:
+            raise Exception(
+                f"account entry {account.get('account_id', account.get('ou'))} is missing default_region"
+            )
+        if account.get("regions_enabled") is None and not has_default_regions_enabled:
+            raise Exception(
+                f"account entry {account.get('account_id', account.get('ou'))} is missing regions_enabled"
+            )
         for tag in account.get("tags", []):
             tags_defined_by_accounts[tag] = True
 

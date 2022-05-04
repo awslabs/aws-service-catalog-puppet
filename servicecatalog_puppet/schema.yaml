@@ -32,8 +32,8 @@ account_def: any(include('account'), include('account_with_overwrite'), include(
 account:
   account_id: include('account_id_str')
   name: str()
-  default_region: include('region')
-  regions_enabled: list(include('region'))
+  default_region: include('region', required=False)
+  regions_enabled: list(include('region'), required=False)
   tags: list(str())
 
 account_with_overwrite:
@@ -51,8 +51,8 @@ account_with_append:
 ou:
   ou: include('ou_path_or_id')
   name: str()
-  default_region: include('region')
-  regions_enabled: list(include('region'))
+  default_region: include('region', required=False)
+  regions_enabled: list(include('region'), required=False)
   tags: list(str())
   exclude: include('exclude', required=False)
 
@@ -258,7 +258,7 @@ append_or_overwrite_tags:
 
 depends_on: any(str(), include('dependency'))
 
-dependency: any(include('stack_dependency'), include('launch_dependency'), include('workspace_dependency'), include('lambda_invocation_dependency'), include('code_build_run_dependency'), include('assertion_dependency'), )
+dependency: any(include('stack_dependency'), include('launch_dependency'), include('workspace_dependency'), include('lambda_invocation_dependency'), include('code_build_run_dependency'), include('assertion_dependency'), include('service_control_policy_dependency'), include('tag_policy_dependency'), include('simulate_policy_dependency'), )
 
 stack_dependency:
   name: str()
@@ -289,6 +289,21 @@ assertion_dependency:
   name: str()
   type: enum('assertion')
   affinity: enum('account', 'region', 'account-and-region', 'assertion')
+
+service_control_policy_dependency:
+  name: str()
+  type: enum('service-control-policy')
+  affinity: enum('service-control-policy')
+
+tag_policy_dependency:
+  name: str()
+  type: enum('assertion')
+  affinity: enum('tag-policy')
+
+simulate_policy_dependency:
+  name: str()
+  type: enum('simulate-policy')
+  affinity: enum('account', 'region', 'account-and-region', 'simulate-policy')
 
 tags:
   tags:
