@@ -106,7 +106,7 @@ class ProvisionProductTask(
             )
 
         if len(self.ssm_param_outputs) > 0:
-            apis.append(f"ssm.put_parameter_and_wait_{self.region}")
+            apis.append(f"ssm.put_parameter_and_wait")
 
         return apis
 
