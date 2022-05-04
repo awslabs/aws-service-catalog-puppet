@@ -176,7 +176,10 @@ def expand_manifest(manifest, client):
             logger.info("Found an account: {}".format(account_id))
             expanded_account = expand_account(account, client, account_id, manifest)
             if expanded_account is None:
-                raise Exception(f"You have listed account: {account_id} which is not ACTIVE")
+                raise Exception(
+                    f"You have listed account: {account_id} which is not ACTIVE"
+                )
+            temp_accounts.append(expanded_account)
         elif account.get("ou"):
             ou = account.get("ou")
             logger.info("Found an ou: {}".format(ou))
