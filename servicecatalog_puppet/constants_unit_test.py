@@ -156,4 +156,6 @@ def test_constants_values():
         constants.ASSERTION: constants.ASSERTIONS,
         constants.APP: constants.APPS,
         constants.WORKSPACE: constants.WORKSPACES,
+        constants.SIMULATE_POLICY: constants.SIMULATE_POLICIES,
+        constants.SERVICE_CONTROL_POLICY: constants.SERVICE_CONTROL_POLICIES,
     }
