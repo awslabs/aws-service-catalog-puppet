@@ -130,10 +130,10 @@ def expand(f, puppet_account_id, single_account, subset=None):
     ]
 
     # handle all accounts
-    sct_manifest_accounts = json.dumps(manifest_accounts_all).replace('"', '\\"')
-    sct_manifest_spokes = json.dumps(manifest_accounts_excluding).replace('"', '\\"')
+    sct_manifest_accounts = json.dumps(manifest_accounts_all)
+    sct_manifest_spokes = json.dumps(manifest_accounts_excluding)
     regions = config.get_regions(puppet_account_id)
-    sct_config_regions = json.dumps(regions).replace('"', '\\"')
+    sct_config_regions = json.dumps(regions)
 
     new_manifest["parameters"]["SCTManifestAccounts"] = dict(
         default=sct_manifest_accounts
