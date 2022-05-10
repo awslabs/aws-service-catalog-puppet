@@ -7,6 +7,7 @@ import yaml
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow.simulate_policies import simulate_policy_base_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
+from servicecatalog_puppet.workflow import tasks
 
 
 class DoExecuteSimulatePolicyTask(
@@ -75,7 +76,7 @@ class DoExecuteSimulatePolicyTask(
                 kwargs["CallerArn"] = self.caller_arn
 
             if len(self.context_entries) > 0:
-                kwargs["ContextEntries"] = self.context_entries
+                kwargs["ContextEntries"] = tasks.unwrap(self.context_entries)
 
             if self.resource_handling_option != "":
                 kwargs["ResourceHandlingOption"] = self.resource_handling_option
