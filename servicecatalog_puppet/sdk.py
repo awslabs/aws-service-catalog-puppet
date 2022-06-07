@@ -157,6 +157,7 @@ def bootstrap_spokes_in_ou(
     num_workers=10,
     puppet_role_name="PuppetRole",
     puppet_role_path="/servicecatalog-puppet/",
+    tag=[],
 ):
     """
     Bootstrap each spoke in the given path or id
@@ -175,6 +176,7 @@ def bootstrap_spokes_in_ou(
         num_workers,
         puppet_role_name,
         puppet_role_path,
+        tag,
     )
 
 
