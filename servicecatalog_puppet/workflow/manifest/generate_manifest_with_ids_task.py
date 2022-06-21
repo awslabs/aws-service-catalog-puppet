@@ -144,6 +144,14 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
 
         return requirements
 
+    def has_hub_and_spoke_split_execution_mode(self):
+        content = open(self.manifest_file_path, "r").read()
+        new_manifest = yaml.safe_load(content)
+        for item_name, item in new_manifest.get(constants.SPOKE_LOCAL_PORTFOLIOS, {}).items():
+            if item.get("execution") == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT:
+                return True
+        return False
+
     def run(self):
         self.debug("starting")
         content = open(self.manifest_file_path, "r").read()
@@ -201,7 +209,7 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
         bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
 
         cached_output_signed_url = None
-        if self.input().get("parameters") or self.input().get("parameter_by_paths"):
+        if self.input().get("parameters") or self.input().get("parameter_by_paths") or self.has_hub_and_spoke_split_execution_mode():
 
             with zipfile.ZipFile(
                 "output/GetSSMParamTask.zip", "w", zipfile.ZIP_DEFLATED
