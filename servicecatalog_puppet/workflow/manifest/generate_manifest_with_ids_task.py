@@ -224,7 +224,7 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                 )
 
         with self.hub_client("s3") as s3:
-            manifest_content = yaml.safe_dump(json.loads(json.dumps(new_manifest)))
+            manifest_content = yaml.safe_dump(new_manifest)
             key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
             self.debug(f"Uploading generated manifest {key} to {bucket}")
             s3.put_object(
