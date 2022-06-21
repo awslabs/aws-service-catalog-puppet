@@ -146,7 +146,8 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
 
     def run(self):
         self.debug("starting")
-        new_manifest = copy.deepcopy(self.manifest)
+        content = open(self.manifest_file_path, "r").read()
+        new_manifest = yaml.safe_load(content)
         regions = config.get_regions(self.puppet_account_id)
         global_id_cache = dict()
         new_manifest["id_cache"] = global_id_cache
