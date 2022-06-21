@@ -265,3 +265,11 @@ DEPLOY_TO_NAMES = {
     SIMULATE_POLICIES: "simulate_for",
     TAG_POLICIES: "apply_to",
 }
+
+TASKS_TO_SHARE_WITH_SPOKES = [
+    "GetSSMParam",
+    "DeletePortfolio",
+    "CreateSpokeLocalPortfolioTask",
+    "ImportIntoSpokeLocalPortfolioTask",
+    "CopyIntoSpokeLocalPortfolioTask",
+]

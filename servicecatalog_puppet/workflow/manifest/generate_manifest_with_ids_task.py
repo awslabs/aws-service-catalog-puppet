@@ -205,7 +205,9 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
             with zipfile.ZipFile(
                 "output/GetSSMParamTask.zip", "w", zipfile.ZIP_DEFLATED
             ) as zip:
-                files = glob.glob("output/GetSSMParam*/**", recursive=True)
+                files = list()
+                for task_name in constants.TASKS_TO_SHARE_WITH_SPOKES:
+                    files.extend(glob.glob(f"output/{task_name}*/**", recursive=True))
                 for filename in files:
                     zip.write(filename, filename)
 
