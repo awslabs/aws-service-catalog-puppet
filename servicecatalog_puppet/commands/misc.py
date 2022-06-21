@@ -43,7 +43,6 @@ from servicecatalog_puppet.workflow.simulate_policies import (
 from servicecatalog_puppet.workflow.stack import stack_section_task
 from servicecatalog_puppet.workflow.workspaces import workspace_section_task
 
-
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
@@ -290,50 +289,48 @@ def generate_tasks(
     f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
 ):
     tasks = [
-        launch_section_task.LaunchSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        stack_section_task.StackSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        app_section_task.AppSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        workspace_section_task.WorkspaceSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        assertions_section_task.AssertionsSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
+        # launch_section_task.LaunchSectionTask(
+        #     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        # ),
+        # stack_section_task.StackSectionTask(
+        #     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        # ),
+        # app_section_task.AppSectionTask(
+        #     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        # ),
+        # workspace_section_task.WorkspaceSectionTask(
+        #     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        # ),
+        # assertions_section_task.AssertionsSectionTask(
+        #     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        # ),
     ]
     if not is_dry_run:
         tasks += [
-            lambda_invocation_section_task.LambdaInvocationsSectionTask(
-                manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-            ),
-            code_build_run_section_task.CodeBuildRunsSectionTask(
-                manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-            ),
-            simulate_policy_section_task.SimulatePolicysSectionTask(
+            # lambda_invocation_section_task.LambdaInvocationsSectionTask(
+            #     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+            # ),
+            # code_build_run_section_task.CodeBuildRunsSectionTask(
+            #     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+            # ),
+            # simulate_policy_section_task.SimulatePolicysSectionTask(
+            #     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+            # ),
+            spoke_local_portfolio_section_task.SpokeLocalPortfolioSectionTask(
                 manifest_file_path=f.name, puppet_account_id=puppet_account_id,
             ),
         ]
-        if execution_mode != constants.EXECUTION_MODE_SPOKE:
-            tasks.append(
-                spoke_local_portfolio_section_task.SpokeLocalPortfolioSectionTask(
-                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-                )
-            )
-            tasks.append(
-                service_control_policies_section_task.ServiceControlPoliciesSectionTask(
-                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-                )
-            )
-            tasks.append(
-                tag_policies_section_task.TagPoliciesSectionTask(
-                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-                )
-            )
+        # if execution_mode != constants.EXECUTION_MODE_SPOKE:
+        #     tasks.append(
+        #         service_control_policies_section_task.ServiceControlPoliciesSectionTask(
+        #             manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        #         )
+        #     )
+        #     tasks.append(
+        #         tag_policies_section_task.TagPoliciesSectionTask(
+        #             manifest_file_path=f.name, puppet_account_id=puppet_account_id,
+        #         )
+        #     )
 
     return tasks
 

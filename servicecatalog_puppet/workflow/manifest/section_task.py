@@ -66,6 +66,7 @@ class SectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
         task_klass,
         kwargs_to_use,
         supports_spoke_mode,
+        supports_hub_and_spoke_split,
     ):
 
         dependencies = list()
@@ -74,25 +75,36 @@ class SectionTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
         is_a_dependency = False
 
         details = self.manifest.get(section_name_plural).get(name)
-        self_execution = details.get("execution")
+        requested_execution_is_spoke = (
+            details.get("execution") == constants.EXECUTION_MODE_SPOKE
+        )
+        requested_execution_is_hub_and_spoke_split = (
+            details.get("execution") == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT
+        )
         should_run = True
 
-        if (
-            self_execution == constants.EXECUTION_MODE_SPOKE
-            and self.is_running_in_spoke()
-        ):
-            dependencies.append(task_klass(**kwargs_to_use))
-
+        # add dependencies where applicable
         if (
             supports_spoke_mode
-            and self_execution == constants.EXECUTION_MODE_SPOKE
+            and requested_execution_is_spoke
             and not self.is_running_in_spoke()
+        ) or (
+            supports_hub_and_spoke_split and requested_execution_is_hub_and_spoke_split
         ):
             dependencies += self.handle_requirements_for_spoke_execution(name, details)
 
-        elif (
-            self_execution != constants.EXECUTION_MODE_SPOKE
-            and not self.is_running_in_spoke()
+        # add task where applicable
+        if (
+            (
+                supports_spoke_mode
+                and requested_execution_is_spoke
+                and self.is_running_in_spoke()
+            )
+            or (
+                supports_hub_and_spoke_split
+                and requested_execution_is_hub_and_spoke_split
+            )
+            or (not requested_execution_is_spoke and not self.is_running_in_spoke())
         ):
             dependencies.append(task_klass(**kwargs_to_use))
 

@@ -18,6 +18,7 @@ class GenericSectionTask(section_task.SectionTask):
     task_klass = "not_set"
     item_name = "not_set"
     supports_spoke_mode = False
+    supports_hub_and_spoke_split = False
 
     def params_for_results_display(self):
         return {
@@ -48,6 +49,7 @@ class GenericSectionTask(section_task.SectionTask):
                     self.task_klass,
                     common_args,
                     self.supports_spoke_mode,
+                    self.supports_hub_and_spoke_split,
                 )
 
         return requirements

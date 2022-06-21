@@ -51,11 +51,11 @@ deploy-spoke:
 		--puppet-account-id $(PUPPET_ACCOUNT_ID) \
 		--single-account $(SPOKE_ACCOUNT_ID) \
 		--home-region eu-west-1 \
-		--regions eu-west-1,eu-west-2,eu-west-3 \
+		--regions eu-west-1,eu-west-2,eu-west-3,us-east-1 \
 		--should-collect-cloudformation-events true \
 		--should-forward-events-to-eventbridge true \
 		--should-forward-failures-to-opscenter true \
-		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
+		ignored/src/ServiceCatalogPuppet/manifest-spoke.yaml
 
 ## @Puppet_commands Runs servicecatalog-puppet validate for a spoke
 validate:
