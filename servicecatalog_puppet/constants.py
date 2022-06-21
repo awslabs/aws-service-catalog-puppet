@@ -272,4 +272,5 @@ TASKS_TO_SHARE_WITH_SPOKES = [
     "CreateSpokeLocalPortfolioTask",
     "ImportIntoSpokeLocalPortfolioTask",
     "CopyIntoSpokeLocalPortfolioTask",
+    "GetPortfolioByPortfolioName",
 ]
