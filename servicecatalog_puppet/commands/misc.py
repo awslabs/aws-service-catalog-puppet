@@ -327,7 +327,7 @@ def generate_tasks(
                 ),
                 tag_policies_section_task.TagPoliciesSectionTask(
                     manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-                )
+                ),
             ]
 
     return tasks
