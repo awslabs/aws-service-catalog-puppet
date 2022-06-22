@@ -144,9 +144,20 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
 
         return requirements
 
+    def has_hub_and_spoke_split_execution_mode(self):
+        content = open(self.manifest_file_path, "r").read()
+        new_manifest = yaml.safe_load(content)
+        for item_name, item in new_manifest.get(
+            constants.SPOKE_LOCAL_PORTFOLIOS, {}
+        ).items():
+            if item.get("execution") == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT:
+                return True
+        return False
+
     def run(self):
         self.debug("starting")
-        new_manifest = copy.deepcopy(self.manifest)
+        content = open(self.manifest_file_path, "r").read()
+        new_manifest = yaml.safe_load(content)
         regions = config.get_regions(self.puppet_account_id)
         global_id_cache = dict()
         new_manifest["id_cache"] = global_id_cache
@@ -200,12 +211,18 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
         bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
 
         cached_output_signed_url = None
-        if self.input().get("parameters") or self.input().get("parameter_by_paths"):
+        if (
+            self.input().get("parameters")
+            or self.input().get("parameter_by_paths")
+            or self.has_hub_and_spoke_split_execution_mode()
+        ):
 
             with zipfile.ZipFile(
                 "output/GetSSMParamTask.zip", "w", zipfile.ZIP_DEFLATED
             ) as zip:
-                files = glob.glob("output/GetSSMParam*/**", recursive=True)
+                files = list()
+                for task_name in constants.TASKS_TO_SHARE_WITH_SPOKES:
+                    files.extend(glob.glob(f"output/{task_name}*/**", recursive=True))
                 for filename in files:
                     zip.write(filename, filename)
 
@@ -221,7 +238,7 @@ class GenerateManifestWithIdsTask(tasks.PuppetTask, manifest_mixin.ManifestMixen
                 )
 
         with self.hub_client("s3") as s3:
-            manifest_content = yaml.safe_dump(json.loads(json.dumps(new_manifest)))
+            manifest_content = yaml.safe_dump(new_manifest)
             key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
             self.debug(f"Uploading generated manifest {key} to {bucket}")
             s3.put_object(

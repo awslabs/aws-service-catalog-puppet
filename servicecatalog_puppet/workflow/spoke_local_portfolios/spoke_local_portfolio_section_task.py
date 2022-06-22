@@ -32,3 +32,4 @@ class SpokeLocalPortfolioSectionTask(generic_section_task.GenericSectionTask):
     task_klass = spoke_local_portfolio_task.SpokeLocalPortfolioTask
     item_name = "spoke_local_portfolio_name"
     supports_spoke_mode = False
+    supports_hub_and_spoke_split = True

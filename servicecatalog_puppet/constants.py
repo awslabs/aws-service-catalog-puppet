@@ -85,6 +85,7 @@ SPOKE_LOCAL_PORTFOLIO_STATUS_TERMINATED = "terminated"
 EXECUTION_MODE_ASYNC = "async"
 EXECUTION_MODE_HUB = "hub"
 EXECUTION_MODE_SPOKE = "spoke"
+EXECUTION_MODE_HUB_AND_SPOKE_SPLIT = "hub-and-spoke-split"
 EXECUTION_MODE_DEFAULT = EXECUTION_MODE_HUB
 EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME = "servicecatalog-puppet-deploy-in-spoke"
 
@@ -264,3 +265,12 @@ DEPLOY_TO_NAMES = {
     SIMULATE_POLICIES: "simulate_for",
     TAG_POLICIES: "apply_to",
 }
+
+TASKS_TO_SHARE_WITH_SPOKES = [
+    "GetSSMParam",
+    "DeletePortfolio",
+    "CreateSpokeLocalPortfolioTask",
+    "ImportIntoSpokeLocalPortfolioTask",
+    "CopyIntoSpokeLocalPortfolioTask",
+    "GetPortfolioByPortfolioName",
+]

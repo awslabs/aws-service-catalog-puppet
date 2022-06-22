@@ -18,6 +18,7 @@ class GenericSectionTask(section_task.SectionTask):
     task_klass = "not_set"
     item_name = "not_set"
     supports_spoke_mode = False
+    supports_hub_and_spoke_split = False
 
     def params_for_results_display(self):
         return {
@@ -48,12 +49,15 @@ class GenericSectionTask(section_task.SectionTask):
                     self.task_klass,
                     common_args,
                     self.supports_spoke_mode,
+                    self.supports_hub_and_spoke_split,
                 )
 
         return requirements
 
     def run(self):
-        if self.supports_spoke_mode and not self.is_running_in_spoke():
+        if (
+            self.supports_spoke_mode or self.supports_hub_and_spoke_split
+        ) and not self.is_running_in_spoke():
             yield generic_schedule_run_deploy_in_spoke_task.GenericScheduleRunDeployInSpokeTask(
                 manifest_file_path=self.manifest_file_path,
                 puppet_account_id=self.puppet_account_id,

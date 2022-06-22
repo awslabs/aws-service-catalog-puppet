@@ -34,7 +34,11 @@ class GenericScheduleRunDeployInSpokeTask(
                     details.get("execution", constants.EXECUTION_MODE_DEFAULT)
                     == constants.EXECUTION_MODE_SPOKE
                 )
-                if should_be_executed_in_a_spoke:
+                can_be_executed_in_a_spoke = (
+                    details.get("execution", constants.EXECUTION_MODE_DEFAULT)
+                    == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT
+                )
+                if should_be_executed_in_a_spoke or can_be_executed_in_a_spoke:
                     for (
                         account_id
                     ) in self.manifest.get_account_ids_used_for_section_item(

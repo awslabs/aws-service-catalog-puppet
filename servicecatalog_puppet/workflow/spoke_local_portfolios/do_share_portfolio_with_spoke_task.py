@@ -66,6 +66,10 @@ class DoSharePortfolioWithSpokeTask(
             "product_generation_method", constants.PRODUCT_GENERATION_METHOD_DEFAULT
         )
         sharing_mode = task_def.get("sharing_mode", constants.SHARING_MODE_DEFAULT)
+        requested_execution = task_def.get(
+            "execution", constants.EXECUTION_MODE_DEFAULT
+        )
+        actual_execution_mode = self.execution_mode
 
         if task_def.get("status") == constants.SPOKE_LOCAL_PORTFOLIO_STATUS_TERMINATED:
             tasks.append(
@@ -105,17 +109,36 @@ class DoSharePortfolioWithSpokeTask(
             organization=organization,
         )
 
-        if len(task_def.get("associations", [])) > 0:
-            create_associations_for_portfolio_task = create_associations_for_spoke_local_portfolio_task.CreateAssociationsForSpokeLocalPortfolioTask(
-                **create_spoke_local_portfolio_task_as_dependency_params,
-                spoke_local_portfolio_name=self.spoke_local_portfolio_name,
-                sharing_mode=sharing_mode,
-                associations=task_def.get("associations"),
-                puppet_account_id=self.puppet_account_id,
-            )
-            tasks.append(create_associations_for_portfolio_task)
+        if (
+            requested_execution == constants.EXECUTION_MODE_HUB == actual_execution_mode
+        ) or (
+            requested_execution == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT
+            and actual_execution_mode == constants.EXECUTION_MODE_SPOKE
+        ):
+            if len(task_def.get("associations", [])) > 0:
+                create_associations_for_portfolio_task = create_associations_for_spoke_local_portfolio_task.CreateAssociationsForSpokeLocalPortfolioTask(
+                    **create_spoke_local_portfolio_task_as_dependency_params,
+                    spoke_local_portfolio_name=self.spoke_local_portfolio_name,
+                    sharing_mode=sharing_mode,
+                    associations=task_def.get("associations"),
+                    puppet_account_id=self.puppet_account_id,
+                )
+                tasks.append(create_associations_for_portfolio_task)
 
-        launch_constraints = task_def.get("constraints", {}).get("launch", [])
+            launch_constraints = task_def.get("constraints", {}).get("launch", [])
+            if len(launch_constraints) > 0:
+                create_launch_role_constraints_for_portfolio_task_params = dict(
+                    launch_constraints=launch_constraints,
+                    puppet_account_id=self.puppet_account_id,
+                )
+                create_launch_role_constraints_for_portfolio = create_launch_role_constraints_for_spoke_local_portfolio_task.CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(
+                    **create_spoke_local_portfolio_task_as_dependency_params,
+                    **create_launch_role_constraints_for_portfolio_task_params,
+                    spoke_local_portfolio_name=self.spoke_local_portfolio_name,
+                    sharing_mode=sharing_mode,
+                    product_generation_method=product_generation_method,
+                )
+                tasks.append(create_launch_role_constraints_for_portfolio)
 
         if product_generation_method == "import":
             tasks.append(
@@ -136,19 +159,6 @@ class DoSharePortfolioWithSpokeTask(
                 )
             )
 
-        if len(launch_constraints) > 0:
-            create_launch_role_constraints_for_portfolio_task_params = dict(
-                launch_constraints=launch_constraints,
-                puppet_account_id=self.puppet_account_id,
-            )
-            create_launch_role_constraints_for_portfolio = create_launch_role_constraints_for_spoke_local_portfolio_task.CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(
-                **create_spoke_local_portfolio_task_as_dependency_params,
-                **create_launch_role_constraints_for_portfolio_task_params,
-                spoke_local_portfolio_name=self.spoke_local_portfolio_name,
-                sharing_mode=sharing_mode,
-                product_generation_method=product_generation_method,
-            )
-            tasks.append(create_launch_role_constraints_for_portfolio)
         return tasks
 
     def run(self):
