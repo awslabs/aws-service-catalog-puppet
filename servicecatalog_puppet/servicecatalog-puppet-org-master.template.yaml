@@ -40,6 +40,7 @@ Resources:
                   - organizations:DescribeAccount
                   - organizations:ListOrganizationalUnitsForParent
                   - organizations:ListChildren
+                  - organizations:ListTagsForResource
                 Resource: "*"
 
       AssumeRolePolicyDocument:

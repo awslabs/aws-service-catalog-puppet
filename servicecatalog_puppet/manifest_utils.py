@@ -220,31 +220,49 @@ def expand_manifest(manifest, client):
         if accounts_by_id.get(account_id) is None:
             accounts_by_id[account_id] = account
         else:
-            stored_account = accounts_by_id[account_id]
-            stored_account.update(account)
+            logger.debug("Found an already seen account")
+            if not (account.get("append") or account.get("overwrite")):
+                raise Exception(f"Account {account_id} was seen more than once without an append or overwrite")
+            accounts_by_id[account_id].update(account)
 
-            if stored_account.get("append"):
-                append = stored_account.get("append")
-                for tag in append.get("tags", []):
-                    stored_account.get("tags").append(tag)
-                for region_enabled in append.get("regions_enabled", []):
-                    stored_account.get("regions_enabled").append(region_enabled)
-                del stored_account["append"]
+    for stored_account_id, stored_account in accounts_by_id.items():
+        # Get tags from orgs if we should
+        logger.info(f"Last loop through: {stored_account_id}")
+        organizations_account_tags = stored_account.get("organizations_account_tags", "ignored")
+        if organizations_account_tags != "ignored":
+            tags = list()
+            paginator = client.get_paginator('list_tags_for_resource')
+            for page in paginator.paginate(
+                ResourceId=stored_account_id,
+            ):
+                tags.extend(page.get('Tags', []))
+            tags = [f"{t['Key']}:{t['Value']}" for t in tags]
 
-            elif stored_account.get("overwrite"):
-                overwrite = stored_account.get("overwrite")
-                if overwrite.get("tags"):
-                    stored_account["tags"] = overwrite.get("tags")
-                if overwrite.get("regions_enabled"):
-                    stored_account["regions_enabled"] = overwrite.get("regions_enabled")
-                if overwrite.get("default_region"):
-                    stored_account["default_region"] = overwrite.get("default_region")
-                del stored_account["overwrite"]
+            if organizations_account_tags == "append":
+                stored_account['tags'] = stored_account.get("tags", []) + tags
+            elif organizations_account_tags == "honour":
+                stored_account['tags'] = tags
 
-            else:
-                raise Exception(
-                    f"Account {account_id} has been seen twice without using append or overwrite"
-                )
+        # append or overwrite if we should
+        if stored_account.get("append"):
+            append = stored_account.get("append")
+            for tag in append.get("tags", []):
+                stored_account["tags"] = stored_account.get("tags", []) + [tag]
+            for region_enabled in append.get("regions_enabled", []):
+                stored_account["regions_enabled"] = stored_account.get("regions_enabled", []) + [region_enabled]
+            del stored_account["append"]
+
+        elif stored_account.get("overwrite"):
+            overwrite = stored_account.get("overwrite")
+            if overwrite.get("tags"):
+                stored_account["tags"] = overwrite.get("tags")
+            if overwrite.get("regions_enabled"):
+                stored_account["regions_enabled"] = overwrite.get("regions_enabled")
+            if overwrite.get("default_region"):
+                stored_account["default_region"] = overwrite.get("default_region")
+            del stored_account["overwrite"]
+
+
     new_manifest["accounts"] = list(accounts_by_id.values())
 
     for section in [constants.LAUNCHES, constants.STACKS]:
@@ -648,6 +666,7 @@ def expand_account(account, client, account_id, manifest):
     if "ou" in new_account:
         ou_from_parent = new_account["ou"]
         del new_account["ou"]
+
 
     account_details = response.get("Account")
     if account_details.get("Status") == "ACTIVE":
