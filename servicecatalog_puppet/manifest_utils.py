@@ -642,7 +642,7 @@ def expand_account(account, client, account_id, manifest):
     response = client.describe_account(AccountId=account_id)
 
     new_account = deepcopy(manifest.get("defaults", {}).get("accounts", {}))
-    new_account.update(account)
+    new_account.update(deepcopy(account))
 
     ou_from_parent = None
     if "ou" in new_account:
