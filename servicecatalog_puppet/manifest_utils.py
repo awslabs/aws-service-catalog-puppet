@@ -222,26 +222,28 @@ def expand_manifest(manifest, client):
         else:
             logger.debug("Found an already seen account")
             if not (account.get("append") or account.get("overwrite")):
-                raise Exception(f"Account {account_id} was seen more than once without an append or overwrite")
+                raise Exception(
+                    f"Account {account_id} was seen more than once without an append or overwrite"
+                )
             accounts_by_id[account_id].update(account)
 
     for stored_account_id, stored_account in accounts_by_id.items():
         # Get tags from orgs if we should
         logger.info(f"Last loop through: {stored_account_id}")
-        organizations_account_tags = stored_account.get("organizations_account_tags", "ignored")
+        organizations_account_tags = stored_account.get(
+            "organizations_account_tags", "ignored"
+        )
         if organizations_account_tags != "ignored":
             tags = list()
-            paginator = client.get_paginator('list_tags_for_resource')
-            for page in paginator.paginate(
-                ResourceId=stored_account_id,
-            ):
-                tags.extend(page.get('Tags', []))
+            paginator = client.get_paginator("list_tags_for_resource")
+            for page in paginator.paginate(ResourceId=stored_account_id,):
+                tags.extend(page.get("Tags", []))
             tags = [f"{t['Key']}:{t['Value']}" for t in tags]
 
             if organizations_account_tags == "append":
-                stored_account['tags'] = stored_account.get("tags", []) + tags
+                stored_account["tags"] = stored_account.get("tags", []) + tags
             elif organizations_account_tags == "honour":
-                stored_account['tags'] = tags
+                stored_account["tags"] = tags
 
         # append or overwrite if we should
         if stored_account.get("append"):
@@ -249,7 +251,9 @@ def expand_manifest(manifest, client):
             for tag in append.get("tags", []):
                 stored_account["tags"] = stored_account.get("tags", []) + [tag]
             for region_enabled in append.get("regions_enabled", []):
-                stored_account["regions_enabled"] = stored_account.get("regions_enabled", []) + [region_enabled]
+                stored_account["regions_enabled"] = stored_account.get(
+                    "regions_enabled", []
+                ) + [region_enabled]
             del stored_account["append"]
 
         elif stored_account.get("overwrite"):
@@ -261,7 +265,6 @@ def expand_manifest(manifest, client):
             if overwrite.get("default_region"):
                 stored_account["default_region"] = overwrite.get("default_region")
             del stored_account["overwrite"]
-
 
     new_manifest["accounts"] = list(accounts_by_id.values())
 
@@ -666,7 +669,6 @@ def expand_account(account, client, account_id, manifest):
     if "ou" in new_account:
         ou_from_parent = new_account["ou"]
         del new_account["ou"]
-
 
     account_details = response.get("Account")
     if account_details.get("Status") == "ACTIVE":
