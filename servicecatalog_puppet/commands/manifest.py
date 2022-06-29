@@ -216,12 +216,22 @@ def validate(f):
 
     tags_defined_by_accounts = {}
     for account in manifest.get("accounts"):
-        account_entry_is_an_overwrite_or_append = account.get("append", account.get("overwrite", False))
-        if not account_entry_is_an_overwrite_or_append and account.get("default_region") is None and not has_default_default_region:
+        account_entry_is_an_overwrite_or_append = account.get(
+            "append", account.get("overwrite", False)
+        )
+        if (
+            not account_entry_is_an_overwrite_or_append
+            and account.get("default_region") is None
+            and not has_default_default_region
+        ):
             raise Exception(
                 f"account entry {account.get('account_id', account.get('ou'))} is missing default_region"
             )
-        if not account_entry_is_an_overwrite_or_append and account.get("regions_enabled") is None and not has_default_regions_enabled:
+        if (
+            not account_entry_is_an_overwrite_or_append
+            and account.get("regions_enabled") is None
+            and not has_default_regions_enabled
+        ):
             raise Exception(
                 f"account entry {account.get('account_id', account.get('ou'))} is missing regions_enabled"
             )
