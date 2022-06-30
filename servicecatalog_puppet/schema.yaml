@@ -221,17 +221,27 @@ spoke-local-portfolio:
   deploy_to: any(include('tags'), include('accounts'))
 
 constraints:
-  launch: list(include('constraints_launch'))
+  launch: list(include('constraints_launch'), required=False)
+  update_resource: list(include('constraints_update_resource'), required=False)
 
 constraints_launch: any(include('constraints_launch_for_product'), include('constraints_launch_for_products'))
+constraints_update_resource: any(include('constraints_update_resource_for_product'), include('constraints_update_resource_for_products'))
 
 constraints_launch_for_product:
   product: str()
   roles: list(include('constraints_launch_role_arns'))
 
 constraints_launch_for_products:
-  products: list(str())
+  products: any(str(), list(str()))
   roles: list(include('constraints_launch_role_arns'))
+
+constraints_update_resource_for_product:
+  product: str()
+  tag_update_on_provisioned_product: enum("ALLOWED", "NOT_ALLOWED")
+
+constraints_update_resource_for_products:
+  products: any(str(), list(str()))
+  tag_update_on_provisioned_product: enum("ALLOWED", "NOT_ALLOWED")
 
 associations_arns: str()
 constraints_launch_role_arns: str()

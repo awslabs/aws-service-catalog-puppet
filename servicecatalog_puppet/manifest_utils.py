@@ -862,6 +862,9 @@ class Manifest(dict):
                 sharing_mode=item.get("sharing_mode", constants.SHARING_MODE_DEFAULT),
                 associations=item.get("associations", list()),
                 launch_constraints=item.get("constraints", {}).get("launch", []),
+                resource_update_constraints=item.get("constraints", {}).get(
+                    "resource_update", []
+                ),
                 portfolio=item.get("portfolio"),
             ),
             "lambda-invocations": dict(

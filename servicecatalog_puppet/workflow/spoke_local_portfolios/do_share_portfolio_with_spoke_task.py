@@ -11,6 +11,7 @@ from servicecatalog_puppet.workflow.portfolio.associations import (
 )
 from servicecatalog_puppet.workflow.portfolio.constraints_management import (
     create_launch_role_constraints_for_spoke_local_portfolio_task,
+    create_resource_update_constraints_for_spoke_local_portfolio_task,
 )
 from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
     copy_into_spoke_local_portfolio_task,
@@ -43,6 +44,7 @@ class DoSharePortfolioWithSpokeTask(
     organization = luigi.Parameter()
     associations = luigi.ListParameter()
     launch_constraints = luigi.DictParameter()
+    resource_update_constraints = luigi.DictParameter()
     portfolio = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -127,18 +129,29 @@ class DoSharePortfolioWithSpokeTask(
 
             launch_constraints = task_def.get("constraints", {}).get("launch", [])
             if len(launch_constraints) > 0:
-                create_launch_role_constraints_for_portfolio_task_params = dict(
-                    launch_constraints=launch_constraints,
-                    puppet_account_id=self.puppet_account_id,
-                )
                 create_launch_role_constraints_for_portfolio = create_launch_role_constraints_for_spoke_local_portfolio_task.CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(
                     **create_spoke_local_portfolio_task_as_dependency_params,
-                    **create_launch_role_constraints_for_portfolio_task_params,
+                    launch_constraints=launch_constraints,
+                    puppet_account_id=self.puppet_account_id,
                     spoke_local_portfolio_name=self.spoke_local_portfolio_name,
                     sharing_mode=sharing_mode,
                     product_generation_method=product_generation_method,
                 )
                 tasks.append(create_launch_role_constraints_for_portfolio)
+
+            update_resource_constraints = task_def.get("constraints", {}).get(
+                "resource_update", []
+            )
+            if len(update_resource_constraints) > 0:
+                create_update_resource_constraints_for_portfolio = create_resource_update_constraints_for_spoke_local_portfolio_task.CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
+                    **create_spoke_local_portfolio_task_as_dependency_params,
+                    update_resource_constraints=update_resource_constraints,
+                    puppet_account_id=self.puppet_account_id,
+                    spoke_local_portfolio_name=self.spoke_local_portfolio_name,
+                    sharing_mode=sharing_mode,
+                    product_generation_method=product_generation_method,
+                )
+                tasks.append(create_update_resource_constraints_for_portfolio)
 
         if product_generation_method == "import":
             tasks.append(
