@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: update resource constraints for {{portfolio.DisplayName}}
+
+Conditions:
+  NoOpCondition: !Equals [ true, false]
+
+Resources:
+  NoOpResource:
+    Type: AWS::S3::Bucket
+    Description: Resource to ensure that template contains a resource even when there are no shares
+    Condition: NoOpCondition
+
+{% for update_resource_constraint in update_resource_constraints %}{% for product in update_resource_constraint.products %}
+#{{ product }}
+  L{{ portfolio_id|replace("-", "") }}B{{ product_name_to_id_dict.get(product)|replace("-", "") }}C:
+    Type: AWS::ServiceCatalog::ResourceUpdateConstraint
+    Properties:
+      PortfolioId: {{ portfolio_id }}
+      ProductId: {{ product_name_to_id_dict.get(product) }}
+      Description: "TagUpdate = {{update_resource_constraint.get("tag_update_on_provisioned_product")}}"
+      TagUpdateOnProvisionedProduct: {{update_resource_constraint.get("tag_update_on_provisioned_product")}}{% endfor %}{% endfor %}
+
+

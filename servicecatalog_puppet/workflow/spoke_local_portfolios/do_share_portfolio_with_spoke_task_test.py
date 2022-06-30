@@ -15,6 +15,7 @@ class DoSharePortfolioWithSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
     organization = "organization"
     associations = []
     launch_constraints = {}
+    resource_update_constraints = {}
     portfolio = "portfolio"
     region = "region"
     account_id = "account_id"
@@ -35,6 +36,7 @@ class DoSharePortfolioWithSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTe
             organization=self.organization,
             associations=self.associations,
             launch_constraints=self.launch_constraints,
+            resource_update_constraints=self.resource_update_constraints,
             portfolio=self.portfolio,
             region=self.region,
             account_id=self.account_id,

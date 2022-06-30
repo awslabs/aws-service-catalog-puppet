@@ -27,6 +27,7 @@ class SharePortfolioWithSpokeTask(
     organization = luigi.Parameter()
     associations = luigi.ListParameter()
     launch_constraints = luigi.DictParameter()
+    resource_update_constraints = luigi.DictParameter()
     portfolio = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -53,6 +54,7 @@ class SharePortfolioWithSpokeTask(
             organization=self.organization,
             associations=self.associations,
             launch_constraints=self.launch_constraints,
+            resource_update_constraints=self.resource_update_constraints,
             portfolio=self.portfolio,
             region=self.region,
             account_id=self.account_id,

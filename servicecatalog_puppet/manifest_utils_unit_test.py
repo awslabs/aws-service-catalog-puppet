@@ -135,6 +135,7 @@ class TestManifest(unittest.TestCase):
                 "region": region,
                 "associations": [],
                 "launch_constraints": [],
+                "resource_update_constraints": [],
                 "organization": "",
                 "product_generation_method": "copy",
                 "sharing_mode": "ACCOUNT",
