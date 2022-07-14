@@ -66,6 +66,53 @@ class GetSSMParamByPathTask(tasks.PuppetTask):
         self.write_output(parameters)
 
 
+class GetSSMParamIndividuallyTask(tasks.PuppetTask):
+    name = luigi.Parameter()
+    default_value = luigi.Parameter()
+    region = luigi.Parameter(default=None)
+
+    puppet_account_id = luigi.Parameter(default="")
+
+    def params_for_results_display(self):
+        return {
+            "name": self.name,
+            "puppet_account_id": self.puppet_account_id,
+            "region": self.region,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def resources_used(self):
+        identifier = f"{self.region}-{self.puppet_account_id}"
+        return [
+            (identifier, Limits.SSM_GET_PARAMETER_PER_REGION_OF_ACCOUNT),
+        ]
+
+    def run(self):
+        with self.hub_regional_client("ssm") as ssm:
+            try:
+                p = ssm.get_parameter(Name=self.name,)
+                self.write_output(
+                    {
+                        "Name": self.name,
+                        "Region": self.region,
+                        "Value": p.get("Parameter").get("Value"),
+                        "Version": p.get("Parameter").get("Version"),
+                    }
+                )
+            except ssm.exceptions.ParameterNotFound as e:
+                if self.default_value is not None:
+                    self.write_output(
+                        {
+                            "Name": self.name,
+                            "Region": self.region,
+                            "Value": self.default_value,
+                            "Version": 0,
+                        }
+                    )
+                else:
+                    raise e
+
+
 class GetSSMParamTask(tasks.PuppetTask):
     parameter_name = luigi.Parameter()
     name = luigi.Parameter()
@@ -88,15 +135,6 @@ class GetSSMParamTask(tasks.PuppetTask):
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def resources_used(self):
-        if self.path:
-            return []
-        else:
-            identifier = f"{self.region}-{self.puppet_account_id}"
-            return [
-                (identifier, Limits.SSM_GET_PARAMETER_PER_REGION_OF_ACCOUNT),
-            ]
 
     def requires(self):
         deps = dict()
@@ -126,29 +164,15 @@ class GetSSMParamTask(tasks.PuppetTask):
 
     def run(self):
         if self.path == "":
-            with self.hub_regional_client("ssm") as ssm:
-                try:
-                    p = ssm.get_parameter(Name=self.name,)
-                    self.write_output(
-                        {
-                            "Name": self.name,
-                            "Region": self.region,
-                            "Value": p.get("Parameter").get("Value"),
-                            "Version": p.get("Parameter").get("Version"),
-                        }
-                    )
-                except ssm.exceptions.ParameterNotFound as e:
-                    if self.default_value is not None:
-                        self.write_output(
-                            {
-                                "Name": self.name,
-                                "Region": self.region,
-                                "Value": self.default_value,
-                                "Version": 0,
-                            }
-                        )
-                    else:
-                        raise e
+            result = yield GetSSMParamIndividuallyTask(
+                name=self.name,
+                default_value=self.default_value,
+                region=self.region,
+                puppet_account_id=self.puppet_account_id,
+            )
+            self.write_output(
+                result.open("r").read(), skip_json_dump=True,
+            )
         else:
             params = self.load_from_input("ssm")
             self.write_output(params.get(self.name))
