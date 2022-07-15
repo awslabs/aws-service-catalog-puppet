@@ -273,4 +273,5 @@ TASKS_TO_SHARE_WITH_SPOKES = [
     "ImportIntoSpokeLocalPortfolioTask",
     "CopyIntoSpokeLocalPortfolioTask",
     "GetPortfolioByPortfolioName",
+    "SearchProductsAsAdminTask",
 ]
