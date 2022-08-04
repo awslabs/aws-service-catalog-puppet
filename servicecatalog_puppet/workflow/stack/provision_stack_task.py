@@ -171,55 +171,29 @@ class ProvisionStackTask(
         return self.stack_name
 
     def ensure_stack_is_in_complete_status(self):
-        current_stack = dict(StackStatus="DoesntExist")
+        waiting = "NotARealStatus"
+        current_stack = dict(StackStatus=waiting)
         with self.spoke_regional_client("cloudformation") as cloudformation:
-            try:
-                paginator = cloudformation.get_paginator("describe_stacks")
-                for page in paginator.paginate(StackName=self.stack_name_to_use,):
-                    for stack in page.get("Stacks", []):
-                        status = stack.get("StackStatus")
-                        if status in [
-                            "CREATE_IN_PROGRESS",
-                            "ROLLBACK_IN_PROGRESS",
-                            "DELETE_IN_PROGRESS",
-                            "UPDATE_IN_PROGRESS",
-                            "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
-                            "UPDATE_ROLLBACK_IN_PROGRESS",
-                            "UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS",
-                            "IMPORT_ROLLBACK_IN_PROGRESS",
-                            "REVIEW_IN_PROGRESS",
-                            "IMPORT_IN_PROGRESS",
-                            "CREATE_FAILED",
-                            "ROLLBACK_FAILED",
-                            "DELETE_FAILED",
-                            "UPDATE_ROLLBACK_FAILED",
-                            "IMPORT_ROLLBACK_FAILED",
-                        ]:
-                            while status not in [
-                                "ROLLBACK_COMPLETE",
-                                "CREATE_COMPLETE",
-                                "UPDATE_ROLLBACK_COMPLETE",
-                                "DELETE_COMPLETE",
-                                "UPDATE_COMPLETE",
-                                "IMPORT_COMPLETE",
-                                "IMPORT_ROLLBACK_COMPLETE",
-                            ]:
-                                time.sleep(5)
-                                sub_paginator = cloudformation.get_paginator(
-                                    "describe_stacks"
-                                )
-                                for sub_page in sub_paginator.paginate(
-                                    StackName=stack.get("StackId"),
-                                ):
-                                    for sub_stack in sub_page.get("Stacks", []):
-                                        status = sub_stack.get("StackStatus")
-                            current_stack = stack
-            except ClientError as error:
+            while current_stack.get(
+                "StackStatus"
+            ) in constants.CLOUDFORMATION_IN_PROGRESS_STATUS + [waiting]:
+                stacks = cloudformation.describe_stacks(
+                    StackName=self.stack_name_to_use
+                ).get("Stacks", [])
+                assert len(stacks) == 1
+                current_stack = stacks[0]
+
                 if (
-                    error.response["Error"]["Message"]
-                    != f"Stack with id {self.stack_name_to_use} does not exist"
+                    current_stack.get("StackStatus")
+                    in constants.CLOUDFORMATION_IN_PROGRESS_STATUS
                 ):
-                    raise error
+                    time.sleep(5)
+
+        if current_stack.get("StackStatus") in constants.CLOUDFORMATION_UNHAPPY_STATUS:
+            raise Exception(
+                f"stack {self.stack_name} is in state {current_stack.get('StackStatus')}"
+            )
+
         return current_stack
 
     def run(self):
@@ -264,19 +238,13 @@ class ProvisionStackTask(
 
         existing_stack_params_dict = dict()
         existing_template = ""
-        if status in [
-            "CREATE_COMPLETE",
-            "UPDATE_ROLLBACK_COMPLETE",
-            "UPDATE_COMPLETE",
-            "IMPORT_COMPLETE",
-            "IMPORT_ROLLBACK_COMPLETE",
-        ]:
+        if status in constants.CLOUDFORMATION_HAPPY_STATUS:
             with self.spoke_regional_client("cloudformation") as cloudformation:
                 existing_stack_params_dict = {}
                 summary_response = cloudformation.get_template_summary(
                     StackName=self.stack_name_to_use,
                 )
-                for parameter in summary_response.get("Parameters"):
+                for parameter in summary_response.get("Parameters", []):
                     existing_stack_params_dict[
                         parameter.get("ParameterKey")
                     ] = parameter.get("DefaultValue")
@@ -301,6 +269,8 @@ class ProvisionStackTask(
         if status == "UPDATE_ROLLBACK_COMPLETE":
             need_to_provision = True
         else:
+            print(f"existing_stack_params_dict is {existing_stack_params_dict}")
+            print(f"params_to_use is {params_to_use}")
             if existing_stack_params_dict == params_to_use:
                 self.info(f"params unchanged")
                 if template_to_use == cfn_tools.dump_yaml(existing_template):

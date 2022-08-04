@@ -20,6 +20,7 @@ class GetCloudFormationTemplateFromS3(tasks.PuppetTask):
             "key": self.key,
             "region": self.region,
             "version_id": self.version_id,
+            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):
