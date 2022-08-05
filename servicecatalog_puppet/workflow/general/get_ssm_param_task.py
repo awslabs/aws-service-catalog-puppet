@@ -216,17 +216,17 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                         "affinity", parameter_depends_on.get("type")
                     )
                     if parameter_depends_on_affinity == constants.AFFINITY_ACCOUNT:
-                        spoke_account_id_to_use = (self.account_id,)
-                        spoke_region_to_use = ("",)
+                        spoke_account_id_to_use = self.account_id
+                        spoke_region_to_use = ""
                     elif parameter_depends_on_affinity == constants.AFFINITY_REGION:
-                        spoke_account_id_to_use = ("",)
-                        spoke_region_to_use = (self.region,)
+                        spoke_account_id_to_use = ""
+                        spoke_region_to_use = self.region
                     elif (
                         parameter_depends_on_affinity
                         == constants.AFFINITY_ACCOUNT_AND_REGION
                     ):
-                        spoke_account_id_to_use = (self.account_id,)
-                        spoke_region_to_use = (self.region,)
+                        spoke_account_id_to_use = self.account_id
+                        spoke_region_to_use = self.region
 
                 ssm_params[param_name] = GetSSMParamTask(
                     parameter_name=param_name,
