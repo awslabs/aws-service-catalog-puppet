@@ -135,12 +135,12 @@ def expand(f, puppet_account_id, single_account, subset=None):
     regions = config.get_regions(puppet_account_id)
     sct_config_regions = json.dumps(regions)
 
-    # new_manifest["parameters"]["SCTManifestAccounts"] = dict(
-    #     default=sct_manifest_accounts
-    # )
-    # new_manifest["parameters"]["SCTManifestSpokes"] = dict(default=sct_manifest_spokes)
-    # new_manifest["parameters"]["SCTConfigRegions"] = dict(default=sct_config_regions)
-    # new_manifest["parameters"]["SCTAccountId"] = dict(default=puppet_account_id)
+    new_manifest["parameters"]["SCTManifestAccounts"] = dict(
+        default=sct_manifest_accounts
+    )
+    new_manifest["parameters"]["SCTManifestSpokes"] = dict(default=sct_manifest_spokes)
+    new_manifest["parameters"]["SCTConfigRegions"] = dict(default=sct_config_regions)
+    new_manifest["parameters"]["SCTAccountId"] = dict(default=puppet_account_id)
 
     if new_manifest.get(constants.LAMBDA_INVOCATIONS) is None:
         new_manifest[constants.LAMBDA_INVOCATIONS] = dict()
