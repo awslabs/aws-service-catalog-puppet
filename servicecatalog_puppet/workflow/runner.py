@@ -394,13 +394,10 @@ def run_tasks(
                     config.get_puppet_role_arn(current_account_id),
                     f"{current_account_id}-{config.get_puppet_role_name()}",
                 ) as events:
-                    for i in range(
-                        0, len(entries), constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL
-                    ):
+                    batches = [entries[i * constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL:(i + 1) * constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL] for i in range((len(entries) + constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL - 1) // constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL)]
+                    for batch in batches:
                         events.put_events(
-                            Entries=entries[
-                                i : i + constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL
-                            ]
+                            Entries=batch
                         )
                         time.sleep(1)
                 logging.info(f"Finished sending {len(entries)} events to eventbridge")
