@@ -242,7 +242,6 @@ def validate(f):
         for tag in account.get("overwrite", {}).get("tags", []):
             tags_defined_by_accounts[tag] = True
 
-
     for collection_type in constants.ALL_SECTION_NAMES:
         collection_to_check = manifest.get(collection_type, {})
         for collection_name, collection_item in collection_to_check.items():

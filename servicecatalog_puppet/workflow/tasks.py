@@ -7,6 +7,7 @@ import math
 import os
 import traceback
 from pathlib import Path
+from datetime import datetime
 
 import luigi
 import psutil
@@ -296,6 +297,7 @@ def record_event(event_type, task, extra_event_data=None):
         "task_type": task_type,
         "task_params": task_params,
         "params_for_results": task.params_for_results_display(),
+        "datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
     if extra_event_data is not None:
         event.update(extra_event_data)
