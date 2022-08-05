@@ -522,6 +522,9 @@ Resources:
           - Name: ASSUMABLE_ROLE_IN_ROOT_ACCOUNT
             Type: PLAINTEXT
             Value: CHANGE_ME
+          - Name: PARTITION
+            Type: PARAMETER_STORE
+            Value: !Ref PartitionParameter
       Source:
         Type: NO_SOURCE
         BuildSpec: |
@@ -563,6 +566,9 @@ Resources:
           - Name: IAM_ROLE_ARNS
             Type: PLAINTEXT
             Value: ''
+          - Name: PARTITION
+            Type: PARAMETER_STORE
+            Value: !Ref PartitionParameter
       Source:
         Type: NO_SOURCE
         BuildSpec: |
