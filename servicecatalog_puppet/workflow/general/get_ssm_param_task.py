@@ -7,6 +7,7 @@ import luigi
 from deepmerge import always_merger
 
 from servicecatalog_puppet import config
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.general import boto3_task
@@ -204,6 +205,28 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                 ssm_parameter_name = ssm_parameter_name.replace(
                     "${AWS::AccountId}", self.account_id
                 )
+                parameter_depends_on_all = param_details.get("ssm").get(
+                    "depends_on", []
+                )
+                spoke_account_id_to_use = ""
+                spoke_region_to_use = ""
+
+                for parameter_depends_on in parameter_depends_on_all:
+                    parameter_depends_on_affinity = parameter_depends_on.get(
+                        "affinity", parameter_depends_on.get("type")
+                    )
+                    if parameter_depends_on_affinity == constants.AFFINITY_ACCOUNT:
+                        spoke_account_id_to_use = self.account_id
+                        spoke_region_to_use = ""
+                    elif parameter_depends_on_affinity == constants.AFFINITY_REGION:
+                        spoke_account_id_to_use = ""
+                        spoke_region_to_use = self.region
+                    elif (
+                        parameter_depends_on_affinity
+                        == constants.AFFINITY_ACCOUNT_AND_REGION
+                    ):
+                        spoke_account_id_to_use = self.account_id
+                        spoke_region_to_use = self.region
 
                 ssm_params[param_name] = GetSSMParamTask(
                     parameter_name=param_name,
@@ -214,11 +237,11 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                     default_value=param_details.get("ssm").get("default_value"),
                     path=param_details.get("ssm").get("path", ""),
                     recursive=param_details.get("ssm").get("recursive", True),
-                    depends_on=param_details.get("ssm").get("depends_on", []),
+                    depends_on=parameter_depends_on_all,
                     manifest_file_path=self.manifest_file_path,
                     puppet_account_id=self.puppet_account_id,
-                    spoke_account_id=self.account_id,
-                    spoke_region=self.region,
+                    spoke_account_id=spoke_account_id_to_use,
+                    spoke_region=spoke_region_to_use,
                 )
 
             if param_details.get("boto3"):

@@ -322,6 +322,7 @@ def on_task_failure(task, exception):
 
 def print_stats():
     mem = psutil.virtual_memory()
+
     logger.info(
         f"memory usage: total={math.ceil(mem.total / 1024 / 1024)}MB used={math.ceil(mem.used / 1024 / 1024)}MB percent={mem.percent}%"
     )

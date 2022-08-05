@@ -133,10 +133,14 @@ def handle_action_execution_detail(puppet_account_id, action_execution_detail):
             with betterboto_client.ClientContextManager(
                 "logs", region_name=config.get_home_region(puppet_account_id)
             ) as logs:
-                with open(
-                    f"log-{action_execution_detail.get('input').get('configuration').get('ProjectName')}.log",
-                    "w",
-                ) as f:
+                project_name = (
+                    action_execution_detail.get("input")
+                    .get("configuration")
+                    .get("ProjectName")
+                )
+                action_execution_id = action_execution_detail.get("actionExecutionId")
+                output_file_name = f"log-{project_name}--{action_execution_id}.log"
+                with open(output_file_name, "w",) as f:
                     params = {
                         "logGroupName": log_details.get("groupName"),
                         "logStreamName": log_details.get("streamName"),
