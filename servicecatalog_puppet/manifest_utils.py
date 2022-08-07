@@ -529,23 +529,23 @@ def rewrite_ssm_parameters(manifest):
             for parameter_name, parameter_details in details.get(
                 "parameters", {}
             ).items():
-                if parameter_details.get("ssm"):
-                    for d in details.get("depends_on", []):
-                        dependency = manifest.get(
-                            constants.SECTION_SINGULAR_TO_PLURAL[d.get("type")]
-                        ).get(d.get("name"))
-                        for output in dependency.get("outputs", {}).get("ssm", []):
-                            if output.get("param_name") == parameter_details.get(
-                                "ssm"
-                            ).get("name"):
-                                parameter_depends_on = parameter_details["ssm"].get(
-                                    "depends_on", []
-                                )
-                                parameter_depends_on.append(d)
-                                parameter_details["ssm"][
-                                    "depends_on"
-                                ] = parameter_depends_on
-
+                # if parameter_details.get("ssm"):
+                #     for d in details.get("depends_on", []):
+                #         dependency = manifest.get(
+                #             constants.SECTION_SINGULAR_TO_PLURAL[d.get("type")]
+                #         ).get(d.get("name"))
+                #         for output in dependency.get("outputs", {}).get("ssm", []):
+                #             if output.get("param_name") == parameter_details.get(
+                #                 "ssm"
+                #             ).get("name"):
+                #                 parameter_depends_on = parameter_details["ssm"].get(
+                #                     "depends_on", []
+                #                 )
+                #                 parameter_depends_on.append(d)
+                #                 parameter_details["ssm"][
+                #                     "depends_on"
+                #                 ] = parameter_depends_on
+                #
                 if parameter_details.get("cloudformation_stack_output"):
                     existing_parameter = parameter_details.get(
                         "cloudformation_stack_output"
@@ -585,26 +585,26 @@ def rewrite_ssm_parameters(manifest):
                         filter=f"Outputs[?OutputKey==`{output_key}`].OutputValue | [0]",
                     )
                     parameter_details["boto3"] = new_parameter
-                    for section_item_name, section_item_details in manifest.get(
-                        constants.LAUNCHES, {}
-                    ).items():
-                        if section_item_name == provisioned_product_name:
-                            if details.get("depends_on") is None:
-                                details["depends_on"] = list()
-                            details["depends_on"].append(
-                                dict(
-                                    name=provisioned_product_name,
-                                    type=constants.LAUNCH,
-                                    affinity=constants.LAUNCH,
-                                )
-                            )
-                            parameter_details["boto3"]["depends_on"] = [
-                                dict(
-                                    name=provisioned_product_name,
-                                    type=constants.LAUNCH,
-                                    affinity=constants.LAUNCH,
-                                )
-                            ]
+                    # for section_item_name, section_item_details in manifest.get(
+                    #     constants.LAUNCHES, {}
+                    # ).items():
+                    #     if section_item_name == provisioned_product_name:
+                    #         if details.get("depends_on") is None:
+                    #             details["depends_on"] = list()
+                    #         details["depends_on"].append(
+                    #             dict(
+                    #                 name=provisioned_product_name,
+                    #                 type=constants.LAUNCH,
+                    #                 affinity=constants.LAUNCH,
+                    #             )
+                    #         )
+                    #         parameter_details["boto3"]["depends_on"] = [
+                    #             dict(
+                    #                 name=provisioned_product_name,
+                    #                 type=constants.LAUNCH,
+                    #                 affinity=constants.LAUNCH,
+                    #             )
+                    #         ]
 
     return manifest
 
@@ -797,7 +797,6 @@ class Manifest(dict):
 
         common_parameters = {
             "launches": dict(
-                puppet_account_id=puppet_account_id,
                 launch_name=item_name,
                 launch_parameters=item.get("parameters", {}),
                 manifest_parameters=self.get("parameters", {}),
@@ -806,10 +805,8 @@ class Manifest(dict):
                 product=item.get("product"),
                 version=item.get("version"),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
-                requested_priority=item.get("requested_priority", 0),
             ),
             "stacks": dict(
-                puppet_account_id=puppet_account_id,
                 stack_name=item_name,
                 launch_name=item.get("launch_name", ""),
                 stack_set_name=item.get("stack_set_name", ""),
@@ -825,10 +822,8 @@ class Manifest(dict):
                     constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE,
                     constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE_DEFAULT,
                 ),
-                requested_priority=item.get("requested_priority", 0),
             ),
             "apps": dict(
-                puppet_account_id=puppet_account_id,
                 app_name=item_name,
                 launch_parameters=item.get("parameters", {}),
                 manifest_parameters=self.get("parameters", {}),
@@ -837,10 +832,8 @@ class Manifest(dict):
                 key=item.get("key"),
                 version_id=item.get("version_id", ""),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
-                requested_priority=item.get("requested_priority", 0),
             ),
             "workspaces": dict(
-                puppet_account_id=puppet_account_id,
                 workspace_name=item_name,
                 launch_parameters=item.get("parameters", {}),
                 manifest_parameters=self.get("parameters", {}),
@@ -849,10 +842,8 @@ class Manifest(dict):
                 key=item.get("key"),
                 version_id=item.get("version_id", ""),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
-                requested_priority=item.get("requested_priority", 0),
             ),
             "spoke-local-portfolios": dict(
-                puppet_account_id=puppet_account_id,
                 spoke_local_portfolio_name=item_name,
                 product_generation_method=item.get(
                     "product_generation_method",
@@ -868,7 +859,6 @@ class Manifest(dict):
                 portfolio=item.get("portfolio"),
             ),
             "lambda-invocations": dict(
-                puppet_account_id=puppet_account_id,
                 lambda_invocation_name=item_name,
                 function_name=item.get("function_name"),
                 qualifier=item.get("qualifier", "$LATEST"),
@@ -878,39 +868,29 @@ class Manifest(dict):
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
             "code-build-runs": dict(
-                puppet_account_id=puppet_account_id,
                 code_build_run_name=item_name,
                 launch_parameters=item.get("parameters", {}),
                 manifest_parameters=self.get("parameters", {}),
                 project_name=item.get("project_name"),
-                requested_priority=item.get("requested_priority", 0),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
             "assertions": dict(
-                puppet_account_id=puppet_account_id,
-                requested_priority=item.get("requested_priority", 0),
                 assertion_name=item_name,
                 expected=item.get("expected"),
                 actual=item.get("actual"),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
             "service-control-policies": dict(
-                puppet_account_id=puppet_account_id,
-                requested_priority=item.get("requested_priority", 0),
                 service_control_policy_name=item_name,
                 description=item.get("description"),
                 content=tasks.unwrap(item.get("content")),
             ),
             "tag-policies": dict(
-                puppet_account_id=puppet_account_id,
-                requested_priority=item.get("requested_priority", 0),
                 tag_policy_name=item_name,
                 description=item.get("description"),
                 content=tasks.unwrap(item.get("content")),
             ),
             constants.SIMULATE_POLICIES: dict(
-                puppet_account_id=puppet_account_id,
-                requested_priority=item.get("requested_priority", 0),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
                 simulate_policy_name=item_name,
                 simulation_type=item.get("simulation_type"),
@@ -929,6 +909,14 @@ class Manifest(dict):
                 resource_handling_option=item.get("resource_handling_option", ""),
             ),
         }.get(section_name)
+
+        common_parameters.update(
+            dict(
+                puppet_account_id=puppet_account_id,
+                requested_priority=item.get("requested_priority", 0),
+                dependencies=item.get("depends_on", []),
+            )
+        )
 
         # handle deploy_to tags
         tags = item.get(deploy_to).get("tags", [])

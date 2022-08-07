@@ -28,6 +28,16 @@ expand:
 	poetry run servicecatalog-puppet --info expand \
 		ignored/src/ServiceCatalogPuppet/manifest.yaml
 
+## @Puppet_commands Runs servicecatalog-puppet --info generate-task-reference for the checked out manifest file
+generate-task-reference:
+	poetry run servicecatalog-puppet --info generate-task-reference \
+		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
+
+## @Puppet_commands Runs servicecatalog-puppet --info deploy-from-task-reference for the checked out manifest file
+deploy-from-task-reference:
+	poetry run servicecatalog-puppet --info deploy-from-task-reference \
+		ignored/src/ServiceCatalogPuppet/manifest-task-reference.yaml
+
 ## @Puppet_commands Runs servicecatalog-puppet --info deploy
 deploy:
 	time poetry run servicecatalog-puppet --info-line-numbers deploy --num-workers 40 \

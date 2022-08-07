@@ -12,6 +12,7 @@ import yaml
 
 from servicecatalog_puppet import config
 from servicecatalog_puppet.commands import bootstrap as bootstrap_commands
+from servicecatalog_puppet.commands import task_reference as task_reference_commands
 from servicecatalog_puppet.commands import deploy as deploy_commands
 from servicecatalog_puppet.commands import graph as graph_commands
 from servicecatalog_puppet.commands import management as management_commands
@@ -505,6 +506,18 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
     manifest_commands.expand(f, puppet_account_id, **params)
     if config.get_should_explode_manifest(puppet_account_id):
         manifest_commands.explode(f)
+
+
+@cli.command()
+@click.argument("f", type=click.File())
+def generate_task_reference(f):
+    task_reference_commands.generate_task_reference(f)
+
+
+@cli.command()
+@click.argument("f", type=click.File())
+def deploy_from_task_reference(f):
+    task_reference_commands.deploy_from_task_reference(f)
 
 
 @cli.command()
