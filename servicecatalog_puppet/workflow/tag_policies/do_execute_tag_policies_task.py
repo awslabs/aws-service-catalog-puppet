@@ -11,6 +11,9 @@ from servicecatalog_puppet.workflow.tag_policies import (
     get_or_create_policy_task,
 )
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
+)
 
 
 class DoExecuteTagPoliciesTask(
@@ -18,8 +21,12 @@ class DoExecuteTagPoliciesTask(
     manifest_mixin.ManifestMixen,
     dependency.DependenciesMixin,
 ):
-    tag_policy_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
+    manifest_task_reference_file_path = luigi.Parameter()
+    task_reference = luigi.Parameter()
+    dependencies_by_reference = luigi.ListParameter()
+
+    tag_policy_name = luigi.Parameter()
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -42,6 +49,11 @@ class DoExecuteTagPoliciesTask(
 
     def requires(self):
         return dict(
+            reference_dependencies=get_dependencies_for_task_reference(
+                self.manifest_task_reference_file_path,
+                self.task_reference,
+                self.puppet_account_id,
+            ),
             policy=get_or_create_policy_task.GetOrCreatePolicyTask(
                 puppet_account_id=self.puppet_account_id,
                 region=self.region,
@@ -51,7 +63,7 @@ class DoExecuteTagPoliciesTask(
                 tags=self.manifest.get(constants.TAG_POLICIES)
                 .get(self.tag_policy_name)
                 .get("tags", []),
-            )
+            ),
         )
 
     def api_calls_used(self):

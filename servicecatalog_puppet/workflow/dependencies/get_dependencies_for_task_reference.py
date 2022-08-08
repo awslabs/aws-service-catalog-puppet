@@ -153,6 +153,43 @@ def create(
             task_generating_output=parameters_to_use.get("task_generating_output"),
             force_operation=parameters_to_use.get("force_operation"),
         )
+    elif section_name == constants.TAG_POLICIES:
+        from servicecatalog_puppet.workflow.tag_policies import (
+            do_execute_tag_policies_task,
+        )
+
+        # TODO test different tag policy deploy to clauses
+        return do_execute_tag_policies_task.DoExecuteTagPoliciesTask(
+            **common_parameters,
+            tag_policy_name=parameters_to_use.get("tag_policy_name"),
+            ou_name=parameters_to_use.get("ou_name"),
+            content=parameters_to_use.get("content"),
+            description=parameters_to_use.get("description"),
+            requested_priority=parameters_to_use.get(
+                "requested_priority"
+            ),  # TODO make generic
+            manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+        )
+
+    elif section_name == constants.SERVICE_CONTROL_POLICIES:
+        from servicecatalog_puppet.workflow.service_control_policies import (
+            do_execute_service_control_policies_task,
+        )
+
+        # TODO test different tag policy deploy to clauses
+        return do_execute_service_control_policies_task.DoExecuteServiceControlPoliciesTask(
+            **common_parameters,
+            service_control_policy_name=parameters_to_use.get(
+                "service_control_policy_name"
+            ),
+            ou_name=parameters_to_use.get("ou_name"),
+            content=parameters_to_use.get("content"),
+            description=parameters_to_use.get("description"),
+            requested_priority=parameters_to_use.get(
+                "requested_priority"
+            ),  # TODO make generic
+            manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+        )
 
     else:
         raise Exception(f"Unknown section_name: {section_name}")

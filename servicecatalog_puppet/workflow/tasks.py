@@ -192,7 +192,6 @@ class PuppetTask(luigi.Task):
         kwargs = dict()
         if os.environ.get(f"CUSTOM_ENDPOINT_organizations"):
             kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_organizations")
-
         if self.is_running_in_spoke():
             raise Exception("Cannot use organizations client in spoke execution")
         else:
