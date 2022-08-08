@@ -194,7 +194,6 @@ def create(
     elif section_name == constants.ASSERTIONS:
         from servicecatalog_puppet.workflow.assertions import do_assert_task
 
-        # TODO test different tag policy deploy to clauses
         return do_assert_task.DoAssertTask(
             **common_parameters,
             assertion_name=parameters_to_use.get("assertion_name"),
@@ -202,6 +201,33 @@ def create(
             expected=parameters_to_use.get("expected"),
             actual=parameters_to_use.get("actual"),
             requested_priority=parameters_to_use.get("requested_priority"),
+            manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+        )
+
+    elif section_name == constants.SIMULATE_POLICIES:
+        from servicecatalog_puppet.workflow.simulate_policies import (
+            do_execute_simulate_policy_task,
+        )
+
+        return do_execute_simulate_policy_task.DoExecuteSimulatePolicyTask(
+            **common_parameters,
+            simulate_policy_name=parameters_to_use.get("simulate_policy_name"),
+            execution=parameters_to_use.get("execution"),
+            requested_priority=parameters_to_use.get("requested_priority"),
+            simulation_type=parameters_to_use.get("simulation_type"),
+            policy_source_arn=parameters_to_use.get("policy_source_arn"),
+            policy_input_list=parameters_to_use.get("policy_input_list"),
+            permissions_boundary_policy_input_list=parameters_to_use.get(
+                "permissions_boundary_policy_input_list"
+            ),
+            action_names=parameters_to_use.get("action_names"),
+            expected_decision=parameters_to_use.get("expected_decision"),
+            resource_arns=parameters_to_use.get("resource_arns"),
+            resource_policy=parameters_to_use.get("resource_policy"),
+            resource_owner=parameters_to_use.get("resource_owner"),
+            caller_arn=parameters_to_use.get("caller_arn"),
+            context_entries=parameters_to_use.get("context_entries"),
+            resource_handling_option=parameters_to_use.get("resource_handling_option"),
             manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
         )
 
