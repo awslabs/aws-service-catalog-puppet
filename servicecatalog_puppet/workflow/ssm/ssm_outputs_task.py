@@ -1,5 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier= Apache-2.0
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 import luigi
 
@@ -66,17 +67,35 @@ class SSMOutputsTasks(tasks.PuppetTask):  # TODO add by path parameters
         task_generating_output = self.load_from_input(self.task_generating_output)
         generating_account_id = task_generating_output.get("account_id")
         generating_region = task_generating_output.get("region")
-        generating_stack_name = task_generating_output.get("stack_name_used")
-
-        parameter_details = "Not updated - no change to underlying stack detected"
+        parameter_details = "Parameter not updated - stack/launch did not change and there was no force_operation"
         if task_generating_output.get("provisioned") or self.force_operation:
-            stack_output_value = self.find_stack_output(
-                generating_account_id, generating_region, generating_stack_name
-            )
+            if task_generating_output.get("section_name") == constants.STACKS:
+                generating_stack_name = task_generating_output.get("stack_name_used")
+                stack_output_value = self.find_stack_output(
+                    generating_account_id, generating_region, generating_stack_name
+                )
+            elif task_generating_output.get("section_name") == constants.LAUNCHES:
+                with self.cross_account_client(
+                    generating_account_id,
+                    "servicecatalog",
+                    region_name=generating_region,
+                ) as servicecatalog:
+                    output = servicecatalog.get_provisioned_product_outputs(
+                        ProvisionedProductName=task_generating_output.get(
+                            "launch_name"
+                        ),
+                        OutputKeys=[self.stack_output],
+                    ).get("Outputs")[0]
+                    stack_output_value = output.get("OutputValue")
+            else:
+                raise Exception(
+                    f"Unknown or not set section_name: {task_generating_output.get('section_name')}"
+                )
 
             param_name_to_use = self.param_name.replace(
                 "${AWS::Region}", self.region
             ).replace("${AWS::AccountId}", self.account_id)
+
             with self.spoke_regional_client("ssm") as ssm:
                 parameter_details = ssm.put_parameter(
                     Name=param_name_to_use,

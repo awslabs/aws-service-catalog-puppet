@@ -95,6 +95,8 @@ def generate_task_reference(f):
                 ].append(all_tasks_task_reference)
 
                 # ssm outputs
+                # TODO add check that execution mode is spoke or hub
+                # TODO add support to terminate outputs when task_to_add should be terminated
                 for ssm_parameter_output in task_to_add.get("ssm_param_outputs", []):
                     output_region = ssm_parameter_output.get("region", default_region)
                     output_account_id = ssm_parameter_output.get(
@@ -123,7 +125,6 @@ def generate_task_reference(f):
                         section_name="ssm_outputs",
                         task_generating_output=all_tasks_task_reference,
                     )
-
     #
     # Second pass - adding get parameters
     #

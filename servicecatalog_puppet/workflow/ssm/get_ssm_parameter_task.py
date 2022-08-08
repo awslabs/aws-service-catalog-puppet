@@ -46,5 +46,4 @@ class GetSSMParameterTask(tasks.PuppetTask):  # TODO add by path parameters
         with self.spoke_regional_client("ssm") as ssm:
             parameter = ssm.get_parameter(Name=parameter_name_to_use)
         result = {parameter_name_to_use: parameter}
-        # result[parameter_name_to_use] = parameter
         self.write_output(result)

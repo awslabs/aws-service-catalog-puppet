@@ -26,6 +26,7 @@ def get_dependencies_for_task_reference(
 def create(
     manifest_task_reference_file_path, puppet_account_id, parameters_to_use,
 ):
+    # TODO add in support for list launches and dry run
     section_name = parameters_to_use.get("section_name")
     common_parameters = dict(
         puppet_account_id=puppet_account_id,
@@ -37,14 +38,11 @@ def create(
     )
 
     if section_name == constants.STACKS:
-        from servicecatalog_puppet.workflow.stack.provision_stack_task import (
-            ProvisionStackTask,
-        )
-        from servicecatalog_puppet.workflow.stack.terminate_stack_task import (
-            TerminateStackTask,
-        )
-
         if parameters_to_use.get("status") == "terminated":
+            from servicecatalog_puppet.workflow.stack.terminate_stack_task import (
+                TerminateStackTask,
+            )
+
             return TerminateStackTask(
                 **common_parameters,
                 stack_name=parameters_to_use.get("stack_name"),
@@ -67,6 +65,10 @@ def create(
                 manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
             )
         else:
+            from servicecatalog_puppet.workflow.stack.provision_stack_task import (
+                ProvisionStackTask,
+            )
+
             return ProvisionStackTask(
                 **common_parameters,
                 stack_name=parameters_to_use.get("stack_name"),
@@ -88,6 +90,53 @@ def create(
                 execution=parameters_to_use.get("execution"),
                 manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
             )
+
+    elif section_name == constants.LAUNCHES:
+        if parameters_to_use.get("status") == "terminated":
+            from servicecatalog_puppet.workflow.launch.do_terminate_product_task import (
+                DoTerminateProductTask,
+            )
+
+            return DoTerminateProductTask(
+                **common_parameters,
+                launch_name=parameters_to_use.get("launch_name"),
+                portfolio=parameters_to_use.get("portfolio"),
+                product=parameters_to_use.get("product"),
+                version=parameters_to_use.get("version"),
+                # ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
+                # launch_parameters = luigi.DictParameter(default={}, significant=False)
+                # manifest_parameters = luigi.DictParameter(default={}, significant=False)
+                # account_parameters = luigi.DictParameter(default={}, significant=False)
+                retry_count=parameters_to_use.get("retry_count"),
+                worker_timeout=parameters_to_use.get("worker_timeout"),
+                # ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
+                requested_priority=parameters_to_use.get("requested_priority"),
+                execution=parameters_to_use.get("execution"),
+                manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+            )
+        else:
+            from servicecatalog_puppet.workflow.launch.provision_product_task import (
+                ProvisionProductTask,
+            )
+
+            return ProvisionProductTask(
+                **common_parameters,
+                launch_name=parameters_to_use.get("launch_name"),
+                portfolio=parameters_to_use.get("portfolio"),
+                product=parameters_to_use.get("product"),
+                version=parameters_to_use.get("version"),
+                # ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
+                # launch_parameters = luigi.DictParameter(default={}, significant=False)
+                # manifest_parameters = luigi.DictParameter(default={}, significant=False)
+                # account_parameters = luigi.DictParameter(default={}, significant=False)
+                retry_count=parameters_to_use.get("retry_count"),
+                worker_timeout=parameters_to_use.get("worker_timeout"),
+                # ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
+                requested_priority=parameters_to_use.get("requested_priority"),
+                execution=parameters_to_use.get("execution"),
+                manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+            )
+
     elif section_name == constants.SSM_PARAMETERS:
         from servicecatalog_puppet.workflow.ssm import get_ssm_parameter_task
 
@@ -104,3 +153,6 @@ def create(
             task_generating_output=parameters_to_use.get("task_generating_output"),
             force_operation=parameters_to_use.get("force_operation"),
         )
+
+    else:
+        raise Exception(f"Unknown section_name: {section_name}")
