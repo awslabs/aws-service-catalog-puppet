@@ -40,6 +40,8 @@ def generate_task_reference(f):
         tasks_by_account_id[section_name_singular] = dict()
         tasks_by_account_id_and_region[section_name_singular] = dict()
         for item_name, item in manifest.get(section_name, {}).items():
+            if item.get("status") == constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED:
+                continue
             tasks_by_type[section_name_singular][item_name] = list()
             tasks_by_region[section_name_singular][item_name] = dict()
             tasks_by_account_id[section_name_singular][item_name] = dict()
