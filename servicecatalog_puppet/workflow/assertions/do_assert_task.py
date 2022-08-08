@@ -11,12 +11,20 @@ from servicecatalog_puppet.workflow.assertions import assertion_base_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 from servicecatalog_puppet.workflow.general import boto3_task
 
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
+)
+
 
 class DoAssertTask(
     assertion_base_task.AssertionBaseTask,
     manifest_mixin.ManifestMixen,
     dependency.DependenciesMixin,
 ):
+    task_reference = luigi.Parameter()
+    manifest_task_reference_file_path = luigi.Parameter()
+    dependencies_by_reference = luigi.ListParameter()
+
     assertion_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -40,7 +48,13 @@ class DoAssertTask(
 
     def requires(self):
         config = self.actual.get("config")
+        reference_dependencies = get_dependencies_for_task_reference(
+            self.manifest_task_reference_file_path,
+            self.task_reference,
+            self.puppet_account_id,
+        )
         return dict(
+            reference_dependencies=reference_dependencies,
             result=boto3_task.Boto3Task(
                 account_id=self.account_id,
                 region=self.region,
@@ -51,7 +65,7 @@ class DoAssertTask(
                 filter=config.get("filter"),
                 requester_task_id=self.task_id,
                 requester_task_family=self.task_family,
-            )
+            ),
         )
 
     def run(self):

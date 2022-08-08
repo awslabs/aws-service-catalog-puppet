@@ -191,5 +191,19 @@ def create(
             manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
         )
 
+    elif section_name == constants.ASSERTIONS:
+        from servicecatalog_puppet.workflow.assertions import do_assert_task
+
+        # TODO test different tag policy deploy to clauses
+        return do_assert_task.DoAssertTask(
+            **common_parameters,
+            assertion_name=parameters_to_use.get("assertion_name"),
+            execution=parameters_to_use.get("execution"),
+            expected=parameters_to_use.get("expected"),
+            actual=parameters_to_use.get("actual"),
+            requested_priority=parameters_to_use.get("requested_priority"),
+            manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+        )
+
     else:
         raise Exception(f"Unknown section_name: {section_name}")
