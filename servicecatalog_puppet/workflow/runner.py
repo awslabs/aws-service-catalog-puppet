@@ -25,6 +25,7 @@ from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 
+
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 

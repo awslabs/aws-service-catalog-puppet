@@ -3,14 +3,24 @@
 from servicecatalog_puppet.workflow import tasks
 import luigi
 
-class GetSSMParameterTask(tasks.PuppetTask):
-    account_id= luigi.Parameter()
-    param_name= luigi.Parameter()
-    region= luigi.Parameter()
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
+)
+
+
+class GetSSMParameterTask(tasks.PuppetTask):  # TODO add by path parameters
+    # TODO add support for default_value
+    puppet_account_id = luigi.Parameter()
+    manifest_task_reference_file_path = luigi.Parameter()
+    task_reference = luigi.Parameter()
+    account_id = luigi.Parameter()
+    param_name = luigi.Parameter()
+    region = luigi.Parameter()
     dependencies_by_reference = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {
+            "task_reference": self.task_reference,
             "account_id": self.account_id,
             "region": self.region,
             "param_name": self.param_name,
@@ -22,8 +32,19 @@ class GetSSMParameterTask(tasks.PuppetTask):
             f"ssm.get_parameter_{self.account_id}_{self.region}",
         ]
 
-    def run(self):
-        with self.spoke_regional_client('ssm') as ssm:
+    def requires(self):
+        return get_dependencies_for_task_reference(
+            self.manifest_task_reference_file_path,
+            self.task_reference,
+            self.puppet_account_id,
+        )
 
-        raise Exception("really?")
-        self.write_output("done")
+    def run(self):
+        parameter_name_to_use = self.param_name.replace(
+            "${AWS::Region}", self.region
+        ).replace("${AWS::AccountId}", self.account_id)
+        with self.spoke_regional_client("ssm") as ssm:
+            parameter = ssm.get_parameter(Name=parameter_name_to_use)
+        result = {parameter_name_to_use: parameter}
+        # result[parameter_name_to_use] = parameter
+        self.write_output(result)

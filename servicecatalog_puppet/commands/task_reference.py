@@ -7,6 +7,12 @@ from datetime import datetime
 from servicecatalog_puppet import manifest_utils, constants, yaml_utils, config
 from servicecatalog_puppet.workflow import runner
 from servicecatalog_puppet.workflow.stack.provision_stack_task import ProvisionStackTask
+from servicecatalog_puppet.workflow.dependencies import (
+    get_dependencies_for_task_reference,
+)
+import logging
+
+logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
 def generate_task_reference(f):
@@ -38,7 +44,7 @@ def generate_task_reference(f):
             tasks_by_region[section_name_singular][item_name] = dict()
             tasks_by_account_id[section_name_singular][item_name] = dict()
             tasks_by_account_id_and_region[section_name_singular][item_name] = dict()
-            task_id_prefix = f"{section_name}_{item_name}"
+            task_reference_prefix = f"{section_name}_{item_name}"
             tasks_to_add = manifest.get_tasks_for(
                 puppet_account_id, section_name, item_name
             )
@@ -46,12 +52,14 @@ def generate_task_reference(f):
                 task_to_add["section_name"] = section_name
                 task_to_add["item_name"] = item_name
                 del task_to_add["manifest_parameters"]  # TODO remove
-                task_id = f"{task_to_add.get('account_id')}-{task_to_add.get('region')}"
-                all_tasks_task_id = f"{task_id_prefix}_{task_id}"
-                task_to_add["task_id"] = all_tasks_task_id
-                all_tasks[all_tasks_task_id] = task_to_add
+                task_reference = (
+                    f"{task_to_add.get('account_id')}-{task_to_add.get('region')}"
+                )
+                all_tasks_task_reference = f"{task_reference_prefix}_{task_reference}"
+                task_to_add["task_reference"] = all_tasks_task_reference
+                all_tasks[all_tasks_task_reference] = task_to_add
                 tasks_by_type[section_name_singular][item_name].append(
-                    all_tasks_task_id
+                    all_tasks_task_reference
                 )
 
                 if not tasks_by_region[section_name_singular][item_name].get(
@@ -62,7 +70,7 @@ def generate_task_reference(f):
                     ] = list()
                 tasks_by_region[section_name_singular][item_name][
                     task_to_add.get("region")
-                ].append(all_tasks_task_id)
+                ].append(all_tasks_task_reference)
 
                 if not tasks_by_account_id[section_name_singular][item_name].get(
                     task_to_add.get("account_id")
@@ -72,7 +80,7 @@ def generate_task_reference(f):
                     ] = list()
                 tasks_by_account_id[section_name_singular][item_name][
                     task_to_add.get("account_id")
-                ].append(all_tasks_task_id)
+                ].append(all_tasks_task_reference)
 
                 account_and_region = (
                     f'{task_to_add.get("account_id")}-{task_to_add.get("region")}'
@@ -85,25 +93,36 @@ def generate_task_reference(f):
                     ] = list()
                 tasks_by_account_id_and_region[section_name_singular][item_name][
                     account_and_region
-                ].append(all_tasks_task_id)
+                ].append(all_tasks_task_reference)
 
                 # ssm outputs
                 for ssm_parameter_output in task_to_add.get("ssm_param_outputs", []):
                     output_region = ssm_parameter_output.get("region", default_region)
-                    ssm_parameter_output_task_id = f'ssm_outputs-{task_to_add.get("account_id")}-{output_region}-{ssm_parameter_output.get("param_name")}'
-                    ssm_parameter_output_task_id = ssm_parameter_output_task_id.replace(
+                    output_account_id = ssm_parameter_output.get(
+                        "account_id", puppet_account_id
+                    )
+                    ssm_parameter_output_task_reference = f'ssm_outputs-{task_to_add.get("account_id")}-{output_region}-{ssm_parameter_output.get("param_name")}'
+                    ssm_parameter_output_task_reference = ssm_parameter_output_task_reference.replace(
                         "${AWS::Region}", task_to_add.get("region")
-                    ).replace("${AWS::AccountId}", task_to_add.get("account_id"))
-                    if all_tasks.get(ssm_parameter_output_task_id):
+                    ).replace(
+                        "${AWS::AccountId}", task_to_add.get("account_id")
+                    )
+                    if all_tasks.get(ssm_parameter_output_task_reference):
                         raise Exception(
                             f"You have two tasks outputting the same SSM parameter output: {ssm_parameter_output.get('param_name')}"
                         )
-                    all_tasks[ssm_parameter_output_task_id] = dict(
-                        **ssm_parameter_output,
-                        account_id=task_to_add.get("account_id"),
+                    all_tasks[ssm_parameter_output_task_reference] = dict(
+                        param_name=ssm_parameter_output.get("param_name"),
+                        stack_output=ssm_parameter_output.get("stack_output"),
+                        force_operation=ssm_parameter_output.get(
+                            "force_operation", False
+                        ),
+                        task_reference=ssm_parameter_output_task_reference,
+                        account_id=output_account_id,
                         region=output_region,
-                        dependencies_by_reference=[all_tasks_task_id],
+                        dependencies_by_reference=[all_tasks_task_reference],
                         section_name="ssm_outputs",
+                        task_generating_output=all_tasks_task_reference,
                     )
 
     #
@@ -112,7 +131,7 @@ def generate_task_reference(f):
     # TODO handle account and manifest parameters
     # TODO handle boto3 parameters
     new_tasks = dict()
-    for task_id, task in all_tasks.items():
+    for task_reference, task in all_tasks.items():
         parameters = task.get("launch_parameters", {})
         for parameter_name, parameter_details in parameters.items():
             if parameter_details.get("ssm"):
@@ -123,22 +142,29 @@ def generate_task_reference(f):
                     "account_id", puppet_account_id
                 )
                 owning_region = ssm_parameter_details.get("region", default_region)
-                task_id = f"{owning_account}-{owning_region}"
+                task_reference = f"{owning_account}-{owning_region}"
                 param_name = (
                     ssm_parameter_details.get("name")
                     .replace("${AWS::Region}", interpolation_output_region)
                     .replace("${AWS::AccountId}", interpolation_output_account)
                 )
-                ssm_parameter_task_id = f"ssm_parameters-{task_id}-{param_name}"
+                ssm_parameter_task_reference = (
+                    f"ssm_parameters-{task_reference}-{param_name}"
+                )
                 if all_tasks.get(
-                    ssm_parameter_task_id.replace("ssm_parameters-", "ssm_outputs-")
+                    ssm_parameter_task_reference.replace(
+                        "ssm_parameters-", "ssm_outputs-"
+                    )
                 ):
                     dependency = [
-                        ssm_parameter_task_id.replace("ssm_parameters-", "ssm_outputs-")
+                        ssm_parameter_task_reference.replace(
+                            "ssm_parameters-", "ssm_outputs-"
+                        )
                     ]
                 else:
                     dependency = []
-                new_tasks[ssm_parameter_task_id] = dict(
+                new_tasks[ssm_parameter_task_reference] = dict(
+                    task_reference=ssm_parameter_task_reference,
                     account_id=owning_account,
                     region=owning_region,
                     param_name=param_name,
@@ -147,13 +173,13 @@ def generate_task_reference(f):
                 )
                 if not task.get("dependencies_by_reference"):
                     task["dependencies_by_reference"] = list()
-                task["dependencies_by_reference"].append(ssm_parameter_task_id)
+                task["dependencies_by_reference"].append(ssm_parameter_task_reference)
     all_tasks.update(new_tasks)
 
     #
     # Third pass - replacing dependencies with dependencies_by_reference
     #
-    for task_id, task in all_tasks.items():
+    for task_reference, task in all_tasks.items():
         if not task.get("dependencies_by_reference"):
             task["dependencies_by_reference"] = list()
 
@@ -217,43 +243,15 @@ def deploy_from_task_reference(f):
 
     tasks_to_run = list()
     reference = yaml_utils.load(open(f.name, "r").read())
-    for task_id, task in reference.get("all_tasks").items():
-        section_name = task.get("section_name")
-        if section_name == constants.SSM_OUTPUTS:
-            pass
-        elif section_name == constants.SSM_PARAMETERS:
-            pass
-        elif section_name == constants.STACKS:
-            tasks_to_run.append(
-                ProvisionStackTask(
-                    task_reference = task_id,
-                    manifest_task_reference_file_path=f.name,
-                    dependencies_by_reference=task.get("dependencies_by_reference"),
-                    stack_name=task.get("stack_name"),
-                    puppet_account_id=puppet_account_id,
-                    region=task.get("region"),
-                    account_id=task.get("account_id"),
-                    bucket=task.get("bucket"),
-                    key=task.get("key"),
-                    version_id=task.get("version_id"),
-                    launch_name=task.get("launch_name"),
-                    stack_set_name=task.get("stack_set_name"),
-                    capabilities=task.get("capabilities"),
-                    ssm_param_inputs=[],
-                    launch_parameters=task.get(""),
-                    manifest_parameters=task.get(""),
-                    account_parameters=task.get(""),
-                    retry_count=task.get("retry_count"),
-                    worker_timeout=task.get("worker_timeout"),
-                    ssm_param_outputs=[],
-                    requested_priority=task.get("requested_priority"),
-                    use_service_role=task.get("use_service_role"),
-                    execution=task.get("execution"),
-                    manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",
-                )
+
+    for task_reference, task in reference.get("all_tasks").items():
+        tasks_to_run.append(
+            get_dependencies_for_task_reference.create(
+                manifest_task_reference_file_path=f.name,
+                puppet_account_id=puppet_account_id,
+                parameters_to_use=task,
             )
-        else:
-            raise Exception(f"Unhandled section_name: {section_name}")
+        )
 
     puppet_account_id = config.get_puppet_account_id()
     executor_account_id = puppet_account_id

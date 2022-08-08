@@ -18,6 +18,9 @@ from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.stack import get_cloud_formation_template_from_s3
 from servicecatalog_puppet.workflow.stack import provisioning_task
 from servicecatalog_puppet.workflow.stack import prepare_account_for_stack_task
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
+)
 
 
 class ProvisionStackTask(
@@ -72,35 +75,14 @@ class ProvisionStackTask(
         return self.requested_priority
 
     def requires(self):
-        reference_dependencies = list()
-        reference = yaml_utils.load(
-            open(self.manifest_task_reference_file_path, 'r').read()
-        ).get("all_tasks")
-        this_task = reference.get(self.task_reference)
-        for dependency_by_reference in this_task.get("dependencies_by_reference"):
-            dependency_by_reference_params = reference.get(dependency_by_reference)
-            dependency_by_reference_section_name = dependency_by_reference_params.get("section_name")
-            if dependency_by_reference_section_name == constants.STACKS:
-                # TODO implement
-                pass
-            elif dependency_by_reference_section_name == constants.SSM_PARAMETERS:
-                from servicecatalog_puppet.workflow.ssm import get_ssm_parameter_task
-
-                reference_dependencies.append(
-                    get_ssm_parameter_task.GetSSMParameterTask(
-                        account_id=dependency_by_reference_params.get("account_id"),
-                        dependencies_by_reference=dependency_by_reference_params.get("dependencies_by_reference"),
-                        param_name=dependency_by_reference_params.get("param_name"),
-                        region=dependency_by_reference_params.get("region"),
-                    )
-                )
-            else:
-                raise Exception(f"Unhandled dependency section name: {dependency_by_reference_section_name}")
+        reference_dependencies = get_dependencies_for_task_reference(
+            self.manifest_task_reference_file_path,
+            self.task_reference,
+            self.puppet_account_id,
+        )
 
         requirements = {
             "reference_dependencies": reference_dependencies,
-            #         "section_dependencies": self.get_section_dependencies(),
-            #         "ssm_params": self.get_parameters_tasks(),
             "template": get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
                 bucket=self.bucket,
                 key=self.key,
@@ -248,6 +230,7 @@ class ProvisionStackTask(
             account_parameters=tasks.unwrap(self.account_parameters),
             launch_parameters=tasks.unwrap(self.launch_parameters),
             manifest_parameters=tasks.unwrap(self.manifest_parameters),
+            stack_name_used=self.stack_name_to_use,
         )
 
         all_params = self.get_parameter_values()

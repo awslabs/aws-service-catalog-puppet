@@ -17,7 +17,7 @@ class GetCloudFormationTemplateFromS3(tasks.PuppetTask):
     def params_for_results_display(self):
         return {
             "bucket": self.bucket,
-            "key": self.key,
+            "key": self.key.replace("-${AWS::Region}", f"-{self.region}"),
             "region": self.region,
             "version_id": self.version_id,
             "cache_invalidator": self.cache_invalidator,

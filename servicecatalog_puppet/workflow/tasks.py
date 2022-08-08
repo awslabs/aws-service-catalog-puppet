@@ -122,6 +122,19 @@ class PuppetTask(luigi.Task):
             **kwargs,
         )
 
+    def cross_account_client(self, account_id, service, region_name=None):
+        region = region_name or self.region
+        kwargs = dict(region_name=region)
+        if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
+            kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
+
+        return betterboto_client.CrossAccountClientContextManager(
+            service,
+            config.get_puppet_role_arn(account_id),
+            f"{account_id}-{region}-{config.get_puppet_role_name()}",
+            **kwargs,
+        )
+
     def spoke_regional_client(self, service, region_name=None):
         region = region_name or self.region
         kwargs = dict(region_name=region)
@@ -131,7 +144,7 @@ class PuppetTask(luigi.Task):
         return betterboto_client.CrossAccountClientContextManager(
             service,
             config.get_puppet_role_arn(self.account_id),
-            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
+            f"{self.account_id}-{region}-{config.get_puppet_role_name()}",
             **kwargs,
         )
 
