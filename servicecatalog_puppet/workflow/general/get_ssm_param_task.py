@@ -186,9 +186,11 @@ class GetSSMParamTask(tasks.PuppetTask):
 class PuppetTaskWithParameters(tasks.PuppetTask):
     def get_merged_launch_account_and_manifest_parameters(self):
         result = dict()
-        launch_parameters = tasks.unwrap(
-            self.launch_parameters
-        )  # TODO rename or get from manifest file
+        launch_parameters = (
+            self.manifest.get(self.section_name)
+            .get(self.item_name)
+            .get("parameters", {})
+        )
         manifest_parameters = self.manifest.get("parameters")
         account_parameters = self.manifest.get_account(self.account_id).get(
             "parameters"
@@ -212,98 +214,6 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
         return get_dependencies_for_task_reference(
             self.manifest_task_reference_file_path, self.task_reference
         )
-        # ssm_params = dict()
-        # boto3_params = dict()
-        # requires = dict(
-        #     ssm_params=ssm_params,
-        #     boto3_params=boto3_params,
-        # )
-
-        # all_params = self.get_all_of_the_params()
-
-        # for param_name, param_details in all_params.items():
-        #     if param_details.get("ssm"):
-        #         if param_details.get("default"):
-        #             del param_details["default"]
-        #         ssm_parameter_name = param_details.get("ssm").get("name")
-        #         ssm_parameter_name = ssm_parameter_name.replace(
-        #             "${AWS::Region}", self.region
-        #         )
-        #         ssm_parameter_name = ssm_parameter_name.replace(
-        #             "${AWS::AccountId}", self.account_id
-        #         )
-        #         parameter_depends_on_all = param_details.get("ssm").get(
-        #             "depends_on", []
-        #         )
-        #         spoke_account_id_to_use = ""
-        #         spoke_region_to_use = ""
-        #
-        #         for parameter_depends_on in parameter_depends_on_all:
-        #             parameter_depends_on_affinity = parameter_depends_on.get(
-        #                 "affinity", parameter_depends_on.get("type")
-        #             )
-        #             if parameter_depends_on_affinity == constants.AFFINITY_ACCOUNT:
-        #                 spoke_account_id_to_use = self.account_id
-        #                 spoke_region_to_use = ""
-        #             elif parameter_depends_on_affinity == constants.AFFINITY_REGION:
-        #                 spoke_account_id_to_use = ""
-        #                 spoke_region_to_use = self.region
-        #             elif (
-        #                 parameter_depends_on_affinity
-        #                 == constants.AFFINITY_ACCOUNT_AND_REGION
-        #             ):
-        #                 spoke_account_id_to_use = self.account_id
-        #                 spoke_region_to_use = self.region
-        #
-        #         ssm_params[param_name] = GetSSMParamTask(
-        #             parameter_name=param_name,
-        #             name=ssm_parameter_name,
-        #             region=param_details.get("ssm").get(
-        #                 "region", config.get_home_region(self.puppet_account_id)
-        #             ),
-        #             default_value=param_details.get("ssm").get("default_value"),
-        #             path=param_details.get("ssm").get("path", ""),
-        #             recursive=param_details.get("ssm").get("recursive", True),
-        #             depends_on=parameter_depends_on_all,
-        #             manifest_file_path=self.manifest_file_path,
-        #             puppet_account_id=self.puppet_account_id,
-        #             spoke_account_id=spoke_account_id_to_use,
-        #             spoke_region=spoke_region_to_use,
-        #         )
-
-        # if param_details.get("boto3"):
-        #     if param_details.get("default"):
-        #         del param_details["default"]
-        #
-        #     boto3 = param_details.get("boto3")
-        #     account_id = boto3.get("account_id", self.puppet_account_id).replace(
-        #         "${AWS::AccountId}", self.account_id
-        #     )
-        #
-        #     region = boto3.get(
-        #         "region", config.get_home_region(self.puppet_account_id)
-        #     ).replace("${AWS::Region}", self.region)
-        #
-        #     boto3_params[param_name] = boto3_task.Boto3Task(
-        #         account_id=account_id,
-        #         region=region,
-        #         client=boto3.get("client"),
-        #         use_paginator=boto3.get("use_paginator", False),
-        #         call=boto3.get("call"),
-        #         arguments=boto3.get("arguments", {}),
-        #         filter=boto3.get("filter")
-        #         .replace("${AWS::Region}", self.region)
-        #         .replace("${AWS::AccountId}", self.account_id),
-        #         requester_task_id=self.task_id,
-        #         requester_task_family=self.task_family,
-        #         depends_on=param_details.get("boto3").get("depends_on", []),
-        #         manifest_file_path=self.manifest_file_path,
-        #         puppet_account_id=self.puppet_account_id,
-        #         spoke_account_id=self.account_id,
-        #         spoke_region=self.region,
-        #     )
-
-        # return requires
 
     def get_parameter_values(self):
         all_params = {}
@@ -327,6 +237,8 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
 
                 required_task_reference = f"ssm_parameters-{requested_param_account_id}-{requested_param_region}-{requested_param_name}"
 
+                print(self.input())
+                reference_dependencies = self.input().get("reference_dependencies")
                 parameter_task_output = json.loads(
                     self.input()
                     .get("reference_dependencies")

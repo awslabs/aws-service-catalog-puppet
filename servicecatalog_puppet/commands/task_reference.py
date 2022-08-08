@@ -6,11 +6,11 @@ from datetime import datetime
 
 from servicecatalog_puppet import manifest_utils, constants, yaml_utils, config
 from servicecatalog_puppet.workflow import runner
-from servicecatalog_puppet.workflow.stack.provision_stack_task import ProvisionStackTask
 from servicecatalog_puppet.workflow.dependencies import (
     get_dependencies_for_task_reference,
 )
 import logging
+from deepmerge import always_merger
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
@@ -51,7 +51,6 @@ def generate_task_reference(f):
             for task_to_add in tasks_to_add:
                 task_to_add["section_name"] = section_name
                 task_to_add["item_name"] = item_name
-                del task_to_add["manifest_parameters"]  # TODO remove
                 task_reference = (
                     f"{task_to_add.get('account_id')}-{task_to_add.get('region')}"
                 )
@@ -128,11 +127,25 @@ def generate_task_reference(f):
     #
     # Second pass - adding get parameters
     #
-    # TODO handle account and manifest parameters
     # TODO handle boto3 parameters
     new_tasks = dict()
     for task_reference, task in all_tasks.items():
-        parameters = task.get("launch_parameters", {})
+        parameters = dict()
+        print(task.get("section_name"))
+        launch_parameters = (
+            manifest.get(task.get("section_name"), {})
+            .get(task.get("item_name"), {})
+            .get("parameters", {})
+        )
+        manifest_parameters = manifest.get("parameters")
+        account_parameters = manifest.get_account(task.get("account_id")).get(
+            "parameters"
+        )
+
+        always_merger.merge(parameters, manifest_parameters)
+        always_merger.merge(parameters, launch_parameters)
+        always_merger.merge(parameters, account_parameters)
+
         for parameter_name, parameter_details in parameters.items():
             if parameter_details.get("ssm"):
                 ssm_parameter_details = parameter_details.get("ssm")

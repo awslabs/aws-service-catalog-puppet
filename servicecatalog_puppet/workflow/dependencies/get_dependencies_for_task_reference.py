@@ -40,28 +40,54 @@ def create(
         from servicecatalog_puppet.workflow.stack.provision_stack_task import (
             ProvisionStackTask,
         )
-
-        return ProvisionStackTask(
-            **common_parameters,
-            stack_name=parameters_to_use.get("stack_name"),
-            bucket=parameters_to_use.get("bucket"),
-            key=parameters_to_use.get("key"),
-            version_id=parameters_to_use.get("version_id"),
-            launch_name=parameters_to_use.get("launch_name"),
-            stack_set_name=parameters_to_use.get("stack_set_name"),
-            capabilities=parameters_to_use.get("capabilities"),
-            ssm_param_inputs=[],
-            launch_parameters=parameters_to_use.get("launch_parameters"),
-            manifest_parameters=parameters_to_use.get(""),
-            account_parameters=parameters_to_use.get(""),
-            retry_count=parameters_to_use.get("retry_count"),
-            worker_timeout=parameters_to_use.get("worker_timeout"),
-            ssm_param_outputs=[],
-            requested_priority=parameters_to_use.get("requested_priority"),
-            use_service_role=parameters_to_use.get("use_service_role"),
-            execution=parameters_to_use.get("execution"),
-            manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+        from servicecatalog_puppet.workflow.stack.terminate_stack_task import (
+            TerminateStackTask,
         )
+
+        if parameters_to_use.get("status") == "terminated":
+            return TerminateStackTask(
+                **common_parameters,
+                stack_name=parameters_to_use.get("stack_name"),
+                bucket=parameters_to_use.get("bucket"),
+                key=parameters_to_use.get("key"),
+                version_id=parameters_to_use.get("version_id"),
+                launch_name=parameters_to_use.get("launch_name"),
+                stack_set_name=parameters_to_use.get("stack_set_name"),
+                capabilities=parameters_to_use.get("capabilities"),
+                ssm_param_inputs=[],
+                launch_parameters=parameters_to_use.get("launch_parameters"),
+                manifest_parameters=parameters_to_use.get(""),
+                account_parameters=parameters_to_use.get(""),
+                retry_count=parameters_to_use.get("retry_count"),
+                worker_timeout=parameters_to_use.get("worker_timeout"),
+                ssm_param_outputs=[],
+                requested_priority=parameters_to_use.get("requested_priority"),
+                use_service_role=parameters_to_use.get("use_service_role"),
+                execution=parameters_to_use.get("execution"),
+                manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+            )
+        else:
+            return ProvisionStackTask(
+                **common_parameters,
+                stack_name=parameters_to_use.get("stack_name"),
+                bucket=parameters_to_use.get("bucket"),
+                key=parameters_to_use.get("key"),
+                version_id=parameters_to_use.get("version_id"),
+                launch_name=parameters_to_use.get("launch_name"),
+                stack_set_name=parameters_to_use.get("stack_set_name"),
+                capabilities=parameters_to_use.get("capabilities"),
+                ssm_param_inputs=[],
+                launch_parameters=parameters_to_use.get("launch_parameters"),
+                manifest_parameters=parameters_to_use.get(""),
+                account_parameters=parameters_to_use.get(""),
+                retry_count=parameters_to_use.get("retry_count"),
+                worker_timeout=parameters_to_use.get("worker_timeout"),
+                ssm_param_outputs=[],
+                requested_priority=parameters_to_use.get("requested_priority"),
+                use_service_role=parameters_to_use.get("use_service_role"),
+                execution=parameters_to_use.get("execution"),
+                manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+            )
     elif section_name == constants.SSM_PARAMETERS:
         from servicecatalog_puppet.workflow.ssm import get_ssm_parameter_task
 

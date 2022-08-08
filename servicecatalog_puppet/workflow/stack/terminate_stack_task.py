@@ -16,6 +16,10 @@ class TerminateStackTask(
     dependency.DependenciesMixin,
     get_ssm_param_task.PuppetTaskWithParameters,
 ):
+    task_reference = luigi.Parameter()
+    manifest_task_reference_file_path = luigi.Parameter()
+    dependencies_by_reference = luigi.ListParameter()
+
     stack_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 

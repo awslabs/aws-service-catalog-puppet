@@ -798,8 +798,8 @@ class Manifest(dict):
         common_parameters = {
             "launches": dict(
                 launch_name=item_name,
-                launch_parameters=item.get("parameters", {}),
-                manifest_parameters=self.get("parameters", {}),
+                # launch_parameters=item.get("parameters", {}),
+                # manifest_parameters=self.get("parameters", {}),
                 ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
                 portfolio=item.get("portfolio"),
                 product=item.get("product"),
@@ -810,9 +810,9 @@ class Manifest(dict):
                 stack_name=item_name,
                 launch_name=item.get("launch_name", ""),
                 stack_set_name=item.get("stack_set_name", ""),
-                launch_parameters=item.get("parameters", {}),
+                # launch_parameters=item.get("parameters", {}),
                 capabilities=item.get("capabilities", []),
-                manifest_parameters=self.get("parameters", {}),
+                # manifest_parameters=self.get("parameters", {}),
                 ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
                 bucket=f"sc-puppet-stacks-repository-{puppet_account_id}",
                 key=item.get("key"),
@@ -825,8 +825,8 @@ class Manifest(dict):
             ),
             "apps": dict(
                 app_name=item_name,
-                launch_parameters=item.get("parameters", {}),
-                manifest_parameters=self.get("parameters", {}),
+                # launch_parameters=item.get("parameters", {}),
+                # manifest_parameters=self.get("parameters", {}),
                 ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
                 bucket=f"sc-puppet-stacks-repository-{puppet_account_id}",
                 key=item.get("key"),
@@ -835,8 +835,8 @@ class Manifest(dict):
             ),
             "workspaces": dict(
                 workspace_name=item_name,
-                launch_parameters=item.get("parameters", {}),
-                manifest_parameters=self.get("parameters", {}),
+                # launch_parameters=item.get("parameters", {}),
+                # manifest_parameters=self.get("parameters", {}),
                 ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
                 bucket=f"sc-puppet-stacks-repository-{puppet_account_id}",
                 key=item.get("key"),
@@ -863,14 +863,14 @@ class Manifest(dict):
                 function_name=item.get("function_name"),
                 qualifier=item.get("qualifier", "$LATEST"),
                 invocation_type=item.get("invocation_type"),
-                launch_parameters=item.get("parameters", {}),
-                manifest_parameters=self.get("parameters", {}),
+                # launch_parameters=item.get("parameters", {}),
+                # manifest_parameters=self.get("parameters", {}),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
             "code-build-runs": dict(
                 code_build_run_name=item_name,
-                launch_parameters=item.get("parameters", {}),
-                manifest_parameters=self.get("parameters", {}),
+                # launch_parameters=item.get("parameters", {}),
+                # manifest_parameters=self.get("parameters", {}),
                 project_name=item.get("project_name"),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
@@ -913,6 +913,7 @@ class Manifest(dict):
         common_parameters.update(
             dict(
                 puppet_account_id=puppet_account_id,
+                status=item.get("status"),
                 requested_priority=item.get("requested_priority", 0),
                 dependencies=item.get("depends_on", []),
             )
@@ -930,29 +931,29 @@ class Manifest(dict):
                 additional_parameters = {
                     "launches": dict(
                         account_id=account_id,
-                        account_parameters=account.get("parameters", {}),
+                        # account_parameters=account.get("parameters", {}),
                     ),
                     "apps": dict(
                         account_id=account_id,
-                        account_parameters=account.get("parameters", {}),
+                        # account_parameters=account.get("parameters", {}),
                     ),
                     "workspaces": dict(
                         account_id=account_id,
-                        account_parameters=account.get("parameters", {}),
+                        # account_parameters=account.get("parameters", {}),
                     ),
                     "stacks": dict(
                         account_id=account_id,
-                        account_parameters=account.get("parameters", {}),
+                        # account_parameters=account.get("parameters", {}),
                     ),
                     "spoke-local-portfolios": dict(account_id=account_id,),
                     "assertions": dict(account_id=account_id,),
                     "lambda-invocations": dict(
                         account_id=account_id,
-                        account_parameters=account.get("parameters", {}),
+                        # account_parameters=account.get("parameters", {}),
                     ),
                     "code-build-runs": dict(
                         account_id=account_id,
-                        account_parameters=account.get("parameters", {}),
+                        # account_parameters=account.get("parameters", {}),
                     ),
                     "service-control-policies": dict(
                         account_id=account_id, ou_name="",
@@ -1042,21 +1043,21 @@ class Manifest(dict):
             additional_parameters = {
                 "launches": dict(
                     account_id=account_id,
-                    account_parameters=account.get("parameters", {}),
+                    # account_parameters=account.get("parameters", {}),
                 ),
                 "stacks": dict(
                     account_id=account_id,
-                    account_parameters=account.get("parameters", {}),
+                    # account_parameters=account.get("parameters", {}),
                 ),
                 "spoke-local-portfolios": dict(account_id=account_id,),
                 "assertions": dict(account_id=account_id,),
                 "lambda-invocations": dict(
                     account_id=account_id,
-                    account_parameters=account.get("parameters", {}),
+                    # account_parameters=account.get("parameters", {}),
                 ),
                 "code-build-runs": dict(
                     account_id=account_id,
-                    account_parameters=account.get("parameters", {}),
+                    # account_parameters=account.get("parameters", {}),
                 ),
                 "service-control-policies": dict(account_id=account_id, ou_name="",),
                 "tag-policies": dict(account_id=account_id, ou_name="",),
