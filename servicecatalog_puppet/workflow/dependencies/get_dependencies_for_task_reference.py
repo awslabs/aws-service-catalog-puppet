@@ -36,6 +36,8 @@ def create(
         account_id=parameters_to_use.get("account_id"),
         region=parameters_to_use.get("region"),
     )
+    manifest_file_path = manifest_task_reference_file_path.replace("manifest-task-reference.yaml",
+                                                                   "manifest-expanded.yaml")
 
     if section_name == constants.STACKS:
         if parameters_to_use.get("status") == "terminated":
@@ -62,7 +64,7 @@ def create(
                 requested_priority=parameters_to_use.get("requested_priority"),
                 use_service_role=parameters_to_use.get("use_service_role"),
                 execution=parameters_to_use.get("execution"),
-                manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+                manifest_file_path=manifest_file_path,
             )
         else:
             from servicecatalog_puppet.workflow.stack.provision_stack_task import (
@@ -88,7 +90,7 @@ def create(
                 requested_priority=parameters_to_use.get("requested_priority"),
                 use_service_role=parameters_to_use.get("use_service_role"),
                 execution=parameters_to_use.get("execution"),
-                manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+                manifest_file_path=manifest_file_path,
             )
 
     elif section_name == constants.LAUNCHES:
@@ -112,7 +114,7 @@ def create(
                 # ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
                 requested_priority=parameters_to_use.get("requested_priority"),
                 execution=parameters_to_use.get("execution"),
-                manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+                manifest_file_path=manifest_file_path,
             )
         else:
             from servicecatalog_puppet.workflow.launch.provision_product_task import (
@@ -134,7 +136,7 @@ def create(
                 # ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
                 requested_priority=parameters_to_use.get("requested_priority"),
                 execution=parameters_to_use.get("execution"),
-                manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+                manifest_file_path=manifest_file_path,
             )
 
     elif section_name == constants.SSM_PARAMETERS:
@@ -168,7 +170,7 @@ def create(
             requested_priority=parameters_to_use.get(
                 "requested_priority"
             ),  # TODO make generic
-            manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+            manifest_file_path=manifest_file_path,
         )
 
     elif section_name == constants.SERVICE_CONTROL_POLICIES:
@@ -188,7 +190,7 @@ def create(
             requested_priority=parameters_to_use.get(
                 "requested_priority"
             ),  # TODO make generic
-            manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+            manifest_file_path=manifest_file_path,
         )
 
     elif section_name == constants.ASSERTIONS:
@@ -201,7 +203,7 @@ def create(
             expected=parameters_to_use.get("expected"),
             actual=parameters_to_use.get("actual"),
             requested_priority=parameters_to_use.get("requested_priority"),
-            manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+            manifest_file_path=manifest_file_path,
         )
 
     elif section_name == constants.SIMULATE_POLICIES:
@@ -228,7 +230,7 @@ def create(
             caller_arn=parameters_to_use.get("caller_arn"),
             context_entries=parameters_to_use.get("context_entries"),
             resource_handling_option=parameters_to_use.get("resource_handling_option"),
-            manifest_file_path="ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml",  # TODO move to params
+            manifest_file_path=manifest_file_path,
         )
 
     else:
