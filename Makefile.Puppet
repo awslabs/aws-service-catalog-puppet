@@ -6,7 +6,7 @@ version:
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap
 bootstrap:
-	poetry run servicecatalog-puppet --info bootstrap
+	poetry run servicecatalog-puppet --info bootstrap --branch main
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap-spoke for the current aws profile
 bootstrap-self-as-spoke:
