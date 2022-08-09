@@ -268,8 +268,6 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                 all_params[param_name] = self.manifest.get_mapping(
                     param_details.get("mapping"), self.account_id, self.region
                 )
-
-        self.info(f"finished collecting all_params: {all_params}")
         return all_params
 
     def terminate_ssm_outputs(self):
