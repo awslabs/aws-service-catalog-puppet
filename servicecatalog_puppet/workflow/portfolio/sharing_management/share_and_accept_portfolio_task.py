@@ -19,6 +19,10 @@ from servicecatalog_puppet.workflow.portfolio.sharing_management import (
     share_portfolio_via_orgs_task,
 )
 
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
+)
+
 
 class ShareAndAcceptPortfolioTask(
     portfolio_management_task.PortfolioManagementTask, manifest_mixin.ManifestMixen
@@ -28,6 +32,11 @@ class ShareAndAcceptPortfolioTask(
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     sharing_mode = luigi.Parameter()
+    portfolio_task_reference = luigi.Parameter()
+
+    task_reference = luigi.Parameter()
+    manifest_task_reference_file_path = luigi.Parameter()
+    dependencies_by_reference = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {

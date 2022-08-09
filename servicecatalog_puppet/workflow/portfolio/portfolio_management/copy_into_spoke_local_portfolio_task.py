@@ -15,48 +15,40 @@ from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
 from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
     portfolio_management_task,
 )
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
+)
 
 
 class CopyIntoSpokeLocalPortfolioTask(
     portfolio_management_task.PortfolioManagementTask
 ):
-    spoke_local_portfolio_name = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
-    portfolio = luigi.Parameter()
-    organization = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
+    portfolio_task_reference = luigi.Parameter()
 
-    sharing_mode = luigi.Parameter()
+    task_reference = luigi.Parameter()
+    manifest_task_reference_file_path = luigi.Parameter()
+    dependencies_by_reference = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {
+            "task_reference": self.task_reference,
             "puppet_account_id": self.puppet_account_id,
-            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
-            "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
 
     def requires(self):
-        return {
-            "create_spoke_local_portfolio": create_spoke_local_portfolio_task.CreateSpokeLocalPortfolioTask(
-                manifest_file_path=self.manifest_file_path,
-                account_id=self.account_id,
-                region=self.region,
-                portfolio=self.portfolio,
-                organization=self.organization,
-                puppet_account_id=self.puppet_account_id,
-                sharing_mode=self.sharing_mode,
-            ),
-            "products_and_provisioning_artifacts": get_products_and_provisioning_artifacts_task.GetProductsAndProvisioningArtifactsTask(
-                manifest_file_path=self.manifest_file_path,
-                region=self.region,
-                portfolio=self.portfolio,
-                puppet_account_id=self.puppet_account_id,
-            ),
-        }
+        return dict(
+            reference_dependencies=get_dependencies_for_task_reference(
+                self.manifest_task_reference_file_path,
+                self.task_reference,
+                self.puppet_account_id,
+            )
+        )
 
     def api_calls_used(self):
         return [

@@ -29,7 +29,9 @@ def generate_task_reference(f):
     tasks_by_account_id_and_region = dict()
 
     #
-    # First pass - handle tasks and create ssm output tasks
+    # First pass - handle tasks
+    # First pass - create ssm output tasks
+    # First pass - set up spoke local portfolios
     #
     for (
         section_name_singular,
@@ -119,19 +121,89 @@ def generate_task_reference(f):
                             f"You have two tasks outputting the same SSM parameter output: {ssm_parameter_output.get('param_name')}"
                         )
                     all_tasks[ssm_parameter_output_task_reference] = dict(
+                        task_reference=ssm_parameter_output_task_reference,
                         param_name=ssm_parameter_output.get("param_name"),
                         stack_output=ssm_parameter_output.get("stack_output"),
                         force_operation=ssm_parameter_output.get(
                             "force_operation", False
                         ),
-                        task_reference=ssm_parameter_output_task_reference,
                         account_id=output_account_id,
                         region=output_region,
                         dependencies_by_reference=[all_tasks_task_reference],
                         reverse_dependencies_by_reference=list(),
-                        section_name="ssm_outputs",
                         task_generating_output=all_tasks_task_reference,
+                        section_name="ssm_outputs",
                     )
+
+                # TODO need to add a handler here for launches to clean up portfolio sharing
+                if section_name == constants.SPOKE_LOCAL_PORTFOLIOS:
+                    reference_suffix = f"{item_name}-{task_reference}"
+
+                    # TODO delete associations from task to add
+                    # TODO delete launch constraint from task to add
+                    # TODO delete resource_update constraint from task to add
+                    # TODO add ImportIntoSpokeLocalPortfolioTask
+                    # TODO add CopyIntoSpokeLocalPortfolioTask
+
+                    spoke_local_portfolio_common_args = dict(
+                        status=task_to_add.get("status"),
+                        account_id=task_to_add.get("account_id"),
+                        region=task_to_add.get("region"),
+                        portfolio=task_to_add.get("portfolio"),
+                        execution=task_to_add.get("execution"),
+                        dependencies_by_reference=[all_tasks_task_reference],
+                        reverse_dependencies_by_reference=list(),
+                        portfolio_task_reference=all_tasks_task_reference,
+                    )
+
+                    ref = f"portfolio-share-and-accept-{reference_suffix}"
+                    all_tasks[ref] = dict(
+                        **spoke_local_portfolio_common_args,
+                        task_reference=ref,
+                        section_name=f"portfolio-share-and-accept-{task_to_add.get('sharing_mode').lower()}",  # TODO need to make sure global sharing cascades into the expanded manifest file
+                    )
+
+                    ref = f"portfolio-import-or-copy-{reference_suffix}"
+                    all_tasks[ref] = dict(
+                        **spoke_local_portfolio_common_args,
+                        task_reference=ref,
+                        product_generation_mathod=task_to_add.get(
+                            "product_generation_method"
+                        ),
+                        section_name=f"portfolio-{task_to_add.get('product_generation_method')}",
+                    )
+
+                    if task_to_add.get("associations"):
+                        ref = f"portfolio-associations-{reference_suffix}"
+                        all_tasks[ref] = dict(
+                            **spoke_local_portfolio_common_args,
+                            task_reference=ref,
+                            section_name="portfolio-associations",
+                            associations=task_to_add.get("associations"),
+                        )
+
+                    if task_to_add.get("launch_constraints"):
+                        ref = f"portfolio-constraints-launch-{reference_suffix}"
+                        all_tasks[ref] = dict(
+                            **spoke_local_portfolio_common_args,
+                            task_reference=ref,
+                            section_name="portfolio-constraints-launch",
+                            launch_constraints=task_to_add["launch_constraints"],
+                        )
+
+                    if task_to_add.get("resource_update_constraints"):
+                        ref = (
+                            f"portfolio-constraints-resource_update-{reference_suffix}"
+                        )
+                        all_tasks[ref] = dict(
+                            **spoke_local_portfolio_common_args,
+                            task_reference=ref,
+                            section_name="portfolio-constraints-resource_update",
+                            resource_update_constraints=task_to_add[
+                                "resource_update_constraints"
+                            ],
+                        )
+
     #
     # Second pass - adding get parameters
     #

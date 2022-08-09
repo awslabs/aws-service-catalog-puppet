@@ -849,7 +849,7 @@ class Manifest(dict):
                     "product_generation_method",
                     constants.PRODUCT_GENERATION_METHOD_DEFAULT,
                 ),
-                organization=item.get("organization", ""),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
                 sharing_mode=item.get("sharing_mode", constants.SHARING_MODE_DEFAULT),
                 associations=item.get("associations", list()),
                 launch_constraints=item.get("constraints", {}).get("launch", []),
@@ -945,7 +945,10 @@ class Manifest(dict):
                         account_id=account_id,
                         # account_parameters=account.get("parameters", {}),
                     ),
-                    "spoke-local-portfolios": dict(account_id=account_id,),
+                    "spoke-local-portfolios": dict(
+                        account_id=account_id,
+                        organization=account.get("organization", ""),
+                    ),
                     "assertions": dict(account_id=account_id,),
                     "lambda-invocations": dict(
                         account_id=account_id,

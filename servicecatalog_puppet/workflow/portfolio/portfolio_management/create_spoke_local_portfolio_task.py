@@ -38,6 +38,7 @@ class CreateSpokeLocalPortfolioTask(
         }
 
     def requires(self):
+        raise Exception("#TODO need to remove these deps and wire it up to the main task creation stuff")
         return {
             "create_share_for_account_launch_region": create_share_for_account_launch_region_task.CreateShareForAccountLaunchRegion(
                 manifest_file_path=self.manifest_file_path,
@@ -63,6 +64,7 @@ class CreateSpokeLocalPortfolioTask(
         ]
 
     def run(self):
+        raise Exception("#TODO need to add parameters to the class for provider name and description and tags")
         with self.input().get("puppet_portfolio").open("r") as f:
             portfolio_details = json.loads(f.read())
         with self.spoke_regional_client("servicecatalog") as spoke_service_catalog:

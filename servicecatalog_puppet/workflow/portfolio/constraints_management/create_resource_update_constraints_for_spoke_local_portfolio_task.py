@@ -17,21 +17,25 @@ from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
 from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
     portfolio_management_task,
 )
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
+)
 
 
 class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
     portfolio_management_task.PortfolioManagementTask
 ):
+    portfolio_task_reference = luigi.Parameter()
     spoke_local_portfolio_name = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
-    organization = luigi.Parameter()
-    product_generation_method = luigi.Parameter()
-    update_resource_constraints = luigi.DictParameter()
+    resource_update_constraints = luigi.DictParameter()
 
-    sharing_mode = luigi.Parameter()
+    manifest_task_reference_file_path = luigi.Parameter()
+    task_reference = luigi.Parameter()
+    dependencies_by_reference = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {
@@ -44,23 +48,12 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
         }
 
     def requires(self):
-        create_spoke_local_portfolio_task_klass = (
-            import_into_spoke_local_portfolio_task.ImportIntoSpokeLocalPortfolioTask
-            if self.product_generation_method == "import"
-            else copy_into_spoke_local_portfolio_task.CopyIntoSpokeLocalPortfolioTask
-        )
-
         return dict(
-            create_spoke_local_portfolio_task=create_spoke_local_portfolio_task_klass(
-                spoke_local_portfolio_name=self.spoke_local_portfolio_name,
-                manifest_file_path=self.manifest_file_path,
-                account_id=self.account_id,
-                region=self.region,
-                portfolio=self.portfolio,
-                organization=self.organization,
-                puppet_account_id=self.puppet_account_id,
-                sharing_mode=self.sharing_mode,
-            ),
+            reference_dependencies=get_dependencies_for_task_reference(
+                self.manifest_task_reference_file_path,
+                self.task_reference,
+                self.puppet_account_id,
+            )
         )
 
     def api_calls_used(self):
@@ -72,9 +65,17 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
         ]
 
     def run(self):
-        dependency_output = self.load_from_input("create_spoke_local_portfolio_task")
-        spoke_portfolio = dependency_output.get("portfolio")
-        portfolio_id = spoke_portfolio.get("Id")
+        # dependency_output = self.load_from_input("create_spoke_local_portfolio_task")
+        # spoke_portfolio = dependency_output.get("portfolio")
+        # portfolio_id = spoke_portfolio.get("Id")
+
+        raise Exception(
+            self.input()
+            .get("reference_dependencies")
+            .get(self.portfolio_task_reference)
+            .open("r")
+            .read()
+        )
 
         product_name_to_id_dict = dependency_output.get("products")
         with self.spoke_regional_client("cloudformation") as cloudformation:
@@ -109,7 +110,7 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
 
     def generate_new_constraints(self, portfolio_id, product_name_to_id_dict):
         new_constraints = []
-        for constraint in self.update_resource_constraints:
+        for constraint in self.resource_update_constraints:
             new_constraint = {
                 "products": [],
                 "tag_update_on_provisioned_product": constraint.get(

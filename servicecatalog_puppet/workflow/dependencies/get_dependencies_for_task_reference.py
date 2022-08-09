@@ -123,6 +123,9 @@ def create(
                 ProvisionProductTask,
             )
 
+            # TODO
+            raise Exception("need to make work with CreateSpokeLocalPortfolioTask, add sharing and associations explicitly through here")
+
             return ProvisionProductTask(
                 **common_parameters,
                 launch_name=parameters_to_use.get("launch_name"),
@@ -286,6 +289,166 @@ def create(
             project_name=parameters_to_use.get("project_name"),
             manifest_file_path=manifest_file_path,
         )
+
+    elif section_name == constants.SPOKE_LOCAL_PORTFOLIOS:
+        if status == "terminated":
+            raise Exception("Not supported yet")
+        else:
+            from servicecatalog_puppet.workflow.spoke_local_portfolios import (
+                do_share_portfolio_with_spoke_task,
+            )
+
+            # TODO delete assoca
+            # TODO delete launch cons
+            # TODO delete resource update cons
+
+            # THIS SI THE WRONG CLASS TO USE
+            raise Exception("#TODO this should be the CreateSpokeLocalPortfolioTask class")
+            return do_share_portfolio_with_spoke_task.DoSharePortfolioWithSpokeTask(
+                **common_parameters,
+                spoke_local_portfolio_name=parameters_to_use.get(
+                    "spoke_local_portfolio_name"
+                ),
+                sharing_mode=parameters_to_use.get("sharing_mode"),
+                product_generation_method=parameters_to_use.get(
+                    "product_generation_method"
+                ),
+                organization=parameters_to_use.get("organization"),
+                associations=parameters_to_use.get("associations"),
+                launch_constraints=parameters_to_use.get("launch_constraints"),
+                resource_update_constraints=parameters_to_use.get(
+                    "resource_update_constraints"
+                ),
+                portfolio=parameters_to_use.get("portfolio"),
+                manifest_file_path=manifest_file_path,
+            )
+
+    elif section_name == constants.PORTFOLIO_ASSOCIATIONS:
+        if status == "terminated":
+            raise Exception("Not supported yet")
+        else:
+            from servicecatalog_puppet.workflow.portfolio.associations import (
+                create_associations_for_spoke_local_portfolio_task,
+            )
+
+            return create_associations_for_spoke_local_portfolio_task.CreateAssociationsForSpokeLocalPortfolioTask(
+                **common_parameters,
+                spoke_local_portfolio_name=parameters_to_use.get(
+                    "spoke_local_portfolio_name"
+                ),
+                associations=parameters_to_use.get("associations"),
+                portfolio=parameters_to_use.get("portfolio"),
+                portfolio_task_reference=parameters_to_use.get(
+                    "portfolio_task_reference"
+                ),
+                manifest_file_path=manifest_file_path,
+            )
+
+    elif section_name == constants.PORTFOLIO_CONSTRAINTS_LAUNCH:
+        if status == "terminated":
+            raise Exception("Not supported yet")
+        else:
+            from servicecatalog_puppet.workflow.portfolio.constraints_management import (
+                create_launch_role_constraints_for_spoke_local_portfolio_task,
+            )
+
+            return create_launch_role_constraints_for_spoke_local_portfolio_task.CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(
+                **common_parameters,
+                spoke_local_portfolio_name=parameters_to_use.get(
+                    "spoke_local_portfolio_name"
+                ),
+                launch_constraints=parameters_to_use.get("launch_constraints"),
+                portfolio=parameters_to_use.get("portfolio"),
+                portfolio_task_reference=parameters_to_use.get(
+                    "portfolio_task_reference"
+                ),
+                manifest_file_path=manifest_file_path,
+            )
+
+    elif section_name == constants.PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE:
+        if status == "terminated":
+            raise Exception("Not supported yet")
+        else:
+            from servicecatalog_puppet.workflow.portfolio.constraints_management import (
+                create_resource_update_constraints_for_spoke_local_portfolio_task,
+            )
+
+            return create_resource_update_constraints_for_spoke_local_portfolio_task.CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
+                **common_parameters,
+                spoke_local_portfolio_name=parameters_to_use.get(
+                    "spoke_local_portfolio_name"
+                ),
+                resource_update_constraints=parameters_to_use.get(
+                    "resource_update_constraints"
+                ),
+                portfolio=parameters_to_use.get("portfolio"),
+                portfolio_task_reference=parameters_to_use.get(
+                    "portfolio_task_reference"
+                ),
+                manifest_file_path=manifest_file_path,
+            )
+
+    elif section_name == constants.PORTFOLIO_COPY:
+        if status == "terminated":
+            raise Exception("Not supported yet")
+        else:
+            from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+                copy_into_spoke_local_portfolio_task,
+            )
+
+            return copy_into_spoke_local_portfolio_task.CopyIntoSpokeLocalPortfolioTask(
+                **common_parameters,
+                portfolio_task_reference=parameters_to_use.get(
+                    "portfolio_task_reference"
+                ),
+                # spoke_local_portfolio_name=parameters_to_use.get(
+                #     "spoke_local_portfolio_name"
+                # ),
+                # resource_update_constraints=parameters_to_use.get(
+                #     "resource_update_constraints"
+                # ),
+                # portfolio=parameters_to_use.get("portfolio"),
+                # portfolio_task_reference=parameters_to_use.get(
+                #     "portfolio_task_reference"
+                # ),
+                manifest_file_path=manifest_file_path,
+            )
+
+    elif section_name == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT:
+        if status == "terminated":
+            raise Exception("Not supported yet")
+        else:
+            from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+                share_and_accept_portfolio_task,
+            )
+
+            return share_and_accept_portfolio_task.ShareAndAcceptPortfolioTask(
+                **common_parameters,
+                portfolio=parameters_to_use.get("portfolio"),
+                sharing_mode=constants.SHARING_MODE_ACCOUNT,
+                portfolio_task_reference=parameters_to_use.get(
+                    "portfolio_task_reference"
+                ),
+                manifest_file_path=manifest_file_path,
+            )
+            # from servicecatalog_puppet.workflow.portfolio.constraints_management import (
+            #     create_resource_update_constraints_for_spoke_local_portfolio_task,
+            # )
+            #
+            # return create_resource_update_constraints_for_spoke_local_portfolio_task.CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
+            #     **common_parameters,
+            #     spoke_local_portfolio_name=parameters_to_use.get(
+            #         "spoke_local_portfolio_name"
+            #     ),
+            #     resource_update_constraints=parameters_to_use.get(
+            #         "resource_update_constraints"
+            #     ),
+            #     portfolio=parameters_to_use.get("portfolio"),
+            #     portfolio_task_reference=parameters_to_use.get(
+            #         "portfolio_task_reference"
+            #     ),
+            #     manifest_file_path=manifest_file_path,
+            # )
 
     else:
         raise Exception(f"Unknown section_name: {section_name}")

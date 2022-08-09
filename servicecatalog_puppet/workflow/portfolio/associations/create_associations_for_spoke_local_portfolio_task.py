@@ -14,20 +14,26 @@ from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
     portfolio_management_task,
 )
 
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
+)
+
 
 class CreateAssociationsForSpokeLocalPortfolioTask(
     portfolio_management_task.PortfolioManagementTask
 ):
+    portfolio_task_reference = luigi.Parameter()
     spoke_local_portfolio_name = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
-    organization = luigi.Parameter()
 
     associations = luigi.ListParameter(default=[])
 
-    sharing_mode = luigi.Parameter()
+    manifest_task_reference_file_path = luigi.Parameter()
+    task_reference = luigi.Parameter()
+    dependencies_by_reference = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {
@@ -40,17 +46,13 @@ class CreateAssociationsForSpokeLocalPortfolioTask(
         }
 
     def requires(self):
-        return {
-            "create_spoke_local_portfolio_task": create_spoke_local_portfolio_task.CreateSpokeLocalPortfolioTask(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                account_id=self.account_id,
-                region=self.region,
-                portfolio=self.portfolio,
-                organization=self.organization,
-                sharing_mode=self.sharing_mode,
-            ),
-        }
+        return dict(
+            reference_dependencies=get_dependencies_for_task_reference(
+                self.manifest_task_reference_file_path,
+                self.task_reference,
+                self.puppet_account_id,
+            )
+        )
 
     def api_calls_used(self):
         calls = [
@@ -63,6 +65,13 @@ class CreateAssociationsForSpokeLocalPortfolioTask(
         return calls
 
     def run(self):
+        raise Exception(
+            self.input()
+            .get("reference_dependencies")
+            .get(self.portfolio_task_reference)
+            .open("r")
+            .read()
+        )
         create_spoke_local_portfolio_task_input = self.load_from_input(
             "create_spoke_local_portfolio_task"
         )
