@@ -21,6 +21,7 @@ from servicecatalog_puppet.workflow.stack import prepare_account_for_stack_task
 from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
     get_dependencies_for_task_reference,
 )
+from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 class ProvisionStackTask(
@@ -102,30 +103,28 @@ class ProvisionStackTask(
         #
         return requirements
 
-    def api_calls_used(self):
-        # TODO fixme
+
+    def resources_used(self):
+        uniq = f"{self.region}-{self.puppet_account_id}"
         apis = [
-            f"servicecatalog.describe_stacks_{self.account_id}_{self.region}",
-            f"servicecatalog.ensure_deleted_{self.account_id}_{self.region}",
-            f"servicecatalog.get_template_summary_{self.account_id}_{self.region}",
-            f"servicecatalog.get_template_{self.account_id}_{self.region}",
-            f"servicecatalog.create_or_update_{self.account_id}_{self.region}",
+            (uniq, Limits.CLOUDFORMATION_ENSURE_DELETED_PER_REGION_OF_ACCOUNT),
+            (uniq, Limits.CLOUDFORMATION_GET_TEMPLATE_SUMMARY_PER_REGION_OF_ACCOUNT),
+            (uniq, Limits.CLOUDFORMATION_GET_TEMPLATE_PER_REGION_OF_ACCOUNT),
+            (uniq, Limits.CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT),
         ]
         if self.launch_name != "":
             if "*" in self.launch_name:
                 apis.append(
-                    f"servicecatalog.scan_provisioned_products_{self.account_id}_{self.region}"
+                    (uniq, Limits.SERVICE_CATALOG_SCAN_PROVISIONED_PRODUCTS_PER_REGION_OF_ACCOUNT),
                 )
             else:
                 apis.append(
-                    f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}"
+                    (uniq, Limits.SERVICE_CATALOG_DESCRIBE_PROVISIONED_PRODUCT_PER_REGION_OF_ACCOUNT),
                 )
         if self.stack_set_name != "":
-            apis.append(f"cloudformation.list_stacks_{self.account_id}_{self.region}")
-
-        if len(self.ssm_param_outputs) > 0:
-            apis.append(f"ssm.put_parameter_and_wait")
-
+            apis.append(
+                (uniq, Limits.CLOUDFORMATION_LIST_STACKS_PER_REGION_OF_ACCOUNT),
+            )
         return apis
 
     @property
@@ -222,7 +221,6 @@ class ProvisionStackTask(
         return current_stack
 
     def run(self):
-        self.info(111111)
         stack = self.ensure_stack_is_in_complete_status()
         status = stack.get("StackStatus")
 
@@ -236,7 +234,6 @@ class ProvisionStackTask(
                             f"Stack: {self.stack_name_to_use} is in ROLLBACK_COMPLETE and need remediation"
                         )
 
-        self.info(222222)
         task_output = dict(
             **self.params_for_results_display(), stack_name_used=self.stack_name_to_use,
         )
@@ -261,7 +258,6 @@ class ProvisionStackTask(
                     param_name, p.get("DefaultValue")
                 )
 
-        self.info(333333333)
         existing_stack_params_dict = dict()
         existing_template = ""
         if status != "NoStack":
@@ -292,7 +288,6 @@ class ProvisionStackTask(
                             )
 
         template_to_use = cfn_tools.dump_yaml(template_to_provision)
-        self.info(444444444)
         if status in ["UPDATE_ROLLBACK_COMPLETE", "NoStack"]:
             need_to_provision = True
         else:
@@ -310,8 +305,6 @@ class ProvisionStackTask(
                 self.info(f"params changed")
                 need_to_provision = True
 
-        self.info(555555555555)
-        self.info(6666666666)
         if need_to_provision:
             provisioning_parameters = []
             for p in params_to_use.keys():
@@ -334,5 +327,4 @@ class ProvisionStackTask(
 
         task_output["provisioned"] = need_to_provision
         task_output["section_name"] = self.section_name
-        self.info(7777777777)
         self.write_output(task_output)

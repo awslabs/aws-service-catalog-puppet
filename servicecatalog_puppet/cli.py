@@ -516,8 +516,9 @@ def generate_task_reference(f):
 
 @cli.command()
 @click.argument("f", type=click.File())
-def deploy_from_task_reference(f):
-    task_reference_commands.deploy_from_task_reference(f)
+@click.option("--num-workers", default=10)
+def deploy_from_task_reference(f, num_workers):
+    task_reference_commands.deploy_from_task_reference(f, num_workers)
 
 
 @cli.command()

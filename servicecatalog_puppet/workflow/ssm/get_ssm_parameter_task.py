@@ -6,6 +6,7 @@ import luigi
 from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
     get_dependencies_for_task_reference,
 )
+from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 class GetSSMParameterTask(tasks.PuppetTask):  # TODO add by path parameters
@@ -27,9 +28,10 @@ class GetSSMParameterTask(tasks.PuppetTask):  # TODO add by path parameters
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
+    def resources_used(self):
+        uniq = f"{self.region}-{self.puppet_account_id}"
         return [
-            f"ssm.get_parameter_{self.account_id}_{self.region}",
+            (uniq, Limits.SSM_GET_PARAMETER_PER_REGION_OF_ACCOUNT),
         ]
 
     def requires(self):

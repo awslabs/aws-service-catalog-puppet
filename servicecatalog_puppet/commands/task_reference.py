@@ -53,6 +53,10 @@ def generate_task_reference(f):
             for task_to_add in tasks_to_add:
                 task_to_add["section_name"] = section_name
                 task_to_add["item_name"] = item_name
+                # set up for later pass
+                task_to_add["dependencies_by_reference"] = list()
+                task_to_add["reverse_dependencies_by_reference"] = list()
+
                 task_reference = (
                     f"{task_to_add.get('account_id')}-{task_to_add.get('region')}"
                 )
@@ -124,6 +128,7 @@ def generate_task_reference(f):
                         account_id=output_account_id,
                         region=output_region,
                         dependencies_by_reference=[all_tasks_task_reference],
+                        reverse_dependencies_by_reference=list(),
                         section_name="ssm_outputs",
                         task_generating_output=all_tasks_task_reference,
                     )
@@ -134,7 +139,6 @@ def generate_task_reference(f):
     new_tasks = dict()
     for task_reference, task in all_tasks.items():
         parameters = dict()
-        print(task.get("section_name"))
         launch_parameters = (
             manifest.get(task.get("section_name"), {})
             .get(task.get("item_name"), {})
@@ -185,10 +189,9 @@ def generate_task_reference(f):
                     region=owning_region,
                     param_name=param_name,
                     dependencies_by_reference=dependency,
+                    reverse_dependencies_by_reference=list(),
                     section_name="ssm_parameters",
                 )
-                if not task.get("dependencies_by_reference"):
-                    task["dependencies_by_reference"] = list()
                 task["dependencies_by_reference"].append(ssm_parameter_task_reference)
     all_tasks.update(new_tasks)
 
@@ -196,8 +199,6 @@ def generate_task_reference(f):
     # Third pass - replacing dependencies with dependencies_by_reference
     #
     for task_reference, task in all_tasks.items():
-        if not task.get("dependencies_by_reference"):
-            task["dependencies_by_reference"] = list()
 
         for dependency in task.get("dependencies", []):
             section = dependency.get("type")
@@ -245,6 +246,9 @@ def generate_task_reference(f):
                     tasks_by_account_id_and_region[section][name][account_and_region]
                 )
 
+        for dep in task["dependencies_by_reference"]:
+            all_tasks[dep]["reverse_dependencies_by_reference"].append(task_reference)
+
     reference = dict(
         all_tasks=all_tasks,
         # tasks_by_type=tasks_by_type,
@@ -254,13 +258,14 @@ def generate_task_reference(f):
     )
 
 
-def deploy_from_task_reference(f):
+def deploy_from_task_reference(f, num_workers):
     puppet_account_id = config.get_puppet_account_id()
 
     tasks_to_run = list()
     reference = yaml_utils.load(open(f.name, "r").read())
+    all_tasks = reference.get("all_tasks")
 
-    for task_reference, task in reference.get("all_tasks").items():
+    for task_reference, task in all_tasks.items():
         tasks_to_run.append(
             get_dependencies_for_task_reference.create(
                 manifest_task_reference_file_path=f.name,
@@ -271,7 +276,6 @@ def deploy_from_task_reference(f):
 
     puppet_account_id = config.get_puppet_account_id()
     executor_account_id = puppet_account_id
-    num_workers = 10
     is_dry_run = False
     is_list_launches = False
     execution_mode = constants.EXECUTION_MODE_HUB

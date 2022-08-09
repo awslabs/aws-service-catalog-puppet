@@ -7,6 +7,7 @@ import luigi
 from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
     get_dependencies_for_task_reference,
 )
+from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 class SSMOutputsTasks(tasks.PuppetTask):  # TODO add by path parameters
@@ -36,10 +37,10 @@ class SSMOutputsTasks(tasks.PuppetTask):  # TODO add by path parameters
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        uniq = f"{self.account_id}_{self.region}"
+    def resources_used(self):
+        uniq = f"{self.region}-{self.puppet_account_id}"
         return [
-            f"cloudformation.describe_stacks_{uniq}" f"ssm.put_parameter_{uniq}",
+            (uniq, Limits.SSM_PUT_PARAMETER_PER_REGION_OF_ACCOUNT),
         ]
 
     def requires(self):
