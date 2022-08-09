@@ -5,9 +5,13 @@ import json
 
 import luigi
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet import config
 from servicecatalog_puppet.workflow.general import get_ssm_param_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
+)
 
 
 class DoInvokeLambdaTask(
@@ -21,13 +25,19 @@ class DoInvokeLambdaTask(
     qualifier = luigi.Parameter()
     invocation_type = luigi.Parameter()
 
+    manifest_task_reference_file_path = luigi.Parameter()
+    task_reference = luigi.Parameter()
+    dependencies_by_reference = luigi.ListParameter()
+
     puppet_account_id = luigi.Parameter()
 
-    launch_parameters = luigi.DictParameter()
-    manifest_parameters = luigi.DictParameter()
-    account_parameters = luigi.DictParameter()
-
     manifest_file_path = luigi.Parameter()
+
+    section_name = constants.LAMBDA_INVOCATIONS
+
+    @property
+    def item_name(self):
+        return self.lambda_invocation_name
 
     def params_for_results_display(self):
         return {
@@ -39,7 +49,13 @@ class DoInvokeLambdaTask(
         }
 
     def requires(self):
-        return dict(ssm_params=self.get_parameters_tasks(),)
+        return dict(
+            reference_dependencies=get_dependencies_for_task_reference(
+                self.manifest_task_reference_file_path,
+                self.task_reference,
+                self.puppet_account_id,
+            ),
+        )
 
     def api_calls_used(self):
         return {

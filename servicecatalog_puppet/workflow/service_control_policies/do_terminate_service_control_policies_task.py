@@ -13,6 +13,11 @@ from servicecatalog_puppet.workflow.service_control_policies import (
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 
+
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
+)
+
 class DoTerminateServiceControlPoliciesTask(
     service_control_policies_base_task.ServiceControlPoliciesBaseTask,
     manifest_mixin.ManifestMixen,
@@ -20,6 +25,10 @@ class DoTerminateServiceControlPoliciesTask(
 ):
     service_control_policy_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
+
+    manifest_task_reference_file_path = luigi.Parameter()
+    task_reference = luigi.Parameter()
+    dependencies_by_reference = luigi.ListParameter()
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -42,6 +51,11 @@ class DoTerminateServiceControlPoliciesTask(
 
     def requires(self):
         return dict(
+            reference_dependencies=get_dependencies_for_task_reference(
+                self.manifest_task_reference_file_path,
+                self.task_reference,
+                self.puppet_account_id,
+            ),
             policy=get_or_create_policy_task.GetOrCreatePolicyTask(
                 puppet_account_id=self.puppet_account_id,
                 region=self.region,

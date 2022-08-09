@@ -5,7 +5,7 @@ from servicecatalog_puppet import yaml_utils
 
 
 def get_dependencies_for_task_reference(
-    manifest_task_reference_file_path, task_reference, puppet_account_id
+        manifest_task_reference_file_path, task_reference, puppet_account_id
 ):
     dependencies = dict()
     reference = yaml_utils.load(
@@ -24,7 +24,7 @@ def get_dependencies_for_task_reference(
 
 
 def create(
-    manifest_task_reference_file_path, puppet_account_id, parameters_to_use,
+        manifest_task_reference_file_path, puppet_account_id, parameters_to_use,
 ):
     # TODO add in support for list launches and dry run
     section_name = parameters_to_use.get("section_name")
@@ -39,8 +39,9 @@ def create(
     manifest_file_path = manifest_task_reference_file_path.replace("manifest-task-reference.yaml",
                                                                    "manifest-expanded.yaml")
 
+    status = parameters_to_use.get("status")
     if section_name == constants.STACKS:
-        if parameters_to_use.get("status") == "terminated":
+        if status == "terminated":
             from servicecatalog_puppet.workflow.stack.terminate_stack_task import (
                 TerminateStackTask,
             )
@@ -94,7 +95,7 @@ def create(
             )
 
     elif section_name == constants.LAUNCHES:
-        if parameters_to_use.get("status") == "terminated":
+        if status == "terminated":
             from servicecatalog_puppet.workflow.launch.do_terminate_product_task import (
                 DoTerminateProductTask,
             )
@@ -156,42 +157,64 @@ def create(
             force_operation=parameters_to_use.get("force_operation"),
         )
     elif section_name == constants.TAG_POLICIES:
-        from servicecatalog_puppet.workflow.tag_policies import (
-            do_execute_tag_policies_task,
-        )
+        if status == "terminated":
+            raise Exception("No supported yet, raise a github issue if you would like to see this")
 
-        # TODO test different tag policy deploy to clauses
-        return do_execute_tag_policies_task.DoExecuteTagPoliciesTask(
-            **common_parameters,
-            tag_policy_name=parameters_to_use.get("tag_policy_name"),
-            ou_name=parameters_to_use.get("ou_name"),
-            content=parameters_to_use.get("content"),
-            description=parameters_to_use.get("description"),
-            requested_priority=parameters_to_use.get(
-                "requested_priority"
-            ),  # TODO make generic
-            manifest_file_path=manifest_file_path,
-        )
+        else:
+            from servicecatalog_puppet.workflow.tag_policies import (
+                do_execute_tag_policies_task,
+            )
+
+            # TODO test different tag policy deploy to clauses
+            return do_execute_tag_policies_task.DoExecuteTagPoliciesTask(
+                **common_parameters,
+                tag_policy_name=parameters_to_use.get("tag_policy_name"),
+                ou_name=parameters_to_use.get("ou_name"),
+                content=parameters_to_use.get("content"),
+                description=parameters_to_use.get("description"),
+                requested_priority=parameters_to_use.get(
+                    "requested_priority"
+                ),  # TODO make generic
+                manifest_file_path=manifest_file_path,
+            )
 
     elif section_name == constants.SERVICE_CONTROL_POLICIES:
-        from servicecatalog_puppet.workflow.service_control_policies import (
-            do_execute_service_control_policies_task,
-        )
-
-        # TODO test different tag policy deploy to clauses
-        return do_execute_service_control_policies_task.DoExecuteServiceControlPoliciesTask(
-            **common_parameters,
-            service_control_policy_name=parameters_to_use.get(
-                "service_control_policy_name"
-            ),
-            ou_name=parameters_to_use.get("ou_name"),
-            content=parameters_to_use.get("content"),
-            description=parameters_to_use.get("description"),
-            requested_priority=parameters_to_use.get(
-                "requested_priority"
-            ),  # TODO make generic
-            manifest_file_path=manifest_file_path,
-        )
+        if status == "terminated":
+            from servicecatalog_puppet.workflow.service_control_policies import (
+                do_terminate_service_control_policies_task
+            )
+            # TODO test different tag policy deploy to clauses
+            return do_terminate_service_control_policies_task.DoTerminateServiceControlPoliciesTask(
+                **common_parameters,
+                service_control_policy_name=parameters_to_use.get(
+                    "service_control_policy_name"
+                ),
+                ou_name=parameters_to_use.get("ou_name"),
+                content=parameters_to_use.get("content"),
+                description=parameters_to_use.get("description"),
+                requested_priority=parameters_to_use.get(
+                    "requested_priority"
+                ),  # TODO make generic
+                manifest_file_path=manifest_file_path,
+            )
+        else:
+            from servicecatalog_puppet.workflow.service_control_policies import (
+                do_execute_service_control_policies_task,
+            )
+            # TODO test different tag policy deploy to clauses
+            return do_execute_service_control_policies_task.DoExecuteServiceControlPoliciesTask(
+                **common_parameters,
+                service_control_policy_name=parameters_to_use.get(
+                    "service_control_policy_name"
+                ),
+                ou_name=parameters_to_use.get("ou_name"),
+                content=parameters_to_use.get("content"),
+                description=parameters_to_use.get("description"),
+                requested_priority=parameters_to_use.get(
+                    "requested_priority"
+                ),  # TODO make generic
+                manifest_file_path=manifest_file_path,
+            )
 
     elif section_name == constants.ASSERTIONS:
         from servicecatalog_puppet.workflow.assertions import do_assert_task
@@ -230,6 +253,23 @@ def create(
             caller_arn=parameters_to_use.get("caller_arn"),
             context_entries=parameters_to_use.get("context_entries"),
             resource_handling_option=parameters_to_use.get("resource_handling_option"),
+            manifest_file_path=manifest_file_path,
+        )
+
+    elif section_name == constants.LAMBDA_INVOCATIONS:
+        from servicecatalog_puppet.workflow.lambda_invocations import (
+            do_invoke_lambda_task,
+        )
+
+        return do_invoke_lambda_task.DoInvokeLambdaTask(
+            **common_parameters,
+
+            lambda_invocation_name=parameters_to_use.get("lambda_invocation_name"),
+
+            function_name=parameters_to_use.get("function_name"),
+            qualifier=parameters_to_use.get("qualifier"),
+            invocation_type=parameters_to_use.get("invocation_type"),
+
             manifest_file_path=manifest_file_path,
         )
 
