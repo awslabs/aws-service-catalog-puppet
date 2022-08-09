@@ -5,7 +5,7 @@ from servicecatalog_puppet import yaml_utils
 
 
 def get_dependencies_for_task_reference(
-        manifest_task_reference_file_path, task_reference, puppet_account_id
+    manifest_task_reference_file_path, task_reference, puppet_account_id
 ):
     dependencies = dict()
     reference = yaml_utils.load(
@@ -24,7 +24,7 @@ def get_dependencies_for_task_reference(
 
 
 def create(
-        manifest_task_reference_file_path, puppet_account_id, parameters_to_use,
+    manifest_task_reference_file_path, puppet_account_id, parameters_to_use,
 ):
     # TODO add in support for list launches and dry run
     section_name = parameters_to_use.get("section_name")
@@ -36,8 +36,9 @@ def create(
         account_id=parameters_to_use.get("account_id"),
         region=parameters_to_use.get("region"),
     )
-    manifest_file_path = manifest_task_reference_file_path.replace("manifest-task-reference.yaml",
-                                                                   "manifest-expanded.yaml")
+    manifest_file_path = manifest_task_reference_file_path.replace(
+        "manifest-task-reference.yaml", "manifest-expanded.yaml"
+    )
 
     status = parameters_to_use.get("status")
     if section_name == constants.STACKS:
@@ -158,7 +159,9 @@ def create(
         )
     elif section_name == constants.TAG_POLICIES:
         if status == "terminated":
-            raise Exception("No supported yet, raise a github issue if you would like to see this")
+            raise Exception(
+                "No supported yet, raise a github issue if you would like to see this"
+            )
 
         else:
             from servicecatalog_puppet.workflow.tag_policies import (
@@ -181,8 +184,9 @@ def create(
     elif section_name == constants.SERVICE_CONTROL_POLICIES:
         if status == "terminated":
             from servicecatalog_puppet.workflow.service_control_policies import (
-                do_terminate_service_control_policies_task
+                do_terminate_service_control_policies_task,
             )
+
             # TODO test different tag policy deploy to clauses
             return do_terminate_service_control_policies_task.DoTerminateServiceControlPoliciesTask(
                 **common_parameters,
@@ -201,6 +205,7 @@ def create(
             from servicecatalog_puppet.workflow.service_control_policies import (
                 do_execute_service_control_policies_task,
             )
+
             # TODO test different tag policy deploy to clauses
             return do_execute_service_control_policies_task.DoExecuteServiceControlPoliciesTask(
                 **common_parameters,
@@ -263,13 +268,22 @@ def create(
 
         return do_invoke_lambda_task.DoInvokeLambdaTask(
             **common_parameters,
-
             lambda_invocation_name=parameters_to_use.get("lambda_invocation_name"),
-
             function_name=parameters_to_use.get("function_name"),
             qualifier=parameters_to_use.get("qualifier"),
             invocation_type=parameters_to_use.get("invocation_type"),
+            manifest_file_path=manifest_file_path,
+        )
 
+    elif section_name == constants.CODE_BUILD_RUNS:
+        from servicecatalog_puppet.workflow.codebuild_runs import (
+            do_execute_code_build_run_task,
+        )
+
+        return do_execute_code_build_run_task.DoExecuteCodeBuildRunTask(
+            **common_parameters,
+            code_build_run_name=parameters_to_use.get("code_build_run_name"),
+            project_name=parameters_to_use.get("project_name"),
             manifest_file_path=manifest_file_path,
         )
 

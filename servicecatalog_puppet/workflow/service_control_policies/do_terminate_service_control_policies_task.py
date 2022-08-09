@@ -13,10 +13,10 @@ from servicecatalog_puppet.workflow.service_control_policies import (
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 
-
 from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
     get_dependencies_for_task_reference,
 )
+
 
 class DoTerminateServiceControlPoliciesTask(
     service_control_policies_base_task.ServiceControlPoliciesBaseTask,
@@ -65,7 +65,7 @@ class DoTerminateServiceControlPoliciesTask(
                 tags=self.manifest.get(constants.SERVICE_CONTROL_POLICIES)
                 .get(self.service_control_policy_name)
                 .get("tags", []),
-            )
+            ),
         )
 
     def api_calls_used(self):

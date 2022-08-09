@@ -103,7 +103,6 @@ class ProvisionStackTask(
         #
         return requirements
 
-
     def resources_used(self):
         uniq = f"{self.region}-{self.puppet_account_id}"
         apis = [
@@ -115,11 +114,17 @@ class ProvisionStackTask(
         if self.launch_name != "":
             if "*" in self.launch_name:
                 apis.append(
-                    (uniq, Limits.SERVICE_CATALOG_SCAN_PROVISIONED_PRODUCTS_PER_REGION_OF_ACCOUNT),
+                    (
+                        uniq,
+                        Limits.SERVICE_CATALOG_SCAN_PROVISIONED_PRODUCTS_PER_REGION_OF_ACCOUNT,
+                    ),
                 )
             else:
                 apis.append(
-                    (uniq, Limits.SERVICE_CATALOG_DESCRIBE_PROVISIONED_PRODUCT_PER_REGION_OF_ACCOUNT),
+                    (
+                        uniq,
+                        Limits.SERVICE_CATALOG_DESCRIBE_PROVISIONED_PRODUCT_PER_REGION_OF_ACCOUNT,
+                    ),
                 )
         if self.stack_set_name != "":
             apis.append(

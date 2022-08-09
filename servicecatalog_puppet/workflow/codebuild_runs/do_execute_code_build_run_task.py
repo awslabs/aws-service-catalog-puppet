@@ -7,6 +7,10 @@ from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_base_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
+)
+
 
 class DoExecuteCodeBuildRunTask(
     code_build_run_base_task.CodeBuildRunBaseTask,
@@ -19,16 +23,11 @@ class DoExecuteCodeBuildRunTask(
     region = luigi.Parameter()
     account_id = luigi.Parameter()
 
-    execution = luigi.Parameter()
-
-    ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
-
-    launch_parameters = luigi.DictParameter(default={}, significant=False)
-    manifest_parameters = luigi.DictParameter(default={}, significant=False)
-    account_parameters = luigi.DictParameter(default={}, significant=False)
-
     project_name = luigi.Parameter()
-    requested_priority = luigi.IntParameter()
+
+    manifest_task_reference_file_path = luigi.Parameter()
+    task_reference = luigi.Parameter()
+    dependencies_by_reference = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {
@@ -46,10 +45,13 @@ class DoExecuteCodeBuildRunTask(
         ]
 
     def requires(self):
-        requirements = {
-            "ssm_params": self.get_parameters_tasks(),
-        }
-        return requirements
+        return dict(
+            reference_dependencies=get_dependencies_for_task_reference(
+                self.manifest_task_reference_file_path,
+                self.task_reference,
+                self.puppet_account_id,
+            ),
+        )
 
     def run(self):
         with self.hub_client("codebuild") as codebuild:
