@@ -1,5 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+import copy
 import json
 import os
 from datetime import datetime
@@ -13,6 +14,19 @@ import logging
 from deepmerge import always_merger
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
+
+
+def get_spoke_local_portfolio_common_args(task_to_add, all_tasks_task_reference):
+    return dict(
+        status=task_to_add.get("status"),
+        account_id=task_to_add.get("account_id"),
+        region=task_to_add.get("region"),
+        portfolio=task_to_add.get("portfolio"),
+        execution=task_to_add.get("execution"),
+        dependencies_by_reference=[all_tasks_task_reference],
+        reverse_dependencies_by_reference=list(),
+        portfolio_task_reference=all_tasks_task_reference,
+    )
 
 
 def generate_task_reference(f):
@@ -145,63 +159,93 @@ def generate_task_reference(f):
                     # TODO add ImportIntoSpokeLocalPortfolioTask
                     # TODO add CopyIntoSpokeLocalPortfolioTask
 
-                    spoke_local_portfolio_common_args = dict(
-                        status=task_to_add.get("status"),
-                        account_id=task_to_add.get("account_id"),
-                        region=task_to_add.get("region"),
-                        portfolio=task_to_add.get("portfolio"),
-                        execution=task_to_add.get("execution"),
-                        dependencies_by_reference=[all_tasks_task_reference],
-                        reverse_dependencies_by_reference=list(),
-                        portfolio_task_reference=all_tasks_task_reference,
+                    s = "portfolio-get-all-products-and-their-versions"
+                    portfolio_get_all_products_and_their_versions_ref = (
+                        f"{s}-{reference_suffix}"
+                    )
+                    all_tasks[portfolio_get_all_products_and_their_versions_ref] = dict(
+                        **get_spoke_local_portfolio_common_args(
+                            task_to_add, all_tasks_task_reference
+                        ),
+                        task_reference=portfolio_get_all_products_and_their_versions_ref,
+                        section_name=s,
                     )
 
-                    ref = f"portfolio-share-and-accept-{reference_suffix}"
+                    s = "portfolio-share-and-accept"
+                    ref = f"{s}-{reference_suffix}"
                     all_tasks[ref] = dict(
-                        **spoke_local_portfolio_common_args,
+                        **get_spoke_local_portfolio_common_args(
+                            task_to_add, all_tasks_task_reference
+                        ),
                         task_reference=ref,
-                        section_name=f"portfolio-share-and-accept-{task_to_add.get('sharing_mode').lower()}",  # TODO need to make sure global sharing cascades into the expanded manifest file
+                        section_name=f"{s}-{task_to_add.get('sharing_mode').lower()}",
+                        # TODO need to make sure global sharing cascades into the expanded manifest file
                     )
 
-                    ref = f"portfolio-import-or-copy-{reference_suffix}"
+                    s = "portfolio-import-or-copy"
+                    ref = f"{s}-{reference_suffix}"
                     all_tasks[ref] = dict(
-                        **spoke_local_portfolio_common_args,
+                        **get_spoke_local_portfolio_common_args(
+                            task_to_add, all_tasks_task_reference
+                        ),
                         task_reference=ref,
                         product_generation_mathod=task_to_add.get(
                             "product_generation_method"
                         ),
                         section_name=f"portfolio-{task_to_add.get('product_generation_method')}",
+                        portfolio_get_all_products_and_their_versions_ref=portfolio_get_all_products_and_their_versions_ref,
+                    )
+                    all_tasks[ref]["dependencies_by_reference"].append(
+                        portfolio_get_all_products_and_their_versions_ref
                     )
 
                     if task_to_add.get("associations"):
-                        ref = f"portfolio-associations-{reference_suffix}"
+                        s = "portfolio-associations"
+                        ref = f"{s}-{reference_suffix}"
                         all_tasks[ref] = dict(
-                            **spoke_local_portfolio_common_args,
+                            **get_spoke_local_portfolio_common_args(
+                                task_to_add, all_tasks_task_reference
+                            ),
                             task_reference=ref,
-                            section_name="portfolio-associations",
+                            spoke_local_portfolio_name=item_name,
+                            section_name=s,
                             associations=task_to_add.get("associations"),
                         )
 
                     if task_to_add.get("launch_constraints"):
-                        ref = f"portfolio-constraints-launch-{reference_suffix}"
+                        s = "portfolio-constraints-launch"
+                        ref = f"{s}-{reference_suffix}"
                         all_tasks[ref] = dict(
-                            **spoke_local_portfolio_common_args,
+                            **get_spoke_local_portfolio_common_args(
+                                task_to_add, all_tasks_task_reference
+                            ),
                             task_reference=ref,
-                            section_name="portfolio-constraints-launch",
+                            section_name=s,
+                            spoke_local_portfolio_name=item_name,
                             launch_constraints=task_to_add["launch_constraints"],
+                            portfolio_get_all_products_and_their_versions_ref=portfolio_get_all_products_and_their_versions_ref,
+                        )
+                        all_tasks[ref]["dependencies_by_reference"].append(
+                            portfolio_get_all_products_and_their_versions_ref
                         )
 
                     if task_to_add.get("resource_update_constraints"):
-                        ref = (
-                            f"portfolio-constraints-resource_update-{reference_suffix}"
-                        )
+                        s = "portfolio-constraints-resource_update"
+                        ref = f"{s}-{reference_suffix}"
                         all_tasks[ref] = dict(
-                            **spoke_local_portfolio_common_args,
+                            **get_spoke_local_portfolio_common_args(
+                                task_to_add, all_tasks_task_reference
+                            ),
                             task_reference=ref,
-                            section_name="portfolio-constraints-resource_update",
+                            section_name=s,
+                            spoke_local_portfolio_name=item_name,
                             resource_update_constraints=task_to_add[
                                 "resource_update_constraints"
                             ],
+                            portfolio_get_all_products_and_their_versions_ref=portfolio_get_all_products_and_their_versions_ref,
+                        )
+                        all_tasks[ref]["dependencies_by_reference"].append(
+                            portfolio_get_all_products_and_their_versions_ref
                         )
 
     #

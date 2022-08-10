@@ -1,5 +1,6 @@
 #  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+import json
 import re
 
 import luigi
@@ -65,18 +66,14 @@ class CreateAssociationsForSpokeLocalPortfolioTask(
         return calls
 
     def run(self):
-        raise Exception(
+        portfolio_details = json.loads(
             self.input()
             .get("reference_dependencies")
             .get(self.portfolio_task_reference)
             .open("r")
             .read()
         )
-        create_spoke_local_portfolio_task_input = self.load_from_input(
-            "create_spoke_local_portfolio_task"
-        )
-        portfolio_id = create_spoke_local_portfolio_task_input.get("Id")
-        self.info(f"using portfolio_id: {portfolio_id}")
+        portfolio_id = portfolio_details.get("Id")
 
         yield delete_cloud_formation_stack_task.DeleteCloudFormationStackTask(
             account_id=self.account_id,

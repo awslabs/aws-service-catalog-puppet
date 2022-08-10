@@ -124,7 +124,9 @@ def create(
             )
 
             # TODO
-            raise Exception("need to make work with CreateSpokeLocalPortfolioTask, add sharing and associations explicitly through here")
+            raise Exception(
+                "need to make work with CreateSpokeLocalPortfolioTask, add sharing and associations explicitly through here"
+            )
 
             return ProvisionProductTask(
                 **common_parameters,
@@ -294,32 +296,15 @@ def create(
         if status == "terminated":
             raise Exception("Not supported yet")
         else:
-            from servicecatalog_puppet.workflow.spoke_local_portfolios import (
-                do_share_portfolio_with_spoke_task,
+            from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+                create_spoke_local_portfolio_task,
             )
 
-            # TODO delete assoca
-            # TODO delete launch cons
-            # TODO delete resource update cons
-
-            # THIS SI THE WRONG CLASS TO USE
-            raise Exception("#TODO this should be the CreateSpokeLocalPortfolioTask class")
-            return do_share_portfolio_with_spoke_task.DoSharePortfolioWithSpokeTask(
+            return create_spoke_local_portfolio_task.CreateSpokeLocalPortfolioTask(
                 **common_parameters,
-                spoke_local_portfolio_name=parameters_to_use.get(
-                    "spoke_local_portfolio_name"
-                ),
-                sharing_mode=parameters_to_use.get("sharing_mode"),
-                product_generation_method=parameters_to_use.get(
-                    "product_generation_method"
-                ),
-                organization=parameters_to_use.get("organization"),
-                associations=parameters_to_use.get("associations"),
-                launch_constraints=parameters_to_use.get("launch_constraints"),
-                resource_update_constraints=parameters_to_use.get(
-                    "resource_update_constraints"
-                ),
                 portfolio=parameters_to_use.get("portfolio"),
+                provider_name=parameters_to_use.get("provider_name"),
+                description=parameters_to_use.get("description"),
                 manifest_file_path=manifest_file_path,
             )
 
@@ -362,6 +347,9 @@ def create(
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
+                portfolio_get_all_products_and_their_versions_ref=parameters_to_use.get(
+                    "portfolio_get_all_products_and_their_versions_ref"
+                ),
                 manifest_file_path=manifest_file_path,
             )
 
@@ -385,6 +373,9 @@ def create(
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
+                portfolio_get_all_products_and_their_versions_ref=parameters_to_use.get(
+                    "portfolio_get_all_products_and_their_versions_ref"
+                ),
                 manifest_file_path=manifest_file_path,
             )
 
@@ -401,16 +392,9 @@ def create(
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
-                # spoke_local_portfolio_name=parameters_to_use.get(
-                #     "spoke_local_portfolio_name"
-                # ),
-                # resource_update_constraints=parameters_to_use.get(
-                #     "resource_update_constraints"
-                # ),
-                # portfolio=parameters_to_use.get("portfolio"),
-                # portfolio_task_reference=parameters_to_use.get(
-                #     "portfolio_task_reference"
-                # ),
+                portfolio_get_all_products_and_their_versions_ref=parameters_to_use.get(
+                    "portfolio_get_all_products_and_their_versions_ref"
+                ),
                 manifest_file_path=manifest_file_path,
             )
 
@@ -431,24 +415,22 @@ def create(
                 ),
                 manifest_file_path=manifest_file_path,
             )
-            # from servicecatalog_puppet.workflow.portfolio.constraints_management import (
-            #     create_resource_update_constraints_for_spoke_local_portfolio_task,
-            # )
-            #
-            # return create_resource_update_constraints_for_spoke_local_portfolio_task.CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
-            #     **common_parameters,
-            #     spoke_local_portfolio_name=parameters_to_use.get(
-            #         "spoke_local_portfolio_name"
-            #     ),
-            #     resource_update_constraints=parameters_to_use.get(
-            #         "resource_update_constraints"
-            #     ),
-            #     portfolio=parameters_to_use.get("portfolio"),
-            #     portfolio_task_reference=parameters_to_use.get(
-            #         "portfolio_task_reference"
-            #     ),
-            #     manifest_file_path=manifest_file_path,
-            # )
+
+    elif section_name == constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS:
+        if status == "terminated":
+            raise Exception("Not supported yet")
+        else:
+            from servicecatalog_puppet.workflow.portfolio.accessors import (
+                get_all_products_and_their_versions_task,
+            )
+
+            return get_all_products_and_their_versions_task.GetAllProductsAndTheirVersionsTask(
+                **common_parameters,
+                portfolio=parameters_to_use.get("portfolio"),
+                portfolio_task_reference=parameters_to_use.get(
+                    "portfolio_task_reference"
+                ),
+            )
 
     else:
         raise Exception(f"Unknown section_name: {section_name}")

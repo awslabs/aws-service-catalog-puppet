@@ -31,6 +31,7 @@ class CopyIntoSpokeLocalPortfolioTask(
     task_reference = luigi.Parameter()
     manifest_task_reference_file_path = luigi.Parameter()
     dependencies_by_reference = luigi.ListParameter()
+    portfolio_get_all_products_and_their_versions_ref = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -61,9 +62,15 @@ class CopyIntoSpokeLocalPortfolioTask(
         ]
 
     def run(self):
-        with self.input().get("create_spoke_local_portfolio").open("r") as f:
-            spoke_portfolio = json.loads(f.read())
-        portfolio_id = spoke_portfolio.get("Id")
+        portfolio_details = json.loads(
+            self.input()
+            .get("reference_dependencies")
+            .get(self.portfolio_task_reference)
+            .open("r")
+            .read()
+        )
+        portfolio_id = portfolio_details.get("Id")
+
         product_versions_that_should_be_copied = {}
         product_versions_that_should_be_updated = {}
 
@@ -239,15 +246,10 @@ class CopyIntoSpokeLocalPortfolioTask(
                                     Active=version_details.get("Active"),
                                 )
 
-        with self.output().open("w") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "portfolio": spoke_portfolio,
-                        "product_versions_that_should_be_copied": product_versions_that_should_be_copied,
-                        "products": product_name_to_id_dict,
-                    },
-                    indent=4,
-                    default=str,
-                )
-            )
+        self.write_output(
+            {
+                "portfolio": portfolio_details,
+                "product_versions_that_should_be_copied": product_versions_that_should_be_copied,
+                "products": product_name_to_id_dict,
+            }
+        )

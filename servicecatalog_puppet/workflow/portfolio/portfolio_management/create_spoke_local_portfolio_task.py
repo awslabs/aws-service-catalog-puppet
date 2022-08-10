@@ -17,6 +17,10 @@ from servicecatalog_puppet.workflow.portfolio.sharing_management import (
     create_share_for_account_launch_region_task,
 )
 
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
+)
+
 
 class CreateSpokeLocalPortfolioTask(
     portfolio_management_task.PortfolioManagementTask, manifest_mixin.ManifestMixen
@@ -25,8 +29,12 @@ class CreateSpokeLocalPortfolioTask(
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    organization = luigi.Parameter(significant=False)
-    sharing_mode = luigi.Parameter()
+    provider_name = luigi.Parameter()
+    description = luigi.Parameter()
+
+    task_reference = luigi.Parameter()
+    manifest_task_reference_file_path = luigi.Parameter()
+    dependencies_by_reference = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {
@@ -38,24 +46,13 @@ class CreateSpokeLocalPortfolioTask(
         }
 
     def requires(self):
-        raise Exception("#TODO need to remove these deps and wire it up to the main task creation stuff")
-        return {
-            "create_share_for_account_launch_region": create_share_for_account_launch_region_task.CreateShareForAccountLaunchRegion(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                portfolio=self.portfolio,
-                account_id=self.account_id,
-                region=self.region,
-                sharing_mode=self.sharing_mode,
-            ),
-            "puppet_portfolio": get_portfolio_by_portfolio_name_task.GetPortfolioByPortfolioName(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                portfolio=self.portfolio,
-                account_id=self.puppet_account_id,
-                region=self.region,
-            ),
-        }
+        return dict(
+            reference_dependencies=get_dependencies_for_task_reference(
+                self.manifest_task_reference_file_path,
+                self.task_reference,
+                self.puppet_account_id,
+            )
+        )
 
     def api_calls_used(self):
         return [
@@ -64,14 +61,11 @@ class CreateSpokeLocalPortfolioTask(
         ]
 
     def run(self):
-        raise Exception("#TODO need to add parameters to the class for provider name and description and tags")
-        with self.input().get("puppet_portfolio").open("r") as f:
-            portfolio_details = json.loads(f.read())
         with self.spoke_regional_client("servicecatalog") as spoke_service_catalog:
             spoke_portfolio = aws.ensure_portfolio(
                 spoke_service_catalog,
                 self.portfolio,
-                portfolio_details.get("provider_name"),
-                portfolio_details.get("description"),
+                self.provider_name,
+                self.description,
             )
         self.write_output(spoke_portfolio)
