@@ -324,3 +324,4 @@ PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT = "portfolio-share-and-accept-account"
 PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS = (
     "portfolio-get-all-products-and-their-versions"
 )
+PORTFOLIO = "portfolio"

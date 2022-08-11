@@ -124,9 +124,9 @@ def create(
             )
 
             # TODO
-            raise Exception(
-                "need to make work with CreateSpokeLocalPortfolioTask, add sharing and associations explicitly through here"
-            )
+            # raise Exception(
+            #     "need to make work with CreateSpokeLocalPortfolioTask, add sharing and associations explicitly through here"
+            # )
 
             return ProvisionProductTask(
                 **common_parameters,
@@ -134,6 +134,9 @@ def create(
                 portfolio=parameters_to_use.get("portfolio"),
                 product=parameters_to_use.get("product"),
                 version=parameters_to_use.get("version"),
+                portfolio_get_all_products_and_their_versions_ref=parameters_to_use.get(
+                    "portfolio_get_all_products_and_their_versions_ref"
+                ),
                 # ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
                 # launch_parameters = luigi.DictParameter(default={}, significant=False)
                 # manifest_parameters = luigi.DictParameter(default={}, significant=False)

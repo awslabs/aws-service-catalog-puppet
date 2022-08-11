@@ -37,6 +37,8 @@ class ProvisionProductTask(
     product = luigi.Parameter()
     version = luigi.Parameter()
 
+    portfolio_get_all_products_and_their_versions_ref = luigi.Parameter()
+
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
     launch_parameters = luigi.DictParameter(default={}, significant=False)
@@ -74,23 +76,23 @@ class ProvisionProductTask(
 
         requirements = {
             "reference_dependencies": reference_dependencies,
-            "provisioning_artifact_parameters": provisioning_artifact_parameters_task.ProvisioningArtifactParametersTask(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                portfolio=self.portfolio,
-                product_name=self.product,
-                version_name=self.version,
-                region=self.region,
-            ),
-            "describe_product_as_admin_task": describe_product_as_admin_task.DescribeProductAsAdminTask(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                account_id=self.single_account
-                if self.execution_mode == constants.EXECUTION_MODE_SPOKE
-                else self.puppet_account_id,
-                product_name=self.product,
-                region=self.region,
-            ),
+            # "provisioning_artifact_parameters": provisioning_artifact_parameters_task.ProvisioningArtifactParametersTask(
+            #     manifest_file_path=self.manifest_file_path,
+            #     puppet_account_id=self.puppet_account_id,
+            #     portfolio=self.portfolio,
+            #     product_name=self.product,
+            #     version_name=self.version,
+            #     region=self.region,
+            # ),
+            # "describe_product_as_admin_task": describe_product_as_admin_task.DescribeProductAsAdminTask(
+            #     manifest_file_path=self.manifest_file_path,
+            #     puppet_account_id=self.puppet_account_id,
+            #     account_id=self.single_account
+            #     if self.execution_mode == constants.EXECUTION_MODE_SPOKE
+            #     else self.puppet_account_id,
+            #     product_name=self.product,
+            #     region=self.region,
+            # ),
         }
         return requirements
 
@@ -123,22 +125,36 @@ class ProvisionProductTask(
         return apis
 
     def run(self):
-        describe_product_as_admin = self.load_from_input(
-            "describe_product_as_admin_task"
+        products_and_their_versions = json.loads(
+            self.input()
+            .get("reference_dependencies")
+            .get(self.portfolio_get_all_products_and_their_versions_ref)
+            .open("r")
+            .read()
         )
-        product_id = (
-            describe_product_as_admin.get("ProductViewDetail")
-            .get("ProductViewSummary")
-            .get("ProductId")
+        raise Exception(products_and_their_versions)
+        version_id = (
+            products_and_their_versions.get(self.product)
+            .get("versions")
+            .get(self.version)
+            .get("Id")
         )
-        version_id = None
-        for provisioning_artifact_summary in describe_product_as_admin.get(
-            "ProvisioningArtifactSummaries", []
-        ):
-            if provisioning_artifact_summary.get("Name") == self.version:
-                version_id = provisioning_artifact_summary.get("Id")
-        if version_id is None:
-            raise Exception(f"Did not find version: {self.version} in: {self.product}")
+        # describe_product_as_admin = self.load_from_input(
+        #     "describe_product_as_admin_task"
+        # )
+        # product_id = (
+        #     describe_product_as_admin.get("ProductViewDetail")
+        #     .get("ProductViewSummary")
+        #     .get("ProductId")
+        # )
+        # version_id = None
+        # for provisioning_artifact_summary in describe_product_as_admin.get(
+        #     "ProvisioningArtifactSummaries", []
+        # ):
+        #     if provisioning_artifact_summary.get("Name") == self.version:
+        #         version_id = provisioning_artifact_summary.get("Id")
+        # if version_id is None:
+        #     raise Exception(f"Did not find version: {self.version} in: {self.product}")
 
         task_output = dict(
             **self.params_for_results_display(),
@@ -159,9 +175,9 @@ class ProvisionProductTask(
 
             params_to_use = {}
             provisioned_product_id = False
-            provisioning_artifact_parameters = self.load_from_input(
-                "provisioning_artifact_parameters"
-            )
+            # provisioning_artifact_parameters = self.load_from_input(
+            #     "provisioning_artifact_parameters"
+            # )
             for p in provisioning_artifact_parameters:
                 param_name = p.get("ParameterKey")
                 params_to_use[param_name] = all_params.get(
@@ -279,55 +295,6 @@ class ProvisionProductTask(
                         self.should_use_sns,
                         self.execution,
                     )
-
-                # self.info(f"self.execution is {self.execution}")
-                # if self.execution in [
-                #     constants.EXECUTION_MODE_HUB,
-                #     constants.EXECUTION_MODE_SPOKE,
-                # ]:
-                #     self.info(
-                #         f"Running in execution mode: {self.execution}, checking for SSM outputs"
-                #     )
-                #     outputs = service_catalog.get_provisioned_product_outputs(
-                #         ProvisionedProductId=provisioned_product_id
-                #     ).get("Outputs", [])
-                #     for ssm_param_output in self.ssm_param_outputs:
-                #         self.info(
-                #             f"writing SSM Param: {ssm_param_output.get('stack_output')}"
-                #         )
-                #         with self.hub_client("ssm") as ssm:
-                #             found_match = False
-                #             # TODO push into another task
-                #             for output in outputs:
-                #                 if output.get("OutputKey") == ssm_param_output.get(
-                #                     "stack_output"
-                #                 ):
-                #                     ssm_parameter_name = ssm_param_output.get(
-                #                         "param_name"
-                #                     )
-                #                     ssm_parameter_name = ssm_parameter_name.replace(
-                #                         "${AWS::Region}", self.region
-                #                     )
-                #                     ssm_parameter_name = ssm_parameter_name.replace(
-                #                         "${AWS::AccountId}", self.account_id
-                #                     )
-                #                     found_match = True
-                #                     self.info(f"found value")
-                #                     ssm.put_parameter_and_wait(
-                #                         Name=ssm_parameter_name,
-                #                         Value=output.get("OutputValue"),
-                #                         Type=ssm_param_output.get(
-                #                             "param_type", "String"
-                #                         ),
-                #                         Overwrite=True,
-                #                     )
-                #             if not found_match:
-                #                 raise Exception(
-                #                     f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
-                #                 )
-
-                # self.write_output(task_output)
-                # else:
 
         self.write_output(task_output)
         self.info("finished")
