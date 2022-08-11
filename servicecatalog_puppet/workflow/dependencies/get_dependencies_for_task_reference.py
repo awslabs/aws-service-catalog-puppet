@@ -395,6 +395,9 @@ def create(
                 portfolio_get_all_products_and_their_versions_ref=parameters_to_use.get(
                     "portfolio_get_all_products_and_their_versions_ref"
                 ),
+                portfolio_get_all_products_and_their_versions_for_hub_ref=parameters_to_use.get(
+                    "portfolio_get_all_products_and_their_versions_for_hub_ref"
+                ),
                 manifest_file_path=manifest_file_path,
             )
 

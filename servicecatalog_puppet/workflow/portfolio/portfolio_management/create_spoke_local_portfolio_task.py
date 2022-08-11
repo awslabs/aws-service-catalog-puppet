@@ -38,6 +38,7 @@ class CreateSpokeLocalPortfolioTask(
 
     def params_for_results_display(self):
         return {
+            "task_reference": self.task_reference,
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
             "region": self.region,

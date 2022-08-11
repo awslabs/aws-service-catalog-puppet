@@ -36,6 +36,13 @@ class GetAllProductsAndTheirVersionsTask(tasks.PuppetTask):
             )
         )
 
+    def api_calls_used(self):
+        return [
+            f"servicecatalog.search_products_as_admin_{self.account_id}_{self.region}",
+            f"servicecatalog.describe_product_as_admin_{self.account_id}_{self.region}",
+            f"servicecatalog.describe_product_as_admin_{self.account_id}_{self.region}",
+        ]
+
     def run(self):
         portfolio_details = json.loads(
             self.input()
@@ -53,10 +60,13 @@ class GetAllProductsAndTheirVersionsTask(tasks.PuppetTask):
                 PortfolioId=portfolio_id, ProductSource="ACCOUNT",
             ):
                 for product_view_detail in page.get("ProductViewDetails", []):
-                    # product_ARN = product_view_detail.get("product_ARN")
+                    product_arn = product_view_detail.get("ProductARN")
                     product_view_summary = product_view_detail.get("ProductViewSummary")
+                    product_view_summary["ProductArn"] = product_arn
                     product_view_summary["Versions"] = dict()
-                    products[product_view_summary.get("Name")] = product_view_summary
+                    product_id = product_view_summary.get("ProductId")
+                    product_name = product_view_summary.get("Name")
+                    products[product_name] = product_view_summary
                     provisioning_artifact_summaries = servicecatalog.describe_product_as_admin(
                         Id=product_view_summary.get("ProductId"),
                     ).get(
@@ -65,7 +75,19 @@ class GetAllProductsAndTheirVersionsTask(tasks.PuppetTask):
                     for (
                         provisioning_artifact_summary
                     ) in provisioning_artifact_summaries:
+                        version_name = provisioning_artifact_summary.get("Name")
+                        provisioning_artifact_detail = servicecatalog.describe_provisioning_artifact(
+                            ProductId=product_id, ProvisioningArtifactName=version_name,
+                        ).get(
+                            "ProvisioningArtifactDetail"
+                        )
+                        provisioning_artifact_summary[
+                            "Active"
+                        ] = provisioning_artifact_detail.get("Active")
+                        provisioning_artifact_summary[
+                            "Guidance"
+                        ] = provisioning_artifact_detail.get("Guidance")
                         product_view_summary["Versions"][
-                            provisioning_artifact_summary.get("Name")
+                            version_name
                         ] = provisioning_artifact_summary
         self.write_output(products)
