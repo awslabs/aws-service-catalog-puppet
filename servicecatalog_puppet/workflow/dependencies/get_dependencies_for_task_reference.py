@@ -314,7 +314,7 @@ def create(
                 manifest_file_path=manifest_file_path,
             )
 
-    elif section_name == constants.PORTFOLIO:
+    elif section_name == constants.PORTFOLIO_LOCAL:
         if status == "terminated":
             raise Exception("Not supported")
         else:
@@ -322,7 +322,19 @@ def create(
                 get_portfolio_task,
             )
 
-            return get_portfolio_task.GetPortfolioTask(
+            return get_portfolio_task.GetPortfolioLocalTask(
+                **common_parameters, portfolio=parameters_to_use.get("portfolio"),
+            )
+
+    elif section_name == constants.PORTFOLIO_IMPORTED:
+        if status == "terminated":
+            raise Exception("Not supported")
+        else:
+            from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+                get_portfolio_task,
+            )
+
+            return get_portfolio_task.GetPortfolioImportedTask(
                 **common_parameters,
                 sharing_mode=parameters_to_use.get("sharing_mode"),
                 portfolio=parameters_to_use.get("portfolio"),
@@ -432,9 +444,6 @@ def create(
             return share_and_accept_portfolio_task.ShareAndAcceptPortfolioForAccountTask(
                 **common_parameters,
                 portfolio=parameters_to_use.get("portfolio"),
-                hub_spoke_local_portfolio_ref=parameters_to_use.get(
-                    "hub_spoke_local_portfolio_ref"
-                ),
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),

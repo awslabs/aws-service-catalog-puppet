@@ -23,7 +23,6 @@ class ShareAndAcceptPortfolioForAccountTask(
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
-    hub_spoke_local_portfolio_ref = luigi.Parameter()
 
     task_reference = luigi.Parameter()
     manifest_task_reference_file_path = luigi.Parameter()
@@ -31,6 +30,7 @@ class ShareAndAcceptPortfolioForAccountTask(
 
     def params_for_results_display(self):
         return {
+            "task_reference": self.task_reference,
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
             "region": self.region,
@@ -103,53 +103,36 @@ class ShareAndAcceptPortfolioForAccountTask(
         return False
 
     def run(self):
-        spoke_portfolio_details = json.loads(
+        hub_portfolio_details = json.loads(
             self.input()
             .get("reference_dependencies")
             .get(self.portfolio_task_reference)
             .open("r")
             .read()
         )
-        spoke_portfolio_id = spoke_portfolio_details.get("Id")
-
-        hub_portfolio_details = json.loads(
-            self.input()
-            .get("reference_dependencies")
-            .get(self.hub_spoke_local_portfolio_ref)
-            .open("r")
-            .read()
-        )
-        hub_portfolio_id = hub_portfolio_details.get("Id")
-        #
+        portfolio_id = hub_portfolio_details.get("Id")
         # # ADD PRINCIPAL IF NEEDED
         with self.hub_regional_client("servicecatalog") as servicecatalog:
             hub_added_principal = self.add_principal_if_needed(
-                hub_portfolio_id, self.puppet_account_id, servicecatalog
+                portfolio_id, self.puppet_account_id, servicecatalog
             )
 
         # SHARE
-        has_already_been_shared = self.has_already_been_shared(hub_portfolio_id)
+        has_already_been_shared = self.has_already_been_shared(portfolio_id)
         if not has_already_been_shared:
-            self.info(f"{self.uid}: sharing {hub_portfolio_id} with {self.account_id}")
+            self.info(f"{self.uid}: sharing {portfolio_id} with {self.account_id}")
             with self.hub_regional_client("servicecatalog") as servicecatalog:
                 servicecatalog.create_portfolio_share(
-                    PortfolioId=hub_portfolio_id, AccountId=self.account_id,
+                    PortfolioId=portfolio_id, AccountId=self.account_id,
                 )
 
-        # ADD PRINCIPAL
-        with self.spoke_regional_client("servicecatalog") as servicecatalog:
-            spoke_added_principal = self.add_principal_if_needed(
-                spoke_portfolio_id, self.account_id, servicecatalog
-            )
-
         # ACCEPT
-        accepted = self.accept_if_needed(spoke_portfolio_id)
+        accepted = self.accept_if_needed(portfolio_id)
 
         self.write_output(
             dict(
                 has_already_been_shared=has_already_been_shared,
                 accepted=accepted,
-                spoke_added_principal=spoke_added_principal,
                 hub_added_principal=False,
             )
         )

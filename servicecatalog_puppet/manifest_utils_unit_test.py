@@ -125,7 +125,25 @@ class TestManifest(unittest.TestCase):
         self.sut.update(deepcopy(self.accounts))
         self.sut.update(deepcopy(self.launches))
         self.sut.update(deepcopy(self.spoke_local_portfolios))
-        expected_result = [{'spoke_local_portfolio_name': 'spoke_local_portfolio_a', 'product_generation_method': 'copy', 'execution': 'hub', 'sharing_mode': 'ACCOUNT', 'associations': [], 'launch_constraints': [], 'resource_update_constraints': [], 'portfolio': 'portfolio_a', 'puppet_account_id': 'pppppppppppp', 'status': None, 'requested_priority': 0, 'dependencies': [], 'account_id': '012345678910', 'organization': 'o-aaaaaaaa', 'region': 'eu-west-1'}]
+        expected_result = [
+            {
+                "spoke_local_portfolio_name": "spoke_local_portfolio_a",
+                "product_generation_method": "copy",
+                "execution": "hub",
+                "sharing_mode": "ACCOUNT",
+                "associations": [],
+                "launch_constraints": [],
+                "resource_update_constraints": [],
+                "portfolio": "portfolio_a",
+                "puppet_account_id": "pppppppppppp",
+                "status": None,
+                "requested_priority": 0,
+                "dependencies": [],
+                "account_id": "012345678910",
+                "organization": "o-aaaaaaaa",
+                "region": "eu-west-1",
+            }
+        ]
 
         # exercise
         actual_results = self.sut.get_tasks_for_launch_and_region(
