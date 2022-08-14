@@ -412,6 +412,7 @@ def update_provisioned_product(
         provisioning_parameters.append(
             {"Key": p, "Value": params.get(p),}
         )
+
     provisioned_product_id = (
         service_catalog.update_provisioned_product(
             ProductId=product_id,

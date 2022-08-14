@@ -4,18 +4,21 @@ import time
 
 import luigi
 
-from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.launch import provisioning_task
-from servicecatalog_puppet.workflow.portfolio.associations import (
-    create_associations_in_python_for_portfolio_task,
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
 )
+from servicecatalog_puppet.workflow import tasks
 
 
-class ProvisioningArtifactParametersTask(provisioning_task.ProvisioningTask):
+class ProvisioningArtifactParametersTask(tasks.PuppetTask):
+    task_reference = luigi.Parameter()
+    manifest_task_reference_file_path = luigi.Parameter()
+    dependencies_by_reference = luigi.ListParameter()
+
     puppet_account_id = luigi.Parameter()
     portfolio = luigi.Parameter()
-    product_name = luigi.Parameter()
-    version_name = luigi.Parameter()
+    product = luigi.Parameter()
+    version = luigi.Parameter()
     region = luigi.Parameter()
 
     @property
@@ -27,8 +30,8 @@ class ProvisioningArtifactParametersTask(provisioning_task.ProvisioningTask):
             "puppet_account_id": self.puppet_account_id,
             "portfolio": self.portfolio,
             "region": self.region,
-            "product_name": self.product_name,
-            "version_name": self.version_name,
+            "product": self.product,
+            "version": self.version,
             "cache_invalidator": self.cache_invalidator,
         }
 
@@ -38,18 +41,13 @@ class ProvisioningArtifactParametersTask(provisioning_task.ProvisioningTask):
         ]
 
     def requires(self):
-        if self.execution_mode != constants.EXECUTION_MODE_SPOKE:
-            return dict(
-                associations=create_associations_in_python_for_portfolio_task.CreateAssociationsInPythonForPortfolioTask(
-                    manifest_file_path=self.manifest_file_path,
-                    puppet_account_id=self.puppet_account_id,
-                    account_id=self.puppet_account_id,
-                    region=self.region,
-                    portfolio=self.portfolio,
-                )
+        return dict(
+            reference_dependencies=get_dependencies_for_task_reference(
+                self.manifest_task_reference_file_path,
+                self.task_reference,
+                self.puppet_account_id,
             )
-        else:
-            return []
+        )
 
     def run(self):
         with self.hub_regional_client("servicecatalog") as service_catalog:
@@ -58,8 +56,8 @@ class ProvisioningArtifactParametersTask(provisioning_task.ProvisioningTask):
             while retries > 0:
                 try:
                     provisioning_artifact_parameters = service_catalog.describe_provisioning_parameters(
-                        ProductName=self.product_name,
-                        ProvisioningArtifactName=self.version_name,
+                        ProductName=self.product,
+                        ProvisioningArtifactName=self.version,
                         PathName=self.portfolio,
                     ).get(
                         "ProvisioningArtifactParameters", []

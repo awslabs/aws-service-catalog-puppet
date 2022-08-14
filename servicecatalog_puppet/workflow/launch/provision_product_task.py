@@ -38,6 +38,7 @@ class ProvisionProductTask(
     version = luigi.Parameter()
 
     portfolio_get_all_products_and_their_versions_ref = luigi.Parameter()
+    describe_provisioning_params_ref = luigi.Parameter()
 
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
@@ -68,33 +69,13 @@ class ProvisionProductTask(
         return self.requested_priority
 
     def requires(self):
-        reference_dependencies = get_dependencies_for_task_reference(
-            self.manifest_task_reference_file_path,
-            self.task_reference,
-            self.puppet_account_id,
+        return dict(
+            reference_dependencies=get_dependencies_for_task_reference(
+                self.manifest_task_reference_file_path,
+                self.task_reference,
+                self.puppet_account_id,
+            )
         )
-
-        requirements = {
-            "reference_dependencies": reference_dependencies,
-            # "provisioning_artifact_parameters": provisioning_artifact_parameters_task.ProvisioningArtifactParametersTask(
-            #     manifest_file_path=self.manifest_file_path,
-            #     puppet_account_id=self.puppet_account_id,
-            #     portfolio=self.portfolio,
-            #     product_name=self.product,
-            #     version_name=self.version,
-            #     region=self.region,
-            # ),
-            # "describe_product_as_admin_task": describe_product_as_admin_task.DescribeProductAsAdminTask(
-            #     manifest_file_path=self.manifest_file_path,
-            #     puppet_account_id=self.puppet_account_id,
-            #     account_id=self.single_account
-            #     if self.execution_mode == constants.EXECUTION_MODE_SPOKE
-            #     else self.puppet_account_id,
-            #     product_name=self.product,
-            #     region=self.region,
-            # ),
-        }
-        return requirements
 
     def api_calls_used(self):
         apis = [
@@ -132,29 +113,16 @@ class ProvisionProductTask(
             .open("r")
             .read()
         )
-        raise Exception(products_and_their_versions)
-        version_id = (
-            products_and_their_versions.get(self.product)
-            .get("versions")
-            .get(self.version)
-            .get("Id")
+        product = products_and_their_versions.get(self.product)
+        product_id = product.get("ProductId")
+        version_id = product.get("Versions").get(self.version).get("Id")
+        describe_provisioning_params = json.loads(
+            self.input()
+            .get("reference_dependencies")
+            .get(self.describe_provisioning_params_ref)
+            .open("r")
+            .read()
         )
-        # describe_product_as_admin = self.load_from_input(
-        #     "describe_product_as_admin_task"
-        # )
-        # product_id = (
-        #     describe_product_as_admin.get("ProductViewDetail")
-        #     .get("ProductViewSummary")
-        #     .get("ProductId")
-        # )
-        # version_id = None
-        # for provisioning_artifact_summary in describe_product_as_admin.get(
-        #     "ProvisioningArtifactSummaries", []
-        # ):
-        #     if provisioning_artifact_summary.get("Name") == self.version:
-        #         version_id = provisioning_artifact_summary.get("Id")
-        # if version_id is None:
-        #     raise Exception(f"Did not find version: {self.version} in: {self.product}")
 
         task_output = dict(
             **self.params_for_results_display(),
@@ -166,135 +134,136 @@ class ProvisionProductTask(
         all_params = self.get_parameter_values()
 
         with self.spoke_regional_client("servicecatalog") as service_catalog:
-            path_name = self.portfolio
-            # Get the status
-            (
-                provisioned_product_detail,
-                was_provisioned_before,
-            ) = self.check_was_previously_provisioned(service_catalog)
+            with self.spoke_regional_client("cloudformation") as cloudformation:
+                    path_name = self.portfolio
+                    # Get the status
+                    (
+                        provisioned_product_detail,
+                        was_provisioned_before,
+                    ) = self.check_was_previously_provisioned(service_catalog)
 
-            params_to_use = {}
-            provisioned_product_id = False
-            # provisioning_artifact_parameters = self.load_from_input(
-            #     "provisioning_artifact_parameters"
-            # )
-            for p in provisioning_artifact_parameters:
-                param_name = p.get("ParameterKey")
-                params_to_use[param_name] = all_params.get(
-                    param_name, p.get("DefaultValue")
-                )
-
-            if was_provisioned_before:
-                (
-                    product_id,
-                    provisioning_artifact_id,
-                    provisioned_product_id,
-                ) = self.clean_up_existing_provisioned_product(
-                    provisioned_product_detail, service_catalog
-                )
-
-                need_to_provision = True
-
-                if provisioning_artifact_id == version_id:
-                    self.info(f"found previous good provision")
-                    if provisioned_product_id:
-                        self.info(f"checking params for diffs")
-                        pp_stack_name = aws.get_stack_name_for_pp_id(
-                            service_catalog, provisioned_product_id
-                        )
-                        with self.spoke_regional_client(
-                            "cloudformation"
-                        ) as cloudformation:
-                            provisioned_parameters = aws.get_parameters_for_stack(
-                                cloudformation, pp_stack_name,
-                            )
-                        self.info(f"current params: {provisioned_parameters}")
-                        self.info(f"new params: {params_to_use}")
-
-                        if provisioned_parameters == params_to_use:
-                            self.info(f"params unchanged")
-                            need_to_provision = False
-                        else:
-                            self.info(f"params changed")
-            else:
-                need_to_provision = True
-
-            task_output["provisioned"] = need_to_provision
-            task_output["section_name"] = self.section_name
-            if need_to_provision:
-                self.info(
-                    f"about to provision with params: {json.dumps(tasks.unwrap(params_to_use))}"
-                )
-
-                if provisioned_product_id:
-                    pp_stack_name = aws.get_stack_name_for_pp_id(
-                        service_catalog, provisioned_product_id
-                    )
-                    stack = aws.get_stack_output_for(cloudformation, pp_stack_name,)
-                    stack_status = stack.get("StackStatus")
-                    self.info(f"current cfn stack_status is {stack_status}")
-                    if stack_status not in [
-                        "UPDATE_COMPLETE",
-                        "CREATE_COMPLETE",
-                        "UPDATE_ROLLBACK_COMPLETE",
-                    ]:
-                        raise Exception(
-                            f"[{self.uid}] current cfn stack_status is {stack_status}"
-                        )
-                    if stack_status == "UPDATE_ROLLBACK_COMPLETE":
-                        self.warning(
-                            f"[{self.uid}] {pp_stack_name} has a status of "
-                            f"{stack_status}.  This may need manual resolution."
+                    params_to_use = {}
+                    provisioned_product_id = False
+                    # provisioning_artifact_parameters = self.load_from_input(
+                    #     "provisioning_artifact_parameters"
+                    # )
+                    for p in describe_provisioning_params:
+                        param_name = p.get("ParameterKey")
+                        params_to_use[param_name] = all_params.get(
+                            param_name, p.get("DefaultValue")
                         )
 
-                if provisioned_product_id:
-                    if self.should_use_product_plans:
-                        path_id = aws.get_path_for_product(
-                            service_catalog, product_id, self.portfolio
+                    if was_provisioned_before:
+                        (
+                            ignore_me,
+                            provisioning_artifact_id,
+                            provisioned_product_id,
+                        ) = self.clean_up_existing_provisioned_product(
+                            provisioned_product_detail, service_catalog
                         )
-                        provisioned_product_id = aws.provision_product_with_plan(
-                            service_catalog,
-                            self.launch_name,
-                            self.account_id,
-                            self.region,
-                            product_id,
-                            version_id,
-                            self.puppet_account_id,
-                            path_id,
-                            params_to_use,
-                            self.version,
-                            self.should_use_sns,
-                        )
+
+                        need_to_provision = True
+
+                        if provisioning_artifact_id == version_id:
+                            self.info(f"found previous good provision")
+                            if provisioned_product_id:
+                                self.info(f"checking params for diffs")
+                                pp_stack_name = aws.get_stack_name_for_pp_id(
+                                    service_catalog, provisioned_product_id
+                                )
+                                with self.spoke_regional_client(
+                                    "cloudformation"
+                                ) as cloudformation:
+                                    provisioned_parameters = aws.get_parameters_for_stack(
+                                        cloudformation, pp_stack_name,
+                                    )
+                                self.info(f"current params: {provisioned_parameters}")
+                                self.info(f"new params: {params_to_use}")
+
+                                if provisioned_parameters == params_to_use:
+                                    self.info(f"params unchanged")
+                                    need_to_provision = False
+                                else:
+                                    self.info(f"params changed")
                     else:
-                        provisioned_product_id = aws.update_provisioned_product(
-                            service_catalog,
-                            self.launch_name,
-                            self.account_id,
-                            self.region,
-                            product_id,
-                            version_id,
-                            self.puppet_account_id,
-                            path_name,
-                            params_to_use,
-                            self.version,
-                            self.execution,
+                        need_to_provision = True
+
+                    task_output["provisioned"] = need_to_provision
+                    task_output["section_name"] = self.section_name
+                    if need_to_provision:
+                        self.info(
+                            f"about to provision with params: {json.dumps(tasks.unwrap(params_to_use))}"
                         )
 
-                else:
-                    provisioned_product_id = aws.provision_product(
-                        service_catalog,
-                        self.launch_name,
-                        self.account_id,
-                        self.region,
-                        product_id,
-                        version_id,
-                        self.puppet_account_id,
-                        path_name,
-                        params_to_use,
-                        self.version,
-                        self.should_use_sns,
-                        self.execution,
-                    )
+                        if provisioned_product_id:
+                            pp_stack_name = aws.get_stack_name_for_pp_id(
+                                service_catalog, provisioned_product_id
+                            )
+                            stack = aws.get_stack_output_for(cloudformation, pp_stack_name,)
+                            stack_status = stack.get("StackStatus")
+                            self.info(f"current cfn stack_status is {stack_status}")
+                            if stack_status not in [
+                                "UPDATE_COMPLETE",
+                                "CREATE_COMPLETE",
+                                "UPDATE_ROLLBACK_COMPLETE",
+                            ]:
+                                raise Exception(
+                                    f"[{self.uid}] current cfn stack_status is {stack_status}"
+                                )
+                            if stack_status == "UPDATE_ROLLBACK_COMPLETE":
+                                self.warning(
+                                    f"[{self.uid}] {pp_stack_name} has a status of "
+                                    f"{stack_status}.  This may need manual resolution."
+                                )
+
+                        if provisioned_product_id:
+                            if self.should_use_product_plans:
+                                path_id = aws.get_path_for_product(
+                                    service_catalog, product_id, self.portfolio
+                                )
+                                provisioned_product_id = aws.provision_product_with_plan(
+                                    service_catalog,
+                                    self.launch_name,
+                                    self.account_id,
+                                    self.region,
+                                    product_id,
+                                    version_id,
+                                    self.puppet_account_id,
+                                    path_id,
+                                    params_to_use,
+                                    self.version,
+                                    self.should_use_sns,
+                                )
+                            else:
+                                provisioned_product_id = aws.update_provisioned_product(
+                                    service_catalog,
+                                    self.launch_name,
+                                    self.account_id,
+                                    self.region,
+                                    product_id,
+                                    version_id,
+                                    self.puppet_account_id,
+                                    path_name,
+                                    params_to_use,
+                                    self.version,
+                                    self.execution,
+                                )
+
+                        else:
+                            provisioned_product_id = aws.provision_product(
+                                service_catalog,
+                                self.launch_name,
+                                self.account_id,
+                                self.region,
+                                product_id,
+                                version_id,
+                                self.puppet_account_id,
+                                path_name,
+                                params_to_use,
+                                self.version,
+                                self.should_use_sns,
+                                self.execution,
+                            )
 
         self.write_output(task_output)
         self.info("finished")

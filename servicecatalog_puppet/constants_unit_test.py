@@ -16,8 +16,8 @@ def test_constants_values():
 
     assert constants.CONFIG_PARAM_NAME == "/servicecatalog-puppet/config"
     assert (
-        constants.CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN
-        == "/servicecatalog-puppet/org-iam-role-arn"
+            constants.CONFIG_PARAM_NAME_ORG_IAM_ROLE_ARN
+            == "/servicecatalog-puppet/org-iam-role-arn"
     )
     assert constants.PUPPET_ORG_ROLE_FOR_EXPANDS_ARN == "PuppetOrgRoleForExpandsArn"
     assert constants.HOME_REGION_PARAM_NAME == "/servicecatalog-puppet/home-region"
@@ -73,12 +73,12 @@ def test_constants_values():
 
     assert constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL == 10
     assert (
-        constants.SPOKE_VERSION_SSM_PARAM_NAME == "service-catalog-puppet-spoke-version"
+            constants.SPOKE_VERSION_SSM_PARAM_NAME == "service-catalog-puppet-spoke-version"
     )
     assert constants.PUPPET_VERSION_SSM_PARAM_NAME == "service-catalog-puppet-version"
     assert (
-        constants.PUPPET_VERSION_INITIAL_SSM_PARAM_NAME
-        == "service-catalog-puppet-version-initial"
+            constants.PUPPET_VERSION_INITIAL_SSM_PARAM_NAME
+            == "service-catalog-puppet-version-initial"
     )
     assert constants.SPOKE_LOCAL_PORTFOLIO_STATUS_SHARED == "shared"
     assert constants.SPOKE_LOCAL_PORTFOLIO_STATUS_TERMINATED == "terminated"
@@ -87,8 +87,8 @@ def test_constants_values():
     assert constants.EXECUTION_MODE_SPOKE == "spoke"
     assert constants.EXECUTION_MODE_DEFAULT == constants.EXECUTION_MODE_HUB
     assert (
-        constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME
-        == "servicecatalog-puppet-deploy-in-spoke"
+            constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME
+            == "servicecatalog-puppet-deploy-in-spoke"
     )
     assert constants.SHARING_MODE_ACCOUNT == "ACCOUNT"
     assert constants.SHARING_MODE_AWS_ORGANIZATIONS == "AWS_ORGANIZATIONS"
@@ -96,31 +96,31 @@ def test_constants_values():
     assert constants.PARTITION_DEFAULT == "aws"
     assert constants.PARTITION_ENVIRONMENTAL_VARIABLE_NAME == "PARTITION"
     assert (
-        constants.PARTITION_SSM_PARAMETER_VARIABLE_NAME
-        == "/servicecatalog-puppet/partition"
+            constants.PARTITION_SSM_PARAMETER_VARIABLE_NAME
+            == "/servicecatalog-puppet/partition"
     )
     assert constants.PUPPET_ROLE_NAME_DEFAULT == "PuppetRole"
     assert constants.PUPPET_ROLE_NAME_ENVIRONMENTAL_VARIABLE_NAME == "PUPPET_ROLE_NAME"
     assert (
-        constants.PUPPET_ROLE_NAME_SSM_PARAMETER_VARIABLE_NAME
-        == "/servicecatalog-puppet/puppet-role/name"
+            constants.PUPPET_ROLE_NAME_SSM_PARAMETER_VARIABLE_NAME
+            == "/servicecatalog-puppet/puppet-role/name"
     )
     assert constants.PUPPET_ROLE_PATH_DEFAULT == "/servicecatalog-puppet/"
     assert constants.PUPPET_ROLE_PATH_ENVIRONMENTAL_VARIABLE_NAME == "PUPPET_ROLE_PATH"
     assert (
-        constants.PUPPET_ROLE_PATH_SSM_PARAMETER_VARIABLE_NAME
-        == "/servicecatalog-puppet/puppet-role/path"
+            constants.PUPPET_ROLE_PATH_SSM_PARAMETER_VARIABLE_NAME
+            == "/servicecatalog-puppet/puppet-role/path"
     )
     assert constants.DEPLOY_ENVIRONMENT_COMPUTE_TYPE_DEFAULT == "BUILD_GENERAL1_SMALL"
     assert constants.CONFIG_IS_CACHING_ENABLED == "CONFIG_IS_CACHING_ENABLED"
     assert (
-        constants.START_SHARED_SCHEDULER_COMMAND
-        == "luigid --background --pidfile luigi.pid --logdir results/logs --state-path results/state"
+            constants.START_SHARED_SCHEDULER_COMMAND
+            == "luigid --background --pidfile luigi.pid --logdir results/logs --state-path results/state"
     )
     assert constants.CONFIG_REGIONS == "regions"
     assert (
-        constants.CONFIG_SHOULD_COLLECT_CLOUDFORMATION_EVENTS
-        == "should_collect_cloudformation_events"
+            constants.CONFIG_SHOULD_COLLECT_CLOUDFORMATION_EVENTS
+            == "should_collect_cloudformation_events"
     )
     assert constants.CONFIG_SHOULD_USE_SHARED_SCHEDULER == "should_use_shared_scheduler"
     assert constants.CONFIG_SHOULD_EXPLODE_MANIFEST == "should_explode_manifest"
@@ -138,6 +138,11 @@ def test_constants_values():
         (constants.ASSERTION, constants.ASSERTIONS),
         (constants.APP, constants.APPS),
         (constants.WORKSPACE, constants.WORKSPACES),
+
+        (constants.SERVICE_CONTROL_POLICY, constants.SERVICE_CONTROL_POLICIES),
+        (constants.SIMULATE_POLICY, constants.SIMULATE_POLICIES),
+        (constants.TAG_POLICY, constants.TAG_POLICIES),
+
     ]
     assert constants.SECTION_NAME_SINGULAR_AND_PLURAL_LIST_THAT_SUPPORTS_PARAMETERS == [
         (constants.LAUNCH, constants.LAUNCHES),

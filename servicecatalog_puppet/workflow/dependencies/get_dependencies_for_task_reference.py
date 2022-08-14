@@ -137,6 +137,9 @@ def create(
                 portfolio_get_all_products_and_their_versions_ref=parameters_to_use.get(
                     "portfolio_get_all_products_and_their_versions_ref"
                 ),
+                describe_provisioning_params_ref=parameters_to_use.get(
+                    "describe_provisioning_params_ref"
+                ),
                 # ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
                 # launch_parameters = luigi.DictParameter(default={}, significant=False)
                 # manifest_parameters = luigi.DictParameter(default={}, significant=False)
@@ -311,6 +314,20 @@ def create(
                 manifest_file_path=manifest_file_path,
             )
 
+    elif section_name == constants.PORTFOLIO:
+        if status == "terminated":
+            raise Exception("Not supported")
+        else:
+            from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+                get_portfolio_task,
+            )
+
+            return get_portfolio_task.GetPortfolioTask(
+                **common_parameters,
+                sharing_mode=parameters_to_use.get("sharing_mode"),
+                portfolio=parameters_to_use.get("portfolio"),
+            )
+
     elif section_name == constants.PORTFOLIO_ASSOCIATIONS:
         if status == "terminated":
             raise Exception("Not supported yet")
@@ -412,10 +429,12 @@ def create(
                 share_and_accept_portfolio_task,
             )
 
-            return share_and_accept_portfolio_task.ShareAndAcceptPortfolioTask(
+            return share_and_accept_portfolio_task.ShareAndAcceptPortfolioForAccountTask(
                 **common_parameters,
                 portfolio=parameters_to_use.get("portfolio"),
-                sharing_mode=constants.SHARING_MODE_ACCOUNT,
+                hub_spoke_local_portfolio_ref=parameters_to_use.get(
+                    "hub_spoke_local_portfolio_ref"
+                ),
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
@@ -436,6 +455,27 @@ def create(
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
+            )
+
+    elif section_name == constants.DESCRIBE_PROVISIONING_PARAMETERS:
+        if status == "terminated":
+            raise Exception("Not supported yet")
+        else:
+            from servicecatalog_puppet.workflow.launch import (
+                provisioning_artifact_parameters_task,
+            )
+
+            return provisioning_artifact_parameters_task.ProvisioningArtifactParametersTask(
+                puppet_account_id=puppet_account_id,
+                task_reference=parameters_to_use.get("task_reference"),
+                dependencies_by_reference=parameters_to_use.get(
+                    "dependencies_by_reference"
+                ),
+                region=parameters_to_use.get("region"),
+                portfolio=parameters_to_use.get("portfolio"),
+                product=parameters_to_use.get("product"),
+                version=parameters_to_use.get("version"),
+                manifest_task_reference_file_path=manifest_task_reference_file_path,
             )
 
     else:

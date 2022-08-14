@@ -325,3 +325,4 @@ PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS = (
     "portfolio-get-all-products-and-their-versions"
 )
 PORTFOLIO = "portfolio"
+DESCRIBE_PROVISIONING_PARAMETERS = "describe-provisioning-parameters"
