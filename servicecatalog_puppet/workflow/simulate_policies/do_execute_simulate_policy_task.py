@@ -4,23 +4,12 @@
 import luigi
 import yaml
 
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.simulate_policies import simulate_policy_base_task
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
 from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
+
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class DoExecuteSimulatePolicyTask(
-    simulate_policy_base_task.SimulatePolicyBaseTask,
-    manifest_mixin.ManifestMixen,
-    dependency.DependenciesMixin,
-):
-    task_reference = luigi.Parameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
+class DoExecuteSimulatePolicyTask(tasks.TaskWithReference):
 
     simulate_policy_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -58,14 +47,6 @@ class DoExecuteSimulatePolicyTask(
         return [
             f"iam.simulate_{self.simulation_type}_policy_{self.account_id}_{self.region}"
         ]
-
-    def requires(self):
-        reference_dependencies = get_dependencies_for_task_reference(
-            self.manifest_task_reference_file_path,
-            self.task_reference,
-            self.puppet_account_id,
-        )
-        return dict(reference_dependencies=reference_dependencies,)
 
     def run(self):
         with self.spoke_regional_client("iam") as iam:

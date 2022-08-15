@@ -15,17 +15,12 @@ from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_refer
     get_dependencies_for_task_reference,
 )
 
+from servicecatalog_puppet.workflow.dependencies import tasks
 
-class DoExecuteServiceControlPoliciesTask(
-    service_control_policies_base_task.ServiceControlPoliciesBaseTask,
-    manifest_mixin.ManifestMixen,
-    dependency.DependenciesMixin,
-):
+
+class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
     service_control_policy_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-    task_reference = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
     ou_name = luigi.Parameter()

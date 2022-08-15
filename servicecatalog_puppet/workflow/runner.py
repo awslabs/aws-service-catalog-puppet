@@ -112,7 +112,7 @@ def run_tasks(
         detailed_summary=True,
         workers=num_workers,
         parallel_scheduling=True,
-        parallel_scheduling_processes=40,
+        # parallel_scheduling_processes=40,
         log_level=os.environ.get("LUIGI_LOG_LEVEL", constants.LUIGI_DEFAULT_LOG_LEVEL),
     )
 

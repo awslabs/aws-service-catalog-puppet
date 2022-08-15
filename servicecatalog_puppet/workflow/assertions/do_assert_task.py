@@ -10,20 +10,14 @@ from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow.assertions import assertion_base_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 from servicecatalog_puppet.workflow.general import boto3_task
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
     get_dependencies_for_task_reference,
 )
 
 
-class DoAssertTask(
-    assertion_base_task.AssertionBaseTask,
-    manifest_mixin.ManifestMixen,
-    dependency.DependenciesMixin,
-):
-    task_reference = luigi.Parameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
+class DoAssertTask(tasks.TaskWithParameters):
 
     assertion_name = luigi.Parameter()
     region = luigi.Parameter()
@@ -55,6 +49,7 @@ class DoAssertTask(
         )
         return dict(
             reference_dependencies=reference_dependencies,
+            # TODO fixme this is a bug waiting to happen - this should be in the run command
             result=boto3_task.Boto3Task(
                 account_id=self.account_id,
                 region=self.region,

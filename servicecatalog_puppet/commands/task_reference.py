@@ -182,7 +182,6 @@ def generate_task_reference(f):
     # TODO handle boto3 parameters
     new_tasks = dict()
     for task_reference, task in all_tasks.items():
-        print(task_reference)
         parameters = dict()
         launch_parameters = (
             manifest.get(task.get("section_name"), {})
@@ -213,7 +212,6 @@ def generate_task_reference(f):
                     .replace("${AWS::Region}", interpolation_output_region)
                     .replace("${AWS::AccountId}", interpolation_output_account)
                 )
-                print(param_name)
                 ssm_parameter_task_reference = (
                     f"ssm_parameters-{task_reference}-{param_name}"
                 )
@@ -313,67 +311,119 @@ def handle_spoke_local_portfolios(
     task_reference,
     task_to_add,
 ):
-    pass
-    # GET THE HUB portfolio
-    # hub_portfolio_ref = f"portfolio_{task_to_add.get('portfolio')}_{puppet_account_id}-{task_to_add.get('region')}"
-    # hub_portfolio_task = dict(
-    #     puppet_account_id=puppet_account_id,
-    #     task_reference=hub_portfolio_ref,
-    #     dependencies_by_reference=[],
-    #     reverse_dependencies_by_reference=[],
-    #     account_id=puppet_account_id,
-    #     region=task_to_add.get("region"),
-    #     portfolio=task_to_add.get("portfolio"),
-    #     sharing_mode="",
-    #     section_name=constants.PORTFOLIO,
-    # )
-    # all_tasks[hub_portfolio_ref] = hub_portfolio_task
+    is_sharing_with_puppet_account = task_to_add.get("account_id") == puppet_account_id
+    # GET THE HUB DETAILS TASK
 
-    # GET THE HUB products and versions
-    # hub_portfolio_all_products_and_versions_ref = f"get_products_and_version-{task_to_add.get('portfolio')}-{puppet_account_id}-{task_to_add.get('region')}"
-    # all_tasks[hub_portfolio_all_products_and_versions_ref] = dict(
-    #     puppet_account_id=puppet_account_id,
-    #     task_reference=hub_portfolio_all_products_and_versions_ref,
-    #     dependencies_by_reference=[hub_portfolio_ref],
-    #     portfolio_task_reference=hub_portfolio_ref,
-    #     reverse_dependencies_by_reference=[],
-    #     account_id=task_to_add.get("account_id"),
-    #     region=task_to_add.get("region"),
-    #     section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-    # )
+    if is_sharing_with_puppet_account:
+        pass
+    else:
+        hub_portfolio_ref = f"{constants.PORTFOLIO_LOCAL}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+        all_tasks[hub_portfolio_ref] = dict(
+            puppet_account_id=puppet_account_id,
+            task_reference=hub_portfolio_ref,
+            dependencies_by_reference=[],
+            reverse_dependencies_by_reference=[],
+            account_id=puppet_account_id,
+            region=task_to_add.get("region"),
+            portfolio=task_to_add.get("portfolio"),
+            section_name=constants.PORTFOLIO_LOCAL,
+        )
+        all_tasks[all_tasks_task_reference][
+            "portfolio_task_reference"
+        ] = hub_portfolio_ref
+        all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
+            hub_portfolio_ref
+        )
 
-    # GET THE SPOKE products and versions
-    # spoke_portfolio_all_products_and_versions_ref = f"get_products_and_version-{task_to_add.get('portfolio')}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
-    # all_tasks[spoke_portfolio_all_products_and_versions_ref] = dict(
-    #     **get_spoke_local_portfolio_common_args(task_to_add, all_tasks_task_reference),
-    #     task_reference=spoke_portfolio_all_products_and_versions_ref,
-    #     section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-    # )
+        hub_portfolio_puppet_association_ref = f"{constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+        all_tasks[hub_portfolio_puppet_association_ref] = dict(
+            puppet_account_id=puppet_account_id,
+            task_reference=hub_portfolio_puppet_association_ref,
+            portfolio_task_reference=hub_portfolio_ref,
+            dependencies_by_reference=[hub_portfolio_ref],
+            reverse_dependencies_by_reference=[],
+            account_id=puppet_account_id,
+            region=task_to_add.get("region"),
+            portfolio=task_to_add.get("portfolio"),
+            section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,  # TODO test in with a new spoke local
+        )
 
-    # share_and_accept_ref = f"portfolio_share_and_accept_{task_to_add.get('portfolio')}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
-    # all_tasks[share_and_accept_ref] = dict(
-    #     **get_spoke_local_portfolio_common_args(task_to_add, all_tasks_task_reference, [hub_portfolio_ref]),
-    #     task_reference=share_and_accept_ref,
-    #     hub_spoke_local_portfolio_ref=hub_portfolio_ref,
-    #     section_name=f"portfolio-share-and-accept-{task_to_add.get('sharing_mode').lower()}", # TODO need to make sure global sharing cascades into the expanded manifest file
-    # )
-    #
-    # portfolio_import_or_copy_ref = f"portfolio_import_or_copy_{task_to_add.get('portfolio')}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
-    # all_tasks[portfolio_import_or_copy_ref] = dict(
-    #     **get_spoke_local_portfolio_common_args(
-    #         task_to_add,
-    #         all_tasks_task_reference,
-    #         [
-    #             spoke_portfolio_all_products_and_versions_ref,
-    #             hub_portfolio_all_products_and_versions_ref,
-    #         ],
-    #     ),
-    #     task_reference=portfolio_import_or_copy_ref,
-    #     product_generation_mathod=task_to_add.get("product_generation_method"),
-    #     section_name=f"portfolio-{task_to_add.get('product_generation_method')}",
-    #     portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_ref,
-    #     portfolio_get_all_products_and_their_versions_for_hub_ref=hub_portfolio_all_products_and_versions_ref,
-    # )
+        share_and_accept_ref = f"portfolio_share_and_accept-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"  # TODO need to rename to avoid duplicates
+        sharing_mode = task_to_add.get(
+            "sharing_mode", constants.SHARING_MODE_ACCOUNT
+        )  # TODO need to make sure global sharing cascades into the expanded manifest file
+        # TODO handle when account_id == puppet_account_id
+        all_tasks[share_and_accept_ref] = dict(
+            puppet_account_id=puppet_account_id,
+            account_id=task_to_add.get("account_id"),
+            region=task_to_add.get("region"),
+            task_reference=share_and_accept_ref,
+            dependencies_by_reference=[hub_portfolio_ref],
+            reverse_dependencies_by_reference=[],
+            portfolio=task_to_add.get("portfolio"),
+            portfolio_task_reference=hub_portfolio_ref,
+            section_name=f"portfolio-share-and-accept-{sharing_mode.lower()}",
+        )
+
+        # GET THE HUB products and versions
+        hub_portfolio_all_products_and_versions_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+        all_tasks[hub_portfolio_all_products_and_versions_ref] = dict(
+            puppet_account_id=puppet_account_id,
+            task_reference=hub_portfolio_all_products_and_versions_ref,
+            dependencies_by_reference=[
+                hub_portfolio_ref,
+                hub_portfolio_puppet_association_ref,
+            ],
+            portfolio_task_reference=hub_portfolio_ref,
+            reverse_dependencies_by_reference=[],
+            account_id=puppet_account_id,  # EPF changed
+            region=task_to_add.get("region"),
+            section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+        )
+
+        spoke_portfolio_puppet_association_ref = f"{constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+        all_tasks[spoke_portfolio_puppet_association_ref] = dict(
+            puppet_account_id=puppet_account_id,
+            task_reference=spoke_portfolio_puppet_association_ref,
+            portfolio_task_reference=all_tasks_task_reference,
+            dependencies_by_reference=[all_tasks_task_reference],
+            reverse_dependencies_by_reference=[],
+            account_id=task_to_add.get("account_id"),
+            region=task_to_add.get("region"),
+            portfolio=task_to_add.get("portfolio"),
+            section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
+        )
+
+        # GET THE SPOKE products and versions
+        spoke_portfolio_all_products_and_versions_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+        all_tasks[spoke_portfolio_all_products_and_versions_ref] = dict(
+            **get_spoke_local_portfolio_common_args(
+                task_to_add,
+                all_tasks_task_reference,
+                [spoke_portfolio_puppet_association_ref],
+            ),
+            task_reference=spoke_portfolio_all_products_and_versions_ref,
+            section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+        )
+
+        product_generation_method = task_to_add.get("product_generation_method")
+        portfolio_import_or_copy_ref = f"portfolio_{product_generation_method}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+        all_tasks[portfolio_import_or_copy_ref] = dict(
+            **get_spoke_local_portfolio_common_args(
+                task_to_add,
+                all_tasks_task_reference,
+                [
+                    spoke_portfolio_all_products_and_versions_ref,
+                    hub_portfolio_all_products_and_versions_ref,
+                ],
+            ),
+            task_reference=portfolio_import_or_copy_ref,
+            product_generation_mathod=product_generation_method,
+            section_name=f"portfolio-{product_generation_method}",
+            portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_ref,
+            portfolio_get_all_products_and_their_versions_for_hub_ref=hub_portfolio_all_products_and_versions_ref,
+        )
+
     # if task_to_add.get("associations"):
     #     shared_ref = f"{section_name}-{item_name}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
     #     ref = f"portfolio_associations-{shared_ref}"
@@ -438,7 +488,7 @@ def handle_launches(
     )
     # GET THE HUB DETAILS TASK
     hub_portfolio_ref = f"{constants.PORTFOLIO_LOCAL}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-    hub_portfolio_task = dict(
+    all_tasks[hub_portfolio_ref] = dict(
         puppet_account_id=puppet_account_id,
         task_reference=hub_portfolio_ref,
         dependencies_by_reference=[],
@@ -448,8 +498,8 @@ def handle_launches(
         portfolio=task_to_add.get("portfolio"),
         section_name=constants.PORTFOLIO_LOCAL,
     )
-    all_tasks[hub_portfolio_ref] = hub_portfolio_task
 
+    spoke_portfolio_puppet_association_ref = None
     if is_deploying_into_puppet_account:
         portfolio_deploying_from = hub_portfolio_ref
     else:
@@ -488,9 +538,24 @@ def handle_launches(
         )
         portfolio_deploying_from = spoke_portfolio_ref
 
+        spoke_portfolio_puppet_association_ref = f"{constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+        all_tasks[spoke_portfolio_puppet_association_ref] = dict(
+            puppet_account_id=puppet_account_id,
+            task_reference=spoke_portfolio_puppet_association_ref,
+            portfolio_task_reference=spoke_portfolio_ref,
+            dependencies_by_reference=[spoke_portfolio_ref],
+            reverse_dependencies_by_reference=[],
+            account_id=task_to_add.get("account_id"),
+            region=task_to_add.get("region"),
+            portfolio=task_to_add.get("portfolio"),
+            section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
+        )
+        all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
+            spoke_portfolio_puppet_association_ref
+        )
+
     # GET the provisioning parameters
-    # TODO swap account_id for puppet_account_id to reduce num of tasks needed
-    describe_provisioning_params_ref = f"describe_provisioning_parameters-{task_to_add.get('account_id')}_{task_to_add.get('region')}-{task_to_add.get('portfolio')}-{task_to_add.get('product')}-{task_to_add.get('version')}"
+    describe_provisioning_params_ref = f"{constants.DESCRIBE_PROVISIONING_PARAMETERS}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}-{task_to_add.get('product')}-{task_to_add.get('version')}"
     all_tasks[describe_provisioning_params_ref] = dict(
         puppet_account_id=puppet_account_id,
         task_reference=describe_provisioning_params_ref,
@@ -507,14 +572,18 @@ def handle_launches(
     )
 
     # GET all the products for the spoke
-    portfolio_get_all_products_and_their_versions_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+    if spoke_portfolio_puppet_association_ref is None:
+        deps = [portfolio_deploying_from]
+    else:
+        deps = [portfolio_deploying_from, spoke_portfolio_puppet_association_ref]
+    portfolio_get_all_products_and_their_versions_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
     all_tasks[portfolio_get_all_products_and_their_versions_ref] = dict(
         puppet_account_id=puppet_account_id,
         task_reference=portfolio_get_all_products_and_their_versions_ref,
-        dependencies_by_reference=[portfolio_deploying_from],
+        dependencies_by_reference=deps,
         portfolio_task_reference=portfolio_deploying_from,
         reverse_dependencies_by_reference=[],
-        account_id=task_to_add.get("account_id"),
+        account_id=puppet_account_id,
         region=task_to_add.get("region"),
         section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
     )

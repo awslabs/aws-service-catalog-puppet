@@ -5,26 +5,17 @@ import functools
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.tag_policies import (
-    tag_policies_base_task,
-    get_or_create_policy_task,
-)
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
+from servicecatalog_puppet.workflow.tag_policies import get_or_create_policy_task
 from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
     get_dependencies_for_task_reference,
 )
 
 
-class DoExecuteTagPoliciesTask(
-    tag_policies_base_task.TagPoliciesBaseTask,
-    manifest_mixin.ManifestMixen,
-    dependency.DependenciesMixin,
-):
+from servicecatalog_puppet.workflow.dependencies import tasks
+
+
+class DoExecuteTagPoliciesTask(tasks.TaskWithReference):
     puppet_account_id = luigi.Parameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-    task_reference = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
 
     tag_policy_name = luigi.Parameter()
 

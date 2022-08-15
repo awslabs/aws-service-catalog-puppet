@@ -336,38 +336,3 @@ def generate_dependency_task(
             )
 
     raise Exception(f"Unhandled: {depends_on}")
-
-
-class DependenciesMixin(object):
-    def get_section_dependencies(self):
-        dependencies = (
-            self.manifest.get(self.section_name)
-            .get(self.item_name)
-            .get("depends_on", [])
-        )
-
-        should_generate_shares = not (
-            self.execution_mode == constants.EXECUTION_MODE_SPOKE or self.is_dry_run
-        )
-
-        these_dependencies = generate_dependency_tasks(
-            dependencies,
-            self.manifest_file_path,
-            self.puppet_account_id,
-            self.account_id,
-            self.ou_name if hasattr(self, "ou_name") else "",
-            self.region,
-            self.execution_mode,
-        )
-
-        if self.section_name in [constants.SPOKE_LOCAL_PORTFOLIOS, constants.LAUNCHES]:
-            if should_generate_shares:
-                these_dependencies.append(
-                    generate_shares_task.GenerateSharesTask(
-                        puppet_account_id=self.puppet_account_id,
-                        manifest_file_path=self.manifest_file_path,
-                        section=self.section_name,
-                    )
-                )
-
-        return these_dependencies

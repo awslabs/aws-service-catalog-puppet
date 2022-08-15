@@ -2,39 +2,22 @@
 #  SPDX-License-Identifier: Apache-2.0
 import json
 
-from servicecatalog_puppet.workflow import tasks
-
 import luigi
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class GetAllProductsAndTheirVersionsTask(tasks.PuppetTask):
+class GetAllProductsAndTheirVersionsTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
 
-    task_reference = luigi.Parameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
-
     def params_for_results_display(self):
         return {
             "task_reference": self.task_reference,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def requires(self):
-        return dict(
-            reference_dependencies=get_dependencies_for_task_reference(
-                self.manifest_task_reference_file_path,
-                self.task_reference,
-                self.puppet_account_id,
-            )
-        )
 
     def api_calls_used(self):
         return [

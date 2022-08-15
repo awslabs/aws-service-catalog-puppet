@@ -8,28 +8,20 @@ import cfn_tools
 import luigi
 from botocore.exceptions import ClientError
 
-from servicecatalog_puppet import yaml_utils
 
 from servicecatalog_puppet import config
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.stack import get_cloud_formation_template_from_s3
-from servicecatalog_puppet.workflow.stack import provisioning_task
-from servicecatalog_puppet.workflow.stack import prepare_account_for_stack_task
 from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
     get_dependencies_for_task_reference,
 )
 from servicecatalog_puppet.workflow.workspaces import Limits
 
+from servicecatalog_puppet.workflow.dependencies import tasks
 
-class ProvisionStackTask(
-    provisioning_task.ProvisioningTask, dependency.DependenciesMixin
-):
-    task_reference = luigi.Parameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
+
+class ProvisionStackTask(tasks.TaskWithParameters):
 
     stack_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -93,14 +85,6 @@ class ProvisionStackTask(
                 account_id=self.puppet_account_id,
             ),
         }
-        #     #TODO rename the task class name! fixme
-        #     if self.use_service_role:
-        #         requirements[
-        #             "prep"
-        #         ] = prepare_account_for_stack_task.PrepareAccountForWorkspaceTask(
-        #             account_id=self.account_id
-        #         )
-        #
         return requirements
 
     def resources_used(self):

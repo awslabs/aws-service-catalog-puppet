@@ -3,20 +3,15 @@
 
 import luigi
 
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_base_task
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
-
 from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
     get_dependencies_for_task_reference,
 )
 
 
-class DoExecuteCodeBuildRunTask(
-    code_build_run_base_task.CodeBuildRunBaseTask,
-    manifest_mixin.ManifestMixen,
-    dependency.DependenciesMixin,
-):
+from servicecatalog_puppet.workflow.dependencies import tasks
+
+
+class DoExecuteCodeBuildRunTask(tasks.TaskWithParameters):
     code_build_run_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -24,10 +19,6 @@ class DoExecuteCodeBuildRunTask(
     account_id = luigi.Parameter()
 
     project_name = luigi.Parameter()
-
-    manifest_task_reference_file_path = luigi.Parameter()
-    task_reference = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {
@@ -43,15 +34,6 @@ class DoExecuteCodeBuildRunTask(
             f"codebuild.start_build_{self.get_account_used()}_{self.project_name}",
             f"codebuild.batch_get_projects_{self.get_account_used()}_{self.project_name}",
         ]
-
-    def requires(self):
-        return dict(
-            reference_dependencies=get_dependencies_for_task_reference(
-                self.manifest_task_reference_file_path,
-                self.task_reference,
-                self.puppet_account_id,
-            ),
-        )
 
     def run(self):
         with self.hub_client("codebuild") as codebuild:

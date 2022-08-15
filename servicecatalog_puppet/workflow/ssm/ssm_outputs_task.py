@@ -1,20 +1,15 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier= Apache-2.0
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow import tasks
 import luigi
 
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
 from servicecatalog_puppet.workflow.workspaces import Limits
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class SSMOutputsTasks(tasks.PuppetTask):  # TODO add by path parameters
+class SSMOutputsTasks(tasks.TaskWithReference):  # TODO add by path parameters
     # TODO add filter so this only works in hub and spoke modes
     puppet_account_id = luigi.Parameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-    task_reference = luigi.Parameter()
 
     account_id = luigi.Parameter()
     region = luigi.Parameter()
@@ -23,8 +18,6 @@ class SSMOutputsTasks(tasks.PuppetTask):  # TODO add by path parameters
     stack_output = luigi.Parameter()
     task_generating_output = luigi.Parameter()
     force_operation = luigi.BoolParameter()
-
-    dependencies_by_reference = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {
@@ -43,13 +36,6 @@ class SSMOutputsTasks(tasks.PuppetTask):  # TODO add by path parameters
             (uniq, Limits.SSM_PUT_PARAMETER_PER_REGION_OF_ACCOUNT),
         ]
 
-    def requires(self):
-        return get_dependencies_for_task_reference(
-            self.manifest_task_reference_file_path,
-            self.task_reference,
-            self.puppet_account_id,
-        )
-
     def find_stack_output(
         self, generating_account_id, generating_region, generating_stack_name
     ):
@@ -65,7 +51,9 @@ class SSMOutputsTasks(tasks.PuppetTask):  # TODO add by path parameters
         raise Exception("Could not find stack output")
 
     def run(self):
-        task_generating_output = self.load_from_input(self.task_generating_output)
+        task_generating_output = self.get_output_from_reference_dependency(
+            self.task_generating_output
+        )
         generating_account_id = task_generating_output.get("account_id")
         generating_region = task_generating_output.get("region")
         parameter_details = "Parameter not updated - stack/launch did not change and there was no force_operation"

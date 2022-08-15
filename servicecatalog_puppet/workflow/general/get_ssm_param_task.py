@@ -6,16 +6,12 @@ import json
 import luigi
 from deepmerge import always_merger
 
-from servicecatalog_puppet import yaml_utils
-from servicecatalog_puppet import config
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow.general import boto3_task
 from servicecatalog_puppet.workflow.workspaces import Limits
+
+from servicecatalog_puppet import manifest_utils
+from servicecatalog_puppet import yaml_utils
 
 
 class GetSSMParamByPathTask(tasks.PuppetTask):
@@ -44,19 +40,19 @@ class GetSSMParamByPathTask(tasks.PuppetTask):
             (identifier, Limits.SSM_GET_PARAMETER_PER_REGION_OF_ACCOUNT),
         ]
 
-    def requires(self):
-        if len(self.depends_on) > 0:
-            return dependency.generate_dependency_tasks(
-                self.depends_on,
-                self.manifest_file_path,
-                self.puppet_account_id,
-                self.spoke_account_id,
-                self.ou_name if hasattr(self, "ou_name") else "",
-                self.spoke_region,
-                self.execution_mode,
-            )
-        else:
-            return []
+    # def requires(self):
+    #     if len(self.depends_on) > 0:
+    #         return dependency.generate_dependency_tasks(
+    #             self.depends_on,
+    #             self.manifest_file_path,
+    #             self.puppet_account_id,
+    #             self.spoke_account_id,
+    #             self.ou_name if hasattr(self, "ou_name") else "",
+    #             self.spoke_region,
+    #             self.execution_mode,
+    #         )
+    #     else:
+    #         return []
 
     def run(self):
         parameters = dict()
@@ -185,16 +181,15 @@ class GetSSMParamTask(tasks.PuppetTask):
 
 class PuppetTaskWithParameters(tasks.PuppetTask):
     def get_merged_launch_account_and_manifest_parameters(self):
+        content = open(self.manifest_file_path, "r").read()
+        manifest = manifest_utils.Manifest(yaml_utils.load(content))
+
         result = dict()
         launch_parameters = (
-            self.manifest.get(self.section_name)
-            .get(self.item_name)
-            .get("parameters", {})
+            manifest.get(self.section_name).get(self.item_name).get("parameters", {})
         )
-        manifest_parameters = self.manifest.get("parameters")
-        account_parameters = self.manifest.get_account(self.account_id).get(
-            "parameters"
-        )
+        manifest_parameters = manifest.get("parameters")
+        account_parameters = manifest.get_account(self.account_id).get("parameters")
 
         always_merger.merge(result, manifest_parameters)
         always_merger.merge(result, launch_parameters)
@@ -210,10 +205,10 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
         always_merger.merge(all_params, tasks.unwrap(self.account_parameters))
         return all_params
 
-    def get_parameters_tasks(self):
-        return get_dependencies_for_task_reference(
-            self.manifest_task_reference_file_path, self.task_reference
-        )
+    # def get_parameters_tasks(self):
+    #     return get_dependencies_for_task_reference(
+    #         self.manifest_task_reference_file_path, self.task_reference
+    #     )
 
     def get_parameter_values(self):
         all_params = {}
@@ -265,7 +260,10 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                     .replace("${AWS::Region}", self.region)
                 )
             if param_details.get("mapping"):
-                all_params[param_name] = self.manifest.get_mapping(
+                content = open(self.manifest_file_path, "r").read()
+                manifest = manifest_utils.Manifest(yaml_utils.load(content))
+
+                all_params[param_name] = manifest.get_mapping(
                     param_details.get("mapping"), self.account_id, self.region
                 )
         return all_params

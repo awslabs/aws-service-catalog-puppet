@@ -7,18 +7,13 @@ import luigi
 
 from servicecatalog_puppet import config
 from servicecatalog_puppet import utils
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
-    portfolio_management_task,
-)
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
+from servicecatalog_puppet.workflow.dependencies import tasks
 import troposphere as t
 from troposphere import servicecatalog
 
 
 class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
-    portfolio_management_task.PortfolioManagementTask
+    tasks.TaskWithReference
 ):
     portfolio_task_reference = luigi.Parameter()
     spoke_local_portfolio_name = luigi.Parameter()
@@ -28,9 +23,6 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
     puppet_account_id = luigi.Parameter()
     resource_update_constraints = luigi.ListParameter()
 
-    manifest_task_reference_file_path = luigi.Parameter()
-    task_reference = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
     portfolio_get_all_products_and_their_versions_ref = luigi.Parameter()
 
     def params_for_results_display(self):
@@ -42,15 +34,6 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def requires(self):
-        return dict(
-            reference_dependencies=get_dependencies_for_task_reference(
-                self.manifest_task_reference_file_path,
-                self.task_reference,
-                self.puppet_account_id,
-            )
-        )
 
     def api_calls_used(self):
         return [

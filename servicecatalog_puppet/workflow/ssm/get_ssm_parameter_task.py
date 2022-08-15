@@ -7,17 +7,15 @@ from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_refer
     get_dependencies_for_task_reference,
 )
 from servicecatalog_puppet.workflow.workspaces import Limits
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class GetSSMParameterTask(tasks.PuppetTask):  # TODO add by path parameters
+class GetSSMParameterTask(tasks.TaskWithReference):  # TODO add by path parameters
     # TODO add support for default_value
     puppet_account_id = luigi.Parameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-    task_reference = luigi.Parameter()
     account_id = luigi.Parameter()
     param_name = luigi.Parameter()
     region = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {
@@ -33,13 +31,6 @@ class GetSSMParameterTask(tasks.PuppetTask):  # TODO add by path parameters
         return [
             (uniq, Limits.SSM_GET_PARAMETER_PER_REGION_OF_ACCOUNT),
         ]
-
-    def requires(self):
-        return get_dependencies_for_task_reference(
-            self.manifest_task_reference_file_path,
-            self.task_reference,
-            self.puppet_account_id,
-        )
 
     def run(self):
         parameter_name_to_use = self.param_name.replace(

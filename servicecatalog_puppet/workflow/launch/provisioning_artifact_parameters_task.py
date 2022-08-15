@@ -4,17 +4,10 @@ import time
 
 import luigi
 
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
-from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class ProvisioningArtifactParametersTask(tasks.PuppetTask):
-    task_reference = luigi.Parameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
-
+class ProvisioningArtifactParametersTask(tasks.TaskWithReference):
     puppet_account_id = luigi.Parameter()
     portfolio = luigi.Parameter()
     product = luigi.Parameter()
@@ -39,15 +32,6 @@ class ProvisioningArtifactParametersTask(tasks.PuppetTask):
         return [
             f"servicecatalog.describe_provisioning_parameters_{self.puppet_account_id}_{self.region}",
         ]
-
-    def requires(self):
-        return dict(
-            reference_dependencies=get_dependencies_for_task_reference(
-                self.manifest_task_reference_file_path,
-                self.task_reference,
-                self.puppet_account_id,
-            )
-        )
 
     def run(self):
         with self.hub_regional_client("servicecatalog") as service_catalog:

@@ -1,27 +1,18 @@
 #  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
-import json
-
 import luigi
 
-from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 sharing_mode_map = dict(ACCOUNT="IMPORTED", AWS_ORGANIZATIONS="AWS_ORGANIZATIONS",)
 
 
-class GetPortfolioLocalTask(tasks.PuppetTask):
+class GetPortfolioLocalTask(tasks.TaskWithReference):
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-
-    task_reference = luigi.Parameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {
@@ -32,15 +23,6 @@ class GetPortfolioLocalTask(tasks.PuppetTask):
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def requires(self):
-        return dict(
-            reference_dependencies=get_dependencies_for_task_reference(
-                self.manifest_task_reference_file_path,
-                self.task_reference,
-                self.puppet_account_id,
-            )
-        )
 
     def api_calls_used(self):
         return [
@@ -60,16 +42,12 @@ class GetPortfolioLocalTask(tasks.PuppetTask):
         self.write_output(self.get_portfolio_details())
 
 
-class GetPortfolioImportedTask(tasks.PuppetTask):
+class GetPortfolioImportedTask(tasks.TaskWithReference):
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     sharing_mode = luigi.Parameter()
-
-    task_reference = luigi.Parameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {
@@ -81,15 +59,6 @@ class GetPortfolioImportedTask(tasks.PuppetTask):
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def requires(self):
-        return dict(
-            reference_dependencies=get_dependencies_for_task_reference(
-                self.manifest_task_reference_file_path,
-                self.task_reference,
-                self.puppet_account_id,
-            )
-        )
 
     def api_calls_used(self):
         return [

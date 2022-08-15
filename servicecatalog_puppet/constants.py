@@ -327,3 +327,4 @@ PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS = (
 PORTFOLIO_LOCAL = "portfolio-local"
 PORTFOLIO_IMPORTED = "portfolio-imported"
 DESCRIBE_PROVISIONING_PARAMETERS = "describe-provisioning-parameters"
+PORTFOLIO_PUPPET_ROLE_ASSOCIATION = "portfolio-puppet-role-association"

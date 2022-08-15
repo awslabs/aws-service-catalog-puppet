@@ -123,11 +123,6 @@ def create(
                 ProvisionProductTask,
             )
 
-            # TODO
-            # raise Exception(
-            #     "need to make work with CreateSpokeLocalPortfolioTask, add sharing and associations explicitly through here"
-            # )
-
             return ProvisionProductTask(
                 **common_parameters,
                 launch_name=parameters_to_use.get("launch_name"),
@@ -309,9 +304,9 @@ def create(
             return create_spoke_local_portfolio_task.CreateSpokeLocalPortfolioTask(
                 **common_parameters,
                 portfolio=parameters_to_use.get("portfolio"),
-                provider_name=parameters_to_use.get("provider_name"),
-                description=parameters_to_use.get("description"),
-                manifest_file_path=manifest_file_path,
+                portfolio_task_reference=parameters_to_use.get(
+                    "portfolio_task_reference"
+                ),
             )
 
     elif section_name == constants.PORTFOLIO_LOCAL:
@@ -430,7 +425,6 @@ def create(
                 portfolio_get_all_products_and_their_versions_for_hub_ref=parameters_to_use.get(
                     "portfolio_get_all_products_and_their_versions_for_hub_ref"
                 ),
-                manifest_file_path=manifest_file_path,
             )
 
     elif section_name == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT:
@@ -447,7 +441,7 @@ def create(
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
-                manifest_file_path=manifest_file_path,
+                # manifest_file_path=manifest_file_path,
             )
 
     elif section_name == constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS:
@@ -484,6 +478,29 @@ def create(
                 portfolio=parameters_to_use.get("portfolio"),
                 product=parameters_to_use.get("product"),
                 version=parameters_to_use.get("version"),
+                manifest_task_reference_file_path=manifest_task_reference_file_path,
+            )
+
+    elif section_name == constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION:
+        if status == "terminated":
+            raise Exception("Not supported yet")
+        else:
+            from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+                create_associations_task,
+            )
+
+            return create_associations_task.CreateAssociationTask(
+                puppet_account_id=puppet_account_id,
+                task_reference=parameters_to_use.get("task_reference"),
+                dependencies_by_reference=parameters_to_use.get(
+                    "dependencies_by_reference"
+                ),
+                account_id=parameters_to_use.get("account_id"),
+                region=parameters_to_use.get("region"),
+                portfolio=parameters_to_use.get("portfolio"),
+                portfolio_task_reference=parameters_to_use.get(
+                    "portfolio_task_reference"
+                ),
                 manifest_task_reference_file_path=manifest_task_reference_file_path,
             )
 

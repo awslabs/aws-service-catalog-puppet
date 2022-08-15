@@ -7,16 +7,11 @@ import luigi
 
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import config
-from servicecatalog_puppet.workflow.general import get_ssm_param_task
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
+
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class DoInvokeLambdaTask(
-    get_ssm_param_task.PuppetTaskWithParameters, manifest_mixin.ManifestMixen
-):
+class DoInvokeLambdaTask(tasks.TaskWithParameters):
     lambda_invocation_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -24,10 +19,6 @@ class DoInvokeLambdaTask(
     function_name = luigi.Parameter()
     qualifier = luigi.Parameter()
     invocation_type = luigi.Parameter()
-
-    manifest_task_reference_file_path = luigi.Parameter()
-    task_reference = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
 
     puppet_account_id = luigi.Parameter()
 
@@ -47,15 +38,6 @@ class DoInvokeLambdaTask(
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def requires(self):
-        return dict(
-            reference_dependencies=get_dependencies_for_task_reference(
-                self.manifest_task_reference_file_path,
-                self.task_reference,
-                self.puppet_account_id,
-            ),
-        )
 
     def api_calls_used(self):
         return {

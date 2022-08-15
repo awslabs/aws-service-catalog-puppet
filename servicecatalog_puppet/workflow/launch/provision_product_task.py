@@ -7,26 +7,15 @@ import time
 import luigi
 
 from servicecatalog_puppet import aws
-from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow import dependency
 from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow.launch import provisioning_artifact_parameters_task
-from servicecatalog_puppet.workflow.launch import provisioning_task
-from servicecatalog_puppet.workflow.portfolio.accessors import (
-    describe_product_as_admin_task,
-)
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
 
 
-class ProvisionProductTask(
-    provisioning_task.ProvisioningTask, dependency.DependenciesMixin
-):
-    task_reference = luigi.Parameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
+from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet import constants
 
+
+class ProvisionProductTask(tasks.TaskWithParameters):
+    manifest_file_path = luigi.Parameter()
     launch_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -53,6 +42,12 @@ class ProvisionProductTask(
 
     execution = luigi.Parameter()
 
+    section_name = constants.LAUNCHES
+
+    @property
+    def item_name(self):
+        return self.launch_name
+
     try_count = 1
 
     def params_for_results_display(self):
@@ -67,15 +62,6 @@ class ProvisionProductTask(
     @property
     def priority(self):
         return self.requested_priority
-
-    def requires(self):
-        return dict(
-            reference_dependencies=get_dependencies_for_task_reference(
-                self.manifest_task_reference_file_path,
-                self.task_reference,
-                self.puppet_account_id,
-            )
-        )
 
     def api_calls_used(self):
         apis = [

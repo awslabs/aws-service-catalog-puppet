@@ -6,35 +6,16 @@ import json
 import luigi
 
 from servicecatalog_puppet import aws
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow.portfolio.accessors import (
-    get_portfolio_by_portfolio_name_task,
-)
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
-    portfolio_management_task,
-)
-from servicecatalog_puppet.workflow.portfolio.sharing_management import (
-    create_share_for_account_launch_region_task,
-)
 
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class CreateSpokeLocalPortfolioTask(
-    portfolio_management_task.PortfolioManagementTask, manifest_mixin.ManifestMixen
-):
+class CreateSpokeLocalPortfolioTask(tasks.TaskWithReference):
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    provider_name = luigi.Parameter()
-    description = luigi.Parameter()
-
-    task_reference = luigi.Parameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
+    portfolio_task_reference = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -46,15 +27,6 @@ class CreateSpokeLocalPortfolioTask(
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def requires(self):
-        return dict(
-            reference_dependencies=get_dependencies_for_task_reference(
-                self.manifest_task_reference_file_path,
-                self.task_reference,
-                self.puppet_account_id,
-            )
-        )
-
     def api_calls_used(self):
         return [
             f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
@@ -62,11 +34,14 @@ class CreateSpokeLocalPortfolioTask(
         ]
 
     def run(self):
+        hub_portfolio_details = self.get_output_from_reference_dependency(
+            self.portfolio_task_reference
+        )
         with self.spoke_regional_client("servicecatalog") as spoke_service_catalog:
             spoke_portfolio = aws.ensure_portfolio(
                 spoke_service_catalog,
                 self.portfolio,
-                self.provider_name,
-                self.description,
+                hub_portfolio_details.get("ProviderName"),
+                hub_portfolio_details.get("Description"),
             )
         self.write_output(spoke_portfolio)
