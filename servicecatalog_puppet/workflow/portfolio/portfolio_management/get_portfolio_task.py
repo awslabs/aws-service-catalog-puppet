@@ -3,6 +3,7 @@
 
 import luigi
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 sharing_mode_map = dict(ACCOUNT="IMPORTED", AWS_ORGANIZATIONS="AWS_ORGANIZATIONS",)
@@ -13,6 +14,7 @@ class GetPortfolioLocalTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
+    status = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -36,7 +38,10 @@ class GetPortfolioLocalTask(tasks.TaskWithReference):
                 for portfolio_details in page.get("PortfolioDetails", []):
                     if portfolio_details.get("DisplayName") == self.portfolio:
                         return portfolio_details
-        raise Exception(f"Could not find portfolio: {self.portfolio}")
+        if self.status == constants.TERMINATED:
+            return {}
+        else:
+            raise Exception(f"Could not find portfolio: {self.portfolio}")
 
     def run(self):
         self.write_output(self.get_portfolio_details())
@@ -48,6 +53,7 @@ class GetPortfolioImportedTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     sharing_mode = luigi.Parameter()
+    status = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -85,7 +91,10 @@ class GetPortfolioImportedTask(tasks.TaskWithReference):
                     if portfolio_details.get("DisplayName") == self.portfolio:
                         return portfolio_details
 
-        raise Exception(f"Could not find portfolio: {self.portfolio}")
+        if self.status == constants.TERMINATED:
+            return {}
+        else:
+            raise Exception(f"Could not find portfolio: {self.portfolio}")
 
     def run(self):
         self.write_output(self.get_portfolio_details())

@@ -66,7 +66,6 @@ def create(
                 requested_priority=parameters_to_use.get("requested_priority"),
                 use_service_role=parameters_to_use.get("use_service_role"),
                 execution=parameters_to_use.get("execution"),
-                manifest_file_path=manifest_file_path,
             )
         else:
             from servicecatalog_puppet.workflow.stack.provision_stack_task import (
@@ -116,7 +115,7 @@ def create(
                 # ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
                 requested_priority=parameters_to_use.get("requested_priority"),
                 execution=parameters_to_use.get("execution"),
-                manifest_file_path=manifest_file_path,
+                # manifest_file_path=manifest_file_path,
             )
         else:
             from servicecatalog_puppet.workflow.launch.provision_product_task import (
@@ -294,7 +293,13 @@ def create(
 
     elif section_name == constants.SPOKE_LOCAL_PORTFOLIOS:
         if status == "terminated":
-            raise Exception("Not supported yet")
+            from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+                terminate_spoke_local_portfolio_task,
+            )
+
+            return terminate_spoke_local_portfolio_task.TerminateSpokeLocalPortfolioTask(
+                **common_parameters, portfolio=parameters_to_use.get("portfolio"),
+            )
         else:
             from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
                 create_spoke_local_portfolio_task,
@@ -309,34 +314,41 @@ def create(
             )
 
     elif section_name == constants.PORTFOLIO_LOCAL:
-        if status == "terminated":
-            raise Exception("Not supported")
-        else:
-            from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
-                get_portfolio_task,
-            )
+        from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+            get_portfolio_task,
+        )
 
-            return get_portfolio_task.GetPortfolioLocalTask(
-                **common_parameters, portfolio=parameters_to_use.get("portfolio"),
-            )
+        return get_portfolio_task.GetPortfolioLocalTask(
+            **common_parameters,
+            portfolio=parameters_to_use.get("portfolio"),
+            status=parameters_to_use.get("status"),
+        )
 
     elif section_name == constants.PORTFOLIO_IMPORTED:
-        if status == "terminated":
-            raise Exception("Not supported")
-        else:
-            from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
-                get_portfolio_task,
-            )
+        from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+            get_portfolio_task,
+        )
 
-            return get_portfolio_task.GetPortfolioImportedTask(
-                **common_parameters,
-                sharing_mode=parameters_to_use.get("sharing_mode"),
-                portfolio=parameters_to_use.get("portfolio"),
-            )
+        return get_portfolio_task.GetPortfolioImportedTask(
+            **common_parameters,
+            sharing_mode=parameters_to_use.get("sharing_mode"),
+            portfolio=parameters_to_use.get("portfolio"),
+            status=parameters_to_use.get("status"),
+        )
 
     elif section_name == constants.PORTFOLIO_ASSOCIATIONS:
         if status == "terminated":
-            raise Exception("Not supported yet")
+            from servicecatalog_puppet.workflow.portfolio.associations import (
+                terminate_associations_for_spoke_local_portfolio_task,
+            )
+
+            return terminate_associations_for_spoke_local_portfolio_task.TerminateAssociationsForSpokeLocalPortfolioTask(
+                **common_parameters,
+                portfolio=parameters_to_use.get("portfolio"),
+                spoke_local_portfolio_name=parameters_to_use.get(
+                    "spoke_local_portfolio_name"
+                ),
+            )
         else:
             from servicecatalog_puppet.workflow.portfolio.associations import (
                 create_associations_for_spoke_local_portfolio_task,
@@ -356,7 +368,18 @@ def create(
 
     elif section_name == constants.PORTFOLIO_CONSTRAINTS_LAUNCH:
         if status == "terminated":
-            raise Exception("Not supported yet")
+            from servicecatalog_puppet.workflow.portfolio.constraints_management import (
+                terminate_launch_role_constraints_for_spoke_local_portfolio_task,
+            )
+
+            return terminate_launch_role_constraints_for_spoke_local_portfolio_task.TerminateLaunchRoleConstraintsForSpokeLocalPortfolioTask(
+                **common_parameters,
+                portfolio=parameters_to_use.get("portfolio"),
+                spoke_local_portfolio_name=parameters_to_use.get(
+                    "spoke_local_portfolio_name"
+                ),
+            )
+
         else:
             from servicecatalog_puppet.workflow.portfolio.constraints_management import (
                 create_launch_role_constraints_for_spoke_local_portfolio_task,
@@ -379,7 +402,17 @@ def create(
 
     elif section_name == constants.PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE:
         if status == "terminated":
-            raise Exception("Not supported yet")
+            from servicecatalog_puppet.workflow.portfolio.constraints_management import (
+                terminate_resource_update_constraints_for_spoke_local_portfolio_task,
+            )
+
+            return terminate_resource_update_constraints_for_spoke_local_portfolio_task.TerminateResourceUpdateConstraintsForSpokeLocalPortfolioTask(
+                **common_parameters,
+                portfolio=parameters_to_use.get("portfolio"),
+                spoke_local_portfolio_name=parameters_to_use.get(
+                    "spoke_local_portfolio_name"
+                ),
+            )
         else:
             from servicecatalog_puppet.workflow.portfolio.constraints_management import (
                 create_resource_update_constraints_for_spoke_local_portfolio_task,
@@ -479,7 +512,24 @@ def create(
 
     elif section_name == constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION:
         if status == "terminated":
-            raise Exception("Not supported yet")
+            from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+                terminate_associations_task,
+            )
+
+            return terminate_associations_task.TerminateAssociationTask(
+                puppet_account_id=puppet_account_id,
+                task_reference=parameters_to_use.get("task_reference"),
+                dependencies_by_reference=parameters_to_use.get(
+                    "dependencies_by_reference"
+                ),
+                account_id=parameters_to_use.get("account_id"),
+                region=parameters_to_use.get("region"),
+                portfolio=parameters_to_use.get("portfolio"),
+                portfolio_task_reference=parameters_to_use.get(
+                    "portfolio_task_reference"
+                ),
+                manifest_task_reference_file_path=manifest_task_reference_file_path,
+            )
         else:
             from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
                 create_associations_task,
@@ -578,6 +628,31 @@ def create(
                     "dependencies_by_reference"
                 ),
                 account_id=parameters_to_use.get("account_id"),
+                manifest_task_reference_file_path=manifest_task_reference_file_path,
+            )
+
+    elif (
+        section_name == constants.PORTFOLIO_DISASSOCIATE_ALL_PRODUCTS_AND_THEIR_VERSIONS
+    ):
+        if status == "terminated":
+            raise Exception("Not supported")
+        else:
+            from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+                disassociate_products_from_portfolio_task,
+            )
+
+            return disassociate_products_from_portfolio_task.DisassociateProductsFromPortfolio(
+                puppet_account_id=puppet_account_id,
+                task_reference=parameters_to_use.get("task_reference"),
+                dependencies_by_reference=parameters_to_use.get(
+                    "dependencies_by_reference"
+                ),
+                account_id=parameters_to_use.get("account_id"),
+                region=parameters_to_use.get("region"),
+                portfolio=parameters_to_use.get("portfolio"),
+                portfolio_task_reference=parameters_to_use.get(
+                    "portfolio_task_reference"
+                ),
                 manifest_task_reference_file_path=manifest_task_reference_file_path,
             )
 

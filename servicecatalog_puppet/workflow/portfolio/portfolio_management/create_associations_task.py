@@ -1,12 +1,11 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+import time
 
 import luigi
 
 from servicecatalog_puppet import config
 from servicecatalog_puppet.workflow.dependencies import tasks
-
-sharing_mode_map = dict(ACCOUNT="IMPORTED", AWS_ORGANIZATIONS="AWS_ORGANIZATIONS",)
 
 
 class CreateAssociationTask(tasks.TaskWithReference):
@@ -36,21 +35,28 @@ class CreateAssociationTask(tasks.TaskWithReference):
         )
         portfolio_id = portfolio_details.get("Id")
 
-        was_present = False
-        with self.spoke_regional_client("servicecatalog") as servicecatalog:
-            principal_to_associate = config.get_puppet_role_arn(self.account_id)
-            paginator = servicecatalog.get_paginator("list_principals_for_portfolio")
-            for page in paginator.paginate(PortfolioId=portfolio_id):
-                self.info(page)
-                for principal in page.get("Principals", []):
-                    if principal_to_associate == principal.get("PrincipalARN"):
-                        was_present = True
-
-            if not was_present:
+        principal_to_associate = config.get_puppet_role_arn(self.account_id)
+        was_present = self.check_was_present(portfolio_id, principal_to_associate)
+        self.info(f"Check for association: {was_present}")
+        if not was_present:
+            with self.spoke_regional_client("servicecatalog") as servicecatalog:
                 servicecatalog.associate_principal_with_portfolio(
                     PortfolioId=portfolio_id,
                     PrincipalARN=principal_to_associate,
                     PrincipalType="IAM",
                 )
+        while not was_present:
+            time.sleep(1)
+            was_present = self.check_was_present(portfolio_id, principal_to_associate)
+            self.info(f"Check for association: {was_present}")
 
         self.write_output(dict(was_present=was_present))
+
+    def check_was_present(self, portfolio_id, principal_to_associate):
+        with self.spoke_regional_client("servicecatalog") as servicecatalog:
+            paginator = servicecatalog.get_paginator("list_principals_for_portfolio")
+            for page in paginator.paginate(PortfolioId=portfolio_id):
+                for principal in page.get("Principals", []):
+                    if principal_to_associate == principal.get("PrincipalARN"):
+                        return True
+        return False

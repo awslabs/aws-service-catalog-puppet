@@ -232,7 +232,6 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
 
                 required_task_reference = f"ssm_parameters-{requested_param_account_id}-{requested_param_region}-{requested_param_name}"
 
-                print(self.input())
                 reference_dependencies = self.input().get("reference_dependencies")
                 parameter_task_output = json.loads(
                     self.input()

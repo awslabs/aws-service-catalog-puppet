@@ -5,6 +5,7 @@ import functools
 import luigi
 
 from servicecatalog_puppet import constants
+from servicecatalog_puppet import yaml_utils
 from servicecatalog_puppet.workflow.tag_policies import get_or_create_policy_task
 from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
     get_dependencies_for_task_reference,
@@ -40,6 +41,7 @@ class DoExecuteTagPoliciesTask(tasks.TaskWithReference):
         }
 
     def requires(self):
+        manifest = yaml_utils.load(open(self.manifest_file_path, "r").read())
         return dict(
             reference_dependencies=get_dependencies_for_task_reference(
                 self.manifest_task_reference_file_path,
@@ -52,7 +54,7 @@ class DoExecuteTagPoliciesTask(tasks.TaskWithReference):
                 policy_name=self.tag_policy_name,
                 policy_description=self.description,
                 policy_content=self.content,
-                tags=self.manifest.get(constants.TAG_POLICIES)
+                tags=manifest.get(constants.TAG_POLICIES)
                 .get(self.tag_policy_name)
                 .get("tags", []),
             ),

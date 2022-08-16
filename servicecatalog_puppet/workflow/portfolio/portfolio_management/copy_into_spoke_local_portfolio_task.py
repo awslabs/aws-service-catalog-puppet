@@ -172,11 +172,9 @@ class CopyIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
                 product_view_detail.get("ProductViewSummary").get("ProductId")
                 for product_view_detail in response.get("ProductViewDetails")
             ]
-            print(f"checking in {products_ids} for {products_to_check}")
             products_found = 0
             for product_to_check in products_to_check:
                 if product_to_check in products_ids:
                     products_found += 1
         self.info("Finished waiting for association of products to portfolio")
-
         self.write_output({})

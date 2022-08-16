@@ -287,8 +287,6 @@ class ProvisionStackTask(tasks.TaskWithParameters):
         if status in ["UPDATE_ROLLBACK_COMPLETE", "NoStack"]:
             need_to_provision = True
         else:
-            print(f"existing_stack_params_dict is {existing_stack_params_dict}")
-            print(f"params_to_use is {params_to_use}")
             if existing_stack_params_dict == params_to_use:
                 self.info(f"params unchanged")
                 if template_to_use == cfn_tools.dump_yaml(existing_template):

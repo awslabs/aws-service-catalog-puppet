@@ -324,6 +324,9 @@ PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT = "portfolio-share-and-accept-account"
 PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS = (
     "portfolio-get-all-products-and-their-versions"
 )
+PORTFOLIO_DISASSOCIATE_ALL_PRODUCTS_AND_THEIR_VERSIONS = (
+    "portfolio-disassociate-all-products-and-their-versions"
+)
 PORTFOLIO_LOCAL = "portfolio-local"
 PORTFOLIO_IMPORTED = "portfolio-imported"
 DESCRIBE_PROVISIONING_PARAMETERS = "describe-provisioning-parameters"

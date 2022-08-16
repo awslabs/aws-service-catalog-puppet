@@ -91,7 +91,6 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
                 portfolio_id=portfolio_id,
             )
             stack_name = f"associations-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
-            self.info(template)
             cloudformation.create_or_update(
                 StackName=stack_name,
                 TemplateBody=template,

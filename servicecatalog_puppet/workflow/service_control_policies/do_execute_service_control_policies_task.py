@@ -41,7 +41,7 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
         }
 
     def requires(self):
-        manifest = yaml_utils.load(open(self.manifest_file_path, 'r').read())
+        manifest = yaml_utils.load(open(self.manifest_file_path, "r").read())
         return dict(
             reference_dependencies=get_dependencies_for_task_reference(
                 self.manifest_task_reference_file_path,
