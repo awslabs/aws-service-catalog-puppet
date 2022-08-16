@@ -237,7 +237,6 @@ def create(
             expected=parameters_to_use.get("expected"),
             actual=parameters_to_use.get("actual"),
             requested_priority=parameters_to_use.get("requested_priority"),
-            manifest_file_path=manifest_file_path,
         )
 
     elif section_name == constants.SIMULATE_POLICIES:
@@ -264,7 +263,7 @@ def create(
             caller_arn=parameters_to_use.get("caller_arn"),
             context_entries=parameters_to_use.get("context_entries"),
             resource_handling_option=parameters_to_use.get("resource_handling_option"),
-            manifest_file_path=manifest_file_path,
+            # manifest_file_path=manifest_file_path,
         )
 
     elif section_name == constants.LAMBDA_INVOCATIONS:

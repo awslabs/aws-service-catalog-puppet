@@ -5,12 +5,10 @@ import functools
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow import dependency
+from servicecatalog_puppet import yaml_utils
 from servicecatalog_puppet.workflow.service_control_policies import (
-    service_control_policies_base_task,
     get_or_create_policy_task,
 )
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
 from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
     get_dependencies_for_task_reference,
 )
@@ -30,6 +28,8 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
 
     requested_priority = luigi.IntParameter()
 
+    manifest_file_path = luigi.Parameter()
+
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -41,6 +41,7 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
         }
 
     def requires(self):
+        manifest = yaml_utils.load(open(self.manifest_file_path, 'r').read())
         return dict(
             reference_dependencies=get_dependencies_for_task_reference(
                 self.manifest_task_reference_file_path,
@@ -53,7 +54,7 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
                 policy_name=self.service_control_policy_name,
                 policy_description=self.description,
                 policy_content=self.content,
-                tags=self.manifest.get(constants.SERVICE_CONTROL_POLICIES)
+                tags=manifest.get(constants.SERVICE_CONTROL_POLICIES)
                 .get(self.service_control_policy_name)
                 .get("tags", []),
             ),

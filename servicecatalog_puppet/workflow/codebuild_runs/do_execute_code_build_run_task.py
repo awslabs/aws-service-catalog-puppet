@@ -3,13 +3,8 @@
 
 import luigi
 
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
-
-
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
-
 
 class DoExecuteCodeBuildRunTask(tasks.TaskWithParameters):
     code_build_run_name = luigi.Parameter()
@@ -19,6 +14,14 @@ class DoExecuteCodeBuildRunTask(tasks.TaskWithParameters):
     account_id = luigi.Parameter()
 
     project_name = luigi.Parameter()
+
+    manifest_file_path = luigi.Parameter()
+
+    section_name = constants.CODE_BUILD_RUNS
+
+    @property
+    def item_name(self):
+        return self.code_build_run_name
 
     def params_for_results_display(self):
         return {

@@ -23,15 +23,6 @@ class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
             "account_id": self.account_id,
         }
 
-    def requires(self,):
-        return dict(
-            reference_dependencies=get_dependencies_for_task_reference(
-                self.manifest_task_reference_file_path,
-                self.task_reference,
-                self.puppet_account_id,
-            )
-        )
-
     def api_calls_used(self):
         return {
             f"cloudformation.create_or_update_{self.account_id}": 1,

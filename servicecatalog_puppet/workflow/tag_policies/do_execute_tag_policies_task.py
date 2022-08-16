@@ -27,6 +27,7 @@ class DoExecuteTagPoliciesTask(tasks.TaskWithReference):
     description = luigi.Parameter()
 
     requested_priority = luigi.IntParameter()
+    manifest_file_path = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
