@@ -8,20 +8,17 @@ import zipfile
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.general import get_ssm_param_task
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
+
 from servicecatalog_puppet.workflow.workspaces import Limits
-from servicecatalog_puppet.workflow.workspaces import prepare_account_for_workspace_task
-from servicecatalog_puppet.workflow.workspaces import workspace_base_task
 
 
-class ProvisionWorkspaceTask(
-    workspace_base_task.WorkspaceBaseTask,
-    get_ssm_param_task.PuppetTaskWithParameters,
-    manifest_mixin.ManifestMixen,
-    dependency.DependenciesMixin,
-):
+from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
+)
+
+
+class ProvisionWorkspaceTask(tasks.TaskWithParameters):
     workspace_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -54,18 +51,16 @@ class ProvisionWorkspaceTask(
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def requires(self):
-        requirements = {
-            "section_dependencies": self.get_section_dependencies(),
-            # "ssm_params": self.get_parameters_tasks(),
-        }
-        if not self.is_running_in_spoke():
-            requirements[
-                "account_ready"
-            ] = prepare_account_for_workspace_task.PrepareAccountForWorkspaceTask(
-                puppet_account_id=self.puppet_account_id, account_id=self.account_id,
+    def requires(
+        self,
+    ):  # TODO handle prepare_account_for_workspace_task.PrepareAccountForWorkspaceTask(
+        return dict(
+            reference_dependencies=get_dependencies_for_task_reference(
+                self.manifest_task_reference_file_path,
+                self.task_reference,
+                self.puppet_account_id,
             )
-        return requirements
+        )
 
     def resources_used(self):
         return [

@@ -353,7 +353,6 @@ def create(
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
-                manifest_file_path=manifest_file_path,
             )
 
     elif section_name == constants.PORTFOLIO_CONSTRAINTS_LAUNCH:
@@ -377,7 +376,6 @@ def create(
                 portfolio_get_all_products_and_their_versions_ref=parameters_to_use.get(
                     "portfolio_get_all_products_and_their_versions_ref"
                 ),
-                manifest_file_path=manifest_file_path,
             )
 
     elif section_name == constants.PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE:
@@ -403,7 +401,6 @@ def create(
                 portfolio_get_all_products_and_their_versions_ref=parameters_to_use.get(
                     "portfolio_get_all_products_and_their_versions_ref"
                 ),
-                manifest_file_path=manifest_file_path,
             )
 
     elif section_name == constants.PORTFOLIO_COPY:
@@ -502,6 +499,66 @@ def create(
                     "portfolio_task_reference"
                 ),
                 manifest_task_reference_file_path=manifest_task_reference_file_path,
+            )
+
+    elif section_name == constants.APPS:
+        if status == "terminated":
+            raise Exception("Not supported yet")
+        else:
+            from servicecatalog_puppet.workflow.apps import provision_app_task
+
+            return provision_app_task.ProvisionAppTask(
+                puppet_account_id=puppet_account_id,
+                task_reference=parameters_to_use.get("task_reference"),
+                dependencies_by_reference=parameters_to_use.get(
+                    "dependencies_by_reference"
+                ),
+                app_name=parameters_to_use.get("app_name"),
+                region=parameters_to_use.get("region"),
+                account_id=parameters_to_use.get("account_id"),
+                bucket=parameters_to_use.get("bucket"),
+                key=parameters_to_use.get("key"),
+                version_id=parameters_to_use.get("version_id"),
+                ssm_param_inputs=[],
+                launch_parameters=parameters_to_use.get("launch_parameters"),
+                manifest_parameters=parameters_to_use.get(""),
+                account_parameters=parameters_to_use.get(""),
+                retry_count=parameters_to_use.get("retry_count"),
+                worker_timeout=parameters_to_use.get("worker_timeout"),
+                ssm_param_outputs=[],
+                requested_priority=parameters_to_use.get("requested_priority"),
+                execution=parameters_to_use.get("execution"),
+            )
+
+    elif section_name == constants.WORKSPACES:
+        if status == "terminated":
+            raise Exception("Not supported yet")
+        else:
+            from servicecatalog_puppet.workflow.workspaces import (
+                provision_workspace_task,
+            )
+
+            return provision_workspace_task.ProvisionWorkspaceTask(
+                puppet_account_id=puppet_account_id,
+                task_reference=parameters_to_use.get("task_reference"),
+                dependencies_by_reference=parameters_to_use.get(
+                    "dependencies_by_reference"
+                ),
+                app_name=parameters_to_use.get("app_name"),
+                region=parameters_to_use.get("region"),
+                account_id=parameters_to_use.get("account_id"),
+                bucket=parameters_to_use.get("bucket"),
+                key=parameters_to_use.get("key"),
+                version_id=parameters_to_use.get("version_id"),
+                ssm_param_inputs=[],
+                launch_parameters=parameters_to_use.get("launch_parameters"),
+                manifest_parameters=parameters_to_use.get(""),
+                account_parameters=parameters_to_use.get(""),
+                retry_count=parameters_to_use.get("retry_count"),
+                worker_timeout=parameters_to_use.get("worker_timeout"),
+                ssm_param_outputs=[],
+                requested_priority=parameters_to_use.get("requested_priority"),
+                execution=parameters_to_use.get("execution"),
             )
 
     else:

@@ -4,7 +4,6 @@ import json
 
 import luigi
 
-from servicecatalog_puppet import config
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -30,8 +29,6 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
             f"servicecatalog.list_portfolio_access_{self.account_id}_{self.region}",
             f"servicecatalog.create_portfolio_share_{self.account_id}_{self.region}",
             f"servicecatalog.accept_portfolio_share_{self.account_id}_{self.region}",
-            # f"servicecatalog.list_principals_for_portfolio_{self.account_id}_{self.region}",
-            # f"servicecatalog.associate_principal_with_portfolio_{self.account_id}_{self.region}",
         ]
 
     def has_already_been_shared(self, portfolio_id):
@@ -61,25 +58,6 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
             return True
         return False
 
-    # def add_principal_if_needed(self, portfolio_id, account_to_add, servicecatalog):
-    #     was_present = False
-    #     principal_to_associate = config.get_puppet_role_arn(account_to_add)
-    #     paginator = servicecatalog.get_paginator("list_principals_for_portfolio")
-    #     for page in paginator.paginate(PortfolioId=portfolio_id):
-    #         self.info(page)
-    #         for principal in page.get("Principals", []):
-    #             if principal_to_associate == principal.get("PrincipalARN"):
-    #                 was_present = True
-    #
-    #     if not was_present:
-    #         servicecatalog.associate_principal_with_portfolio(
-    #             PortfolioId=portfolio_id,
-    #             PrincipalARN=principal_to_associate,
-    #             PrincipalType="IAM",
-    #         )
-    #         return True
-    #     return False
-
     def run(self):
         hub_portfolio_details = json.loads(
             self.input()
@@ -89,11 +67,6 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
             .read()
         )
         portfolio_id = hub_portfolio_details.get("Id")
-        # # ADD PRINCIPAL IF NEEDED
-        # with self.hub_regional_client("servicecatalog") as servicecatalog:
-        #     hub_added_principal = self.add_principal_if_needed(
-        #         portfolio_id, self.puppet_account_id, servicecatalog
-        #     )
 
         # SHARE
         has_already_been_shared = self.has_already_been_shared(portfolio_id)
