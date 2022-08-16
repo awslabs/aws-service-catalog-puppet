@@ -32,14 +32,18 @@ class CreateSpokeLocalPortfolioTask(tasks.TaskWithReference):
         ]
 
     def run(self):
-        hub_portfolio_details = self.get_output_from_reference_dependency(
-            self.portfolio_task_reference
-        )
-        with self.spoke_regional_client("servicecatalog") as spoke_service_catalog:
-            spoke_portfolio = aws.ensure_portfolio(
-                spoke_service_catalog,
-                self.portfolio,
-                hub_portfolio_details.get("ProviderName"),
-                hub_portfolio_details.get("Description"),
-            )
+        with self.spoke_regional_client("servicecatalog") as servicecatalog:
+            if self.puppet_account_id == self.account_id:
+                spoke_portfolio = aws.find_portfolio(servicecatalog, self.portfolio)
+            else:
+                hub_portfolio_details = self.get_output_from_reference_dependency(
+                    self.portfolio_task_reference
+                )
+
+                spoke_portfolio = aws.ensure_portfolio(
+                    servicecatalog,
+                    self.portfolio,
+                    hub_portfolio_details.get("ProviderName"),
+                    hub_portfolio_details.get("Description"),
+                )
         self.write_output(spoke_portfolio)

@@ -41,6 +41,13 @@ class ProvisionWorkspaceTask(tasks.TaskWithParameters):
     requested_priority = luigi.IntParameter(significant=False, default=0)
 
     execution = luigi.Parameter()
+    manifest_file_path = luigi.Parameter()
+
+    section_name = constants.WORKSPACES
+
+    @property
+    def item_name(self):
+        return self.workspace_name
 
     def params_for_results_display(self):
         return {
@@ -51,9 +58,7 @@ class ProvisionWorkspaceTask(tasks.TaskWithParameters):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def requires(
-        self,
-    ):  # TODO handle prepare_account_for_workspace_task.PrepareAccountForWorkspaceTask(
+    def requires(self,):
         return dict(
             reference_dependencies=get_dependencies_for_task_reference(
                 self.manifest_task_reference_file_path,

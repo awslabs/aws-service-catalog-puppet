@@ -528,6 +528,7 @@ def create(
                 ssm_param_outputs=[],
                 requested_priority=parameters_to_use.get("requested_priority"),
                 execution=parameters_to_use.get("execution"),
+                manifest_task_reference_file_path=manifest_task_reference_file_path,
             )
 
     elif section_name == constants.WORKSPACES:
@@ -544,7 +545,7 @@ def create(
                 dependencies_by_reference=parameters_to_use.get(
                     "dependencies_by_reference"
                 ),
-                app_name=parameters_to_use.get("app_name"),
+                workspace_name=parameters_to_use.get("workspace_name"),
                 region=parameters_to_use.get("region"),
                 account_id=parameters_to_use.get("account_id"),
                 bucket=parameters_to_use.get("bucket"),
@@ -559,6 +560,26 @@ def create(
                 ssm_param_outputs=[],
                 requested_priority=parameters_to_use.get("requested_priority"),
                 execution=parameters_to_use.get("execution"),
+                manifest_task_reference_file_path=manifest_task_reference_file_path,
+                manifest_file_path=manifest_file_path,
+            )
+
+    elif section_name == constants.WORKSPACE_ACCOUNT_PREPARATION:
+        if status == "terminated":
+            raise Exception("Not supported")
+        else:
+            from servicecatalog_puppet.workflow.workspaces import (
+                prepare_account_for_workspace_task,
+            )
+
+            return prepare_account_for_workspace_task.PrepareAccountForWorkspaceTask(
+                puppet_account_id=puppet_account_id,
+                task_reference=parameters_to_use.get("task_reference"),
+                dependencies_by_reference=parameters_to_use.get(
+                    "dependencies_by_reference"
+                ),
+                account_id=parameters_to_use.get("account_id"),
+                manifest_task_reference_file_path=manifest_task_reference_file_path,
             )
 
     else:

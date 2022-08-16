@@ -176,6 +176,17 @@ def generate_task_reference(f):
                         task_to_add,
                     )
 
+                if section_name == constants.WORKSPACES:
+                    handle_workspaces(
+                        all_tasks,
+                        all_tasks_task_reference,
+                        item_name,
+                        puppet_account_id,
+                        section_name,
+                        task_reference,
+                        task_to_add,
+                    )
+
     #
     # Second pass - adding get parameters
     #
@@ -302,6 +313,35 @@ def generate_task_reference(f):
     )
 
 
+def handle_workspaces(
+    all_tasks,
+    all_tasks_task_reference,
+    item_name,
+    puppet_account_id,
+    section_name,
+    task_reference,
+    task_to_add,
+):
+    workspace_account_preparation_ref = (
+        f"{constants.WORKSPACE_ACCOUNT_PREPARATION}-{task_to_add.get('account_id')}"
+    )
+    if all_tasks.get(workspace_account_preparation_ref) is None:
+        all_tasks[workspace_account_preparation_ref] = dict(
+            puppet_account_id=puppet_account_id,
+            task_reference=workspace_account_preparation_ref,
+            dependencies_by_reference=[],
+            reverse_dependencies_by_reference=[],
+            account_id=task_to_add.get("account_id"),
+            section_name=constants.WORKSPACE_ACCOUNT_PREPARATION,
+        )
+    if workspace_account_preparation_ref not in all_tasks[all_tasks_task_reference].get(
+        "dependencies_by_reference"
+    ):
+        all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
+            workspace_account_preparation_ref
+        )
+
+
 def handle_spoke_local_portfolios(
     all_tasks,
     all_tasks_task_reference,
@@ -341,7 +381,6 @@ def handle_spoke_local_portfolios(
             section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
         )
 
-
     else:
         # GET THE HUB PORTFOLIO
         hub_portfolio_ref = f"{constants.PORTFOLIO_LOCAL}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
@@ -355,9 +394,12 @@ def handle_spoke_local_portfolios(
             portfolio=task_to_add.get("portfolio"),
             section_name=constants.PORTFOLIO_LOCAL,
         )
-        all_tasks[all_tasks_task_reference]["portfolio_task_reference"] = hub_portfolio_ref
-        all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(hub_portfolio_ref)
-
+        all_tasks[all_tasks_task_reference][
+            "portfolio_task_reference"
+        ] = hub_portfolio_ref
+        all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
+            hub_portfolio_ref
+        )
 
         # CREATE THE HUB ASSOCIATIONS
         hub_portfolio_puppet_association_ref = f"{constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"

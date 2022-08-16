@@ -51,6 +51,13 @@ class ProvisionStackTask(tasks.TaskWithParameters):
     use_service_role = luigi.BoolParameter()
 
     execution = luigi.Parameter()
+    manifest_file_path = luigi.Parameter()
+
+    section_name = constants.STACKS
+
+    @property
+    def item_name(self):
+        return self.stack_name
 
     try_count = 1
 
