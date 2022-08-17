@@ -127,7 +127,7 @@ def generate_task_reference(f):
                     output_account_id = ssm_parameter_output.get(
                         "account_id", puppet_account_id
                     )
-                    ssm_parameter_output_task_reference = f'ssm_outputs-{task_to_add.get("account_id")}-{output_region}-{ssm_parameter_output.get("param_name")}'
+                    ssm_parameter_output_task_reference = f'{constants.SSM_OUTPUTS}-{task_to_add.get("account_id")}-{output_region}-{ssm_parameter_output.get("param_name")}'
                     ssm_parameter_output_task_reference = ssm_parameter_output_task_reference.replace(
                         "${AWS::Region}", task_to_add.get("region")
                     ).replace(
@@ -151,7 +151,8 @@ def generate_task_reference(f):
                         dependencies_by_reference=[all_tasks_task_reference],
                         reverse_dependencies_by_reference=list(),
                         task_generating_output=all_tasks_task_reference,
-                        section_name="ssm_outputs",
+                        status=task_to_add.get("status"),
+                        section_name=constants.SSM_OUTPUTS,
                     )
 
                 if section_name == constants.LAUNCHES:
@@ -190,7 +191,6 @@ def generate_task_reference(f):
     #
     # Second pass - adding get parameters
     #
-    # TODO handle boto3 parameters
     new_tasks = dict()
     for task_reference, task in all_tasks.items():
         parameters = dict()
@@ -208,46 +208,121 @@ def generate_task_reference(f):
         always_merger.merge(parameters, launch_parameters)
         always_merger.merge(parameters, account_parameters)
 
-        for parameter_name, parameter_details in parameters.items():
-            if parameter_details.get("ssm"):
-                ssm_parameter_details = parameter_details.get("ssm")
-                interpolation_output_account = task.get("account_id")
-                interpolation_output_region = task.get("region")
-                owning_account = ssm_parameter_details.get(
-                    "account_id", puppet_account_id
-                )
-                owning_region = ssm_parameter_details.get("region", default_region)
-                task_reference = f"{owning_account}-{owning_region}"
-                param_name = (
-                    ssm_parameter_details.get("name")
-                    .replace("${AWS::Region}", interpolation_output_region)
-                    .replace("${AWS::AccountId}", interpolation_output_account)
-                )
-                ssm_parameter_task_reference = (
-                    f"ssm_parameters-{task_reference}-{param_name}"
-                )
-                if all_tasks.get(
-                    ssm_parameter_task_reference.replace(
-                        "ssm_parameters-", "ssm_outputs-"
+        if task_to_add.get("status") != constants.TERMINATED:
+            for parameter_name, parameter_details in parameters.items():
+                if parameter_details.get("ssm"):
+                    ssm_parameter_details = parameter_details.get("ssm")
+                    interpolation_output_account = task.get("account_id")
+                    interpolation_output_region = task.get("region")
+                    owning_account = ssm_parameter_details.get(
+                        "account_id", puppet_account_id
                     )
-                ):
-                    dependency = [
-                        ssm_parameter_task_reference.replace(
-                            "ssm_parameters-", "ssm_outputs-"
+                    owning_region = ssm_parameter_details.get("region", default_region)
+                    task_reference = f"{owning_account}-{owning_region}"
+                    param_name = (
+                        ssm_parameter_details.get("name")
+                        .replace("${AWS::Region}", interpolation_output_region)
+                        .replace("${AWS::AccountId}", interpolation_output_account)
+                    )
+
+                    task_def = dict(
+                        account_id=owning_account,
+                        region=owning_region,
+                        reverse_dependencies_by_reference=list(),
+                    )
+                    path = ssm_parameter_details.get("path")
+                    if path is None:
+                        ssm_parameter_task_reference = (
+                            f"{constants.SSM_PARAMETERS}-{task_reference}-{param_name}"
                         )
-                    ]
-                else:
-                    dependency = []
-                new_tasks[ssm_parameter_task_reference] = dict(
-                    task_reference=ssm_parameter_task_reference,
-                    account_id=owning_account,
-                    region=owning_region,
-                    param_name=param_name,
-                    dependencies_by_reference=dependency,
-                    reverse_dependencies_by_reference=list(),
-                    section_name="ssm_parameters",
-                )
-                task["dependencies_by_reference"].append(ssm_parameter_task_reference)
+                        task_def["param_name"] = param_name
+                        task_def["section_name"] = constants.SSM_PARAMETERS
+                    else:
+                        ssm_parameter_task_reference = f"{constants.SSM_PARAMETERS_WITH_A_PATH}-{task_reference}-{path}"
+                        task_def["path"] = path
+                        task_def["section_name"] = constants.SSM_PARAMETERS_WITH_A_PATH
+                    task_def["task_reference"] = ssm_parameter_task_reference
+
+                    potential_output_task_ref = f"{constants.SSM_PARAMETERS}-{task_reference}-{param_name}".replace(
+                        f"{constants.SSM_PARAMETERS}-", f"{constants.SSM_OUTPUTS}-"
+                    )
+                    if all_tasks.get(potential_output_task_ref):
+                        dependency = [potential_output_task_ref]
+                    else:
+                        dependency = []
+                    task_def["dependencies_by_reference"] = dependency
+
+                    # IF THERE ARE TWO TASKS USING THE SAME PARAMETER AND THE OTHER TASK ADDED IT FIRST
+                    if new_tasks.get(ssm_parameter_task_reference):
+                        existing_task_def = new_tasks[ssm_parameter_task_reference]
+                        # AVOID DUPLICATE DEPENDENCIES IN THE SAME LIST
+                        for dep in dependency:
+                            if (
+                                dep
+                                not in existing_task_def["dependencies_by_reference"]
+                            ):
+                                existing_task_def["dependencies_by_reference"].append(
+                                    dep
+                                )
+                    else:
+                        new_tasks[ssm_parameter_task_reference] = task_def
+
+                    task["dependencies_by_reference"].append(
+                        ssm_parameter_task_reference
+                    )
+                # HANDLE BOTO3 PARAMS
+                if parameter_details.get("boto3"):
+                    boto3_parameter_details = parameter_details.get("boto3")
+                    account_id_to_use_for_boto3_call = (
+                        str(
+                            boto3_parameter_details.get("account_id", puppet_account_id)
+                        )
+                        .replace("${AWS::AccountId}", task.get("account_id"))
+                        .replace("${AWS::PuppetAccountId}", puppet_account_id)
+                    )
+                    region_to_use_for_boto3_call = boto3_parameter_details.get(
+                        "region", constants.HOME_REGION
+                    ).replace("${AWS::Region}", task.get("region"))
+
+                    dependencies = list()
+                    if parameter_details.get("cloudformation_stack_output"):
+                        cloudformation_stack_output = parameter_details[
+                            "cloudformation_stack_output"
+                        ]
+                        stack_ref_account_id = (
+                            str(cloudformation_stack_output.get("account_id"))
+                            .replace("${AWS::AccountId}", task.get("account_id"))
+                            .replace("${AWS::PuppetAccountId}", puppet_account_id)
+                        )
+                        stack_ref_region = cloudformation_stack_output.get(
+                            "region"
+                        ).replace("${AWS::Region}", task.get("region"))
+                        stack_ref_stack = cloudformation_stack_output.get("stack_name")
+                        stack_ref = f"{constants.STACKS}_{stack_ref_stack}_{stack_ref_account_id}-{stack_ref_region}"
+                        if all_tasks.get(stack_ref):
+                            dependencies.append(stack_ref)
+                        section_name_to_use = constants.STACKS
+                        item_name_to_use = stack_ref_stack
+
+                    boto3_parameter_task_reference = f"{constants.BOTO3_PARAMETERS}-{section_name_to_use}-{item_name_to_use}-{parameter_name}-{account_id_to_use_for_boto3_call}-{region_to_use_for_boto3_call}"
+                    new_tasks[boto3_parameter_task_reference] = dict(
+                        status=task.get("status"),
+                        task_reference=boto3_parameter_task_reference,
+                        dependencies_by_reference=dependencies,
+                        reverse_dependencies_by_reference=list(),
+                        account_id=account_id_to_use_for_boto3_call,
+                        region=region_to_use_for_boto3_call,
+                        arguments=boto3_parameter_details.get("arguments"),
+                        call=boto3_parameter_details.get("call"),
+                        client=boto3_parameter_details.get("client"),
+                        filter=boto3_parameter_details.get("filter"),
+                        use_paginator=boto3_parameter_details.get("use_paginator"),
+                        section_name=constants.BOTO3_PARAMETERS,
+                    )
+                    task["dependencies_by_reference"].append(
+                        boto3_parameter_task_reference
+                    )
+
     all_tasks.update(new_tasks)
 
     #
@@ -569,7 +644,7 @@ def handle_spoke_local_portfolios(
                 ],
                 portfolio_task_reference=hub_portfolio_ref,
                 reverse_dependencies_by_reference=[],
-                account_id=puppet_account_id,  # EPF changed
+                account_id=puppet_account_id,
                 region=task_to_add.get("region"),
                 section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
             )

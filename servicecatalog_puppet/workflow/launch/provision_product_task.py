@@ -85,10 +85,6 @@ class ProvisionProductTask(tasks.TaskWithParameters):
             apis.append(
                 f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
             )
-
-        if len(self.ssm_param_outputs) > 0:
-            apis.append(f"ssm.put_parameter_and_wait")
-
         return apis
 
     def run(self):

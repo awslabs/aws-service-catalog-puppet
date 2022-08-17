@@ -38,5 +38,39 @@ class GetSSMParameterTask(tasks.TaskWithReference):  # TODO add by path paramete
         ).replace("${AWS::AccountId}", self.account_id)
         with self.spoke_regional_client("ssm") as ssm:
             parameter = ssm.get_parameter(Name=parameter_name_to_use)
-        result = {parameter_name_to_use: parameter}
+        result = {parameter_name_to_use: parameter.get("Parameter")}
         self.write_output(result)
+
+
+class GetSSMParameterByPathTask(tasks.TaskWithReference):
+    puppet_account_id = luigi.Parameter()
+    account_id = luigi.Parameter()
+    path = luigi.Parameter()
+    region = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "task_reference": self.task_reference,
+            "account_id": self.account_id,
+            "region": self.region,
+            "path": self.path,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def resources_used(self):
+        uniq = f"{self.region}-{self.puppet_account_id}"
+        return [
+            (uniq, Limits.SSM_GET_PARAMETER_BY_PATH_PER_REGION_OF_ACCOUNT),
+        ]
+
+    def run(self):
+        path = self.path.replace("${AWS::Region}", self.region).replace(
+            "${AWS::AccountId}", self.account_id
+        )
+        parameters = dict()
+        with self.spoke_regional_client("ssm") as ssm:
+            paginator = ssm.get_paginator("get_parameters_by_path")
+            for page in paginator.paginate(Path=path, Recursive=True):
+                for parameter in page.get("Parameters", []):
+                    parameters[parameter.get("Name")] = parameter
+        self.write_output(parameters)

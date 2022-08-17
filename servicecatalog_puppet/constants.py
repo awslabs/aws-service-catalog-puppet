@@ -316,6 +316,8 @@ CLOUDFORMATION_IN_PROGRESS_STATUS = [
 
 SSM_OUTPUTS = "ssm_outputs"
 SSM_PARAMETERS = "ssm_parameters"
+BOTO3_PARAMETERS = "boto3_parameters"
+SSM_PARAMETERS_WITH_A_PATH = "ssm_parameters_with_a_path"
 PORTFOLIO_ASSOCIATIONS = "portfolio-associations"
 PORTFOLIO_CONSTRAINTS_LAUNCH = "portfolio-constraints-launch"
 PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE = "portfolio-constraints-resource_update"

@@ -99,3 +99,42 @@ class SSMOutputsTasks(tasks.TaskWithReference):  # TODO add by path parameters
                 **self.params_for_results_display(),
             )
         )
+
+
+class TerminateSSMOutputsTasks(tasks.TaskWithReference):  # TODO add by path parameters
+    # TODO add filter so this only works in hub and spoke modes
+    puppet_account_id = luigi.Parameter()
+
+    account_id = luigi.Parameter()
+    region = luigi.Parameter()
+
+    param_name = luigi.Parameter()
+
+    def params_for_results_display(self):
+        return {
+            "task_reference": self.task_reference,
+            "account_id": self.account_id,
+            "region": self.region,
+            "param_name": self.param_name,
+            "cache_invalidator": self.cache_invalidator,
+        }
+
+    def resources_used(self):
+        uniq = f"{self.region}-{self.puppet_account_id}"
+        return [
+            (uniq, Limits.SSM_DELETE_PARAMETER_PER_REGION_OF_ACCOUNT),
+        ]
+
+    def run(self):
+        param_name_to_use = self.param_name.replace(
+            "${AWS::Region}", self.region
+        ).replace("${AWS::AccountId}", self.account_id)
+
+        with self.spoke_regional_client(
+            "ssm"
+        ) as ssm:  # TODO what happens when the param is deleted already
+            try:
+                parameter_details = ssm.delete_parameter(Name=param_name_to_use,)
+                self.write_output(dict(parameter_details))
+            except ssm.exceptions.ParameterNotFound:
+                self.write_output(dict(result="parameter not found"))

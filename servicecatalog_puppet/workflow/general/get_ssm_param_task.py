@@ -223,17 +223,18 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                 requested_param_account_id = requested_param_details.get(
                     "account_id", self.puppet_account_id
                 )
-
                 requested_param_name = (
                     requested_param_details.get("name")
                     .replace("${AWS::AccountId}", self.account_id)
                     .replace("${AWS::Region}", self.region)
                 )
 
-                required_task_reference = f"ssm_parameters-{requested_param_account_id}-{requested_param_region}-{requested_param_name}"
+                if requested_param_details.get("path"):
+                    required_task_reference = f"{constants.SSM_PARAMETERS_WITH_A_PATH}-{requested_param_account_id}-{requested_param_region}-{requested_param_details.get('path')}"
+                else:
+                    required_task_reference = f"{constants.SSM_PARAMETERS}-{requested_param_account_id}-{requested_param_region}-{requested_param_name}"
 
-                reference_dependencies = self.input().get("reference_dependencies")
-                parameter_task_output = json.loads(
+                parameter_task_output = json.loads(  # TODO optimise
                     self.input()
                     .get("reference_dependencies")
                     .get(required_task_reference)
@@ -241,17 +242,43 @@ class PuppetTaskWithParameters(tasks.PuppetTask):
                     .read()
                 )
 
-                all_params[param_name] = (
-                    parameter_task_output.get(requested_param_name)
-                    .get("Parameter")
-                    .get("Value")
-                )
+                all_params[param_name] = parameter_task_output.get(
+                    requested_param_name
+                ).get("Value")
 
             if param_details.get("boto3"):
-                with self.input().get("ssm_params").get("boto3_params").get(
-                    param_name
-                ).open() as f:
-                    all_params[param_name] = json.loads(f.read())
+                requested_param_details = param_details.get("boto3")
+                boto3_task_account_id = requested_param_details.get("account_id")
+                boto3_task_region = requested_param_details.get("region")
+                if param_details.get("cloudformation_stack_output"):
+                    boto3_section = constants.STACKS
+                    boto3_item = param_details["cloudformation_stack_output"][
+                        "stack_name"
+                    ]
+                elif param_details.get("servicecatalog_provisioned_product_output"):
+                    boto3_section = constants.LAUNCHES
+                    boto3_item = param_details[
+                        "servicecatalog_provisioned_product_output"
+                    ]["provisioned_product_name"]
+                else:
+                    boto3_section = constants.BOTO3_PARAMETERS
+                    boto3_item = ""  # TODO FIXME
+
+                task_ref = f"{constants.BOTO3_PARAMETERS}-{boto3_section}-{boto3_item}-{param_name}-{boto3_task_account_id}-{boto3_task_region}"
+                task_ref = (
+                    task_ref.replace("${AWS::AccountId}", self.account_id)
+                    .replace("${AWS::PuppetAccountId}", self.puppet_account_id)
+                    .replace("${AWS::Region}", self.region)
+                )
+                parameter_task_output = json.loads(  # TODO optimise
+                    self.input()
+                    .get("reference_dependencies")
+                    .get(task_ref)
+                    .open("r")
+                    .read()
+                )
+                all_params[param_name] = parameter_task_output
+
             if param_details.get("default"):
                 all_params[param_name] = (
                     param_details.get("default")

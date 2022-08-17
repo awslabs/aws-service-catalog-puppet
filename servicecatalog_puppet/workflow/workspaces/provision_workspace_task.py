@@ -13,9 +13,6 @@ from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 from servicecatalog_puppet.workflow.dependencies import tasks
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
 
 
 class ProvisionWorkspaceTask(tasks.TaskWithParameters):

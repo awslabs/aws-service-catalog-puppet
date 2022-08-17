@@ -146,22 +146,51 @@ def create(
                 manifest_file_path=manifest_file_path,
             )
 
+    elif section_name == constants.BOTO3_PARAMETERS:
+        from servicecatalog_puppet.workflow.general import boto3_task
+
+        return boto3_task.Boto3Task(
+            **common_parameters,
+            client=parameters_to_use.get("client"),
+            use_paginator=parameters_to_use.get("use_paginator"),
+            call=parameters_to_use.get("call"),
+            arguments=parameters_to_use.get("arguments"),
+            filter=parameters_to_use.get("filter"),
+        )
+
+    elif section_name == constants.SSM_PARAMETERS_WITH_A_PATH:
+        from servicecatalog_puppet.workflow.ssm import get_ssm_parameter_task
+
+        return get_ssm_parameter_task.GetSSMParameterByPathTask(
+            **common_parameters, path=parameters_to_use.get("path"),
+        )
+
     elif section_name == constants.SSM_PARAMETERS:
         from servicecatalog_puppet.workflow.ssm import get_ssm_parameter_task
 
         return get_ssm_parameter_task.GetSSMParameterTask(
             **common_parameters, param_name=parameters_to_use.get("param_name"),
         )
+
     elif section_name == constants.SSM_OUTPUTS:
         from servicecatalog_puppet.workflow.ssm import ssm_outputs_task
 
-        return ssm_outputs_task.SSMOutputsTasks(
-            **common_parameters,
-            param_name=parameters_to_use.get("param_name"),
-            stack_output=parameters_to_use.get("stack_output"),
-            task_generating_output=parameters_to_use.get("task_generating_output"),
-            force_operation=parameters_to_use.get("force_operation"),
-        )
+        if (
+            parameters_to_use.get("status") == constants.TERMINATED
+        ):  # EPF LATE NIGHT ADD
+
+            return ssm_outputs_task.TerminateSSMOutputsTasks(
+                **common_parameters, param_name=parameters_to_use.get("param_name"),
+            )
+
+        else:
+            return ssm_outputs_task.SSMOutputsTasks(
+                **common_parameters,
+                param_name=parameters_to_use.get("param_name"),
+                stack_output=parameters_to_use.get("stack_output"),
+                task_generating_output=parameters_to_use.get("task_generating_output"),
+                force_operation=parameters_to_use.get("force_operation"),
+            )
     elif section_name == constants.TAG_POLICIES:
         if status == "terminated":
             raise Exception(
@@ -582,7 +611,35 @@ def create(
 
     elif section_name == constants.WORKSPACES:
         if status == "terminated":
-            raise Exception("Not supported yet")
+            from servicecatalog_puppet.workflow.workspaces import (
+                terminate_workspace_task,
+            )
+
+            return terminate_workspace_task.TerminateWorkspaceTask(
+                puppet_account_id=puppet_account_id,
+                task_reference=parameters_to_use.get("task_reference"),
+                dependencies_by_reference=parameters_to_use.get(
+                    "dependencies_by_reference"
+                ),
+                workspace_name=parameters_to_use.get("workspace_name"),
+                region=parameters_to_use.get("region"),
+                account_id=parameters_to_use.get("account_id"),
+                bucket=parameters_to_use.get("bucket"),
+                key=parameters_to_use.get("key"),
+                version_id=parameters_to_use.get("version_id"),
+                ssm_param_inputs=[],
+                launch_parameters=parameters_to_use.get("launch_parameters"),
+                manifest_parameters=parameters_to_use.get(""),
+                account_parameters=parameters_to_use.get(""),
+                retry_count=parameters_to_use.get("retry_count"),
+                worker_timeout=parameters_to_use.get("worker_timeout"),
+                ssm_param_outputs=[],
+                requested_priority=parameters_to_use.get("requested_priority"),
+                execution=parameters_to_use.get("execution"),
+                manifest_task_reference_file_path=manifest_task_reference_file_path,
+                manifest_file_path=manifest_file_path,
+            )
+
         else:
             from servicecatalog_puppet.workflow.workspaces import (
                 provision_workspace_task,
