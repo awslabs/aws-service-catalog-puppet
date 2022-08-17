@@ -32,13 +32,7 @@ def get_spoke_local_portfolio_common_args(
     )
 
 
-def generate_task_reference(f):
-    puppet_account_id = config.get_puppet_account_id()
-    default_region = constants.HOME_REGION
-
-    content = open(f.name, "r").read()
-    manifest = manifest_utils.Manifest(yaml_utils.load(content))
-
+def generate_complete_task_reference(f, puppet_account_id, default_region, manifest):
     all_tasks = dict()
     tasks_by_type = dict()
     tasks_by_region = dict()
@@ -495,6 +489,7 @@ def handle_spoke_local_portfolios(
             region=task_to_add.get("region"),
             portfolio=task_to_add.get("portfolio"),
             status=task_to_add.get("status"),
+            execution=task_to_add.get("execution"),
             section_name=constants.PORTFOLIO_LOCAL,
         )
 
@@ -502,6 +497,7 @@ def handle_spoke_local_portfolios(
             # GET THE SPOKE PRODUCTS AND VERSIONS SO WE CAN DISASSOCIATE THEM
             spoke_portfolio_all_products_and_versions_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
             all_tasks[spoke_portfolio_all_products_and_versions_ref] = dict(
+                execution=task_to_add.get("execution"),
                 puppet_account_id=puppet_account_id,
                 task_reference=spoke_portfolio_all_products_and_versions_ref,
                 dependencies_by_reference=[spoke_portfolio_ref],
@@ -542,6 +538,7 @@ def handle_spoke_local_portfolios(
             account_id=task_to_add.get("account_id"),
             region=task_to_add.get("region"),
             portfolio=task_to_add.get("portfolio"),
+            execution=task_to_add.get("execution"),
             section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
         )
         deps.append(spoke_portfolio_puppet_association_ref)
@@ -562,6 +559,7 @@ def handle_spoke_local_portfolios(
                 account_id=task_to_add.get("account_id"),
                 region=task_to_add.get("region"),
                 portfolio=task_to_add.get("portfolio"),
+                execution=task_to_add.get("execution"),
                 section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
             )
 
@@ -592,6 +590,7 @@ def handle_spoke_local_portfolios(
                 region=task_to_add.get("region"),
                 portfolio=task_to_add.get("portfolio"),
                 status=task_to_add.get("status"),
+                execution=task_to_add.get("execution"),
                 section_name=constants.PORTFOLIO_LOCAL,
             )
             all_tasks[all_tasks_task_reference][
@@ -612,6 +611,7 @@ def handle_spoke_local_portfolios(
                 account_id=puppet_account_id,
                 region=task_to_add.get("region"),
                 portfolio=task_to_add.get("portfolio"),
+                execution=task_to_add.get("execution"),
                 section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,  # TODO test in with a new spoke local
             )
 
@@ -629,6 +629,7 @@ def handle_spoke_local_portfolios(
                 dependencies_by_reference=[hub_portfolio_ref],
                 reverse_dependencies_by_reference=[],
                 portfolio=task_to_add.get("portfolio"),
+                execution=task_to_add.get("execution"),
                 portfolio_task_reference=hub_portfolio_ref,
                 section_name=f"portfolio-share-and-accept-{sharing_mode.lower()}",
             )
@@ -646,6 +647,7 @@ def handle_spoke_local_portfolios(
                 reverse_dependencies_by_reference=[],
                 account_id=puppet_account_id,
                 region=task_to_add.get("region"),
+                execution=task_to_add.get("execution"),
                 section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
             )
 
@@ -660,6 +662,7 @@ def handle_spoke_local_portfolios(
                 account_id=task_to_add.get("account_id"),
                 region=task_to_add.get("region"),
                 portfolio=task_to_add.get("portfolio"),
+                execution=task_to_add.get("execution"),
                 section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
             )
 
@@ -777,6 +780,7 @@ def handle_launches(
         region=task_to_add.get("region"),
         portfolio=task_to_add.get("portfolio"),
         status=task_to_add.get("status"),
+        execution=task_to_add.get("execution"),
         section_name=constants.PORTFOLIO_LOCAL,
     )
 
@@ -798,6 +802,7 @@ def handle_launches(
             dependencies_by_reference=[hub_portfolio_ref],
             reverse_dependencies_by_reference=[],
             portfolio=task_to_add.get("portfolio"),
+            execution=task_to_add.get("execution"),
             portfolio_task_reference=hub_portfolio_ref,
             section_name=f"portfolio-share-and-accept-{sharing_mode.lower()}",
         )
@@ -829,6 +834,7 @@ def handle_launches(
             account_id=task_to_add.get("account_id"),
             region=task_to_add.get("region"),
             portfolio=task_to_add.get("portfolio"),
+            execution=task_to_add.get("execution"),
             section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
         )
         all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
@@ -859,6 +865,7 @@ def handle_launches(
         deps = [portfolio_deploying_from, spoke_portfolio_puppet_association_ref]
     portfolio_get_all_products_and_their_versions_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
     all_tasks[portfolio_get_all_products_and_their_versions_ref] = dict(
+        execution=task_to_add.get("execution"),
         puppet_account_id=puppet_account_id,
         task_reference=portfolio_get_all_products_and_their_versions_ref,
         dependencies_by_reference=deps,
@@ -881,6 +888,64 @@ def handle_launches(
     all_tasks[all_tasks_task_reference][
         "describe_provisioning_params_ref"
     ] = describe_provisioning_params_ref
+
+
+def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
+    tasks_to_include = dict()
+    for task_name, task in all_tasks.items():
+        execution = task.get("execution", constants.EXECUTION_MODE_DEFAULT)
+        if execution in [constants.EXECUTION_MODE_HUB, constants.EXECUTION_MODE_ASYNC]:
+            should_include = True
+        elif execution == constants.EXECUTION_MODE_SPOKE:
+            should_include = False
+        elif execution == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT:
+            should_include = task.get("account_id", puppet_account_id) == puppet_account_id
+        else:
+            raise Exception("Unhandled execution")
+
+        if should_include:
+            tasks_to_include[task_name] = task
+
+    for task_name, task_to_include in tasks_to_include.items():
+        for dep in task_to_include.get("dependencies_by_reference"):
+            if not tasks_to_include.get(dep):
+                raise Exception(f"You have a non spoke item: {task_name} depending on a spoke item: {dep}")
+
+    open(output_file_path, "w").write(yaml_utils.dump(dict(all_tasks=tasks_to_include)))
+
+
+def generate_spoke_task_reference(puppet_account_id, all_tasks, output_file_path):
+    tasks_to_include = dict()
+    for task_name, task in all_tasks.items():
+        execution = task.get("execution", constants.EXECUTION_MODE_DEFAULT)
+        if execution in [constants.EXECUTION_MODE_HUB, constants.EXECUTION_MODE_ASYNC]:
+            should_include = False
+        elif execution == constants.EXECUTION_MODE_SPOKE:
+            should_include = True
+        elif execution == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT:
+            should_include = task.get("account_id", puppet_account_id) != puppet_account_id and task.get("section_name") != constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
+        else:
+            raise Exception("Unhandled execution")
+
+        if should_include:
+            tasks_to_include[task_name] = task
+
+    open(output_file_path, "w").write(yaml_utils.dump(dict(all_tasks=tasks_to_include)))
+
+def generate_task_reference(f):
+    puppet_account_id = config.get_puppet_account_id()
+    default_region = constants.HOME_REGION
+
+    content = open(f.name, "r").read()
+    manifest = manifest_utils.Manifest(yaml_utils.load(content))
+    generate_complete_task_reference(f, puppet_account_id, default_region, manifest)
+
+    complete = yaml_utils.load(
+        open(f.name.replace("-expanded", "-task-reference"), "r").read()
+    )
+    generate_hub_task_reference(puppet_account_id, complete.get("all_tasks"), f.name.replace("-expanded", "-task-reference-hub"))
+    generate_spoke_task_reference(puppet_account_id, complete.get("all_tasks"), f.name.replace("-expanded", "-task-reference-spoke"))
+
 
 
 def deploy_from_task_reference(f, num_workers):
