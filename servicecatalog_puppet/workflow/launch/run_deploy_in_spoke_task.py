@@ -5,7 +5,6 @@ import luigi
 
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow.generate import generate_shares_task
 from servicecatalog_puppet.workflow.manifest import generate_manifest_with_ids_task
 from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
@@ -29,11 +28,11 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
 
     def requires(self):
         return dict(
-            shares=generate_shares_task.GenerateSharesTask(
-                puppet_account_id=self.puppet_account_id,
-                manifest_file_path=self.manifest_file_path,
-                section=constants.LAUNCHES,
-            ),
+            # shares=generate_shares_task.GenerateSharesTask(
+            #     puppet_account_id=self.puppet_account_id,
+            #     manifest_file_path=self.manifest_file_path,
+            #     section=constants.LAUNCHES,
+            # ),
             new_manifest=generate_manifest_with_ids_task.GenerateManifestWithIdsTask(
                 puppet_account_id=self.puppet_account_id,
                 manifest_file_path=self.manifest_file_path,

@@ -899,7 +899,9 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
         elif execution == constants.EXECUTION_MODE_SPOKE:
             should_include = False
         elif execution == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT:
-            should_include = task.get("account_id", puppet_account_id) == puppet_account_id
+            should_include = (
+                task.get("account_id", puppet_account_id) == puppet_account_id
+            )
         else:
             raise Exception("Unhandled execution")
 
@@ -909,7 +911,9 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
     for task_name, task_to_include in tasks_to_include.items():
         for dep in task_to_include.get("dependencies_by_reference"):
             if not tasks_to_include.get(dep):
-                raise Exception(f"You have a non spoke item: {task_name} depending on a spoke item: {dep}")
+                raise Exception(
+                    f"You have a non spoke item: {task_name} depending on a spoke item: {dep}"
+                )
 
     open(output_file_path, "w").write(yaml_utils.dump(dict(all_tasks=tasks_to_include)))
 
@@ -923,7 +927,11 @@ def generate_spoke_task_reference(puppet_account_id, all_tasks, output_file_path
         elif execution == constants.EXECUTION_MODE_SPOKE:
             should_include = True
         elif execution == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT:
-            should_include = task.get("account_id", puppet_account_id) != puppet_account_id and task.get("section_name") != constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
+            should_include = (
+                task.get("account_id", puppet_account_id) != puppet_account_id
+                and task.get("section_name")
+                != constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
+            )
         else:
             raise Exception("Unhandled execution")
 
@@ -931,6 +939,7 @@ def generate_spoke_task_reference(puppet_account_id, all_tasks, output_file_path
             tasks_to_include[task_name] = task
 
     open(output_file_path, "w").write(yaml_utils.dump(dict(all_tasks=tasks_to_include)))
+
 
 def generate_task_reference(f):
     puppet_account_id = config.get_puppet_account_id()
@@ -940,12 +949,19 @@ def generate_task_reference(f):
     manifest = manifest_utils.Manifest(yaml_utils.load(content))
     generate_complete_task_reference(f, puppet_account_id, default_region, manifest)
 
-    complete = yaml_utils.load(
-        open(f.name.replace("-expanded", "-task-reference"), "r").read()
-    )
-    generate_hub_task_reference(puppet_account_id, complete.get("all_tasks"), f.name.replace("-expanded", "-task-reference-hub"))
-    generate_spoke_task_reference(puppet_account_id, complete.get("all_tasks"), f.name.replace("-expanded", "-task-reference-spoke"))
-
+    # complete = yaml_utils.load(
+    #     open(f.name.replace("-expanded", "-task-reference"), "r").read()
+    # )
+    # generate_hub_task_reference(
+    #     puppet_account_id,
+    #     complete.get("all_tasks"),
+    #     f.name.replace("-expanded", "-task-reference-hub"),
+    # )
+    # generate_spoke_task_reference(
+    #     puppet_account_id,
+    #     complete.get("all_tasks"),
+    #     f.name.replace("-expanded", "-task-reference-spoke"),
+    # )
 
 
 def deploy_from_task_reference(f, num_workers):

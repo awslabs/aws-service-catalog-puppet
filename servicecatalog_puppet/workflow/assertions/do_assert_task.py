@@ -2,19 +2,11 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import deepdiff
-from datetime import datetime
 import luigi
+from deepmerge import always_merger
+import jmespath
 
-
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.assertions import assertion_base_task
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow.general import boto3_task
 from servicecatalog_puppet.workflow.dependencies import tasks
-
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
 
 
 class DoAssertTask(tasks.TaskWithParameters):
@@ -40,31 +32,32 @@ class DoAssertTask(tasks.TaskWithParameters):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def requires(self):
+    def get_actual_result(self):
         config = self.actual.get("config")
-        reference_dependencies = get_dependencies_for_task_reference(
-            self.manifest_task_reference_file_path,
-            self.task_reference,
-            self.puppet_account_id,
-        )
-        return dict(
-            reference_dependencies=reference_dependencies,
-            # TODO fixme this is a bug waiting to happen - this should be in the run command
-            result=boto3_task.Boto3Task(
-                account_id=self.account_id,
-                region=self.region,
-                client=config.get("client"),
-                use_paginator=config.get("use_paginator"),
-                call=config.get("call"),
-                arguments=config.get("arguments"),
-                filter=config.get("filter"),
-                requester_task_id=self.task_id,
-                requester_task_family=self.task_family,
-            ),
-        )
+        client = config.get("client")
+        use_paginator = config.get("use_paginator")
+        call = config.get("call")
+        arguments = config.get("arguments")
+        filter = config.get("filter")
+
+        with self.spoke_regional_client(client) as client:
+            if use_paginator:
+                paginator = client.get_paginator(call)
+                result = dict()
+                for page in paginator.paginate(**arguments):
+                    always_merger.merge(result, page)
+            else:
+                f = getattr(client, call)
+                result = f(**arguments)
+
+        actual_result = jmespath.search(filter, result)
+        if isinstance(actual_result, str):
+            return actual_result.strip()
+        else:
+            return actual_result
 
     def run(self):
-        actual_result = self.load_from_input("result")
+        actual_result = self.get_actual_result()
         expected_result = self.expected.get("config").get("value")
         if isinstance(expected_result, tuple):
             expected_result = list(expected_result)
