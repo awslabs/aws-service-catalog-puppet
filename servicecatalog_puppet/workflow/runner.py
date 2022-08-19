@@ -92,9 +92,11 @@ def run_tasks(
         "processing_time",
         "broken_task",
     ]:
-        os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type)
+        if not os.path.exists(Path(constants.RESULTS_DIRECTORY) / result_type):
+            os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type)
 
-    os.makedirs(Path(constants.OUTPUT))
+    if not os.path.exists(Path(constants.OUTPUT)):
+        os.makedirs(Path(constants.OUTPUT))
 
     logger.info(f"About to run workflow with {num_workers} workers")
 

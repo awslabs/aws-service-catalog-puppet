@@ -190,11 +190,11 @@ class ProvisionProductTask(tasks.TaskWithParameters):
                             "UPDATE_ROLLBACK_COMPLETE",
                         ]:
                             raise Exception(
-                                f"[{self.uid}] current cfn stack_status is {stack_status}"
+                                f"[{self.task_reference}] current cfn stack_status is {stack_status}"
                             )
                         if stack_status == "UPDATE_ROLLBACK_COMPLETE":
                             self.warning(
-                                f"[{self.uid}] {pp_stack_name} has a status of "
+                                f"{pp_stack_name} has a status of "
                                 f"{stack_status}.  This may need manual resolution."
                             )
 

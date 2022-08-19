@@ -6,7 +6,7 @@ from servicecatalog_puppet.workflow import tasks
 import luigi
 
 
-class GetOrCreatePolicyTask(tasks.PuppetTask):
+class GetOrCreatePolicyTask(tasks.PuppetTask):  # TODO make task with reference
     puppet_account_id = luigi.Parameter()
     region = luigi.Parameter()
     policy_name = luigi.Parameter()

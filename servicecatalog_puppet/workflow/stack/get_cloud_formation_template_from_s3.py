@@ -6,7 +6,9 @@ import luigi
 from servicecatalog_puppet.workflow import tasks
 
 
-class GetCloudFormationTemplateFromS3(tasks.PuppetTask):
+class GetCloudFormationTemplateFromS3(
+    tasks.PuppetTask
+):  # TODO make task with reference
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     bucket = luigi.Parameter()

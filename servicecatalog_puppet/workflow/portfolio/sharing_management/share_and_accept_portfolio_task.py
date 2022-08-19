@@ -71,7 +71,7 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
         # SHARE
         has_already_been_shared = self.has_already_been_shared(portfolio_id)
         if not has_already_been_shared:
-            self.info(f"{self.uid}: sharing {portfolio_id} with {self.account_id}")
+            self.info(f"sharing {portfolio_id} with {self.account_id}")
             with self.hub_regional_client("servicecatalog") as servicecatalog:
                 servicecatalog.create_portfolio_share(
                     PortfolioId=portfolio_id, AccountId=self.account_id,

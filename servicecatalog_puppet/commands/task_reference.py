@@ -899,9 +899,15 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
         elif execution == constants.EXECUTION_MODE_SPOKE:
             should_include = False
         elif execution == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT:
+            # cannot assume account_id role from spoke when it is the puppet account id
             should_include = (
                 task.get("account_id", puppet_account_id) == puppet_account_id
             )
+
+            # these should not override the previous decisions
+            if not should_include:
+                # sharing should happen from the hub
+                should_include = task.get("section_name") == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
         else:
             raise Exception("Unhandled execution")
 
@@ -941,22 +947,21 @@ def generate_spoke_task_reference(puppet_account_id, all_tasks, output_file_path
     open(output_file_path, "w").write(yaml_utils.dump(dict(all_tasks=tasks_to_include)))
 
 
-def generate_task_reference(f):
-    puppet_account_id = config.get_puppet_account_id()
+def generate_task_reference(f, puppet_account_id):
     default_region = constants.HOME_REGION
 
     content = open(f.name, "r").read()
     manifest = manifest_utils.Manifest(yaml_utils.load(content))
     generate_complete_task_reference(f, puppet_account_id, default_region, manifest)
 
-    # complete = yaml_utils.load(
-    #     open(f.name.replace("-expanded", "-task-reference"), "r").read()
-    # )
-    # generate_hub_task_reference(
-    #     puppet_account_id,
-    #     complete.get("all_tasks"),
-    #     f.name.replace("-expanded", "-task-reference-hub"),
-    # )
+    complete = yaml_utils.load(
+        open(f.name.replace("-expanded", "-task-reference"), "r").read()
+    )
+    generate_hub_task_reference(
+        puppet_account_id,
+        complete.get("all_tasks"),
+        f.name.replace("-expanded", "-task-reference-hub"),
+    )
     # generate_spoke_task_reference(
     #     puppet_account_id,
     #     complete.get("all_tasks"),
@@ -964,9 +969,7 @@ def generate_task_reference(f):
     # )
 
 
-def deploy_from_task_reference(f, num_workers):
-    puppet_account_id = config.get_puppet_account_id()
-
+def deploy_from_task_reference(f, num_workers, puppet_account_id):
     tasks_to_run = list()
     reference = yaml_utils.load(open(f.name, "r").read())
     all_tasks = reference.get("all_tasks")
@@ -980,7 +983,6 @@ def deploy_from_task_reference(f, num_workers):
             )
         )
 
-    puppet_account_id = config.get_puppet_account_id()
     executor_account_id = puppet_account_id
     is_dry_run = False
     is_list_launches = False

@@ -511,14 +511,20 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
 @cli.command()
 @click.argument("f", type=click.File())
 def generate_task_reference(f):
-    task_reference_commands.generate_task_reference(f)
+    puppet_account_id = config.get_puppet_account_id()
+    task_reference_commands.generate_task_reference(f, puppet_account_id)
 
 
 @cli.command()
 @click.argument("f", type=click.File())
 @click.option("--num-workers", default=10)
-def deploy_from_task_reference(f, num_workers):
-    task_reference_commands.deploy_from_task_reference(f, num_workers)
+@click.option("--puppet-account-id")
+def deploy_from_task_reference(f, num_workers, puppet_account_id):
+    if puppet_account_id is None:
+        puppet_account_id_to_use = config.get_puppet_account_id()
+    else:
+        puppet_account_id_to_use = puppet_account_id
+    task_reference_commands.deploy_from_task_reference(f, num_workers, puppet_account_id_to_use)
 
 
 @cli.command()

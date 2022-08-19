@@ -10,7 +10,6 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class DoAssertTask(tasks.TaskWithParameters):
-
     assertion_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()

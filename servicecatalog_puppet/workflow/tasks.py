@@ -241,10 +241,13 @@ class PuppetTask(luigi.Task):
             result[f"{i}-{r[0]}"] = 1 / r[1]
         return result
 
+    def get_output_location_path(self):
+        return f"output/{self.uid}.{self.output_suffix}"
+
     @property
     def output_location(self):
         puppet_account_id = config.get_puppet_account_id()
-        path = f"output/{self.uid}.{self.output_suffix}"
+        path = self.get_output_location_path()
         should_use_s3_target_if_caching_is_on = (
             "cache_invalidator" not in self.params_for_results_display().keys()
         )
