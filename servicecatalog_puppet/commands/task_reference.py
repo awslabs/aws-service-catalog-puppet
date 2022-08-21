@@ -681,7 +681,7 @@ def handle_spoke_local_portfolios(
             # COPY OR IMPORT THE CHANGES BETWEEN THE TWO PORTFOLIOS
             product_generation_method = task_to_add.get("product_generation_method")
             portfolio_import_or_copy_ref = f"portfolio_{product_generation_method}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-            all_tasks[portfolio_import_or_copy_ref] = dict(
+            portfolio_import_or_copy_task = dict(
                 **get_spoke_local_portfolio_common_args(
                     task_to_add,
                     all_tasks_task_reference,
@@ -696,6 +696,10 @@ def handle_spoke_local_portfolios(
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_ref,
                 portfolio_get_all_products_and_their_versions_for_hub_ref=hub_portfolio_all_products_and_versions_before_ref,
             )
+            if product_generation_method == constants.PRODUCT_GENERATION_METHOD_IMPORT:
+                portfolio_import_or_copy_task["hub_portfolio_task_reference"] = hub_portfolio_ref
+                portfolio_import_or_copy_task["dependencies_by_reference"].append(hub_portfolio_ref)
+            all_tasks[portfolio_import_or_copy_ref] = portfolio_import_or_copy_task
             dependencies_for_constraints.append(portfolio_import_or_copy_ref)
 
         if task_to_add.get("associations"):

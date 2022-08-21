@@ -485,6 +485,30 @@ def create(
                 ),
             )
 
+    elif section_name == constants.PORTFOLIO_IMPORT:
+        if status == "terminated":
+            raise Exception("Not supported yet")
+        else:
+            from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+                import_into_spoke_local_portfolio_task,
+            )
+
+            return import_into_spoke_local_portfolio_task.ImportIntoSpokeLocalPortfolioTask(
+                **common_parameters,
+                portfolio_task_reference=parameters_to_use.get(
+                    "portfolio_task_reference"
+                ),
+                hub_portfolio_task_reference=parameters_to_use.get(
+                    "hub_portfolio_task_reference"
+                ),
+                portfolio_get_all_products_and_their_versions_ref=parameters_to_use.get(
+                    "portfolio_get_all_products_and_their_versions_ref"
+                ),
+                portfolio_get_all_products_and_their_versions_for_hub_ref=parameters_to_use.get(
+                    "portfolio_get_all_products_and_their_versions_for_hub_ref"
+                ),
+            )
+
     elif section_name == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT:
         if status == "terminated":
             raise Exception("Not supported yet")

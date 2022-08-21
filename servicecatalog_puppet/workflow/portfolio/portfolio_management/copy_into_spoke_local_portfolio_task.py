@@ -165,7 +165,7 @@ class CopyIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
         n_products_to_check = len(products_to_check)
         products_found = 0
         while products_found < n_products_to_check:
-            response = servicecatalog.search_products_as_admin_single_page(
+            response = servicecatalog.search_products_as_admin_single_page( #TODO optimise = swap for paginator
                 PortfolioId=spoke_portfolio_id,
             )
             products_ids = [
