@@ -56,6 +56,8 @@ class TaskWithReference(tasks.PuppetTask):
         return f"{self.task_reference}"
 
     def get_output_location_path(self):
+        out = f"output/{self.__class__.__name__}/{self.task_reference}/{self.params_for_results_display().get('cache_invalidator', 'latest')}.{self.output_suffix}"
+        print(f"for {self.task_reference} the output is {out}")
         return f"output/{self.__class__.__name__}/{self.task_reference}/{self.params_for_results_display().get('cache_invalidator', 'latest')}.{self.output_suffix}"
 
 
