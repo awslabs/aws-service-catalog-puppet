@@ -1239,7 +1239,7 @@ def deploy_from_task_reference(f):
     executor_account_id = config.get_executor_account_id()  # TODO FIXME REMOVE
     is_dry_run = is_list_launches = False  # TODO FIXME REMOVE
     execution_mode = "hub"  # TODO FIXME REMOVE
-    on_complete_url = "localhost"  # TODO FIXME REMOVE
+    on_complete_url = ""  # TODO FIXME REMOVE
     running_exploded = False  # TODO FIXME REMOVE
     output_cache_starting_point = ""  # TODO FIXME REMOVE
 
