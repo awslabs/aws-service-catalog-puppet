@@ -216,3 +216,7 @@ def get_should_forward_failures_to_opscenter():
 
 def get_regions():
     return json.loads(os.environ.get(environmental_variables.REGIONS))
+
+
+def get_output_cache_starting_point():
+    return os.environ.get(environmental_variables.OUTPUT_CACHE_STARTING_POINT)

@@ -57,7 +57,6 @@ def run_tasks(
     execution_mode="hub",
     on_complete_url=None,
     running_exploded=False,
-    output_cache_starting_point="",
 ):
     codebuild_id = os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD")
     if is_list_launches:
@@ -121,6 +120,7 @@ def run_tasks(
     if should_use_shared_scheduler:
         logger.info(f"should_use_shared_scheduler: {should_use_shared_scheduler}")
 
+    output_cache_starting_point= config.get_output_cache_starting_point()
     if output_cache_starting_point != "":
         dst = "GetSSMParamTask.zip"
         urlretrieve(output_cache_starting_point, dst)

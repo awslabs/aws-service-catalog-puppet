@@ -1287,5 +1287,4 @@ def deploy_from_task_reference(f):
         execution_mode,
         on_complete_url,
         running_exploded,
-        output_cache_starting_point=output_cache_starting_point,
     )
