@@ -768,7 +768,13 @@ class Manifest(dict):
         return self.get(constants.APPS).get(name)
 
     def get_tasks_for(
-        self, puppet_account_id, section_name, item_name, single_account="None"
+        self,
+        puppet_account_id,
+        section_name,
+        item_name,
+        home_region_configured,
+        regions_configured,
+        single_account="None",
     ):
         accounts = self.get(constants.ACCOUNTS)
         section = self.get(section_name)
@@ -992,11 +998,11 @@ class Manifest(dict):
                                 dict(
                                     **common_parameters,
                                     **additional_parameters,
-                                    region=config.get_home_region(puppet_account_id),
+                                    region=home_region_configured,
                                 )
                             )
                         elif regions == "all":
-                            all_regions = config.get_regions(puppet_account_id)
+                            all_regions = regions_configured
                             for region_enabled in all_regions:
                                 provisioning_tasks.append(
                                     dict(
@@ -1094,11 +1100,11 @@ class Manifest(dict):
                         dict(
                             **common_parameters,
                             **additional_parameters,
-                            region=config.get_home_region(puppet_account_id),
+                            region=home_region_configured,
                         )
                     )
                 elif regions == "all":
-                    all_regions = config.get_regions(puppet_account_id)
+                    all_regions = regions_configured
                     for region_enabled in all_regions:
                         provisioning_tasks.append(
                             dict(
@@ -1154,7 +1160,7 @@ class Manifest(dict):
                     dict(
                         **common_parameters,
                         **additional_parameters,
-                        region=config.get_home_region(puppet_account_id),
+                        region=home_region_configured,
                     )
                 )
             else:
@@ -1163,76 +1169,6 @@ class Manifest(dict):
                 )
 
         return provisioning_tasks
-
-    def get_tasks_for_launch_and_region(
-        self,
-        puppet_account_id,
-        section_name,
-        launch_name,
-        region,
-        single_account="None",
-    ):
-        return [
-            task
-            for task in self.get_tasks_for(
-                puppet_account_id,
-                section_name,
-                launch_name,
-                single_account=single_account,
-            )
-            if task.get("region") == region
-        ]
-
-    def get_tasks_for_launch_and_account(
-        self,
-        puppet_account_id,
-        section_nam,
-        launch_name,
-        account_id,
-        single_account="None",
-    ):
-        return [
-            task
-            for task in self.get_tasks_for(
-                puppet_account_id,
-                section_nam,
-                launch_name,
-                single_account=single_account,
-            )
-            if task.get("account_id") == account_id
-        ]
-
-    def get_tasks_for_launch_and_account_and_region(
-        self,
-        puppet_account_id,
-        section_name,
-        launch_name,
-        account_id,
-        region,
-        single_account="None",
-    ):
-        return [
-            task
-            for task in self.get_tasks_for(
-                puppet_account_id,
-                section_name,
-                launch_name,
-                single_account=single_account,
-            )
-            if task.get("account_id") == account_id and task.get("region") == region
-        ]
-
-    def get_regions_used_for_section_item(
-        self, puppet_account_id, section_name, item_name
-    ):
-        return list(
-            set(
-                task.get("region")
-                for task in self.get_tasks_for(
-                    puppet_account_id, section_name, item_name
-                )
-            )
-        )
 
     def get_account_ids_used_for_section_item(
         self, puppet_account_id, section_name, item_name
@@ -1422,7 +1358,7 @@ class Manifest(dict):
                                 )
                                 task_defs.append(region_tag_account_def)
                             elif regions == "all":
-                                all_regions = config.get_regions(puppet_account_id)
+                                all_regions = regions_configured
                                 for region_enabled in all_regions:
                                     region_tag_account_def = deepcopy(tag_account_def)
                                     region_tag_account_def["region"] = region_enabled
@@ -1471,7 +1407,7 @@ class Manifest(dict):
                             )
                             task_defs.append(region_account_account_def)
                         elif regions in ["all"]:
-                            all_regions = config.get_regions(puppet_account_id)
+                            all_regions = regions_configured
                             for region_enabled in all_regions:
                                 region_account_account_def = deepcopy(
                                     account_account_def

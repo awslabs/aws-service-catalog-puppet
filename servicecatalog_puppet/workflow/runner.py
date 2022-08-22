@@ -21,6 +21,7 @@ from betterboto import client as betterboto_client
 from colorclass import Color
 from luigi import LuigiStatusCode
 
+from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
@@ -63,17 +64,9 @@ def run_tasks(
         should_use_eventbridge = False
         should_forward_failures_to_opscenter = False
     else:
-        should_use_eventbridge = (
-            config.get_should_use_eventbridge(
-                puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-            )
-            and not is_dry_run
-        )
+        should_use_eventbridge = config.get_should_use_eventbridge() and not is_dry_run
         should_forward_failures_to_opscenter = (
-            config.get_should_forward_failures_to_opscenter(
-                puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-            )
-            and not is_dry_run
+            config.get_should_forward_failures_to_opscenter() and not is_dry_run
         )
 
     ssm_client = None
@@ -143,7 +136,7 @@ def run_tasks(
         LuigiStatusCode.MISSING_EXT: 5,
     }
 
-    cache_invalidator = os.environ.get("SCT_CACHE_INVALIDATOR")
+    cache_invalidator = os.environ.get(environmental_variables.CACHE_INVALIDATOR)
 
     has_spoke_failures = False
 

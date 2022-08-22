@@ -61,9 +61,7 @@ def bootstrap(
             except events.exceptions.ResourceNotFoundException:
                 events.create_event_bus(Name=constants.EVENT_BUS_NAME,)
 
-    all_regions = config.get_regions(
-        puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-    )
+    all_regions = config.get_regions(puppet_account_id, constants.HOME_REGION)
     with betterboto_client.MultiRegionClientContextManager(
         "cloudformation", all_regions
     ) as clients:

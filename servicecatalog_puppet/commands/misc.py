@@ -18,6 +18,7 @@ from servicecatalog_puppet import (
     constants,
     manifest_utils,
     manifest_utils_for_launches,
+    environmental_variables,
 )
 from servicecatalog_puppet.workflow import runner
 
@@ -52,7 +53,7 @@ def reset_provisioned_product_owner(f):
     current_account_id = puppet_account_id
     manifest = manifest_utils.load(f, puppet_account_id)
 
-    os.environ["SCT_CACHE_INVALIDATOR"] = str(datetime.now())
+    os.environ[environmental_variables.CACHE_INVALIDATOR] = str(datetime.now())
 
     task_defs = manifest_utils_for_launches.generate_launch_tasks(
         manifest, puppet_account_id, False, False

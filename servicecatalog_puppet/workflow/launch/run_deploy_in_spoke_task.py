@@ -3,6 +3,7 @@
 
 import luigi
 
+from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.manifest import generate_manifest_with_ids_task
@@ -41,6 +42,9 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
 
     def run(self):
         spoke_execution_mode_deploy_env = self.spoke_execution_mode_deploy_env
+        raise Exception(
+            'self.manifest.get("config_cache") was removed and moved to config - need to write some luigi global params to wrap env vars instead'
+        )
         cached_config = self.manifest.get("config_cache")
         home_region = cached_config.get("home_region")
         regions = cached_config.get("regions")
@@ -59,7 +63,7 @@ class RunDeployInSpokeTask(tasks.PuppetTask, manifest_mixin.ManifestMixen):
         signed_url = new_manifest.get("signed_url")
         vars = [
             {
-                "name": "SCT_CACHE_INVALIDATOR",
+                "name": environmental_variables.CACHE_INVALIDATOR,
                 "value": self.cache_invalidator,
                 "type": "PLAINTEXT",
             },

@@ -55,7 +55,7 @@ def assemble_manifest_from_ssm(target_directory):
         )
 
 
-def expand(f, puppet_account_id, single_account, subset=None):
+def expand(f, puppet_account_id, regions, single_account=None, subset=None):
     click.echo("Expanding")
     target_directory = os.path.sep.join([os.path.dirname(f.name), "manifests"])
     assemble_manifest_from_ssm(target_directory)
@@ -132,7 +132,6 @@ def expand(f, puppet_account_id, single_account, subset=None):
     # handle all accounts
     sct_manifest_accounts = json.dumps(manifest_accounts_all)
     sct_manifest_spokes = json.dumps(manifest_accounts_excluding)
-    regions = config.get_regions(puppet_account_id)
     sct_config_regions = json.dumps(regions)
 
     new_manifest["parameters"]["SCTManifestAccounts"] = dict(
@@ -144,26 +143,6 @@ def expand(f, puppet_account_id, single_account, subset=None):
 
     if new_manifest.get(constants.LAMBDA_INVOCATIONS) is None:
         new_manifest[constants.LAMBDA_INVOCATIONS] = dict()
-
-    home_region = config.get_home_region(puppet_account_id)
-    with betterboto_client.ClientContextManager("ssm") as ssm:
-        response = ssm.get_parameter(Name="service-catalog-puppet-version")
-        version = response.get("Parameter").get("Value")
-
-    new_manifest["config_cache"] = dict(
-        home_region=home_region,
-        regions=regions,
-        should_collect_cloudformation_events=config.get_should_use_sns(
-            puppet_account_id, home_region
-        ),
-        should_forward_events_to_eventbridge=config.get_should_use_eventbridge(
-            puppet_account_id, home_region
-        ),
-        should_forward_failures_to_opscenter=config.get_should_forward_failures_to_opscenter(
-            puppet_account_id, home_region
-        ),
-        puppet_version=version,
-    )
 
     new_name = f.name.replace(".yaml", "-expanded.yaml")
     logger.info("Writing new manifest: {}".format(new_name))

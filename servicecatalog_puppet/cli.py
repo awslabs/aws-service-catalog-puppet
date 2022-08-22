@@ -8,9 +8,12 @@ import shutil
 import sys
 
 import click
+import json
 import yaml
 
-from servicecatalog_puppet import config
+from servicecatalog_puppet import config, remote_config
+from servicecatalog_puppet import environmental_variables
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.commands import bootstrap as bootstrap_commands
 from servicecatalog_puppet.commands import task_reference as task_reference_commands
 from servicecatalog_puppet.commands import deploy as deploy_commands
@@ -74,18 +77,18 @@ def deploy(
 
     if executor_account_id != puppet_account_id:
         click.echo("Not running in puppet account: writing config")
-        with open("config.yaml", "w") as conf:
-            conf.write(
-                yaml.safe_dump(
-                    dict(
-                        home_region=home_region,
-                        regions=regions.split(","),
-                        should_collect_cloudformation_events=should_collect_cloudformation_events,
-                        should_forward_events_to_eventbridge=should_forward_events_to_eventbridge,
-                        should_forward_failures_to_opscenter=should_forward_failures_to_opscenter,
-                    )
-                )
-            )
+        # with open("config.yaml", "w") as conf:
+        #     conf.write(
+        #         yaml.safe_dump(
+        #             dict(
+        #                 home_region=home_region,
+        #                 regions=regions.split(","),
+        #                 should_collect_cloudformation_events=should_collect_cloudformation_events,
+        #                 should_forward_events_to_eventbridge=should_forward_events_to_eventbridge,
+        #                 should_forward_failures_to_opscenter=should_forward_failures_to_opscenter,
+        #             )
+        #         )
+        #     )
         deploy_commands.deploy(
             f,
             puppet_account_id,
@@ -486,45 +489,170 @@ def list_launches(expanded_manifest, format):
     "--parameter-override-forced/--no-parameter-override-forced", default=False
 )
 def expand(f, single_account, parameter_override_file, parameter_override_forced):
-    params = dict(single_account=single_account)
-    if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
-        overrides = dict(**yaml.safe_load(parameter_override_file.read()))
-        if overrides.get("subset"):
-            subset = overrides.get("subset")
-            overrides = dict(
-                section=subset.get("section"),
-                item=subset.get("name"),
-                include_dependencies=subset.get("include_dependencies"),
-                include_reverse_dependencies=subset.get("include_reverse_dependencies"),
-            )
-        params.update(
-            dict(single_account=overrides.get("single_account"), subset=overrides,)
-        )
-        click.echo(f"Overridden parameters {params}")
+    # params = dict(single_account=single_account)
+    # if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
+    #     overrides = dict(**yaml.safe_load(parameter_override_file.read()))
+    #     if overrides.get("subset"):
+    #         subset = overrides.get("subset")
+    #         overrides = dict(
+    #             section=subset.get("section"),
+    #             item=subset.get("name"),
+    #             include_dependencies=subset.get("include_dependencies"),
+    #             include_reverse_dependencies=subset.get("include_reverse_dependencies"),
+    #         )
+    #     params.update(
+    #         dict(single_account=overrides.get("single_account"), subset=overrides,)
+    #     )
+    #     click.echo(f"Overridden parameters {params}")
 
-    puppet_account_id = config.get_puppet_account_id()
-    manifest_commands.expand(f, puppet_account_id, **params)
-    if config.get_should_explode_manifest(puppet_account_id):
-        manifest_commands.explode(f)
+    puppet_account_id = remote_config.get_puppet_account_id()
+    regions = remote_config.get_regions(puppet_account_id, constants.HOME_REGION)
+    manifest_commands.expand(f, puppet_account_id, regions)
+    # if config.get_should_explode_manifest(puppet_account_id):
+    #     manifest_commands.explode(f)
+
+
+def get_overrides():
+    # params = dict(single_account=single_account)
+    # if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
+    #     overrides = dict(**yaml.safe_load(parameter_override_file.read()))
+    #     if overrides.get("subset"):
+    #         subset = overrides.get("subset")
+    #         overrides = dict(
+    #             section=subset.get("section"),
+    #             item=subset.get("name"),
+    #             include_dependencies=subset.get("include_dependencies"),
+    #             include_reverse_dependencies=subset.get("include_reverse_dependencies"),
+    #         )
+    #     params.update(
+    #         dict(single_account=overrides.get("single_account"), subset=overrides,)
+    #     )
+    #     click.echo(f"Overridden parameters {params}")
+    # return dict(
+    #     section="spoke-local-portfolios",
+    #     # item="sleeper",
+    #     include_dependencies=False,
+    #     include_reverse_dependencies=False,
+    # )
+    return dict()
 
 
 @cli.command()
 @click.argument("f", type=click.File())
 def generate_task_reference(f):
-    puppet_account_id = config.get_puppet_account_id()
-    task_reference_commands.generate_task_reference(f, puppet_account_id)
+    setup_config()
+    overrides = get_overrides()
+    task_reference_commands.generate_task_reference(f, get_overrides())
+
+
+def setup_config(
+    puppet_account_id=None,
+    execution_mode="hub",
+    num_workers="10",
+    home_region=None,
+    regions="",
+    should_collect_cloudformation_events=None,
+    should_forward_events_to_eventbridge=None,
+    should_forward_failures_to_opscenter=None,
+):
+    home_region_to_use = home_region or constants.HOME_REGION
+    if puppet_account_id is None:
+        puppet_account_id_to_use = remote_config.get_puppet_account_id()
+    else:
+        puppet_account_id_to_use = puppet_account_id
+    os.environ[environmental_variables.PUPPET_ACCOUNT_ID] = puppet_account_id_to_use
+
+    os.environ[environmental_variables.EXECUTION_MODE] = execution_mode
+    os.environ[environmental_variables.NUM_WORKERS] = num_workers
+    os.environ[environmental_variables.HOME_REGION] = home_region_to_use
+    os.environ[environmental_variables.EXECUTOR_ACCOUNT_ID] = str(
+        remote_config.get_current_account_id()
+    )
+    os.environ[environmental_variables.REGIONS] = json.dumps(
+        regions
+        if regions != ""
+        else remote_config.get_regions(puppet_account_id_to_use, home_region_to_use)
+    )
+    if os.environ.get(environmental_variables.CACHE_INVALIDATOR):
+        click.echo(
+            f"Found existing {environmental_variables.CACHE_INVALIDATOR}: {os.environ.get(environmental_variables.CACHE_INVALIDATOR)}"
+        )
+    else:
+        os.environ[environmental_variables.CACHE_INVALIDATOR] = str(datetime.now())
+
+    os.environ[environmental_variables.SHOULD_USE_SNS] = str(
+        remote_config.get_should_use_sns(puppet_account_id_to_use, home_region)
+        if should_collect_cloudformation_events is None
+        else should_collect_cloudformation_events
+    )
+    os.environ[environmental_variables.SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE] = str(
+        remote_config.get_should_use_eventbridge(puppet_account_id_to_use, home_region)
+        if should_forward_events_to_eventbridge is None
+        else should_forward_events_to_eventbridge
+    )
+    os.environ[environmental_variables.SHOULD_FORWARD_FAILURES_TO_OPSCENTER] = str(
+        remote_config.get_should_forward_failures_to_opscenter(
+            puppet_account_id_to_use, home_region
+        )
+        if should_forward_failures_to_opscenter is None
+        else should_forward_failures_to_opscenter
+    )
+
+    os.environ[environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS] = str(
+        remote_config.get_should_delete_rollback_complete_stacks(
+            puppet_account_id_to_use
+        )
+    )
+    os.environ[environmental_variables.SHOULD_USE_PRODUCT_PLANS] = str(
+        remote_config.get_should_use_product_plans(
+            puppet_account_id_to_use, os.environ.get("AWS_DEFAULT_REGION")
+        )
+    )
+    os.environ[environmental_variables.INITIALISER_STACK_TAGS] = json.dumps(
+        remote_config.get_initialiser_stack_tags()
+    )
+    # for k, v in os.environ.items():
+    #     if k[0:4] == "SCT_":
+    #         click.echo(f"Overrided {k}: {v}")
 
 
 @cli.command()
 @click.argument("f", type=click.File())
 @click.option("--num-workers", default=10)
+@click.option("--execution-mode", default="hub")
 @click.option("--puppet-account-id")
-def deploy_from_task_reference(f, num_workers, puppet_account_id):
-    if puppet_account_id is None:
-        puppet_account_id_to_use = config.get_puppet_account_id()
-    else:
-        puppet_account_id_to_use = puppet_account_id
-    task_reference_commands.deploy_from_task_reference(f, num_workers, puppet_account_id_to_use)
+@click.option("--home-region", default=None)
+@click.option("--regions", default="")
+@click.option("--should-collect-cloudformation-events", default=None, type=bool)
+@click.option("--should-forward-events-to-eventbridge", default=None, type=bool)
+@click.option("--should-forward-failures-to-opscenter", default=None, type=bool)
+def deploy_from_task_reference(
+    f,
+    num_workers,
+    execution_mode,
+    puppet_account_id,
+    home_region,
+    regions,
+    should_collect_cloudformation_events,
+    should_forward_events_to_eventbridge,
+    should_forward_failures_to_opscenter,
+):
+    setup_config(
+        puppet_account_id=puppet_account_id,
+        num_workers=str(num_workers),
+        execution_mode=execution_mode,
+        home_region=home_region,
+        regions=regions,
+        should_collect_cloudformation_events=str(should_collect_cloudformation_events),
+        should_forward_events_to_eventbridge=str(should_forward_events_to_eventbridge),
+        should_forward_failures_to_opscenter=str(should_forward_failures_to_opscenter),
+    )
+
+    click.echo(
+        f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"
+    )
+
+    task_reference_commands.deploy_from_task_reference(f)
 
 
 @cli.command()

@@ -38,7 +38,9 @@ class TaskWithReference(tasks.PuppetTask):
         for dependency_by_reference in this_task.get("dependencies_by_reference", []):
             dependency_by_reference_params = reference.get(dependency_by_reference)
             if dependency_by_reference_params is None:
-                raise Exception(f"{self.task_reference} has a dependency: {dependency_by_reference} unsatisfied by the manifest task reference")
+                raise Exception(
+                    f"{self.task_reference} has a dependency: {dependency_by_reference} unsatisfied by the manifest task reference"
+                )
             t_reference = dependency_by_reference_params.get("task_reference")
             dependencies[t_reference] = create(
                 self.manifest_task_reference_file_path,

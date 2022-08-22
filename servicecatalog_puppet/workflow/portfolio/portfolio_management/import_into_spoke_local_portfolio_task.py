@@ -9,9 +9,7 @@ import luigi
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class ImportIntoSpokeLocalPortfolioTask(
-    tasks.TaskWithReference
-):
+class ImportIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
@@ -40,40 +38,40 @@ class ImportIntoSpokeLocalPortfolioTask(
     def run(self):
         spoke_portfolio_details = json.loads(
             self.input()
-                .get("reference_dependencies")
-                .get(self.portfolio_task_reference)
-                .open("r")
-                .read()
+            .get("reference_dependencies")
+            .get(self.portfolio_task_reference)
+            .open("r")
+            .read()
         )
         spoke_portfolio_id = spoke_portfolio_details.get("Id")
         spoke_products_and_their_versions = json.loads(
             self.input()
-                .get("reference_dependencies")
-                .get(self.portfolio_get_all_products_and_their_versions_ref)
-                .open("r")
-                .read()
+            .get("reference_dependencies")
+            .get(self.portfolio_get_all_products_and_their_versions_ref)
+            .open("r")
+            .read()
         )
         hub_portfolio_details = json.loads(
             self.input()
-                .get("reference_dependencies")
-                .get(self.hub_portfolio_task_reference)
-                .open("r")
-                .read()
+            .get("reference_dependencies")
+            .get(self.hub_portfolio_task_reference)
+            .open("r")
+            .read()
         )
         hub_portfolio_id = hub_portfolio_details.get("Id")
         hub_products_and_their_versions = json.loads(
             self.input()
-                .get("reference_dependencies")
-                .get(self.portfolio_get_all_products_and_their_versions_for_hub_ref)
-                .open("r")
-                .read()
+            .get("reference_dependencies")
+            .get(self.portfolio_get_all_products_and_their_versions_for_hub_ref)
+            .open("r")
+            .read()
         )
 
         with self.spoke_regional_client("servicecatalog") as servicecatalog:
             products_to_check = list()
             for (
-                    hub_product_name,
-                    hub_product_details,
+                hub_product_name,
+                hub_product_details,
             ) in hub_products_and_their_versions.items():
                 if spoke_products_and_their_versions.get(hub_product_name) is None:
                     product_id = hub_product_details.get("ProductId")
@@ -88,7 +86,7 @@ class ImportIntoSpokeLocalPortfolioTask(
             n_products_to_check = len(products_to_check)
             products_found = 0
             while products_found < n_products_to_check:
-                response = servicecatalog.search_products_as_admin_single_page( #TODO optimise = swap for paginator
+                response = servicecatalog.search_products_as_admin_single_page(  # TODO optimise = swap for paginator
                     PortfolioId=spoke_portfolio_id,
                 )
                 products_ids = [

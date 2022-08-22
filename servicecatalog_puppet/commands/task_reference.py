@@ -5,6 +5,7 @@ import json
 import os
 from datetime import datetime
 
+from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet import manifest_utils, constants, yaml_utils, config
 from servicecatalog_puppet.workflow import runner
 from servicecatalog_puppet.workflow.dependencies import (
@@ -32,7 +33,10 @@ def get_spoke_local_portfolio_common_args(
     )
 
 
-def generate_complete_task_reference(f, puppet_account_id, default_region, manifest):
+def generate_complete_task_reference(f, puppet_account_id, manifest):
+    default_region = config.get_home_region(puppet_account_id)
+    regions_in_use = config.get_regions()
+
     all_tasks = dict()
     tasks_by_type = dict()
     tasks_by_region = dict()
@@ -61,9 +65,16 @@ def generate_complete_task_reference(f, puppet_account_id, default_region, manif
             tasks_by_account_id_and_region[section_name_singular][item_name] = dict()
             task_reference_prefix = f"{section_name}_{item_name}"
             tasks_to_add = manifest.get_tasks_for(
-                puppet_account_id, section_name, item_name
+                puppet_account_id,
+                section_name,
+                item_name,
+                default_region,
+                regions_in_use,
             )
             for task_to_add in tasks_to_add:
+                task_to_add["manifest_section_name"] = section_name
+                task_to_add["manifest_item_name"] = item_name
+                task_to_add["manifest_account_id"] = task_to_add.get("account_id")
                 task_to_add["section_name"] = section_name
                 task_to_add["item_name"] = item_name
                 # set up for later pass
@@ -132,6 +143,9 @@ def generate_complete_task_reference(f, puppet_account_id, default_region, manif
                             f"You have two tasks outputting the same SSM parameter output: {ssm_parameter_output.get('param_name')}"
                         )
                     all_tasks[ssm_parameter_output_task_reference] = dict(
+                        manifest_section_name=section_name,
+                        manifest_item_name=item_name,
+                        manifest_account_id=task_to_add.get("account_id"),
                         task_reference=ssm_parameter_output_task_reference,
                         param_name=ssm_parameter_output.get("param_name")
                         .replace("${AWS::Region}", task_to_add.get("region"))
@@ -223,6 +237,9 @@ def generate_complete_task_reference(f, puppet_account_id, default_region, manif
                         account_id=owning_account,
                         region=owning_region,
                         reverse_dependencies_by_reference=list(),
+                        manifest_section_name=task_to_add.get("manifest_section_name"),
+                        manifest_item_name=task_to_add.get("manifest_item_name"),
+                        manifest_account_id=task_to_add.get("manifest_account_id"),
                     )
                     path = ssm_parameter_details.get("path")
                     if path is None:
@@ -301,6 +318,9 @@ def generate_complete_task_reference(f, puppet_account_id, default_region, manif
                     boto3_parameter_task_reference = f"{constants.BOTO3_PARAMETERS}-{section_name_to_use}-{item_name_to_use}-{parameter_name}-{account_id_to_use_for_boto3_call}-{region_to_use_for_boto3_call}"
                     new_tasks[boto3_parameter_task_reference] = dict(
                         status=task.get("status"),
+                        manifest_section_name=task_to_add.get("manifest_section_name"),
+                        manifest_item_name=task_to_add.get("manifest_item_name"),
+                        manifest_account_id=task_to_add.get("manifest_account_id"),
                         task_reference=boto3_parameter_task_reference,
                         dependencies_by_reference=dependencies,
                         reverse_dependencies_by_reference=list(),
@@ -402,6 +422,9 @@ def handle_workspaces(
             reverse_dependencies_by_reference=[],
             account_id=task_to_add.get("account_id"),
             section_name=constants.WORKSPACE_ACCOUNT_PREPARATION,
+            manifest_section_name=task_to_add.get("manifest_section_name"),
+            manifest_item_name=task_to_add.get("manifest_item_name"),
+            manifest_account_id=task_to_add.get("manifest_account_id"),
         )
     if workspace_account_preparation_ref not in all_tasks[all_tasks_task_reference].get(
         "dependencies_by_reference"
@@ -441,6 +464,9 @@ def handle_spoke_local_portfolios(
                 spoke_local_portfolio_name=item_name,
                 section_name=constants.PORTFOLIO_ASSOCIATIONS,
                 associations=task_to_add.get("associations"),
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
         # DELETE THE LAUNCH CONSTRAINTS IF IT EXISTS
         if task_to_add.get("launch_constraints"):
@@ -459,6 +485,9 @@ def handle_spoke_local_portfolios(
                 section_name=constants.PORTFOLIO_CONSTRAINTS_LAUNCH,
                 spoke_local_portfolio_name=item_name,
                 launch_constraints=task_to_add["launch_constraints"],
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
         # DELETE THE RESOURCE UPDATE CONSTRAINTS IF IT EXISTS
         if task_to_add.get("resource_update_constraints"):
@@ -477,6 +506,9 @@ def handle_spoke_local_portfolios(
                 section_name=constants.PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE,
                 spoke_local_portfolio_name=item_name,
                 resource_update_constraints=task_to_add["resource_update_constraints"],
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
         # GET THE SPOKE LOCAL PORTFOLIO SO WE CAN DELETE THE ASSOCIATIONS
         spoke_portfolio_ref = f"{constants.PORTFOLIO_LOCAL}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
@@ -491,6 +523,9 @@ def handle_spoke_local_portfolios(
             status=task_to_add.get("status"),
             execution=task_to_add.get("execution"),
             section_name=constants.PORTFOLIO_LOCAL,
+            manifest_section_name=task_to_add.get("manifest_section_name"),
+            manifest_item_name=task_to_add.get("manifest_item_name"),
+            manifest_account_id=task_to_add.get("manifest_account_id"),
         )
 
         if not is_sharing_with_puppet_account:
@@ -507,6 +542,9 @@ def handle_spoke_local_portfolios(
                 portfolio=task_to_add.get("portfolio"),
                 portfolio_task_reference=spoke_portfolio_ref,
                 section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
 
             disassociate_portfolio_all_products_and_versions_ref = f"{constants.PORTFOLIO_DISASSOCIATE_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
@@ -523,6 +561,9 @@ def handle_spoke_local_portfolios(
                 portfolio=task_to_add.get("portfolio"),
                 portfolio_task_reference=spoke_portfolio_ref,
                 section_name=constants.PORTFOLIO_DISASSOCIATE_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
             deps.append(disassociate_portfolio_all_products_and_versions_ref)
 
@@ -540,6 +581,9 @@ def handle_spoke_local_portfolios(
             portfolio=task_to_add.get("portfolio"),
             execution=task_to_add.get("execution"),
             section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
+            manifest_section_name=task_to_add.get("manifest_section_name"),
+            manifest_item_name=task_to_add.get("manifest_item_name"),
+            manifest_account_id=task_to_add.get("manifest_account_id"),
         )
         deps.append(spoke_portfolio_puppet_association_ref)
 
@@ -561,6 +605,9 @@ def handle_spoke_local_portfolios(
                 portfolio=task_to_add.get("portfolio"),
                 execution=task_to_add.get("execution"),
                 section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
 
             # GET THE SPOKE PRODUCTS AND VERSIONS - USE THE AFTER ONE AS NO PRODUCTS WILL BE COPIED WHEN SHARING WITH PUPPET ACCOUNT
@@ -573,6 +620,9 @@ def handle_spoke_local_portfolios(
                 ),
                 task_reference=spoke_portfolio_all_products_and_versions_after_ref,
                 section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
             dependencies_for_constraints.append(
                 spoke_portfolio_all_products_and_versions_after_ref
@@ -592,6 +642,9 @@ def handle_spoke_local_portfolios(
                 status=task_to_add.get("status"),
                 execution=task_to_add.get("execution"),
                 section_name=constants.PORTFOLIO_LOCAL,
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
             all_tasks[all_tasks_task_reference][
                 "portfolio_task_reference"
@@ -613,6 +666,9 @@ def handle_spoke_local_portfolios(
                 portfolio=task_to_add.get("portfolio"),
                 execution=task_to_add.get("execution"),
                 section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,  # TODO test in with a new spoke local
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
 
             # SHARE THE PORTFOLIO
@@ -632,6 +688,9 @@ def handle_spoke_local_portfolios(
                 execution=task_to_add.get("execution"),
                 portfolio_task_reference=hub_portfolio_ref,
                 section_name=f"portfolio-share-and-accept-{sharing_mode.lower()}",
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
 
             # GET THE HUB PRODUCTS AND VERSIONS SO WE KNOW WHAT NEEDS TO BE COPIED OR IMPORTED
@@ -649,6 +708,9 @@ def handle_spoke_local_portfolios(
                 region=task_to_add.get("region"),
                 execution=task_to_add.get("execution"),
                 section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
 
             # CREATE SPOKE ASSOCIATIONS
@@ -664,6 +726,9 @@ def handle_spoke_local_portfolios(
                 portfolio=task_to_add.get("portfolio"),
                 execution=task_to_add.get("execution"),
                 section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
 
             # GET THE SPOKE PRODUCTS AND VERSIONS SO WE KNOW WHAT IS MISSING OR NEEDS UPDATING
@@ -676,6 +741,9 @@ def handle_spoke_local_portfolios(
                 ),
                 task_reference=spoke_portfolio_all_products_and_versions_ref,
                 section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
 
             # COPY OR IMPORT THE CHANGES BETWEEN THE TWO PORTFOLIOS
@@ -695,10 +763,17 @@ def handle_spoke_local_portfolios(
                 section_name=f"portfolio-{product_generation_method}",
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_ref,
                 portfolio_get_all_products_and_their_versions_for_hub_ref=hub_portfolio_all_products_and_versions_before_ref,
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
             if product_generation_method == constants.PRODUCT_GENERATION_METHOD_IMPORT:
-                portfolio_import_or_copy_task["hub_portfolio_task_reference"] = hub_portfolio_ref
-                portfolio_import_or_copy_task["dependencies_by_reference"].append(hub_portfolio_ref)
+                portfolio_import_or_copy_task[
+                    "hub_portfolio_task_reference"
+                ] = hub_portfolio_ref
+                portfolio_import_or_copy_task["dependencies_by_reference"].append(
+                    hub_portfolio_ref
+                )
             all_tasks[portfolio_import_or_copy_ref] = portfolio_import_or_copy_task
             dependencies_for_constraints.append(portfolio_import_or_copy_ref)
 
@@ -713,6 +788,9 @@ def handle_spoke_local_portfolios(
                 spoke_local_portfolio_name=item_name,
                 section_name=constants.PORTFOLIO_ASSOCIATIONS,
                 associations=task_to_add.get("associations"),
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
         if not is_sharing_with_puppet_account:
             # GET NEW PRODUCT AND VERSIONS FOLLOWING THE IMPORT OR COPY
@@ -728,6 +806,9 @@ def handle_spoke_local_portfolios(
                 ),
                 task_reference=spoke_portfolio_all_products_and_versions_after_ref,
                 section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
             dependencies_for_constraints.append(
                 spoke_portfolio_all_products_and_versions_after_ref
@@ -745,6 +826,9 @@ def handle_spoke_local_portfolios(
                 spoke_local_portfolio_name=item_name,
                 launch_constraints=task_to_add["launch_constraints"],
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_after_ref,
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
         if task_to_add.get("resource_update_constraints"):
             shared_ref = f"{section_name}-{item_name}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
@@ -758,6 +842,9 @@ def handle_spoke_local_portfolios(
                 spoke_local_portfolio_name=item_name,
                 resource_update_constraints=task_to_add["resource_update_constraints"],
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_after_ref,
+                manifest_section_name=task_to_add.get("manifest_section_name"),
+                manifest_item_name=task_to_add.get("manifest_item_name"),
+                manifest_account_id=task_to_add.get("manifest_account_id"),
             )
 
 
@@ -786,6 +873,9 @@ def handle_launches(
         status=task_to_add.get("status"),
         execution=task_to_add.get("execution"),
         section_name=constants.PORTFOLIO_LOCAL,
+        manifest_section_name=task_to_add.get("manifest_section_name"),
+        manifest_item_name=task_to_add.get("manifest_item_name"),
+        manifest_account_id=task_to_add.get("manifest_account_id"),
     )
 
     spoke_portfolio_puppet_association_ref = None
@@ -809,6 +899,9 @@ def handle_launches(
             execution=task_to_add.get("execution"),
             portfolio_task_reference=hub_portfolio_ref,
             section_name=f"portfolio-share-and-accept-{sharing_mode.lower()}",
+            manifest_section_name=task_to_add.get("manifest_section_name"),
+            manifest_item_name=task_to_add.get("manifest_item_name"),
+            manifest_account_id=task_to_add.get("manifest_account_id"),
         )
 
         # GET THE IMPORTED PORTFOLIO
@@ -825,6 +918,9 @@ def handle_launches(
                 "sharing_mode", constants.SHARING_MODE_ACCOUNT
             ),  # TODO verify
             section_name=constants.PORTFOLIO_IMPORTED,
+            manifest_section_name=task_to_add.get("manifest_section_name"),
+            manifest_item_name=task_to_add.get("manifest_item_name"),
+            manifest_account_id=task_to_add.get("manifest_account_id"),
         )
         portfolio_deploying_from = spoke_portfolio_ref
 
@@ -840,6 +936,9 @@ def handle_launches(
             portfolio=task_to_add.get("portfolio"),
             execution=task_to_add.get("execution"),
             section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
+            manifest_section_name=task_to_add.get("manifest_section_name"),
+            manifest_item_name=task_to_add.get("manifest_item_name"),
+            manifest_account_id=task_to_add.get("manifest_account_id"),
         )
         all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
             spoke_portfolio_puppet_association_ref
@@ -860,6 +959,9 @@ def handle_launches(
         product=task_to_add.get("product"),
         version=task_to_add.get("version"),
         section_name=constants.DESCRIBE_PROVISIONING_PARAMETERS,
+        manifest_section_name=task_to_add.get("manifest_section_name"),
+        manifest_item_name=task_to_add.get("manifest_item_name"),
+        manifest_account_id=task_to_add.get("manifest_account_id"),
     )
 
     # GET all the products for the spoke
@@ -878,6 +980,9 @@ def handle_launches(
         account_id=puppet_account_id,
         region=task_to_add.get("region"),
         section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+        manifest_section_name=task_to_add.get("manifest_section_name"),
+        manifest_item_name=task_to_add.get("manifest_item_name"),
+        manifest_account_id=task_to_add.get("manifest_account_id"),
     )
 
     all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
@@ -892,6 +997,69 @@ def handle_launches(
     all_tasks[all_tasks_task_reference][
         "describe_provisioning_params_ref"
     ] = describe_provisioning_params_ref
+
+
+def generate_overrides_task_reference(
+    puppet_account_id, all_tasks, output_file_path, overrides
+):
+    single_account = overrides.get("single_account")
+    section_name = overrides.get("section")
+    item_name = overrides.get("item")
+    include_dependencies = overrides.get("include_dependencies")
+    include_reverse_dependencies = overrides.get("include_reverse_dependencies")
+
+    tasks_to_include = dict()
+    for task_name, task in all_tasks.items():
+
+        should_include = True
+
+        if single_account:
+            if task.get("manifest_account_id") not in [
+                single_account,
+                puppet_account_id,
+            ]:
+                should_include = False
+
+        if should_include:
+            if section_name:
+                if task.get("manifest_section_name") != section_name:
+                    should_include = False
+
+        if should_include:
+            if item_name:
+                if task.get("manifest_item_name") != item_name:
+                    should_include = False
+
+        if should_include:
+            tasks_to_include[task_name] = task
+
+    if include_dependencies:
+        needs_another_loop = True
+        while needs_another_loop:
+            dependencies_to_add = dict()
+            needs_another_loop = False
+            for task_name, task_to_include in tasks_to_include.items():
+                for dep in task_to_include.get("dependencies_by_reference"):
+                    if not tasks_to_include.get(dep):
+                        if not dependencies_to_add.get(dep):
+                            dependencies_to_add[dep] = all_tasks.get(dep)
+                            needs_another_loop = True
+            tasks_to_include.update(dependencies_to_add)
+
+    if include_reverse_dependencies:
+        needs_another_loop = True
+        while needs_another_loop:
+            dependencies_to_add = dict()
+            needs_another_loop = False
+            for task_name, task_to_include in tasks_to_include.items():
+                for dep in task_to_include.get("reverse_dependencies_by_reference"):
+                    if not tasks_to_include.get(dep):
+                        if not dependencies_to_add.get(dep):
+                            dependencies_to_add[dep] = all_tasks.get(dep)
+                            needs_another_loop = True
+            tasks_to_include.update(dependencies_to_add)
+
+    open(output_file_path, "w").write(yaml_utils.dump(dict(all_tasks=tasks_to_include)))
 
 
 def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
@@ -911,7 +1079,10 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
             # these should not override the previous decisions
             if not should_include:
                 # sharing should happen from the hub
-                should_include = task.get("section_name") == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
+                should_include = (
+                    task.get("section_name")
+                    == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
+                )
         else:
             raise Exception("Unhandled execution")
 
@@ -951,16 +1122,24 @@ def generate_spoke_task_reference(puppet_account_id, all_tasks, output_file_path
     open(output_file_path, "w").write(yaml_utils.dump(dict(all_tasks=tasks_to_include)))
 
 
-def generate_task_reference(f, puppet_account_id):
-    default_region = constants.HOME_REGION
+def generate_task_reference(f, overrides):
+    puppet_account_id = config.get_puppet_account_id()
 
     content = open(f.name, "r").read()
     manifest = manifest_utils.Manifest(yaml_utils.load(content))
-    generate_complete_task_reference(f, puppet_account_id, default_region, manifest)
+    generate_complete_task_reference(f, puppet_account_id, manifest)
 
     complete = yaml_utils.load(
         open(f.name.replace("-expanded", "-task-reference"), "r").read()
     )
+
+    generate_overrides_task_reference(
+        puppet_account_id,
+        complete.get("all_tasks"),
+        f.name.replace("-expanded", "-task-reference-overrides"),
+        overrides,
+    )
+
     generate_hub_task_reference(
         puppet_account_id,
         complete.get("all_tasks"),
@@ -973,10 +1152,13 @@ def generate_task_reference(f, puppet_account_id):
     # )
 
 
-def deploy_from_task_reference(f, num_workers, puppet_account_id):
+def deploy_from_task_reference(f):
     tasks_to_run = list()
     reference = yaml_utils.load(open(f.name, "r").read())
     all_tasks = reference.get("all_tasks")
+
+    num_workers = config.get_num_workers()
+    puppet_account_id = config.get_puppet_account_id()
 
     for task_reference, task in all_tasks.items():
         tasks_to_run.append(
@@ -987,38 +1169,46 @@ def deploy_from_task_reference(f, num_workers, puppet_account_id):
             )
         )
 
-    executor_account_id = puppet_account_id
-    is_dry_run = False
-    is_list_launches = False
-    execution_mode = constants.EXECUTION_MODE_HUB
-    on_complete_url = None
-    running_exploded = False
-    output_cache_starting_point = ""
-    single_account = ""
+    executor_account_id = puppet_account_id  # TODO FIXME REMOVE
+    is_dry_run = is_list_launches = False  # TODO FIXME REMOVE
+    execution_mode = "hub"  # TODO FIXME REMOVE
+    on_complete_url = "localhost"  # TODO FIXME REMOVE
+    running_exploded = False  # TODO FIXME REMOVE
+    output_cache_starting_point = ""  # TODO FIXME REMOVE
 
-    if os.environ.get("SCT_CACHE_INVALIDATOR"):
-        logger.info(
-            f"Found existing SCT_CACHE_INVALIDATOR: {os.environ.get('SCT_CACHE_INVALIDATOR')}"
-        )
-    else:
-        os.environ["SCT_CACHE_INVALIDATOR"] = str(datetime.now())
-
-    os.environ["SCT_EXECUTION_MODE"] = str(execution_mode)
-    os.environ["SCT_SINGLE_ACCOUNT"] = str(single_account)
-    os.environ["SCT_IS_DRY_RUN"] = str(is_dry_run)
-    os.environ["EXECUTOR_ACCOUNT_ID"] = str(executor_account_id)
-    os.environ["SCT_SHOULD_USE_SNS"] = str(config.get_should_use_sns(puppet_account_id))
-    os.environ["SCT_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS"] = str(
-        config.get_should_delete_rollback_complete_stacks(puppet_account_id)
-    )
-    os.environ["SCT_SHOULD_USE_PRODUCT_PLANS"] = str(
-        config.get_should_use_product_plans(
-            puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-        )
-    )
-    os.environ["SCT_INITIALISER_STACK_TAGS"] = json.dumps(
-        config.get_initialiser_stack_tags()
-    )
+    # is_dry_run = False
+    # is_list_launches = False
+    # execution_mode = constants.EXECUTION_MODE_HUB
+    # on_complete_url = None
+    # running_exploded = False
+    # output_cache_starting_point = ""
+    # single_account = ""
+    #
+    # if os.environ.get(environmental_variables.CACHE_INVALIDATOR):
+    #     logger.info(
+    #         f"Found existing {environmental_variables.CACHE_INVALIDATOR}: {os.environ.get(environmental_variables.CACHE_INVALIDATOR)}"
+    #     )
+    # else:
+    #     os.environ[environmental_variables.CACHE_INVALIDATOR] = str(datetime.now())
+    #
+    # os.environ[environmental_variables.EXECUTION_MODE] = str(execution_mode)
+    # os.environ["SCT_SINGLE_ACCOUNT"] = str(single_account)
+    # os.environ["SCT_IS_DRY_RUN"] = str(is_dry_run)
+    # os.environ[environmental_variables.EXECUTOR_ACCOUNT_ID] = str(executor_account_id)
+    # os.environ[environmental_variables.SHOULD_USE_SNS] = str(
+    #     config.get_should_use_sns(puppet_account_id)
+    # )
+    # os.environ[environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS] = str(
+    #     config.get_should_delete_rollback_complete_stacks(puppet_account_id)
+    # )
+    # os.environ[environmental_variables.SHOULD_USE_PRODUCT_PLANS] = str(
+    #     config.get_should_use_product_plans(
+    #         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
+    #     )
+    # )
+    # os.environ[environmental_variables.INITIALISER_STACK_TAGS] = json.dumps(
+    #     config.get_initialiser_stack_tags()
+    # )
 
     runner.run_tasks(
         puppet_account_id,
