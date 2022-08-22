@@ -38,7 +38,7 @@ def create(
     )
     manifest_file_path = manifest_task_reference_file_path.replace(
         "manifest-task-reference.yaml", "manifest-expanded.yaml"
-    )
+    ).replace("manifest-task-reference-full.yaml", "manifest-expanded.yaml")
 
     status = parameters_to_use.get("status")
     if section_name == constants.STACKS:
@@ -74,6 +74,7 @@ def create(
 
             return ProvisionStackTask(
                 **common_parameters,
+                get_s3_template_ref=parameters_to_use.get("get_s3_template_ref"),
                 stack_name=parameters_to_use.get("stack_name"),
                 bucket=parameters_to_use.get("bucket"),
                 key=parameters_to_use.get("key"),
@@ -737,12 +738,8 @@ def create(
                 manifest_task_reference_file_path=manifest_task_reference_file_path,
             )
 
-    elif (
-        section_name == constants.RUN_DEPLOY_IN_SPOKE
-    ):
-        from servicecatalog_puppet.workflow.launch import (
-            run_deploy_in_spoke_task
-        )
+    elif section_name == constants.RUN_DEPLOY_IN_SPOKE:
+        from servicecatalog_puppet.workflow.launch import run_deploy_in_spoke_task
 
         return run_deploy_in_spoke_task.RunDeployInSpokeTask(
             puppet_account_id=puppet_account_id,
@@ -751,14 +748,13 @@ def create(
                 "dependencies_by_reference"
             ),
             account_id=parameters_to_use.get("account_id"),
+            generate_manifest_ref=parameters_to_use.get("generate_manifest_ref"),
             manifest_task_reference_file_path=manifest_task_reference_file_path,
         )
 
-    elif (
-        section_name == constants.GENERATE_MANIFEST
-    ):
+    elif section_name == constants.GENERATE_MANIFEST:
         from servicecatalog_puppet.workflow.manifest import (
-            generate_manifest_with_ids_task
+            generate_manifest_with_ids_task,
         )
 
         return generate_manifest_with_ids_task.GenerateManifestWithIdsTask(
@@ -767,6 +763,31 @@ def create(
             dependencies_by_reference=parameters_to_use.get(
                 "dependencies_by_reference"
             ),
+            manifest_task_reference_file_path=manifest_task_reference_file_path,
+        )
+
+    elif section_name == constants.GET_TEMPLATE_FROM_S3:
+        from servicecatalog_puppet.workflow.stack import (
+            get_cloud_formation_template_from_s3,
+        )
+
+        print(manifest_task_reference_file_path)
+        print(manifest_task_reference_file_path)
+        print(manifest_task_reference_file_path)
+        print(manifest_task_reference_file_path)
+        print(manifest_task_reference_file_path)
+
+        return get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
+            puppet_account_id=parameters_to_use.get("puppet_account_id"),
+            task_reference=parameters_to_use.get("task_reference"),
+            dependencies_by_reference=parameters_to_use.get(
+                "dependencies_by_reference"
+            ),
+            account_id=parameters_to_use.get("account_id"),
+            bucket=parameters_to_use.get("bucket"),
+            key=parameters_to_use.get("key"),
+            region=parameters_to_use.get("region"),
+            version_id=parameters_to_use.get("version_id"),
             manifest_task_reference_file_path=manifest_task_reference_file_path,
         )
 

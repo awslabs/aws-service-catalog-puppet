@@ -35,6 +35,7 @@ class ProvisionStackTask(tasks.TaskWithParameters):
 
     launch_name = luigi.Parameter()
     stack_set_name = luigi.Parameter()
+    get_s3_template_ref = luigi.Parameter()
     capabilities = luigi.ListParameter()
 
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
@@ -74,25 +75,25 @@ class ProvisionStackTask(tasks.TaskWithParameters):
     def priority(self):
         return self.requested_priority
 
-    def requires(self):
-        reference_dependencies = get_dependencies_for_task_reference(
-            self.manifest_task_reference_file_path,
-            self.task_reference,
-            self.puppet_account_id,
-        )
-
-        requirements = {
-            "reference_dependencies": reference_dependencies,
-            "template": get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
-                bucket=self.bucket,
-                key=self.key,
-                region=self.region,
-                version_id=self.version_id,
-                puppet_account_id=self.puppet_account_id,
-                account_id=self.puppet_account_id,
-            ),
-        }
-        return requirements
+    # def requires(self):
+    #     reference_dependencies = get_dependencies_for_task_reference(
+    #         self.manifest_task_reference_file_path,
+    #         self.task_reference,
+    #         self.puppet_account_id,
+    #     )
+    #
+    #     requirements = {
+    #         "reference_dependencies": reference_dependencies,
+    #         "template": get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
+    #             bucket=self.bucket,
+    #             key=self.key,
+    #             region=self.region,
+    #             version_id=self.version_id,
+    #             puppet_account_id=self.puppet_account_id,
+    #             account_id=self.puppet_account_id,
+    #         ),
+    #     }
+    #     return requirements
 
     def resources_used(self):
         uniq = f"{self.region}-{self.puppet_account_id}"
@@ -236,7 +237,14 @@ class ProvisionStackTask(tasks.TaskWithParameters):
 
         all_params = self.get_parameter_values()
 
-        template_to_provision_source = self.input().get("template").open("r").read()
+        template_to_provision_source = (
+            self.input()
+            .get("reference_dependencies")
+            .get(self.get_s3_template_ref)
+            .open("r")
+            .read()
+        )
+
         try:
             template_to_provision = cfn_tools.load_yaml(template_to_provision_source)
         except Exception:

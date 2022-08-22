@@ -196,6 +196,17 @@ def generate_complete_task_reference(f, puppet_account_id, manifest):
                         task_to_add,
                     )
 
+                if section_name == constants.STACKS:
+                    handle_stacks(
+                        all_tasks,
+                        all_tasks_task_reference,
+                        item_name,
+                        puppet_account_id,
+                        section_name,
+                        task_reference,
+                        task_to_add,
+                    )
+
     #
     # Second pass - adding get parameters
     #
@@ -393,13 +404,45 @@ def generate_complete_task_reference(f, puppet_account_id, manifest):
         for dep in task["dependencies_by_reference"]:
             all_tasks[dep]["reverse_dependencies_by_reference"].append(task_reference)
 
-    reference = dict(
-        all_tasks=all_tasks,
-    )
+    reference = dict(all_tasks=all_tasks,)
     open(f.name.replace("-expanded", "-task-reference-full"), "w").write(
         yaml_utils.dump(reference)
     )
     return reference
+
+
+def handle_stacks(
+    all_tasks,
+    all_tasks_task_reference,
+    item_name,
+    puppet_account_id,
+    section_name,
+    task_reference,
+    task_to_add,
+):
+    # pass
+    get_s3_template_ref = f"{constants.GET_TEMPLATE_FROM_S3}-{section_name}-{item_name}"
+    if not all_tasks.get(get_s3_template_ref):
+        all_tasks[get_s3_template_ref] = dict(
+            task_reference=get_s3_template_ref,
+            execution="hub",
+            bucket=task_to_add.get("bucket"),
+            key=task_to_add.get("key"),
+            region=task_to_add.get("region"),
+            version_id=task_to_add.get("version_id"),
+            puppet_account_id=puppet_account_id,
+            account_id=puppet_account_id,
+            dependencies_by_reference=list(),
+            reverse_dependencies_by_reference=list(),
+            manifest_section_name=task_to_add.get("manifest_section_name"),
+            manifest_item_name=task_to_add.get("manifest_item_name"),
+            manifest_account_id=task_to_add.get("manifest_account_id"),
+            section_name=constants.GET_TEMPLATE_FROM_S3,
+        )
+        all_tasks[all_tasks_task_reference]["get_s3_template_ref"] = get_s3_template_ref
+        all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
+            get_s3_template_ref
+        )
 
 
 def handle_workspaces(
@@ -1100,10 +1143,17 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
                     reverse_dependencies_by_reference=[],
                 )
             t = tasks_to_include[generate_manifest_ref]
-            t["dependencies_by_reference"] = t["dependencies_by_reference"] + task["dependencies_by_reference"]
-            t["reverse_dependencies_by_reference"] = t["reverse_dependencies_by_reference"] + task["reverse_dependencies_by_reference"]
+            t["dependencies_by_reference"] = (
+                t["dependencies_by_reference"] + task["dependencies_by_reference"]
+            )
+            t["reverse_dependencies_by_reference"] = (
+                t["reverse_dependencies_by_reference"]
+                + task["reverse_dependencies_by_reference"]
+            )
 
-            replacement_ref = f"{constants.RUN_DEPLOY_IN_SPOKE}_{task.get('account_id')}"
+            replacement_ref = (
+                f"{constants.RUN_DEPLOY_IN_SPOKE}_{task.get('account_id')}"
+            )
             if not tasks_to_include.get(replacement_ref):
                 tasks_to_include[replacement_ref] = dict(
                     execution=constants.EXECUTION_MODE_HUB,
@@ -1111,14 +1161,18 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
                     account_id=task.get("account_id"),
                     section_name=constants.RUN_DEPLOY_IN_SPOKE,
                     task_reference=replacement_ref,
-                    dependencies_by_reference=[
-                        generate_manifest_ref,
-                    ],
+                    generate_manifest_ref=generate_manifest_ref,
+                    dependencies_by_reference=[generate_manifest_ref,],
                     reverse_dependencies_by_reference=list(),
                 )
             t = tasks_to_include[replacement_ref]
-            t["dependencies_by_reference"] = t["dependencies_by_reference"] + task["dependencies_by_reference"]
-            t["reverse_dependencies_by_reference"] = t["reverse_dependencies_by_reference"] + task["reverse_dependencies_by_reference"]
+            t["dependencies_by_reference"] = (
+                t["dependencies_by_reference"] + task["dependencies_by_reference"]
+            )
+            t["reverse_dependencies_by_reference"] = (
+                t["reverse_dependencies_by_reference"]
+                + task["reverse_dependencies_by_reference"]
+            )
 
     for task_name, task_to_include in tasks_to_include.items():
         for dep in task_to_include.get("dependencies_by_reference"):
@@ -1158,15 +1212,29 @@ def deploy_from_task_reference(f):
 
     num_workers = config.get_num_workers()
     puppet_account_id = config.get_puppet_account_id()
+    single_account_id = config.get_single_account_id()
 
     for task_reference, task in all_tasks.items():
-        tasks_to_run.append(
-            get_dependencies_for_task_reference.create(
-                manifest_task_reference_file_path=f.name,
-                puppet_account_id=puppet_account_id,
-                parameters_to_use=task,
+        if single_account_id:
+            if (
+                task.get("account_id") == single_account_id
+                and task.get("section_name") != constants.RUN_DEPLOY_IN_SPOKE
+            ):
+                tasks_to_run.append(
+                    get_dependencies_for_task_reference.create(
+                        manifest_task_reference_file_path=f.name,
+                        puppet_account_id=puppet_account_id,
+                        parameters_to_use=task,
+                    )
+                )
+        else:
+            tasks_to_run.append(
+                get_dependencies_for_task_reference.create(
+                    manifest_task_reference_file_path=f.name,
+                    puppet_account_id=puppet_account_id,
+                    parameters_to_use=task,
+                )
             )
-        )
 
     executor_account_id = puppet_account_id  # TODO FIXME REMOVE
     is_dry_run = is_list_launches = False  # TODO FIXME REMOVE

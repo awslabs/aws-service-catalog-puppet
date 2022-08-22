@@ -35,6 +35,8 @@ class TaskWithReference(tasks.PuppetTask):
             open(self.manifest_task_reference_file_path, "r").read()
         ).get("all_tasks")
         this_task = reference.get(self.task_reference)
+        if this_task is None:
+            raise Exception(f"Did not find {self.task_reference} within reference")
         for dependency_by_reference in this_task.get("dependencies_by_reference", []):
             dependency_by_reference_params = reference.get(dependency_by_reference)
             if dependency_by_reference_params is None:

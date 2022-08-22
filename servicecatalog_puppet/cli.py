@@ -547,13 +547,14 @@ def generate_task_reference(f):
 
 def setup_config(
     puppet_account_id=None,
+    single_account=None,
     execution_mode="hub",
     num_workers="10",
     home_region=None,
     regions="",
-    should_collect_cloudformation_events=None,
-    should_forward_events_to_eventbridge=None,
-    should_forward_failures_to_opscenter=None,
+    should_collect_cloudformation_events="None",
+    should_forward_events_to_eventbridge="None",
+    should_forward_failures_to_opscenter="None",
 ):
     home_region_to_use = home_region or constants.HOME_REGION
     if puppet_account_id is None:
@@ -561,6 +562,8 @@ def setup_config(
     else:
         puppet_account_id_to_use = puppet_account_id
     os.environ[environmental_variables.PUPPET_ACCOUNT_ID] = puppet_account_id_to_use
+    if single_account:
+        os.environ[environmental_variables.SINGLE_ACCOUNT_ID] = single_account
 
     os.environ[environmental_variables.EXECUTION_MODE] = execution_mode
     os.environ[environmental_variables.NUM_WORKERS] = num_workers
@@ -580,37 +583,45 @@ def setup_config(
     else:
         os.environ[environmental_variables.CACHE_INVALIDATOR] = str(datetime.now())
 
-    os.environ[environmental_variables.SHOULD_USE_SNS] = str(
-        remote_config.get_should_use_sns(puppet_account_id_to_use, home_region)
-        if should_collect_cloudformation_events is None
-        else should_collect_cloudformation_events
+    os.environ[environmental_variables.SHOULD_USE_SNS] = (
+        str(remote_config.get_should_use_sns(puppet_account_id_to_use, home_region))
+        if should_collect_cloudformation_events == "None"
+        else str(should_collect_cloudformation_events)
     )
+
     os.environ[environmental_variables.SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE] = str(
-        remote_config.get_should_use_eventbridge(puppet_account_id_to_use, home_region)
-        if should_forward_events_to_eventbridge is None
+        str(
+            remote_config.get_should_use_eventbridge(
+                puppet_account_id_to_use, home_region
+            )
+        )
+        if should_forward_events_to_eventbridge == "None"
         else should_forward_events_to_eventbridge
     )
     os.environ[environmental_variables.SHOULD_FORWARD_FAILURES_TO_OPSCENTER] = str(
-        remote_config.get_should_forward_failures_to_opscenter(
-            puppet_account_id_to_use, home_region
+        str(
+            remote_config.get_should_forward_failures_to_opscenter(
+                puppet_account_id_to_use, home_region
+            )
         )
-        if should_forward_failures_to_opscenter is None
+        if should_forward_failures_to_opscenter == "None"
         else should_forward_failures_to_opscenter
     )
 
-    os.environ[environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS] = str(
-        remote_config.get_should_delete_rollback_complete_stacks(
-            puppet_account_id_to_use
-        )
-    )
-    os.environ[environmental_variables.SHOULD_USE_PRODUCT_PLANS] = str(
-        remote_config.get_should_use_product_plans(
-            puppet_account_id_to_use, os.environ.get("AWS_DEFAULT_REGION")
-        )
-    )
-    os.environ[environmental_variables.INITIALISER_STACK_TAGS] = json.dumps(
-        remote_config.get_initialiser_stack_tags()
-    )
+    # os.environ[environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS] = str( #TODO make dynamic
+    #     remote_config.get_should_delete_rollback_complete_stacks(
+    #         puppet_account_id_to_use
+    #     )
+    # )
+    # os.environ[environmental_variables.SHOULD_USE_PRODUCT_PLANS] = str( #TODO make dynamic
+    #     remote_config.get_should_use_product_plans(
+    #         puppet_account_id_to_use, os.environ.get("AWS_DEFAULT_REGION")
+    #     )
+    # )
+    # os.environ[environmental_variables.INITIALISER_STACK_TAGS] = json.dumps( #TODO make dynamic
+    #     remote_config.get_initialiser_stack_tags()
+    # )
+    os.environ[environmental_variables.VERSION] = constants.VERSION
     # for k, v in os.environ.items():
     #     if k[0:4] == "SCT_":
     #         click.echo(f"Overrided {k}: {v}")
@@ -621,6 +632,7 @@ def setup_config(
 @click.option("--num-workers", default=10)
 @click.option("--execution-mode", default="hub")
 @click.option("--puppet-account-id")
+@click.option("--single-account", default=None)
 @click.option("--home-region", default=None)
 @click.option("--regions", default="")
 @click.option("--should-collect-cloudformation-events", default=None, type=bool)
@@ -631,6 +643,7 @@ def deploy_from_task_reference(
     num_workers,
     execution_mode,
     puppet_account_id,
+    single_account,
     home_region,
     regions,
     should_collect_cloudformation_events,
@@ -639,6 +652,7 @@ def deploy_from_task_reference(
 ):
     setup_config(
         puppet_account_id=puppet_account_id,
+        single_account=single_account,
         num_workers=str(num_workers),
         execution_mode=execution_mode,
         home_region=home_region,

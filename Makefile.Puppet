@@ -1,4 +1,4 @@
-.PHONY: version bootstrap bootstrap-self-as-spoke bootstrap-branch expand deploy deploy-spoke create-config
+.PHONY: version bootstrap bootstrap-self-as-spoke bootstrap-branch expand deploy deploy-spoke
 
 ## @Puppet_commands Runs servicecatalog-puppet version
 version:
@@ -38,9 +38,17 @@ deploy-from-task-reference:
 	time poetry run servicecatalog-puppet --info deploy-from-task-reference --num-workers 40 \
 		ignored/src/ServiceCatalogPuppet/manifest-task-reference.yaml
 
-deploy-from-task-reference-spoke: create-config
-	time poetry run servicecatalog-puppet --info deploy-from-task-reference --puppet-account-id 105463962595 --num-workers 40 \
-		ignored/src/ServiceCatalogPuppet/manifest-task-reference.yaml
+deploy-from-task-reference-spoke:
+	time poetry run servicecatalog-puppet --info deploy-from-task-reference \
+	    --puppet-account-id 105463962595 \
+	    --single-account 022042407650 \
+	    --num-workers 40 \
+	    --home-region eu-west-1 \
+	    --regions eu-west-1,eu-west-2,eu-west-3,us-east-1,us-west-1 \
+	    --should-collect-cloudformation-events False \
+	    --should-forward-events-to-eventbridge False \
+        --should-forward-failures-to-opscenter False \
+		ignored/src/ServiceCatalogPuppet/manifest-task-reference-full.yaml
 
 ## @Puppet_commands Runs servicecatalog-puppet --info deploy
 deploy:
@@ -91,10 +99,3 @@ export-singleaccount-stats:
 ## @puppet_commands Runs servicecatalog-puppet --info show-pipelines
 show-pipelines:
 	poetry run servicecatalog-puppet --info show-pipelines
-
-create-config:
-    echo "home_region: eu-west-1" > config.yaml
-    echo "regions: eu-west-1" >> config.yaml
-    echo "should_collect_cloudformation_events: should_collect_cloudformation_events" >> config.yaml
-    echo "should_forward_events_to_eventbridge: should_forward_events_to_eventbridge" >> config.yaml
-    echo "should_forward_failures_to_opscenter: should_forward_failures_to_opscenter" >> config.yaml

@@ -3,14 +3,12 @@
 
 import luigi
 
-from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class GetCloudFormationTemplateFromS3(
-    tasks.PuppetTask
-):  # TODO make task with reference
-    puppet_account_id = luigi.Parameter()
+class GetCloudFormationTemplateFromS3(tasks.TaskWithReference):
     account_id = luigi.Parameter()
+
     bucket = luigi.Parameter()
     key = luigi.Parameter()
     region = luigi.Parameter()
@@ -18,6 +16,7 @@ class GetCloudFormationTemplateFromS3(
 
     def params_for_results_display(self):
         return {
+            "task_reference": self.task_reference,
             "bucket": self.bucket,
             "key": self.key.replace("-${AWS::Region}", f"-{self.region}"),
             "region": self.region,

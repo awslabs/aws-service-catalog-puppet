@@ -4,7 +4,6 @@
 import glob
 import os
 
-import luigi
 import zipfile
 
 from servicecatalog_puppet import constants
@@ -12,11 +11,6 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class GenerateManifestWithIdsTask(tasks.TaskWithReference):
-    puppet_account_id = luigi.Parameter()
-    task_reference = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
-    manifest_task_reference_file_path = luigi.Parameter()
-
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -47,26 +41,57 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
             )
 
         with self.hub_client("s3") as s3:
-            task_reference_content = open(
-                self.manifest_task_reference_file_path.replace("task-reference.yaml", "task-reference-full.yaml"),
-                'r'
-            ).read()
-            key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}.yaml"
-            self.debug(f"Uploading task reference {key} to {bucket}")
-            s3.put_object(
-                Body=task_reference_content, Bucket=bucket, Key=key,
-            )
-            self.debug(f"Generating presigned URL for {key}")
-            signed_url = s3.generate_presigned_url(
-                "get_object",
-                Params={"Bucket": bucket, "Key": key},
-                ExpiresIn=60 * 60 * 24,
-            )
+            (
+                reference_signed_url,
+                reference_task_reference_content,
+            ) = self.get_signed_url_for_task_reference(bucket, s3)
+            (
+                manifest_signed_url,
+                manifest_content,
+            ) = self.get_signed_url_for_manifest(bucket, s3)
 
         self.write_output(
             dict(
-                task_reference_content=task_reference_content,
-                signed_url=signed_url,
+                reference_task_reference_content=reference_task_reference_content,
+                reference_signed_url=reference_signed_url,
                 cached_output_signed_url=cached_output_signed_url,
+                manifest_signed_url=manifest_signed_url,
+                manifest_content=manifest_content,
             )
         )
+
+    def get_signed_url_for_task_reference(self, bucket, s3):
+        task_reference_content = open(
+            self.manifest_task_reference_file_path.replace(
+                "task-reference.yaml", "task-reference-full.yaml"
+            ),
+            "r",
+        ).read()
+        key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-reference.yaml"
+        self.debug(f"Uploading task reference {key} to {bucket}")
+        s3.put_object(
+            Body=task_reference_content, Bucket=bucket, Key=key,
+        )
+        self.debug(f"Generating presigned URL for {key}")
+        signed_url = s3.generate_presigned_url(
+            "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=60 * 60 * 24,
+        )
+        return signed_url, task_reference_content
+
+    def get_signed_url_for_manifest(self, bucket, s3):
+        task_reference_content = open(
+            self.manifest_task_reference_file_path.replace(
+                "task-reference.yaml", "expanded.yaml"
+            ),
+            "r",
+        ).read()
+        key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-manifest.yaml"
+        self.debug(f"Uploading manifest {key} to {bucket}")
+        s3.put_object(
+            Body=task_reference_content, Bucket=bucket, Key=key,
+        )
+        self.debug(f"Generating presigned URL for {key}")
+        signed_url = s3.generate_presigned_url(
+            "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=60 * 60 * 24,
+        )
+        return signed_url, task_reference_content

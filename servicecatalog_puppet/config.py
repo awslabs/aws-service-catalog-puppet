@@ -198,6 +198,10 @@ def get_puppet_account_id():
     return os.environ.get(environmental_variables.PUPPET_ACCOUNT_ID)
 
 
+def get_single_account_id():
+    return os.environ.get(environmental_variables.SINGLE_ACCOUNT_ID)
+
+
 def get_should_use_eventbridge():
     return os.environ.get(environmental_variables.SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE)
 

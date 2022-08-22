@@ -96,12 +96,14 @@ def run_tasks(
     if not (running_exploded or is_list_launches):
         tasks.print_stats()
 
+    should_use_shared_scheduler = False
     if is_list_launches:
         should_use_shared_scheduler = False
     else:
-        should_use_shared_scheduler = config.get_should_use_shared_scheduler(
-            puppet_account_id
-        )
+        pass
+        # should_use_shared_scheduler = config.get_should_use_shared_scheduler( #TODO reenable
+        #     puppet_account_id
+        # )
 
     build_params = dict(
         detailed_summary=True,
