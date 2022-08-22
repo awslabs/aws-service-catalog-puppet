@@ -110,7 +110,7 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
                         commands=[
                             "curl $TASK_REFERENCE_URL > manifest-task-reference-full.yaml",
                             "curl $MANIFEST_URL > manifest-expanded.yaml",
-                            """servicecatalog-puppet --info deploy_from_task_reference \
+                            """servicecatalog-puppet --info deploy-from-task-reference \
                       --execution-mode spoke \
                       --puppet-account-id $PUPPET_ACCOUNT_ID \
                       --single-account $(aws sts get-caller-identity --query Account --output text) \

@@ -1236,7 +1236,7 @@ def deploy_from_task_reference(f):
                 )
             )
 
-    executor_account_id = puppet_account_id  # TODO FIXME REMOVE
+    executor_account_id = config.get_executor_account_id()  # TODO FIXME REMOVE
     is_dry_run = is_list_launches = False  # TODO FIXME REMOVE
     execution_mode = "hub"  # TODO FIXME REMOVE
     on_complete_url = "localhost"  # TODO FIXME REMOVE

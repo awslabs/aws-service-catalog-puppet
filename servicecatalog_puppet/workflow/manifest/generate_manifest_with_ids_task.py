@@ -24,6 +24,7 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
             "output/GetSSMParamTask.zip", "w", zipfile.ZIP_DEFLATED
         ) as zip:
             files = list()
+            files.extend(glob.glob(f"output/*/**", recursive=True))
             for task_name in constants.TASKS_TO_SHARE_WITH_SPOKES:
                 files.extend(glob.glob(f"output/{task_name}*/**", recursive=True))
             for filename in files:

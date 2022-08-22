@@ -394,7 +394,7 @@ def on_task_processing_time(task, duration):
 
     with betterboto_client.CrossAccountClientContextManager(
         "cloudwatch",
-        config.get_puppet_role_arn(config.get_puppet_account_id()),
+        config.get_puppet_role_arn(config.get_executor_account_id()),
         "cloudwatch-puppethub",
     ) as cloudwatch:
 

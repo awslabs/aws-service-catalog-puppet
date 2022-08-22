@@ -202,6 +202,10 @@ def get_single_account_id():
     return os.environ.get(environmental_variables.SINGLE_ACCOUNT_ID)
 
 
+def get_executor_account_id():
+    return os.environ.get(environmental_variables.EXECUTOR_ACCOUNT_ID)
+
+
 def get_should_use_eventbridge():
     return os.environ.get(environmental_variables.SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE)
 
