@@ -1,7 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
-
 EXECUTOR_ACCOUNT_ID = "SCT_EXECUTOR_ACCOUNT_ID"
 CACHE_INVALIDATOR = "SCT_CACHE_INVALIDATOR"
 EXECUTION_MODE = "SCT_EXECUTION_MODE"

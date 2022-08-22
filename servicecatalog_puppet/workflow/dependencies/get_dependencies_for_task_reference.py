@@ -737,5 +737,38 @@ def create(
                 manifest_task_reference_file_path=manifest_task_reference_file_path,
             )
 
+    elif (
+        section_name == constants.RUN_DEPLOY_IN_SPOKE
+    ):
+        from servicecatalog_puppet.workflow.launch import (
+            run_deploy_in_spoke_task
+        )
+
+        return run_deploy_in_spoke_task.RunDeployInSpokeTask(
+            puppet_account_id=puppet_account_id,
+            task_reference=parameters_to_use.get("task_reference"),
+            dependencies_by_reference=parameters_to_use.get(
+                "dependencies_by_reference"
+            ),
+            account_id=parameters_to_use.get("account_id"),
+            manifest_task_reference_file_path=manifest_task_reference_file_path,
+        )
+
+    elif (
+        section_name == constants.GENERATE_MANIFEST
+    ):
+        from servicecatalog_puppet.workflow.manifest import (
+            generate_manifest_with_ids_task
+        )
+
+        return generate_manifest_with_ids_task.GenerateManifestWithIdsTask(
+            puppet_account_id=puppet_account_id,
+            task_reference=parameters_to_use.get("task_reference"),
+            dependencies_by_reference=parameters_to_use.get(
+                "dependencies_by_reference"
+            ),
+            manifest_task_reference_file_path=manifest_task_reference_file_path,
+        )
+
     else:
         raise Exception(f"Unknown section_name: {section_name}")

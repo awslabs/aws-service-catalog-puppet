@@ -647,7 +647,6 @@ def deploy_from_task_reference(
         should_forward_events_to_eventbridge=str(should_forward_events_to_eventbridge),
         should_forward_failures_to_opscenter=str(should_forward_failures_to_opscenter),
     )
-
     click.echo(
         f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"
     )
