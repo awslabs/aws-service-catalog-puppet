@@ -491,6 +491,8 @@ def list_launches(expanded_manifest, format):
     "--parameter-override-forced/--no-parameter-override-forced", default=False
 )
 def expand(f, single_account, parameter_override_file, parameter_override_forced):
+    puppet_account_id = remote_config.get_puppet_account_id()
+    regions = remote_config.get_regions(puppet_account_id, constants.HOME_REGION)
     params = dict(single_account=single_account)
     if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
         overrides = dict(**yaml.safe_load(parameter_override_file.read()))
@@ -507,8 +509,7 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
         )
         click.echo(f"Overridden parameters {params}")
 
-    puppet_account_id = config.get_puppet_account_id()
-    manifest_commands.expand(f, puppet_account_id, **params)
+    manifest_commands.expand(f, puppet_account_id, regions, **params)
     if config.get_should_explode_manifest(puppet_account_id):
         manifest_commands.explode(f)
 
