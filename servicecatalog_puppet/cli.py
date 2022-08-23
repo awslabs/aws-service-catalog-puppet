@@ -534,7 +534,6 @@ def get_overrides():
 
 @cli.command()
 @click.argument("f", type=click.File())
-@click.option("")
 def generate_task_reference(f):
     setup_config()
     task_reference_commands.generate_task_reference(f, get_overrides())
