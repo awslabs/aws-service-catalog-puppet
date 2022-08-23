@@ -102,7 +102,7 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
             {
                 "name": environmental_variables.INITIALISER_STACK_TAGS,
                 "value": config.get_initialiser_stack_tags(),
-                "type:": "PLAINTEXT",
+                "type": "PLAINTEXT",
             },
         ]
 
