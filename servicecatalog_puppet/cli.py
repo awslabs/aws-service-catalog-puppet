@@ -509,7 +509,7 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
 
     puppet_account_id = remote_config.get_puppet_account_id()
     regions = remote_config.get_regions(puppet_account_id, constants.HOME_REGION)
-    manifest_commands.expand(f, puppet_account_id, regions)
+    manifest_commands.expand(f, puppet_account_id, regions, get_overrides(parameter_override_file))
     # if config.get_should_explode_manifest(puppet_account_id):
     #     manifest_commands.explode(f)
 
@@ -530,15 +530,16 @@ def get_overrides(parameter_override_file):
             dict(single_account=overrides.get("single_account"), subset=overrides,)
         )
         click.echo(f"Overridden parameters {params}")
-    return params
+    # return params
+    # return {'single_account': '087969333128', 'subset': {'single_account': '087969333128'}, 'include_dependencies': True}
+    return {'single_account': '087969333128', 'subset': {'single_account': '087969333128'}, }
 
 
 @cli.command()
 @click.argument("f", type=click.File())
-@click.option("--parameter-override-file", type=click.File())
-def generate_task_reference(f, parameter_override_file):
+def generate_task_reference(f):
     setup_config()
-    task_reference_commands.generate_task_reference(f, get_overrides(parameter_override_file))
+    task_reference_commands.generate_task_reference(f)
 
 
 def setup_config(

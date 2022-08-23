@@ -51,8 +51,6 @@ def generate_complete_task_reference(f, puppet_account_id, manifest):
         tasks_by_account_id[section_name_singular] = dict()
         tasks_by_account_id_and_region[section_name_singular] = dict()
         for item_name, item in manifest.get(section_name, {}).items():
-            if item.get("status") == constants.MANIFEST_STATUS_FIELD_VALUE_IGNORED:
-                continue
             tasks_by_type[section_name_singular][item_name] = list()
             tasks_by_region[section_name_singular][item_name] = dict()
             tasks_by_account_id[section_name_singular][item_name] = dict()
@@ -1036,75 +1034,6 @@ def handle_launches(
     ] = describe_provisioning_params_ref
 
 
-def generate_overrides_task_reference(
-    puppet_account_id, all_tasks, output_file_path, overrides
-):
-    single_account = overrides.get("single_account")
-    section_name = overrides.get("section")
-    item_name = overrides.get("item")
-    include_dependencies = overrides.get("include_dependencies")
-    include_reverse_dependencies = overrides.get("include_reverse_dependencies")
-
-    tasks_to_include = dict()
-    for task_name, task in all_tasks.items():
-
-        should_include = True
-
-        if single_account:
-            if task.get("manifest_account_id") not in [
-                single_account,
-            ]:
-                should_include = False
-            if should_include:
-                if task.get("account_id") not in [
-                    single_account,
-                ]:
-                    should_include = False
-
-        if should_include:
-            if section_name:
-                if task.get("manifest_section_name") != section_name:
-                    should_include = False
-
-        if should_include:
-            if item_name:
-                if task.get("manifest_item_name") != item_name:
-                    should_include = False
-
-        if should_include:
-            tasks_to_include[task_name] = task
-
-    if include_dependencies:
-        needs_another_loop = True
-        while needs_another_loop:
-            dependencies_to_add = dict()
-            needs_another_loop = False
-            for task_name, task_to_include in tasks_to_include.items():
-                for dep in task_to_include.get("dependencies_by_reference"):
-                    if not tasks_to_include.get(dep):
-                        if not dependencies_to_add.get(dep):
-                            dependencies_to_add[dep] = all_tasks.get(dep)
-                            needs_another_loop = True
-            tasks_to_include.update(dependencies_to_add)
-
-    if include_reverse_dependencies:
-        needs_another_loop = True
-        while needs_another_loop:
-            dependencies_to_add = dict()
-            needs_another_loop = False
-            for task_name, task_to_include in tasks_to_include.items():
-                for dep in task_to_include.get("reverse_dependencies_by_reference"):
-                    if not tasks_to_include.get(dep):
-                        if not dependencies_to_add.get(dep):
-                            dependencies_to_add[dep] = all_tasks.get(dep)
-                            needs_another_loop = True
-            tasks_to_include.update(dependencies_to_add)
-
-    result = dict(all_tasks=tasks_to_include)
-    open(output_file_path, "w").write(yaml_utils.dump(result))
-    return result
-
-
 def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
     tasks_to_include = dict()
     generate_manifest_ref = "generate-manifest"
@@ -1198,23 +1127,16 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
     return result
 
 
-def generate_task_reference(f, overrides):
+def generate_task_reference(f):
     puppet_account_id = config.get_puppet_account_id()
 
     content = open(f.name, "r").read()
     manifest = manifest_utils.Manifest(yaml_utils.load(content))
     complete = generate_complete_task_reference(f, puppet_account_id, manifest)
 
-    tasks_to_run = generate_overrides_task_reference(
-        puppet_account_id,
-        complete.get("all_tasks"),
-        f.name.replace("-expanded", "-task-reference-overrides"),
-        overrides,
-    )
-
     generate_hub_task_reference(
         puppet_account_id,
-        tasks_to_run.get("all_tasks"),
+        complete.get("all_tasks"),
         f.name.replace("-expanded", "-task-reference"),
     )
 
