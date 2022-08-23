@@ -1053,9 +1053,13 @@ def generate_overrides_task_reference(
         if single_account:
             if task.get("manifest_account_id") not in [
                 single_account,
-                puppet_account_id,
             ]:
                 should_include = False
+            if should_include:
+                if task.get("account_id") not in [
+                    single_account,
+                ]:
+                    should_include = False
 
         if should_include:
             if section_name:
