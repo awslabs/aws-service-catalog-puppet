@@ -109,9 +109,7 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
         if "http" in self.version:
             install_command = f"pip install {self.version}"
         else:
-            install_command = (
-                f"pip install aws-service-catalog-puppet=={self.version}",
-            )
+            install_command = f"pip install aws-service-catalog-puppet=={self.version}"
 
         build_spec = yaml_utils.dump(
             dict(
