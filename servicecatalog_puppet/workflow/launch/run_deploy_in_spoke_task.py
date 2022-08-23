@@ -96,7 +96,7 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
             },
             {
                 "name": environmental_variables.IS_CACHING_ENABLED,
-                "value": config.is_caching_enabled(),
+                "value": str(config.is_caching_enabled()),
                 "type": "PLAINTEXT",
             }
         ]
