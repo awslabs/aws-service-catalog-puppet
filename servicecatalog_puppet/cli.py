@@ -530,9 +530,9 @@ def get_overrides(parameter_override_file):
             dict(single_account=overrides.get("single_account"), subset=overrides,)
         )
         click.echo(f"Overridden parameters {params}")
-    # return params
+    return params
     # return {'single_account': '087969333128', 'subset': {'single_account': '087969333128'}, 'include_dependencies': True}
-    return {'single_account': '087969333128', 'subset': {'single_account': '087969333128', 'section': 'stacks'}, }
+    # return {'single_account': '087969333128', 'subset': {'single_account': '087969333128', 'section': 'stacks'}, }
 
 
 @cli.command()
