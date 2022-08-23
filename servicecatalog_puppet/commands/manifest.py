@@ -55,7 +55,7 @@ def assemble_manifest_from_ssm(target_directory):
         )
 
 
-def expand(f, puppet_account_id, regions, single_account=None, subset=None):
+def expand(f, puppet_account_id, regions, single_account, subset=None):
     click.echo("Expanding")
     target_directory = os.path.sep.join([os.path.dirname(f.name), "manifests"])
     assemble_manifest_from_ssm(target_directory)

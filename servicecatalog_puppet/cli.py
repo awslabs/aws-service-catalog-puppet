@@ -491,27 +491,26 @@ def list_launches(expanded_manifest, format):
     "--parameter-override-forced/--no-parameter-override-forced", default=False
 )
 def expand(f, single_account, parameter_override_file, parameter_override_forced):
-    # params = dict(single_account=single_account)
-    # if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
-    #     overrides = dict(**yaml.safe_load(parameter_override_file.read()))
-    #     if overrides.get("subset"):
-    #         subset = overrides.get("subset")
-    #         overrides = dict(
-    #             section=subset.get("section"),
-    #             item=subset.get("name"),
-    #             include_dependencies=subset.get("include_dependencies"),
-    #             include_reverse_dependencies=subset.get("include_reverse_dependencies"),
-    #         )
-    #     params.update(
-    #         dict(single_account=overrides.get("single_account"), subset=overrides,)
-    #     )
-    #     click.echo(f"Overridden parameters {params}")
+    params = dict(single_account=single_account)
+    if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
+        overrides = dict(**yaml.safe_load(parameter_override_file.read()))
+        if overrides.get("subset"):
+            subset = overrides.get("subset")
+            overrides = dict(
+                section=subset.get("section"),
+                item=subset.get("name"),
+                include_dependencies=subset.get("include_dependencies"),
+                include_reverse_dependencies=subset.get("include_reverse_dependencies"),
+            )
+        params.update(
+            dict(single_account=overrides.get("single_account"), subset=overrides,)
+        )
+        click.echo(f"Overridden parameters {params}")
 
-    puppet_account_id = remote_config.get_puppet_account_id()
-    regions = remote_config.get_regions(puppet_account_id, constants.HOME_REGION)
-    manifest_commands.expand(f, puppet_account_id, regions, get_overrides(parameter_override_file))
-    # if config.get_should_explode_manifest(puppet_account_id):
-    #     manifest_commands.explode(f)
+    puppet_account_id = config.get_puppet_account_id()
+    manifest_commands.expand(f, puppet_account_id, **params)
+    if config.get_should_explode_manifest(puppet_account_id):
+        manifest_commands.explode(f)
 
 
 def get_overrides(parameter_override_file):
@@ -532,7 +531,7 @@ def get_overrides(parameter_override_file):
         click.echo(f"Overridden parameters {params}")
     # return params
     # return {'single_account': '087969333128', 'subset': {'single_account': '087969333128'}, 'include_dependencies': True}
-    return {'single_account': '087969333128', 'subset': {'single_account': '087969333128'}, }
+    return {'single_account': '087969333128', 'subset': {'single_account': '087969333128', 'section': 'stacks'}, }
 
 
 @cli.command()
