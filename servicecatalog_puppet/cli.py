@@ -514,35 +514,29 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
 
 
 def get_overrides():
-    # params = dict(single_account=single_account)
-    # if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
-    #     overrides = dict(**yaml.safe_load(parameter_override_file.read()))
-    #     if overrides.get("subset"):
-    #         subset = overrides.get("subset")
-    #         overrides = dict(
-    #             section=subset.get("section"),
-    #             item=subset.get("name"),
-    #             include_dependencies=subset.get("include_dependencies"),
-    #             include_reverse_dependencies=subset.get("include_reverse_dependencies"),
-    #         )
-    #     params.update(
-    #         dict(single_account=overrides.get("single_account"), subset=overrides,)
-    #     )
-    #     click.echo(f"Overridden parameters {params}")
-    # return dict(
-    #     section="spoke-local-portfolios",
-    #     # item="sleeper",
-    #     include_dependencies=False,
-    #     include_reverse_dependencies=False,
-    # )
-    return dict()
+    params = dict()
+    if misc_commands.is_a_parameter_override_execution():
+        overrides = dict(**yaml.safe_load(parameter_override_file.read()))
+        if overrides.get("subset"):
+            subset = overrides.get("subset")
+            overrides = dict(
+                section=subset.get("section"),
+                item=subset.get("name"),
+                include_dependencies=subset.get("include_dependencies"),
+                include_reverse_dependencies=subset.get("include_reverse_dependencies"),
+            )
+        params.update(
+            dict(single_account=overrides.get("single_account"), subset=overrides,)
+        )
+        click.echo(f"Overridden parameters {params}")
+    return params
 
 
 @cli.command()
 @click.argument("f", type=click.File())
+@click.option("")
 def generate_task_reference(f):
     setup_config()
-    overrides = get_overrides()
     task_reference_commands.generate_task_reference(f, get_overrides())
 
 
