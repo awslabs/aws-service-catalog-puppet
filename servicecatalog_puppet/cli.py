@@ -621,9 +621,12 @@ def setup_config(
     #         puppet_account_id_to_use, os.environ.get("AWS_DEFAULT_REGION")
     #     )
     # )
-    # os.environ[environmental_variables.INITIALISER_STACK_TAGS] = json.dumps( #TODO make dynamic
-    #     remote_config.get_initialiser_stack_tags()
-    # )
+
+    if not os.environ.get(environmental_variables.INITIALISER_STACK_TAGS):
+        os.environ[environmental_variables.INITIALISER_STACK_TAGS] = json.dumps( #TODO make dynamic
+            remote_config.get_initialiser_stack_tags()
+        )
+
     os.environ[environmental_variables.VERSION] = constants.VERSION
     os.environ[
         environmental_variables.OUTPUT_CACHE_STARTING_POINT

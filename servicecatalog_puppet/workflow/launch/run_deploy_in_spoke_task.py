@@ -96,9 +96,14 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
             },
             {
                 "name": environmental_variables.IS_CACHING_ENABLED,
-                "value": str(config.is_caching_enabled()),
+                "value": "False", # no caching in spokes
                 "type": "PLAINTEXT",
-            }
+            },
+            {
+                "name": environmental_variables.INITIALISER_STACK_TAGS,
+                "value": config.get_initialiser_stack_tags(),
+                "type:": "PLAINTEXT",
+            },
         ]
 
         if "http" in self.version:
