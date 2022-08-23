@@ -557,6 +557,7 @@ def setup_config(
     should_forward_events_to_eventbridge="None",
     should_forward_failures_to_opscenter="None",
     output_cache_starting_point="",
+    is_caching_enabled="",
 ):
     home_region_to_use = home_region or constants.HOME_REGION
     if puppet_account_id is None:
@@ -627,6 +628,11 @@ def setup_config(
     os.environ[
         environmental_variables.OUTPUT_CACHE_STARTING_POINT
     ] = output_cache_starting_point
+
+    if is_caching_enabled == "":
+        os.environ[environmental_variables.IS_CACHING_ENABLED] = str(remote_config.is_caching_enabled(puppet_account_id_to_use, home_region))
+    else:
+        os.environ[environmental_variables.IS_CACHING_ENABLED] = str(is_caching_enabled)
     # for k, v in os.environ.items():
     #     if k[0:4] == "SCT_":
     #         click.echo(f"Overrided {k}: {v}")
@@ -649,6 +655,11 @@ def setup_config(
     show_default=True,
     envvar="OUTPUT_CACHE_STARTING_POINT",
 )
+@click.option(
+    "--is-caching-enabled",
+    default="",
+    envvar="SCT_IS_CACHING_ENABLED",
+)
 def deploy_from_task_reference(
     f,
     num_workers,
@@ -661,6 +672,7 @@ def deploy_from_task_reference(
     should_forward_events_to_eventbridge,
     should_forward_failures_to_opscenter,
     output_cache_starting_point,
+    is_caching_enabled,
 ):
     setup_config(
         puppet_account_id=puppet_account_id,
@@ -673,6 +685,7 @@ def deploy_from_task_reference(
         should_forward_events_to_eventbridge=str(should_forward_events_to_eventbridge),
         should_forward_failures_to_opscenter=str(should_forward_failures_to_opscenter),
         output_cache_starting_point=output_cache_starting_point,
+        is_caching_enabled=is_caching_enabled,
     )
     click.echo(
         f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"

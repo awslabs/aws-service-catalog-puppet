@@ -3,6 +3,7 @@
 
 import luigi
 
+from servicecatalog_puppet import config
 from servicecatalog_puppet import yaml_utils
 from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet import environmental_variables_parameters
@@ -93,6 +94,11 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
                 "value": cached_output_signed_url,
                 "type": "PLAINTEXT",
             },
+            {
+                "name": environmental_variables.IS_CACHING_ENABLED,
+                "value": config.is_caching_enabled(),
+                "type": "PLAINTEXT",
+            }
         ]
 
         if "http" in self.version:

@@ -19,10 +19,10 @@ def get_config(puppet_account_id, default_region=None):
         default_region if default_region else config.get_home_region(puppet_account_id)
     )
     with betterboto_client.CrossAccountClientContextManager(
-        "ssm",
-        config.get_puppet_role_arn(puppet_account_id),
-        f"{puppet_account_id}-{region}-{config.get_puppet_role_name()}",
-        region_name=region,
+            "ssm",
+            config.get_puppet_role_arn(puppet_account_id),
+            f"{puppet_account_id}-{region}-{config.get_puppet_role_name()}",
+            region_name=region,
     ) as ssm:
         response = ssm.get_parameter(Name=constants.CONFIG_PARAM_NAME)
         return yaml.safe_load(response.get("Parameter").get("Value"))
@@ -68,10 +68,10 @@ def get_initialiser_stack_tags():
             )
             initialiser_stack_name = response.get("Parameter").get("Value")
             with betterboto_client.ClientContextManager(
-                "cloudformation"
+                    "cloudformation"
             ) as cloudformation:
                 paginator = cloudformation.get_paginator("describe_stacks")
-                for page in paginator.paginate(StackName=initialiser_stack_name,):
+                for page in paginator.paginate(StackName=initialiser_stack_name, ):
                     for stack in page.get("Stacks", []):
                         if stack.get("StackStatus") in [
                             "CREATE_IN_PROGRESS",
@@ -132,3 +132,10 @@ def get_puppet_account_id():
 def get_current_account_id():
     with betterboto_client.ClientContextManager("sts") as sts:
         return sts.get_caller_identity().get("Account")
+
+
+@functools.lru_cache(maxsize=32)
+def is_caching_enabled(puppet_account_id, default_region=None):
+    return get_config(puppet_account_id, default_region).get(
+        "is_caching_enabled", False
+    )

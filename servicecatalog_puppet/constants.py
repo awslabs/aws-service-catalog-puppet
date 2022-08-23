@@ -109,8 +109,6 @@ PUPPET_ROLE_PATH_SSM_PARAMETER_VARIABLE_NAME = "/servicecatalog-puppet/puppet-ro
 
 DEPLOY_ENVIRONMENT_COMPUTE_TYPE_DEFAULT = "BUILD_GENERAL1_SMALL"
 
-CONFIG_IS_CACHING_ENABLED = "CONFIG_IS_CACHING_ENABLED"
-
 START_SHARED_SCHEDULER_COMMAND = "luigid --background --pidfile luigi.pid --logdir results/logs --state-path results/state"
 
 CONFIG_REGIONS = "regions"

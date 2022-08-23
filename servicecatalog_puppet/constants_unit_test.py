@@ -112,7 +112,6 @@ def test_constants_values():
         == "/servicecatalog-puppet/puppet-role/path"
     )
     assert constants.DEPLOY_ENVIRONMENT_COMPUTE_TYPE_DEFAULT == "BUILD_GENERAL1_SMALL"
-    assert constants.CONFIG_IS_CACHING_ENABLED == "CONFIG_IS_CACHING_ENABLED"
     assert (
         constants.START_SHARED_SCHEDULER_COMMAND
         == "luigid --background --pidfile luigi.pid --logdir results/logs --state-path results/state"
