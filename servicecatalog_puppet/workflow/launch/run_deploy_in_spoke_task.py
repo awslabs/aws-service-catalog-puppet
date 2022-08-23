@@ -156,8 +156,6 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
             "bucketOwnerAccess": "FULL",
         }
 
-        print(build_spec)
-
         with self.spoke_client("codebuild") as codebuild:
             response = codebuild.start_build(
                 projectName=constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME,

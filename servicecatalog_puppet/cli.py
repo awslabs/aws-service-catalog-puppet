@@ -859,6 +859,9 @@ def wait_for_code_build_in(iam_role_arns):
 @cli.command()
 @click.option("--on-complete-url", default=None)
 def wait_for_parameterised_run_to_complete(on_complete_url):
+    setup_config(
+        puppet_account_id=remote_config.get_puppet_account_id()
+    )
     click.echo("Starting to wait for parameterised run to complete")
     succeeded = misc_commands.wait_for_parameterised_run_to_complete(on_complete_url)
     if succeeded:
