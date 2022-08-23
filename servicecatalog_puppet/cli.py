@@ -623,7 +623,9 @@ def setup_config(
     # )
 
     if not os.environ.get(environmental_variables.INITIALISER_STACK_TAGS):
-        os.environ[environmental_variables.INITIALISER_STACK_TAGS] = json.dumps( #TODO make dynamic
+        os.environ[
+            environmental_variables.INITIALISER_STACK_TAGS
+        ] = json.dumps(  # TODO make dynamic
             remote_config.get_initialiser_stack_tags()
         )
 
@@ -633,7 +635,9 @@ def setup_config(
     ] = output_cache_starting_point
 
     if is_caching_enabled == "":
-        os.environ[environmental_variables.IS_CACHING_ENABLED] = str(remote_config.is_caching_enabled(puppet_account_id_to_use, home_region))
+        os.environ[environmental_variables.IS_CACHING_ENABLED] = str(
+            remote_config.is_caching_enabled(puppet_account_id_to_use, home_region)
+        )
     else:
         os.environ[environmental_variables.IS_CACHING_ENABLED] = str(is_caching_enabled)
     # for k, v in os.environ.items():
@@ -659,9 +663,7 @@ def setup_config(
     envvar="OUTPUT_CACHE_STARTING_POINT",
 )
 @click.option(
-    "--is-caching-enabled",
-    default="",
-    envvar="SCT_IS_CACHING_ENABLED",
+    "--is-caching-enabled", default="", envvar="SCT_IS_CACHING_ENABLED",
 )
 def deploy_from_task_reference(
     f,

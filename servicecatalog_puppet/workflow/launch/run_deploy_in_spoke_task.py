@@ -96,7 +96,7 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
             },
             {
                 "name": environmental_variables.IS_CACHING_ENABLED,
-                "value": "False", # no caching in spokes
+                "value": "False",  # no caching in spokes
                 "type": "PLAINTEXT",
             },
             {

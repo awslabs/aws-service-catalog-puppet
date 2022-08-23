@@ -258,8 +258,7 @@ class PuppetTask(luigi.Task):
         should_use_s3_target_if_caching_is_on = (
             "cache_invalidator" not in self.params_for_results_display().keys()
         )
-        if should_use_s3_target_if_caching_is_on and config.is_caching_enabled(
-        ):
+        if should_use_s3_target_if_caching_is_on and config.is_caching_enabled():
             return f"s3://sc-puppet-caching-bucket-{config.get_puppet_account_id()}-{config.get_home_region(puppet_account_id)}/{path}"
         else:
             return path

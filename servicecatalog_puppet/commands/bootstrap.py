@@ -164,8 +164,7 @@ def bootstrap(
         constants.VERSION,
         all_regions,
         source_args,
-        config.is_caching_enabled(
-        ),
+        config.is_caching_enabled(),
         with_manual_approvals,
         scm_skip_creation_of_repo,
         should_validate,

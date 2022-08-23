@@ -1112,8 +1112,7 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
             # should_include = False
             # sharing should happen from the hub for launches in spoke mode
             should_include = (
-                    task.get("section_name")
-                    == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
+                task.get("section_name") == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
             )
 
         elif execution == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT:
@@ -1177,9 +1176,11 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
     if tasks_to_include.get(generate_manifest_ref):
         t = tasks_to_include[generate_manifest_ref]
         for task_name, task_to_include in tasks_to_include.items():
-            if task_to_include.get("section_name") not in [constants.RUN_DEPLOY_IN_SPOKE, constants.GENERATE_MANIFEST]:
+            if task_to_include.get("section_name") not in [
+                constants.RUN_DEPLOY_IN_SPOKE,
+                constants.GENERATE_MANIFEST,
+            ]:
                 t["dependencies_by_reference"].append(task_name)
-
 
     for task_name, task_to_include in tasks_to_include.items():
         for dep in task_to_include.get("dependencies_by_reference"):

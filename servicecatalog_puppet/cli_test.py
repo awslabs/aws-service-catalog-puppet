@@ -37,7 +37,6 @@ class CLITest(unittest.TestCase):
                         )
 
                         # verify
-                        print(result.exception)
                         self.assertEqual(result.exit_code, 0)
                         core_mocked.deploy.assert_called_once()
                         mocked_call = core_mocked.deploy.mock_calls[0]

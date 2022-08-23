@@ -771,12 +771,6 @@ def create(
             get_cloud_formation_template_from_s3,
         )
 
-        print(manifest_task_reference_file_path)
-        print(manifest_task_reference_file_path)
-        print(manifest_task_reference_file_path)
-        print(manifest_task_reference_file_path)
-        print(manifest_task_reference_file_path)
-
         return get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
             puppet_account_id=parameters_to_use.get("puppet_account_id"),
             task_reference=parameters_to_use.get("task_reference"),
