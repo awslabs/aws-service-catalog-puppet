@@ -61,7 +61,11 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
             },
             {"name": "VERSION", "value": self.version, "type": "PLAINTEXT"},
             {"name": "MANIFEST_URL", "value": manifest_signed_url, "type": "PLAINTEXT"},
-            {"name": "TASK_REFERENCE_URL", "value": reference_signed_url, "type": "PLAINTEXT"},
+            {
+                "name": "TASK_REFERENCE_URL",
+                "value": reference_signed_url,
+                "type": "PLAINTEXT",
+            },
             {
                 "name": "PUPPET_ACCOUNT_ID",
                 "value": self.puppet_account_id,

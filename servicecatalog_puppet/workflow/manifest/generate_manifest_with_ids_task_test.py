@@ -8,7 +8,9 @@ from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 class GenerateManifestWithIdsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
-    manifest_file_path = "manifest_file_path"
+    task_reference = "task_reference"
+    manifest_task_reference_file_path = "manifest_task_reference_file_path"
+    dependencies_by_reference = "dependencies_by_reference"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.manifest import (
@@ -18,8 +20,10 @@ class GenerateManifestWithIdsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
         self.module = generate_manifest_with_ids_task
 
         self.sut = self.module.GenerateManifestWithIdsTask(
-            manifest_file_path=self.manifest_file_path,
             puppet_account_id=self.puppet_account_id,
+            task_reference=self.task_reference,
+            manifest_task_reference_file_path=self.manifest_task_reference_file_path,
+            dependencies_by_reference=self.dependencies_by_reference,
         )
 
         self.wire_up_mocks()

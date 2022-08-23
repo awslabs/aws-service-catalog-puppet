@@ -1,11 +1,5 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-import copy
-import json
-import os
-from datetime import datetime
-
-from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet import manifest_utils, constants, yaml_utils, config
 from servicecatalog_puppet.workflow import runner
 from servicecatalog_puppet.workflow.dependencies import (
@@ -1109,12 +1103,19 @@ def generate_overrides_task_reference(
 
 def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
     tasks_to_include = dict()
+    generate_manifest_ref = "generate-manifest"
     for task_name, task in all_tasks.items():
         execution = task.get("execution", constants.EXECUTION_MODE_DEFAULT)
         if execution in [constants.EXECUTION_MODE_HUB, constants.EXECUTION_MODE_ASYNC]:
             should_include = True
         elif execution == constants.EXECUTION_MODE_SPOKE:
-            should_include = False
+            # should_include = False
+            # sharing should happen from the hub for launches in spoke mode
+            should_include = (
+                    task.get("section_name")
+                    == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
+            )
+
         elif execution == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT:
             # cannot assume account_id role from spoke when it is the puppet account id
             should_include = (
@@ -1122,7 +1123,7 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
             )
             # these should not override the previous decisions
             if not should_include:
-                # sharing should happen from the hub
+                # sharing should happen from the hub for spoke-local-portfolios in hub and spoke split mode
                 should_include = (
                     task.get("section_name")
                     == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
@@ -1133,7 +1134,6 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
         if should_include:
             tasks_to_include[task_name] = task
         else:
-            generate_manifest_ref = "generate-manifest"
             if not tasks_to_include.get(generate_manifest_ref):
                 tasks_to_include[generate_manifest_ref] = dict(
                     puppet_account_id=puppet_account_id,
@@ -1143,13 +1143,13 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
                     reverse_dependencies_by_reference=[],
                 )
             t = tasks_to_include[generate_manifest_ref]
-            t["dependencies_by_reference"] = (
-                t["dependencies_by_reference"] + task["dependencies_by_reference"]
-            )
-            t["reverse_dependencies_by_reference"] = (
-                t["reverse_dependencies_by_reference"]
-                + task["reverse_dependencies_by_reference"]
-            )
+            # t["dependencies_by_reference"] = (
+            #     t["dependencies_by_reference"] + task["dependencies_by_reference"]
+            # )
+            # t["reverse_dependencies_by_reference"] = (
+            #     t["reverse_dependencies_by_reference"]
+            #     + task["reverse_dependencies_by_reference"]
+            # )
 
             replacement_ref = (
                 f"{constants.RUN_DEPLOY_IN_SPOKE}_{task.get('account_id')}"
@@ -1165,23 +1165,32 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
                     dependencies_by_reference=[generate_manifest_ref,],
                     reverse_dependencies_by_reference=list(),
                 )
-            t = tasks_to_include[replacement_ref]
-            t["dependencies_by_reference"] = (
-                t["dependencies_by_reference"] + task["dependencies_by_reference"]
-            )
-            t["reverse_dependencies_by_reference"] = (
-                t["reverse_dependencies_by_reference"]
-                + task["reverse_dependencies_by_reference"]
-            )
+            # t = tasks_to_include[replacement_ref]
+            # t["dependencies_by_reference"] = (
+            #     t["dependencies_by_reference"] + task["dependencies_by_reference"]
+            # )
+            # t["reverse_dependencies_by_reference"] = (
+            #     t["reverse_dependencies_by_reference"]
+            #     + task["reverse_dependencies_by_reference"]
+            # )
+
+    if tasks_to_include.get(generate_manifest_ref):
+        t = tasks_to_include[generate_manifest_ref]
+        for task_name, task_to_include in tasks_to_include.items():
+            if task_to_include.get("section_name") not in [constants.RUN_DEPLOY_IN_SPOKE, constants.GENERATE_MANIFEST]:
+                t["dependencies_by_reference"].append(task_name)
+
 
     for task_name, task_to_include in tasks_to_include.items():
         for dep in task_to_include.get("dependencies_by_reference"):
             if not tasks_to_include.get(dep):
                 raise Exception(
-                    f"You have a non spoke item: {task_name} depending on a spoke item: {dep}"
+                    f"{task_name} depends on: {dep} which is not listed in this reference"
                 )
 
-    open(output_file_path, "w").write(yaml_utils.dump(dict(all_tasks=tasks_to_include)))
+    result = dict(all_tasks=tasks_to_include)
+    open(output_file_path, "w").write(yaml_utils.dump(result))
+    return result
 
 
 def generate_task_reference(f, overrides):

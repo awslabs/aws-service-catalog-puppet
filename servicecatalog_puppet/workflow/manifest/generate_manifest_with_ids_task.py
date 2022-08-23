@@ -46,10 +46,9 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
                 reference_signed_url,
                 reference_task_reference_content,
             ) = self.get_signed_url_for_task_reference(bucket, s3)
-            (
-                manifest_signed_url,
-                manifest_content,
-            ) = self.get_signed_url_for_manifest(bucket, s3)
+            (manifest_signed_url, manifest_content,) = self.get_signed_url_for_manifest(
+                bucket, s3
+            )
 
         self.write_output(
             dict(

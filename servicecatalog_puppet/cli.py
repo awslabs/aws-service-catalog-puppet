@@ -11,6 +11,7 @@ import click
 import json
 import yaml
 
+from datetime import datetime
 from servicecatalog_puppet import config, remote_config
 from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet import constants
@@ -623,7 +624,9 @@ def setup_config(
     #     remote_config.get_initialiser_stack_tags()
     # )
     os.environ[environmental_variables.VERSION] = constants.VERSION
-    os.environ[environmental_variables.OUTPUT_CACHE_STARTING_POINT] = output_cache_starting_point
+    os.environ[
+        environmental_variables.OUTPUT_CACHE_STARTING_POINT
+    ] = output_cache_starting_point
     # for k, v in os.environ.items():
     #     if k[0:4] == "SCT_":
     #         click.echo(f"Overrided {k}: {v}")

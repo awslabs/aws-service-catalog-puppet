@@ -120,7 +120,7 @@ def run_tasks(
     if should_use_shared_scheduler:
         logger.info(f"should_use_shared_scheduler: {should_use_shared_scheduler}")
 
-    output_cache_starting_point= config.get_output_cache_starting_point()
+    output_cache_starting_point = config.get_output_cache_starting_point()
     if output_cache_starting_point != "":
         dst = "GetSSMParamTask.zip"
         urlretrieve(output_cache_starting_point, dst)
