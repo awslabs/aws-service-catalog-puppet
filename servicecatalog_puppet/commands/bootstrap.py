@@ -165,7 +165,6 @@ def bootstrap(
         all_regions,
         source_args,
         config.is_caching_enabled(
-            puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
         ),
         with_manual_approvals,
         scm_skip_creation_of_repo,
