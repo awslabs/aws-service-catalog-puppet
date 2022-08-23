@@ -392,6 +392,7 @@ def bootstrap(
     custom_source_action_custom_action_type_version,
     custom_source_action_custom_action_type_provider,
 ):
+    setup_config()
     puppet_account_id = config.get_puppet_account_id()
 
     parameters = dict(
@@ -513,7 +514,7 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
     #     manifest_commands.explode(f)
 
 
-def get_overrides():
+def get_overrides(parameter_override_file):
     params = dict()
     if misc_commands.is_a_parameter_override_execution():
         overrides = dict(**yaml.safe_load(parameter_override_file.read()))
@@ -534,9 +535,10 @@ def get_overrides():
 
 @cli.command()
 @click.argument("f", type=click.File())
-def generate_task_reference(f):
+@click.option("--parameter-override-file", type=click.File())
+def generate_task_reference(f, parameter_override_file):
     setup_config()
-    task_reference_commands.generate_task_reference(f, get_overrides())
+    task_reference_commands.generate_task_reference(f, get_overrides(parameter_override_file))
 
 
 def setup_config(
@@ -658,6 +660,7 @@ def setup_config(
 @click.option(
     "--is-caching-enabled", default="", envvar="SCT_IS_CACHING_ENABLED",
 )
+@click.option("--parameter-override-file", type=click.File())
 def deploy_from_task_reference(
     f,
     num_workers,
@@ -671,7 +674,12 @@ def deploy_from_task_reference(
     should_forward_failures_to_opscenter,
     output_cache_starting_point,
     is_caching_enabled,
+    parameter_override_file,
 ):
+    overrides = get_overrides(parameter_override_file)
+    if single_account is None:
+        single_account = overrides.get("single_account")
+
     setup_config(
         puppet_account_id=puppet_account_id,
         single_account=single_account,

@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import io
+import json
 import os
 import zipfile
 from threading import Thread
@@ -51,9 +52,8 @@ def bootstrap(
 ):
     click.echo("Starting bootstrap")
     should_use_eventbridge = config.get_should_use_eventbridge(
-        puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
     )
-    initialiser_stack_tags = config.get_initialiser_stack_tags()
+    initialiser_stack_tags = json.loads(config.get_initialiser_stack_tags())
     if should_use_eventbridge:
         with betterboto_client.ClientContextManager("events") as events:
             try:
@@ -61,7 +61,7 @@ def bootstrap(
             except events.exceptions.ResourceNotFoundException:
                 events.create_event_bus(Name=constants.EVENT_BUS_NAME,)
 
-    all_regions = config.get_regions(puppet_account_id, constants.HOME_REGION)
+    all_regions = config.get_regions()
     with betterboto_client.MultiRegionClientContextManager(
         "cloudformation", all_regions
     ) as clients:
