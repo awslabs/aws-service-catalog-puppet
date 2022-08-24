@@ -237,8 +237,14 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
         always_merger.merge(parameters, launch_parameters)
         always_merger.merge(parameters, account_parameters)
 
-        if task_to_add.get("status") != constants.TERMINATED:
+        if task.get("status") != constants.TERMINATED:
+            print("")
+            print("")
+            print("")
+            print("")
+            print(f"looking at {task.get('section_name')} {task.get('item_name')} for {task.get('account_id')} {task.get('region')}")
             for parameter_name, parameter_details in parameters.items():
+                print(f"looking at {parameter_name}")
                 if parameter_details.get("ssm"):
                     ssm_parameter_details = parameter_details.get("ssm")
                     interpolation_output_account = task.get("account_id")
@@ -259,10 +265,10 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         account_id=owning_account,
                         region=owning_region,
                         reverse_dependencies_by_reference=list(),
-                        manifest_section_name=task_to_add.get("manifest_section_name"),
-                        manifest_item_name=task_to_add.get("manifest_item_name"),
-                        manifest_account_id=task_to_add.get("manifest_account_id"),
-                        manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
+                        manifest_section_name=task.get("manifest_section_name"),
+                        manifest_item_name=task.get("manifest_item_name"),
+                        manifest_account_id=task.get("manifest_account_id"),
+                        manifest_account_ids=dict(**task.get("manifest_account_ids")),
                     )
                     path = ssm_parameter_details.get("path")
                     if path is None:
@@ -277,11 +283,13 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         task_def["section_name"] = constants.SSM_PARAMETERS_WITH_A_PATH
                     task_def["task_reference"] = ssm_parameter_task_reference
 
+                    print(f"created task_def {task_def}")
+
                     potential_output_task_ref = f"{constants.SSM_PARAMETERS}-{task_reference}-{param_name}".replace(
                         f"{constants.SSM_PARAMETERS}-", f"{constants.SSM_OUTPUTS}-"
                     )
                     if all_tasks.get(potential_output_task_ref):
-                        dependency = [potential_output_task_ref]
+                        dependency = [potential_output_task_ref] #TODO do I need to update the ssm output too!?!?!
                     else:
                         dependency = []
                     task_def["dependencies_by_reference"] = dependency
@@ -301,22 +309,24 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                     else:
                         new_tasks[ssm_parameter_task_reference] = task_def
 
+                    print(f"now using the folloing {new_tasks[ssm_parameter_task_reference]}")
                     new_tasks[ssm_parameter_task_reference][
                         "manifest_section_name"
-                    ].extend(task_to_add.get("manifest_section_name"))
+                    ].extend(task.get("manifest_section_name"))
                     new_tasks[ssm_parameter_task_reference][
                         "manifest_item_name"
-                    ].extend(task_to_add.get("manifest_item_name"))
+                    ].extend(task.get("manifest_item_name"))
                     new_tasks[ssm_parameter_task_reference][
                         "manifest_account_id"
-                    ].extend(task_to_add.get("manifest_account_id"))
+                    ].extend(task.get("manifest_account_id"))
                     new_tasks[ssm_parameter_task_reference][
                         "manifest_account_ids"
-                    ].update(task_to_add.get("manifest_account_ids"))
+                    ].update(task.get("manifest_account_ids"))
 
                     task["dependencies_by_reference"].append(
                         ssm_parameter_task_reference
                     )
+                    print(f"finishing up {new_tasks[ssm_parameter_task_reference]}")
                 # HANDLE BOTO3 PARAMS
                 if parameter_details.get("boto3"):
                     boto3_parameter_details = parameter_details.get("boto3")
@@ -374,21 +384,22 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
 
                     new_tasks[boto3_parameter_task_reference][
                         "manifest_section_name"
-                    ].extend(task_to_add.get("manifest_section_name"))
+                    ].extend(task.get("manifest_section_name"))
                     new_tasks[boto3_parameter_task_reference][
                         "manifest_item_name"
-                    ].extend(task_to_add.get("manifest_item_name"))
+                    ].extend(task.get("manifest_item_name"))
                     new_tasks[boto3_parameter_task_reference][
                         "manifest_account_id"
-                    ].extend(task_to_add.get("manifest_account_id"))
+                    ].extend(task.get("manifest_account_id"))
                     new_tasks[boto3_parameter_task_reference][
                         "manifest_account_ids"
-                    ].update(task_to_add.get("manifest_account_ids"))
+                    ].update(task.get("manifest_account_ids"))
 
                     task["dependencies_by_reference"].append(
                         boto3_parameter_task_reference
                     )
 
+        print(f"END at {task.get('task_reference')}")
     all_tasks.update(new_tasks)
 
     #
@@ -1387,7 +1398,7 @@ def handle_launches(
         deps = [portfolio_deploying_from]
     else:
         deps = [portfolio_deploying_from, spoke_portfolio_puppet_association_ref]
-    portfolio_get_all_products_and_their_versions_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+    portfolio_get_all_products_and_their_versions_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{task_to_add.get('account_id')}-{section_name}-{item_name}--{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
     if not all_tasks.get(portfolio_get_all_products_and_their_versions_ref):
         all_tasks[portfolio_get_all_products_and_their_versions_ref] = dict(
             execution=task_to_add.get("execution"),
@@ -1510,7 +1521,7 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
 
 
 def generate_overridden_task_reference(
-    overrides, all_tasks, output_file_path
+    puppet_account_id, overrides, all_tasks, output_file_path
 ):
     if not overrides.get("single_account"):
         open(output_file_path, "w").write(yaml_utils.dump(all_tasks))
@@ -1520,7 +1531,7 @@ def generate_overridden_task_reference(
     overridden_tasks = dict()
     for task_name, task in all_tasks.get("all_tasks").items():
         if single_account:
-            if task.get("manifest_account_ids").get(single_account) or task.get("manifest_account_ids").get(int(single_account)):
+            if task.get("manifest_account_ids").get(single_account) or task.get("manifest_account_ids").get(int(single_account)) or task.get("manifest_account_ids").get(str(puppet_account_id)) or task.get("manifest_account_ids").get(int(puppet_account_id)):
                 overridden_tasks[task_name] = task
 
     result = dict(all_tasks=overridden_tasks)
@@ -1535,6 +1546,7 @@ def generate_task_reference(f, overrides):
     manifest = manifest_utils.Manifest(yaml_utils.load(content))
     complete = generate_complete_task_reference(puppet_account_id, manifest, f.name.replace("-expanded", "-task-reference-full"))
     filtered = generate_overridden_task_reference(
+        puppet_account_id,
         overrides,
         complete,
         f.name.replace("-expanded", "-task-reference-filtered"),
