@@ -51,8 +51,7 @@ def bootstrap(
     custom_source_action_custom_action_type_provider,
 ):
     click.echo("Starting bootstrap")
-    should_use_eventbridge = config.get_should_use_eventbridge(
-    )
+    should_use_eventbridge = config.get_should_use_eventbridge()
     initialiser_stack_tags = json.loads(config.get_initialiser_stack_tags())
     if should_use_eventbridge:
         with betterboto_client.ClientContextManager("events") as events:

@@ -1231,6 +1231,12 @@ class Manifest(dict):
                 return account
         raise Exception(f"Could not find account: {account_id}")
 
+    def get_parameters_for_account(self, account_id):
+        for account in self.get("accounts"):
+            if account.get("account_id") == str(account_id):
+                return account.get("parameters", {})
+        return dict()
+
     def get_sharing_policies_by_region(self):
         sharing_policies_by_region = {}
         for account in self.get("accounts"):

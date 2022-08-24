@@ -25,8 +25,8 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
         ) as zip:
             files = list()
             files.extend(glob.glob(f"output/*/**", recursive=True))
-            for task_name in constants.TASKS_TO_SHARE_WITH_SPOKES:
-                files.extend(glob.glob(f"output/{task_name}*/**", recursive=True))
+            # for task_name in constants.TASKS_TO_SHARE_WITH_SPOKES:
+            #     files.extend(glob.glob(f"output/{task_name}*/**", recursive=True))
             for filename in files:
                 zip.write(filename, filename)
 
@@ -63,7 +63,7 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
     def get_signed_url_for_task_reference(self, bucket, s3):
         task_reference_content = open(
             self.manifest_task_reference_file_path.replace(
-                "task-reference.yaml", "task-reference-full.yaml"
+                "task-reference.yaml", "task-reference-filtered.yaml"
             ),
             "r",
         ).read()

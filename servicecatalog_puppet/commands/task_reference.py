@@ -27,7 +27,7 @@ def get_spoke_local_portfolio_common_args(
     )
 
 
-def generate_complete_task_reference(f, puppet_account_id, manifest):
+def generate_complete_task_reference(puppet_account_id, manifest, output_file_path):
     default_region = config.get_home_region(puppet_account_id)
     regions_in_use = config.get_regions()
 
@@ -64,9 +64,12 @@ def generate_complete_task_reference(f, puppet_account_id, manifest):
                 regions_in_use,
             )
             for task_to_add in tasks_to_add:
-                task_to_add["manifest_section_name"] = section_name
-                task_to_add["manifest_item_name"] = item_name
-                task_to_add["manifest_account_id"] = task_to_add.get("account_id")
+                task_to_add["manifest_section_name"] = [section_name]
+                task_to_add["manifest_item_name"] = [item_name]
+                task_to_add["manifest_account_id"] = [task_to_add.get("account_id")]
+                task_to_add["manifest_account_ids"] = {
+                    task_to_add.get("account_id"): True
+                }
                 task_to_add["section_name"] = section_name
                 task_to_add["item_name"] = item_name
                 # set up for later pass
@@ -134,26 +137,43 @@ def generate_complete_task_reference(f, puppet_account_id, manifest):
                         raise Exception(
                             f"You have two tasks outputting the same SSM parameter output: {ssm_parameter_output.get('param_name')}"
                         )
-                    all_tasks[ssm_parameter_output_task_reference] = dict(
-                        manifest_section_name=section_name,
-                        manifest_item_name=item_name,
-                        manifest_account_id=task_to_add.get("account_id"),
-                        task_reference=ssm_parameter_output_task_reference,
-                        param_name=ssm_parameter_output.get("param_name")
-                        .replace("${AWS::Region}", task_to_add.get("region"))
-                        .replace("${AWS::AccountId}", task_to_add.get("account_id")),
-                        stack_output=ssm_parameter_output.get("stack_output"),
-                        force_operation=ssm_parameter_output.get(
-                            "force_operation", False
-                        ),
-                        account_id=output_account_id,
-                        region=output_region,
-                        dependencies_by_reference=[all_tasks_task_reference],
-                        reverse_dependencies_by_reference=list(),
-                        task_generating_output=all_tasks_task_reference,
-                        status=task_to_add.get("status"),
-                        section_name=constants.SSM_OUTPUTS,
-                    )
+
+                    if not all_tasks.get(ssm_parameter_output_task_reference):
+                        all_tasks[ssm_parameter_output_task_reference] = dict(
+                            manifest_section_name=list(),
+                            manifest_item_name=list(),
+                            manifest_account_id=list(),
+                            manifest_account_ids=dict(),
+                            task_reference=ssm_parameter_output_task_reference,
+                            param_name=ssm_parameter_output.get("param_name")
+                            .replace("${AWS::Region}", task_to_add.get("region"))
+                            .replace(
+                                "${AWS::AccountId}", task_to_add.get("account_id")
+                            ),
+                            stack_output=ssm_parameter_output.get("stack_output"),
+                            force_operation=ssm_parameter_output.get(
+                                "force_operation", False
+                            ),
+                            account_id=output_account_id,
+                            region=output_region,
+                            dependencies_by_reference=[all_tasks_task_reference],
+                            reverse_dependencies_by_reference=list(),
+                            task_generating_output=all_tasks_task_reference,
+                            status=task_to_add.get("status"),
+                            section_name=constants.SSM_OUTPUTS,
+                        )
+                    all_tasks[ssm_parameter_output_task_reference][
+                        "manifest_section_name"
+                    ].append(section_name)
+                    all_tasks[ssm_parameter_output_task_reference][
+                        "manifest_item_name"
+                    ].append(item_name)
+                    all_tasks[ssm_parameter_output_task_reference][
+                        "manifest_account_id"
+                    ].append(task_to_add.get("account_id"))
+                    all_tasks[ssm_parameter_output_task_reference][
+                        "manifest_account_ids"
+                    ][task_to_add.get("account_id")] = True
 
                 if section_name == constants.LAUNCHES:
                     handle_launches(
@@ -211,9 +231,7 @@ def generate_complete_task_reference(f, puppet_account_id, manifest):
             .get("parameters", {})
         )
         manifest_parameters = manifest.get("parameters")
-        account_parameters = manifest.get_account(task.get("account_id")).get(
-            "parameters"
-        )
+        account_parameters = manifest.get_parameters_for_account(task.get("account_id"))
 
         always_merger.merge(parameters, manifest_parameters)
         always_merger.merge(parameters, launch_parameters)
@@ -236,6 +254,7 @@ def generate_complete_task_reference(f, puppet_account_id, manifest):
                         .replace("${AWS::AccountId}", interpolation_output_account)
                     )
 
+                    # TODO verify
                     task_def = dict(
                         account_id=owning_account,
                         region=owning_region,
@@ -243,6 +262,7 @@ def generate_complete_task_reference(f, puppet_account_id, manifest):
                         manifest_section_name=task_to_add.get("manifest_section_name"),
                         manifest_item_name=task_to_add.get("manifest_item_name"),
                         manifest_account_id=task_to_add.get("manifest_account_id"),
+                        manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
                     )
                     path = ssm_parameter_details.get("path")
                     if path is None:
@@ -280,6 +300,19 @@ def generate_complete_task_reference(f, puppet_account_id, manifest):
                                 )
                     else:
                         new_tasks[ssm_parameter_task_reference] = task_def
+
+                    new_tasks[ssm_parameter_task_reference][
+                        "manifest_section_name"
+                    ].extend(task_to_add.get("manifest_section_name"))
+                    new_tasks[ssm_parameter_task_reference][
+                        "manifest_item_name"
+                    ].extend(task_to_add.get("manifest_item_name"))
+                    new_tasks[ssm_parameter_task_reference][
+                        "manifest_account_id"
+                    ].extend(task_to_add.get("manifest_account_id"))
+                    new_tasks[ssm_parameter_task_reference][
+                        "manifest_account_ids"
+                    ].update(task_to_add.get("manifest_account_ids"))
 
                     task["dependencies_by_reference"].append(
                         ssm_parameter_task_reference
@@ -319,23 +352,39 @@ def generate_complete_task_reference(f, puppet_account_id, manifest):
                         item_name_to_use = stack_ref_stack
 
                     boto3_parameter_task_reference = f"{constants.BOTO3_PARAMETERS}-{section_name_to_use}-{item_name_to_use}-{parameter_name}-{account_id_to_use_for_boto3_call}-{region_to_use_for_boto3_call}"
-                    new_tasks[boto3_parameter_task_reference] = dict(
-                        status=task.get("status"),
-                        manifest_section_name=task_to_add.get("manifest_section_name"),
-                        manifest_item_name=task_to_add.get("manifest_item_name"),
-                        manifest_account_id=task_to_add.get("manifest_account_id"),
-                        task_reference=boto3_parameter_task_reference,
-                        dependencies_by_reference=dependencies,
-                        reverse_dependencies_by_reference=list(),
-                        account_id=account_id_to_use_for_boto3_call,
-                        region=region_to_use_for_boto3_call,
-                        arguments=boto3_parameter_details.get("arguments"),
-                        call=boto3_parameter_details.get("call"),
-                        client=boto3_parameter_details.get("client"),
-                        filter=boto3_parameter_details.get("filter"),
-                        use_paginator=boto3_parameter_details.get("use_paginator"),
-                        section_name=constants.BOTO3_PARAMETERS,
-                    )
+                    if not new_tasks.get(boto3_parameter_task_reference):
+                        new_tasks[boto3_parameter_task_reference] = dict(
+                            status=task.get("status"),
+                            task_reference=boto3_parameter_task_reference,
+                            dependencies_by_reference=dependencies,
+                            manifest_section_name=list(),
+                            manifest_item_name=list(),
+                            manifest_account_id=list(),
+                            manifest_account_ids=dict(),
+                            reverse_dependencies_by_reference=list(),
+                            account_id=account_id_to_use_for_boto3_call,
+                            region=region_to_use_for_boto3_call,
+                            arguments=boto3_parameter_details.get("arguments"),
+                            call=boto3_parameter_details.get("call"),
+                            client=boto3_parameter_details.get("client"),
+                            filter=boto3_parameter_details.get("filter"),
+                            use_paginator=boto3_parameter_details.get("use_paginator"),
+                            section_name=constants.BOTO3_PARAMETERS,
+                        )
+
+                    new_tasks[boto3_parameter_task_reference][
+                        "manifest_section_name"
+                    ].extend(task_to_add.get("manifest_section_name"))
+                    new_tasks[boto3_parameter_task_reference][
+                        "manifest_item_name"
+                    ].extend(task_to_add.get("manifest_item_name"))
+                    new_tasks[boto3_parameter_task_reference][
+                        "manifest_account_id"
+                    ].extend(task_to_add.get("manifest_account_id"))
+                    new_tasks[boto3_parameter_task_reference][
+                        "manifest_account_ids"
+                    ].update(task_to_add.get("manifest_account_ids"))
+
                     task["dependencies_by_reference"].append(
                         boto3_parameter_task_reference
                     )
@@ -346,58 +395,65 @@ def generate_complete_task_reference(f, puppet_account_id, manifest):
     # Third pass - replacing dependencies with dependencies_by_reference
     #
     for task_reference, task in all_tasks.items():
-
         for dependency in task.get("dependencies", []):
             section = dependency.get("type")
             affinity = dependency.get("affinity")
             name = dependency.get("name")
 
             if affinity == section:
-                if not tasks_by_type[section].get(name):
+                if tasks_by_type[section].get(name):
+                    task["dependencies_by_reference"].extend(
+                        tasks_by_type[section][name]
+                    )
+                else:
                     # TODO should this be a warning or an error
                     raise Exception(
                         f"invalid use of {affinity} affinity - {name} is not deployed"
                     )
-                task["dependencies_by_reference"].extend(tasks_by_type[section][name])
 
             if affinity == constants.AFFINITY_REGION:
-                if not tasks_by_region[section][name].get(task.get("region")):
+                if tasks_by_region[section][name].get(task.get("region")):
+                    task["dependencies_by_reference"].extend(
+                        tasks_by_region[section][name][task.get("region")]
+                    )
+                else:
                     # TODO should this be a warning or an error
                     raise Exception(
                         f"invalid use of region affinity - {name} is not deployed in the region: {task.get('region')}"
                     )
-                task["dependencies_by_reference"].extend(
-                    tasks_by_region[section][name][task.get("region")]
-                )
 
             if affinity == constants.AFFINITY_ACCOUNT:
-                if not tasks_by_account_id[section][name].get(task.get("account_id")):
+                if tasks_by_account_id[section][name].get(task.get("account_id")):
+                    task["dependencies_by_reference"].extend(
+                        tasks_by_account_id[section][name][task.get("account_id")]
+                    )
+                else:
                     # TODO should this be a warning or an error
                     raise Exception(
                         f"invalid use of account affinity - {name} is not deployed in the account_id: {task.get('account_id')}"
                     )
-                task["dependencies_by_reference"].extend(
-                    tasks_by_account_id[section][name][task.get("account_id")]
-                )
 
             if affinity == constants.AFFINITY_ACCOUNT_AND_REGION:
                 account_and_region = f"{task.get('account_id')}-{task.get('region')}"
-                if not tasks_by_account_id_and_region[section][name].get(
+                if tasks_by_account_id_and_region[section][name].get(
                     account_and_region
                 ):
+                    task["dependencies_by_reference"].extend(
+                        tasks_by_account_id_and_region[section][name][
+                            account_and_region
+                        ]
+                    )
+                else:
                     # TODO should this be a warning or an error
                     raise Exception(
                         f"invalid use of account-and-region affinity - {name} is not deployed in the account_id and region: {account_and_region}"
                     )
-                task["dependencies_by_reference"].extend(
-                    tasks_by_account_id_and_region[section][name][account_and_region]
-                )
 
         for dep in task["dependencies_by_reference"]:
             all_tasks[dep]["reverse_dependencies_by_reference"].append(task_reference)
 
     reference = dict(all_tasks=all_tasks,)
-    open(f.name.replace("-expanded", "-task-reference-full"), "w").write(
+    open(output_file_path, "w").write(
         yaml_utils.dump(reference)
     )
     return reference
@@ -426,15 +482,28 @@ def handle_stacks(
             account_id=puppet_account_id,
             dependencies_by_reference=list(),
             reverse_dependencies_by_reference=list(),
-            manifest_section_name=task_to_add.get("manifest_section_name"),
-            manifest_item_name=task_to_add.get("manifest_item_name"),
-            manifest_account_id=task_to_add.get("manifest_account_id"),
+            manifest_section_name=list(),
+            manifest_item_name=list(),
+            manifest_account_id=list(),
+            manifest_account_ids=dict(),
             section_name=constants.GET_TEMPLATE_FROM_S3,
         )
         all_tasks[all_tasks_task_reference]["get_s3_template_ref"] = get_s3_template_ref
         all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
             get_s3_template_ref
         )
+    all_tasks[get_s3_template_ref]["manifest_section_name"].extend(
+        task_to_add.get("manifest_section_name")
+    )
+    all_tasks[get_s3_template_ref]["manifest_item_name"].extend(
+        task_to_add.get("manifest_item_name")
+    )
+    all_tasks[get_s3_template_ref]["manifest_account_id"].extend(
+        task_to_add.get("manifest_account_id")
+    )
+    all_tasks[get_s3_template_ref]["manifest_account_ids"].update(
+        task_to_add.get("manifest_account_ids")
+    )
 
 
 def handle_workspaces(
@@ -457,10 +526,23 @@ def handle_workspaces(
             reverse_dependencies_by_reference=[],
             account_id=task_to_add.get("account_id"),
             section_name=constants.WORKSPACE_ACCOUNT_PREPARATION,
-            manifest_section_name=task_to_add.get("manifest_section_name"),
-            manifest_item_name=task_to_add.get("manifest_item_name"),
-            manifest_account_id=task_to_add.get("manifest_account_id"),
+            manifest_section_name=list(),
+            manifest_item_name=list(),
+            manifest_account_id=list(),
+            manifest_account_ids=dict(),
         )
+    all_tasks[workspace_account_preparation_ref]["manifest_section_name"].extend(
+        task_to_add.get("manifest_section_name")
+    )
+    all_tasks[workspace_account_preparation_ref]["manifest_item_name"].extend(
+        task_to_add.get("manifest_item_name")
+    )
+    all_tasks[workspace_account_preparation_ref]["manifest_account_id"].extend(
+        task_to_add.get("manifest_account_id")
+    )
+    all_tasks[workspace_account_preparation_ref]["manifest_account_ids"].update(
+        task_to_add.get("manifest_account_ids")
+    )
     if workspace_account_preparation_ref not in all_tasks[all_tasks_task_reference].get(
         "dependencies_by_reference"
     ):
@@ -487,139 +569,240 @@ def handle_spoke_local_portfolios(
             shared_ref = f"{section_name}-{item_name}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
             ref = f"portfolio_associations-{shared_ref}"
             deps.append(ref)
-            all_tasks[ref] = dict(
-                status=task_to_add.get("status"),
-                account_id=task_to_add.get("account_id"),
-                region=task_to_add.get("region"),
-                portfolio=task_to_add.get("portfolio"),
-                execution=task_to_add.get("execution"),
-                dependencies_by_reference=[],
-                reverse_dependencies_by_reference=list(),
-                task_reference=ref,
-                spoke_local_portfolio_name=item_name,
-                section_name=constants.PORTFOLIO_ASSOCIATIONS,
-                associations=task_to_add.get("associations"),
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
+            if not all_tasks.get(ref):
+                all_tasks[ref] = dict(
+                    status=task_to_add.get("status"),
+                    account_id=task_to_add.get("account_id"),
+                    region=task_to_add.get("region"),
+                    portfolio=task_to_add.get("portfolio"),
+                    execution=task_to_add.get("execution"),
+                    dependencies_by_reference=[],
+                    reverse_dependencies_by_reference=list(),
+                    task_reference=ref,
+                    spoke_local_portfolio_name=item_name,
+                    section_name=constants.PORTFOLIO_ASSOCIATIONS,
+                    associations=task_to_add.get("associations"),
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[ref]["manifest_section_name"].extend(
+                task_to_add.get("manifest_section_name")
+            )
+            all_tasks[ref]["manifest_item_name"].extend(
+                task_to_add.get("manifest_item_name")
+            )
+            all_tasks[ref]["manifest_account_id"].extend(
+                task_to_add.get("manifest_account_id")
+            )
+            all_tasks[ref]["manifest_account_ids"].update(
+                task_to_add.get("manifest_account_ids")
             )
         # DELETE THE LAUNCH CONSTRAINTS IF IT EXISTS
         if task_to_add.get("launch_constraints"):
             shared_ref = f"{section_name}-{item_name}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
             ref = f"launch_constraints-{shared_ref}"
             deps.append(ref)
-            all_tasks[ref] = dict(
-                status=task_to_add.get("status"),
-                account_id=task_to_add.get("account_id"),
-                region=task_to_add.get("region"),
-                portfolio=task_to_add.get("portfolio"),
-                execution=task_to_add.get("execution"),
-                dependencies_by_reference=[],
-                reverse_dependencies_by_reference=list(),
-                task_reference=ref,
-                section_name=constants.PORTFOLIO_CONSTRAINTS_LAUNCH,
-                spoke_local_portfolio_name=item_name,
-                launch_constraints=task_to_add["launch_constraints"],
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
+            if not all_tasks.get(ref):
+                all_tasks[ref] = dict(
+                    status=task_to_add.get("status"),
+                    account_id=task_to_add.get("account_id"),
+                    region=task_to_add.get("region"),
+                    portfolio=task_to_add.get("portfolio"),
+                    execution=task_to_add.get("execution"),
+                    dependencies_by_reference=[],
+                    reverse_dependencies_by_reference=list(),
+                    task_reference=ref,
+                    section_name=constants.PORTFOLIO_CONSTRAINTS_LAUNCH,
+                    spoke_local_portfolio_name=item_name,
+                    launch_constraints=task_to_add["launch_constraints"],
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[ref]["manifest_section_name"].extend(
+                task_to_add.get("manifest_section_name")
+            )
+            all_tasks[ref]["manifest_item_name"].extend(
+                task_to_add.get("manifest_item_name")
+            )
+            all_tasks[ref]["manifest_account_id"].extend(
+                task_to_add.get("manifest_account_id")
+            )
+            all_tasks[ref]["manifest_account_ids"].update(
+                task_to_add.get("manifest_account_ids")
             )
         # DELETE THE RESOURCE UPDATE CONSTRAINTS IF IT EXISTS
         if task_to_add.get("resource_update_constraints"):
             shared_ref = f"{section_name}-{item_name}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
             ref = f"resource_update_constraints-{shared_ref}"
             deps.append(ref)
-            all_tasks[ref] = dict(
-                status=task_to_add.get("status"),
-                account_id=task_to_add.get("account_id"),
-                region=task_to_add.get("region"),
-                portfolio=task_to_add.get("portfolio"),
-                execution=task_to_add.get("execution"),
-                dependencies_by_reference=[],
-                reverse_dependencies_by_reference=list(),
-                task_reference=ref,
-                section_name=constants.PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE,
-                spoke_local_portfolio_name=item_name,
-                resource_update_constraints=task_to_add["resource_update_constraints"],
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
+            if not all_tasks.get(ref):
+                all_tasks[ref] = dict(
+                    status=task_to_add.get("status"),
+                    account_id=task_to_add.get("account_id"),
+                    region=task_to_add.get("region"),
+                    portfolio=task_to_add.get("portfolio"),
+                    execution=task_to_add.get("execution"),
+                    dependencies_by_reference=[],
+                    reverse_dependencies_by_reference=list(),
+                    task_reference=ref,
+                    section_name=constants.PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE,
+                    spoke_local_portfolio_name=item_name,
+                    resource_update_constraints=task_to_add[
+                        "resource_update_constraints"
+                    ],
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[ref]["manifest_section_name"].extend(
+                task_to_add.get("manifest_section_name")
+            )
+            all_tasks[ref]["manifest_item_name"].extend(
+                task_to_add.get("manifest_item_name")
+            )
+            all_tasks[ref]["manifest_account_id"].extend(
+                task_to_add.get("manifest_account_id")
+            )
+            all_tasks[ref]["manifest_account_ids"].update(
+                task_to_add.get("manifest_account_ids")
             )
         # GET THE SPOKE LOCAL PORTFOLIO SO WE CAN DELETE THE ASSOCIATIONS
         spoke_portfolio_ref = f"{constants.PORTFOLIO_LOCAL}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-        all_tasks[spoke_portfolio_ref] = dict(
-            puppet_account_id=puppet_account_id,
-            task_reference=spoke_portfolio_ref,
-            dependencies_by_reference=[],
-            reverse_dependencies_by_reference=[],
-            account_id=task_to_add.get("account_id"),
-            region=task_to_add.get("region"),
-            portfolio=task_to_add.get("portfolio"),
-            status=task_to_add.get("status"),
-            execution=task_to_add.get("execution"),
-            section_name=constants.PORTFOLIO_LOCAL,
-            manifest_section_name=task_to_add.get("manifest_section_name"),
-            manifest_item_name=task_to_add.get("manifest_item_name"),
-            manifest_account_id=task_to_add.get("manifest_account_id"),
+        if not all_tasks.get(spoke_portfolio_ref):
+            all_tasks[spoke_portfolio_ref] = dict(
+                puppet_account_id=puppet_account_id,
+                task_reference=spoke_portfolio_ref,
+                dependencies_by_reference=[],
+                reverse_dependencies_by_reference=[],
+                account_id=task_to_add.get("account_id"),
+                region=task_to_add.get("region"),
+                portfolio=task_to_add.get("portfolio"),
+                status=task_to_add.get("status"),
+                execution=task_to_add.get("execution"),
+                section_name=constants.PORTFOLIO_LOCAL,
+                manifest_section_name=list(),
+                manifest_item_name=list(),
+                manifest_account_id=list(),
+                manifest_account_ids=dict(),
+            )
+        all_tasks[spoke_portfolio_ref]["manifest_section_name"].extend(
+            task_to_add.get("manifest_section_name")
+        )
+        all_tasks[spoke_portfolio_ref]["manifest_item_name"].extend(
+            task_to_add.get("manifest_item_name")
+        )
+        all_tasks[spoke_portfolio_ref]["manifest_account_id"].extend(
+            task_to_add.get("manifest_account_id")
+        )
+        all_tasks[spoke_portfolio_ref]["manifest_account_ids"].update(
+            task_to_add.get("manifest_account_ids")
         )
 
         if not is_sharing_with_puppet_account:
             # GET THE SPOKE PRODUCTS AND VERSIONS SO WE CAN DISASSOCIATE THEM
             spoke_portfolio_all_products_and_versions_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-            all_tasks[spoke_portfolio_all_products_and_versions_ref] = dict(
-                execution=task_to_add.get("execution"),
+            if not all_tasks.get(spoke_portfolio_all_products_and_versions_ref):
+                all_tasks[spoke_portfolio_all_products_and_versions_ref] = dict(
+                    execution=task_to_add.get("execution"),
+                    puppet_account_id=puppet_account_id,
+                    task_reference=spoke_portfolio_all_products_and_versions_ref,
+                    dependencies_by_reference=[spoke_portfolio_ref],
+                    reverse_dependencies_by_reference=[],
+                    account_id=task_to_add.get("account_id"),
+                    region=task_to_add.get("region"),
+                    portfolio=task_to_add.get("portfolio"),
+                    portfolio_task_reference=spoke_portfolio_ref,
+                    section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[spoke_portfolio_all_products_and_versions_ref][
+                "manifest_section_name"
+            ].extend(task_to_add.get("manifest_section_name"))
+            all_tasks[spoke_portfolio_all_products_and_versions_ref][
+                "manifest_item_name"
+            ].extend(task_to_add.get("manifest_item_name"))
+            all_tasks[spoke_portfolio_all_products_and_versions_ref][
+                "manifest_account_id"
+            ].extend(task_to_add.get("manifest_account_id"))
+            all_tasks[spoke_portfolio_all_products_and_versions_ref][
+                "manifest_account_ids"
+            ].update(task_to_add.get("manifest_account_ids"))
+
+            disassociate_portfolio_all_products_and_versions_ref = f"{constants.PORTFOLIO_DISASSOCIATE_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+            if not all_tasks.get(disassociate_portfolio_all_products_and_versions_ref):
+                all_tasks[disassociate_portfolio_all_products_and_versions_ref] = dict(
+                    puppet_account_id=puppet_account_id,
+                    task_reference=disassociate_portfolio_all_products_and_versions_ref,
+                    dependencies_by_reference=[
+                        spoke_portfolio_all_products_and_versions_ref,
+                        spoke_portfolio_ref,
+                    ],
+                    reverse_dependencies_by_reference=[],
+                    account_id=task_to_add.get("account_id"),
+                    region=task_to_add.get("region"),
+                    portfolio=task_to_add.get("portfolio"),
+                    portfolio_task_reference=spoke_portfolio_ref,
+                    section_name=constants.PORTFOLIO_DISASSOCIATE_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[disassociate_portfolio_all_products_and_versions_ref][
+                "manifest_section_name"
+            ].extend(task_to_add.get("manifest_section_name"))
+            all_tasks[disassociate_portfolio_all_products_and_versions_ref][
+                "manifest_item_name"
+            ].extend(task_to_add.get("manifest_item_name"))
+            all_tasks[disassociate_portfolio_all_products_and_versions_ref][
+                "manifest_account_id"
+            ].extend(task_to_add.get("manifest_account_id"))
+            all_tasks[disassociate_portfolio_all_products_and_versions_ref][
+                "manifest_account_ids"
+            ].update(task_to_add.get("manifest_account_ids"))
+
+            deps.append(disassociate_portfolio_all_products_and_versions_ref)
+
+        # DELETE THE SPOKE LOCAL PORTFOLIO ASSOCIATION
+        spoke_portfolio_puppet_association_ref = f"{constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+        if not all_tasks.get(spoke_portfolio_puppet_association_ref):
+            all_tasks[spoke_portfolio_puppet_association_ref] = dict(
+                status=task_to_add.get("status"),
                 puppet_account_id=puppet_account_id,
-                task_reference=spoke_portfolio_all_products_and_versions_ref,
+                task_reference=spoke_portfolio_puppet_association_ref,
+                portfolio_task_reference=spoke_portfolio_ref,
                 dependencies_by_reference=[spoke_portfolio_ref],
                 reverse_dependencies_by_reference=[],
                 account_id=task_to_add.get("account_id"),
                 region=task_to_add.get("region"),
                 portfolio=task_to_add.get("portfolio"),
-                portfolio_task_reference=spoke_portfolio_ref,
-                section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
+                execution=task_to_add.get("execution"),
+                section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
+                manifest_section_name=list(),
+                manifest_item_name=list(),
+                manifest_account_id=list(),
+                manifest_account_ids=dict(),
             )
-
-            disassociate_portfolio_all_products_and_versions_ref = f"{constants.PORTFOLIO_DISASSOCIATE_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-            all_tasks[disassociate_portfolio_all_products_and_versions_ref] = dict(
-                puppet_account_id=puppet_account_id,
-                task_reference=disassociate_portfolio_all_products_and_versions_ref,
-                dependencies_by_reference=[
-                    spoke_portfolio_all_products_and_versions_ref,
-                    spoke_portfolio_ref,
-                ],
-                reverse_dependencies_by_reference=[],
-                account_id=task_to_add.get("account_id"),
-                region=task_to_add.get("region"),
-                portfolio=task_to_add.get("portfolio"),
-                portfolio_task_reference=spoke_portfolio_ref,
-                section_name=constants.PORTFOLIO_DISASSOCIATE_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
-            )
-            deps.append(disassociate_portfolio_all_products_and_versions_ref)
-
-        # DELETE THE SPOKE LOCAL PORTFOLIO ASSOCIATION
-        spoke_portfolio_puppet_association_ref = f"{constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-        all_tasks[spoke_portfolio_puppet_association_ref] = dict(
-            status=task_to_add.get("status"),
-            puppet_account_id=puppet_account_id,
-            task_reference=spoke_portfolio_puppet_association_ref,
-            portfolio_task_reference=spoke_portfolio_ref,
-            dependencies_by_reference=[spoke_portfolio_ref],
-            reverse_dependencies_by_reference=[],
-            account_id=task_to_add.get("account_id"),
-            region=task_to_add.get("region"),
-            portfolio=task_to_add.get("portfolio"),
-            execution=task_to_add.get("execution"),
-            section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
-            manifest_section_name=task_to_add.get("manifest_section_name"),
-            manifest_item_name=task_to_add.get("manifest_item_name"),
-            manifest_account_id=task_to_add.get("manifest_account_id"),
+        all_tasks[spoke_portfolio_puppet_association_ref][
+            "manifest_section_name"
+        ].extend(task_to_add.get("manifest_section_name"))
+        all_tasks[spoke_portfolio_puppet_association_ref]["manifest_item_name"].extend(
+            task_to_add.get("manifest_item_name")
         )
+        all_tasks[spoke_portfolio_puppet_association_ref]["manifest_account_id"].extend(
+            task_to_add.get("manifest_account_id")
+        )
+        all_tasks[spoke_portfolio_puppet_association_ref][
+            "manifest_account_ids"
+        ].update(task_to_add.get("manifest_account_ids"))
         deps.append(spoke_portfolio_puppet_association_ref)
 
         task_to_add["dependencies_by_reference"].extend(deps)
@@ -629,36 +812,64 @@ def handle_spoke_local_portfolios(
         if is_sharing_with_puppet_account:
             # CREATE SPOKE ASSOCIATIONS
             spoke_portfolio_puppet_association_ref = f"{constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-            all_tasks[spoke_portfolio_puppet_association_ref] = dict(
-                puppet_account_id=puppet_account_id,
-                task_reference=spoke_portfolio_puppet_association_ref,
-                portfolio_task_reference=all_tasks_task_reference,
-                dependencies_by_reference=[all_tasks_task_reference],
-                reverse_dependencies_by_reference=[],
-                account_id=task_to_add.get("account_id"),
-                region=task_to_add.get("region"),
-                portfolio=task_to_add.get("portfolio"),
-                execution=task_to_add.get("execution"),
-                section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
-            )
+            if not all_tasks.get(spoke_portfolio_puppet_association_ref):
+                all_tasks[spoke_portfolio_puppet_association_ref] = dict(
+                    puppet_account_id=puppet_account_id,
+                    task_reference=spoke_portfolio_puppet_association_ref,
+                    portfolio_task_reference=all_tasks_task_reference,
+                    dependencies_by_reference=[all_tasks_task_reference],
+                    reverse_dependencies_by_reference=[],
+                    account_id=task_to_add.get("account_id"),
+                    region=task_to_add.get("region"),
+                    portfolio=task_to_add.get("portfolio"),
+                    execution=task_to_add.get("execution"),
+                    section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[spoke_portfolio_puppet_association_ref][
+                "manifest_section_name"
+            ].extend(task_to_add.get("manifest_section_name"))
+            all_tasks[spoke_portfolio_puppet_association_ref][
+                "manifest_item_name"
+            ].extend(task_to_add.get("manifest_item_name"))
+            all_tasks[spoke_portfolio_puppet_association_ref][
+                "manifest_account_id"
+            ].extend(task_to_add.get("manifest_account_id"))
+            all_tasks[spoke_portfolio_puppet_association_ref][
+                "manifest_account_ids"
+            ].update(task_to_add.get("manifest_account_ids"))
 
             # GET THE SPOKE PRODUCTS AND VERSIONS - USE THE AFTER ONE AS NO PRODUCTS WILL BE COPIED WHEN SHARING WITH PUPPET ACCOUNT
             spoke_portfolio_all_products_and_versions_after_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-after-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-            all_tasks[spoke_portfolio_all_products_and_versions_after_ref] = dict(
-                **get_spoke_local_portfolio_common_args(
-                    task_to_add,
-                    all_tasks_task_reference,
-                    [spoke_portfolio_puppet_association_ref],
-                ),
-                task_reference=spoke_portfolio_all_products_and_versions_after_ref,
-                section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
-            )
+            if not all_tasks.get(spoke_portfolio_all_products_and_versions_after_ref):
+                all_tasks[spoke_portfolio_all_products_and_versions_after_ref] = dict(
+                    **get_spoke_local_portfolio_common_args(
+                        task_to_add,
+                        all_tasks_task_reference,
+                        [spoke_portfolio_puppet_association_ref],
+                    ),
+                    task_reference=spoke_portfolio_all_products_and_versions_after_ref,
+                    section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
+                "manifest_section_name"
+            ].extend(task_to_add.get("manifest_section_name"))
+            all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
+                "manifest_item_name"
+            ].extend(task_to_add.get("manifest_item_name"))
+            all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
+                "manifest_account_id"
+            ].extend(task_to_add.get("manifest_account_id"))
+            all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
+                "manifest_account_ids"
+            ].update(task_to_add.get("manifest_account_ids"))
             dependencies_for_constraints.append(
                 spoke_portfolio_all_products_and_versions_after_ref
             )
@@ -666,20 +877,34 @@ def handle_spoke_local_portfolios(
         else:
             # GET THE HUB PORTFOLIO
             hub_portfolio_ref = f"{constants.PORTFOLIO_LOCAL}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-            all_tasks[hub_portfolio_ref] = dict(
-                puppet_account_id=puppet_account_id,
-                task_reference=hub_portfolio_ref,
-                dependencies_by_reference=[],
-                reverse_dependencies_by_reference=[],
-                account_id=puppet_account_id,
-                region=task_to_add.get("region"),
-                portfolio=task_to_add.get("portfolio"),
-                status=task_to_add.get("status"),
-                execution=task_to_add.get("execution"),
-                section_name=constants.PORTFOLIO_LOCAL,
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
+            if not all_tasks.get(hub_portfolio_ref):
+                all_tasks[hub_portfolio_ref] = dict(
+                    puppet_account_id=puppet_account_id,
+                    task_reference=hub_portfolio_ref,
+                    dependencies_by_reference=[],
+                    reverse_dependencies_by_reference=[],
+                    account_id=puppet_account_id,
+                    region=task_to_add.get("region"),
+                    portfolio=task_to_add.get("portfolio"),
+                    status=task_to_add.get("status"),
+                    execution=task_to_add.get("execution"),
+                    section_name=constants.PORTFOLIO_LOCAL,
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[hub_portfolio_ref]["manifest_section_name"].extend(
+                task_to_add.get("manifest_section_name")
+            )
+            all_tasks[hub_portfolio_ref]["manifest_item_name"].extend(
+                task_to_add.get("manifest_item_name")
+            )
+            all_tasks[hub_portfolio_ref]["manifest_account_id"].extend(
+                task_to_add.get("manifest_account_id")
+            )
+            all_tasks[hub_portfolio_ref]["manifest_account_ids"].update(
+                task_to_add.get("manifest_account_ids")
             )
             all_tasks[all_tasks_task_reference][
                 "portfolio_task_reference"
@@ -690,21 +915,35 @@ def handle_spoke_local_portfolios(
 
             # CREATE THE HUB ASSOCIATIONS
             hub_portfolio_puppet_association_ref = f"{constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-            all_tasks[hub_portfolio_puppet_association_ref] = dict(
-                puppet_account_id=puppet_account_id,
-                task_reference=hub_portfolio_puppet_association_ref,
-                portfolio_task_reference=hub_portfolio_ref,
-                dependencies_by_reference=[hub_portfolio_ref],
-                reverse_dependencies_by_reference=[],
-                account_id=puppet_account_id,
-                region=task_to_add.get("region"),
-                portfolio=task_to_add.get("portfolio"),
-                execution=task_to_add.get("execution"),
-                section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,  # TODO test in with a new spoke local
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
-            )
+            if not all_tasks.get(hub_portfolio_puppet_association_ref):
+                all_tasks[hub_portfolio_puppet_association_ref] = dict(
+                    puppet_account_id=puppet_account_id,
+                    task_reference=hub_portfolio_puppet_association_ref,
+                    portfolio_task_reference=hub_portfolio_ref,
+                    dependencies_by_reference=[hub_portfolio_ref],
+                    reverse_dependencies_by_reference=[],
+                    account_id=puppet_account_id,
+                    region=task_to_add.get("region"),
+                    portfolio=task_to_add.get("portfolio"),
+                    execution=task_to_add.get("execution"),
+                    section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,  # TODO test in with a new spoke local
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[hub_portfolio_puppet_association_ref][
+                "manifest_section_name"
+            ].extend(task_to_add.get("manifest_section_name"))
+            all_tasks[hub_portfolio_puppet_association_ref][
+                "manifest_item_name"
+            ].extend(task_to_add.get("manifest_item_name"))
+            all_tasks[hub_portfolio_puppet_association_ref][
+                "manifest_account_id"
+            ].extend(task_to_add.get("manifest_account_id"))
+            all_tasks[hub_portfolio_puppet_association_ref][
+                "manifest_account_ids"
+            ].update(task_to_add.get("manifest_account_ids"))
 
             # SHARE THE PORTFOLIO
             share_and_accept_ref = f"portfolio_share_and_accept-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"  # TODO need to rename to avoid duplicates
@@ -712,78 +951,134 @@ def handle_spoke_local_portfolios(
                 "sharing_mode", constants.SHARING_MODE_ACCOUNT
             )  # TODO need to make sure global sharing cascades into the expanded manifest file
             # TODO handle when account_id == puppet_account_id
-            all_tasks[share_and_accept_ref] = dict(
-                puppet_account_id=puppet_account_id,
-                account_id=task_to_add.get("account_id"),
-                region=task_to_add.get("region"),
-                task_reference=share_and_accept_ref,
-                dependencies_by_reference=[hub_portfolio_ref],
-                reverse_dependencies_by_reference=[],
-                portfolio=task_to_add.get("portfolio"),
-                execution=task_to_add.get("execution"),
-                portfolio_task_reference=hub_portfolio_ref,
-                section_name=f"portfolio-share-and-accept-{sharing_mode.lower()}",
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
+            if not all_tasks.get(share_and_accept_ref):
+                all_tasks[share_and_accept_ref] = dict(
+                    puppet_account_id=puppet_account_id,
+                    account_id=task_to_add.get("account_id"),
+                    region=task_to_add.get("region"),
+                    task_reference=share_and_accept_ref,
+                    dependencies_by_reference=[hub_portfolio_ref],
+                    reverse_dependencies_by_reference=[],
+                    portfolio=task_to_add.get("portfolio"),
+                    execution=task_to_add.get("execution"),
+                    portfolio_task_reference=hub_portfolio_ref,
+                    section_name=f"portfolio-share-and-accept-{sharing_mode.lower()}",
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[share_and_accept_ref]["manifest_section_name"].extend(
+                task_to_add.get("manifest_section_name")
+            )
+            all_tasks[share_and_accept_ref]["manifest_item_name"].extend(
+                task_to_add.get("manifest_item_name")
+            )
+            all_tasks[share_and_accept_ref]["manifest_account_id"].extend(
+                task_to_add.get("manifest_account_id")
+            )
+            all_tasks[share_and_accept_ref]["manifest_account_ids"].update(
+                task_to_add.get("manifest_account_ids")
             )
 
             # GET THE HUB PRODUCTS AND VERSIONS SO WE KNOW WHAT NEEDS TO BE COPIED OR IMPORTED
             hub_portfolio_all_products_and_versions_before_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-before-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-            all_tasks[hub_portfolio_all_products_and_versions_before_ref] = dict(
-                puppet_account_id=puppet_account_id,
-                task_reference=hub_portfolio_all_products_and_versions_before_ref,
-                dependencies_by_reference=[
-                    hub_portfolio_ref,
-                    hub_portfolio_puppet_association_ref,  # TODO reduce this down to one ?
-                ],
-                portfolio_task_reference=hub_portfolio_ref,
-                reverse_dependencies_by_reference=[],
-                account_id=puppet_account_id,
-                region=task_to_add.get("region"),
-                execution=task_to_add.get("execution"),
-                section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
-            )
+            if not all_tasks.get(hub_portfolio_all_products_and_versions_before_ref):
+                all_tasks[hub_portfolio_all_products_and_versions_before_ref] = dict(
+                    puppet_account_id=puppet_account_id,
+                    task_reference=hub_portfolio_all_products_and_versions_before_ref,
+                    dependencies_by_reference=[
+                        hub_portfolio_ref,
+                        hub_portfolio_puppet_association_ref,  # TODO reduce this down to one ?
+                    ],
+                    portfolio_task_reference=hub_portfolio_ref,
+                    reverse_dependencies_by_reference=[],
+                    account_id=puppet_account_id,
+                    region=task_to_add.get("region"),
+                    execution=task_to_add.get("execution"),
+                    section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[hub_portfolio_all_products_and_versions_before_ref][
+                "manifest_section_name"
+            ].extend(task_to_add.get("manifest_section_name"))
+            all_tasks[hub_portfolio_all_products_and_versions_before_ref][
+                "manifest_item_name"
+            ].extend(task_to_add.get("manifest_item_name"))
+            all_tasks[hub_portfolio_all_products_and_versions_before_ref][
+                "manifest_account_id"
+            ].extend(task_to_add.get("manifest_account_id"))
+            all_tasks[hub_portfolio_all_products_and_versions_before_ref][
+                "manifest_account_ids"
+            ].update(task_to_add.get("manifest_account_ids"))
 
             # CREATE SPOKE ASSOCIATIONS
             spoke_portfolio_puppet_association_ref = f"{constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-            all_tasks[spoke_portfolio_puppet_association_ref] = dict(
-                puppet_account_id=puppet_account_id,
-                task_reference=spoke_portfolio_puppet_association_ref,
-                portfolio_task_reference=all_tasks_task_reference,
-                dependencies_by_reference=[all_tasks_task_reference],
-                reverse_dependencies_by_reference=[],
-                account_id=task_to_add.get("account_id"),
-                region=task_to_add.get("region"),
-                portfolio=task_to_add.get("portfolio"),
-                execution=task_to_add.get("execution"),
-                section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
-            )
+            if not all_tasks.get(spoke_portfolio_puppet_association_ref):
+                all_tasks[spoke_portfolio_puppet_association_ref] = dict(
+                    puppet_account_id=puppet_account_id,
+                    task_reference=spoke_portfolio_puppet_association_ref,
+                    portfolio_task_reference=all_tasks_task_reference,
+                    dependencies_by_reference=[all_tasks_task_reference],
+                    reverse_dependencies_by_reference=[],
+                    account_id=task_to_add.get("account_id"),
+                    region=task_to_add.get("region"),
+                    portfolio=task_to_add.get("portfolio"),
+                    execution=task_to_add.get("execution"),
+                    section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[spoke_portfolio_puppet_association_ref][
+                "manifest_section_name"
+            ].extend(task_to_add.get("manifest_section_name"))
+            all_tasks[spoke_portfolio_puppet_association_ref][
+                "manifest_item_name"
+            ].extend(task_to_add.get("manifest_item_name"))
+            all_tasks[spoke_portfolio_puppet_association_ref][
+                "manifest_account_id"
+            ].extend(task_to_add.get("manifest_account_id"))
+            all_tasks[spoke_portfolio_puppet_association_ref][
+                "manifest_account_ids"
+            ].update(task_to_add.get("manifest_account_ids"))
 
             # GET THE SPOKE PRODUCTS AND VERSIONS SO WE KNOW WHAT IS MISSING OR NEEDS UPDATING
             spoke_portfolio_all_products_and_versions_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-            all_tasks[spoke_portfolio_all_products_and_versions_ref] = dict(
-                **get_spoke_local_portfolio_common_args(
-                    task_to_add,
-                    all_tasks_task_reference,
-                    [spoke_portfolio_puppet_association_ref],
-                ),
-                task_reference=spoke_portfolio_all_products_and_versions_ref,
-                section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
-            )
+            if not all_tasks.get(spoke_portfolio_all_products_and_versions_ref):
+                all_tasks[spoke_portfolio_all_products_and_versions_ref] = dict(
+                    **get_spoke_local_portfolio_common_args(
+                        task_to_add,
+                        all_tasks_task_reference,
+                        [spoke_portfolio_puppet_association_ref],
+                    ),
+                    task_reference=spoke_portfolio_all_products_and_versions_ref,
+                    section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[spoke_portfolio_all_products_and_versions_ref][
+                "manifest_section_name"
+            ].extend(task_to_add.get("manifest_section_name"))
+            all_tasks[spoke_portfolio_all_products_and_versions_ref][
+                "manifest_item_name"
+            ].extend(task_to_add.get("manifest_item_name"))
+            all_tasks[spoke_portfolio_all_products_and_versions_ref][
+                "manifest_account_id"
+            ].extend(task_to_add.get("manifest_account_id"))
+            all_tasks[spoke_portfolio_all_products_and_versions_ref][
+                "manifest_account_ids"
+            ].update(task_to_add.get("manifest_account_ids"))
 
             # COPY OR IMPORT THE CHANGES BETWEEN THE TWO PORTFOLIOS
             product_generation_method = task_to_add.get("product_generation_method")
-            portfolio_import_or_copy_ref = f"portfolio_{product_generation_method}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+            portfolio_import_or_copy_ref = f"portfolio_{product_generation_method}-{section_name}-{item_name}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
             portfolio_import_or_copy_task = dict(
                 **get_spoke_local_portfolio_common_args(
                     task_to_add,
@@ -798,9 +1093,10 @@ def handle_spoke_local_portfolios(
                 section_name=f"portfolio-{product_generation_method}",
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_ref,
                 portfolio_get_all_products_and_their_versions_for_hub_ref=hub_portfolio_all_products_and_versions_before_ref,
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
+                manifest_section_name=[] + task_to_add.get("manifest_section_name"),
+                manifest_item_name=[] + task_to_add.get("manifest_item_name"),
+                manifest_account_id=[] + task_to_add.get("manifest_account_id"),
+                manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
             )
             if product_generation_method == constants.PRODUCT_GENERATION_METHOD_IMPORT:
                 portfolio_import_or_copy_task[
@@ -823,28 +1119,43 @@ def handle_spoke_local_portfolios(
                 spoke_local_portfolio_name=item_name,
                 section_name=constants.PORTFOLIO_ASSOCIATIONS,
                 associations=task_to_add.get("associations"),
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
+                manifest_section_name=[] + task_to_add.get("manifest_section_name"),
+                manifest_item_name=[] + task_to_add.get("manifest_item_name"),
+                manifest_account_id=[] + task_to_add.get("manifest_account_id"),
+                manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
             )
         if not is_sharing_with_puppet_account:
             # GET NEW PRODUCT AND VERSIONS FOLLOWING THE IMPORT OR COPY
             spoke_portfolio_all_products_and_versions_after_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-after-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-            all_tasks[spoke_portfolio_all_products_and_versions_after_ref] = dict(
-                **get_spoke_local_portfolio_common_args(
-                    task_to_add,
-                    all_tasks_task_reference,
-                    [
-                        spoke_portfolio_puppet_association_ref,
-                        portfolio_import_or_copy_ref,
-                    ],
-                ),
-                task_reference=spoke_portfolio_all_products_and_versions_after_ref,
-                section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
-            )
+            if not all_tasks.get(spoke_portfolio_all_products_and_versions_after_ref):
+                all_tasks[spoke_portfolio_all_products_and_versions_after_ref] = dict(
+                    **get_spoke_local_portfolio_common_args(
+                        task_to_add,
+                        all_tasks_task_reference,
+                        [
+                            spoke_portfolio_puppet_association_ref,
+                            portfolio_import_or_copy_ref,
+                        ],
+                    ),
+                    task_reference=spoke_portfolio_all_products_and_versions_after_ref,
+                    section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+                    manifest_section_name=list(),
+                    manifest_item_name=list(),
+                    manifest_account_id=list(),
+                    manifest_account_ids=dict(),
+                )
+            all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
+                "manifest_section_name"
+            ].extend(task_to_add.get("manifest_section_name"))
+            all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
+                "manifest_item_name"
+            ].extend(task_to_add.get("manifest_item_name"))
+            all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
+                "manifest_account_id"
+            ].extend(task_to_add.get("manifest_account_id"))
+            all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
+                "manifest_account_ids"
+            ].update(task_to_add.get("manifest_account_ids"))
             dependencies_for_constraints.append(
                 spoke_portfolio_all_products_and_versions_after_ref
             )
@@ -861,9 +1172,10 @@ def handle_spoke_local_portfolios(
                 spoke_local_portfolio_name=item_name,
                 launch_constraints=task_to_add["launch_constraints"],
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_after_ref,
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
+                manifest_section_name=[] + task_to_add.get("manifest_section_name"),
+                manifest_item_name=[] + task_to_add.get("manifest_item_name"),
+                manifest_account_id=[] + task_to_add.get("manifest_account_id"),
+                manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
             )
         if task_to_add.get("resource_update_constraints"):
             shared_ref = f"{section_name}-{item_name}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
@@ -877,9 +1189,10 @@ def handle_spoke_local_portfolios(
                 spoke_local_portfolio_name=item_name,
                 resource_update_constraints=task_to_add["resource_update_constraints"],
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_after_ref,
-                manifest_section_name=task_to_add.get("manifest_section_name"),
-                manifest_item_name=task_to_add.get("manifest_item_name"),
-                manifest_account_id=task_to_add.get("manifest_account_id"),
+                manifest_section_name=[] + task_to_add.get("manifest_section_name"),
+                manifest_item_name=[] + task_to_add.get("manifest_item_name"),
+                manifest_account_id=[] + task_to_add.get("manifest_account_id"),
+                manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
             )
 
 
@@ -897,20 +1210,34 @@ def handle_launches(
     )
     # GET THE HUB DETAILS TASK
     hub_portfolio_ref = f"{constants.PORTFOLIO_LOCAL}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-    all_tasks[hub_portfolio_ref] = dict(
-        puppet_account_id=puppet_account_id,
-        task_reference=hub_portfolio_ref,
-        dependencies_by_reference=[],
-        reverse_dependencies_by_reference=[],
-        account_id=puppet_account_id,
-        region=task_to_add.get("region"),
-        portfolio=task_to_add.get("portfolio"),
-        status=task_to_add.get("status"),
-        execution=task_to_add.get("execution"),
-        section_name=constants.PORTFOLIO_LOCAL,
-        manifest_section_name=task_to_add.get("manifest_section_name"),
-        manifest_item_name=task_to_add.get("manifest_item_name"),
-        manifest_account_id=task_to_add.get("manifest_account_id"),
+    if not all_tasks.get(hub_portfolio_ref):
+        all_tasks[hub_portfolio_ref] = dict(
+            puppet_account_id=puppet_account_id,
+            task_reference=hub_portfolio_ref,
+            dependencies_by_reference=[],
+            reverse_dependencies_by_reference=[],
+            account_id=puppet_account_id,
+            region=task_to_add.get("region"),
+            portfolio=task_to_add.get("portfolio"),
+            status=task_to_add.get("status"),
+            execution=constants.EXECUTION_MODE_HUB,
+            section_name=constants.PORTFOLIO_LOCAL,
+            manifest_section_name=list(),
+            manifest_item_name=list(),
+            manifest_account_id=list(),
+            manifest_account_ids=dict(),
+        )
+    all_tasks[hub_portfolio_ref]["manifest_section_name"].extend(
+        task_to_add.get("manifest_section_name")
+    )
+    all_tasks[hub_portfolio_ref]["manifest_item_name"].extend(
+        task_to_add.get("manifest_item_name")
+    )
+    all_tasks[hub_portfolio_ref]["manifest_account_id"].extend(
+        task_to_add.get("manifest_account_id")
+    )
+    all_tasks[hub_portfolio_ref]["manifest_account_ids"].update(
+        task_to_add.get("manifest_account_ids")
     )
 
     spoke_portfolio_puppet_association_ref = None
@@ -923,80 +1250,137 @@ def handle_launches(
             "sharing_mode", constants.SHARING_MODE_ACCOUNT
         )  # TODO need to make sure global sharing cascades into the expanded manifest file
         # TODO handle when account_id == puppet_account_id
-        all_tasks[share_and_accept_ref] = dict(
-            puppet_account_id=puppet_account_id,
-            account_id=task_to_add.get("account_id"),
-            region=task_to_add.get("region"),
-            task_reference=share_and_accept_ref,
-            dependencies_by_reference=[hub_portfolio_ref],
-            reverse_dependencies_by_reference=[],
-            portfolio=task_to_add.get("portfolio"),
-            execution=task_to_add.get("execution"),
-            portfolio_task_reference=hub_portfolio_ref,
-            section_name=f"portfolio-share-and-accept-{sharing_mode.lower()}",
-            manifest_section_name=task_to_add.get("manifest_section_name"),
-            manifest_item_name=task_to_add.get("manifest_item_name"),
-            manifest_account_id=task_to_add.get("manifest_account_id"),
+        if not all_tasks.get(share_and_accept_ref):
+            all_tasks[share_and_accept_ref] = dict(
+                puppet_account_id=puppet_account_id,
+                account_id=task_to_add.get("account_id"),
+                region=task_to_add.get("region"),
+                task_reference=share_and_accept_ref,
+                dependencies_by_reference=[hub_portfolio_ref],
+                reverse_dependencies_by_reference=[],
+                portfolio=task_to_add.get("portfolio"),
+                execution=task_to_add.get("execution"),
+                portfolio_task_reference=hub_portfolio_ref,
+                section_name=f"portfolio-share-and-accept-{sharing_mode.lower()}",
+                manifest_section_name=list(),
+                manifest_item_name=list(),
+                manifest_account_id=list(),
+                manifest_account_ids=dict(),
+            )
+        all_tasks[share_and_accept_ref]["manifest_section_name"].extend(
+            task_to_add.get("manifest_section_name")
+        )
+        all_tasks[share_and_accept_ref]["manifest_item_name"].extend(
+            task_to_add.get("manifest_item_name")
+        )
+        all_tasks[share_and_accept_ref]["manifest_account_id"].extend(
+            task_to_add.get("manifest_account_id")
+        )
+        all_tasks[share_and_accept_ref]["manifest_account_ids"].update(
+            task_to_add.get("manifest_account_ids")
         )
 
         # GET THE IMPORTED PORTFOLIO
         spoke_portfolio_ref = f"{constants.PORTFOLIO_IMPORTED}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-        all_tasks[spoke_portfolio_ref] = dict(
-            puppet_account_id=puppet_account_id,
-            task_reference=spoke_portfolio_ref,
-            dependencies_by_reference=[share_and_accept_ref],
-            reverse_dependencies_by_reference=[],
-            account_id=task_to_add.get("account_id"),
-            region=task_to_add.get("region"),
-            portfolio=task_to_add.get("portfolio"),
-            sharing_mode=task_to_add.get(
-                "sharing_mode", constants.SHARING_MODE_ACCOUNT
-            ),  # TODO verify
-            section_name=constants.PORTFOLIO_IMPORTED,
-            manifest_section_name=task_to_add.get("manifest_section_name"),
-            manifest_item_name=task_to_add.get("manifest_item_name"),
-            manifest_account_id=task_to_add.get("manifest_account_id"),
+        if not all_tasks.get(spoke_portfolio_ref):
+            all_tasks[spoke_portfolio_ref] = dict(
+                puppet_account_id=puppet_account_id,
+                task_reference=spoke_portfolio_ref,
+                dependencies_by_reference=[share_and_accept_ref],
+                reverse_dependencies_by_reference=[],
+                account_id=task_to_add.get("account_id"),
+                region=task_to_add.get("region"),
+                portfolio=task_to_add.get("portfolio"),
+                sharing_mode=task_to_add.get(
+                    "sharing_mode", constants.SHARING_MODE_ACCOUNT
+                ),  # TODO verify
+                section_name=constants.PORTFOLIO_IMPORTED,
+                manifest_section_name=list(),
+                manifest_item_name=list(),
+                manifest_account_id=list(),
+                manifest_account_ids=dict(),
+            )
+        all_tasks[spoke_portfolio_ref]["manifest_section_name"].extend(
+            task_to_add.get("manifest_section_name")
+        )
+        all_tasks[spoke_portfolio_ref]["manifest_item_name"].extend(
+            task_to_add.get("manifest_item_name")
+        )
+        all_tasks[spoke_portfolio_ref]["manifest_account_id"].extend(
+            task_to_add.get("manifest_account_id")
+        )
+        all_tasks[spoke_portfolio_ref]["manifest_account_ids"].update(
+            task_to_add.get("manifest_account_ids")
         )
         portfolio_deploying_from = spoke_portfolio_ref
 
         spoke_portfolio_puppet_association_ref = f"{constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-        all_tasks[spoke_portfolio_puppet_association_ref] = dict(
-            puppet_account_id=puppet_account_id,
-            task_reference=spoke_portfolio_puppet_association_ref,
-            portfolio_task_reference=spoke_portfolio_ref,
-            dependencies_by_reference=[spoke_portfolio_ref],
-            reverse_dependencies_by_reference=[],
-            account_id=task_to_add.get("account_id"),
-            region=task_to_add.get("region"),
-            portfolio=task_to_add.get("portfolio"),
-            execution=task_to_add.get("execution"),
-            section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
-            manifest_section_name=task_to_add.get("manifest_section_name"),
-            manifest_item_name=task_to_add.get("manifest_item_name"),
-            manifest_account_id=task_to_add.get("manifest_account_id"),
+        if not all_tasks.get(spoke_portfolio_puppet_association_ref):
+            all_tasks[spoke_portfolio_puppet_association_ref] = dict(
+                puppet_account_id=puppet_account_id,
+                task_reference=spoke_portfolio_puppet_association_ref,
+                portfolio_task_reference=spoke_portfolio_ref,
+                dependencies_by_reference=[spoke_portfolio_ref],
+                reverse_dependencies_by_reference=[],
+                account_id=task_to_add.get("account_id"),
+                region=task_to_add.get("region"),
+                portfolio=task_to_add.get("portfolio"),
+                execution=task_to_add.get("execution"),
+                section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
+                manifest_section_name=list(),
+                manifest_item_name=list(),
+                manifest_account_id=list(),
+                manifest_account_ids=dict(),
+            )
+        all_tasks[spoke_portfolio_puppet_association_ref][
+            "manifest_section_name"
+        ].extend(task_to_add.get("manifest_section_name"))
+        all_tasks[spoke_portfolio_puppet_association_ref]["manifest_item_name"].extend(
+            task_to_add.get("manifest_item_name")
         )
+        all_tasks[spoke_portfolio_puppet_association_ref]["manifest_account_id"].extend(
+            task_to_add.get("manifest_account_id")
+        )
+        all_tasks[spoke_portfolio_puppet_association_ref][
+            "manifest_account_ids"
+        ].update(task_to_add.get("manifest_account_ids"))
+
         all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
             spoke_portfolio_puppet_association_ref
         )
 
     # GET the provisioning parameters
     describe_provisioning_params_ref = f"{constants.DESCRIBE_PROVISIONING_PARAMETERS}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}-{task_to_add.get('product')}-{task_to_add.get('version')}"
-    all_tasks[describe_provisioning_params_ref] = dict(
-        puppet_account_id=puppet_account_id,
-        task_reference=describe_provisioning_params_ref,
-        dependencies_by_reference=[
-            portfolio_deploying_from
-        ],  # associations are added here and so this is a dependency
-        reverse_dependencies_by_reference=[],
-        account_id=puppet_account_id,
-        region=task_to_add.get("region"),
-        portfolio=task_to_add.get("portfolio"),
-        product=task_to_add.get("product"),
-        version=task_to_add.get("version"),
-        section_name=constants.DESCRIBE_PROVISIONING_PARAMETERS,
-        manifest_section_name=task_to_add.get("manifest_section_name"),
-        manifest_item_name=task_to_add.get("manifest_item_name"),
-        manifest_account_id=task_to_add.get("manifest_account_id"),
+    if not all_tasks.get(describe_provisioning_params_ref):
+        all_tasks[describe_provisioning_params_ref] = dict(
+            puppet_account_id=puppet_account_id,
+            task_reference=describe_provisioning_params_ref,
+            dependencies_by_reference=[
+                hub_portfolio_ref, # TODO check this still works for a new portfolio after changing it from: portfolio_deploying_from
+            ],  # associations are added here and so this is a dependency
+            reverse_dependencies_by_reference=[],
+            account_id=puppet_account_id,
+            region=task_to_add.get("region"),
+            portfolio=task_to_add.get("portfolio"),
+            product=task_to_add.get("product"),
+            version=task_to_add.get("version"),
+            section_name=constants.DESCRIBE_PROVISIONING_PARAMETERS,
+            manifest_section_name=list(),
+            manifest_item_name=list(),
+            manifest_account_id=list(),
+            manifest_account_ids=dict(),
+        )
+    all_tasks[describe_provisioning_params_ref]["manifest_section_name"].extend(
+        task_to_add.get("manifest_section_name")
+    )
+    all_tasks[describe_provisioning_params_ref]["manifest_item_name"].extend(
+        task_to_add.get("manifest_item_name")
+    )
+    all_tasks[describe_provisioning_params_ref]["manifest_account_id"].extend(
+        task_to_add.get("manifest_account_id")
+    )
+    all_tasks[describe_provisioning_params_ref]["manifest_account_ids"].update(
+        task_to_add.get("manifest_account_ids")
     )
 
     # GET all the products for the spoke
@@ -1005,20 +1389,34 @@ def handle_launches(
     else:
         deps = [portfolio_deploying_from, spoke_portfolio_puppet_association_ref]
     portfolio_get_all_products_and_their_versions_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-    all_tasks[portfolio_get_all_products_and_their_versions_ref] = dict(
-        execution=task_to_add.get("execution"),
-        puppet_account_id=puppet_account_id,
-        task_reference=portfolio_get_all_products_and_their_versions_ref,
-        dependencies_by_reference=deps,
-        portfolio_task_reference=portfolio_deploying_from,
-        reverse_dependencies_by_reference=[],
-        account_id=puppet_account_id,
-        region=task_to_add.get("region"),
-        section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-        manifest_section_name=task_to_add.get("manifest_section_name"),
-        manifest_item_name=task_to_add.get("manifest_item_name"),
-        manifest_account_id=task_to_add.get("manifest_account_id"),
-    )
+    if not all_tasks.get(portfolio_get_all_products_and_their_versions_ref):
+        all_tasks[portfolio_get_all_products_and_their_versions_ref] = dict(
+            execution=task_to_add.get("execution"),
+            puppet_account_id=puppet_account_id,
+            task_reference=portfolio_get_all_products_and_their_versions_ref,
+            dependencies_by_reference=deps,
+            portfolio_task_reference=portfolio_deploying_from,
+            reverse_dependencies_by_reference=[],
+            account_id=puppet_account_id,
+            region=task_to_add.get("region"),
+            section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+            manifest_section_name=list(),
+            manifest_item_name=list(),
+            manifest_account_id=list(),
+            manifest_account_ids=dict(),
+        )
+    all_tasks[portfolio_get_all_products_and_their_versions_ref][
+        "manifest_section_name"
+    ].extend(task_to_add.get("manifest_section_name"))
+    all_tasks[portfolio_get_all_products_and_their_versions_ref][
+        "manifest_item_name"
+    ].extend(task_to_add.get("manifest_item_name"))
+    all_tasks[portfolio_get_all_products_and_their_versions_ref][
+        "manifest_account_id"
+    ].extend(task_to_add.get("manifest_account_id"))
+    all_tasks[portfolio_get_all_products_and_their_versions_ref][
+        "manifest_account_ids"
+    ].update(task_to_add.get("manifest_account_ids"))
 
     all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
         portfolio_get_all_products_and_their_versions_ref
@@ -1037,7 +1435,7 @@ def handle_launches(
 def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
     tasks_to_include = dict()
     generate_manifest_ref = "generate-manifest"
-    for task_name, task in all_tasks.items():
+    for task_name, task in all_tasks.get("all_tasks").items():
         execution = task.get("execution", constants.EXECUTION_MODE_DEFAULT)
         if execution in [constants.EXECUTION_MODE_HUB, constants.EXECUTION_MODE_ASYNC]:
             should_include = True
@@ -1074,14 +1472,6 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
                     dependencies_by_reference=[],
                     reverse_dependencies_by_reference=[],
                 )
-            t = tasks_to_include[generate_manifest_ref]
-            # t["dependencies_by_reference"] = (
-            #     t["dependencies_by_reference"] + task["dependencies_by_reference"]
-            # )
-            # t["reverse_dependencies_by_reference"] = (
-            #     t["reverse_dependencies_by_reference"]
-            #     + task["reverse_dependencies_by_reference"]
-            # )
 
             replacement_ref = (
                 f"{constants.RUN_DEPLOY_IN_SPOKE}_{task.get('account_id')}"
@@ -1097,15 +1487,8 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
                     dependencies_by_reference=[generate_manifest_ref,],
                     reverse_dependencies_by_reference=list(),
                 )
-            # t = tasks_to_include[replacement_ref]
-            # t["dependencies_by_reference"] = (
-            #     t["dependencies_by_reference"] + task["dependencies_by_reference"]
-            # )
-            # t["reverse_dependencies_by_reference"] = (
-            #     t["reverse_dependencies_by_reference"]
-            #     + task["reverse_dependencies_by_reference"]
-            # )
 
+    # make sure everything runs before we zip up the output directory
     if tasks_to_include.get(generate_manifest_ref):
         t = tasks_to_include[generate_manifest_ref]
         for task_name, task_to_include in tasks_to_include.items():
@@ -1127,16 +1510,40 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
     return result
 
 
+def generate_overridden_task_reference(
+    overrides, all_tasks, output_file_path
+):
+    if not overrides.get("single_account"):
+        open(output_file_path, "w").write(yaml_utils.dump(dict(all_tasks=all_tasks)))
+        return all_tasks
+
+    single_account = str(overrides.get("single_account"))
+    overridden_tasks = dict()
+    for task_name, task in all_tasks.get("all_tasks").items():
+        if single_account:
+            if task.get("manifest_account_ids").get(single_account) or task.get("manifest_account_ids").get(int(single_account)):
+                overridden_tasks[task_name] = task
+
+    result = dict(all_tasks=overridden_tasks)
+    open(output_file_path, "w").write(yaml_utils.dump(result))
+    return result
+
+
 def generate_task_reference(f):
     puppet_account_id = config.get_puppet_account_id()
+    overrides = dict(single_account="087969333128")
 
     content = open(f.name, "r").read()
     manifest = manifest_utils.Manifest(yaml_utils.load(content))
-    complete = generate_complete_task_reference(f, puppet_account_id, manifest)
-
+    complete = generate_complete_task_reference(puppet_account_id, manifest, f.name.replace("-expanded", "-task-reference-full"))
+    filtered = generate_overridden_task_reference(
+        overrides,
+        complete,
+        f.name.replace("-expanded", "-task-reference-filtered"),
+    )
     generate_hub_task_reference(
         puppet_account_id,
-        complete.get("all_tasks"),
+        filtered,
         f.name.replace("-expanded", "-task-reference"),
     )
 

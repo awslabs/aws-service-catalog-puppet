@@ -672,13 +672,13 @@ def deploy_from_task_reference(
                 include_reverse_dependencies=subset.get("include_reverse_dependencies"),
             )
         params.update(
-            dict(single_account=overrides.get("single_account"), subset=overrides, )
+            dict(single_account=overrides.get("single_account"), subset=overrides,)
         )
         click.echo(f"Overridden parameters {params}")
 
     setup_config(
         puppet_account_id=puppet_account_id,
-        single_account=params.get('single_account'),
+        single_account=params.get("single_account"),
         num_workers=str(num_workers),
         execution_mode=execution_mode,
         home_region=home_region,
@@ -856,9 +856,7 @@ def wait_for_code_build_in(iam_role_arns):
 @cli.command()
 @click.option("--on-complete-url", default=None)
 def wait_for_parameterised_run_to_complete(on_complete_url):
-    setup_config(
-        puppet_account_id=remote_config.get_puppet_account_id()
-    )
+    setup_config(puppet_account_id=remote_config.get_puppet_account_id())
     click.echo("Starting to wait for parameterised run to complete")
     succeeded = misc_commands.wait_for_parameterised_run_to_complete(on_complete_url)
     if succeeded:

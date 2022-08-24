@@ -121,7 +121,7 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
                     },
                     build=dict(
                         commands=[
-                            "curl $TASK_REFERENCE_URL > manifest-task-reference-full.yaml",
+                            "curl $TASK_REFERENCE_URL > manifest-task-reference-filtered.yaml",
                             "curl $MANIFEST_URL > manifest-expanded.yaml",
                             """servicecatalog-puppet --info deploy-from-task-reference \
                       --execution-mode spoke \
@@ -132,7 +132,7 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
                       --should-collect-cloudformation-events $SHOULD_COLLECT_CLOUDFORMATION_EVENTS \
                       --should-forward-events-to-eventbridge $SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE \
                       --should-forward-failures-to-opscenter $SHOULD_FORWARD_FAILURES_TO_OPSCENTER \
-                      manifest-task-reference-full.yaml""",
+                      manifest-task-reference-filtered.yaml""",
                         ]
                     ),
                 ),
