@@ -641,10 +641,6 @@ def setup_config(
 @click.option(
     "--is-caching-enabled", default="", envvar="SCT_IS_CACHING_ENABLED",
 )
-@click.option("--parameter-override-file", type=click.File())
-@click.option(
-    "--parameter-override-forced/--no-parameter-override-forced", default=False
-)
 def deploy_from_task_reference(
     f,
     num_workers,
@@ -658,28 +654,10 @@ def deploy_from_task_reference(
     should_forward_failures_to_opscenter,
     output_cache_starting_point,
     is_caching_enabled,
-    parameter_override_file,
-    parameter_override_forced,
 ):
-    params = dict(single_account=single_account)
-    if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
-        overrides = dict(**yaml.safe_load(parameter_override_file.read()))
-        if overrides.get("subset"):
-            subset = overrides.get("subset")
-            overrides = dict(
-                section=subset.get("section"),
-                item=subset.get("name"),
-                include_dependencies=subset.get("include_dependencies"),
-                include_reverse_dependencies=subset.get("include_reverse_dependencies"),
-            )
-        params.update(
-            dict(single_account=overrides.get("single_account"), subset=overrides,)
-        )
-        click.echo(f"Overridden parameters {params}")
-
     setup_config(
         puppet_account_id=puppet_account_id,
-        single_account=params.get("single_account"),
+        single_account=single_account,
         num_workers=str(num_workers),
         execution_mode=execution_mode,
         home_region=home_region,
@@ -693,6 +671,8 @@ def deploy_from_task_reference(
     click.echo(
         f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"
     )
+
+    print("get_single_account_id", config.get_single_account_id())
 
     task_reference_commands.deploy_from_task_reference(f)
 
