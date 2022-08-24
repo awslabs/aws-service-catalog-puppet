@@ -1,0 +1,183 @@
+all_tasks:
+  boto3_parameters-stacks-sleeper-SleeperCustomResourceArn-105463962595-eu-west-1:
+    account_id: '105463962595'
+    arguments:
+      StackName: sleeper
+    call: describe_stacks
+    client: cloudformation
+    dependencies_by_reference:
+    - stacks_sleeper_105463962595-eu-west-1
+    filter: Stacks[?StackStatus==`CREATE_COMPLETE` || StackStatus==`UPDATE_COMPLETE`|| StackStatus==`UPDATE_ROLLBACK_COMPLETE`].Outputs[] | [?OutputKey==`SleeperFunctionArn`].OutputValue | [0]
+    manifest_account_id:
+    - '105463962595'
+    - '105463962595'
+    manifest_account_ids:
+      '105463962595': true
+    manifest_item_name:
+    - sleeper
+    - sleeper
+    manifest_section_name:
+    - stacks
+    - stacks
+    region: eu-west-1
+    reverse_dependencies_by_reference:
+    - stacks_sleepFor10_022042407650-eu-west-1
+    - stacks_sleepFor10_087969333128-eu-west-1
+    section_name: boto3_parameters
+    status: null
+    task_reference: boto3_parameters-stacks-sleeper-SleeperCustomResourceArn-105463962595-eu-west-1
+    use_paginator: true
+  get-template-from-s3-stacks-sleepFor10:
+    account_id: '105463962595'
+    bucket: sc-puppet-stacks-repository-105463962595
+    dependencies_by_reference: []
+    execution: hub
+    key: stack/sleep/v1/stack.template-${AWS::Region}.yaml
+    manifest_account_id:
+    - '022042407650'
+    - 087969333128
+    manifest_account_ids:
+      '022042407650': true
+      087969333128: true
+    manifest_item_name:
+    - sleepFor10
+    - sleepFor10
+    manifest_section_name:
+    - stacks
+    - stacks
+    puppet_account_id: '105463962595'
+    region: eu-west-1
+    reverse_dependencies_by_reference:
+    - stacks_sleepFor10_022042407650-eu-west-1
+    - stacks_sleepFor10_087969333128-eu-west-1
+    section_name: get-template-from-s3
+    task_reference: get-template-from-s3-stacks-sleepFor10
+    version_id: ''
+  get-template-from-s3-stacks-sleeper:
+    account_id: '105463962595'
+    bucket: sc-puppet-stacks-repository-105463962595
+    dependencies_by_reference: []
+    execution: hub
+    key: stack/sleeper/v1/stack.template-${AWS::Region}.yaml
+    manifest_account_id:
+    - '105463962595'
+    manifest_account_ids:
+      '105463962595': true
+    manifest_item_name:
+    - sleeper
+    manifest_section_name:
+    - stacks
+    puppet_account_id: '105463962595'
+    region: eu-west-1
+    reverse_dependencies_by_reference:
+    - stacks_sleeper_105463962595-eu-west-1
+    section_name: get-template-from-s3
+    task_reference: get-template-from-s3-stacks-sleeper
+    version_id: ''
+  stacks_sleepFor10_022042407650-eu-west-1:
+    account_id: '022042407650'
+    bucket: sc-puppet-stacks-repository-105463962595
+    capabilities: &id001 []
+    dependencies: &id002
+    - affinity: region
+      name: sleeper
+      type: stack
+    dependencies_by_reference:
+    - get-template-from-s3-stacks-sleepFor10
+    - boto3_parameters-stacks-sleeper-SleeperCustomResourceArn-105463962595-eu-west-1
+    - stacks_sleeper_105463962595-eu-west-1
+    execution: spoke
+    get_s3_template_ref: get-template-from-s3-stacks-sleepFor10
+    item_name: sleepFor10
+    key: stack/sleep/v1/stack.template-${AWS::Region}.yaml
+    launch_name: ''
+    manifest_account_id:
+    - '022042407650'
+    manifest_account_ids:
+      '022042407650': true
+    manifest_item_name:
+    - sleepFor10
+    manifest_section_name:
+    - stacks
+    puppet_account_id: '105463962595'
+    region: eu-west-1
+    requested_priority: 0
+    reverse_dependencies_by_reference: []
+    section_name: stacks
+    ssm_param_outputs: &id003 []
+    stack_name: sleepFor10
+    stack_set_name: ''
+    status: null
+    task_reference: stacks_sleepFor10_022042407650-eu-west-1
+    use_service_role: true
+    version_id: ''
+  stacks_sleepFor10_087969333128-eu-west-1:
+    account_id: 087969333128
+    bucket: sc-puppet-stacks-repository-105463962595
+    capabilities: *id001
+    dependencies: *id002
+    dependencies_by_reference:
+    - get-template-from-s3-stacks-sleepFor10
+    - boto3_parameters-stacks-sleeper-SleeperCustomResourceArn-105463962595-eu-west-1
+    - stacks_sleeper_105463962595-eu-west-1
+    execution: spoke
+    get_s3_template_ref: get-template-from-s3-stacks-sleepFor10
+    item_name: sleepFor10
+    key: stack/sleep/v1/stack.template-${AWS::Region}.yaml
+    launch_name: ''
+    manifest_account_id:
+    - 087969333128
+    manifest_account_ids:
+      087969333128: true
+    manifest_item_name:
+    - sleepFor10
+    manifest_section_name:
+    - stacks
+    puppet_account_id: '105463962595'
+    region: eu-west-1
+    requested_priority: 0
+    reverse_dependencies_by_reference: []
+    section_name: stacks
+    ssm_param_outputs: *id003
+    stack_name: sleepFor10
+    stack_set_name: ''
+    status: null
+    task_reference: stacks_sleepFor10_087969333128-eu-west-1
+    use_service_role: true
+    version_id: ''
+  stacks_sleeper_105463962595-eu-west-1:
+    account_id: '105463962595'
+    bucket: sc-puppet-stacks-repository-105463962595
+    capabilities:
+    - CAPABILITY_IAM
+    dependencies: []
+    dependencies_by_reference:
+    - get-template-from-s3-stacks-sleeper
+    execution: hub
+    get_s3_template_ref: get-template-from-s3-stacks-sleeper
+    item_name: sleeper
+    key: stack/sleeper/v1/stack.template-${AWS::Region}.yaml
+    launch_name: ''
+    manifest_account_id:
+    - '105463962595'
+    manifest_account_ids:
+      '105463962595': true
+    manifest_item_name:
+    - sleeper
+    manifest_section_name:
+    - stacks
+    puppet_account_id: '105463962595'
+    region: eu-west-1
+    requested_priority: 0
+    reverse_dependencies_by_reference:
+    - stacks_sleepFor10_022042407650-eu-west-1
+    - stacks_sleepFor10_087969333128-eu-west-1
+    - boto3_parameters-stacks-sleeper-SleeperCustomResourceArn-105463962595-eu-west-1
+    section_name: stacks
+    ssm_param_outputs: []
+    stack_name: sleeper
+    stack_set_name: ''
+    status: null
+    task_reference: stacks_sleeper_105463962595-eu-west-1
+    use_service_role: true
+    version_id: ''

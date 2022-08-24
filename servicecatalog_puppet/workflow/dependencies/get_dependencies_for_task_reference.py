@@ -38,7 +38,7 @@ def create(
     )
     manifest_file_path = manifest_task_reference_file_path.replace(
         "manifest-task-reference.yaml", "manifest-expanded.yaml"
-    ).replace("manifest-task-reference-full.yaml", "manifest-expanded.yaml")
+    ).replace("manifest-task-reference-full.yaml", "manifest-expanded.yaml").replace("manifest-task-reference-filtered.yaml", "manifest-expanded.yaml")
 
     status = parameters_to_use.get("status")
     if section_name == constants.STACKS:
