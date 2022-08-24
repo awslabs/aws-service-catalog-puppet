@@ -468,7 +468,6 @@ def handle_stacks(
     task_reference,
     task_to_add,
 ):
-    # pass
     get_s3_template_ref = f"{constants.GET_TEMPLATE_FROM_S3}-{section_name}-{item_name}"
     if not all_tasks.get(get_s3_template_ref):
         all_tasks[get_s3_template_ref] = dict(
@@ -488,10 +487,10 @@ def handle_stacks(
             manifest_account_ids=dict(),
             section_name=constants.GET_TEMPLATE_FROM_S3,
         )
-        all_tasks[all_tasks_task_reference]["get_s3_template_ref"] = get_s3_template_ref
-        all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
+    all_tasks[all_tasks_task_reference]["get_s3_template_ref"] = get_s3_template_ref
+    all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
             get_s3_template_ref
-        )
+    )
     all_tasks[get_s3_template_ref]["manifest_section_name"].extend(
         task_to_add.get("manifest_section_name")
     )

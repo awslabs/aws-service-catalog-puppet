@@ -75,26 +75,6 @@ class ProvisionStackTask(tasks.TaskWithParameters):
     def priority(self):
         return self.requested_priority
 
-    # def requires(self):
-    #     reference_dependencies = get_dependencies_for_task_reference(
-    #         self.manifest_task_reference_file_path,
-    #         self.task_reference,
-    #         self.puppet_account_id,
-    #     )
-    #
-    #     requirements = {
-    #         "reference_dependencies": reference_dependencies,
-    #         "template": get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
-    #             bucket=self.bucket,
-    #             key=self.key,
-    #             region=self.region,
-    #             version_id=self.version_id,
-    #             puppet_account_id=self.puppet_account_id,
-    #             account_id=self.puppet_account_id,
-    #         ),
-    #     }
-    #     return requirements
-
     def resources_used(self):
         uniq = f"{self.region}-{self.puppet_account_id}"
         apis = [
