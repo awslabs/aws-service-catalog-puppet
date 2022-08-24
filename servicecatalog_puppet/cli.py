@@ -522,7 +522,7 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
 )
 def generate_task_reference(f, parameter_override_file, parameter_override_forced):
     setup_config()
-    params = dict(single_account=single_account)
+    params = dict()
     if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
         overrides = dict(**yaml.safe_load(parameter_override_file.read()))
         if overrides.get("subset"):
