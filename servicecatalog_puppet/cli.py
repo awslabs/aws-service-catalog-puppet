@@ -496,6 +496,8 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
     params = dict(single_account=single_account)
     if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
         overrides = dict(**yaml.safe_load(parameter_override_file.read()))
+        if overrides.get("single_account"):
+            del overrides["single_account"]
         if overrides.get("subset"):
             subset = overrides.get("subset")
             overrides = dict(
@@ -507,6 +509,8 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
         params.update(
             dict(single_account=overrides.get("single_account"), subset=overrides,)
         )
+        if params.get("single_account"):
+            del params["single_account"]
         click.echo(f"Overridden parameters {params}")
 
     manifest_commands.expand(f, puppet_account_id, regions, **params)
