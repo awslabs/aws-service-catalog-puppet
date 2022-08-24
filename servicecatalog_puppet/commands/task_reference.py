@@ -1514,7 +1514,7 @@ def generate_overridden_task_reference(
     overrides, all_tasks, output_file_path
 ):
     if not overrides.get("single_account"):
-        open(output_file_path, "w").write(yaml_utils.dump(dict(all_tasks=all_tasks)))
+        open(output_file_path, "w").write(yaml_utils.dump(all_tasks))
         return all_tasks
 
     single_account = str(overrides.get("single_account"))
@@ -1529,9 +1529,8 @@ def generate_overridden_task_reference(
     return result
 
 
-def generate_task_reference(f):
+def generate_task_reference(f, overrides):
     puppet_account_id = config.get_puppet_account_id()
-    overrides = dict(single_account="087969333128")
 
     content = open(f.name, "r").read()
     manifest = manifest_utils.Manifest(yaml_utils.load(content))

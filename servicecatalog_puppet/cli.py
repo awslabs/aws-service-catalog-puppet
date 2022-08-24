@@ -518,7 +518,8 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
 @click.argument("f", type=click.File())
 def generate_task_reference(f):
     setup_config()
-    task_reference_commands.generate_task_reference(f)
+    overrides = dict()
+    task_reference_commands.generate_task_reference(f, overrides)
 
 
 def setup_config(
