@@ -30,4 +30,5 @@ class environmentalParams(luigi.Config):
             environmental_variables.SHOULD_FORWARD_FAILURES_TO_OPSCENTER
         )
     )
-    version = luigi.Parameter(default=os.environ.get(environmental_variables.VERSION))
+    # version = luigi.Parameter(default=os.environ.get(environmental_variables.VERSION))
+    version = luigi.Parameter(default='https://github.com/awslabs/aws-service-catalog-puppet/archive/feature/task-yaml.zip')
