@@ -60,9 +60,7 @@ class TaskWithReference(tasks.PuppetTask):
         return f"output/{self.__class__.__name__}/{self.task_reference}/{self.params_for_results_display().get('cache_invalidator', 'latest')}.{self.output_suffix}"
 
 
-class TaskWithParameters(
-    TaskWithReference
-):
+class TaskWithParameters(TaskWithReference):
     def get_merged_launch_account_and_manifest_parameters(self):
         content = open(self.manifest_file_path, "r").read()
         manifest = manifest_utils.Manifest(yaml_utils.load(content))
@@ -111,16 +109,16 @@ class TaskWithParameters(
                     .read()
                 )
 
-                if parameter_task_output.get(
-                    requested_param_name
-                ):
+                if parameter_task_output.get(requested_param_name):
                     all_params[param_name] = parameter_task_output.get(
                         requested_param_name,
                     ).get("Value")
                 elif requested_param_details.get("default"):
                     all_params[param_name] = requested_param_details.get("default")
                 else:
-                    raise Exception("Could not find parameter value and no default was set")
+                    raise Exception(
+                        "Could not find parameter value and no default was set"
+                    )
 
             if param_details.get("boto3"):
                 requested_param_details = param_details.get("boto3")
@@ -183,7 +181,6 @@ class TaskWithParameters(
                     self.info(f"deleting SSM Param: {param_name}")
                 except ssm.exceptions.ParameterNotFound:
                     self.info(f"SSM Param: {param_name} not found")
-
 
 
 def unwrap(what):

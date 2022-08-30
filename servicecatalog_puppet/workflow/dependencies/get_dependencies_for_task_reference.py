@@ -169,9 +169,7 @@ def create(
     elif section_name == constants.SSM_OUTPUTS:
         from servicecatalog_puppet.workflow.ssm import ssm_outputs_task
 
-        if (
-            parameters_to_use.get("status") == constants.TERMINATED
-        ):
+        if parameters_to_use.get("status") == constants.TERMINATED:
 
             return ssm_outputs_task.TerminateSSMOutputsTasks(
                 **common_parameters, param_name=parameters_to_use.get("param_name"),
@@ -202,9 +200,7 @@ def create(
                 ou_name=parameters_to_use.get("ou_name"),
                 content=parameters_to_use.get("content"),
                 description=parameters_to_use.get("description"),
-                requested_priority=parameters_to_use.get(
-                    "requested_priority"
-                ),
+                requested_priority=parameters_to_use.get("requested_priority"),
                 manifest_file_path=manifest_file_path,
             )
 
@@ -222,9 +218,7 @@ def create(
                 ou_name=parameters_to_use.get("ou_name"),
                 content=parameters_to_use.get("content"),
                 description=parameters_to_use.get("description"),
-                requested_priority=parameters_to_use.get(
-                    "requested_priority"
-                ),
+                requested_priority=parameters_to_use.get("requested_priority"),
                 manifest_file_path=manifest_file_path,
             )
         else:
@@ -240,9 +234,7 @@ def create(
                 ou_name=parameters_to_use.get("ou_name"),
                 content=parameters_to_use.get("content"),
                 description=parameters_to_use.get("description"),
-                requested_priority=parameters_to_use.get(
-                    "requested_priority"
-                ),
+                requested_priority=parameters_to_use.get("requested_priority"),
                 manifest_file_path=manifest_file_path,
             )
 
@@ -527,7 +519,9 @@ def create(
                 puppet_account_id=puppet_account_id,
                 task_reference=parameters_to_use.get("task_reference"),
                 manifest_task_reference_file_path=manifest_task_reference_file_path,
-                dependencies_by_reference=parameters_to_use.get("dependencies_by_reference"),
+                dependencies_by_reference=parameters_to_use.get(
+                    "dependencies_by_reference"
+                ),
                 region=parameters_to_use.get("region"),
                 portfolio=parameters_to_use.get("portfolio"),
                 portfolio_task_reference=parameters_to_use.get(

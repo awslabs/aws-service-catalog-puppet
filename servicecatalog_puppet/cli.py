@@ -39,7 +39,9 @@ def cli(info, info_line_numbers):
 @click.argument("f", type=click.File())
 @click.option("--single-account", default=None)
 def graph(f, single_account):
-    raise Exception("This command is not supported in this version, please try an older version")
+    raise Exception(
+        "This command is not supported in this version, please try an older version"
+    )
 
 
 @cli.command()
@@ -530,6 +532,7 @@ def setup_config(
             environmental_variables.GLOBAL_SHARING_MODE
         ] = global_sharing_mode_default
 
+
 @cli.command()
 @click.argument("f", type=click.File())
 @click.option("--num-workers", default=10)
@@ -767,7 +770,9 @@ def remove_from_launches(launch_name):
 @cli.command()
 @click.argument("f", type=click.File())
 def reset_provisioned_product_owner(f):
-    raise Exception("This is not supported within this version, please try an older version")
+    raise Exception(
+        "This is not supported within this version, please try an older version"
+    )
 
 
 @cli.command()

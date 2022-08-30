@@ -899,30 +899,19 @@ class Manifest(dict):
                     continue
                 additional_parameters = {
                     "launches": dict(
-                        account_id=account_id,
-                        ou=account.get("expanded_from", ""),
+                        account_id=account_id, ou=account.get("expanded_from", ""),
                     ),
-                    "apps": dict(
-                        account_id=account_id,
-                    ),
-                    "workspaces": dict(
-                        account_id=account_id,
-                    ),
-                    "stacks": dict(
-                        account_id=account_id,
-                    ),
+                    "apps": dict(account_id=account_id,),
+                    "workspaces": dict(account_id=account_id,),
+                    "stacks": dict(account_id=account_id,),
                     "spoke-local-portfolios": dict(
                         account_id=account_id,
                         organization=account.get("organization", ""),
                         ou=account.get("expanded_from", ""),
                     ),
                     "assertions": dict(account_id=account_id,),
-                    "lambda-invocations": dict(
-                        account_id=account_id,
-                    ),
-                    "code-build-runs": dict(
-                        account_id=account_id,
-                    ),
+                    "lambda-invocations": dict(account_id=account_id,),
+                    "code-build-runs": dict(account_id=account_id,),
                     "service-control-policies": dict(
                         account_id=account_id, ou_name="",
                     ),
@@ -1009,20 +998,12 @@ class Manifest(dict):
             if single_account != "None" and single_account != account_id:
                 continue
             additional_parameters = {
-                "launches": dict(
-                    account_id=account_id,
-                ),
-                "stacks": dict(
-                    account_id=account_id,
-                ),
+                "launches": dict(account_id=account_id,),
+                "stacks": dict(account_id=account_id,),
                 "spoke-local-portfolios": dict(account_id=account_id,),
                 "assertions": dict(account_id=account_id,),
-                "lambda-invocations": dict(
-                    account_id=account_id,
-                ),
-                "code-build-runs": dict(
-                    account_id=account_id,
-                ),
+                "lambda-invocations": dict(account_id=account_id,),
+                "code-build-runs": dict(account_id=account_id,),
                 "service-control-policies": dict(account_id=account_id, ou_name="",),
                 "tag-policies": dict(account_id=account_id, ou_name="",),
                 constants.SIMULATE_POLICIES: dict(account_id=account_id,),
