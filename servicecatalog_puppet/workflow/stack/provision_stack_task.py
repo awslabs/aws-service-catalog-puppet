@@ -1,19 +1,18 @@
 #  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+import functools
 import re
 import time
-import functools
 
 import cfn_tools
 import luigi
 from botocore.exceptions import ClientError
 
-
-from servicecatalog_puppet import config
 from servicecatalog_puppet import aws
+from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.workspaces import Limits
 from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 class ProvisionStackTask(tasks.TaskWithParameters):

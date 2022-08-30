@@ -1,6 +1,5 @@
 #  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-import copy
 import json
 import logging
 import os
@@ -11,11 +10,11 @@ import yamale
 import yaml
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import yaml_utils
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import manifest_utils
+from servicecatalog_puppet import yaml_utils
 
 logger = logging.getLogger(__name__)
 

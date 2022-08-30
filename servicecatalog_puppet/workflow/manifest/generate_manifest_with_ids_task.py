@@ -3,7 +3,6 @@
 
 import glob
 import os
-
 import zipfile
 
 from servicecatalog_puppet.workflow.dependencies import tasks

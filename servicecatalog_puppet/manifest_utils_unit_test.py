@@ -4,8 +4,6 @@ import unittest
 from copy import deepcopy
 from unittest import skip
 
-import constants
-
 
 class TestManifest(unittest.TestCase):
     account_a = {

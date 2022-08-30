@@ -1,12 +1,14 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+import logging
+
+from deepmerge import always_merger
+
 from servicecatalog_puppet import manifest_utils, constants, yaml_utils, config
 from servicecatalog_puppet.workflow import runner
 from servicecatalog_puppet.workflow.dependencies import (
     get_dependencies_for_task_reference,
 )
-import logging
-from deepmerge import always_merger
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 

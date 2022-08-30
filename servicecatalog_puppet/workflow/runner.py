@@ -7,10 +7,10 @@ import os
 import shutil
 import sys
 import time
-from urllib.request import urlretrieve
 import urllib
 from glob import glob
 from pathlib import Path
+from urllib.request import urlretrieve
 
 import click
 import colorclass
@@ -21,11 +21,10 @@ from betterboto import client as betterboto_client
 from colorclass import Color
 from luigi import LuigiStatusCode
 
-from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
+from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet.workflow import tasks
-
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 

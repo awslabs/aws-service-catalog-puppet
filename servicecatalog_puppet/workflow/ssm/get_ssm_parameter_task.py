@@ -2,8 +2,8 @@
 #  SPDX-License-Identifier= Apache-2.0
 import luigi
 
-from servicecatalog_puppet.workflow.workspaces import Limits
 from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 class GetSSMParameterTask(tasks.TaskWithReference):

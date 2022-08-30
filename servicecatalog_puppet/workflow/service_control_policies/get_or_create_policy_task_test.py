@@ -3,6 +3,7 @@
 
 import io
 import json
+
 from botocore.response import StreamingBody
 
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper

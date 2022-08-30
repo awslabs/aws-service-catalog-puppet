@@ -3,9 +3,8 @@
 
 import luigi as luigi
 
-from servicecatalog_puppet.workflow.dependencies import tasks
-
 from servicecatalog_puppet import utils
+from servicecatalog_puppet.workflow.dependencies import tasks
 from servicecatalog_puppet.workflow.general import delete_cloud_formation_stack_task
 
 

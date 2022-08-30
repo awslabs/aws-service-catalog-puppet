@@ -5,7 +5,6 @@ import luigi
 import yaml
 
 from servicecatalog_puppet.workflow import tasks
-
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 

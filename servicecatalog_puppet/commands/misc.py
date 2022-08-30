@@ -7,7 +7,6 @@ import os
 import time
 import traceback
 import urllib
-from datetime import datetime
 
 import click
 from betterboto import client as betterboto_client

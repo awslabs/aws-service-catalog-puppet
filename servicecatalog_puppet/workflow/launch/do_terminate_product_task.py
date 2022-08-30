@@ -6,7 +6,6 @@ import time
 import luigi
 
 from servicecatalog_puppet import yaml_utils
-
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 

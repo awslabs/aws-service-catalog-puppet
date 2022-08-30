@@ -2,9 +2,9 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import deepdiff
+import jmespath
 import luigi
 from deepmerge import always_merger
-import jmespath
 
 from servicecatalog_puppet.workflow.dependencies import tasks
 

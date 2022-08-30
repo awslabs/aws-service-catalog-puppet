@@ -4,12 +4,12 @@ import json
 import re
 
 import luigi
+import troposphere as t
+from troposphere import servicecatalog
 
 from servicecatalog_puppet import config
 from servicecatalog_puppet import utils
 from servicecatalog_puppet.workflow.dependencies import tasks
-import troposphere as t
-from troposphere import servicecatalog
 
 
 class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(tasks.TaskWithReference):

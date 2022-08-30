@@ -1,12 +1,12 @@
 #  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-import luigi
-from deepmerge import always_merger
-import jmespath
 import json
 
-from servicecatalog_puppet.workflow.dependencies import tasks
+import jmespath
+import luigi
+from deepmerge import always_merger
 
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 remove_punctuation_map = dict((ord(char), None) for char in '\/*?:"<>|\n')
 

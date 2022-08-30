@@ -6,6 +6,7 @@ import json
 import os
 
 import luigi
+
 from servicecatalog_puppet import environmental_variables
 
 

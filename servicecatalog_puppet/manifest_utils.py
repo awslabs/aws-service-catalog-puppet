@@ -8,17 +8,16 @@ import os
 import re
 from copy import deepcopy
 
-from servicecatalog_puppet import yaml_utils
-
 import click
 import networkx as nx
+from betterboto import client as betterboto_client
 from deepmerge import always_merger
 
 from servicecatalog_puppet import config
-from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet import constants
+from servicecatalog_puppet import yaml_utils
 from servicecatalog_puppet.macros import macros
-from betterboto import client as betterboto_client
+from servicecatalog_puppet.workflow import tasks
 
 logger = logging.getLogger(__file__)
 

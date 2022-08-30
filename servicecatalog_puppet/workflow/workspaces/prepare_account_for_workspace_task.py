@@ -3,12 +3,12 @@
 import copy
 
 import luigi
-
-from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.dependencies import tasks
 import troposphere as t
 import yaml
 from troposphere import s3, codebuild
+
+from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):

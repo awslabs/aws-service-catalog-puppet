@@ -3,15 +3,16 @@
 import json
 import logging
 
-from servicecatalog_puppet import constants
-from servicecatalog_puppet import yaml_utils
-from servicecatalog_puppet.workflow import tasks
 import luigi
 from deepmerge import always_merger
+
+from servicecatalog_puppet import constants
+from servicecatalog_puppet import manifest_utils
+from servicecatalog_puppet import yaml_utils
+from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
     create,
 )
-from servicecatalog_puppet import manifest_utils
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 

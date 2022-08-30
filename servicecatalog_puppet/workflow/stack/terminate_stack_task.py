@@ -1,12 +1,12 @@
 #  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
-import luigi
-
-from servicecatalog_puppet import constants
-from servicecatalog_puppet import aws
 import functools
 
+import luigi
+
+from servicecatalog_puppet import aws
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 

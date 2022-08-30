@@ -1,30 +1,27 @@
 #  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
-import glob
+import json
 import os
-import re
-import shutil
 import sys
+from datetime import datetime
 
 import click
-import json
 import yaml
 
-from datetime import datetime
 from servicecatalog_puppet import config, remote_config
-from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet import constants
+from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet.commands import bootstrap as bootstrap_commands
-from servicecatalog_puppet.commands import task_reference as task_reference_commands
 from servicecatalog_puppet.commands import management as management_commands
 from servicecatalog_puppet.commands import manifest as manifest_commands
 from servicecatalog_puppet.commands import misc as misc_commands
-from servicecatalog_puppet.commands import show_pipelines as show_pipelines_commands
 from servicecatalog_puppet.commands import orgs as orgs_commands
-from servicecatalog_puppet.commands import spoke_management as spoke_management_commands
-from servicecatalog_puppet.commands import version as version_commands
 from servicecatalog_puppet.commands import show_codebuilds as show_codebuilds_commands
+from servicecatalog_puppet.commands import show_pipelines as show_pipelines_commands
+from servicecatalog_puppet.commands import spoke_management as spoke_management_commands
+from servicecatalog_puppet.commands import task_reference as task_reference_commands
+from servicecatalog_puppet.commands import version as version_commands
 
 
 @click.group()

@@ -2,8 +2,9 @@
 #  SPDX-License-Identifier: Apache-2.0
 import json
 
-from servicecatalog_puppet.workflow import tasks
 import luigi
+
+from servicecatalog_puppet.workflow import tasks
 
 
 class GetOrCreatePolicyTask(tasks.PuppetTask):  # TODO make task with reference

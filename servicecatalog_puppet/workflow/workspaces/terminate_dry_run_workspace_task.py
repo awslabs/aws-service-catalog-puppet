@@ -8,10 +8,8 @@ import zipfile
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.workspaces import Limits
-
-
 from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 class TerminateDryRunWorkspaceTask(tasks.TaskWithParameters):

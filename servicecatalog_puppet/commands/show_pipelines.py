@@ -5,10 +5,10 @@ import json
 
 import click
 import terminaltables
-
-from servicecatalog_puppet import utils
-from servicecatalog_puppet import constants
 from betterboto import client as betterboto_client
+
+from servicecatalog_puppet import constants
+from servicecatalog_puppet import utils
 
 result_look_up = dict(Failed="red", Succeeded="green")
 trigger_look_up = dict(StartPipelineExecution="Manual Full Run")

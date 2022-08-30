@@ -4,7 +4,6 @@
 import luigi
 
 from servicecatalog_puppet import aws
-
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 

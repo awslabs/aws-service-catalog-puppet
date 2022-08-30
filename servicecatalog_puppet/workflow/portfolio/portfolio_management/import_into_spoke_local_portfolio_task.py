@@ -5,7 +5,6 @@ import json
 
 import luigi
 
-
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 

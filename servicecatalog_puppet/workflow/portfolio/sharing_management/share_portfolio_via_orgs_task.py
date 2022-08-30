@@ -1,10 +1,10 @@
 #  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
+import json
 import time
 
 import luigi
-import json
 import yaml
 
 from servicecatalog_puppet.workflow.dependencies import tasks

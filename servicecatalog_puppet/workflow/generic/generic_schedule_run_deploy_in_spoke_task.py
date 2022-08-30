@@ -4,9 +4,9 @@
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.launch import run_deploy_in_spoke_task
+from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 
 class GenericScheduleRunDeployInSpokeTask(

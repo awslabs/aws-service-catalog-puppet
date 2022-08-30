@@ -6,17 +6,13 @@ import luigi
 
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import yaml_utils
-from servicecatalog_puppet.workflow.service_control_policies import (
-    get_or_create_policy_task,
-)
-
-
+from servicecatalog_puppet.workflow.dependencies import tasks
 from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
     get_dependencies_for_task_reference,
 )
-
-
-from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet.workflow.service_control_policies import (
+    get_or_create_policy_task,
+)
 
 
 class DoTerminateServiceControlPoliciesTask(tasks.TaskWithReference):

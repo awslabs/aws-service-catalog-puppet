@@ -4,11 +4,10 @@
 import luigi
 
 from servicecatalog_puppet import config
-from servicecatalog_puppet import yaml_utils
+from servicecatalog_puppet import constants
 from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet import environmental_variables_parameters
-from servicecatalog_puppet import constants
-
+from servicecatalog_puppet import yaml_utils
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
