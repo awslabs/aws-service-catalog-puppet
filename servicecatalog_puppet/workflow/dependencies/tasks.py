@@ -111,9 +111,16 @@ class TaskWithParameters(
                     .read()
                 )
 
-                all_params[param_name] = parameter_task_output.get(
+                if parameter_task_output.get(
                     requested_param_name
-                ).get("Value")
+                ):
+                    all_params[param_name] = parameter_task_output.get(
+                        requested_param_name,
+                    ).get("Value")
+                elif requested_param_details.get("default"):
+                    all_params[param_name] = requested_param_details.get("default")
+                else:
+                    raise Exception("Could not find parameter value and no default was set")
 
             if param_details.get("boto3"):
                 requested_param_details = param_details.get("boto3")

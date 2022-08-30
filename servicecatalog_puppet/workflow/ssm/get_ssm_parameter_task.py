@@ -31,9 +31,13 @@ class GetSSMParameterTask(tasks.TaskWithReference):
         parameter_name_to_use = self.param_name.replace(
             "${AWS::Region}", self.region
         ).replace("${AWS::AccountId}", self.account_id)
+        result = {}
         with self.spoke_regional_client("ssm") as ssm:
-            parameter = ssm.get_parameter(Name=parameter_name_to_use)
-        result = {parameter_name_to_use: parameter.get("Parameter")}
+            try:
+                parameter = ssm.get_parameter(Name=parameter_name_to_use)
+                result = {parameter_name_to_use: parameter.get("Parameter")}
+            except ssm.exceptions.ParameterNotFound:
+                pass
         self.write_output(result)
 
 
