@@ -203,3 +203,7 @@ def get_initialiser_stack_tags():
 
 def get_global_sharing_mode_default():
     return os.environ.get(environmental_variables.GLOBAL_SHARING_MODE)
+
+
+def get_on_complete_url():
+    return os.environ.get(environmental_variables.ON_COMPLETE_URL, "")

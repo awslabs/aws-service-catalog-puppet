@@ -435,6 +435,7 @@ def setup_config(
     output_cache_starting_point="",
     is_caching_enabled="",
     global_sharing_mode_default="",
+    on_complete_url=None,
 ):
     home_region_to_use = home_region or constants.HOME_REGION
     if puppet_account_id is None:
@@ -528,6 +529,8 @@ def setup_config(
         os.environ[
             environmental_variables.GLOBAL_SHARING_MODE
         ] = global_sharing_mode_default
+    if on_complete_url:
+        os.environ[environmental_variables.ON_COMPLETE_URL] = on_complete_url
 
 
 @cli.command()
@@ -554,6 +557,7 @@ def setup_config(
 @click.option(
     "--parameter-override-forced/--no-parameter-override-forced", default=False
 )
+@click.option("--on-complete-url", default=None)
 def deploy_from_task_reference(
     f,
     num_workers,
@@ -569,6 +573,7 @@ def deploy_from_task_reference(
     is_caching_enabled,
     parameter_override_file,
     parameter_override_forced,
+    on_complete_url,
 ):
     params = dict()
     if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
@@ -598,6 +603,7 @@ def deploy_from_task_reference(
         should_forward_failures_to_opscenter=str(should_forward_failures_to_opscenter),
         output_cache_starting_point=output_cache_starting_point,
         is_caching_enabled=is_caching_enabled,
+        on_complete_url=on_complete_url,
     )
 
     click.echo(
