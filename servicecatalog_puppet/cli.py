@@ -538,7 +538,7 @@ def generate_task_reference(f, parameter_override_file, parameter_override_force
                 include_reverse_dependencies=subset.get("include_reverse_dependencies"),
             )
         params.update(
-            dict(single_account=overrides.get("single_account"), subset=overrides, )
+            dict(single_account=overrides.get("single_account"), subset=overrides,)
         )
         click.echo(f"Overridden parameters {params}")
     task_reference_commands.generate_task_reference(f, params)
@@ -642,12 +642,18 @@ def setup_config(
     #     if k[0:4] == "SCT_":
     #         click.echo(f"Overrided {k}: {v}")
 
+    os.environ[
+        environmental_variables.GLOBAL_SHARING_MODE
+    ] = remote_config.get_global_sharing_mode_default(
+        puppet_account_id_to_use, home_region
+    )
+
 
 @cli.command()
 @click.argument("f", type=click.File())
 @click.option("--num-workers", default=10)
 @click.option("--execution-mode", default="hub")
-@click.option("--puppet-account-id")
+@click.option("--puppet-account-id", default=None)
 @click.option("--single-account", default=None)
 @click.option("--home-region", default=None)
 @click.option("--regions", default="")
@@ -681,7 +687,7 @@ def deploy_from_task_reference(
     output_cache_starting_point,
     is_caching_enabled,
     parameter_override_file,
-    parameter_override_forced
+    parameter_override_forced,
 ):
     params = dict()
     if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
@@ -695,7 +701,7 @@ def deploy_from_task_reference(
                 include_reverse_dependencies=subset.get("include_reverse_dependencies"),
             )
         params.update(
-            dict(single_account=overrides.get("single_account"), subset=overrides, )
+            dict(single_account=overrides.get("single_account"), subset=overrides,)
         )
         click.echo(f"Overridden parameters {params}")
 

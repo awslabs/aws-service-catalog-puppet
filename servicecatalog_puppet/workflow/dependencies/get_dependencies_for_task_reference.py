@@ -36,9 +36,13 @@ def create(
         account_id=parameters_to_use.get("account_id"),
         region=parameters_to_use.get("region"),
     )
-    manifest_file_path = manifest_task_reference_file_path.replace(
-        "manifest-task-reference.yaml", "manifest-expanded.yaml"
-    ).replace("manifest-task-reference-full.yaml", "manifest-expanded.yaml").replace("manifest-task-reference-filtered.yaml", "manifest-expanded.yaml")
+    manifest_file_path = (
+        manifest_task_reference_file_path.replace(
+            "manifest-task-reference.yaml", "manifest-expanded.yaml"
+        )
+        .replace("manifest-task-reference-full.yaml", "manifest-expanded.yaml")
+        .replace("manifest-task-reference-filtered.yaml", "manifest-expanded.yaml")
+    )
 
     status = parameters_to_use.get("status")
     if section_name == constants.STACKS:
@@ -525,6 +529,27 @@ def create(
                     "portfolio_task_reference"
                 ),
                 # manifest_file_path=manifest_file_path,
+            )
+
+    elif section_name == constants.PORTFOLIO_SHARE_AND_ACCEPT_AWS_ORGANIZATIONS:
+        if status == "terminated":
+            raise Exception("Not supported yet")
+        else:
+            from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+                share_portfolio_via_orgs_task,
+            )
+
+            return share_portfolio_via_orgs_task.SharePortfolioViaOrgsTask(
+                puppet_account_id=puppet_account_id,
+                task_reference=parameters_to_use.get("task_reference"),
+                manifest_task_reference_file_path=manifest_task_reference_file_path,
+                dependencies_by_reference=parameters_to_use.get("dependencies_by_reference"),
+                region=parameters_to_use.get("region"),
+                portfolio=parameters_to_use.get("portfolio"),
+                portfolio_task_reference=parameters_to_use.get(
+                    "portfolio_task_reference"
+                ),
+                ou_to_share_with=parameters_to_use.get("ou_to_share_with"),
             )
 
     elif section_name == constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS:

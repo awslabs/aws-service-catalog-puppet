@@ -139,3 +139,15 @@ def is_caching_enabled(puppet_account_id, default_region=None):
     return get_config(puppet_account_id, default_region).get(
         "is_caching_enabled", False
     )
+
+
+@functools.lru_cache(maxsize=32)
+def get_global_sharing_mode_default(puppet_account_id, default_region=None):
+    logger.info(
+        "getting global_sharing_mode_default,  default_region: {}".format(
+            default_region
+        )
+    )
+    return get_config(puppet_account_id, default_region).get(
+        "global_sharing_mode_default", constants.SHARING_MODE_DEFAULT
+    )

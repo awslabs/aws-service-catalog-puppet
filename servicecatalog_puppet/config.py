@@ -61,18 +61,6 @@ def get_should_explode_manifest(puppet_account_id, default_region=None):
     )
 
 
-@functools.lru_cache(maxsize=32)
-def get_global_sharing_mode_default(puppet_account_id, default_region=None):
-    logger.info(
-        "getting global_sharing_mode_default,  default_region: {}".format(
-            default_region
-        )
-    )
-    return get_config(puppet_account_id, default_region).get(
-        "global_sharing_mode_default", constants.SHARING_MODE_DEFAULT
-    )
-
-
 @functools.lru_cache()
 def get_partition():
     logger.info(f"getting partition")
@@ -211,3 +199,7 @@ def is_caching_enabled():
 
 def get_initialiser_stack_tags():
     return os.environ.get(environmental_variables.INITIALISER_STACK_TAGS)
+
+
+def get_global_sharing_mode_default():
+    return os.environ.get(environmental_variables.GLOBAL_SHARING_MODE)

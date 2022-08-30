@@ -780,6 +780,7 @@ class Manifest(dict):
         section = self.get(section_name)
         provisioning_tasks = list()
         item = section[item_name]
+        sharing_mode_default = config.get_global_sharing_mode_default()
 
         deploy_to = {
             "launches": "deploy_to",
@@ -856,7 +857,7 @@ class Manifest(dict):
                     constants.PRODUCT_GENERATION_METHOD_DEFAULT,
                 ),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
-                sharing_mode=item.get("sharing_mode", constants.SHARING_MODE_DEFAULT),
+                sharing_mode=item.get("sharing_mode", sharing_mode_default),
                 associations=item.get("associations", list()),
                 launch_constraints=item.get("constraints", {}).get("launch", []),
                 resource_update_constraints=item.get("constraints", {}).get(
@@ -937,6 +938,7 @@ class Manifest(dict):
                 additional_parameters = {
                     "launches": dict(
                         account_id=account_id,
+                        ou=account.get("expanded_from", ""),
                         # account_parameters=account.get("parameters", {}),
                     ),
                     "apps": dict(
@@ -954,6 +956,7 @@ class Manifest(dict):
                     "spoke-local-portfolios": dict(
                         account_id=account_id,
                         organization=account.get("organization", ""),
+                        ou=account.get("expanded_from", ""),
                     ),
                     "assertions": dict(account_id=account_id,),
                     "lambda-invocations": dict(

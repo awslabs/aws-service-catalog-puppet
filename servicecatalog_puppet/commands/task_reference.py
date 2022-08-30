@@ -242,7 +242,9 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
             print("")
             print("")
             print("")
-            print(f"looking at {task.get('section_name')} {task.get('item_name')} for {task.get('account_id')} {task.get('region')}")
+            print(
+                f"looking at {task.get('section_name')} {task.get('item_name')} for {task.get('account_id')} {task.get('region')}"
+            )
             for parameter_name, parameter_details in parameters.items():
                 print(f"looking at {parameter_name}")
                 if parameter_details.get("ssm"):
@@ -289,7 +291,9 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         f"{constants.SSM_PARAMETERS}-", f"{constants.SSM_OUTPUTS}-"
                     )
                     if all_tasks.get(potential_output_task_ref):
-                        dependency = [potential_output_task_ref] #TODO do I need to update the ssm output too!?!?!
+                        dependency = [
+                            potential_output_task_ref
+                        ]  # TODO do I need to update the ssm output too!?!?!
                     else:
                         dependency = []
                     task_def["dependencies_by_reference"] = dependency
@@ -309,7 +313,9 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                     else:
                         new_tasks[ssm_parameter_task_reference] = task_def
 
-                    print(f"now using the folloing {new_tasks[ssm_parameter_task_reference]}")
+                    print(
+                        f"now using the folloing {new_tasks[ssm_parameter_task_reference]}"
+                    )
                     new_tasks[ssm_parameter_task_reference][
                         "manifest_section_name"
                     ].extend(task.get("manifest_section_name"))
@@ -464,9 +470,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
             all_tasks[dep]["reverse_dependencies_by_reference"].append(task_reference)
 
     reference = dict(all_tasks=all_tasks,)
-    open(output_file_path, "w").write(
-        yaml_utils.dump(reference)
-    )
+    open(output_file_path, "w").write(yaml_utils.dump(reference))
     return reference
 
 
@@ -500,7 +504,7 @@ def handle_stacks(
         )
     all_tasks[all_tasks_task_reference]["get_s3_template_ref"] = get_s3_template_ref
     all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
-            get_s3_template_ref
+        get_s3_template_ref
     )
     all_tasks[get_s3_template_ref]["manifest_section_name"].extend(
         task_to_add.get("manifest_section_name")
@@ -958,9 +962,8 @@ def handle_spoke_local_portfolios(
             # SHARE THE PORTFOLIO
             share_and_accept_ref = f"portfolio_share_and_accept-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"  # TODO need to rename to avoid duplicates
             sharing_mode = task_to_add.get(
-                "sharing_mode", constants.SHARING_MODE_ACCOUNT
-            )  # TODO need to make sure global sharing cascades into the expanded manifest file
-            # TODO handle when account_id == puppet_account_id
+                "sharing_mode", config.get_global_sharing_mode_default()
+            )
             if not all_tasks.get(share_and_accept_ref):
                 all_tasks[share_and_accept_ref] = dict(
                     puppet_account_id=puppet_account_id,
@@ -973,6 +976,7 @@ def handle_spoke_local_portfolios(
                     execution=task_to_add.get("execution"),
                     portfolio_task_reference=hub_portfolio_ref,
                     section_name=f"portfolio-share-and-accept-{sharing_mode.lower()}",
+                    ou_to_share_with=task_to_add.get("ou"),
                     manifest_section_name=list(),
                     manifest_item_name=list(),
                     manifest_account_id=list(),
@@ -1257,9 +1261,8 @@ def handle_launches(
         # share the portfolio and accept it
         share_and_accept_ref = f"portfolio_share_and_accept-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"  # TODO need to rename to avoid duplicates
         sharing_mode = task_to_add.get(
-            "sharing_mode", constants.SHARING_MODE_ACCOUNT
-        )  # TODO need to make sure global sharing cascades into the expanded manifest file
-        # TODO handle when account_id == puppet_account_id
+            "sharing_mode", config.get_global_sharing_mode_default()
+        )
         if not all_tasks.get(share_and_accept_ref):
             all_tasks[share_and_accept_ref] = dict(
                 puppet_account_id=puppet_account_id,
@@ -1272,6 +1275,7 @@ def handle_launches(
                 execution=task_to_add.get("execution"),
                 portfolio_task_reference=hub_portfolio_ref,
                 section_name=f"portfolio-share-and-accept-{sharing_mode.lower()}",
+                ou_to_share_with=task_to_add.get("ou"),
                 manifest_section_name=list(),
                 manifest_item_name=list(),
                 manifest_account_id=list(),
@@ -1302,8 +1306,8 @@ def handle_launches(
                 region=task_to_add.get("region"),
                 portfolio=task_to_add.get("portfolio"),
                 sharing_mode=task_to_add.get(
-                    "sharing_mode", constants.SHARING_MODE_ACCOUNT
-                ),  # TODO verify
+                    "sharing_mode", config.get_global_sharing_mode_default()
+                ),
                 section_name=constants.PORTFOLIO_IMPORTED,
                 manifest_section_name=list(),
                 manifest_item_name=list(),
@@ -1366,7 +1370,7 @@ def handle_launches(
             puppet_account_id=puppet_account_id,
             task_reference=describe_provisioning_params_ref,
             dependencies_by_reference=[
-                hub_portfolio_ref, # TODO check this still works for a new portfolio after changing it from: portfolio_deploying_from
+                hub_portfolio_ref,  # TODO check this still works for a new portfolio after changing it from: portfolio_deploying_from
             ],  # associations are added here and so this is a dependency
             reverse_dependencies_by_reference=[],
             account_id=puppet_account_id,
@@ -1531,7 +1535,12 @@ def generate_overridden_task_reference(
     overridden_tasks = dict()
     for task_name, task in all_tasks.get("all_tasks").items():
         if single_account:
-            if task.get("manifest_account_ids").get(single_account) or task.get("manifest_account_ids").get(int(single_account)) or task.get("manifest_account_ids").get(str(puppet_account_id)) or task.get("manifest_account_ids").get(int(puppet_account_id)):
+            if (
+                task.get("manifest_account_ids").get(single_account)
+                or task.get("manifest_account_ids").get(int(single_account))
+                or task.get("manifest_account_ids").get(str(puppet_account_id))
+                or task.get("manifest_account_ids").get(int(puppet_account_id))
+            ):
                 overridden_tasks[task_name] = task
 
     result = dict(all_tasks=overridden_tasks)
@@ -1544,7 +1553,9 @@ def generate_task_reference(f, overrides):
 
     content = open(f.name, "r").read()
     manifest = manifest_utils.Manifest(yaml_utils.load(content))
-    complete = generate_complete_task_reference(puppet_account_id, manifest, f.name.replace("-expanded", "-task-reference-full"))
+    complete = generate_complete_task_reference(
+        puppet_account_id, manifest, f.name.replace("-expanded", "-task-reference-full")
+    )
     filtered = generate_overridden_task_reference(
         puppet_account_id,
         overrides,
@@ -1552,9 +1563,7 @@ def generate_task_reference(f, overrides):
         f.name.replace("-expanded", "-task-reference-filtered"),
     )
     generate_hub_task_reference(
-        puppet_account_id,
-        filtered,
-        f.name.replace("-expanded", "-task-reference"),
+        puppet_account_id, filtered, f.name.replace("-expanded", "-task-reference"),
     )
 
 

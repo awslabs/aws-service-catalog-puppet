@@ -31,4 +31,6 @@ class environmentalParams(luigi.Config):
         )
     )
     # version = luigi.Parameter(default=os.environ.get(environmental_variables.VERSION))
-    version = luigi.Parameter(default='https://github.com/awslabs/aws-service-catalog-puppet/archive/feature/task-yaml.zip')
+    version = luigi.Parameter(
+        default="https://github.com/awslabs/aws-service-catalog-puppet/archive/feature/task-yaml.zip"
+    )
