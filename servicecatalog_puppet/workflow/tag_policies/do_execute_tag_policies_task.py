@@ -1,25 +1,22 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import functools
 
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.tag_policies import (
-    tag_policies_base_task,
-    get_or_create_policy_task,
+from servicecatalog_puppet import yaml_utils
+from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
+    get_dependencies_for_task_reference,
 )
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
+from servicecatalog_puppet.workflow.tag_policies import get_or_create_policy_task
 
 
-class DoExecuteTagPoliciesTask(
-    tag_policies_base_task.TagPoliciesBaseTask,
-    manifest_mixin.ManifestMixen,
-    dependency.DependenciesMixin,
-):
-    tag_policy_name = luigi.Parameter()
+class DoExecuteTagPoliciesTask(tasks.TaskWithReference):
     puppet_account_id = luigi.Parameter()
+
+    tag_policy_name = luigi.Parameter()
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -29,6 +26,7 @@ class DoExecuteTagPoliciesTask(
     description = luigi.Parameter()
 
     requested_priority = luigi.IntParameter()
+    manifest_file_path = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -41,17 +39,23 @@ class DoExecuteTagPoliciesTask(
         }
 
     def requires(self):
+        manifest = yaml_utils.load(open(self.manifest_file_path, "r").read())
         return dict(
+            reference_dependencies=get_dependencies_for_task_reference(
+                self.manifest_task_reference_file_path,
+                self.task_reference,
+                self.puppet_account_id,
+            ),
             policy=get_or_create_policy_task.GetOrCreatePolicyTask(
                 puppet_account_id=self.puppet_account_id,
                 region=self.region,
                 policy_name=self.tag_policy_name,
                 policy_description=self.description,
                 policy_content=self.content,
-                tags=self.manifest.get(constants.TAG_POLICIES)
+                tags=manifest.get(constants.TAG_POLICIES)
                 .get(self.tag_policy_name)
                 .get("tags", []),
-            )
+            ),
         )
 
     def api_calls_used(self):

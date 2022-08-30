@@ -1,4 +1,4 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import io
@@ -8,22 +8,11 @@ import zipfile
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.general import get_ssm_param_task
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
-from servicecatalog_puppet.workflow.workspaces import (
-    prepare_account_for_workspace_task,
-    Limits,
-)
-from servicecatalog_puppet.workflow.workspaces import workspace_base_task
+from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet.workflow.workspaces import Limits
 
 
-class TerminateWorkspaceTask(
-    workspace_base_task.WorkspaceBaseTask,
-    get_ssm_param_task.PuppetTaskWithParameters,
-    manifest_mixin.ManifestMixen,
-    dependency.DependenciesMixin,
-):
+class TerminateWorkspaceTask(tasks.TaskWithParameters):
     workspace_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -46,6 +35,13 @@ class TerminateWorkspaceTask(
     requested_priority = luigi.IntParameter(significant=False, default=0)
 
     execution = luigi.Parameter()
+    manifest_file_path = luigi.Parameter()
+
+    section_name = constants.WORKSPACES
+
+    @property
+    def item_name(self):
+        return self.workspace_name
 
     def params_for_results_display(self):
         return {
@@ -55,18 +51,6 @@ class TerminateWorkspaceTask(
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def requires(self):
-        requirements = {
-            "section_dependencies": self.get_section_dependencies(),
-        }
-        if not self.is_running_in_spoke():
-            requirements[
-                "account_ready"
-            ] = prepare_account_for_workspace_task.PrepareAccountForWorkspaceTask(
-                puppet_account_id=self.puppet_account_id, account_id=self.account_id,
-            )
-        return requirements
 
     def resources_used(self):
         return [
@@ -121,8 +105,5 @@ class TerminateWorkspaceTask(
                 projectName=constants.TERMINATE_TERRAFORM_PROJECT_NAME,
                 environmentVariablesOverride=parameters_to_use,
             )
-
-        if len(self.ssm_param_outputs) > 0:
-            self.terminate_ssm_outputs()
 
         self.write_output(self.params_for_results_display())

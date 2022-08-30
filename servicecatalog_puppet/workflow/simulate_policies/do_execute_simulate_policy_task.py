@@ -1,20 +1,15 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import luigi
 import yaml
 
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.simulate_policies import simulate_policy_base_task
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
 from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class DoExecuteSimulatePolicyTask(
-    simulate_policy_base_task.SimulatePolicyBaseTask,
-    manifest_mixin.ManifestMixen,
-    dependency.DependenciesMixin,
-):
+class DoExecuteSimulatePolicyTask(tasks.TaskWithReference):
+
     simulate_policy_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 

@@ -1,21 +1,21 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
 import logging
-import math
 import os
 import traceback
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import luigi
+import math
 import psutil
 from betterboto import client as betterboto_client
 from luigi import format
 from luigi.contrib import s3
 
-from servicecatalog_puppet import constants, config
+from servicecatalog_puppet import constants, config, environmental_variables
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
@@ -49,19 +49,23 @@ class PuppetTask(luigi.Task):
     @property
     def initialiser_stack_tags(self):
         initialiser_stack_tags_value = os.environ.get(
-            "SCT_INITIALISER_STACK_TAGS", None
+            environmental_variables.INITIALISER_STACK_TAGS, None
         )
         if initialiser_stack_tags_value is None:
-            raise Exception("You must export SCT_INITIALISER_STACK_TAGS")
+            raise Exception(
+                f"You must export {environmental_variables.INITIALISER_STACK_TAGS}"
+            )
         return json.loads(initialiser_stack_tags_value)
 
     @property
     def executor_account_id(self):
-        return os.environ.get("EXECUTOR_ACCOUNT_ID")
+        return os.environ.get(environmental_variables.EXECUTOR_ACCOUNT_ID)
 
     @property
     def execution_mode(self):
-        return os.environ.get("SCT_EXECUTION_MODE", constants.EXECUTION_MODE_HUB)
+        return os.environ.get(
+            environmental_variables.EXECUTION_MODE, constants.EXECUTION_MODE_HUB
+        )
 
     @property
     def spoke_execution_mode_deploy_env(self):
@@ -75,7 +79,7 @@ class PuppetTask(luigi.Task):
         return (
             str(
                 os.environ.get(
-                    "SCT_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS",
+                    environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS,
                     constants.CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS_DEFAULT,
                 )
             ).upper()
@@ -92,13 +96,16 @@ class PuppetTask(luigi.Task):
     @property
     def should_use_product_plans(self):
         if self.execution_mode == constants.EXECUTION_MODE_HUB:
-            return os.environ.get("SCT_SHOULD_USE_PRODUCT_PLANS", "True") == "True"
+            return (
+                os.environ.get(environmental_variables.SHOULD_USE_PRODUCT_PLANS, "True")
+                == "True"
+            )
         else:
             return False
 
     @property
     def cache_invalidator(self):
-        return os.environ.get("SCT_CACHE_INVALIDATOR", "NOW")
+        return os.environ.get(environmental_variables.CACHE_INVALIDATOR, "NOW")
 
     @property
     def is_dry_run(self):
@@ -106,7 +113,7 @@ class PuppetTask(luigi.Task):
 
     @property
     def should_use_sns(self):
-        return os.environ.get("SCT_SHOULD_USE_SNS", "False") == "True"
+        return os.environ.get(environmental_variables.SHOULD_USE_SNS, "False") == "True"
 
     def get_account_used(self):
         return self.account_id if self.is_running_in_spoke() else self.puppet_account_id
@@ -122,6 +129,19 @@ class PuppetTask(luigi.Task):
             **kwargs,
         )
 
+    def cross_account_client(self, account_id, service, region_name=None):
+        region = region_name or self.region
+        kwargs = dict(region_name=region)
+        if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
+            kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
+
+        return betterboto_client.CrossAccountClientContextManager(
+            service,
+            config.get_puppet_role_arn(account_id),
+            f"{account_id}-{region}-{config.get_puppet_role_name()}",
+            **kwargs,
+        )
+
     def spoke_regional_client(self, service, region_name=None):
         region = region_name or self.region
         kwargs = dict(region_name=region)
@@ -131,7 +151,7 @@ class PuppetTask(luigi.Task):
         return betterboto_client.CrossAccountClientContextManager(
             service,
             config.get_puppet_role_arn(self.account_id),
-            f"{self.account_id}-{self.region}-{config.get_puppet_role_name()}",
+            f"{self.account_id}-{region}-{config.get_puppet_role_name()}",
             **kwargs,
         )
 
@@ -179,7 +199,6 @@ class PuppetTask(luigi.Task):
         kwargs = dict()
         if os.environ.get(f"CUSTOM_ENDPOINT_organizations"):
             kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_organizations")
-
         if self.is_running_in_spoke():
             raise Exception("Cannot use organizations client in spoke execution")
         else:
@@ -226,19 +245,20 @@ class PuppetTask(luigi.Task):
                 result[a] = r
 
         for i, r in self.resources_used():
-            result[f"{i}-{r.name}"] = 1 / r.value
+            result[f"{i}-{r[0]}"] = 1 / r[1]
         return result
+
+    def get_output_location_path(self):
+        return f"output/{self.uid}.{self.output_suffix}"
 
     @property
     def output_location(self):
         puppet_account_id = config.get_puppet_account_id()
-        path = f"output/{self.uid}.{self.output_suffix}"
+        path = self.get_output_location_path()
         should_use_s3_target_if_caching_is_on = (
             "cache_invalidator" not in self.params_for_results_display().keys()
         )
-        if should_use_s3_target_if_caching_is_on and config.is_caching_enabled(
-            puppet_account_id
-        ):
+        if should_use_s3_target_if_caching_is_on and config.is_caching_enabled():
             return f"s3://sc-puppet-caching-bucket-{config.get_puppet_account_id()}-{config.get_home_region(puppet_account_id)}/{path}"
         else:
             return path
@@ -247,9 +267,7 @@ class PuppetTask(luigi.Task):
         should_use_s3_target_if_caching_is_on = (
             "cache_invalidator" not in self.params_for_results_display().keys()
         )
-        if should_use_s3_target_if_caching_is_on and config.is_caching_enabled(
-            config.get_puppet_account_id()
-        ):
+        if should_use_s3_target_if_caching_is_on and config.is_caching_enabled():
             return s3.S3Target(self.output_location, format=format.UTF8)
         else:
             return luigi.LocalTarget(self.output_location)
@@ -372,7 +390,7 @@ def on_task_processing_time(task, duration):
 
     with betterboto_client.CrossAccountClientContextManager(
         "cloudwatch",
-        config.get_puppet_role_arn(config.get_puppet_account_id()),
+        config.get_puppet_role_arn(config.get_executor_account_id()),
         "cloudwatch-puppethub",
     ) as cloudwatch:
 

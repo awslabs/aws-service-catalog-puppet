@@ -1,26 +1,22 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+import functools
 import re
 import time
-import functools
 
 import cfn_tools
 import luigi
 from botocore.exceptions import ClientError
 
-from servicecatalog_puppet import config
 from servicecatalog_puppet import aws
+from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow.stack import get_cloud_formation_template_from_s3
-from servicecatalog_puppet.workflow.stack import provisioning_task
-from servicecatalog_puppet.workflow.stack import prepare_account_for_stack_task
+from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet.workflow.workspaces import Limits
 
 
-class ProvisionStackTask(
-    provisioning_task.ProvisioningTask, dependency.DependenciesMixin
-):
+class ProvisionStackTask(tasks.TaskWithParameters):
+
     stack_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -33,6 +29,7 @@ class ProvisionStackTask(
 
     launch_name = luigi.Parameter()
     stack_set_name = luigi.Parameter()
+    get_s3_template_ref = luigi.Parameter()
     capabilities = luigi.ListParameter()
 
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
@@ -49,6 +46,13 @@ class ProvisionStackTask(
     use_service_role = luigi.BoolParameter()
 
     execution = luigi.Parameter()
+    manifest_file_path = luigi.Parameter()
+
+    section_name = constants.STACKS
+
+    @property
+    def item_name(self):
+        return self.stack_name
 
     try_count = 1
 
@@ -65,51 +69,33 @@ class ProvisionStackTask(
     def priority(self):
         return self.requested_priority
 
-    def requires(self):
-        requirements = {
-            "section_dependencies": self.get_section_dependencies(),
-            "ssm_params": self.get_parameters_tasks(),
-            "template": get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
-                bucket=self.bucket,
-                key=self.key,
-                region=self.region,
-                version_id=self.version_id,
-                puppet_account_id=self.puppet_account_id,
-                account_id=self.puppet_account_id,
-            ),
-        }
-        if self.use_service_role:
-            requirements[
-                "prep"
-            ] = prepare_account_for_stack_task.PrepareAccountForWorkspaceTask(
-                account_id=self.account_id
-            )
-
-        return requirements
-
-    def api_calls_used(self):
+    def resources_used(self):
+        uniq = f"{self.region}-{self.puppet_account_id}"
         apis = [
-            f"servicecatalog.describe_stacks_{self.account_id}_{self.region}",
-            f"servicecatalog.ensure_deleted_{self.account_id}_{self.region}",
-            f"servicecatalog.get_template_summary_{self.account_id}_{self.region}",
-            f"servicecatalog.get_template_{self.account_id}_{self.region}",
-            f"servicecatalog.create_or_update_{self.account_id}_{self.region}",
+            (uniq, Limits.CLOUDFORMATION_ENSURE_DELETED_PER_REGION_OF_ACCOUNT),
+            (uniq, Limits.CLOUDFORMATION_GET_TEMPLATE_SUMMARY_PER_REGION_OF_ACCOUNT),
+            (uniq, Limits.CLOUDFORMATION_GET_TEMPLATE_PER_REGION_OF_ACCOUNT),
+            (uniq, Limits.CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT),
         ]
         if self.launch_name != "":
             if "*" in self.launch_name:
                 apis.append(
-                    f"servicecatalog.scan_provisioned_products_{self.account_id}_{self.region}"
+                    (
+                        uniq,
+                        Limits.SERVICE_CATALOG_SCAN_PROVISIONED_PRODUCTS_PER_REGION_OF_ACCOUNT,
+                    ),
                 )
             else:
                 apis.append(
-                    f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}"
+                    (
+                        uniq,
+                        Limits.SERVICE_CATALOG_DESCRIBE_PROVISIONED_PRODUCT_PER_REGION_OF_ACCOUNT,
+                    ),
                 )
         if self.stack_set_name != "":
-            apis.append(f"cloudformation.list_stacks_{self.account_id}_{self.region}")
-
-        if len(self.ssm_param_outputs) > 0:
-            apis.append(f"ssm.put_parameter_and_wait")
-
+            apis.append(
+                (uniq, Limits.CLOUDFORMATION_LIST_STACKS_PER_REGION_OF_ACCOUNT),
+            )
         return apis
 
     @property
@@ -177,17 +163,26 @@ class ProvisionStackTask(
             while current_stack.get(
                 "StackStatus"
             ) in constants.CLOUDFORMATION_IN_PROGRESS_STATUS + [waiting]:
-                stacks = cloudformation.describe_stacks(
-                    StackName=self.stack_name_to_use
-                ).get("Stacks", [])
-                assert len(stacks) == 1
-                current_stack = stacks[0]
+                try:
+                    stacks = cloudformation.describe_stacks(
+                        StackName=self.stack_name_to_use
+                    ).get("Stacks", [])
+                    assert len(stacks) == 1
+                    current_stack = stacks[0]
 
-                if (
-                    current_stack.get("StackStatus")
-                    in constants.CLOUDFORMATION_IN_PROGRESS_STATUS
-                ):
-                    time.sleep(5)
+                    if (
+                        current_stack.get("StackStatus")
+                        in constants.CLOUDFORMATION_IN_PROGRESS_STATUS
+                    ):
+                        time.sleep(2)
+                except ClientError as error:
+                    if (
+                        error.response["Error"]["Message"]
+                        == f"Stack with id {self.stack_name} does not exist"
+                    ):
+                        return dict(StackStatus="NoStack")
+                    else:
+                        raise error
 
         if current_stack.get("StackStatus") in constants.CLOUDFORMATION_UNHAPPY_STATUS:
             raise Exception(
@@ -200,25 +195,30 @@ class ProvisionStackTask(
         stack = self.ensure_stack_is_in_complete_status()
         status = stack.get("StackStatus")
 
-        with self.spoke_regional_client("cloudformation") as cloudformation:
-            if status == "ROLLBACK_COMPLETE":
-                if self.should_delete_rollback_complete_stacks:
-                    cloudformation.ensure_deleted(StackName=self.stack_name_to_use)
-                else:
-                    raise Exception(
-                        f"Stack: {self.stack_name_to_use} is in ROLLBACK_COMPLETE and need remediation"
-                    )
+        if status != "NoStack":
+            with self.spoke_regional_client("cloudformation") as cloudformation:
+                if status == "ROLLBACK_COMPLETE":
+                    if self.should_delete_rollback_complete_stacks:
+                        cloudformation.ensure_deleted(StackName=self.stack_name_to_use)
+                    else:
+                        raise Exception(
+                            f"Stack: {self.stack_name_to_use} is in ROLLBACK_COMPLETE and need remediation"
+                        )
 
         task_output = dict(
-            **self.params_for_results_display(),
-            account_parameters=tasks.unwrap(self.account_parameters),
-            launch_parameters=tasks.unwrap(self.launch_parameters),
-            manifest_parameters=tasks.unwrap(self.manifest_parameters),
+            **self.params_for_results_display(), stack_name_used=self.stack_name_to_use,
         )
 
         all_params = self.get_parameter_values()
 
-        template_to_provision_source = self.input().get("template").open("r").read()
+        template_to_provision_source = (
+            self.input()
+            .get("reference_dependencies")
+            .get(self.get_s3_template_ref)
+            .open("r")
+            .read()
+        )
+
         try:
             template_to_provision = cfn_tools.load_yaml(template_to_provision_source)
         except Exception:
@@ -238,39 +238,37 @@ class ProvisionStackTask(
 
         existing_stack_params_dict = dict()
         existing_template = ""
-        if status in constants.CLOUDFORMATION_HAPPY_STATUS:
-            with self.spoke_regional_client("cloudformation") as cloudformation:
-                existing_stack_params_dict = {}
-                summary_response = cloudformation.get_template_summary(
-                    StackName=self.stack_name_to_use,
-                )
-                for parameter in summary_response.get("Parameters", []):
-                    existing_stack_params_dict[
-                        parameter.get("ParameterKey")
-                    ] = parameter.get("DefaultValue")
-                for stack_param in stack.get("Parameters", []):
-                    existing_stack_params_dict[
-                        stack_param.get("ParameterKey")
-                    ] = stack_param.get("ParameterValue")
-                template_body = cloudformation.get_template(
-                    StackName=self.stack_name_to_use, TemplateStage="Original"
-                ).get("TemplateBody")
-                try:
-                    existing_template = cfn_tools.load_yaml(template_body)
-                except Exception:
+        if status != "NoStack":
+            if status in constants.CLOUDFORMATION_HAPPY_STATUS:
+                with self.spoke_regional_client("cloudformation") as cloudformation:
+                    summary_response = cloudformation.get_template_summary(
+                        StackName=self.stack_name_to_use,
+                    )
+                    for parameter in summary_response.get("Parameters", []):
+                        existing_stack_params_dict[
+                            parameter.get("ParameterKey")
+                        ] = parameter.get("DefaultValue")
+                    for stack_param in stack.get("Parameters", []):
+                        existing_stack_params_dict[
+                            stack_param.get("ParameterKey")
+                        ] = stack_param.get("ParameterValue")
+                    template_body = cloudformation.get_template(
+                        StackName=self.stack_name_to_use, TemplateStage="Original"
+                    ).get("TemplateBody")
                     try:
-                        existing_template = cfn_tools.load_json(template_body)
+                        existing_template = cfn_tools.load_yaml(template_body)
                     except Exception:
-                        raise Exception(
-                            "Could not parse existing template as YAML or JSON"
-                        )
+                        try:
+                            existing_template = cfn_tools.load_json(template_body)
+                        except Exception:
+                            raise Exception(
+                                "Could not parse existing template as YAML or JSON"
+                            )
 
         template_to_use = cfn_tools.dump_yaml(template_to_provision)
-        if status == "UPDATE_ROLLBACK_COMPLETE":
+        if status in ["UPDATE_ROLLBACK_COMPLETE", "NoStack"]:
             need_to_provision = True
         else:
-            print(f"existing_stack_params_dict is {existing_stack_params_dict}")
-            print(f"params_to_use is {params_to_use}")
             if existing_stack_params_dict == params_to_use:
                 self.info(f"params unchanged")
                 if template_to_use == cfn_tools.dump_yaml(existing_template):
@@ -304,52 +302,5 @@ class ProvisionStackTask(
                 cloudformation.create_or_update(**a)
 
         task_output["provisioned"] = need_to_provision
-        self.info(f"self.execution is {self.execution}")
-        if self.execution in [
-            constants.EXECUTION_MODE_HUB,
-            constants.EXECUTION_MODE_SPOKE,
-        ]:
-            self.info(
-                f"Running in execution mode: {self.execution}, checking for SSM outputs"
-            )
-            if len(self.ssm_param_outputs) > 0:
-                with self.spoke_regional_client(
-                    "cloudformation"
-                ) as spoke_cloudformation:
-                    stack_details = aws.get_stack_output_for(
-                        spoke_cloudformation, self.stack_name_to_use,
-                    )
-
-                for ssm_param_output in self.ssm_param_outputs:
-                    self.info(
-                        f"writing SSM Param: {ssm_param_output.get('stack_output')}"
-                    )
-                    with self.hub_client("ssm") as ssm:
-                        found_match = False
-                        # TODO push into another task
-                        for output in stack_details.get("Outputs", []):
-                            if output.get("OutputKey") == ssm_param_output.get(
-                                "stack_output"
-                            ):
-                                ssm_parameter_name = ssm_param_output.get("param_name")
-                                ssm_parameter_name = ssm_parameter_name.replace(
-                                    "${AWS::Region}", self.region
-                                )
-                                ssm_parameter_name = ssm_parameter_name.replace(
-                                    "${AWS::AccountId}", self.account_id
-                                )
-                                found_match = True
-                                ssm.put_parameter_and_wait(
-                                    Name=ssm_parameter_name,
-                                    Value=output.get("OutputValue"),
-                                    Type=ssm_param_output.get("param_type", "String"),
-                                    Overwrite=True,
-                                )
-                        if not found_match:
-                            raise Exception(
-                                f"[{self.uid}] Could not find match for {ssm_param_output.get('stack_output')}"
-                            )
-
-            self.write_output(task_output)
-        else:
-            self.write_output(task_output)
+        task_output["section_name"] = self.section_name
+        self.write_output(task_output)

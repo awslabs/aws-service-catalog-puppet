@@ -1,4 +1,4 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
@@ -6,56 +6,25 @@ import time
 
 import luigi
 
-from servicecatalog_puppet.workflow.portfolio.accessors import (
-    get_products_and_provisioning_artifacts_task,
-)
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
-    create_spoke_local_portfolio_task,
-)
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
-    portfolio_management_task,
-)
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class CopyIntoSpokeLocalPortfolioTask(
-    portfolio_management_task.PortfolioManagementTask
-):
-    spoke_local_portfolio_name = luigi.Parameter()
+class CopyIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
-    portfolio = luigi.Parameter()
-    organization = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
+    portfolio_task_reference = luigi.Parameter()
 
-    sharing_mode = luigi.Parameter()
+    portfolio_get_all_products_and_their_versions_ref = luigi.Parameter()
+    portfolio_get_all_products_and_their_versions_for_hub_ref = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
+            "task_reference": self.task_reference,
             "puppet_account_id": self.puppet_account_id,
-            "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
-            "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
-        }
-
-    def requires(self):
-        return {
-            "create_spoke_local_portfolio": create_spoke_local_portfolio_task.CreateSpokeLocalPortfolioTask(
-                manifest_file_path=self.manifest_file_path,
-                account_id=self.account_id,
-                region=self.region,
-                portfolio=self.portfolio,
-                organization=self.organization,
-                puppet_account_id=self.puppet_account_id,
-                sharing_mode=self.sharing_mode,
-            ),
-            "products_and_provisioning_artifacts": get_products_and_provisioning_artifacts_task.GetProductsAndProvisioningArtifactsTask(
-                manifest_file_path=self.manifest_file_path,
-                region=self.region,
-                portfolio=self.portfolio,
-                puppet_account_id=self.puppet_account_id,
-            ),
         }
 
     def api_calls_used(self):
@@ -69,193 +38,143 @@ class CopyIntoSpokeLocalPortfolioTask(
         ]
 
     def run(self):
-        with self.input().get("create_spoke_local_portfolio").open("r") as f:
-            spoke_portfolio = json.loads(f.read())
-        portfolio_id = spoke_portfolio.get("Id")
-        product_versions_that_should_be_copied = {}
-        product_versions_that_should_be_updated = {}
+        spoke_portfolio_details = json.loads(
+            self.input()
+            .get("reference_dependencies")
+            .get(self.portfolio_task_reference)
+            .open("r")
+            .read()
+        )
+        spoke_portfolio_id = spoke_portfolio_details.get("Id")
+        spoke_products_and_their_versions = json.loads(
+            self.input()
+            .get("reference_dependencies")
+            .get(self.portfolio_get_all_products_and_their_versions_ref)
+            .open("r")
+            .read()
+        )
+        hub_products_and_their_versions = json.loads(
+            self.input()
+            .get("reference_dependencies")
+            .get(self.portfolio_get_all_products_and_their_versions_for_hub_ref)
+            .open("r")
+            .read()
+        )
 
-        product_name_to_id_dict = {}
-        with self.input().get("products_and_provisioning_artifacts").open("r") as f:
-            products_and_provisioning_artifacts = json.loads(f.read())
-            for product_view_summary in products_and_provisioning_artifacts:
-                spoke_product_id = False
-                target_product_id = False
-                hub_product_name = product_view_summary.get("Name")
+        copy_product_tokens = list()
+        versions_requiring_updates = dict()
+        products_requiring_adding_to_portfolio = dict()
+        with self.spoke_regional_client("servicecatalog") as servicecatalog:
+            for (
+                hub_product_name,
+                hub_product_details,
+            ) in hub_products_and_their_versions.items():
+                versions_to_copy = list()
+                args_to_use = dict(
+                    SourceProductArn=hub_product_details.get("ProductArn"),
+                    SourceProvisioningArtifactIdentifiers=versions_to_copy,
+                    CopyOptions=["CopyTags",],
+                )
+                hub_versions_details = hub_product_details.get("Versions", {})
+                if spoke_products_and_their_versions.get(hub_product_name):
+                    args_to_use[
+                        "TargetProductId"
+                    ] = spoke_products_and_their_versions.get(hub_product_name).get(
+                        "ProductId"
+                    )
+                else:
+                    products_requiring_adding_to_portfolio[hub_product_name] = True
 
-                for hub_provisioning_artifact_detail in product_view_summary.get(
-                    "provisioning_artifact_details", []
-                ):
-                    if (
-                        hub_provisioning_artifact_detail.get("Type")
-                        == "CLOUD_FORMATION_TEMPLATE"
-                    ):
-                        product_versions_that_should_be_copied[
-                            f"{hub_provisioning_artifact_detail.get('Name')}"
-                        ] = hub_provisioning_artifact_detail
-                        product_versions_that_should_be_updated[
-                            f"{hub_provisioning_artifact_detail.get('Name')}"
-                        ] = hub_provisioning_artifact_detail
-
-                self.info(f"Copying {hub_product_name}")
-                hub_product_arn = product_view_summary.get("ProductARN")
-                copy_args = {
-                    "SourceProductArn": hub_product_arn,
-                    "CopyOptions": ["CopyTags",],
-                }
-
-                with self.spoke_regional_client(
-                    "servicecatalog"
-                ) as spoke_service_catalog:
-                    p = None
-                    try:
-                        p = spoke_service_catalog.search_products_as_admin_single_page(
-                            PortfolioId=portfolio_id,
-                            Filters={"FullTextSearch": [hub_product_name]},
-                        )
-                    except spoke_service_catalog.exceptions.ResourceNotFoundException as e:
-                        self.info(f"swallowing exception: {str(e)}")
-
-                    if p is not None:
-                        for spoke_product_view_details in p.get("ProductViewDetails"):
-                            spoke_product_view = spoke_product_view_details.get(
-                                "ProductViewSummary"
-                            )
-                            if spoke_product_view.get("Name") == hub_product_name:
-                                spoke_product_id = spoke_product_view.get("ProductId")
-                                product_name_to_id_dict[
-                                    hub_product_name
-                                ] = spoke_product_id
-                                copy_args["TargetProductId"] = spoke_product_id
-                                spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
-                                    ProductId=spoke_product_id
-                                ).get(
-                                    "ProvisioningArtifactDetails"
-                                )
-                                for (
-                                    provisioning_artifact_detail
-                                ) in spoke_provisioning_artifact_details:
-                                    id_to_delete = (
-                                        f"{provisioning_artifact_detail.get('Name')}"
-                                    )
-                                    if (
-                                        product_versions_that_should_be_copied.get(
-                                            id_to_delete, None
-                                        )
-                                        is not None
-                                    ):
-                                        self.info(
-                                            f"{hub_product_name} :: Going to skip {spoke_product_id} {provisioning_artifact_detail.get('Name')}"
-                                        )
-                                        del product_versions_that_should_be_copied[
-                                            id_to_delete
-                                        ]
-
-                    if len(product_versions_that_should_be_copied.keys()) == 0:
-                        self.info(f"no versions to copy")
+                spoke_product_details = spoke_products_and_their_versions.get(
+                    hub_product_name, {}
+                )
+                spoke_versions_details = spoke_product_details.get("Versions", {})
+                version_names_to_ignore = ["-"] + list(spoke_versions_details.keys())
+                for (
+                    hub_version_name,
+                    hub_version_details,
+                ) in hub_versions_details.items():
+                    if hub_version_name not in version_names_to_ignore:
+                        versions_to_copy.append(dict(Id=hub_version_details.get("Id"),))
                     else:
-                        self.info(f"about to copy product")
-
-                        copy_args["SourceProvisioningArtifactIdentifiers"] = [
-                            {"Id": a.get("Id")}
-                            for a in product_versions_that_should_be_copied.values()
+                        if hub_version_name == "-":
+                            continue
+                        spoke_product_id = spoke_product_details["ProductId"]
+                        if not versions_requiring_updates.get(spoke_product_id):
+                            versions_requiring_updates[spoke_product_id] = dict()
+                        spoke_version_id = spoke_versions_details[hub_version_name][
+                            "Id"
                         ]
 
-                        self.info(f"about to copy product with args: {copy_args}")
-                        copy_product_token = spoke_service_catalog.copy_product(
-                            **copy_args
-                        ).get("CopyProductToken")
-                        while True:
-                            time.sleep(5)
-                            r = spoke_service_catalog.describe_copy_product_status(
-                                CopyProductToken=copy_product_token
-                            )
-                            target_product_id = r.get("TargetProductId")
-                            self.info(
-                                f"{hub_product_name} status: {r.get('CopyProductStatus')}"
-                            )
-                            if r.get("CopyProductStatus") == "FAILED":
-                                raise Exception(
-                                    f"Copying "
-                                    f"{hub_product_name} failed: {r.get('StatusDetail')}"
-                                )
-                            elif r.get("CopyProductStatus") == "SUCCEEDED":
-                                break
-
-                        self.info(
-                            f"adding {target_product_id} to portfolio {portfolio_id}"
-                        )
-                        spoke_service_catalog.associate_product_with_portfolio(
-                            ProductId=target_product_id, PortfolioId=portfolio_id,
+                        versions_requiring_updates[spoke_product_id][
+                            spoke_version_id
+                        ] = dict(
+                            Active=hub_version_details.get("Active"),
+                            Guidance=hub_version_details.get("Guidance"),
+                            Description=hub_version_details.get("Description"),
                         )
 
-                        # associate_product_with_portfolio is not a synchronous request
-                        self.info(
-                            f"waiting for adding of {target_product_id} to portfolio {portfolio_id}"
+                if len(versions_to_copy) > 0:
+                    copy_product_tokens.append(
+                        (
+                            hub_product_name,
+                            servicecatalog.copy_product(**args_to_use).get(
+                                "CopyProductToken"
+                            ),
                         )
-                        while True:
-                            time.sleep(2)
-                            response = spoke_service_catalog.search_products_as_admin_single_page(
-                                PortfolioId=portfolio_id,
-                            )
-                            products_ids = [
-                                product_view_detail.get("ProductViewSummary").get(
-                                    "ProductId"
-                                )
-                                for product_view_detail in response.get(
-                                    "ProductViewDetails"
-                                )
-                            ]
-                            self.info(
-                                f"Looking for {target_product_id} in {products_ids}"
-                            )
-
-                            if target_product_id in products_ids:
-                                break
-
-                        product_name_to_id_dict[hub_product_name] = target_product_id
-
-                    product_id_in_spoke = spoke_product_id or target_product_id
-                    spoke_provisioning_artifact_details = spoke_service_catalog.list_provisioning_artifacts(
-                        ProductId=product_id_in_spoke
-                    ).get(
-                        "ProvisioningArtifactDetails", []
                     )
-                    for (
-                        version_name,
-                        version_details,
-                    ) in product_versions_that_should_be_updated.items():
-                        self.info(
-                            f"{version_name} is active: {version_details.get('Active')} in hub"
-                        )
-                        for (
-                            spoke_provisioning_artifact_detail
-                        ) in spoke_provisioning_artifact_details:
-                            if (
-                                spoke_provisioning_artifact_detail.get("Name")
-                                == version_name
-                            ):
-                                self.info(
-                                    f"Updating active of {version_name}/{spoke_provisioning_artifact_detail.get('Id')} "
-                                    f"in the spoke to {version_details.get('Active')}"
-                                )
-                                spoke_service_catalog.update_provisioning_artifact(
-                                    ProductId=product_id_in_spoke,
-                                    ProvisioningArtifactId=spoke_provisioning_artifact_detail.get(
-                                        "Id"
-                                    ),
-                                    Active=version_details.get("Active"),
-                                )
+            self.info("Finished copying products")
 
-        with self.output().open("w") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "portfolio": spoke_portfolio,
-                        "product_versions_that_should_be_copied": product_versions_that_should_be_copied,
-                        "products": product_name_to_id_dict,
-                    },
-                    indent=4,
-                    default=str,
+            while len(copy_product_tokens) > 0:
+                first_item_in_list = copy_product_tokens[0]
+                product_name, copy_product_token_to_check = first_item_in_list
+                response = servicecatalog.describe_copy_product_status(
+                    CopyProductToken=copy_product_token_to_check
                 )
+                copy_product_status = response.get("CopyProductStatus")
+                if copy_product_status == "SUCCEEDED":
+                    if products_requiring_adding_to_portfolio.get(product_name):
+                        products_requiring_adding_to_portfolio[
+                            product_name
+                        ] = response.get("TargetProductId")
+                    copy_product_tokens.remove(first_item_in_list)
+                elif copy_product_status == "FAILED":
+                    raise Exception(f"Failed to copy product {copy_product_status}")
+                elif copy_product_status == "IN_PROGRESS":
+                    time.sleep(1)
+                else:
+                    raise Exception(f"Not handled copy product status {response}")
+        self.info("Finished waiting for copy products")
+
+        for product_name, product_id in products_requiring_adding_to_portfolio.items():
+            servicecatalog.associate_product_with_portfolio(
+                ProductId=product_id, PortfolioId=spoke_portfolio_id,
             )
+        self.info("Finished associating products")
+
+        for product_id, product_details in versions_requiring_updates.items():
+            for version_id, version_details in product_details.items():
+                servicecatalog.update_provisioning_artifact(
+                    ProductId=product_id,
+                    ProvisioningArtifactId=version_id,
+                    **version_details,
+                )
+        self.info("Finished updating versions that were copied")
+
+        products_to_check = list(products_requiring_adding_to_portfolio.values())
+        n_products_to_check = len(products_to_check)
+        products_found = 0
+        while products_found < n_products_to_check:
+            response = servicecatalog.search_products_as_admin_single_page(  # TODO optimise = swap for paginator
+                PortfolioId=spoke_portfolio_id,
+            )
+            products_ids = [
+                product_view_detail.get("ProductViewSummary").get("ProductId")
+                for product_view_detail in response.get("ProductViewDetails")
+            ]
+            products_found = 0
+            for product_to_check in products_to_check:
+                if product_to_check in products_ids:
+                    products_found += 1
+        self.info("Finished waiting for association of products to portfolio")
+        self.write_output({})

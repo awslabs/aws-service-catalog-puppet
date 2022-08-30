@@ -1,9 +1,10 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-
-from servicecatalog_puppet.workflow import tasks_unit_tests_helper
-from servicecatalog_puppet import constants
 import os
+
+from servicecatalog_puppet import constants
+from servicecatalog_puppet import environmental_variables
+from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
 class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
@@ -59,7 +60,7 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.inject_into_input("template", template)
 
         # exercise
-        os.environ["SCT_INITIALISER_STACK_TAGS"] = "{}"
+        os.environ[environmental_variables.INITIALISER_STACK_TAGS] = "{}"
         self.sut.run()
 
         # verify

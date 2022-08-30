@@ -1,4 +1,4 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -412,6 +412,7 @@ def update_provisioned_product(
         provisioning_parameters.append(
             {"Key": p, "Value": params.get(p),}
         )
+
     provisioned_product_id = (
         service_catalog.update_provisioned_product(
             ProductId=product_id,

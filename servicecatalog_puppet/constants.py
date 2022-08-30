@@ -1,4 +1,4 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -109,8 +109,6 @@ PUPPET_ROLE_PATH_SSM_PARAMETER_VARIABLE_NAME = "/servicecatalog-puppet/puppet-ro
 
 DEPLOY_ENVIRONMENT_COMPUTE_TYPE_DEFAULT = "BUILD_GENERAL1_SMALL"
 
-CONFIG_IS_CACHING_ENABLED = "CONFIG_IS_CACHING_ENABLED"
-
 START_SHARED_SCHEDULER_COMMAND = "luigid --background --pidfile luigi.pid --logdir results/logs --state-path results/state"
 
 CONFIG_REGIONS = "regions"
@@ -125,7 +123,9 @@ PUBLISHED_VERSION = pkg_resources.require("aws-service-catalog-puppet")[0].versi
 VERSION_OVERRIDE = "SCP_VERSION_OVERRIDE"
 VERSION = os.getenv(VERSION_OVERRIDE, PUBLISHED_VERSION)
 
-PRODUCT_GENERATION_METHOD_DEFAULT = "copy"
+PRODUCT_GENERATION_METHOD_IMPORT = "import"
+PRODUCT_GENERATION_METHOD_COPY = "copy"
+PRODUCT_GENERATION_METHOD_DEFAULT = PRODUCT_GENERATION_METHOD_COPY
 
 LUIGI_DEFAULT_LOG_LEVEL = "INFO"
 
@@ -163,6 +163,9 @@ ALL_SECTION_NAME_SINGULAR_AND_PLURAL_LIST = [
     (ASSERTION, ASSERTIONS),
     (APP, APPS),
     (WORKSPACE, WORKSPACES),
+    (SERVICE_CONTROL_POLICY, SERVICE_CONTROL_POLICIES),
+    (SIMULATE_POLICY, SIMULATE_POLICIES),
+    (TAG_POLICY, TAG_POLICIES),
 ]
 
 SECTION_NAME_SINGULAR_AND_PLURAL_LIST_THAT_SUPPORTS_PARAMETERS = [
@@ -266,18 +269,6 @@ DEPLOY_TO_NAMES = {
     TAG_POLICIES: "apply_to",
 }
 
-TASKS_TO_SHARE_WITH_SPOKES = [
-    "GetSSMParam",
-    "DeletePortfolio",
-    "CreateSpokeLocalPortfolioTask",
-    "ImportIntoSpokeLocalPortfolioTask",
-    "CopyIntoSpokeLocalPortfolioTask",
-    "GetPortfolioByPortfolioName",
-    "SearchProductsAsAdminTask",
-    "SharePortfolioViaOrgsTask",
-    "SharePortfolioTask",
-]
-
 CLOUDFORMATION_HAPPY_STATUS = [
     "CREATE_COMPLETE",
     "UPDATE_ROLLBACK_COMPLETE",
@@ -307,3 +298,32 @@ CLOUDFORMATION_IN_PROGRESS_STATUS = [
     "IMPORT_IN_PROGRESS",
     "IMPORT_ROLLBACK_IN_PROGRESS",
 ]
+
+
+SSM_OUTPUTS = "ssm_outputs"
+SSM_PARAMETERS = "ssm_parameters"
+BOTO3_PARAMETERS = "boto3_parameters"
+SSM_PARAMETERS_WITH_A_PATH = "ssm_parameters_with_a_path"
+PORTFOLIO_ASSOCIATIONS = "portfolio-associations"
+PORTFOLIO_CONSTRAINTS_LAUNCH = "portfolio-constraints-launch"
+PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE = "portfolio-constraints-resource_update"
+PORTFOLIO_COPY = "portfolio-copy"
+PORTFOLIO_IMPORT = "portfolio-import"
+PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT = "portfolio-share-and-accept-account"
+PORTFOLIO_SHARE_AND_ACCEPT_AWS_ORGANIZATIONS = (
+    "portfolio-share-and-accept-aws_organizations"
+)
+PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS = (
+    "portfolio-get-all-products-and-their-versions"
+)
+PORTFOLIO_DISASSOCIATE_ALL_PRODUCTS_AND_THEIR_VERSIONS = (
+    "portfolio-disassociate-all-products-and-their-versions"
+)
+PORTFOLIO_LOCAL = "portfolio-local"
+PORTFOLIO_IMPORTED = "portfolio-imported"
+DESCRIBE_PROVISIONING_PARAMETERS = "describe-provisioning-parameters"
+PORTFOLIO_PUPPET_ROLE_ASSOCIATION = "portfolio-puppet-role-association"
+WORKSPACE_ACCOUNT_PREPARATION = "workspace-account-preparation"
+RUN_DEPLOY_IN_SPOKE = "run-deploy-in-spoke"
+GENERATE_MANIFEST = "generate-manifest"
+GET_TEMPLATE_FROM_S3 = "get-template-from-s3"

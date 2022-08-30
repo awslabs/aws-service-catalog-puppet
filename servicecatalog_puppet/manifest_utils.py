@@ -1,4 +1,4 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import configparser
@@ -8,17 +8,16 @@ import os
 import re
 from copy import deepcopy
 
-from servicecatalog_puppet import yaml_utils
-
 import click
 import networkx as nx
+from betterboto import client as betterboto_client
 from deepmerge import always_merger
 
 from servicecatalog_puppet import config
-from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet import constants
+from servicecatalog_puppet import yaml_utils
 from servicecatalog_puppet.macros import macros
-from betterboto import client as betterboto_client
+from servicecatalog_puppet.workflow import tasks
 
 logger = logging.getLogger(__file__)
 
@@ -529,23 +528,6 @@ def rewrite_ssm_parameters(manifest):
             for parameter_name, parameter_details in details.get(
                 "parameters", {}
             ).items():
-                if parameter_details.get("ssm"):
-                    for d in details.get("depends_on", []):
-                        dependency = manifest.get(
-                            constants.SECTION_SINGULAR_TO_PLURAL[d.get("type")]
-                        ).get(d.get("name"))
-                        for output in dependency.get("outputs", {}).get("ssm", []):
-                            if output.get("param_name") == parameter_details.get(
-                                "ssm"
-                            ).get("name"):
-                                parameter_depends_on = parameter_details["ssm"].get(
-                                    "depends_on", []
-                                )
-                                parameter_depends_on.append(d)
-                                parameter_details["ssm"][
-                                    "depends_on"
-                                ] = parameter_depends_on
-
                 if parameter_details.get("cloudformation_stack_output"):
                     existing_parameter = parameter_details.get(
                         "cloudformation_stack_output"
@@ -585,27 +567,6 @@ def rewrite_ssm_parameters(manifest):
                         filter=f"Outputs[?OutputKey==`{output_key}`].OutputValue | [0]",
                     )
                     parameter_details["boto3"] = new_parameter
-                    for section_item_name, section_item_details in manifest.get(
-                        constants.LAUNCHES, {}
-                    ).items():
-                        if section_item_name == provisioned_product_name:
-                            if details.get("depends_on") is None:
-                                details["depends_on"] = list()
-                            details["depends_on"].append(
-                                dict(
-                                    name=provisioned_product_name,
-                                    type=constants.LAUNCH,
-                                    affinity=constants.LAUNCH,
-                                )
-                            )
-                            parameter_details["boto3"]["depends_on"] = [
-                                dict(
-                                    name=provisioned_product_name,
-                                    type=constants.LAUNCH,
-                                    affinity=constants.LAUNCH,
-                                )
-                            ]
-
     return manifest
 
 
@@ -768,12 +729,19 @@ class Manifest(dict):
         return self.get(constants.APPS).get(name)
 
     def get_tasks_for(
-        self, puppet_account_id, section_name, item_name, single_account="None"
+        self,
+        puppet_account_id,
+        section_name,
+        item_name,
+        home_region_configured,
+        regions_configured,
+        single_account="None",
     ):
         accounts = self.get(constants.ACCOUNTS)
         section = self.get(section_name)
         provisioning_tasks = list()
         item = section[item_name]
+        sharing_mode_default = config.get_global_sharing_mode_default()
 
         deploy_to = {
             "launches": "deploy_to",
@@ -797,25 +765,22 @@ class Manifest(dict):
 
         common_parameters = {
             "launches": dict(
-                puppet_account_id=puppet_account_id,
                 launch_name=item_name,
-                launch_parameters=item.get("parameters", {}),
-                manifest_parameters=self.get("parameters", {}),
+                # launch_parameters=item.get("parameters", {}),
+                # manifest_parameters=self.get("parameters", {}),
                 ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
                 portfolio=item.get("portfolio"),
                 product=item.get("product"),
                 version=item.get("version"),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
-                requested_priority=item.get("requested_priority", 0),
             ),
             "stacks": dict(
-                puppet_account_id=puppet_account_id,
                 stack_name=item_name,
                 launch_name=item.get("launch_name", ""),
                 stack_set_name=item.get("stack_set_name", ""),
-                launch_parameters=item.get("parameters", {}),
+                # launch_parameters=item.get("parameters", {}),
                 capabilities=item.get("capabilities", []),
-                manifest_parameters=self.get("parameters", {}),
+                # manifest_parameters=self.get("parameters", {}),
                 ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
                 bucket=f"sc-puppet-stacks-repository-{puppet_account_id}",
                 key=item.get("key"),
@@ -825,41 +790,35 @@ class Manifest(dict):
                     constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE,
                     constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE_DEFAULT,
                 ),
-                requested_priority=item.get("requested_priority", 0),
             ),
             "apps": dict(
-                puppet_account_id=puppet_account_id,
                 app_name=item_name,
-                launch_parameters=item.get("parameters", {}),
-                manifest_parameters=self.get("parameters", {}),
+                # launch_parameters=item.get("parameters", {}),
+                # manifest_parameters=self.get("parameters", {}),
                 ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
                 bucket=f"sc-puppet-stacks-repository-{puppet_account_id}",
                 key=item.get("key"),
                 version_id=item.get("version_id", ""),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
-                requested_priority=item.get("requested_priority", 0),
             ),
             "workspaces": dict(
-                puppet_account_id=puppet_account_id,
                 workspace_name=item_name,
-                launch_parameters=item.get("parameters", {}),
-                manifest_parameters=self.get("parameters", {}),
+                # launch_parameters=item.get("parameters", {}),
+                # manifest_parameters=self.get("parameters", {}),
                 ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
                 bucket=f"sc-puppet-stacks-repository-{puppet_account_id}",
                 key=item.get("key"),
                 version_id=item.get("version_id", ""),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
-                requested_priority=item.get("requested_priority", 0),
             ),
             "spoke-local-portfolios": dict(
-                puppet_account_id=puppet_account_id,
                 spoke_local_portfolio_name=item_name,
                 product_generation_method=item.get(
                     "product_generation_method",
                     constants.PRODUCT_GENERATION_METHOD_DEFAULT,
                 ),
-                organization=item.get("organization", ""),
-                sharing_mode=item.get("sharing_mode", constants.SHARING_MODE_DEFAULT),
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
+                sharing_mode=item.get("sharing_mode", sharing_mode_default),
                 associations=item.get("associations", list()),
                 launch_constraints=item.get("constraints", {}).get("launch", []),
                 resource_update_constraints=item.get("constraints", {}).get(
@@ -868,49 +827,38 @@ class Manifest(dict):
                 portfolio=item.get("portfolio"),
             ),
             "lambda-invocations": dict(
-                puppet_account_id=puppet_account_id,
                 lambda_invocation_name=item_name,
                 function_name=item.get("function_name"),
                 qualifier=item.get("qualifier", "$LATEST"),
                 invocation_type=item.get("invocation_type"),
-                launch_parameters=item.get("parameters", {}),
-                manifest_parameters=self.get("parameters", {}),
+                # launch_parameters=item.get("parameters", {}),
+                # manifest_parameters=self.get("parameters", {}),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
             "code-build-runs": dict(
-                puppet_account_id=puppet_account_id,
                 code_build_run_name=item_name,
-                launch_parameters=item.get("parameters", {}),
-                manifest_parameters=self.get("parameters", {}),
+                # launch_parameters=item.get("parameters", {}),
+                # manifest_parameters=self.get("parameters", {}),
                 project_name=item.get("project_name"),
-                requested_priority=item.get("requested_priority", 0),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
             "assertions": dict(
-                puppet_account_id=puppet_account_id,
-                requested_priority=item.get("requested_priority", 0),
                 assertion_name=item_name,
                 expected=item.get("expected"),
                 actual=item.get("actual"),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
             ),
             "service-control-policies": dict(
-                puppet_account_id=puppet_account_id,
-                requested_priority=item.get("requested_priority", 0),
                 service_control_policy_name=item_name,
                 description=item.get("description"),
                 content=tasks.unwrap(item.get("content")),
             ),
             "tag-policies": dict(
-                puppet_account_id=puppet_account_id,
-                requested_priority=item.get("requested_priority", 0),
                 tag_policy_name=item_name,
                 description=item.get("description"),
                 content=tasks.unwrap(item.get("content")),
             ),
             constants.SIMULATE_POLICIES: dict(
-                puppet_account_id=puppet_account_id,
-                requested_priority=item.get("requested_priority", 0),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
                 simulate_policy_name=item_name,
                 simulation_type=item.get("simulation_type"),
@@ -930,6 +878,15 @@ class Manifest(dict):
             ),
         }.get(section_name)
 
+        common_parameters.update(
+            dict(
+                puppet_account_id=puppet_account_id,
+                status=item.get("status"),
+                requested_priority=item.get("requested_priority", 0),
+                dependencies=item.get("depends_on", []),
+            )
+        )
+
         # handle deploy_to tags
         tags = item.get(deploy_to).get("tags", [])
         for tag in tags:
@@ -941,31 +898,19 @@ class Manifest(dict):
                     continue
                 additional_parameters = {
                     "launches": dict(
-                        account_id=account_id,
-                        account_parameters=account.get("parameters", {}),
+                        account_id=account_id, ou=account.get("expanded_from", ""),
                     ),
-                    "apps": dict(
+                    "apps": dict(account_id=account_id,),
+                    "workspaces": dict(account_id=account_id,),
+                    "stacks": dict(account_id=account_id,),
+                    "spoke-local-portfolios": dict(
                         account_id=account_id,
-                        account_parameters=account.get("parameters", {}),
+                        organization=account.get("organization", ""),
+                        ou=account.get("expanded_from", ""),
                     ),
-                    "workspaces": dict(
-                        account_id=account_id,
-                        account_parameters=account.get("parameters", {}),
-                    ),
-                    "stacks": dict(
-                        account_id=account_id,
-                        account_parameters=account.get("parameters", {}),
-                    ),
-                    "spoke-local-portfolios": dict(account_id=account_id,),
                     "assertions": dict(account_id=account_id,),
-                    "lambda-invocations": dict(
-                        account_id=account_id,
-                        account_parameters=account.get("parameters", {}),
-                    ),
-                    "code-build-runs": dict(
-                        account_id=account_id,
-                        account_parameters=account.get("parameters", {}),
-                    ),
+                    "lambda-invocations": dict(account_id=account_id,),
+                    "code-build-runs": dict(account_id=account_id,),
                     "service-control-policies": dict(
                         account_id=account_id, ou_name="",
                     ),
@@ -1000,11 +945,11 @@ class Manifest(dict):
                                 dict(
                                     **common_parameters,
                                     **additional_parameters,
-                                    region=config.get_home_region(puppet_account_id),
+                                    region=home_region_configured,
                                 )
                             )
                         elif regions == "all":
-                            all_regions = config.get_regions(puppet_account_id)
+                            all_regions = regions_configured
                             for region_enabled in all_regions:
                                 provisioning_tasks.append(
                                     dict(
@@ -1052,24 +997,12 @@ class Manifest(dict):
             if single_account != "None" and single_account != account_id:
                 continue
             additional_parameters = {
-                "launches": dict(
-                    account_id=account_id,
-                    account_parameters=account.get("parameters", {}),
-                ),
-                "stacks": dict(
-                    account_id=account_id,
-                    account_parameters=account.get("parameters", {}),
-                ),
+                "launches": dict(account_id=account_id,),
+                "stacks": dict(account_id=account_id,),
                 "spoke-local-portfolios": dict(account_id=account_id,),
                 "assertions": dict(account_id=account_id,),
-                "lambda-invocations": dict(
-                    account_id=account_id,
-                    account_parameters=account.get("parameters", {}),
-                ),
-                "code-build-runs": dict(
-                    account_id=account_id,
-                    account_parameters=account.get("parameters", {}),
-                ),
+                "lambda-invocations": dict(account_id=account_id,),
+                "code-build-runs": dict(account_id=account_id,),
                 "service-control-policies": dict(account_id=account_id, ou_name="",),
                 "tag-policies": dict(account_id=account_id, ou_name="",),
                 constants.SIMULATE_POLICIES: dict(account_id=account_id,),
@@ -1102,11 +1035,11 @@ class Manifest(dict):
                         dict(
                             **common_parameters,
                             **additional_parameters,
-                            region=config.get_home_region(puppet_account_id),
+                            region=home_region_configured,
                         )
                     )
                 elif regions == "all":
-                    all_regions = config.get_regions(puppet_account_id)
+                    all_regions = regions_configured
                     for region_enabled in all_regions:
                         provisioning_tasks.append(
                             dict(
@@ -1162,7 +1095,7 @@ class Manifest(dict):
                     dict(
                         **common_parameters,
                         **additional_parameters,
-                        region=config.get_home_region(puppet_account_id),
+                        region=home_region_configured,
                     )
                 )
             else:
@@ -1171,76 +1104,6 @@ class Manifest(dict):
                 )
 
         return provisioning_tasks
-
-    def get_tasks_for_launch_and_region(
-        self,
-        puppet_account_id,
-        section_name,
-        launch_name,
-        region,
-        single_account="None",
-    ):
-        return [
-            task
-            for task in self.get_tasks_for(
-                puppet_account_id,
-                section_name,
-                launch_name,
-                single_account=single_account,
-            )
-            if task.get("region") == region
-        ]
-
-    def get_tasks_for_launch_and_account(
-        self,
-        puppet_account_id,
-        section_nam,
-        launch_name,
-        account_id,
-        single_account="None",
-    ):
-        return [
-            task
-            for task in self.get_tasks_for(
-                puppet_account_id,
-                section_nam,
-                launch_name,
-                single_account=single_account,
-            )
-            if task.get("account_id") == account_id
-        ]
-
-    def get_tasks_for_launch_and_account_and_region(
-        self,
-        puppet_account_id,
-        section_name,
-        launch_name,
-        account_id,
-        region,
-        single_account="None",
-    ):
-        return [
-            task
-            for task in self.get_tasks_for(
-                puppet_account_id,
-                section_name,
-                launch_name,
-                single_account=single_account,
-            )
-            if task.get("account_id") == account_id and task.get("region") == region
-        ]
-
-    def get_regions_used_for_section_item(
-        self, puppet_account_id, section_name, item_name
-    ):
-        return list(
-            set(
-                task.get("region")
-                for task in self.get_tasks_for(
-                    puppet_account_id, section_name, item_name
-                )
-            )
-        )
 
     def get_account_ids_used_for_section_item(
         self, puppet_account_id, section_name, item_name
@@ -1302,6 +1165,12 @@ class Manifest(dict):
             if account.get("account_id") == str(account_id):
                 return account
         raise Exception(f"Could not find account: {account_id}")
+
+    def get_parameters_for_account(self, account_id):
+        for account in self.get("accounts"):
+            if account.get("account_id") == str(account_id):
+                return account.get("parameters", {})
+        return dict()
 
     def get_sharing_policies_by_region(self):
         sharing_policies_by_region = {}
@@ -1430,7 +1299,7 @@ class Manifest(dict):
                                 )
                                 task_defs.append(region_tag_account_def)
                             elif regions == "all":
-                                all_regions = config.get_regions(puppet_account_id)
+                                all_regions = regions_configured
                                 for region_enabled in all_regions:
                                     region_tag_account_def = deepcopy(tag_account_def)
                                     region_tag_account_def["region"] = region_enabled
@@ -1479,7 +1348,7 @@ class Manifest(dict):
                             )
                             task_defs.append(region_account_account_def)
                         elif regions in ["all"]:
-                            all_regions = config.get_regions(puppet_account_id)
+                            all_regions = regions_configured
                             for region_enabled in all_regions:
                                 region_account_account_def = deepcopy(
                                     account_account_def

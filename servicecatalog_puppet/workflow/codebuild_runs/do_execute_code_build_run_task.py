@@ -1,34 +1,28 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import luigi
 
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_base_task
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
+from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class DoExecuteCodeBuildRunTask(
-    code_build_run_base_task.CodeBuildRunBaseTask,
-    manifest_mixin.ManifestMixen,
-    dependency.DependenciesMixin,
-):
+class DoExecuteCodeBuildRunTask(tasks.TaskWithParameters):
     code_build_run_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()
 
-    execution = luigi.Parameter()
-
-    ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
-
-    launch_parameters = luigi.DictParameter(default={}, significant=False)
-    manifest_parameters = luigi.DictParameter(default={}, significant=False)
-    account_parameters = luigi.DictParameter(default={}, significant=False)
-
     project_name = luigi.Parameter()
-    requested_priority = luigi.IntParameter()
+
+    manifest_file_path = luigi.Parameter()
+
+    section_name = constants.CODE_BUILD_RUNS
+
+    @property
+    def item_name(self):
+        return self.code_build_run_name
 
     def params_for_results_display(self):
         return {
@@ -44,12 +38,6 @@ class DoExecuteCodeBuildRunTask(
             f"codebuild.start_build_{self.get_account_used()}_{self.project_name}",
             f"codebuild.batch_get_projects_{self.get_account_used()}_{self.project_name}",
         ]
-
-    def requires(self):
-        requirements = {
-            "ssm_params": self.get_parameters_tasks(),
-        }
-        return requirements
 
     def run(self):
         with self.hub_client("codebuild") as codebuild:

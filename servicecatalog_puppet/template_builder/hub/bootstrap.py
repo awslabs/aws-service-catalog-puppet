@@ -1,4 +1,4 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import troposphere as t
@@ -899,17 +899,19 @@ def get_template(
             pre_build={
                 "commands": [
                     "servicecatalog-puppet --info expand --parameter-override-file $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml manifest.yaml",
+                    "servicecatalog-puppet --info generate-task-reference --parameter-override-file $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml  manifest-expanded.yaml",
                 ]
             },
             build={
                 "commands": [
-                    "servicecatalog-puppet --info deploy --num-workers ${NUM_WORKERS} manifest-expanded.yaml",
+                    "servicecatalog-puppet --info deploy-from-task-reference --num-workers ${NUM_WORKERS} manifest-task-reference.yaml",
                 ]
             },
         ),
         artifacts=dict(
             name="DeployProject",
             files=[
+                "*.yaml",
                 "manifest-expanded.yaml",
                 "results/*/*",
                 "output/*/*",

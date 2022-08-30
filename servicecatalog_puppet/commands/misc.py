@@ -1,4 +1,4 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
@@ -7,7 +7,6 @@ import os
 import time
 import traceback
 import urllib
-from datetime import datetime
 
 import click
 from betterboto import client as betterboto_client
@@ -16,67 +15,9 @@ from servicecatalog_puppet import (
     aws,
     config,
     constants,
-    manifest_utils,
-    manifest_utils_for_launches,
 )
-from servicecatalog_puppet.workflow import runner
-from servicecatalog_puppet.workflow.assertions import assertions_section_task
-from servicecatalog_puppet.workflow.codebuild_runs import code_build_run_section_task
-from servicecatalog_puppet.workflow.lambda_invocations import (
-    lambda_invocation_section_task,
-)
-from servicecatalog_puppet.workflow.apps import app_section_task
-from servicecatalog_puppet.workflow.launch import launch_section_task
-from servicecatalog_puppet.workflow.launch.reset_provisioned_product_owner_task import (
-    ResetProvisionedProductOwnerTask,
-)
-from servicecatalog_puppet.workflow.spoke_local_portfolios import (
-    spoke_local_portfolio_section_task,
-)
-from servicecatalog_puppet.workflow.service_control_policies import (
-    service_control_policies_section_task,
-)
-from servicecatalog_puppet.workflow.tag_policies import tag_policies_section_task
-from servicecatalog_puppet.workflow.simulate_policies import (
-    simulate_policy_section_task,
-)
-from servicecatalog_puppet.workflow.stack import stack_section_task
-from servicecatalog_puppet.workflow.workspaces import workspace_section_task
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
-
-
-def reset_provisioned_product_owner(f):
-    puppet_account_id = config.get_puppet_account_id()
-    current_account_id = puppet_account_id
-    manifest = manifest_utils.load(f, puppet_account_id)
-
-    os.environ["SCT_CACHE_INVALIDATOR"] = str(datetime.now())
-
-    task_defs = manifest_utils_for_launches.generate_launch_tasks(
-        manifest, puppet_account_id, False, False
-    )
-
-    tasks_to_run = []
-    for task in task_defs:
-        task_status = task.get("status")
-        if task_status == constants.PROVISIONED:
-            tasks_to_run.append(
-                ResetProvisionedProductOwnerTask(
-                    launch_name=task.get("launch_name"),
-                    account_id=task.get("account_id"),
-                    region=task.get("region"),
-                )
-            )
-
-    runner.run_tasks(
-        puppet_account_id,
-        current_account_id,
-        tasks_to_run,
-        10,
-        execution_mode="hub",
-        on_complete_url=None,
-    )
 
 
 def cli(info, info_line_numbers):
@@ -283,54 +224,6 @@ def wait_for_parameterised_run_to_complete(on_complete_url: str) -> bool:
                                                             logger.info(f.reason)
 
                                                         return succeeded
-
-
-def generate_tasks(
-    f, puppet_account_id, executor_account_id, execution_mode, is_dry_run
-):
-    tasks = [
-        launch_section_task.LaunchSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        stack_section_task.StackSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        app_section_task.AppSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        workspace_section_task.WorkspaceSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-        assertions_section_task.AssertionsSectionTask(
-            manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-        ),
-    ]
-    if not is_dry_run:
-        tasks += [
-            lambda_invocation_section_task.LambdaInvocationsSectionTask(
-                manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-            ),
-            code_build_run_section_task.CodeBuildRunsSectionTask(
-                manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-            ),
-            simulate_policy_section_task.SimulatePolicysSectionTask(
-                manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-            ),
-            spoke_local_portfolio_section_task.SpokeLocalPortfolioSectionTask(
-                manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-            ),
-        ]
-        if execution_mode != constants.EXECUTION_MODE_SPOKE:
-            tasks += [
-                service_control_policies_section_task.ServiceControlPoliciesSectionTask(
-                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-                ),
-                tag_policies_section_task.TagPoliciesSectionTask(
-                    manifest_file_path=f.name, puppet_account_id=puppet_account_id,
-                ),
-            ]
-
-    return tasks
 
 
 def run(what, tail):

@@ -1,4 +1,4 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
@@ -7,10 +7,10 @@ import os
 import shutil
 import sys
 import time
-from urllib.request import urlretrieve
 import urllib
 from glob import glob
 from pathlib import Path
+from urllib.request import urlretrieve
 
 import click
 import colorclass
@@ -23,6 +23,7 @@ from luigi import LuigiStatusCode
 
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
+from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet.workflow import tasks
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
@@ -55,24 +56,15 @@ def run_tasks(
     execution_mode="hub",
     on_complete_url=None,
     running_exploded=False,
-    output_cache_starting_point="",
 ):
     codebuild_id = os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD")
     if is_list_launches:
         should_use_eventbridge = False
         should_forward_failures_to_opscenter = False
     else:
-        should_use_eventbridge = (
-            config.get_should_use_eventbridge(
-                puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-            )
-            and not is_dry_run
-        )
+        should_use_eventbridge = config.get_should_use_eventbridge() and not is_dry_run
         should_forward_failures_to_opscenter = (
-            config.get_should_forward_failures_to_opscenter(
-                puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-            )
-            and not is_dry_run
+            config.get_should_forward_failures_to_opscenter() and not is_dry_run
         )
 
     ssm_client = None
@@ -91,25 +83,31 @@ def run_tasks(
         "processing_time",
         "broken_task",
     ]:
-        os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type)
+        if not os.path.exists(Path(constants.RESULTS_DIRECTORY) / result_type):
+            os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type)
 
-    os.makedirs(Path(constants.OUTPUT))
+    if not os.path.exists(Path(constants.OUTPUT)):
+        os.makedirs(Path(constants.OUTPUT))
 
     logger.info(f"About to run workflow with {num_workers} workers")
 
     if not (running_exploded or is_list_launches):
         tasks.print_stats()
 
+    should_use_shared_scheduler = False
     if is_list_launches:
         should_use_shared_scheduler = False
     else:
-        should_use_shared_scheduler = config.get_should_use_shared_scheduler(
-            puppet_account_id
-        )
+        pass
+        # should_use_shared_scheduler = config.get_should_use_shared_scheduler( #TODO reenable
+        #     puppet_account_id
+        # )
 
     build_params = dict(
         detailed_summary=True,
         workers=num_workers,
+        parallel_scheduling=True,
+        # parallel_scheduling_processes=40,
         log_level=os.environ.get("LUIGI_LOG_LEVEL", constants.LUIGI_DEFAULT_LOG_LEVEL),
     )
 
@@ -121,6 +119,7 @@ def run_tasks(
     if should_use_shared_scheduler:
         logger.info(f"should_use_shared_scheduler: {should_use_shared_scheduler}")
 
+    output_cache_starting_point = config.get_output_cache_starting_point()
     if output_cache_starting_point != "":
         dst = "GetSSMParamTask.zip"
         urlretrieve(output_cache_starting_point, dst)
@@ -138,7 +137,7 @@ def run_tasks(
         LuigiStatusCode.MISSING_EXT: 5,
     }
 
-    cache_invalidator = os.environ.get("SCT_CACHE_INVALIDATOR")
+    cache_invalidator = os.environ.get(environmental_variables.CACHE_INVALIDATOR)
 
     has_spoke_failures = False
 

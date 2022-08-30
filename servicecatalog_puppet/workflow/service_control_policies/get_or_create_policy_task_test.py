@@ -1,8 +1,9 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import io
 import json
+
 from botocore.response import StreamingBody
 
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper

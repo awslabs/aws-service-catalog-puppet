@@ -1,4 +1,4 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 
@@ -112,7 +112,6 @@ def test_constants_values():
         == "/servicecatalog-puppet/puppet-role/path"
     )
     assert constants.DEPLOY_ENVIRONMENT_COMPUTE_TYPE_DEFAULT == "BUILD_GENERAL1_SMALL"
-    assert constants.CONFIG_IS_CACHING_ENABLED == "CONFIG_IS_CACHING_ENABLED"
     assert (
         constants.START_SHARED_SCHEDULER_COMMAND
         == "luigid --background --pidfile luigi.pid --logdir results/logs --state-path results/state"
@@ -138,6 +137,9 @@ def test_constants_values():
         (constants.ASSERTION, constants.ASSERTIONS),
         (constants.APP, constants.APPS),
         (constants.WORKSPACE, constants.WORKSPACES),
+        (constants.SERVICE_CONTROL_POLICY, constants.SERVICE_CONTROL_POLICIES),
+        (constants.SIMULATE_POLICY, constants.SIMULATE_POLICIES),
+        (constants.TAG_POLICY, constants.TAG_POLICIES),
     ]
     assert constants.SECTION_NAME_SINGULAR_AND_PLURAL_LIST_THAT_SUPPORTS_PARAMETERS == [
         (constants.LAUNCH, constants.LAUNCHES),

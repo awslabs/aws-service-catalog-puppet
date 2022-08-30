@@ -52,4 +52,4 @@ def load(what):
 
 
 def dump(what):
-    return yaml.safe_dump(what, default_flow_style=False)
+    return yaml.safe_dump(what, default_flow_style=False, width=1000000)

@@ -1,4 +1,4 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
@@ -6,13 +6,11 @@ import json
 import luigi
 
 from servicecatalog_puppet import config
-from servicecatalog_puppet.workflow.general import get_ssm_param_task
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
+from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class DoInvokeLambdaTask(
-    get_ssm_param_task.PuppetTaskWithParameters, manifest_mixin.ManifestMixen
-):
+class DoInvokeLambdaTask(tasks.TaskWithParameters):
     lambda_invocation_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -23,11 +21,13 @@ class DoInvokeLambdaTask(
 
     puppet_account_id = luigi.Parameter()
 
-    launch_parameters = luigi.DictParameter()
-    manifest_parameters = luigi.DictParameter()
-    account_parameters = luigi.DictParameter()
-
     manifest_file_path = luigi.Parameter()
+
+    section_name = constants.LAMBDA_INVOCATIONS
+
+    @property
+    def item_name(self):
+        return self.lambda_invocation_name
 
     def params_for_results_display(self):
         return {
@@ -37,9 +37,6 @@ class DoInvokeLambdaTask(
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def requires(self):
-        return dict(ssm_params=self.get_parameters_tasks(),)
 
     def api_calls_used(self):
         return {

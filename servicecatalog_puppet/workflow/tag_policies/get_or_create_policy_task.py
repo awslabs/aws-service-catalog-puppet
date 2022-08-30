@@ -1,12 +1,13 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import json
 
-from servicecatalog_puppet.workflow import tasks
 import luigi
 
+from servicecatalog_puppet.workflow import tasks
 
-class GetOrCreatePolicyTask(tasks.PuppetTask):
+
+class GetOrCreatePolicyTask(tasks.PuppetTask):  # TODO make task with reference
     puppet_account_id = luigi.Parameter()
     region = luigi.Parameter()
     policy_name = luigi.Parameter()

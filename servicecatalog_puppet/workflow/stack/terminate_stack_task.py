@@ -1,21 +1,17 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+
+import functools
 
 import luigi
 
-from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.general import get_ssm_param_task
-from servicecatalog_puppet.workflow.stack import provisioning_task
 from servicecatalog_puppet import aws
-import functools
+from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class TerminateStackTask(
-    provisioning_task.ProvisioningTask,
-    dependency.DependenciesMixin,
-    get_ssm_param_task.PuppetTaskWithParameters,
-):
+class TerminateStackTask(tasks.TaskWithReference):
+
     stack_name = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
 
@@ -55,10 +51,6 @@ class TerminateStackTask(
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def requires(self):
-        requirements = {"section_dependencies": self.get_section_dependencies()}
-        return requirements
 
     @property
     @functools.lru_cache(maxsize=32)

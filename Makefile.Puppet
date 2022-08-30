@@ -6,7 +6,7 @@ version:
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap
 bootstrap:
-	poetry run servicecatalog-puppet --info bootstrap
+	poetry run servicecatalog-puppet --info bootstrap --branch main
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap-spoke for the current aws profile
 bootstrap-self-as-spoke:
@@ -27,6 +27,28 @@ bootstrap-branch:
 expand:
 	poetry run servicecatalog-puppet --info expand \
 		ignored/src/ServiceCatalogPuppet/manifest.yaml
+
+## @Puppet_commands Runs servicecatalog-puppet --info generate-task-reference for the checked out manifest file
+generate-task-reference:
+	poetry run servicecatalog-puppet --info generate-task-reference \
+		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
+
+## @Puppet_commands Runs servicecatalog-puppet --info deploy-from-task-reference for the checked out manifest file
+deploy-from-task-reference:
+	time poetry run servicecatalog-puppet --info deploy-from-task-reference --num-workers 40 \
+		ignored/src/ServiceCatalogPuppet/manifest-task-reference.yaml
+
+deploy-from-task-reference-spoke:
+	time poetry run servicecatalog-puppet --info deploy-from-task-reference \
+	    --puppet-account-id 105463962595 \
+	    --single-account 022042407650 \
+	    --num-workers 40 \
+	    --home-region eu-west-1 \
+	    --regions eu-west-1,eu-west-2,eu-west-3,us-east-1,us-west-1 \
+	    --should-collect-cloudformation-events False \
+	    --should-forward-events-to-eventbridge False \
+        --should-forward-failures-to-opscenter False \
+		ignored/src/ServiceCatalogPuppet/manifest-task-reference-full.yaml
 
 ## @Puppet_commands Runs servicecatalog-puppet --info deploy
 deploy:
@@ -77,4 +99,3 @@ export-singleaccount-stats:
 ## @puppet_commands Runs servicecatalog-puppet --info show-pipelines
 show-pipelines:
 	poetry run servicecatalog-puppet --info show-pipelines
-

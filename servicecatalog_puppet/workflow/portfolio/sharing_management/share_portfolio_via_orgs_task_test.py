@@ -1,4 +1,4 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 from unittest import skip
@@ -7,11 +7,14 @@ from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
 class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
-    manifest_file_path = "manifest_file_path"
     region = "region"
     portfolio = "portfolio"
     puppet_account_id = "puppet_account_id"
     ou_to_share_with = "ou_to_share_with"
+    task_reference = "task_reference"
+    manifest_task_reference_file_path = "manifest_task_reference_file_path"
+    dependencies_by_reference = []
+    portfolio_task_reference = "portfolio_task_reference"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.portfolio.sharing_management import (
@@ -21,7 +24,10 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.module = share_portfolio_via_orgs_task
 
         self.sut = self.module.SharePortfolioViaOrgsTask(
-            manifest_file_path=self.manifest_file_path,
+            portfolio_task_reference=self.portfolio_task_reference,
+            dependencies_by_reference=self.dependencies_by_reference,
+            manifest_task_reference_file_path=self.manifest_task_reference_file_path,
+            task_reference=self.task_reference,
             region=self.region,
             portfolio=self.portfolio,
             puppet_account_id=self.puppet_account_id,

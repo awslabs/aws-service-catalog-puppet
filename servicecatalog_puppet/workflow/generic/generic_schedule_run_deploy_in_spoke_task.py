@@ -1,12 +1,12 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.launch import run_deploy_in_spoke_task
+from servicecatalog_puppet.workflow.manifest import manifest_mixin
 
 
 class GenericScheduleRunDeployInSpokeTask(

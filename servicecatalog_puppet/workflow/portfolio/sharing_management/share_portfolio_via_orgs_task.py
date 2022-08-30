@@ -1,24 +1,21 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
+import json
 import time
 
 import luigi
 import yaml
 
-from servicecatalog_puppet.workflow.portfolio.accessors import (
-    get_portfolio_by_portfolio_name_task,
-)
-from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
-    portfolio_management_task,
-)
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class SharePortfolioViaOrgsTask(portfolio_management_task.PortfolioManagementTask):
+class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     puppet_account_id = luigi.Parameter()
     ou_to_share_with = luigi.Parameter()
+    portfolio_task_reference = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -34,19 +31,16 @@ class SharePortfolioViaOrgsTask(portfolio_management_task.PortfolioManagementTas
             f"servicecatalog.describe_portfolio_share_status",
         ]
 
-    def requires(self):
-        return dict(
-            portfolio=get_portfolio_by_portfolio_name_task.GetPortfolioByPortfolioName(
-                manifest_file_path=self.manifest_file_path,
-                puppet_account_id=self.puppet_account_id,
-                portfolio=self.portfolio,
-                account_id=self.puppet_account_id,
-                region=self.region,
-            )
-        )
-
     def run(self):
-        portfolio_id = self.load_from_input("portfolio").get("portfolio_id")
+        hub_portfolio_details = json.loads(
+            self.input()
+            .get("reference_dependencies")
+            .get(self.portfolio_task_reference)
+            .open("r")
+            .read()
+        )
+        portfolio_id = hub_portfolio_details.get("Id")
+
         with self.hub_regional_client("servicecatalog") as servicecatalog:
             portfolio_share_token = servicecatalog.create_portfolio_share(
                 PortfolioId=portfolio_id,

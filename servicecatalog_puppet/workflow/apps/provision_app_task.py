@@ -1,18 +1,12 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import luigi
 
-from servicecatalog_puppet.workflow import dependency
-from servicecatalog_puppet.workflow.apps import app_base_task
-from servicecatalog_puppet.workflow.manifest import manifest_mixin
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class ProvisionAppTask(
-    app_base_task.AppBaseTask,
-    manifest_mixin.ManifestMixen,
-    dependency.DependenciesMixin,
-):
+class ProvisionAppTask(tasks.TaskWithParameters):
     app_name = luigi.Parameter()
     region = luigi.Parameter()
     account_id = luigi.Parameter()
@@ -38,16 +32,13 @@ class ProvisionAppTask(
 
     def params_for_results_display(self):
         return {
+            "task_reference": self.task_reference,
             "puppet_account_id": self.puppet_account_id,
             "app_name": self.app_name,
             "region": self.region,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def requires(self):
-        requirements = {"section_dependencies": self.get_section_dependencies()}
-        return requirements
 
     def run(self):
         self.write_output(self.params_for_results_display())

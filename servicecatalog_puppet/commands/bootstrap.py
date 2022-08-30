@@ -1,7 +1,8 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import io
+import json
 import os
 import zipfile
 from threading import Thread
@@ -50,10 +51,8 @@ def bootstrap(
     custom_source_action_custom_action_type_provider,
 ):
     click.echo("Starting bootstrap")
-    should_use_eventbridge = config.get_should_use_eventbridge(
-        puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-    )
-    initialiser_stack_tags = config.get_initialiser_stack_tags()
+    should_use_eventbridge = config.get_should_use_eventbridge()
+    initialiser_stack_tags = json.loads(config.get_initialiser_stack_tags())
     if should_use_eventbridge:
         with betterboto_client.ClientContextManager("events") as events:
             try:
@@ -61,9 +60,7 @@ def bootstrap(
             except events.exceptions.ResourceNotFoundException:
                 events.create_event_bus(Name=constants.EVENT_BUS_NAME,)
 
-    all_regions = config.get_regions(
-        puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-    )
+    all_regions = config.get_regions()
     with betterboto_client.MultiRegionClientContextManager(
         "cloudformation", all_regions
     ) as clients:
@@ -166,9 +163,7 @@ def bootstrap(
         constants.VERSION,
         all_regions,
         source_args,
-        config.is_caching_enabled(
-            puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-        ),
+        config.is_caching_enabled(),
         with_manual_approvals,
         scm_skip_creation_of_repo,
         should_validate,

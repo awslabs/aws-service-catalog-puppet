@@ -1,4 +1,4 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
@@ -6,7 +6,7 @@ import json
 import cfn_tools
 from botocore.exceptions import ClientError
 
-from servicecatalog_puppet import constants, config
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.stack import provision_stack_task
 

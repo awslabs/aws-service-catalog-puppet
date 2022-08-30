@@ -1,12 +1,12 @@
-#  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-import luigi
-from deepmerge import always_merger
-import jmespath
 import json
 
-from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow import dependency
+import jmespath
+import luigi
+from deepmerge import always_merger
+
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 remove_punctuation_map = dict((ord(char), None) for char in '\/*?:"<>|\n')
 
@@ -15,7 +15,7 @@ def hash(what):
     return json.dumps(tasks.unwrap(what), indent=0).translate(remove_punctuation_map)
 
 
-class Boto3Task(tasks.PuppetTask):
+class Boto3Task(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
 
@@ -24,15 +24,6 @@ class Boto3Task(tasks.PuppetTask):
     call = luigi.Parameter()
     arguments = luigi.DictParameter()
     filter = luigi.Parameter()
-
-    requester_task_id = luigi.Parameter()
-    requester_task_family = luigi.Parameter()
-
-    depends_on = luigi.ListParameter(default=[])
-    manifest_file_path = luigi.Parameter(default="")
-    puppet_account_id = luigi.Parameter(default="")
-    spoke_account_id = luigi.Parameter(default="")
-    spoke_region = luigi.Parameter(default="")
 
     def params_for_results_display(self):
         return {
@@ -43,24 +34,8 @@ class Boto3Task(tasks.PuppetTask):
             "call": self.call,
             "arguments": hash(self.arguments),
             "filter": hash(self.filter),
-            "requester_task_id": self.requester_task_id,
-            "requester_task_family": self.requester_task_family,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def requires(self):
-        deps = dict()
-        if len(self.depends_on) > 0:
-            deps["dependencies"] = dependency.generate_dependency_tasks(
-                self.depends_on,
-                self.manifest_file_path,
-                self.puppet_account_id,
-                self.spoke_account_id,
-                self.ou_name if hasattr(self, "ou_name") else "",
-                self.spoke_region,
-                self.execution_mode,
-            )
-        return deps
 
     def run(self):
         with self.spoke_regional_client(self.client) as client:
