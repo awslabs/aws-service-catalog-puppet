@@ -93,7 +93,6 @@ def expand(f, puppet_account_id, regions, single_account, subset=None):
                     if str(deploy_details.get("account_id")) == str(single_account):
                         accounts.append(deploy_details)
 
-                print(f"{item_name}: there are " + str(len(accounts)))
                 if item.get(deploy_to_name).get("accounts"):
                     if len(accounts) > 0:
                         item[deploy_to_name]["accounts"] = accounts

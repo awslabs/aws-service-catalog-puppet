@@ -238,15 +238,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
         always_merger.merge(parameters, account_parameters)
 
         if task.get("status") != constants.TERMINATED:
-            print("")
-            print("")
-            print("")
-            print("")
-            print(
-                f"looking at {task.get('section_name')} {task.get('item_name')} for {task.get('account_id')} {task.get('region')}"
-            )
             for parameter_name, parameter_details in parameters.items():
-                print(f"looking at {parameter_name}")
                 if parameter_details.get("ssm"):
                     ssm_parameter_details = parameter_details.get("ssm")
                     interpolation_output_account = task.get("account_id")
@@ -285,8 +277,6 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         task_def["section_name"] = constants.SSM_PARAMETERS_WITH_A_PATH
                     task_def["task_reference"] = ssm_parameter_task_reference
 
-                    print(f"created task_def {task_def}")
-
                     potential_output_task_ref = f"{constants.SSM_PARAMETERS}-{task_reference}-{param_name}".replace(
                         f"{constants.SSM_PARAMETERS}-", f"{constants.SSM_OUTPUTS}-"
                     )
@@ -313,9 +303,6 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                     else:
                         new_tasks[ssm_parameter_task_reference] = task_def
 
-                    print(
-                        f"now using the folloing {new_tasks[ssm_parameter_task_reference]}"
-                    )
                     new_tasks[ssm_parameter_task_reference][
                         "manifest_section_name"
                     ].extend(task.get("manifest_section_name"))
@@ -332,7 +319,6 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                     task["dependencies_by_reference"].append(
                         ssm_parameter_task_reference
                     )
-                    print(f"finishing up {new_tasks[ssm_parameter_task_reference]}")
                 # HANDLE BOTO3 PARAMS
                 if parameter_details.get("boto3"):
                     boto3_parameter_details = parameter_details.get("boto3")
@@ -405,7 +391,6 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         boto3_parameter_task_reference
                     )
 
-        print(f"END at {task.get('task_reference')}")
     all_tasks.update(new_tasks)
 
     #
