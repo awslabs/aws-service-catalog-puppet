@@ -1,8 +1,5 @@
 #  Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-import json
-import re
-
 import luigi
 
 from servicecatalog_puppet import utils

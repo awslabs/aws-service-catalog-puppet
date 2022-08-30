@@ -7,8 +7,7 @@ from servicecatalog_puppet.workflow.workspaces import Limits
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class SSMOutputsTasks(tasks.TaskWithReference):  # TODO add by path parameters
-    # TODO add filter so this only works in hub and spoke modes
+class SSMOutputsTasks(tasks.TaskWithReference):
     puppet_account_id = luigi.Parameter()
 
     account_id = luigi.Parameter()

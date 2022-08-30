@@ -4,7 +4,6 @@
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.general import get_ssm_param_task
 from servicecatalog_puppet import aws
 import functools
 
@@ -12,7 +11,7 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class TerminateStackTask(
-    tasks.TaskWithReference, get_ssm_param_task.PuppetTaskWithParameters,
+    tasks.TaskWithReference
 ):
 
     stack_name = luigi.Parameter()

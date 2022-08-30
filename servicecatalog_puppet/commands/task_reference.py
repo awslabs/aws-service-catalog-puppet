@@ -1598,46 +1598,12 @@ def deploy_from_task_reference(f):
                 )
             )
 
-    executor_account_id = config.get_executor_account_id()  # TODO FIXME REMOVE
-    is_dry_run = is_list_launches = False  # TODO FIXME REMOVE
-    execution_mode = "hub"  # TODO FIXME REMOVE
-    on_complete_url = ""  # TODO FIXME REMOVE
-    running_exploded = False  # TODO FIXME REMOVE
-    output_cache_starting_point = ""  # TODO FIXME REMOVE
-
-    # is_dry_run = False
-    # is_list_launches = False
-    # execution_mode = constants.EXECUTION_MODE_HUB
-    # on_complete_url = None
-    # running_exploded = False
-    # output_cache_starting_point = ""
-    # single_account = ""
-    #
-    # if os.environ.get(environmental_variables.CACHE_INVALIDATOR):
-    #     logger.info(
-    #         f"Found existing {environmental_variables.CACHE_INVALIDATOR}: {os.environ.get(environmental_variables.CACHE_INVALIDATOR)}"
-    #     )
-    # else:
-    #     os.environ[environmental_variables.CACHE_INVALIDATOR] = str(datetime.now())
-    #
-    # os.environ[environmental_variables.EXECUTION_MODE] = str(execution_mode)
-    # os.environ["SCT_SINGLE_ACCOUNT"] = str(single_account)
-    # os.environ["SCT_IS_DRY_RUN"] = str(is_dry_run)
-    # os.environ[environmental_variables.EXECUTOR_ACCOUNT_ID] = str(executor_account_id)
-    # os.environ[environmental_variables.SHOULD_USE_SNS] = str(
-    #     config.get_should_use_sns(puppet_account_id)
-    # )
-    # os.environ[environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS] = str(
-    #     config.get_should_delete_rollback_complete_stacks(puppet_account_id)
-    # )
-    # os.environ[environmental_variables.SHOULD_USE_PRODUCT_PLANS] = str(
-    #     config.get_should_use_product_plans(
-    #         puppet_account_id, os.environ.get("AWS_DEFAULT_REGION")
-    #     )
-    # )
-    # os.environ[environmental_variables.INITIALISER_STACK_TAGS] = json.dumps(
-    #     config.get_initialiser_stack_tags()
-    # )
+    executor_account_id = config.get_executor_account_id()
+    is_dry_run = is_list_launches = False
+    execution_mode = "hub"
+    on_complete_url = ""
+    running_exploded = False
+    output_cache_starting_point = ""
 
     runner.run_tasks(
         puppet_account_id,

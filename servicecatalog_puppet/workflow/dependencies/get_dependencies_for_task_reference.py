@@ -111,16 +111,10 @@ def create(
                 portfolio=parameters_to_use.get("portfolio"),
                 product=parameters_to_use.get("product"),
                 version=parameters_to_use.get("version"),
-                # ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
-                # launch_parameters = luigi.DictParameter(default={}, significant=False)
-                # manifest_parameters = luigi.DictParameter(default={}, significant=False)
-                # account_parameters = luigi.DictParameter(default={}, significant=False)
                 retry_count=parameters_to_use.get("retry_count"),
                 worker_timeout=parameters_to_use.get("worker_timeout"),
-                # ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
                 requested_priority=parameters_to_use.get("requested_priority"),
                 execution=parameters_to_use.get("execution"),
-                # manifest_file_path=manifest_file_path,
             )
         else:
             from servicecatalog_puppet.workflow.launch.provision_product_task import (
@@ -139,13 +133,8 @@ def create(
                 describe_provisioning_params_ref=parameters_to_use.get(
                     "describe_provisioning_params_ref"
                 ),
-                # ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
-                # launch_parameters = luigi.DictParameter(default={}, significant=False)
-                # manifest_parameters = luigi.DictParameter(default={}, significant=False)
-                # account_parameters = luigi.DictParameter(default={}, significant=False)
                 retry_count=parameters_to_use.get("retry_count"),
                 worker_timeout=parameters_to_use.get("worker_timeout"),
-                # ssm_param_outputs = luigi.ListParameter(default=[], significant=False)
                 requested_priority=parameters_to_use.get("requested_priority"),
                 execution=parameters_to_use.get("execution"),
                 manifest_file_path=manifest_file_path,
@@ -182,7 +171,7 @@ def create(
 
         if (
             parameters_to_use.get("status") == constants.TERMINATED
-        ):  # EPF LATE NIGHT ADD
+        ):
 
             return ssm_outputs_task.TerminateSSMOutputsTasks(
                 **common_parameters, param_name=parameters_to_use.get("param_name"),
@@ -207,7 +196,6 @@ def create(
                 do_execute_tag_policies_task,
             )
 
-            # TODO test different tag policy deploy to clauses
             return do_execute_tag_policies_task.DoExecuteTagPoliciesTask(
                 **common_parameters,
                 tag_policy_name=parameters_to_use.get("tag_policy_name"),
@@ -216,7 +204,7 @@ def create(
                 description=parameters_to_use.get("description"),
                 requested_priority=parameters_to_use.get(
                     "requested_priority"
-                ),  # TODO make generic
+                ),
                 manifest_file_path=manifest_file_path,
             )
 
@@ -226,7 +214,6 @@ def create(
                 do_terminate_service_control_policies_task,
             )
 
-            # TODO test different tag policy deploy to clauses
             return do_terminate_service_control_policies_task.DoTerminateServiceControlPoliciesTask(
                 **common_parameters,
                 service_control_policy_name=parameters_to_use.get(
@@ -237,7 +224,7 @@ def create(
                 description=parameters_to_use.get("description"),
                 requested_priority=parameters_to_use.get(
                     "requested_priority"
-                ),  # TODO make generic
+                ),
                 manifest_file_path=manifest_file_path,
             )
         else:
@@ -245,7 +232,6 @@ def create(
                 do_execute_service_control_policies_task,
             )
 
-            # TODO test different tag policy deploy to clauses
             return do_execute_service_control_policies_task.DoExecuteServiceControlPoliciesTask(
                 **common_parameters,
                 service_control_policy_name=parameters_to_use.get(
@@ -256,7 +242,7 @@ def create(
                 description=parameters_to_use.get("description"),
                 requested_priority=parameters_to_use.get(
                     "requested_priority"
-                ),  # TODO make generic
+                ),
                 manifest_file_path=manifest_file_path,
             )
 
@@ -296,7 +282,6 @@ def create(
             caller_arn=parameters_to_use.get("caller_arn"),
             context_entries=parameters_to_use.get("context_entries"),
             resource_handling_option=parameters_to_use.get("resource_handling_option"),
-            # manifest_file_path=manifest_file_path,
         )
 
     elif section_name == constants.LAMBDA_INVOCATIONS:
@@ -528,7 +513,6 @@ def create(
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
-                # manifest_file_path=manifest_file_path,
             )
 
     elif section_name == constants.PORTFOLIO_SHARE_AND_ACCEPT_AWS_ORGANIZATIONS:

@@ -1,17 +1,12 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier= Apache-2.0
-from servicecatalog_puppet.workflow import tasks
 import luigi
 
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
 from servicecatalog_puppet.workflow.workspaces import Limits
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class GetSSMParameterTask(tasks.TaskWithReference):  # TODO add by path parameters
-    # TODO add support for default_value
+class GetSSMParameterTask(tasks.TaskWithReference):
     puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     param_name = luigi.Parameter()

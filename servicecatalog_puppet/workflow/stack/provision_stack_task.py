@@ -12,12 +12,7 @@ from botocore.exceptions import ClientError
 from servicecatalog_puppet import config
 from servicecatalog_puppet import aws
 from servicecatalog_puppet import constants
-from servicecatalog_puppet.workflow.stack import get_cloud_formation_template_from_s3
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
 from servicecatalog_puppet.workflow.workspaces import Limits
-
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 

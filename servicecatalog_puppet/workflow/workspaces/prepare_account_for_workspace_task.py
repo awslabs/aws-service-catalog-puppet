@@ -6,9 +6,6 @@ import luigi
 
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
 import troposphere as t
 import yaml
 from troposphere import s3, codebuild

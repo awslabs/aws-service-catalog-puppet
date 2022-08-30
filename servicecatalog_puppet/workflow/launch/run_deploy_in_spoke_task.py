@@ -104,6 +104,11 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
                 "value": config.get_initialiser_stack_tags(),
                 "type": "PLAINTEXT",
             },
+            {
+                "name": environmental_variables.GLOBAL_SHARING_MODE,
+                "value": config.get_global_sharing_mode_default(),
+                "type": "PLAINTEXT",
+            },
         ]
 
         if "http" in self.version:
@@ -142,26 +147,11 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
             )
         )
 
-        uiq = "aaa"
-        # bucket_to_use = ""
-
-        artifacts_override = {
-            "type": "S3",
-            # 'location': bucket_to_use,
-            "path": "spoke-execution-results",
-            "namespaceType": "NONE",
-            "name": f"{uiq}-{self.account_id}",
-            "packaging": "ZIP",
-            "artifactIdentifier": "DeployInSpokeProject",
-            "bucketOwnerAccess": "FULL",
-        }
-
         with self.spoke_client("codebuild") as codebuild:
             response = codebuild.start_build(
                 projectName=constants.EXECUTION_SPOKE_CODEBUILD_PROJECT_NAME,
                 environmentVariablesOverride=vars,
                 computeTypeOverride=self.spoke_execution_mode_deploy_env,
                 buildspecOverride=build_spec,
-                # artifactsOverride=artifacts_override,
             )
         self.write_output(dict(account_id=self.account_id, **response))

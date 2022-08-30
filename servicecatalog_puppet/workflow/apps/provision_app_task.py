@@ -4,9 +4,6 @@
 import luigi
 
 from servicecatalog_puppet.workflow.dependencies import tasks
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    get_dependencies_for_task_reference,
-)
 
 
 class ProvisionAppTask(tasks.TaskWithParameters):

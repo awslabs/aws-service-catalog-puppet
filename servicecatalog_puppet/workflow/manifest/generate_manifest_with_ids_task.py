@@ -6,7 +6,6 @@ import os
 
 import zipfile
 
-from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -25,8 +24,6 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
         ) as zip:
             files = list()
             files.extend(glob.glob(f"output/*/**", recursive=True))
-            # for task_name in constants.TASKS_TO_SHARE_WITH_SPOKES:
-            #     files.extend(glob.glob(f"output/{task_name}*/**", recursive=True))
             for filename in files:
                 zip.write(filename, filename)
 

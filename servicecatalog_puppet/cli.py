@@ -17,8 +17,6 @@ from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.commands import bootstrap as bootstrap_commands
 from servicecatalog_puppet.commands import task_reference as task_reference_commands
-from servicecatalog_puppet.commands import deploy as deploy_commands
-from servicecatalog_puppet.commands import graph as graph_commands
 from servicecatalog_puppet.commands import management as management_commands
 from servicecatalog_puppet.commands import manifest as manifest_commands
 from servicecatalog_puppet.commands import misc as misc_commands
@@ -40,110 +38,8 @@ def cli(info, info_line_numbers):
 @cli.command()
 @click.argument("f", type=click.File())
 @click.option("--single-account", default=None)
-@click.option("--num-workers", default=10)
-@click.option("--execution-mode", default="hub")
-@click.option("--puppet-account-id", default=None)
-@click.option("--home-region", default=None)
-@click.option("--regions", default="")
-@click.option("--should-collect-cloudformation-events", default=None, type=bool)
-@click.option("--should-forward-events-to-eventbridge", default=None, type=bool)
-@click.option("--should-forward-failures-to-opscenter", default=None, type=bool)
-@click.option("--on-complete-url", default=None)
-@click.option(
-    "--output-cache-starting-point",
-    default="",
-    show_default=True,
-    envvar="OUTPUT_CACHE_STARTING_POINT",
-)
-def deploy(
-    f,
-    single_account,
-    num_workers,
-    execution_mode,
-    puppet_account_id,
-    home_region,
-    regions,
-    should_collect_cloudformation_events,
-    should_forward_events_to_eventbridge,
-    should_forward_failures_to_opscenter,
-    on_complete_url,
-    output_cache_starting_point,
-):
-    click.echo(
-        f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"
-    )
-    if puppet_account_id is None:
-        puppet_account_id = config.get_puppet_account_id()
-    executor_account_id = config.get_current_account_id()
-
-    if executor_account_id != puppet_account_id:
-        click.echo("Not running in puppet account: writing config")
-        # with open("config.yaml", "w") as conf:
-        #     conf.write(
-        #         yaml.safe_dump(
-        #             dict(
-        #                 home_region=home_region,
-        #                 regions=regions.split(","),
-        #                 should_collect_cloudformation_events=should_collect_cloudformation_events,
-        #                 should_forward_events_to_eventbridge=should_forward_events_to_eventbridge,
-        #                 should_forward_failures_to_opscenter=should_forward_failures_to_opscenter,
-        #             )
-        #         )
-        #     )
-        deploy_commands.deploy(
-            f,
-            puppet_account_id,
-            executor_account_id,
-            single_account=single_account,
-            num_workers=num_workers,
-            execution_mode=execution_mode,
-            on_complete_url=on_complete_url,
-            output_cache_starting_point=output_cache_starting_point,
-        )
-    else:
-        if config.get_should_explode_manifest(puppet_account_id):
-            click.echo("Using an exploded manifest")
-            exploded_files = f.name.replace("expanded.yaml", "exploded-*.yaml")
-            exploded_manifests = glob.glob(exploded_files)
-            for exploded_manifest in exploded_manifests:
-                click.echo(f"Created and running {exploded_manifest}")
-                uid = re.search(".*exploded-(.*).yaml", exploded_manifest).group(1)
-                open(f.name, "w").write(open(exploded_manifest, "r").read())
-                deploy_commands.deploy(
-                    f,
-                    puppet_account_id,
-                    executor_account_id,
-                    single_account=single_account,
-                    num_workers=num_workers,
-                    execution_mode=execution_mode,
-                    on_complete_url=on_complete_url,
-                    running_exploded=True,
-                    output_cache_starting_point=output_cache_starting_point,
-                )
-                output = f"exploded_results{os.path.sep}{uid}"
-                os.makedirs(output)
-                for d in ["results", "output", "data"]:
-                    if os.path.exists(d):
-                        shutil.move(d, f"{output}{os.path.sep}")
-
-        else:
-            deploy_commands.deploy(
-                f,
-                puppet_account_id,
-                executor_account_id,
-                single_account=single_account,
-                num_workers=num_workers,
-                execution_mode=execution_mode,
-                on_complete_url=on_complete_url,
-                output_cache_starting_point=output_cache_starting_point,
-            )
-
-
-@cli.command()
-@click.argument("f", type=click.File())
-@click.option("--single-account", default=None)
 def graph(f, single_account):
-    graph_commands.graph(f)
+    raise Exception("This command is not supported in this version, please try an older version")
 
 
 @cli.command()
@@ -151,16 +47,7 @@ def graph(f, single_account):
 @click.option("--single-account", default=None)
 @click.option("--puppet-account-id", default=None)
 def dry_run(f, single_account, puppet_account_id):
-    if puppet_account_id is None:
-        puppet_account_id = config.get_puppet_account_id()
-    executor_account_id = config.get_current_account_id()
-    deploy_commands.deploy(
-        f,
-        executor_account_id,
-        puppet_account_id,
-        single_account=single_account,
-        is_dry_run=True,
-    )
+    click.echo("This command is disabled for now, due to performance issues.")
 
 
 def parse_tags(ctx, param, value):
@@ -472,15 +359,7 @@ def seed(complexity, p):
 @click.argument("expanded_manifest", type=click.File())
 @click.option("--format", "-f", type=click.Choice(["table", "json"]), default="table")
 def list_launches(expanded_manifest, format):
-    current_account_id = puppet_account_id = config.get_puppet_account_id()
-    deploy_commands.deploy(
-        expanded_manifest,
-        puppet_account_id,
-        current_account_id,
-        single_account=None,
-        is_dry_run=True,
-        is_list_launches=format,
-    )
+    click.echo("This command is disabled for now, due to performance issues.")
 
 
 @cli.command()
@@ -556,6 +435,7 @@ def setup_config(
     should_forward_failures_to_opscenter="None",
     output_cache_starting_point="",
     is_caching_enabled="",
+    global_sharing_mode_default="",
 ):
     home_region_to_use = home_region or constants.HOME_REGION
     if puppet_account_id is None:
@@ -638,16 +518,17 @@ def setup_config(
         )
     else:
         os.environ[environmental_variables.IS_CACHING_ENABLED] = str(is_caching_enabled)
-    # for k, v in os.environ.items():
-    #     if k[0:4] == "SCT_":
-    #         click.echo(f"Overrided {k}: {v}")
 
-    os.environ[
-        environmental_variables.GLOBAL_SHARING_MODE
-    ] = remote_config.get_global_sharing_mode_default(
-        puppet_account_id_to_use, home_region
-    )
-
+    if global_sharing_mode_default == "":
+        os.environ[
+            environmental_variables.GLOBAL_SHARING_MODE
+        ] = remote_config.get_global_sharing_mode_default(
+            puppet_account_id_to_use, home_region
+        )
+    else:
+        os.environ[
+            environmental_variables.GLOBAL_SHARING_MODE
+        ] = global_sharing_mode_default
 
 @cli.command()
 @click.argument("f", type=click.File())
@@ -746,6 +627,9 @@ def deploy_from_task_reference(
 @click.option(
     "--is-caching-enabled", default="", envvar="SCT_IS_CACHING_ENABLED",
 )
+@click.option(
+    "--global-sharing-mode-default", default="", envvar="SCT_GLOBAL_SHARING_MODE",
+)
 def deploy_in_spoke_from_task_reference(
     f,
     num_workers,
@@ -759,6 +643,7 @@ def deploy_in_spoke_from_task_reference(
     should_forward_failures_to_opscenter,
     output_cache_starting_point,
     is_caching_enabled,
+    global_sharing_mode_default,
 ):
     setup_config(
         puppet_account_id=puppet_account_id,
@@ -772,6 +657,7 @@ def deploy_in_spoke_from_task_reference(
         should_forward_failures_to_opscenter=str(should_forward_failures_to_opscenter),
         output_cache_starting_point=output_cache_starting_point,
         is_caching_enabled=is_caching_enabled,
+        global_sharing_mode_default=global_sharing_mode_default,
     )
     click.echo(
         f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"
@@ -881,7 +767,7 @@ def remove_from_launches(launch_name):
 @cli.command()
 @click.argument("f", type=click.File())
 def reset_provisioned_product_owner(f):
-    misc_commands.reset_provisioned_product_owner(f)
+    raise Exception("This is not supported within this version, please try an older version")
 
 
 @cli.command()

@@ -529,23 +529,6 @@ def rewrite_ssm_parameters(manifest):
             for parameter_name, parameter_details in details.get(
                 "parameters", {}
             ).items():
-                # if parameter_details.get("ssm"):
-                #     for d in details.get("depends_on", []):
-                #         dependency = manifest.get(
-                #             constants.SECTION_SINGULAR_TO_PLURAL[d.get("type")]
-                #         ).get(d.get("name"))
-                #         for output in dependency.get("outputs", {}).get("ssm", []):
-                #             if output.get("param_name") == parameter_details.get(
-                #                 "ssm"
-                #             ).get("name"):
-                #                 parameter_depends_on = parameter_details["ssm"].get(
-                #                     "depends_on", []
-                #                 )
-                #                 parameter_depends_on.append(d)
-                #                 parameter_details["ssm"][
-                #                     "depends_on"
-                #                 ] = parameter_depends_on
-                #
                 if parameter_details.get("cloudformation_stack_output"):
                     existing_parameter = parameter_details.get(
                         "cloudformation_stack_output"
@@ -585,27 +568,6 @@ def rewrite_ssm_parameters(manifest):
                         filter=f"Outputs[?OutputKey==`{output_key}`].OutputValue | [0]",
                     )
                     parameter_details["boto3"] = new_parameter
-                    # for section_item_name, section_item_details in manifest.get(
-                    #     constants.LAUNCHES, {}
-                    # ).items():
-                    #     if section_item_name == provisioned_product_name:
-                    #         if details.get("depends_on") is None:
-                    #             details["depends_on"] = list()
-                    #         details["depends_on"].append(
-                    #             dict(
-                    #                 name=provisioned_product_name,
-                    #                 type=constants.LAUNCH,
-                    #                 affinity=constants.LAUNCH,
-                    #             )
-                    #         )
-                    #         parameter_details["boto3"]["depends_on"] = [
-                    #             dict(
-                    #                 name=provisioned_product_name,
-                    #                 type=constants.LAUNCH,
-                    #                 affinity=constants.LAUNCH,
-                    #             )
-                    #         ]
-
     return manifest
 
 
@@ -939,19 +901,15 @@ class Manifest(dict):
                     "launches": dict(
                         account_id=account_id,
                         ou=account.get("expanded_from", ""),
-                        # account_parameters=account.get("parameters", {}),
                     ),
                     "apps": dict(
                         account_id=account_id,
-                        # account_parameters=account.get("parameters", {}),
                     ),
                     "workspaces": dict(
                         account_id=account_id,
-                        # account_parameters=account.get("parameters", {}),
                     ),
                     "stacks": dict(
                         account_id=account_id,
-                        # account_parameters=account.get("parameters", {}),
                     ),
                     "spoke-local-portfolios": dict(
                         account_id=account_id,
@@ -961,11 +919,9 @@ class Manifest(dict):
                     "assertions": dict(account_id=account_id,),
                     "lambda-invocations": dict(
                         account_id=account_id,
-                        # account_parameters=account.get("parameters", {}),
                     ),
                     "code-build-runs": dict(
                         account_id=account_id,
-                        # account_parameters=account.get("parameters", {}),
                     ),
                     "service-control-policies": dict(
                         account_id=account_id, ou_name="",
@@ -1055,21 +1011,17 @@ class Manifest(dict):
             additional_parameters = {
                 "launches": dict(
                     account_id=account_id,
-                    # account_parameters=account.get("parameters", {}),
                 ),
                 "stacks": dict(
                     account_id=account_id,
-                    # account_parameters=account.get("parameters", {}),
                 ),
                 "spoke-local-portfolios": dict(account_id=account_id,),
                 "assertions": dict(account_id=account_id,),
                 "lambda-invocations": dict(
                     account_id=account_id,
-                    # account_parameters=account.get("parameters", {}),
                 ),
                 "code-build-runs": dict(
                     account_id=account_id,
-                    # account_parameters=account.get("parameters", {}),
                 ),
                 "service-control-policies": dict(account_id=account_id, ou_name="",),
                 "tag-policies": dict(account_id=account_id, ou_name="",),

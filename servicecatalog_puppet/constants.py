@@ -269,18 +269,6 @@ DEPLOY_TO_NAMES = {
     TAG_POLICIES: "apply_to",
 }
 
-TASKS_TO_SHARE_WITH_SPOKES = [
-    "GetSSMParam",
-    "DeletePortfolio",
-    "CreateSpokeLocalPortfolioTask",
-    "ImportIntoSpokeLocalPortfolioTask",
-    "CopyIntoSpokeLocalPortfolioTask",
-    "GetPortfolioByPortfolioName",
-    "SearchProductsAsAdminTask",
-    "SharePortfolioViaOrgsTask",
-    "SharePortfolioTask",
-]
-
 CLOUDFORMATION_HAPPY_STATUS = [
     "CREATE_COMPLETE",
     "UPDATE_ROLLBACK_COMPLETE",
