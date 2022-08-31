@@ -675,6 +675,7 @@ def deploy_in_spoke_from_task_reference(
 @cli.command()
 @click.argument("f", type=click.File())
 def validate(f):
+    setup_config()
     manifest_commands.validate(f)
 
 
