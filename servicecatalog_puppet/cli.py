@@ -13,6 +13,7 @@ from servicecatalog_puppet import config, remote_config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet.commands import bootstrap as bootstrap_commands
+from servicecatalog_puppet.commands import graph as graph_commands
 from servicecatalog_puppet.commands import management as management_commands
 from servicecatalog_puppet.commands import manifest as manifest_commands
 from servicecatalog_puppet.commands import misc as misc_commands
@@ -34,11 +35,8 @@ def cli(info, info_line_numbers):
 
 @cli.command()
 @click.argument("f", type=click.File())
-@click.option("--single-account", default=None)
-def graph(f, single_account):
-    raise Exception(
-        "This command is not supported in this version, please try an older version"
-    )
+def graph(f):
+    click.echo(graph_commands.graph(f))
 
 
 @cli.command()
