@@ -17,7 +17,6 @@ from servicecatalog_puppet.workflow.service_control_policies import (
 
 class DoTerminateServiceControlPoliciesTask(tasks.TaskWithReference):
     service_control_policy_name = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()

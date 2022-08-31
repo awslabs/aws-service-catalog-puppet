@@ -2,8 +2,10 @@ from unittest import skip
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
-class DoExecuteTagPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
-    tag_policy_name = "tag_policy_name"
+class DoTerminateServiceControlPoliciesTaskTest(
+    tasks_unit_tests_helper.PuppetTaskUnitTest
+):
+    service_control_policy_name = "service_control_policy_name"
     region = "region"
     account_id = "account_id"
     ou_name = "ou_name"
@@ -13,15 +15,15 @@ class DoExecuteTagPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     requested_priority = 1
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.tag_policies import (
-            do_execute_tag_policies_task,
+        from servicecatalog_puppet.workflow.service_control_policies import (
+            do_terminate_service_control_policies_task,
         )
 
-        self.module = do_execute_tag_policies_task
+        self.module = do_terminate_service_control_policies_task
 
-        self.sut = self.module.DoExecuteTagPoliciesTask(
+        self.sut = self.module.DoTerminateServiceControlPoliciesTask(
             **self.get_common_args(),
-            tag_policy_name=self.tag_policy_name,
+            service_control_policy_name=self.service_control_policy_name,
             region=self.region,
             account_id=self.account_id,
             ou_name=self.ou_name,
@@ -37,7 +39,7 @@ class DoExecuteTagPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
-            "tag_policy_name": self.tag_policy_name,
+            "service_control_policy_name": self.service_control_policy_name,
             "region": self.region,
             "account_id": self.account_id,
             "ou_name": self.ou_name,
@@ -62,7 +64,7 @@ class DoExecuteTagPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_api_calls_used(self):
         # setup
         expected_result = [
-            f"organizations.attach_policy_{self.region}",
+            f"organizations.detach_policy_{self.region}",
         ]
 
         # exercise

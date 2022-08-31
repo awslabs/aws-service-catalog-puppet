@@ -265,7 +265,7 @@ def get_initial_args_for(c):
     return dict()
 
 
-package = "stack"
+package = "service_control_policies"
 
 for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
     print(input)
