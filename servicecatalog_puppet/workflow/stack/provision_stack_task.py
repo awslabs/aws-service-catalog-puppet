@@ -16,9 +16,7 @@ from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 class ProvisionStackTask(tasks.TaskWithParameters):
-
     stack_name = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()

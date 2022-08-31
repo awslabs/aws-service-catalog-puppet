@@ -9,7 +9,7 @@ from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 
 
-class CreateTemplateForStackTask(tasks.PuppetTask):
+class CreateTemplateForStackTask(tasks.PuppetTask): #TODO make task with reference
     def params_for_results_display(self):
         return {
             "cache_invalidator": self.cache_invalidator,

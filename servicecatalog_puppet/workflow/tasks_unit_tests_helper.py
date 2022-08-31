@@ -26,6 +26,7 @@ class FakeInput(object):
 
 
 class PuppetTaskUnitTest(unittest.TestCase):
+    task_reference = "task_reference"
     puppet_account_id = "puppet_account_id"
 
     def get_common_args(self):

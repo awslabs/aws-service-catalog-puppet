@@ -8,7 +8,7 @@ from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.stack import create_template_for_stack_task
 
 
-class PrepareAccountForWorkspaceTask(tasks.PuppetTask):
+class PrepareAccountForWorkspaceTask(tasks.PuppetTask): #TODO make task with reference
     account_id = luigi.Parameter()
 
     def params_for_results_display(self):

@@ -11,9 +11,7 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class TerminateStackTask(tasks.TaskWithReference):
-
     stack_name = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()
