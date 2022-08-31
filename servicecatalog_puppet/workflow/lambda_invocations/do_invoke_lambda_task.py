@@ -19,8 +19,6 @@ class DoInvokeLambdaTask(tasks.TaskWithParameters):
     qualifier = luigi.Parameter()
     invocation_type = luigi.Parameter()
 
-    puppet_account_id = luigi.Parameter()
-
     manifest_file_path = luigi.Parameter()
 
     section_name = constants.LAMBDA_INVOCATIONS

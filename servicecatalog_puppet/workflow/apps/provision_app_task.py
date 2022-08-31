@@ -15,8 +15,6 @@ class ProvisionAppTask(tasks.TaskWithParameters):
     key = luigi.Parameter()
     version_id = luigi.Parameter()
 
-    puppet_account_id = luigi.Parameter()
-
     ssm_param_inputs = luigi.ListParameter(default=[], significant=False)
 
     launch_parameters = luigi.DictParameter(default={}, significant=False)

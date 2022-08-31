@@ -15,7 +15,6 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 class ProvisionProductTask(tasks.TaskWithParameters):
     manifest_file_path = luigi.Parameter()
     launch_name = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()

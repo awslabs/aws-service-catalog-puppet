@@ -12,9 +12,6 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class RunDeployInSpokeTask(tasks.TaskWithReference):
-    task_reference = luigi.Parameter()
-    dependencies_by_reference = luigi.ListParameter()
-    puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     generate_manifest_ref = luigi.Parameter()
 

@@ -8,7 +8,6 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class ProvisioningArtifactParametersTask(tasks.TaskWithReference):
-    puppet_account_id = luigi.Parameter()
     portfolio = luigi.Parameter()
     product = luigi.Parameter()
     version = luigi.Parameter()

@@ -265,7 +265,7 @@ def get_initial_args_for(c):
     return dict()
 
 
-package = "apps"
+package = "launch"
 
 for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
     print(input)
@@ -329,19 +329,27 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
                             if parameter_value.type == "atom_expr":
                                 parameter_type = parameter_value.children[1].children[1].value
 
-                                if global_params.get(parameter_name):
+                                if False: #global_params.get(parameter_name):
                                     parameter_value = global_params[parameter_name]
+                                    handled = True
                                 else:
                                     if parameter_type == "Parameter":
                                         parameter_value = parameter_name
+                                        handled = True
                                     elif parameter_type == "ListParameter":
                                         parameter_value = list()
+                                        handled = True
                                     elif parameter_type == "DictParameter":
                                         parameter_value = dict()
+                                        handled = True
                                     else:
                                         print(f"DIDNT HANDLE {parameter_type} in {parameter_name} in {input}")
+                                        handled = False
                                         # raise Exception("unhandlered parameter type:"+parameter_type)
+                                    if handled:
+                                        params[parameter_name] = parameter_value
 
+                                    print(f"parameter_value is {parameter_value} for {parameter_name}")
 
                                 # if parameter_type == "Parameter":
                                 #     open(output, "a+").write(f"    {parameter_name} = \"{parameter_value}\"\n")
@@ -369,6 +377,7 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.module = {mod}
         
         self.sut = self.module.{c.name.value}(
+            **self.get_common_args(),
             {", ".join([f"{p}=self.{p}" for p in params.keys()])}        
         )
         

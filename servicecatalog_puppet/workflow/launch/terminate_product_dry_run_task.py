@@ -12,7 +12,6 @@ from servicecatalog_puppet.workflow.launch import do_terminate_product_task
 
 class TerminateProductDryRunTask(do_terminate_product_task.DoTerminateProductTask):
     launch_name = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
 
     region = luigi.Parameter()
     account_id = luigi.Parameter()

@@ -14,7 +14,6 @@ class DoAssertTask(tasks.TaskWithParameters):
     region = luigi.Parameter()
     account_id = luigi.Parameter()
 
-    puppet_account_id = luigi.Parameter()
     execution = luigi.Parameter()
 
     expected = luigi.DictParameter()

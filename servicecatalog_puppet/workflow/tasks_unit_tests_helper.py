@@ -13,7 +13,6 @@ def mocked_client():
 
 
 class FakeInput(object):
-
     values = None
 
     def __init__(self) -> None:
@@ -27,6 +26,16 @@ class FakeInput(object):
 
 
 class PuppetTaskUnitTest(unittest.TestCase):
+    puppet_account_id = "puppet_account_id"
+
+    def get_common_args(self):
+        return dict(
+            task_reference="task_reference",
+            manifest_task_reference_file_path="manifest_task_reference_file_path",
+            dependencies_by_reference="dependencies_by_reference",
+            puppet_account_id="puppet_account_id",
+        )
+
     cache_invalidator = "NOW"
 
     def wire_up_mocks(self):
