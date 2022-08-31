@@ -305,7 +305,7 @@ for each AWS CodeBuild step within the pipeline.  This is useful for sharing the
 
 graph
 -----
-The graph command takes an expanded manifest as a parameter and generates a graphviz formated graph representing the
+The graph command takes a task reference file as a parameter and generates a graphviz formated graph representing the
 actions the framework will perform
 
 .. code-block:: bash
