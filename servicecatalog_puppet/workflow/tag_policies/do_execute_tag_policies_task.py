@@ -14,8 +14,6 @@ from servicecatalog_puppet.workflow.tag_policies import get_or_create_policy_tas
 
 
 class DoExecuteTagPoliciesTask(tasks.TaskWithReference):
-    puppet_account_id = luigi.Parameter()
-
     tag_policy_name = luigi.Parameter()
 
     region = luigi.Parameter()

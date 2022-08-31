@@ -13,7 +13,6 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 
 class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
