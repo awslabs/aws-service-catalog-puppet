@@ -17,7 +17,6 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
 
     associations = luigi.ListParameter(default=[])
 

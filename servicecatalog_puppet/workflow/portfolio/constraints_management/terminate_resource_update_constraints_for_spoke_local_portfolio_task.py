@@ -15,7 +15,6 @@ class TerminateResourceUpdateConstraintsForSpokeLocalPortfolioTask(
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     spoke_local_portfolio_name = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
 
     def params_for_results_display(self):
         return {

@@ -265,7 +265,8 @@ def get_initial_args_for(c):
     return dict()
 
 
-package = "service_control_policies"
+package = "portfolio_management"
+package_to_print = f"portfolio.{package}"
 
 for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
     print(input)
@@ -373,7 +374,7 @@ class {c.name.value}Test(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         open(output, "a+").write(f"""
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.{package} import {mod}
+        from servicecatalog_puppet.workflow.{package_to_print} import {mod}
         self.module = {mod}
         
         self.sut = self.module.{c.name.value}(

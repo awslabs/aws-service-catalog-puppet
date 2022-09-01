@@ -18,7 +18,6 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(tasks.TaskWithRefere
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
     launch_constraints = luigi.ListParameter()
 
     portfolio_get_all_products_and_their_versions_ref = luigi.Parameter()

@@ -20,7 +20,6 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
     resource_update_constraints = luigi.ListParameter()
 
     portfolio_get_all_products_and_their_versions_ref = luigi.Parameter()
