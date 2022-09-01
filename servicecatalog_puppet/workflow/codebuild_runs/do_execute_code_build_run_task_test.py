@@ -1,4 +1,4 @@
-from unittest import skip
+from unittest import skip, mock
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -43,12 +43,12 @@ class DoExecuteCodeBuildRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    @skip
     def test_api_calls_used(self):
         # setup
+        self.sut.get_account_used = mock.MagicMock(name="get_account_used")
         expected_result = [
-            f"codebuild.start_build_{self.get_account_used()}_{self.project_name}",
-            f"codebuild.batch_get_projects_{self.get_account_used()}_{self.project_name}",
+            f"codebuild.start_build_{self.sut.get_account_used()}_{self.project_name}",
+            f"codebuild.batch_get_projects_{self.sut.get_account_used()}_{self.project_name}",
         ]
 
         # exercise

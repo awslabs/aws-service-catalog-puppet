@@ -1,4 +1,4 @@
-from unittest import skip
+from unittest import skip, mock
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -47,11 +47,11 @@ class DoInvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    @skip
     def test_api_calls_used(self):
         # setup
+        self.sut.get_account_used = mock.MagicMock(name="get_account_used")
         expected_result = {
-            f"lambda.invoke_{self.get_account_used()}_{self.region}": 1,
+            f"lambda.invoke_{self.sut.get_account_used()}_{self.region}": 1,
         }
 
         # exercise
