@@ -9,15 +9,21 @@ class GetPortfolioLocalTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     status = "status"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.portfolio_management import get_portfolio_task
+        from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+            get_portfolio_task,
+        )
+
         self.module = get_portfolio_task
-        
+
         self.sut = self.module.GetPortfolioLocalTask(
             **self.get_common_args(),
-            account_id=self.account_id, region=self.region, portfolio=self.portfolio, status=self.status        
+            account_id=self.account_id,
+            region=self.region,
+            portfolio=self.portfolio,
+            status=self.status,
         )
-        
-        self.wire_up_mocks()    
+
+        self.wire_up_mocks()
 
     def test_params_for_results_display(self):
         # setup
@@ -28,26 +34,26 @@ class GetPortfolioLocalTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "region": self.region,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
-        }        
-    
+        }
+
         # exercise
         actual_result = self.sut.params_for_results_display()
-        
+
         # verify
         self.assertEqual(expected_result, actual_result)
-    
+
     def test_api_calls_used(self):
         # setup
         expected_result = [
             f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
-        ]        
-    
+        ]
+
         # exercise
         actual_result = self.sut.api_calls_used()
-        
+
         # verify
         self.assertEqual(expected_result, actual_result)
-    
+
     @skip
     def test_run(self):
         # setup
@@ -56,7 +62,8 @@ class GetPortfolioLocalTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         # verify
         raise NotImplementedError()
-    
+
+
 class GetPortfolioImportedTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     account_id = "account_id"
     region = "region"
@@ -65,15 +72,22 @@ class GetPortfolioImportedTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     status = "status"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.portfolio_management import get_portfolio_task
+        from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+            get_portfolio_task,
+        )
+
         self.module = get_portfolio_task
-        
+
         self.sut = self.module.GetPortfolioImportedTask(
             **self.get_common_args(),
-            account_id=self.account_id, region=self.region, portfolio=self.portfolio, sharing_mode=self.sharing_mode, status=self.status
+            account_id=self.account_id,
+            region=self.region,
+            portfolio=self.portfolio,
+            sharing_mode=self.sharing_mode,
+            status=self.status,
         )
-        
-        self.wire_up_mocks()    
+
+        self.wire_up_mocks()
 
     def test_params_for_results_display(self):
         # setup
@@ -85,26 +99,26 @@ class GetPortfolioImportedTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "region": self.region,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
-        }        
-    
+        }
+
         # exercise
         actual_result = self.sut.params_for_results_display()
-        
+
         # verify
         self.assertEqual(expected_result, actual_result)
-    
+
     def test_api_calls_used(self):
         # setup
         expected_result = [
             f"servicecatalog.list_accepted_portfolio_shares_{self.account_id}_{self.region}",
-        ]        
-    
+        ]
+
         # exercise
         actual_result = self.sut.api_calls_used()
-        
+
         # verify
         self.assertEqual(expected_result, actual_result)
-    
+
     @skip
     def test_run(self):
         # setup
@@ -113,4 +127,3 @@ class GetPortfolioImportedTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         # verify
         raise NotImplementedError()
-    

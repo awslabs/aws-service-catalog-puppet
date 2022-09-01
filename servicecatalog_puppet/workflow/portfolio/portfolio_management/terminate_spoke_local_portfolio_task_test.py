@@ -8,15 +8,20 @@ class TerminateSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUni
     portfolio = "portfolio"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.portfolio_management import terminate_spoke_local_portfolio_task
+        from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+            terminate_spoke_local_portfolio_task,
+        )
+
         self.module = terminate_spoke_local_portfolio_task
-        
+
         self.sut = self.module.TerminateSpokeLocalPortfolioTask(
             **self.get_common_args(),
-            account_id=self.account_id, region=self.region, portfolio=self.portfolio        
+            account_id=self.account_id,
+            region=self.region,
+            portfolio=self.portfolio,
         )
-        
-        self.wire_up_mocks()    
+
+        self.wire_up_mocks()
 
     def test_params_for_results_display(self):
         # setup
@@ -27,27 +32,27 @@ class TerminateSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUni
             "region": self.region,
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
-        }        
-    
+        }
+
         # exercise
         actual_result = self.sut.params_for_results_display()
-        
+
         # verify
         self.assertEqual(expected_result, actual_result)
-    
+
     def test_api_calls_used(self):
         # setup
         expected_result = [
             f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
             f"servicecatalog.create_portfolio_{self.account_id}_{self.region}",
-        ]        
-    
+        ]
+
         # exercise
         actual_result = self.sut.api_calls_used()
-        
+
         # verify
         self.assertEqual(expected_result, actual_result)
-    
+
     @skip
     def test_run(self):
         # setup
@@ -56,4 +61,3 @@ class TerminateSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUni
 
         # verify
         raise NotImplementedError()
-    
