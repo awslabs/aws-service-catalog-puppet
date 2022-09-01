@@ -1,4 +1,4 @@
-from unittest import skip
+from unittest import skip, mock
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -54,14 +54,15 @@ class GetPortfolioLocalTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    @skip
     def test_run(self):
         # setup
+        self.sut.get_portfolio_details = mock.MagicMock(name="get_portfolio_details")
+
         # exercise
-        actual_result = self.sut.run()
+        self.sut.run()
 
         # verify
-        raise NotImplementedError()
+        self.assert_output(self.sut.get_portfolio_details())
 
 
 class GetPortfolioImportedTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
@@ -119,11 +120,12 @@ class GetPortfolioImportedTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    @skip
     def test_run(self):
         # setup
+        self.sut.get_portfolio_details = mock.MagicMock(name="get_portfolio_details")
+
         # exercise
-        actual_result = self.sut.run()
+        self.sut.run()
 
         # verify
-        raise NotImplementedError()
+        self.assert_output(self.sut.get_portfolio_details())
