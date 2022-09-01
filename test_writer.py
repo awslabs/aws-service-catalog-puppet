@@ -265,8 +265,8 @@ def get_initial_args_for(c):
     return dict()
 
 
-package = "portfolio_management"
-package_to_print = f"portfolio.{package}"
+package = "ssm"
+package_to_print = f"{package}"
 
 for input in glob.glob("servicecatalog_puppet/workflow/**/*.py", recursive=True):
     print(input)

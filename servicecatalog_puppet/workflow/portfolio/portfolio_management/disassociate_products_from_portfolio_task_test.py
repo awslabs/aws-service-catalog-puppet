@@ -2,19 +2,19 @@ from unittest import skip
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
-class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
+class DisassociateProductsFromPortfolioTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
+    account_id = "account_id"
     region = "region"
     portfolio = "portfolio"
-    ou_to_share_with = "ou_to_share_with"
     portfolio_task_reference = "portfolio_task_reference"
 
     def setUp(self) -> None:
-        from servicecatalog_puppet.workflow.portfolio.sharing_management import share_portfolio_via_orgs_task
-        self.module = share_portfolio_via_orgs_task
+        from servicecatalog_puppet.workflow.portfolio.portfolio_management import disassociate_products_from_portfolio_task
+        self.module = disassociate_products_from_portfolio_task
         
-        self.sut = self.module.SharePortfolioViaOrgsTask(
+        self.sut = self.module.DisassociateProductsFromPortfolio(
             **self.get_common_args(),
-            region=self.region, portfolio=self.portfolio, ou_to_share_with=self.ou_to_share_with, portfolio_task_reference=self.portfolio_task_reference        
+            account_id=self.account_id, region=self.region, portfolio=self.portfolio, portfolio_task_reference=self.portfolio_task_reference        
         )
         
         self.wire_up_mocks()    
@@ -22,10 +22,10 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     def test_params_for_results_display(self):
         # setup
         expected_result = {
-            "puppet_account_id": self.puppet_account_id,
-            "portfolio": self.portfolio,
+            "account_id": self.account_id,
             "region": self.region,
-            "ou_to_share_with": self.ou_to_share_with,
+            "portfolio": self.portfolio,
+            "cache_invalidator": self.cache_invalidator,
         }        
     
         # exercise
@@ -36,10 +36,9 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     
     def test_api_calls_used(self):
         # setup
-        expected_result = [
-            f"servicecatalog.create_portfolio_share",
-            f"servicecatalog.describe_portfolio_share_status",
-        ]        
+        expected_result = {
+            f"servicecatalog.disassociate_product_from_portfolio_{self.account_id}_{self.region}": 1,
+        }        
     
         # exercise
         actual_result = self.sut.api_calls_used()

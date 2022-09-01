@@ -13,7 +13,6 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
     ou_to_share_with = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
 

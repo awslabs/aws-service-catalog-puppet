@@ -7,7 +7,6 @@ from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 class GetSSMParameterTask(tasks.TaskWithReference):
-    puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     param_name = luigi.Parameter()
     region = luigi.Parameter()
@@ -42,7 +41,6 @@ class GetSSMParameterTask(tasks.TaskWithReference):
 
 
 class GetSSMParameterByPathTask(tasks.TaskWithReference):
-    puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     path = luigi.Parameter()
     region = luigi.Parameter()

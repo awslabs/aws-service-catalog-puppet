@@ -11,7 +11,6 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 class ImportIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
     hub_portfolio_task_reference = luigi.Parameter()
 

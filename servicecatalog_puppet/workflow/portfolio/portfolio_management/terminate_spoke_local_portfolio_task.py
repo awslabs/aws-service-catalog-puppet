@@ -8,7 +8,6 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class TerminateSpokeLocalPortfolioTask(tasks.TaskWithReference):
-    puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()

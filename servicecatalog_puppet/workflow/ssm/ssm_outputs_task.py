@@ -8,8 +8,6 @@ from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 class SSMOutputsTasks(tasks.TaskWithReference):
-    puppet_account_id = luigi.Parameter()
-
     account_id = luigi.Parameter()
     region = luigi.Parameter()
 

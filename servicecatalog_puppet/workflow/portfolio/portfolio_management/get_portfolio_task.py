@@ -10,7 +10,6 @@ sharing_mode_map = dict(ACCOUNT="IMPORTED", AWS_ORGANIZATIONS="AWS_ORGANIZATIONS
 
 
 class GetPortfolioLocalTask(tasks.TaskWithReference):
-    puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
@@ -48,7 +47,6 @@ class GetPortfolioLocalTask(tasks.TaskWithReference):
 
 
 class GetPortfolioImportedTask(tasks.TaskWithReference):
-    puppet_account_id = luigi.Parameter()
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()

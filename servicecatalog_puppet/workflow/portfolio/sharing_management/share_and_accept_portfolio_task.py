@@ -11,7 +11,6 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
-    puppet_account_id = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
 
     def params_for_results_display(self):
