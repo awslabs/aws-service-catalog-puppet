@@ -138,6 +138,7 @@ def create(
                 worker_timeout=parameters_to_use.get("worker_timeout"),
                 requested_priority=parameters_to_use.get("requested_priority"),
                 execution=parameters_to_use.get("execution"),
+                tags=parameters_to_use.get("tags"),
                 manifest_file_path=manifest_file_path,
             )
 

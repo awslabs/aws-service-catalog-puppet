@@ -38,6 +38,7 @@ class ProvisionProductTask(tasks.TaskWithParameters):
     requested_priority = luigi.IntParameter(significant=False, default=0)
 
     execution = luigi.Parameter()
+    tags = luigi.ListParameter()
 
     section_name = constants.LAUNCHES
 
@@ -226,6 +227,7 @@ class ProvisionProductTask(tasks.TaskWithParameters):
                                 params_to_use,
                                 self.version,
                                 self.execution,
+                                self.tags,
                             )
 
                     else:
@@ -242,6 +244,7 @@ class ProvisionProductTask(tasks.TaskWithParameters):
                             self.version,
                             self.should_use_sns,
                             self.execution,
+                            self.tags,
                         )
 
         self.write_output(task_output)
