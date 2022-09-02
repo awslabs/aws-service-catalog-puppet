@@ -20,6 +20,7 @@ class ProvisionStackTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     ssm_param_outputs = []
     execution = "execution"
     manifest_file_path = "manifest_file_path"
+    tags = []
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.stack import provision_stack_task
@@ -44,7 +45,8 @@ class ProvisionStackTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             account_parameters=self.account_parameters,
             ssm_param_outputs=self.ssm_param_outputs,
             execution=self.execution,
-            manifest_file_path=self.manifest_file_path
+            manifest_file_path=self.manifest_file_path,
+            tags=self.tags,
         )
 
         self.wire_up_mocks()

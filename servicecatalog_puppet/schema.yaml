@@ -135,6 +135,7 @@ stack:
   launch_name: str(required=False)
   parameters: include('parameters', required=False)
   depends_on: list(include('depends_on'), required=False)
+  tags: list(include('tags_for_resources'), required=False)
   execution: include('execution', required=False)
   deploy_to: any(include('tags'), include('accounts'))
   outputs: include('outputs', required=False)
@@ -149,6 +150,10 @@ app:
   deploy_to: any(include('tags'), include('accounts'))
   outputs: include('outputs', required=False)
   capabilities: list(enum("CAPABILITY_IAM", "CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"), required=False)
+
+tags_for_resources:
+  key: str()
+  value: str()
 
 outputs:
   ssm: list(include('ssm_output'))
@@ -179,6 +184,7 @@ launch:
   version: str()
   parameters: include('parameters', required=False)
   depends_on: list(include('depends_on'), required=False)
+  tags: list(include('tags_for_resources'), required=False)
   execution: include('execution', required=False)
   deploy_to: any(include('tags'), include('accounts'))
   outputs: include('outputs', required=False)

@@ -213,6 +213,7 @@ class ProvisionProductTask(tasks.TaskWithParameters):
                                 params_to_use,
                                 self.version,
                                 self.should_use_sns,
+                                self.tags,
                             )
                         else:
                             provisioned_product_id = aws.update_provisioned_product(

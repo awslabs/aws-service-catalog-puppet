@@ -300,7 +300,9 @@ class ProvisionStackTask(tasks.TaskWithParameters):
                 if self.use_service_role:
                     a["RoleARN"] = config.get_puppet_stack_role_arn(self.account_id)
                 if self.tags:
-                    a['Tags'] = [dict(Key=t.get("key"), Value=t.get("value")) for t in self.tags]
+                    a["Tags"] = [
+                        dict(Key=t.get("key"), Value=t.get("value")) for t in self.tags
+                    ]
                 cloudformation.create_or_update(**a)
 
         task_output["provisioned"] = need_to_provision

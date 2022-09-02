@@ -774,7 +774,6 @@ class Manifest(dict):
                 version=item.get("version"),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
                 tags=item.get("tags", []),
-
             ),
             "stacks": dict(
                 stack_name=item_name,
