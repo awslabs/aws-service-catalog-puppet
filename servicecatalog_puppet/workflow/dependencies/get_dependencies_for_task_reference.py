@@ -97,6 +97,7 @@ def create(
                 use_service_role=parameters_to_use.get("use_service_role"),
                 execution=parameters_to_use.get("execution"),
                 manifest_file_path=manifest_file_path,
+                tags=parameters_to_use.get("tags"),
             )
 
     elif section_name == constants.LAUNCHES:
