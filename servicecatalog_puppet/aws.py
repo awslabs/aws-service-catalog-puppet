@@ -168,6 +168,7 @@ def provision_product_with_plan(
     params,
     version,
     should_use_sns,
+    tags,
 ):
     uid = f"[{launch_name}] {account_id}:{region}]"
     stack_name = "-".join([constants.PREFIX, account_id, region, launch_name])
@@ -200,7 +201,7 @@ def provision_product_with_plan(
         provisioning_parameters.append(
             {"Key": p, "Value": params.get(p),}
         )
-    response = service_catalog.create_provisioned_product_plan(
+    args = dict(
         PlanName=stack_name,
         PlanType="CLOUDFORMATION",
         PathId=path_id,
@@ -215,6 +216,11 @@ def provision_product_with_plan(
         ],
         NotificationArns=[regional_sns_topic,] if should_use_sns else [],
     )
+    if tags:
+        args["Tags"].extend(
+            [dict(Key=t.get("key"), Value=t.get("value")) for t in tags]
+        )
+    response = service_catalog.create_provisioned_product_plan(**args)
     logger.info(f"{uid} :: Plan created, waiting for completion")
 
     plan_id = response.get("PlanId")
@@ -334,6 +340,7 @@ def provision_product(
     version,
     should_use_sns,
     execution,
+    tags,
 ):
     partition = config.get_partition()
     uid = f"[{launch_name}] {account_id}:{region}]"
@@ -346,24 +353,29 @@ def provision_product(
         provisioning_parameters.append(
             {"Key": p, "Value": params.get(p),}
         )
-    provisioned_product_id = (
-        service_catalog.provision_product(
-            ProductId=product_id,
-            ProvisioningArtifactId=provisioning_artifact_id,
-            PathName=path_name,
-            ProvisionedProductName=launch_name,
-            ProvisioningParameters=provisioning_parameters,
-            Tags=[
-                {"Key": "ServiceCatalogPuppet:Actor", "Value": "Generated",},
-                {"Key": "launch_name", "Value": launch_name,},
-                {"Key": "version", "Value": version,},
-            ],
-            NotificationArns=[
-                f"arn:{partition}:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events",
-            ]
-            if should_use_sns
-            else [],
+    args = dict(
+        ProductId=product_id,
+        ProvisioningArtifactId=provisioning_artifact_id,
+        PathName=path_name,
+        ProvisionedProductName=launch_name,
+        ProvisioningParameters=provisioning_parameters,
+        Tags=[
+            {"Key": "ServiceCatalogPuppet:Actor", "Value": "Generated",},
+            {"Key": "launch_name", "Value": launch_name,},
+            {"Key": "version", "Value": version,},
+        ],
+        NotificationArns=[
+            f"arn:{partition}:sns:{region}:{puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events",
+        ]
+        if should_use_sns
+        else [],
+    )
+    if tags:
+        args["Tags"].extend(
+            [dict(Key=t.get("key"), Value=t.get("value")) for t in tags]
         )
+    provisioned_product_id = (
+        service_catalog.provision_product(**args)
         .get("RecordDetail")
         .get("ProvisionedProductId")
     )
@@ -405,6 +417,7 @@ def update_provisioned_product(
     params,
     version,
     execution,
+    tags,
 ):
     uid = f"[{launch_name}] {account_id}:{region}]"
     provisioning_parameters = []
@@ -413,14 +426,25 @@ def update_provisioned_product(
             {"Key": p, "Value": params.get(p),}
         )
 
-    provisioned_product_id = (
-        service_catalog.update_provisioned_product(
-            ProductId=product_id,
-            ProvisioningArtifactId=provisioning_artifact_id,
-            PathName=path_name,
-            ProvisionedProductName=launch_name,
-            ProvisioningParameters=provisioning_parameters,
+    args = dict(
+        ProductId=product_id,
+        ProvisioningArtifactId=provisioning_artifact_id,
+        PathName=path_name,
+        ProvisionedProductName=launch_name,
+        ProvisioningParameters=provisioning_parameters,
+        Tags=[
+            {"Key": "ServiceCatalogPuppet:Actor", "Value": "Generated",},
+            {"Key": "launch_name", "Value": launch_name,},
+            {"Key": "version", "Value": version,},
+        ],
+    )
+    if tags:
+        args["Tags"].extend(
+            [dict(Key=t.get("key"), Value=t.get("value")) for t in tags]
         )
+
+    provisioned_product_id = (
+        service_catalog.update_provisioned_product(**args)
         .get("RecordDetail")
         .get("ProvisionedProductId")
     )

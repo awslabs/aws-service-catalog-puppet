@@ -773,6 +773,7 @@ class Manifest(dict):
                 product=item.get("product"),
                 version=item.get("version"),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
+                tags=item.get("tags", []),
             ),
             "stacks": dict(
                 stack_name=item_name,
@@ -790,6 +791,7 @@ class Manifest(dict):
                     constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE,
                     constants.CONFIG_SHOULD_USE_STACKS_SERVICE_ROLE_DEFAULT,
                 ),
+                tags=item.get("tags", []),
             ),
             "apps": dict(
                 app_name=item_name,

@@ -97,6 +97,7 @@ def create(
                 use_service_role=parameters_to_use.get("use_service_role"),
                 execution=parameters_to_use.get("execution"),
                 manifest_file_path=manifest_file_path,
+                tags=parameters_to_use.get("tags"),
             )
 
     elif section_name == constants.LAUNCHES:
@@ -137,6 +138,7 @@ def create(
                 worker_timeout=parameters_to_use.get("worker_timeout"),
                 requested_priority=parameters_to_use.get("requested_priority"),
                 execution=parameters_to_use.get("execution"),
+                tags=parameters_to_use.get("tags"),
                 manifest_file_path=manifest_file_path,
             )
 

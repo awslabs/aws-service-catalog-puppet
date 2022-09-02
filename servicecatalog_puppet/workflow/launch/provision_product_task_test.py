@@ -19,6 +19,7 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     manifest_parameters = {}
     account_parameters = {}
     ssm_param_outputs = []
+    tags = []
     execution = "execution"
 
     def setUp(self) -> None:
@@ -42,7 +43,8 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             manifest_parameters=self.manifest_parameters,
             account_parameters=self.account_parameters,
             ssm_param_outputs=self.ssm_param_outputs,
-            execution=self.execution
+            execution=self.execution,
+            tags=self.tags,
         )
 
         self.wire_up_mocks()
