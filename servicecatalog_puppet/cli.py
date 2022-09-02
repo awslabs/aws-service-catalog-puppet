@@ -119,6 +119,7 @@ def bootstrap_spokes_in_ou(
     puppet_role_path,
     tag,
 ):
+    setup_config()
     spoke_management_commands.bootstrap_spokes_in_ou(
         ou_path_or_id,
         role_name,
@@ -679,6 +680,7 @@ def validate(f):
 
 @cli.command()
 def version():
+    setup_config()
     version_commands.version()
 
 
@@ -689,12 +691,14 @@ def version():
 @click.option("--format", type=click.Choice(["csv", "json"]), default="csv")
 @click.option("--limit", type=click.INT, default=20)
 def show_codebuilds(filter, format, limit):
+    setup_config()
     show_codebuilds_commands.show_codebuilds(filter, limit, format)
 
 
 @cli.command()
 @click.argument("p", type=click.Path(exists=True))
 def upload_config(p):
+    setup_config()
     content = open(p, "r").read()
     management_commands.upload_config(yaml.safe_load(content))
 
@@ -702,12 +706,14 @@ def upload_config(p):
 @cli.command()
 @click.argument("org-iam-role-arn")
 def set_org_iam_role_arn(org_iam_role_arn):
+    setup_config()
     orgs_commands.set_org_iam_role_arn(org_iam_role_arn)
 
 
 @cli.command()
 @click.argument("org-iam-role-arn")
 def set_org_scp_role_arn(org_iam_role_arn):
+    setup_config()
     orgs_commands.set_org_scp_role_arn(org_iam_role_arn)
 
 
@@ -715,6 +721,7 @@ def set_org_scp_role_arn(org_iam_role_arn):
 @click.argument("puppet_account_id")
 @click.option("--tag", multiple=True, callback=parse_tags, default=[])
 def bootstrap_org_master(puppet_account_id, tag):
+    setup_config()
     orgs_commands.bootstrap_org_master(puppet_account_id, tag)
 
 
@@ -722,6 +729,7 @@ def bootstrap_org_master(puppet_account_id, tag):
 @click.argument("puppet_account_id")
 @click.option("--tag", multiple=True, callback=parse_tags, default=[])
 def bootstrap_scp_master(puppet_account_id, tag):
+    setup_config()
     orgs_commands.bootstrap_scp_master(puppet_account_id, tag)
 
 
@@ -729,11 +737,13 @@ def bootstrap_scp_master(puppet_account_id, tag):
 @click.argument("what", default="puppet")
 @click.option("--tail/--no-tail", default=False)
 def run(what, tail):
+    setup_config()
     misc_commands.run(what, tail)
 
 
 @cli.command()
 def list_resources():
+    setup_config()
     management_commands.list_resources()
 
 
@@ -742,30 +752,35 @@ def list_resources():
 @click.argument("name")
 @click.argument("portfolio_name")
 def import_product_set(f, name, portfolio_name):
+    setup_config()
     manifest_commands.import_product_set(f, name, portfolio_name)
 
 
 @cli.command()
 @click.argument("account_or_ou_file_path", type=click.File())
 def add_to_accounts(account_or_ou_file_path):
+    setup_config()
     manifest_commands.add_to_accounts(yaml.safe_load(account_or_ou_file_path))
 
 
 @cli.command()
 @click.argument("account_id_or_ou_id_or_ou_path")
 def remove_from_accounts(account_id_or_ou_id_or_ou_path):
+    setup_config()
     manifest_commands.remove_from_accounts(account_id_or_ou_id_or_ou_path)
 
 
 @cli.command()
 @click.argument("launch_file_path", type=click.File())
 def add_to_launches(launch_name, launch_file_path):
+    setup_config()
     manifest_commands.add_to_launches(launch_name, yaml.safe_load(launch_file_path))
 
 
 @cli.command()
 @click.argument("launch_name")
 def remove_from_launches(launch_name):
+    setup_config()
     manifest_commands.remove_from_launches(launch_name)
 
 
@@ -801,6 +816,7 @@ def set_named_config_value(name, value):
 @click.argument("execution_id")
 @click.option("--puppet-account-id", default=None)
 def export_puppet_pipeline_logs(execution_id, puppet_account_id):
+    setup_config(puppet_account_id=puppet_account_id)
     if puppet_account_id is None:
         puppet_account_id = config.get_puppet_account_id()
     management_commands.export_puppet_pipeline_logs(execution_id, puppet_account_id)
@@ -809,6 +825,7 @@ def export_puppet_pipeline_logs(execution_id, puppet_account_id):
 @cli.command()
 @click.option("--puppet-account-id", default=None)
 def uninstall(puppet_account_id):
+    setup_config(puppet_account_id=puppet_account_id)
     if puppet_account_id is None:
         puppet_account_id = config.get_puppet_account_id()
     misc_commands.uninstall(puppet_account_id)
@@ -817,6 +834,7 @@ def uninstall(puppet_account_id):
 @cli.command()
 @click.option("--puppet-account-id", default=None)
 def release_spoke(puppet_account_id):
+    setup_config(puppet_account_id=puppet_account_id)
     if puppet_account_id is None:
         puppet_account_id = config.get_puppet_account_id()
     spoke_management_commands.release_spoke(puppet_account_id)
