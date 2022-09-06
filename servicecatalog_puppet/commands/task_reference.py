@@ -1,5 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+import copy
 import logging
 
 from deepmerge import always_merger
@@ -114,6 +115,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                     tasks_by_region[section_name_singular][item_name][
                         task_to_add.get("region")
                     ] = list()
+
                 tasks_by_region[section_name_singular][item_name][
                     task_to_add.get("region")
                 ].append(all_tasks_task_reference)
@@ -124,6 +126,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                     tasks_by_account_id[section_name_singular][item_name][
                         task_to_add.get("account_id")
                     ] = list()
+
                 tasks_by_account_id[section_name_singular][item_name][
                     task_to_add.get("account_id")
                 ].append(all_tasks_task_reference)
@@ -137,6 +140,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                     tasks_by_account_id_and_region[section_name_singular][item_name][
                         account_and_region
                     ] = list()
+
                 tasks_by_account_id_and_region[section_name_singular][item_name][
                     account_and_region
                 ].append(all_tasks_task_reference)
@@ -160,7 +164,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                             f"You have two tasks outputting the same SSM parameter output: {ssm_parameter_output.get('param_name')}"
                         )
 
-                    if not all_tasks.get(ssm_parameter_output_task_reference):
+                    else:
                         all_tasks[ssm_parameter_output_task_reference] = dict(
                             manifest_section_name=list(),
                             manifest_item_name=list(),
@@ -246,13 +250,13 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
     #
     new_tasks = dict()
     for task_reference, task in all_tasks.items():
-        parameters = dict()
+        parameters = {}
         launch_parameters = (
             manifest.get(task.get("section_name"), {})
             .get(task.get("item_name"), {})
             .get("parameters", {})
         )
-        manifest_parameters = manifest.get("parameters")
+        manifest_parameters = copy.deepcopy(manifest.get("parameters"))
         account_parameters = manifest.get_parameters_for_account(task.get("account_id"))
 
         always_merger.merge(parameters, manifest_parameters)
@@ -276,7 +280,6 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         .replace("${AWS::AccountId}", interpolation_output_account)
                     )
 
-                    # TODO verify
                     task_def = dict(
                         account_id=owning_account,
                         region=owning_region,
