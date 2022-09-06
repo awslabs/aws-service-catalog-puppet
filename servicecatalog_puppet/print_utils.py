@@ -4,22 +4,16 @@ import click
 
 
 def echo(message):
-    click.secho(
-        message,
-    )
+    click.secho(message,)
 
 
 def warn(message):
     click.secho(
-        message,
-        err=True,
-        fg="yellow",
+        message, err=True, fg="yellow",
     )
 
 
 def error(message):
     click.secho(
-        message,
-        err=True,
-        fg="red",
+        message, err=True, fg="red",
     )
