@@ -9,6 +9,7 @@ from servicecatalog_puppet.workflow import runner
 from servicecatalog_puppet.workflow.dependencies import (
     get_dependencies_for_task_reference,
 )
+import networkx as nx
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
@@ -27,6 +28,25 @@ def get_spoke_local_portfolio_common_args(
         reverse_dependencies_by_reference=list(),
         portfolio_task_reference=all_tasks_task_reference,
     )
+
+
+def ensure_no_cyclic_dependencies(name, tasks):
+    graph = nx.DiGraph()
+    for t_name, t in tasks.items():
+        uid = t_name
+        data = t
+        graph.add_nodes_from(
+            [(uid, data),]
+        )
+        for duid in t.get("dependencies_by_reference", []):
+            graph.add_edge(uid, duid)
+    try:
+        cycle = nx.find_cycle(graph)
+        raise Exception(
+            f"found cyclic dependency task reference file {name} between: {cycle}"
+        )
+    except nx.exception.NetworkXNoCycle:
+        pass
 
 
 def generate_complete_task_reference(puppet_account_id, manifest, output_file_path):
@@ -457,6 +477,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
             all_tasks[dep]["reverse_dependencies_by_reference"].append(task_reference)
 
     reference = dict(all_tasks=all_tasks,)
+    ensure_no_cyclic_dependencies("complete task reference", all_tasks)
     open(output_file_path, "w").write(yaml_utils.dump(reference))
     return reference
 
@@ -1357,7 +1378,8 @@ def handle_launches(
             puppet_account_id=puppet_account_id,
             task_reference=describe_provisioning_params_ref,
             dependencies_by_reference=[
-                hub_portfolio_ref,  # TODO check this still works for a new portfolio after changing it from: portfolio_deploying_from
+                hub_portfolio_ref,
+                # TODO check this still works for a new portfolio after changing it from: portfolio_deploying_from
             ],  # associations are added here and so this is a dependency
             reverse_dependencies_by_reference=[],
             account_id=puppet_account_id,
@@ -1507,6 +1529,7 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
                 )
 
     result = dict(all_tasks=tasks_to_include)
+    ensure_no_cyclic_dependencies("hub task reference", tasks_to_include)
     open(output_file_path, "w").write(yaml_utils.dump(result))
     return result
 
@@ -1531,6 +1554,7 @@ def generate_overridden_task_reference(
                 overridden_tasks[task_name] = task
 
     result = dict(all_tasks=overridden_tasks)
+    ensure_no_cyclic_dependencies("overridden task reference", overridden_tasks)
     open(output_file_path, "w").write(yaml_utils.dump(result))
     return result
 
