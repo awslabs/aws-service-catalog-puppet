@@ -13,6 +13,7 @@ from betterboto import client as betterboto_client
 from servicecatalog_puppet import asset_helpers
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
+from servicecatalog_puppet import print_utils
 from servicecatalog_puppet import manifest_utils
 from servicecatalog_puppet import yaml_utils
 
@@ -222,18 +223,24 @@ def validate(f):
     for collection_type in constants.ALL_SECTION_NAMES:
         collection_to_check = manifest.get(collection_type, {})
         for collection_name, collection_item in collection_to_check.items():
+            #
+            # Check the tags in deploy_to that are not defined
+            #
             for deploy_to in collection_item.get("deploy_to", {}).get("tags", []):
                 tag_to_check = deploy_to.get("tag")
                 if tags_defined_by_accounts.get(tag_to_check) is None:
-                    print(
-                        f"{collection_type}.{collection_name} uses tag {tag_to_check} in deploy_to that does not exist"
+                    print_utils.warn(
+                        f"{collection_type}.{collection_name} uses tag {tag_to_check} in deploy_to that does not exist",
                     )
 
+            #
+            # Check the depends_on where the dependency is not present
+            #
             for depends_on in collection_item.get("depends_on", []):
                 if isinstance(depends_on, str):
                     if manifest.get(constants.LAUNCHES).get(depends_on) is None:
-                        print(
-                            f"{collection_type}.{collection_name} uses {depends_on} in depends_on that does not exist"
+                        print_utils.warn(
+                            f"{collection_type}.{collection_name} uses {depends_on} in depends_on that does not exist",
                         )
                 else:
                     tt = constants.SECTION_SINGULAR_TO_PLURAL.get(
@@ -241,12 +248,28 @@ def validate(f):
                     )
                     dd = depends_on.get("name")
                     if manifest.get(tt).get(dd) is None:
-                        print(
-                            f"{collection_type}.{collection_name} uses {depends_on} in depends_on that does not exist"
-                        )
+                        print_utils.warn(f"{collection_type}.{collection_name} uses {depends_on} in depends_on that does not exist",)
 
-    click.echo("Finished validating: {}".format(f.name))
-    click.echo("Finished validating: OK")
+            #
+            # Check depends_on is present when parameters names match outputs defined elsewhere
+            #
+            for parameter_name, parameter_details in collection_item.get("parameters", {}).items():
+                if parameter_details.get("ssm"):
+                    output_name = parameter_details.get("ssm").get("name")
+                    for needle_section_name in constants.ALL_SECTION_NAMES_THAT_GENERATE_OUTPUTS:
+                        for needle_action_name, needle_action_details in manifest.get(needle_section_name, {}).items():
+                            for needle_output in needle_action_details.get("outputs", {}).get("ssm", []):
+                                if output_name == needle_output.get("param_name"):
+                                    found = False
+                                    for dependency in collection_item.get("depends_on", []):
+                                        plural = constants.SECTION_SINGULAR_TO_PLURAL.get(dependency.get("type", constants.LAUNCH))
+                                        if dependency.get("name") == needle_action_name and plural == needle_section_name:
+                                            found = True
+                                    if not found:
+                                        print_utils.error(f"{output_name} is used in {collection_type}.{collection_name} from {needle_section_name}.{needle_action_name} but is not in depends_on")
+
+    print_utils.echo("Finished validating: {}".format(f.name))
+    print_utils.echo("Finished validating: OK")
 
 
 def import_product_set(f, name, portfolio_name):
