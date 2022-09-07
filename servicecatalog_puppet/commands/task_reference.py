@@ -1482,7 +1482,7 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
                 # sharing should happen from the hub for spoke-local-portfolios in hub and spoke split mode
                 should_include = (
                     task.get("section_name")
-                    == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
+                    in [constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT, constants.PORTFOLIO_SHARE_AND_ACCEPT_AWS_ORGANIZATIONS]
                 )
         else:
             raise Exception("Unhandled execution")
