@@ -440,7 +440,7 @@ Resources:
             build:
               commands:
                 - servicecatalog-puppet --info expand manifest.yaml
-                - servicecatalog-puppet --info generate-task-reference manifest-expanded.yaml
+                - servicecatalog-puppet --info generate-task-reference $PWD/manifest-expanded.yaml
                 - servicecatalog-puppet --info deploy-from-task-reference --num-workers ${NUM_WORKERS} .
           artifacts:
             files:
@@ -448,7 +448,7 @@ Resources:
               - results/*/*
               - output/*/*
               - exploded_results/*/*
-              - tasks.log
+              - tasks/*.json
             name: DeployProject
 
       TimeoutInMinutes: 480

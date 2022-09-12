@@ -899,7 +899,7 @@ def get_template(
             pre_build={
                 "commands": [
                     "servicecatalog-puppet --info expand --parameter-override-file $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml manifest.yaml",
-                    "servicecatalog-puppet --info generate-task-reference --parameter-override-file $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml  manifest-expanded.yaml",
+                    "servicecatalog-puppet --info generate-task-reference --parameter-override-file $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml  $PWD/manifest-expanded.yaml",
                 ]
             },
             build={
@@ -916,7 +916,7 @@ def get_template(
                 "results/*/*",
                 "output/*/*",
                 "exploded_results/*/*",
-                "tasks.log",
+                "tasks/*.json",
             ],
         ),
     )
