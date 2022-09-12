@@ -1470,15 +1470,11 @@ def generate_task_reference(f, overrides):
         puppet_account_id, manifest, f.name.replace("-expanded", "-task-reference-full")
     )
     task_output_path = f"{path}/tasks"
-    print(f"outputting to {task_output_path}")
     if not os.path.exists(task_output_path):
-        print(f"creating to {task_output_path}")
         os.makedirs(task_output_path)
-    print(f"complete is {complete}")
     for t_name, task in complete.get("all_tasks", {}).items():
         task_output_file_path = f"{task_output_path}/{graph.escape(t_name)}.json"
         task_output_content = yaml_utils.dump_as_json(task)
-        print(f"writing file to {task_output_file_path}")
         open(task_output_file_path, 'w').write(
            task_output_content
         )
