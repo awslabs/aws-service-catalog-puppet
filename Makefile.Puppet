@@ -36,7 +36,7 @@ generate-task-reference:
 ## @Puppet_commands Runs servicecatalog-puppet --info deploy-from-task-reference for the checked out manifest file
 deploy-from-task-reference:
 	time poetry run servicecatalog-puppet --info deploy-from-task-reference --num-workers 40 \
-		ignored/src/ServiceCatalogPuppet/manifest-task-reference.yaml
+		ignored/src/ServiceCatalogPuppet/
 
 deploy-from-task-reference-spoke:
 	time poetry run servicecatalog-puppet --info deploy-from-task-reference \

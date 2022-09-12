@@ -1,38 +1,22 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 from servicecatalog_puppet import constants
-from servicecatalog_puppet import yaml_utils
-
-
-def get_dependencies_for_task_reference(
-    manifest_task_reference_file_path, task_reference, puppet_account_id
-):
-    dependencies = dict()
-    reference = yaml_utils.load(
-        open(manifest_task_reference_file_path, "r").read()
-    ).get("all_tasks")
-    this_task = reference.get(task_reference)
-    for dependency_by_reference in this_task.get("dependencies_by_reference", []):
-        dependency_by_reference_params = reference.get(dependency_by_reference)
-        t_reference = dependency_by_reference_params.get("task_reference")
-        dependencies[t_reference] = create(
-            manifest_task_reference_file_path,
-            puppet_account_id,
-            dependency_by_reference_params,
-        )
-    return dependencies
 
 
 def create(
-    manifest_task_reference_file_path, puppet_account_id, parameters_to_use,
+    manifest_files_path, manifest_task_reference_file_path, puppet_account_id, parameters_to_use,
 ):
     # TODO add in support for list launches and dry run
     section_name = parameters_to_use.get("section_name")
-    common_parameters = dict(
+    minimum_common_parameters = dict(
         puppet_account_id=puppet_account_id,
         task_reference=parameters_to_use.get("task_reference"),
         manifest_task_reference_file_path=manifest_task_reference_file_path,
+        manifest_files_path=manifest_files_path,
         dependencies_by_reference=parameters_to_use.get("dependencies_by_reference"),
+    )
+    common_parameters = dict(
+        **minimum_common_parameters,
         account_id=parameters_to_use.get("account_id"),
         region=parameters_to_use.get("region"),
     )
@@ -518,12 +502,7 @@ def create(
             )
 
             return share_portfolio_via_orgs_task.SharePortfolioViaOrgsTask(
-                puppet_account_id=puppet_account_id,
-                task_reference=parameters_to_use.get("task_reference"),
-                manifest_task_reference_file_path=manifest_task_reference_file_path,
-                dependencies_by_reference=parameters_to_use.get(
-                    "dependencies_by_reference"
-                ),
+                **minimum_common_parameters,
                 region=parameters_to_use.get("region"),
                 portfolio=parameters_to_use.get("portfolio"),
                 portfolio_task_reference=parameters_to_use.get(
@@ -557,16 +536,11 @@ def create(
             )
 
             return provisioning_artifact_parameters_task.ProvisioningArtifactParametersTask(
-                puppet_account_id=puppet_account_id,
-                task_reference=parameters_to_use.get("task_reference"),
-                dependencies_by_reference=parameters_to_use.get(
-                    "dependencies_by_reference"
-                ),
+                **minimum_common_parameters,
                 region=parameters_to_use.get("region"),
                 portfolio=parameters_to_use.get("portfolio"),
                 product=parameters_to_use.get("product"),
                 version=parameters_to_use.get("version"),
-                manifest_task_reference_file_path=manifest_task_reference_file_path,
             )
 
     elif section_name == constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION:
@@ -576,18 +550,11 @@ def create(
             )
 
             return terminate_associations_task.TerminateAssociationTask(
-                puppet_account_id=puppet_account_id,
-                task_reference=parameters_to_use.get("task_reference"),
-                dependencies_by_reference=parameters_to_use.get(
-                    "dependencies_by_reference"
-                ),
-                account_id=parameters_to_use.get("account_id"),
-                region=parameters_to_use.get("region"),
+                **common_parameters,
                 portfolio=parameters_to_use.get("portfolio"),
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
-                manifest_task_reference_file_path=manifest_task_reference_file_path,
             )
         else:
             from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
@@ -595,18 +562,11 @@ def create(
             )
 
             return create_associations_task.CreateAssociationTask(
-                puppet_account_id=puppet_account_id,
-                task_reference=parameters_to_use.get("task_reference"),
-                dependencies_by_reference=parameters_to_use.get(
-                    "dependencies_by_reference"
-                ),
-                account_id=parameters_to_use.get("account_id"),
-                region=parameters_to_use.get("region"),
+                **common_parameters,
                 portfolio=parameters_to_use.get("portfolio"),
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
-                manifest_task_reference_file_path=manifest_task_reference_file_path,
             )
 
     elif section_name == constants.APPS:
@@ -616,14 +576,8 @@ def create(
             from servicecatalog_puppet.workflow.apps import provision_app_task
 
             return provision_app_task.ProvisionAppTask(
-                puppet_account_id=puppet_account_id,
-                task_reference=parameters_to_use.get("task_reference"),
-                dependencies_by_reference=parameters_to_use.get(
-                    "dependencies_by_reference"
-                ),
+                **common_parameters,
                 app_name=parameters_to_use.get("app_name"),
-                region=parameters_to_use.get("region"),
-                account_id=parameters_to_use.get("account_id"),
                 bucket=parameters_to_use.get("bucket"),
                 key=parameters_to_use.get("key"),
                 version_id=parameters_to_use.get("version_id"),
@@ -636,7 +590,6 @@ def create(
                 ssm_param_outputs=[],
                 requested_priority=parameters_to_use.get("requested_priority"),
                 execution=parameters_to_use.get("execution"),
-                manifest_task_reference_file_path=manifest_task_reference_file_path,
             )
 
     elif section_name == constants.WORKSPACES:
@@ -646,14 +599,8 @@ def create(
             )
 
             return terminate_workspace_task.TerminateWorkspaceTask(
-                puppet_account_id=puppet_account_id,
-                task_reference=parameters_to_use.get("task_reference"),
-                dependencies_by_reference=parameters_to_use.get(
-                    "dependencies_by_reference"
-                ),
+                **common_parameters,
                 workspace_name=parameters_to_use.get("workspace_name"),
-                region=parameters_to_use.get("region"),
-                account_id=parameters_to_use.get("account_id"),
                 bucket=parameters_to_use.get("bucket"),
                 key=parameters_to_use.get("key"),
                 version_id=parameters_to_use.get("version_id"),
@@ -666,7 +613,6 @@ def create(
                 ssm_param_outputs=[],
                 requested_priority=parameters_to_use.get("requested_priority"),
                 execution=parameters_to_use.get("execution"),
-                manifest_task_reference_file_path=manifest_task_reference_file_path,
                 manifest_file_path=manifest_file_path,
             )
 
@@ -676,14 +622,8 @@ def create(
             )
 
             return provision_workspace_task.ProvisionWorkspaceTask(
-                puppet_account_id=puppet_account_id,
-                task_reference=parameters_to_use.get("task_reference"),
-                dependencies_by_reference=parameters_to_use.get(
-                    "dependencies_by_reference"
-                ),
+                **common_parameters,
                 workspace_name=parameters_to_use.get("workspace_name"),
-                region=parameters_to_use.get("region"),
-                account_id=parameters_to_use.get("account_id"),
                 bucket=parameters_to_use.get("bucket"),
                 key=parameters_to_use.get("key"),
                 version_id=parameters_to_use.get("version_id"),
@@ -696,7 +636,6 @@ def create(
                 ssm_param_outputs=[],
                 requested_priority=parameters_to_use.get("requested_priority"),
                 execution=parameters_to_use.get("execution"),
-                manifest_task_reference_file_path=manifest_task_reference_file_path,
                 manifest_file_path=manifest_file_path,
             )
 
@@ -709,13 +648,8 @@ def create(
             )
 
             return prepare_account_for_workspace_task.PrepareAccountForWorkspaceTask(
-                puppet_account_id=puppet_account_id,
-                task_reference=parameters_to_use.get("task_reference"),
-                dependencies_by_reference=parameters_to_use.get(
-                    "dependencies_by_reference"
-                ),
+                **minimum_common_parameters,
                 account_id=parameters_to_use.get("account_id"),
-                manifest_task_reference_file_path=manifest_task_reference_file_path,
             )
 
     elif (
@@ -729,32 +663,20 @@ def create(
             )
 
             return disassociate_products_from_portfolio_task.DisassociateProductsFromPortfolio(
-                puppet_account_id=puppet_account_id,
-                task_reference=parameters_to_use.get("task_reference"),
-                dependencies_by_reference=parameters_to_use.get(
-                    "dependencies_by_reference"
-                ),
-                account_id=parameters_to_use.get("account_id"),
-                region=parameters_to_use.get("region"),
+                **common_parameters,
                 portfolio=parameters_to_use.get("portfolio"),
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
-                manifest_task_reference_file_path=manifest_task_reference_file_path,
             )
 
     elif section_name == constants.RUN_DEPLOY_IN_SPOKE:
         from servicecatalog_puppet.workflow.launch import run_deploy_in_spoke_task
 
         return run_deploy_in_spoke_task.RunDeployInSpokeTask(
-            puppet_account_id=puppet_account_id,
-            task_reference=parameters_to_use.get("task_reference"),
-            dependencies_by_reference=parameters_to_use.get(
-                "dependencies_by_reference"
-            ),
+            **minimum_common_parameters,
             account_id=parameters_to_use.get("account_id"),
             generate_manifest_ref=parameters_to_use.get("generate_manifest_ref"),
-            manifest_task_reference_file_path=manifest_task_reference_file_path,
         )
 
     elif section_name == constants.GENERATE_MANIFEST:
@@ -763,12 +685,7 @@ def create(
         )
 
         return generate_manifest_with_ids_task.GenerateManifestWithIdsTask(
-            puppet_account_id=puppet_account_id,
-            task_reference=parameters_to_use.get("task_reference"),
-            dependencies_by_reference=parameters_to_use.get(
-                "dependencies_by_reference"
-            ),
-            manifest_task_reference_file_path=manifest_task_reference_file_path,
+            **minimum_common_parameters,
         )
 
     elif section_name == constants.GET_TEMPLATE_FROM_S3:
@@ -777,17 +694,10 @@ def create(
         )
 
         return get_cloud_formation_template_from_s3.GetCloudFormationTemplateFromS3(
-            puppet_account_id=parameters_to_use.get("puppet_account_id"),
-            task_reference=parameters_to_use.get("task_reference"),
-            dependencies_by_reference=parameters_to_use.get(
-                "dependencies_by_reference"
-            ),
-            account_id=parameters_to_use.get("account_id"),
+            **common_parameters,
             bucket=parameters_to_use.get("bucket"),
             key=parameters_to_use.get("key"),
-            region=parameters_to_use.get("region"),
             version_id=parameters_to_use.get("version_id"),
-            manifest_task_reference_file_path=manifest_task_reference_file_path,
         )
 
     else:

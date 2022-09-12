@@ -2,10 +2,13 @@
 #  SPDX-License-Identifier: Apache-2.0
 import copy
 import logging
+import os
+import pathlib
 
 from deepmerge import always_merger
 
 from servicecatalog_puppet import manifest_utils, constants, yaml_utils, config
+from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.workflow import runner
 from servicecatalog_puppet.workflow.dependencies import (
     get_dependencies_for_task_reference,
@@ -32,17 +35,17 @@ def get_spoke_local_portfolio_common_args(
 
 
 def ensure_no_cyclic_dependencies(name, tasks):
-    graph = nx.DiGraph()
+    g = nx.DiGraph()
     for t_name, t in tasks.items():
         uid = t_name
         data = t
-        graph.add_nodes_from(
+        g.add_nodes_from(
             [(uid, data),]
         )
         for duid in t.get("dependencies_by_reference", []):
-            graph.add_edge(uid, duid)
+            g.add_edge(uid, duid)
     try:
-        cycle = nx.find_cycle(graph)
+        cycle = nx.find_cycle(g)
         raise Exception(
             f"found cyclic dependency task reference file {name} between: {cycle}"
         )
@@ -87,9 +90,12 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                 regions_in_use,
             )
             for task_to_add in tasks_to_add:
-                task_to_add["manifest_section_name"] = [section_name]
-                task_to_add["manifest_item_name"] = [item_name]
-                task_to_add["manifest_account_id"] = [task_to_add.get("account_id")]
+                task_to_add["manifest_section_names"] = {
+                    section_name: True
+                }
+                task_to_add["manifest_item_names"] = {
+                    item_name: True
+                }
                 task_to_add["manifest_account_ids"] = {
                     task_to_add.get("account_id"): True
                 }
@@ -166,9 +172,8 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
 
                     else:
                         all_tasks[ssm_parameter_output_task_reference] = dict(
-                            manifest_section_name=list(),
-                            manifest_item_name=list(),
-                            manifest_account_id=list(),
+                            manifest_section_names=dict(),
+                            manifest_item_names=dict(),
                             manifest_account_ids=dict(),
                             task_reference=ssm_parameter_output_task_reference,
                             param_name=ssm_parameter_output.get("param_name")
@@ -189,14 +194,11 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                             section_name=constants.SSM_OUTPUTS,
                         )
                     all_tasks[ssm_parameter_output_task_reference][
-                        "manifest_section_name"
-                    ].append(section_name)
+                        "manifest_section_names"
+                    ][section_name] = True
                     all_tasks[ssm_parameter_output_task_reference][
-                        "manifest_item_name"
-                    ].append(item_name)
-                    all_tasks[ssm_parameter_output_task_reference][
-                        "manifest_account_id"
-                    ].append(task_to_add.get("account_id"))
+                        "manifest_item_names"
+                    ][item_name] = True
                     all_tasks[ssm_parameter_output_task_reference][
                         "manifest_account_ids"
                     ][task_to_add.get("account_id")] = True
@@ -284,9 +286,8 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         account_id=owning_account,
                         region=owning_region,
                         reverse_dependencies_by_reference=list(),
-                        manifest_section_name=task.get("manifest_section_name"),
-                        manifest_item_name=task.get("manifest_item_name"),
-                        manifest_account_id=task.get("manifest_account_id"),
+                        manifest_section_names=dict(**task.get("manifest_section_names")),
+                        manifest_item_names=dict(**task.get("manifest_item_names")),
                         manifest_account_ids=dict(**task.get("manifest_account_ids")),
                     )
                     path = ssm_parameter_details.get("path")
@@ -329,14 +330,11 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         new_tasks[ssm_parameter_task_reference] = task_def
 
                     new_tasks[ssm_parameter_task_reference][
-                        "manifest_section_name"
-                    ].extend(task.get("manifest_section_name"))
+                        "manifest_section_names"
+                    ].update(task.get("manifest_section_names"))
                     new_tasks[ssm_parameter_task_reference][
-                        "manifest_item_name"
-                    ].extend(task.get("manifest_item_name"))
-                    new_tasks[ssm_parameter_task_reference][
-                        "manifest_account_id"
-                    ].extend(task.get("manifest_account_id"))
+                        "manifest_item_names"
+                    ].update(task.get("manifest_item_names"))
                     new_tasks[ssm_parameter_task_reference][
                         "manifest_account_ids"
                     ].update(task.get("manifest_account_ids"))
@@ -384,9 +382,8 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                             status=task.get("status"),
                             task_reference=boto3_parameter_task_reference,
                             dependencies_by_reference=dependencies,
-                            manifest_section_name=list(),
-                            manifest_item_name=list(),
-                            manifest_account_id=list(),
+                            manifest_section_names=dict(),
+                            manifest_item_names=dict(),
                             manifest_account_ids=dict(),
                             reverse_dependencies_by_reference=list(),
                             account_id=account_id_to_use_for_boto3_call,
@@ -400,14 +397,11 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         )
 
                     new_tasks[boto3_parameter_task_reference][
-                        "manifest_section_name"
-                    ].extend(task.get("manifest_section_name"))
+                        "manifest_section_names"
+                    ].update(task.get("manifest_section_names"))
                     new_tasks[boto3_parameter_task_reference][
-                        "manifest_item_name"
-                    ].extend(task.get("manifest_item_name"))
-                    new_tasks[boto3_parameter_task_reference][
-                        "manifest_account_id"
-                    ].extend(task.get("manifest_account_id"))
+                        "manifest_item_names"
+                    ].update(task.get("manifest_item_names"))
                     new_tasks[boto3_parameter_task_reference][
                         "manifest_account_ids"
                     ].update(task.get("manifest_account_ids"))
@@ -435,7 +429,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                 else:
                     # TODO should this be a warning or an error
                     raise Exception(
-                        f"invalid use of {affinity} affinity - {name} is not deployed"
+                        f"invalid use of {affinity} affinity - {name} is not deployed for task {task_reference}"
                     )
 
             if affinity == constants.AFFINITY_REGION:
@@ -446,7 +440,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                 else:
                     # TODO should this be a warning or an error
                     raise Exception(
-                        f"invalid use of region affinity - {name} is not deployed in the region: {task.get('region')}"
+                        f"invalid use of region affinity - {name} is not deployed in the region: {task.get('region')} for task {task_reference}"
                     )
 
             if affinity == constants.AFFINITY_ACCOUNT:
@@ -457,7 +451,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                 else:
                     # TODO should this be a warning or an error
                     raise Exception(
-                        f"invalid use of account affinity - {name} is not deployed in the account_id: {task.get('account_id')}"
+                        f"invalid use of account affinity - {name} is not deployed in the account_id: {task.get('account_id')} for task {task_reference}"
                     )
 
             if affinity == constants.AFFINITY_ACCOUNT_AND_REGION:
@@ -473,7 +467,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                 else:
                     # TODO should this be a warning or an error
                     raise Exception(
-                        f"invalid use of account-and-region affinity - {name} is not deployed in the account_id and region: {account_and_region}"
+                        f"invalid use of account-and-region affinity - {name} is not deployed in the account_id and region: {account_and_region} for task {task_reference}"
                     )
 
         for dep in task["dependencies_by_reference"]:
@@ -481,7 +475,8 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
 
     reference = dict(all_tasks=all_tasks,)
     ensure_no_cyclic_dependencies("complete task reference", all_tasks)
-    open(output_file_path, "w").write(yaml_utils.dump(reference))
+    # open(output_file_path, "w").write(yaml_utils.dump(reference))
+    open(output_file_path, "w").write(yaml_utils.dump_as_json(reference))
     return reference
 
 
@@ -507,9 +502,8 @@ def handle_stacks(
             account_id=puppet_account_id,
             dependencies_by_reference=list(),
             reverse_dependencies_by_reference=list(),
-            manifest_section_name=list(),
-            manifest_item_name=list(),
-            manifest_account_id=list(),
+            manifest_section_names=dict(),
+            manifest_item_names=dict(),
             manifest_account_ids=dict(),
             section_name=constants.GET_TEMPLATE_FROM_S3,
         )
@@ -517,14 +511,11 @@ def handle_stacks(
     all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
         get_s3_template_ref
     )
-    all_tasks[get_s3_template_ref]["manifest_section_name"].extend(
-        task_to_add.get("manifest_section_name")
+    all_tasks[get_s3_template_ref]["manifest_section_names"].update(
+        task_to_add.get("manifest_section_names")
     )
-    all_tasks[get_s3_template_ref]["manifest_item_name"].extend(
-        task_to_add.get("manifest_item_name")
-    )
-    all_tasks[get_s3_template_ref]["manifest_account_id"].extend(
-        task_to_add.get("manifest_account_id")
+    all_tasks[get_s3_template_ref]["manifest_item_names"].update(
+        task_to_add.get("manifest_item_names")
     )
     all_tasks[get_s3_template_ref]["manifest_account_ids"].update(
         task_to_add.get("manifest_account_ids")
@@ -551,19 +542,15 @@ def handle_workspaces(
             reverse_dependencies_by_reference=[],
             account_id=task_to_add.get("account_id"),
             section_name=constants.WORKSPACE_ACCOUNT_PREPARATION,
-            manifest_section_name=list(),
-            manifest_item_name=list(),
-            manifest_account_id=list(),
+            manifest_section_names=dict(),
+            manifest_item_names=dict(),
             manifest_account_ids=dict(),
         )
-    all_tasks[workspace_account_preparation_ref]["manifest_section_name"].extend(
-        task_to_add.get("manifest_section_name")
+    all_tasks[workspace_account_preparation_ref]["manifest_section_names"].update(
+        task_to_add.get("manifest_section_names")
     )
-    all_tasks[workspace_account_preparation_ref]["manifest_item_name"].extend(
-        task_to_add.get("manifest_item_name")
-    )
-    all_tasks[workspace_account_preparation_ref]["manifest_account_id"].extend(
-        task_to_add.get("manifest_account_id")
+    all_tasks[workspace_account_preparation_ref]["manifest_item_names"].update(
+        task_to_add.get("manifest_item_names")
     )
     all_tasks[workspace_account_preparation_ref]["manifest_account_ids"].update(
         task_to_add.get("manifest_account_ids")
@@ -607,19 +594,15 @@ def handle_spoke_local_portfolios(
                     spoke_local_portfolio_name=item_name,
                     section_name=constants.PORTFOLIO_ASSOCIATIONS,
                     associations=task_to_add.get("associations"),
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
-            all_tasks[ref]["manifest_section_name"].extend(
-                task_to_add.get("manifest_section_name")
+            all_tasks[ref]["manifest_section_names"].update(
+                task_to_add.get("manifest_section_names")
             )
-            all_tasks[ref]["manifest_item_name"].extend(
-                task_to_add.get("manifest_item_name")
-            )
-            all_tasks[ref]["manifest_account_id"].extend(
-                task_to_add.get("manifest_account_id")
+            all_tasks[ref]["manifest_item_names"].update(
+                task_to_add.get("manifest_item_names")
             )
             all_tasks[ref]["manifest_account_ids"].update(
                 task_to_add.get("manifest_account_ids")
@@ -642,19 +625,15 @@ def handle_spoke_local_portfolios(
                     section_name=constants.PORTFOLIO_CONSTRAINTS_LAUNCH,
                     spoke_local_portfolio_name=item_name,
                     launch_constraints=task_to_add["launch_constraints"],
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
-            all_tasks[ref]["manifest_section_name"].extend(
-                task_to_add.get("manifest_section_name")
+            all_tasks[ref]["manifest_section_names"].update(
+                task_to_add.get("manifest_section_names")
             )
-            all_tasks[ref]["manifest_item_name"].extend(
-                task_to_add.get("manifest_item_name")
-            )
-            all_tasks[ref]["manifest_account_id"].extend(
-                task_to_add.get("manifest_account_id")
+            all_tasks[ref]["manifest_item_names"].update(
+                task_to_add.get("manifest_item_names")
             )
             all_tasks[ref]["manifest_account_ids"].update(
                 task_to_add.get("manifest_account_ids")
@@ -679,19 +658,15 @@ def handle_spoke_local_portfolios(
                     resource_update_constraints=task_to_add[
                         "resource_update_constraints"
                     ],
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
-            all_tasks[ref]["manifest_section_name"].extend(
-                task_to_add.get("manifest_section_name")
+            all_tasks[ref]["manifest_section_names"].update(
+                task_to_add.get("manifest_section_names")
             )
-            all_tasks[ref]["manifest_item_name"].extend(
-                task_to_add.get("manifest_item_name")
-            )
-            all_tasks[ref]["manifest_account_id"].extend(
-                task_to_add.get("manifest_account_id")
+            all_tasks[ref]["manifest_item_names"].update(
+                task_to_add.get("manifest_item_names")
             )
             all_tasks[ref]["manifest_account_ids"].update(
                 task_to_add.get("manifest_account_ids")
@@ -710,19 +685,15 @@ def handle_spoke_local_portfolios(
                 status=task_to_add.get("status"),
                 execution=task_to_add.get("execution"),
                 section_name=constants.PORTFOLIO_LOCAL,
-                manifest_section_name=list(),
-                manifest_item_name=list(),
-                manifest_account_id=list(),
+                manifest_section_names=dict(),
+                manifest_item_names=dict(),
                 manifest_account_ids=dict(),
             )
-        all_tasks[spoke_portfolio_ref]["manifest_section_name"].extend(
-            task_to_add.get("manifest_section_name")
+        all_tasks[spoke_portfolio_ref]["manifest_section_names"].update(
+            task_to_add.get("manifest_section_names")
         )
-        all_tasks[spoke_portfolio_ref]["manifest_item_name"].extend(
-            task_to_add.get("manifest_item_name")
-        )
-        all_tasks[spoke_portfolio_ref]["manifest_account_id"].extend(
-            task_to_add.get("manifest_account_id")
+        all_tasks[spoke_portfolio_ref]["manifest_item_names"].update(
+            task_to_add.get("manifest_item_names")
         )
         all_tasks[spoke_portfolio_ref]["manifest_account_ids"].update(
             task_to_add.get("manifest_account_ids")
@@ -743,20 +714,16 @@ def handle_spoke_local_portfolios(
                     portfolio=task_to_add.get("portfolio"),
                     portfolio_task_reference=spoke_portfolio_ref,
                     section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
             all_tasks[spoke_portfolio_all_products_and_versions_ref][
-                "manifest_section_name"
-            ].extend(task_to_add.get("manifest_section_name"))
+                "manifest_section_names"
+            ].update(task_to_add.get("manifest_section_names"))
             all_tasks[spoke_portfolio_all_products_and_versions_ref][
-                "manifest_item_name"
-            ].extend(task_to_add.get("manifest_item_name"))
-            all_tasks[spoke_portfolio_all_products_and_versions_ref][
-                "manifest_account_id"
-            ].extend(task_to_add.get("manifest_account_id"))
+                "manifest_item_names"
+            ].update(task_to_add.get("manifest_item_names"))
             all_tasks[spoke_portfolio_all_products_and_versions_ref][
                 "manifest_account_ids"
             ].update(task_to_add.get("manifest_account_ids"))
@@ -776,20 +743,16 @@ def handle_spoke_local_portfolios(
                     portfolio=task_to_add.get("portfolio"),
                     portfolio_task_reference=spoke_portfolio_ref,
                     section_name=constants.PORTFOLIO_DISASSOCIATE_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
             all_tasks[disassociate_portfolio_all_products_and_versions_ref][
-                "manifest_section_name"
-            ].extend(task_to_add.get("manifest_section_name"))
+                "manifest_section_names"
+            ].update(task_to_add.get("manifest_section_names"))
             all_tasks[disassociate_portfolio_all_products_and_versions_ref][
-                "manifest_item_name"
-            ].extend(task_to_add.get("manifest_item_name"))
-            all_tasks[disassociate_portfolio_all_products_and_versions_ref][
-                "manifest_account_id"
-            ].extend(task_to_add.get("manifest_account_id"))
+                "manifest_item_names"
+            ].update(task_to_add.get("manifest_item_names"))
             all_tasks[disassociate_portfolio_all_products_and_versions_ref][
                 "manifest_account_ids"
             ].update(task_to_add.get("manifest_account_ids"))
@@ -811,19 +774,15 @@ def handle_spoke_local_portfolios(
                 portfolio=task_to_add.get("portfolio"),
                 execution=task_to_add.get("execution"),
                 section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
-                manifest_section_name=list(),
-                manifest_item_name=list(),
-                manifest_account_id=list(),
+                manifest_section_names=dict(),
+                manifest_item_names=dict(),
                 manifest_account_ids=dict(),
             )
         all_tasks[spoke_portfolio_puppet_association_ref][
-            "manifest_section_name"
-        ].extend(task_to_add.get("manifest_section_name"))
-        all_tasks[spoke_portfolio_puppet_association_ref]["manifest_item_name"].extend(
-            task_to_add.get("manifest_item_name")
-        )
-        all_tasks[spoke_portfolio_puppet_association_ref]["manifest_account_id"].extend(
-            task_to_add.get("manifest_account_id")
+            "manifest_section_names"
+        ].update(task_to_add.get("manifest_section_names"))
+        all_tasks[spoke_portfolio_puppet_association_ref]["manifest_item_names"].update(
+            task_to_add.get("manifest_item_names")
         )
         all_tasks[spoke_portfolio_puppet_association_ref][
             "manifest_account_ids"
@@ -849,20 +808,16 @@ def handle_spoke_local_portfolios(
                     portfolio=task_to_add.get("portfolio"),
                     execution=task_to_add.get("execution"),
                     section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
             all_tasks[spoke_portfolio_puppet_association_ref][
-                "manifest_section_name"
-            ].extend(task_to_add.get("manifest_section_name"))
+                "manifest_section_names"
+            ].update(task_to_add.get("manifest_section_names"))
             all_tasks[spoke_portfolio_puppet_association_ref][
-                "manifest_item_name"
-            ].extend(task_to_add.get("manifest_item_name"))
-            all_tasks[spoke_portfolio_puppet_association_ref][
-                "manifest_account_id"
-            ].extend(task_to_add.get("manifest_account_id"))
+                "manifest_item_names"
+            ].update(task_to_add.get("manifest_item_names"))
             all_tasks[spoke_portfolio_puppet_association_ref][
                 "manifest_account_ids"
             ].update(task_to_add.get("manifest_account_ids"))
@@ -878,20 +833,16 @@ def handle_spoke_local_portfolios(
                     ),
                     task_reference=spoke_portfolio_all_products_and_versions_after_ref,
                     section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
             all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
-                "manifest_section_name"
-            ].extend(task_to_add.get("manifest_section_name"))
+                "manifest_section_names"
+            ].update(task_to_add.get("manifest_section_names"))
             all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
-                "manifest_item_name"
-            ].extend(task_to_add.get("manifest_item_name"))
-            all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
-                "manifest_account_id"
-            ].extend(task_to_add.get("manifest_account_id"))
+                "manifest_item_names"
+            ].update(task_to_add.get("manifest_item_names"))
             all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
                 "manifest_account_ids"
             ].update(task_to_add.get("manifest_account_ids"))
@@ -914,19 +865,15 @@ def handle_spoke_local_portfolios(
                     status=task_to_add.get("status"),
                     execution=task_to_add.get("execution"),
                     section_name=constants.PORTFOLIO_LOCAL,
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
-            all_tasks[hub_portfolio_ref]["manifest_section_name"].extend(
-                task_to_add.get("manifest_section_name")
+            all_tasks[hub_portfolio_ref]["manifest_section_names"].update(
+                task_to_add.get("manifest_section_names")
             )
-            all_tasks[hub_portfolio_ref]["manifest_item_name"].extend(
-                task_to_add.get("manifest_item_name")
-            )
-            all_tasks[hub_portfolio_ref]["manifest_account_id"].extend(
-                task_to_add.get("manifest_account_id")
+            all_tasks[hub_portfolio_ref]["manifest_item_names"].update(
+                task_to_add.get("manifest_item_names")
             )
             all_tasks[hub_portfolio_ref]["manifest_account_ids"].update(
                 task_to_add.get("manifest_account_ids")
@@ -952,20 +899,16 @@ def handle_spoke_local_portfolios(
                     portfolio=task_to_add.get("portfolio"),
                     execution=task_to_add.get("execution"),
                     section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,  # TODO test in with a new spoke local
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
             all_tasks[hub_portfolio_puppet_association_ref][
-                "manifest_section_name"
-            ].extend(task_to_add.get("manifest_section_name"))
+                "manifest_section_names"
+            ].update(task_to_add.get("manifest_section_names"))
             all_tasks[hub_portfolio_puppet_association_ref][
-                "manifest_item_name"
-            ].extend(task_to_add.get("manifest_item_name"))
-            all_tasks[hub_portfolio_puppet_association_ref][
-                "manifest_account_id"
-            ].extend(task_to_add.get("manifest_account_id"))
+                "manifest_item_names"
+            ].update(task_to_add.get("manifest_item_names"))
             all_tasks[hub_portfolio_puppet_association_ref][
                 "manifest_account_ids"
             ].update(task_to_add.get("manifest_account_ids"))
@@ -988,19 +931,15 @@ def handle_spoke_local_portfolios(
                     portfolio_task_reference=hub_portfolio_ref,
                     section_name=f"portfolio-share-and-accept-{sharing_mode.lower()}",
                     ou_to_share_with=task_to_add.get("ou"),
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
-            all_tasks[share_and_accept_ref]["manifest_section_name"].extend(
-                task_to_add.get("manifest_section_name")
+            all_tasks[share_and_accept_ref]["manifest_section_names"].update(
+                task_to_add.get("manifest_section_names")
             )
-            all_tasks[share_and_accept_ref]["manifest_item_name"].extend(
-                task_to_add.get("manifest_item_name")
-            )
-            all_tasks[share_and_accept_ref]["manifest_account_id"].extend(
-                task_to_add.get("manifest_account_id")
+            all_tasks[share_and_accept_ref]["manifest_item_names"].update(
+                task_to_add.get("manifest_item_names")
             )
             all_tasks[share_and_accept_ref]["manifest_account_ids"].update(
                 task_to_add.get("manifest_account_ids")
@@ -1022,20 +961,16 @@ def handle_spoke_local_portfolios(
                     region=task_to_add.get("region"),
                     execution=task_to_add.get("execution"),
                     section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
             all_tasks[hub_portfolio_all_products_and_versions_before_ref][
-                "manifest_section_name"
-            ].extend(task_to_add.get("manifest_section_name"))
+                "manifest_section_names"
+            ].update(task_to_add.get("manifest_section_names"))
             all_tasks[hub_portfolio_all_products_and_versions_before_ref][
-                "manifest_item_name"
-            ].extend(task_to_add.get("manifest_item_name"))
-            all_tasks[hub_portfolio_all_products_and_versions_before_ref][
-                "manifest_account_id"
-            ].extend(task_to_add.get("manifest_account_id"))
+                "manifest_item_names"
+            ].update(task_to_add.get("manifest_item_names"))
             all_tasks[hub_portfolio_all_products_and_versions_before_ref][
                 "manifest_account_ids"
             ].update(task_to_add.get("manifest_account_ids"))
@@ -1054,20 +989,16 @@ def handle_spoke_local_portfolios(
                     portfolio=task_to_add.get("portfolio"),
                     execution=task_to_add.get("execution"),
                     section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
             all_tasks[spoke_portfolio_puppet_association_ref][
-                "manifest_section_name"
-            ].extend(task_to_add.get("manifest_section_name"))
+                "manifest_section_names"
+            ].update(task_to_add.get("manifest_section_names"))
             all_tasks[spoke_portfolio_puppet_association_ref][
-                "manifest_item_name"
-            ].extend(task_to_add.get("manifest_item_name"))
-            all_tasks[spoke_portfolio_puppet_association_ref][
-                "manifest_account_id"
-            ].extend(task_to_add.get("manifest_account_id"))
+                "manifest_item_names"
+            ].update(task_to_add.get("manifest_item_names"))
             all_tasks[spoke_portfolio_puppet_association_ref][
                 "manifest_account_ids"
             ].update(task_to_add.get("manifest_account_ids"))
@@ -1083,20 +1014,16 @@ def handle_spoke_local_portfolios(
                     ),
                     task_reference=spoke_portfolio_all_products_and_versions_ref,
                     section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
             all_tasks[spoke_portfolio_all_products_and_versions_ref][
-                "manifest_section_name"
-            ].extend(task_to_add.get("manifest_section_name"))
+                "manifest_section_names"
+            ].update(task_to_add.get("manifest_section_names"))
             all_tasks[spoke_portfolio_all_products_and_versions_ref][
-                "manifest_item_name"
-            ].extend(task_to_add.get("manifest_item_name"))
-            all_tasks[spoke_portfolio_all_products_and_versions_ref][
-                "manifest_account_id"
-            ].extend(task_to_add.get("manifest_account_id"))
+                "manifest_item_names"
+            ].update(task_to_add.get("manifest_item_names"))
             all_tasks[spoke_portfolio_all_products_and_versions_ref][
                 "manifest_account_ids"
             ].update(task_to_add.get("manifest_account_ids"))
@@ -1118,9 +1045,8 @@ def handle_spoke_local_portfolios(
                 section_name=f"portfolio-{product_generation_method}",
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_ref,
                 portfolio_get_all_products_and_their_versions_for_hub_ref=hub_portfolio_all_products_and_versions_before_ref,
-                manifest_section_name=[] + task_to_add.get("manifest_section_name"),
-                manifest_item_name=[] + task_to_add.get("manifest_item_name"),
-                manifest_account_id=[] + task_to_add.get("manifest_account_id"),
+                manifest_section_names=dict(**task_to_add.get("manifest_section_names")),
+                manifest_item_names=dict(**task_to_add.get("manifest_item_names")),
                 manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
             )
             if product_generation_method == constants.PRODUCT_GENERATION_METHOD_IMPORT:
@@ -1144,9 +1070,8 @@ def handle_spoke_local_portfolios(
                 spoke_local_portfolio_name=item_name,
                 section_name=constants.PORTFOLIO_ASSOCIATIONS,
                 associations=task_to_add.get("associations"),
-                manifest_section_name=[] + task_to_add.get("manifest_section_name"),
-                manifest_item_name=[] + task_to_add.get("manifest_item_name"),
-                manifest_account_id=[] + task_to_add.get("manifest_account_id"),
+                manifest_section_names=dict(**task_to_add.get("manifest_section_names")),
+                manifest_item_names=dict(**task_to_add.get("manifest_item_names")),
                 manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
             )
         if not is_sharing_with_puppet_account:
@@ -1164,20 +1089,16 @@ def handle_spoke_local_portfolios(
                     ),
                     task_reference=spoke_portfolio_all_products_and_versions_after_ref,
                     section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-                    manifest_section_name=list(),
-                    manifest_item_name=list(),
-                    manifest_account_id=list(),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
             all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
-                "manifest_section_name"
-            ].extend(task_to_add.get("manifest_section_name"))
+                "manifest_section_names"
+            ].update(task_to_add.get("manifest_section_names"))
             all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
-                "manifest_item_name"
-            ].extend(task_to_add.get("manifest_item_name"))
-            all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
-                "manifest_account_id"
-            ].extend(task_to_add.get("manifest_account_id"))
+                "manifest_item_names"
+            ].update(task_to_add.get("manifest_item_names"))
             all_tasks[spoke_portfolio_all_products_and_versions_after_ref][
                 "manifest_account_ids"
             ].update(task_to_add.get("manifest_account_ids"))
@@ -1197,9 +1118,8 @@ def handle_spoke_local_portfolios(
                 spoke_local_portfolio_name=item_name,
                 launch_constraints=task_to_add["launch_constraints"],
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_after_ref,
-                manifest_section_name=[] + task_to_add.get("manifest_section_name"),
-                manifest_item_name=[] + task_to_add.get("manifest_item_name"),
-                manifest_account_id=[] + task_to_add.get("manifest_account_id"),
+                manifest_section_names=dict(**task_to_add.get("manifest_section_names")),
+                manifest_item_names=dict(**task_to_add.get("manifest_item_names")),
                 manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
             )
         if task_to_add.get("resource_update_constraints"):
@@ -1214,9 +1134,8 @@ def handle_spoke_local_portfolios(
                 spoke_local_portfolio_name=item_name,
                 resource_update_constraints=task_to_add["resource_update_constraints"],
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_after_ref,
-                manifest_section_name=[] + task_to_add.get("manifest_section_name"),
-                manifest_item_name=[] + task_to_add.get("manifest_item_name"),
-                manifest_account_id=[] + task_to_add.get("manifest_account_id"),
+                manifest_section_names=dict(**task_to_add.get("manifest_section_names")),
+                manifest_item_names=dict(**task_to_add.get("manifest_item_names")),
                 manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
             )
 
@@ -1247,19 +1166,15 @@ def handle_launches(
             status=task_to_add.get("status"),
             execution=constants.EXECUTION_MODE_HUB,
             section_name=constants.PORTFOLIO_LOCAL,
-            manifest_section_name=list(),
-            manifest_item_name=list(),
-            manifest_account_id=list(),
+            manifest_section_names=dict(),
+            manifest_item_names=dict(),
             manifest_account_ids=dict(),
         )
-    all_tasks[hub_portfolio_ref]["manifest_section_name"].extend(
-        task_to_add.get("manifest_section_name")
+    all_tasks[hub_portfolio_ref]["manifest_section_names"].update(
+        task_to_add.get("manifest_section_names")
     )
-    all_tasks[hub_portfolio_ref]["manifest_item_name"].extend(
-        task_to_add.get("manifest_item_name")
-    )
-    all_tasks[hub_portfolio_ref]["manifest_account_id"].extend(
-        task_to_add.get("manifest_account_id")
+    all_tasks[hub_portfolio_ref]["manifest_item_names"].update(
+        task_to_add.get("manifest_item_names")
     )
     all_tasks[hub_portfolio_ref]["manifest_account_ids"].update(
         task_to_add.get("manifest_account_ids")
@@ -1287,19 +1202,15 @@ def handle_launches(
                 portfolio_task_reference=hub_portfolio_ref,
                 section_name=f"portfolio-share-and-accept-{sharing_mode.lower()}",
                 ou_to_share_with=task_to_add.get("ou"),
-                manifest_section_name=list(),
-                manifest_item_name=list(),
-                manifest_account_id=list(),
+                manifest_section_names=dict(),
+                manifest_item_names=dict(),
                 manifest_account_ids=dict(),
             )
-        all_tasks[share_and_accept_ref]["manifest_section_name"].extend(
-            task_to_add.get("manifest_section_name")
+        all_tasks[share_and_accept_ref]["manifest_section_names"].update(
+            task_to_add.get("manifest_section_names")
         )
-        all_tasks[share_and_accept_ref]["manifest_item_name"].extend(
-            task_to_add.get("manifest_item_name")
-        )
-        all_tasks[share_and_accept_ref]["manifest_account_id"].extend(
-            task_to_add.get("manifest_account_id")
+        all_tasks[share_and_accept_ref]["manifest_item_names"].update(
+            task_to_add.get("manifest_item_names")
         )
         all_tasks[share_and_accept_ref]["manifest_account_ids"].update(
             task_to_add.get("manifest_account_ids")
@@ -1320,19 +1231,15 @@ def handle_launches(
                     "sharing_mode", config.get_global_sharing_mode_default()
                 ),
                 section_name=constants.PORTFOLIO_IMPORTED,
-                manifest_section_name=list(),
-                manifest_item_name=list(),
-                manifest_account_id=list(),
+                manifest_section_names=dict(),
+                manifest_item_names=dict(),
                 manifest_account_ids=dict(),
             )
-        all_tasks[spoke_portfolio_ref]["manifest_section_name"].extend(
-            task_to_add.get("manifest_section_name")
+        all_tasks[spoke_portfolio_ref]["manifest_section_names"].update(
+            task_to_add.get("manifest_section_names")
         )
-        all_tasks[spoke_portfolio_ref]["manifest_item_name"].extend(
-            task_to_add.get("manifest_item_name")
-        )
-        all_tasks[spoke_portfolio_ref]["manifest_account_id"].extend(
-            task_to_add.get("manifest_account_id")
+        all_tasks[spoke_portfolio_ref]["manifest_item_names"].update(
+            task_to_add.get("manifest_item_names")
         )
         all_tasks[spoke_portfolio_ref]["manifest_account_ids"].update(
             task_to_add.get("manifest_account_ids")
@@ -1352,19 +1259,15 @@ def handle_launches(
                 portfolio=task_to_add.get("portfolio"),
                 execution=task_to_add.get("execution"),
                 section_name=constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
-                manifest_section_name=list(),
-                manifest_item_name=list(),
-                manifest_account_id=list(),
+                manifest_section_names=dict(),
+                manifest_item_names=dict(),
                 manifest_account_ids=dict(),
             )
         all_tasks[spoke_portfolio_puppet_association_ref][
-            "manifest_section_name"
-        ].extend(task_to_add.get("manifest_section_name"))
-        all_tasks[spoke_portfolio_puppet_association_ref]["manifest_item_name"].extend(
-            task_to_add.get("manifest_item_name")
-        )
-        all_tasks[spoke_portfolio_puppet_association_ref]["manifest_account_id"].extend(
-            task_to_add.get("manifest_account_id")
+            "manifest_section_names"
+        ].update(task_to_add.get("manifest_section_names"))
+        all_tasks[spoke_portfolio_puppet_association_ref]["manifest_item_names"].update(
+            task_to_add.get("manifest_item_names")
         )
         all_tasks[spoke_portfolio_puppet_association_ref][
             "manifest_account_ids"
@@ -1391,19 +1294,15 @@ def handle_launches(
             product=task_to_add.get("product"),
             version=task_to_add.get("version"),
             section_name=constants.DESCRIBE_PROVISIONING_PARAMETERS,
-            manifest_section_name=list(),
-            manifest_item_name=list(),
-            manifest_account_id=list(),
+            manifest_section_names=dict(),
+            manifest_item_names=dict(),
             manifest_account_ids=dict(),
         )
-    all_tasks[describe_provisioning_params_ref]["manifest_section_name"].extend(
-        task_to_add.get("manifest_section_name")
+    all_tasks[describe_provisioning_params_ref]["manifest_section_names"].update(
+        task_to_add.get("manifest_section_names")
     )
-    all_tasks[describe_provisioning_params_ref]["manifest_item_name"].extend(
-        task_to_add.get("manifest_item_name")
-    )
-    all_tasks[describe_provisioning_params_ref]["manifest_account_id"].extend(
-        task_to_add.get("manifest_account_id")
+    all_tasks[describe_provisioning_params_ref]["manifest_item_names"].update(
+        task_to_add.get("manifest_item_names")
     )
     all_tasks[describe_provisioning_params_ref]["manifest_account_ids"].update(
         task_to_add.get("manifest_account_ids")
@@ -1426,20 +1325,16 @@ def handle_launches(
             account_id=puppet_account_id,
             region=task_to_add.get("region"),
             section_name=constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
-            manifest_section_name=list(),
-            manifest_item_name=list(),
-            manifest_account_id=list(),
+            manifest_section_names=dict(),
+            manifest_item_names=dict(),
             manifest_account_ids=dict(),
         )
     all_tasks[portfolio_get_all_products_and_their_versions_ref][
-        "manifest_section_name"
-    ].extend(task_to_add.get("manifest_section_name"))
+        "manifest_section_names"
+    ].update(task_to_add.get("manifest_section_names"))
     all_tasks[portfolio_get_all_products_and_their_versions_ref][
-        "manifest_item_name"
-    ].extend(task_to_add.get("manifest_item_name"))
-    all_tasks[portfolio_get_all_products_and_their_versions_ref][
-        "manifest_account_id"
-    ].extend(task_to_add.get("manifest_account_id"))
+        "manifest_item_names"
+    ].update(task_to_add.get("manifest_item_names"))
     all_tasks[portfolio_get_all_products_and_their_versions_ref][
         "manifest_account_ids"
     ].update(task_to_add.get("manifest_account_ids"))
@@ -1533,7 +1428,8 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
 
     result = dict(all_tasks=tasks_to_include)
     ensure_no_cyclic_dependencies("hub task reference", tasks_to_include)
-    open(output_file_path, "w").write(yaml_utils.dump(result))
+    # open(output_file_path, "w").write(yaml_utils.dump(result))
+    open(output_file_path, "w").write(yaml_utils.dump_as_json(result))
     return result
 
 
@@ -1541,7 +1437,8 @@ def generate_overridden_task_reference(
     puppet_account_id, overrides, all_tasks, output_file_path
 ):
     if not overrides.get("single_account"):
-        open(output_file_path, "w").write(yaml_utils.dump(all_tasks))
+        # open(output_file_path, "w").write(yaml_utils.dump(all_tasks))
+        open(output_file_path, "w").write(yaml_utils.dump_as_json(all_tasks))
         return all_tasks
 
     single_account = str(overrides.get("single_account"))
@@ -1558,11 +1455,13 @@ def generate_overridden_task_reference(
 
     result = dict(all_tasks=overridden_tasks)
     ensure_no_cyclic_dependencies("overridden task reference", overridden_tasks)
-    open(output_file_path, "w").write(yaml_utils.dump(result))
+    # open(output_file_path, "w").write(yaml_utils.dump(result))
+    open(output_file_path, "w").write(yaml_utils.dump_as_json(result))
     return result
 
 
 def generate_task_reference(f, overrides):
+    path = os.path.dirname(f.name)
     puppet_account_id = config.get_puppet_account_id()
 
     content = open(f.name, "r").read()
@@ -1570,6 +1469,15 @@ def generate_task_reference(f, overrides):
     complete = generate_complete_task_reference(
         puppet_account_id, manifest, f.name.replace("-expanded", "-task-reference-full")
     )
+    task_output_path = f"{path}/tasks"
+    if not os.path.exists(task_output_path):
+        os.makedirs(task_output_path)
+    for t_name, task in complete.get("all_tasks", {}).items():
+        task_output_file_path = f"{task_output_path}/{graph.escape(t_name)}.json"
+        task_output_content = yaml_utils.dump_as_json(task)
+        open(task_output_file_path, 'w').write(
+           task_output_content
+        )
     filtered = generate_overridden_task_reference(
         puppet_account_id,
         overrides,
@@ -1581,9 +1489,10 @@ def generate_task_reference(f, overrides):
     )
 
 
-def deploy_from_task_reference(f):
+def deploy_from_task_reference(path):
+    f = f"{path}/manifest-task-reference.yaml"
     tasks_to_run = list()
-    reference = yaml_utils.load(open(f.name, "r").read())
+    reference = yaml_utils.load_as_jaon(open(f, "r").read())
     all_tasks = reference.get("all_tasks")
 
     num_workers = config.get_num_workers()
@@ -1598,7 +1507,8 @@ def deploy_from_task_reference(f):
             ):
                 tasks_to_run.append(
                     get_dependencies_for_task_reference.create(
-                        manifest_task_reference_file_path=f.name,
+                        manifest_files_path=path,
+                        manifest_task_reference_file_path=f,
                         puppet_account_id=puppet_account_id,
                         parameters_to_use=task,
                     )
@@ -1606,7 +1516,8 @@ def deploy_from_task_reference(f):
         else:
             tasks_to_run.append(
                 get_dependencies_for_task_reference.create(
-                    manifest_task_reference_file_path=f.name,
+                    manifest_files_path=path,
+                    manifest_task_reference_file_path=f,
                     puppet_account_id=puppet_account_id,
                     parameters_to_use=task,
                 )

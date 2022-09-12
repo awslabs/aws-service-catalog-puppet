@@ -904,7 +904,7 @@ def get_template(
             },
             build={
                 "commands": [
-                    "servicecatalog-puppet --info deploy-from-task-reference --num-workers ${NUM_WORKERS} manifest-task-reference.yaml",
+                    "servicecatalog-puppet --info deploy-from-task-reference --num-workers ${NUM_WORKERS} .",
                 ]
             },
         ),

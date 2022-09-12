@@ -441,7 +441,7 @@ Resources:
               commands:
                 - servicecatalog-puppet --info expand manifest.yaml
                 - servicecatalog-puppet --info generate-task-reference manifest-expanded.yaml
-                - servicecatalog-puppet --info deploy-from-task-reference --num-workers ${NUM_WORKERS} manifest-task-reference.yaml
+                - servicecatalog-puppet --info deploy-from-task-reference --num-workers ${NUM_WORKERS} .
           artifacts:
             files:
               - manifest-expanded.yaml

@@ -1,5 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+import functools
 import json
 import logging
 
@@ -9,10 +10,9 @@ from deepmerge import always_merger
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import manifest_utils
 from servicecatalog_puppet import yaml_utils
+from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow.dependencies.get_dependencies_for_task_reference import (
-    create,
-)
+from servicecatalog_puppet.workflow.dependencies import get_dependencies_for_task_reference
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
@@ -22,31 +22,47 @@ class TaskWithReference(tasks.PuppetTask):
     manifest_task_reference_file_path = luigi.Parameter()
     dependencies_by_reference = luigi.ListParameter()
     puppet_account_id = luigi.Parameter()
+    manifest_files_path = luigi.Parameter()
 
     def requires(self):
-        return dict(reference_dependencies=self.get_dependencies_for_task_reference())
+        return dict(reference_dependencies=self.dependencies_for_task_reference())
 
     def get_output_from_reference_dependency(self, reference):
         return json.loads(
             self.input().get("reference_dependencies").get(reference).open("r").read()
         )
 
-    def get_dependencies_for_task_reference(self):
-        dependencies = dict()
-        reference = yaml_utils.load(
+    @functools.lru_cache(maxsize=None)
+    def get_reference(self):
+        return yaml_utils.load_as_jaon(
             open(self.manifest_task_reference_file_path, "r").read()
         ).get("all_tasks")
-        this_task = reference.get(self.task_reference)
+
+    @functools.lru_cache(maxsize=None)
+    def get_task_from_reference(self, task_reference):
+        # return self.get_reference().get(task_reference)
+        return yaml_utils.load_as_jaon(
+            open(f"{self.manifest_files_path}/tasks/{graph.escape(task_reference)}.json", "r").read()
+        )
+
+    def dependencies_for_task_reference(self):
+        dependencies = dict()
+        # reference = self.get_reference()
+        # this_task = reference.get(self.task_reference)
+
+        this_task = self.get_task_from_reference(self.task_reference)
         if this_task is None:
             raise Exception(f"Did not find {self.task_reference} within reference")
         for dependency_by_reference in this_task.get("dependencies_by_reference", []):
-            dependency_by_reference_params = reference.get(dependency_by_reference)
+            # dependency_by_reference_params = reference.get(dependency_by_reference)
+            dependency_by_reference_params = self.get_task_from_reference(dependency_by_reference)
             if dependency_by_reference_params is None:
                 raise Exception(
                     f"{self.task_reference} has a dependency: {dependency_by_reference} unsatisfied by the manifest task reference"
                 )
             t_reference = dependency_by_reference_params.get("task_reference")
-            dependencies[t_reference] = create(
+            dependencies[t_reference] = get_dependencies_for_task_reference.create(
+                self.manifest_files_path,
                 self.manifest_task_reference_file_path,
                 self.puppet_account_id,
                 dependency_by_reference_params,

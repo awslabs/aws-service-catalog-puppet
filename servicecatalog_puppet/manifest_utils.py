@@ -228,7 +228,6 @@ def expand_manifest(manifest, client):
 
     for stored_account_id, stored_account in accounts_by_id.items():
         # Get tags from orgs if we should
-        logger.info(f"Last loop through: {stored_account_id}")
         organizations_account_tags = stored_account.get(
             "organizations_account_tags", "ignored"
         )

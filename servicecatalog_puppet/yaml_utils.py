@@ -1,5 +1,7 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+import json
+
 import yaml
 
 
@@ -53,3 +55,11 @@ def load(what):
 
 def dump(what):
     return yaml.safe_dump(what, default_flow_style=False, width=1000000)
+
+
+def dump_as_json(input):
+    return json.dumps(input, default=str)
+
+
+def load_as_jaon(input):
+    return json.loads(input)

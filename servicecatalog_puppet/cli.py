@@ -533,7 +533,7 @@ def setup_config(
 
 
 @cli.command()
-@click.argument("f", type=click.File())
+@click.argument("path", type=click.Path(exists=True))
 @click.option("--num-workers", default=10)
 @click.option("--execution-mode", default="hub")
 @click.option("--puppet-account-id", default=None)
@@ -558,7 +558,7 @@ def setup_config(
 )
 @click.option("--on-complete-url", default=None)
 def deploy_from_task_reference(
-    f,
+    path,
     num_workers,
     execution_mode,
     puppet_account_id,
@@ -609,7 +609,7 @@ def deploy_from_task_reference(
         f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"
     )
 
-    task_reference_commands.deploy_from_task_reference(f)
+    task_reference_commands.deploy_from_task_reference(path)
 
 
 @cli.command()
