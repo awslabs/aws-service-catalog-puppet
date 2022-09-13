@@ -34,15 +34,21 @@ class TaskWithReference(tasks.PuppetTask):
 
     @functools.lru_cache(maxsize=None)
     def get_reference(self):
+        f = open(self.manifest_task_reference_file_path, "r")
+        c = f.read()
+        f.close()
         return yaml_utils.load_as_jaon(
-            open(self.manifest_task_reference_file_path, "r").read()
+            c
         ).get("all_tasks")
 
     @functools.lru_cache(maxsize=None)
     def get_task_from_reference(self, task_reference):
         # return self.get_reference().get(task_reference)
+        f = open(f"{self.manifest_files_path}/tasks/{graph.escape(task_reference)}.json", "r")
+        c = f.read()
+        f.close()
         return yaml_utils.load_as_jaon(
-            open(f"{self.manifest_files_path}/tasks/{graph.escape(task_reference)}.json", "r").read()
+            c
         )
 
     def dependencies_for_task_reference(self):
