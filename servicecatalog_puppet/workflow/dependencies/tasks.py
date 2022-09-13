@@ -43,25 +43,25 @@ class TaskWithReference(tasks.PuppetTask):
 
     @functools.lru_cache(maxsize=None)
     def get_task_from_reference(self, task_reference):
-        # return self.get_reference().get(task_reference)
-        f = open(f"{self.manifest_files_path}/tasks/{graph.escape(task_reference)}.json", "r")
-        c = f.read()
-        f.close()
-        return yaml_utils.load_as_jaon(
-            c
-        )
+        return self.get_reference().get(task_reference)
+        # f = open(f"{self.manifest_files_path}/tasks/{graph.escape(task_reference)}.json", "r")
+        # c = f.read()
+        # f.close()
+        # return yaml_utils.load_as_jaon(
+        #     c
+        # )
 
     def dependencies_for_task_reference(self):
         dependencies = dict()
-        # reference = self.get_reference()
-        # this_task = reference.get(self.task_reference)
+        reference = self.get_reference()
+        this_task = reference.get(self.task_reference)
 
-        this_task = self.get_task_from_reference(self.task_reference)
+        # this_task = self.get_task_from_reference(self.task_reference)
         if this_task is None:
             raise Exception(f"Did not find {self.task_reference} within reference")
         for dependency_by_reference in this_task.get("dependencies_by_reference", []):
-            # dependency_by_reference_params = reference.get(dependency_by_reference)
-            dependency_by_reference_params = self.get_task_from_reference(dependency_by_reference)
+            dependency_by_reference_params = reference.get(dependency_by_reference)
+            # dependency_by_reference_params = self.get_task_from_reference(dependency_by_reference)
             if dependency_by_reference_params is None:
                 raise Exception(
                     f"{self.task_reference} has a dependency: {dependency_by_reference} unsatisfied by the manifest task reference"
