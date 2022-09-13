@@ -20,10 +20,7 @@ class GenerateManifestWithIdsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
         self.module = generate_manifest_with_ids_task
 
         self.sut = self.module.GenerateManifestWithIdsTask(
-            puppet_account_id=self.puppet_account_id,
-            task_reference=self.task_reference,
-            manifest_task_reference_file_path=self.manifest_task_reference_file_path,
-            dependencies_by_reference=self.dependencies_by_reference,
+            **self.get_common_args()
         )
 
         self.wire_up_mocks()

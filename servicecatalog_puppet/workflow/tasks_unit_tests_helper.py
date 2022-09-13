@@ -33,6 +33,7 @@ class PuppetTaskUnitTest(unittest.TestCase):
         return dict(
             task_reference="task_reference",
             manifest_task_reference_file_path="manifest_task_reference_file_path",
+            manifest_files_path="manifest_files_path",
             dependencies_by_reference="dependencies_by_reference",
             puppet_account_id="puppet_account_id",
         )
