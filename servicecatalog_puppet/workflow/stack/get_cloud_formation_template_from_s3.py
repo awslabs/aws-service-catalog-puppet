@@ -1,5 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+import os
 
 import luigi
 
@@ -33,11 +34,12 @@ class GetCloudFormationTemplateFromS3(tasks.TaskWithReference):
                 p["VersionId"] = self.version_id
 
             self.debug(f"Trying regional template: {regional_template}")
+            output = self.output_location
+            if not os.path.exists(os.path.dirname(output)):
+                os.makedirs(os.path.dirname(output))
+
             try:
-                response = s3.get_object(Key=regional_template, **p)
+                s3.download_file(Key=regional_template, Filename=output, **p)
             except s3.exceptions.NoSuchKey:
                 self.debug(f"Didnt find regional template: {regional_template}")
-                response = s3.get_object(Key=global_template, **p)
-            self.write_output(
-                response.get("Body").read().decode("utf8"), skip_json_dump=True
-            )
+                s3.download_file(Key=global_template, Filename=output, **p)

@@ -1,6 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-
+import gc
 import json
 import logging
 import os
@@ -284,11 +284,13 @@ class PuppetTask(luigi.Task):
         return {}
 
     def write_output(self, content, skip_json_dump=False):
-        with self.output().open("w") as f:
-            if skip_json_dump:
-                f.write(content)
-            else:
-                f.write(json.dumps(content, indent=4, default=str,))
+        f = self.output().open("w")
+        if skip_json_dump:
+            f.write(content)
+        else:
+            f.write(json.dumps(content, indent=4, default=str,))
+        f.close()
+        #gc.collect()
 
     @property
     def node_id(self):
@@ -316,6 +318,7 @@ def record_event(event_type, task, extra_event_data=None):
         "task_params": task_params,
         "params_for_results": task.params_for_results_display(),
         "datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "pid": os.getpid(),
     }
     if extra_event_data is not None:
         event.update(extra_event_data)
@@ -341,10 +344,13 @@ def on_task_failure(task, exception):
 
 
 def print_stats():
-    mem = psutil.virtual_memory()
-
+    pid = os.getpid()
+    p = psutil.Process(pid)
+    m_percent = p.memory_percent()
+    memory_info = p.memory_info().rss / 1024 ** 2
+    cpu_percent = p.cpu_percent(interval=1)
     logger.info(
-        f"memory usage: total={math.ceil(mem.total / 1024 / 1024)}MB used={math.ceil(mem.used / 1024 / 1024)}MB percent={mem.percent}%"
+        f"stats: process {pid} is using {memory_info}MB ({m_percent}%) of memory and {cpu_percent}% of CPU"
     )
 
 

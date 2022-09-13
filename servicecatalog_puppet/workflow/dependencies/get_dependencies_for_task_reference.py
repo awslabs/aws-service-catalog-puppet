@@ -20,13 +20,7 @@ def create(
         account_id=parameters_to_use.get("account_id"),
         region=parameters_to_use.get("region"),
     )
-    manifest_file_path = (
-        manifest_task_reference_file_path.replace(
-            "manifest-task-reference.yaml", "manifest-expanded.yaml"
-        )
-        .replace("manifest-task-reference-full.yaml", "manifest-expanded.yaml")
-        .replace("manifest-task-reference-filtered.yaml", "manifest-expanded.yaml")
-    )
+    manifest_file_path = f"{manifest_files_path}/manifest-expanded.yaml"
 
     status = parameters_to_use.get("status")
     if section_name == constants.STACKS:
