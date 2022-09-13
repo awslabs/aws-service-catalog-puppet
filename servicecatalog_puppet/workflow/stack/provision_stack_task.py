@@ -211,13 +211,7 @@ class ProvisionStackTask(tasks.TaskWithParameters):
 
         all_params = self.get_parameter_values()
 
-        template_to_provision_source = (
-            self.input()
-            .get("reference_dependencies")
-            .get(self.get_s3_template_ref)
-            .open("r")
-            .read()
-        )
+        template_to_provision_source = self.get_output_from_reference_dependency_raw(self.get_s3_template_ref)
 
         try:
             template_to_provision = cfn_tools.load_yaml(template_to_provision_source)

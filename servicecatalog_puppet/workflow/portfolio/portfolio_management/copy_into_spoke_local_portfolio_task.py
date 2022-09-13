@@ -1,7 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
-import json
 import time
 
 import luigi
@@ -37,28 +36,10 @@ class CopyIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
         ]
 
     def run(self):
-        spoke_portfolio_details = json.loads(
-            self.input()
-            .get("reference_dependencies")
-            .get(self.portfolio_task_reference)
-            .open("r")
-            .read()
-        )
+        spoke_portfolio_details = self.get_output_from_reference_dependency(self.portfolio_task_reference)
         spoke_portfolio_id = spoke_portfolio_details.get("Id")
-        spoke_products_and_their_versions = json.loads(
-            self.input()
-            .get("reference_dependencies")
-            .get(self.portfolio_get_all_products_and_their_versions_ref)
-            .open("r")
-            .read()
-        )
-        hub_products_and_their_versions = json.loads(
-            self.input()
-            .get("reference_dependencies")
-            .get(self.portfolio_get_all_products_and_their_versions_for_hub_ref)
-            .open("r")
-            .read()
-        )
+        spoke_products_and_their_versions = self.get_output_from_reference_dependency(self.portfolio_get_all_products_and_their_versions_ref)
+        hub_products_and_their_versions = self.get_output_from_reference_dependency(self.portfolio_get_all_products_and_their_versions_for_hub_ref)
 
         copy_product_tokens = list()
         versions_requiring_updates = dict()

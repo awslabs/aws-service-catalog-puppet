@@ -28,9 +28,18 @@ class TaskWithReference(tasks.PuppetTask):
         return dict(reference_dependencies=self.dependencies_for_task_reference())
 
     def get_output_from_reference_dependency(self, reference):
+        f = self.input().get("reference_dependencies").get(reference).open("r")
+        content = f.read()
+        f.close()
         return json.loads(
-            self.input().get("reference_dependencies").get(reference).open("r").read()
+            content
         )
+
+    def get_output_from_reference_dependency_raw(self, reference):
+        f = self.input().get("reference_dependencies").get(reference).open("r")
+        content = f.read()
+        f.close()
+        return content
 
     @functools.lru_cache(maxsize=None)
     def get_reference(self):
@@ -124,13 +133,7 @@ class TaskWithParameters(TaskWithReference):
                 else:
                     required_task_reference = f"{constants.SSM_PARAMETERS}-{requested_param_account_id}-{requested_param_region}-{requested_param_name}"
 
-                parameter_task_output = json.loads(  # TODO optimise
-                    self.input()
-                    .get("reference_dependencies")
-                    .get(required_task_reference)
-                    .open("r")
-                    .read()
-                )
+                parameter_task_output = self.get_output_from_reference_dependency(required_task_reference)
 
                 if parameter_task_output.get(requested_param_name):
                     all_params[param_name] = parameter_task_output.get(
@@ -167,13 +170,7 @@ class TaskWithParameters(TaskWithReference):
                     .replace("${AWS::PuppetAccountId}", self.puppet_account_id)
                     .replace("${AWS::Region}", self.region)
                 )
-                parameter_task_output = json.loads(  # TODO optimise
-                    self.input()
-                    .get("reference_dependencies")
-                    .get(task_ref)
-                    .open("r")
-                    .read()
-                )
+                parameter_task_output = self.get_output_from_reference_dependency(task_ref)
                 all_params[param_name] = parameter_task_output
 
             if param_details.get("default"):

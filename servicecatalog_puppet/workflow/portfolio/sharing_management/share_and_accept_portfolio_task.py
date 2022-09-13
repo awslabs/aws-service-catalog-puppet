@@ -1,6 +1,5 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-import json
 
 import luigi
 
@@ -58,13 +57,7 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
         return False
 
     def run(self):
-        hub_portfolio_details = json.loads(
-            self.input()
-            .get("reference_dependencies")
-            .get(self.portfolio_task_reference)
-            .open("r")
-            .read()
-        )
+        hub_portfolio_details = self.get_output_from_reference_dependency(self.portfolio_task_reference)
         portfolio_id = hub_portfolio_details.get("Id")
 
         # SHARE

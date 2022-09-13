@@ -86,23 +86,11 @@ class ProvisionProductTask(tasks.TaskWithParameters):
         return apis
 
     def run(self):
-        products_and_their_versions = json.loads(
-            self.input()
-            .get("reference_dependencies")
-            .get(self.portfolio_get_all_products_and_their_versions_ref)
-            .open("r")
-            .read()
-        )
+        products_and_their_versions = self.get_output_from_reference_dependency(self.portfolio_get_all_products_and_their_versions_ref)
         product = products_and_their_versions.get(self.product)
         product_id = product.get("ProductId")
         version_id = product.get("Versions").get(self.version).get("Id")
-        describe_provisioning_params = json.loads(
-            self.input()
-            .get("reference_dependencies")
-            .get(self.describe_provisioning_params_ref)
-            .open("r")
-            .read()
-        )
+        describe_provisioning_params = self.get_output_from_reference_dependency(self.describe_provisioning_params_ref)
 
         task_output = dict(
             **self.params_for_results_display(),
