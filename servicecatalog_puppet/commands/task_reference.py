@@ -1469,24 +1469,24 @@ def generate_task_reference(f, overrides):
     complete = generate_complete_task_reference(
         puppet_account_id, manifest, f.name.replace("-expanded", "-task-reference-full")
     )
-    task_output_path = f"{path}/tasks"
-    if not os.path.exists(task_output_path):
-        os.makedirs(task_output_path)
-    for t_name, task in complete.get("all_tasks", {}).items():
-        task_output_file_path = f"{task_output_path}/{graph.escape(t_name)}.json"
-        task_output_content = yaml_utils.dump_as_json(task)
-        open(task_output_file_path, 'w').write(
-           task_output_content
-        )
     filtered = generate_overridden_task_reference(
         puppet_account_id,
         overrides,
         complete,
         f.name.replace("-expanded", "-task-reference-filtered"),
     )
-    generate_hub_task_reference(
+    hub_tasks = generate_hub_task_reference(
         puppet_account_id, filtered, f.name.replace("-expanded", "-task-reference"),
     )
+    task_output_path = f"{path}/tasks"
+    if not os.path.exists(task_output_path):
+        os.makedirs(task_output_path)
+    for t_name, task in hub_tasks.get("all_tasks", {}).items():
+        task_output_file_path = f"{task_output_path}/{graph.escape(t_name)}.json"
+        task_output_content = yaml_utils.dump_as_json(task)
+        open(task_output_file_path, 'w').write(
+           task_output_content
+        )
 
 
 def deploy_from_task_reference(path):
