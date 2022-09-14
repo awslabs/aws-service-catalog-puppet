@@ -5,7 +5,6 @@ import functools
 from servicecatalog_puppet import constants
 
 
-@functools.lru_cache(maxsize=32)
 def create(
     manifest_files_path, manifest_task_reference_file_path, puppet_account_id, parameters_to_use,
 ):
