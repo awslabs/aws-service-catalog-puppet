@@ -823,6 +823,17 @@ def export_puppet_pipeline_logs(execution_id, puppet_account_id):
 
 
 @cli.command()
+@click.argument("codebuild_execution_id")
+@click.option("--puppet-account-id", default=None)
+@click.option("--group-by-pid/--no-group-by-pid", default=False)
+def generate_deploy_viz(codebuild_execution_id, puppet_account_id, group_by_pid):
+    setup_config(puppet_account_id=puppet_account_id)
+    if puppet_account_id is None:
+        puppet_account_id = config.get_puppet_account_id()
+    management_commands.export_deploy_viz(codebuild_execution_id, group_by_pid, puppet_account_id)
+
+
+@cli.command()
 @click.option("--puppet-account-id", default=None)
 def uninstall(puppet_account_id):
     setup_config(puppet_account_id=puppet_account_id)

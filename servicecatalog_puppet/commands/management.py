@@ -1,9 +1,10 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-
+import glob
+import json
 import os
 import shutil
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import cfn_tools
@@ -13,7 +14,7 @@ import yaml
 from betterboto import client as betterboto_client
 from jinja2 import Template
 
-from servicecatalog_puppet import constants, config, asset_helpers
+from servicecatalog_puppet import constants, config, asset_helpers, viz_template, print_utils
 
 
 def upload_config(config):
@@ -175,3 +176,118 @@ def export_puppet_pipeline_logs(execution_id, puppet_account_id):
 
         for action_execution_detail in action_execution_details:
             handle_action_execution_detail(puppet_account_id, action_execution_detail)
+
+
+def get_data_for_viz(codebuild_build_id):
+    return "/Users/eamonnf/Development/github.com/aws-labs/aws-service-catalog-puppet/results"
+
+
+def generate_data_for_viz(path_to_results, group_by_pid):
+    results = list()
+    groups = dict()
+    time_format = '%Y-%m-%d %H:%M:%S'
+    earliest_time = datetime.strptime('4022-09-14 00:54:33', time_format)
+    latest_time = datetime.strptime('2000-09-14 00:54:33', time_format)
+    for starter in glob.glob(
+            f"{path_to_results}/start/*.json"):
+        start = json.loads(open(starter, 'r').read())
+        name = os.path.basename(starter)
+        end = None
+        task_id = name.replace(".json", "")
+        task_id = "-".join(task_id.split("-")[1:])
+        processing_time = dict(duration="unknown")
+
+        if os.path.exists(
+                f"{path_to_results}/success/{name}"):
+            result = "success"
+            end = json.loads(open(
+                f"{path_to_results}/success/{name}",
+                'r').read())
+        elif os.path.exists(
+                f"{path_to_results}/failure/{name}"):
+            result = "failure"
+            end = json.loads(open(
+                f"{path_to_results}/failure/{name}",
+                'r').read())
+
+        if os.path.exists(
+                f"{path_to_results}/processing_time/{name}"):
+            processing_time = json.loads(open(
+                f"{path_to_results}/processing_time/{name}",
+                'r').read())
+
+        if end:
+            body = ""
+            starting_time = start.get('datetime')
+            ending_time = end.get('datetime')
+            pid = start.get('pid')
+            groups[pid] = dict(
+                id=pid,
+                content=pid,
+                value=pid,
+            )
+            for name2, value2 in start.get('params_for_results', {}).items():
+                body += f"<b>{name2}</b>:{value2}<br />"
+            body += f"<b>pid</b>:{pid}<br />"
+            body += f"<b>start</b>:{starting_time}<br />"
+            body += f"<b>end</b>:{ending_time}<br />"
+            body += f"<b>duration</b>:{processing_time.get('duration')}<br />"
+            content = f"""<h2>{task_id}</h2><dl>{body}</dl>"""
+            task_type = task_id.split("_")[0]
+            class_name = f"{result} {task_type}"
+
+            starting_time = datetime.strptime(starting_time, time_format)
+            ending_time = datetime.strptime(ending_time, time_format)
+
+            if starting_time < earliest_time:
+                earliest_time = starting_time
+
+            if ending_time > latest_time:
+                latest_time = ending_time
+
+            if group_by_pid:
+                d = dict(
+                    id=task_id,
+                    group=pid,
+                    content=task_id,
+                    title=content,
+                    start=start.get("datetime"),
+                    end=end.get("datetime"),
+                    className=class_name,
+                )
+            else:
+                d = dict(
+                    id=task_id,
+                    content=task_id,
+                    title=content,
+                    start=start.get("datetime"),
+                    end=end.get("datetime"),
+                    className=class_name,
+                )
+            results.append(d)
+        else:
+            print_utils.warn(f"Did not find an end for {name}")
+
+    earliest_time = earliest_time - timedelta(minutes=2)
+    latest_time = latest_time + timedelta(minutes=2)
+    groups = list(groups.values())
+    return results, groups, earliest_time.strftime(time_format), latest_time.strftime(time_format)
+
+
+def export_deploy_viz(codebuild_execution_id, group_by_pid, puppet_account_id):
+    path_to_results = get_data_for_viz(codebuild_execution_id)
+    results, groups, start, end = generate_data_for_viz(path_to_results, group_by_pid)
+    if group_by_pid:
+        params = "container, items, groups, options"
+    else:
+        params = "container, items, options"
+    output = viz_template.CONTENT.format(
+        DATASET=results,
+        START=start,
+        END=end,
+        GROUPS=groups,
+        PARAMS=params,
+    )
+    f = open(f"{codebuild_execution_id}.html", 'w')
+    f.write(output)
+    f.close()

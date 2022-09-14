@@ -28,3 +28,4 @@ parameters.yaml
 htmlcov/
 coverage.xml
 .DS_Store
+ignored.html

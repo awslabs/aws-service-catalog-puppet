@@ -48,7 +48,7 @@ install_requires = \
  'deepmerge>=0.2.1,<0.3.0',
  'jinja2==2.11.3',
  'jmespath>=0.10.0,<0.11.0',
- 'luigi==3.0.2',
+ 'luigi==3.1.1',
  'networkx>=2.5,<3.0',
  'psutil==5.7.0',
  'pyyaml==5.4',
