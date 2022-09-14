@@ -62,6 +62,7 @@ class TaskWithReference(tasks.PuppetTask):
 
     @functools.lru_cache(maxsize=32)
     def dependencies_for_task_reference(self):
+        tasks.print_stats()
         dependencies = dict()
         # reference = self.get_reference()
         # this_task = reference.get(self.task_reference)
