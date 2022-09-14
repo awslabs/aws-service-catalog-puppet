@@ -1,8 +1,11 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+import functools
+
 from servicecatalog_puppet import constants
 
 
+@functools.lru_cache(maxsize=32)
 def create(
     manifest_files_path, manifest_task_reference_file_path, puppet_account_id, parameters_to_use,
 ):

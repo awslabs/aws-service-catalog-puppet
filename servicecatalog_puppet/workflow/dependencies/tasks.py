@@ -41,7 +41,7 @@ class TaskWithReference(tasks.PuppetTask):
         f.close()
         return content
 
-    @functools.lru_cache(maxsize=None)
+    @functools.lru_cache(maxsize=32)
     def get_reference(self):
         f = open(self.manifest_task_reference_file_path, "r")
         c = f.read()
@@ -50,7 +50,7 @@ class TaskWithReference(tasks.PuppetTask):
             c
         ).get("all_tasks")
 
-    @functools.lru_cache(maxsize=None)
+    @functools.lru_cache(maxsize=32)
     def get_task_from_reference(self, task_reference):
         # return self.get_reference().get(task_reference)
         f = open(f"{self.manifest_files_path}/tasks/{graph.escape(task_reference)}.json", "r")
@@ -60,6 +60,7 @@ class TaskWithReference(tasks.PuppetTask):
             c
         )
 
+    @functools.lru_cache(maxsize=32)
     def dependencies_for_task_reference(self):
         dependencies = dict()
         # reference = self.get_reference()
