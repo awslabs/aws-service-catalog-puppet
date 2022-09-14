@@ -4,6 +4,7 @@ import glob
 import json
 import os
 import shutil
+import zipfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -178,8 +179,32 @@ def export_puppet_pipeline_logs(execution_id, puppet_account_id):
             handle_action_execution_detail(puppet_account_id, action_execution_detail)
 
 
-def get_data_for_viz(codebuild_build_id):
-    return "/Users/eamonnf/Development/github.com/aws-labs/aws-service-catalog-puppet/results"
+def get_data_for_viz(codebuild_build_id, output_file_name_prefix):
+    with betterboto_client.ClientContextManager("codebuild") as codebuild:
+        build = codebuild.batch_get_builds(
+            ids=[
+                codebuild_build_id
+            ]
+        ).get("builds")[0]
+        location = build.get("artifacts").get("location").split(":")
+        bucket = location[5].split("/")[0]
+        key = location[5].replace(f"{bucket}/", "")
+        zip_file_location = f"{output_file_name_prefix}.zip"
+        if os.path.exists(zip_file_location):
+            print(f"Found zip file, skipping download")
+        else:
+            print(f"Downloading zip file")
+            with betterboto_client.ClientContextManager("s3") as s3:
+                print(f"getting {bucket} {key}")
+                s3.download_file(Bucket=bucket, Key=key, Filename=zip_file_location)
+        if os.path.exists(output_file_name_prefix):
+            print(f"Found output folder, skipping unzip")
+        else:
+            print(f"Unziping")
+            os.makedirs(output_file_name_prefix)
+            with zipfile.ZipFile(zip_file_location, 'r') as zip_ref:
+                zip_ref.extractall(output_file_name_prefix)
+    return f"{output_file_name_prefix}/results"
 
 
 def generate_data_for_viz(path_to_results, group_by_pid):
@@ -275,7 +300,8 @@ def generate_data_for_viz(path_to_results, group_by_pid):
 
 
 def export_deploy_viz(codebuild_execution_id, group_by_pid, puppet_account_id):
-    path_to_results = get_data_for_viz(codebuild_execution_id)
+    output_file_name_prefix = codebuild_execution_id.split(":")[1]
+    path_to_results = get_data_for_viz(codebuild_execution_id, output_file_name_prefix)
     results, groups, start, end = generate_data_for_viz(path_to_results, group_by_pid)
     if group_by_pid:
         params = "container, items, groups, options"
@@ -288,6 +314,6 @@ def export_deploy_viz(codebuild_execution_id, group_by_pid, puppet_account_id):
         GROUPS=groups,
         PARAMS=params,
     )
-    f = open(f"{codebuild_execution_id}.html", 'w')
+    f = open(f"{output_file_name_prefix}.html", 'w')
     f.write(output)
     f.close()

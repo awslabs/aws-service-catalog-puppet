@@ -1,7 +1,7 @@
 CONTENT = """<!DOCTYPE HTML>
 <html>
 <head>
-    <title>Timeline | Basic demo</title>
+    <title>Timeline</title>
 
     <style type="text/css">
         body, html {{
