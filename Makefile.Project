@@ -16,6 +16,7 @@ bump-major:
 clean:
 	rm -rf data results output config.yaml
 	rm -rf dist aws-service-catalog-puppet-* aws_service_catalog_puppet.egg-info/ reports
+	rm -rf ignored/src/ServiceCatalogPuppet/tasks
 
 ## @Project_setup Generates a setup.py so you can test bootstrapped branches in AWS Codecommit
 prepare-for-testing: build

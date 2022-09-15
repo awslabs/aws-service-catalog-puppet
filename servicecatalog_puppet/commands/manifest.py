@@ -273,9 +273,13 @@ def validate(f):
                             ).get("ssm", []):
                                 if output_name == needle_output.get("param_name"):
                                     found = False
-                                    for dependency in collection_item.get(
+                                    for d in collection_item.get(
                                         "depends_on", []
                                     ):
+                                        if isinstance(d, str):
+                                            dependency = dict(type=constants.LAUNCH, name=d, affinity=constants.LAUNCH)
+                                        else:
+                                            dependency = d
                                         plural = constants.SECTION_SINGULAR_TO_PLURAL.get(
                                             dependency.get("type", constants.LAUNCH)
                                         )
@@ -297,7 +301,11 @@ def validate(f):
             graph.add_nodes_from(
                 [(uid, data),]
             )
-            for dependency in collection_item.get("depends_on", []):
+            for d in collection_item.get("depends_on", []):
+                if isinstance(d, str):
+                    dependency = dict(type=constants.LAUNCH, name=d, affinity=constants.LAUNCH)
+                else:
+                    dependency = d
                 plural = constants.SECTION_SINGULAR_TO_PLURAL.get(
                     dependency.get("type", constants.LAUNCH)
                 )
