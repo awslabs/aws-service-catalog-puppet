@@ -22,9 +22,12 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
                 s3_url = output.path.split("/")
                 bucket = s3_url[2]
                 key = "/".join(s3_url[3:])
-                target = key
-                with self.hub_client('s3') as s3:
-                    s3.download_file(Bucket=bucket, Key=key, Filename=target)
+                target = ".".join(key.split(".")[0:-1])
+                if not os.path.exists(target.replace("/latest.json", "")):
+                    os.makedirs(target.replace("/latest.json", ""))
+                if not os.path.exists(target):
+                    with self.hub_client('s3') as s3:
+                        s3.download_file(Bucket=bucket, Key=key, Filename=target)
 
     def run(self):
         self.download_all_cached_tasks_outputs()
