@@ -264,23 +264,6 @@ class PuppetTask(luigi.Task):
         else:
             return self.get_output_location_path()
 
-    def complete(self):
-        is_complete = super().complete()
-        if self.should_use_caching:
-            # CAN ONLY HAPPEN IN THE HUB
-            target = self.get_output_location_path()
-            if not os.path.exists(target):
-                puppet_account_id = config.get_puppet_account_id()
-                with betterboto_client.CrossAccountClientContextManager(
-                        "s3",
-                        config.get_puppet_role_arn(puppet_account_id),
-                        "s3-puppethub",
-                ) as s3:
-                    bucket = f"sc-puppet-caching-bucket-{puppet_account_id}-{config.get_home_region(puppet_account_id)}"
-                    key = target
-                    s3.download_file(Bucket=bucket, Key=key, Filename=target)
-        return is_complete
-
     @property
     def should_use_caching(self):
         return self.should_use_s3_target_if_caching_is_on and config.is_caching_enabled()
