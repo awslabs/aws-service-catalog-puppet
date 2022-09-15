@@ -21,7 +21,7 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
             if isinstance(output, S3Target):
                 s3_url = output.path.split("/")
                 bucket = s3_url[2]
-                key = "/".join(s3_url.split("/")[3:])
+                key = "/".join(s3_url[3:])
                 target = key
                 with self.hub_client('s3') as s3:
                     s3.download_file(Bucket=bucket, Key=key, Filename=target)
