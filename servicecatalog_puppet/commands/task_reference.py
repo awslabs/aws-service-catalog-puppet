@@ -914,10 +914,16 @@ def handle_spoke_local_portfolios(
             ].update(task_to_add.get("manifest_account_ids"))
 
             # SHARE THE PORTFOLIO
-            share_and_accept_ref = f"portfolio_share_and_accept-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"  # TODO need to rename to avoid duplicates
             sharing_mode = task_to_add.get(
                 "sharing_mode", config.get_global_sharing_mode_default()
             )
+            if sharing_mode == constants.SHARING_MODE_ACCOUNT:
+                share_and_accept_ref = f"portfolio_share_and_accept-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+            elif sharing_mode == constants.SHARING_MODE_AWS_ORGANIZATIONS:
+                share_and_accept_ref = f"portfolio_share_and_accept-{task_to_add.get('ou')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+            else:
+                raise Exception(f"Unknown sharing mode: {sharing_mode}")
+
             if not all_tasks.get(share_and_accept_ref):
                 all_tasks[share_and_accept_ref] = dict(
                     puppet_account_id=puppet_account_id,
