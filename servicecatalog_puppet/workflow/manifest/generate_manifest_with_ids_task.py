@@ -22,8 +22,9 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
                 s3_url = output.path.split("/")
                 bucket = s3_url[2]
                 key = "/".join(s3_url[3:])
-                # target = ".".join(key.split(".")[0:-1])
-                target = key
+                target = ".".join(key.split(".")[0:-1])
+                target_dir = target.replace('/latest.json', '')
+                # target = key
                 print("STARTING THIS")
                 print("STARTING THIS")
                 print("STARTING THIS")
@@ -31,13 +32,14 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
                 print("STARTING THIS")
                 print("STARTING THIS")
                 print("STARTING THIS")
-                print(f"1Checking for {target.replace('/latest.json', '')}")
-                if not os.path.exists(target.replace("/latest.json", "")):
+                print(f"1Checking for {target_dir}")
+                if not os.path.exists(target_dir):
                     print("MADE PARENT DIR")
-                    os.makedirs(target.replace("/latest.json", ""))
+                    os.makedirs(target_dir)
                 print(f"2CHECKING FOR {target}")
+                print(f"might be Downloading {bucket} {key} to {target}")
                 if not os.path.exists(target):
-                    print(f"Downloading {bucket} {key} to {target}")
+                    print("downloading it")
                     with self.hub_client('s3') as s3:
                         s3.download_file(Bucket=bucket, Key=key, Filename=target)
                 print("")
