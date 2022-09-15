@@ -22,7 +22,10 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
                 s3_url = output.path.split("/")
                 bucket = s3_url[2]
                 key = "/".join(s3_url[3:])
-                target = ".".join(key.split(".")[0:-1])
+                if key.endswith("latest.json"):
+                    target = key
+                else:
+                    target = ".".join(key.split(".")[0:-1])
                 target_dir = target.replace('/latest.json', '')
                 # target = key
                 print("STARTING THIS")

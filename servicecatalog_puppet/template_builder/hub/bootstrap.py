@@ -900,6 +900,9 @@ def get_template(
                 "commands": [
                     "servicecatalog-puppet --info expand --parameter-override-file $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml manifest.yaml",
                     "servicecatalog-puppet --info generate-task-reference --parameter-override-file $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml  $PWD/manifest-expanded.yaml",
+                    'echo "[core]" > luigi.cfg',
+                    'echo "parallel_scheduling=true" >> luigi.cfg',
+                    'echo "parallel_scheduling_processes=10" >> luigi.cfg',
                 ]
             },
             build={
