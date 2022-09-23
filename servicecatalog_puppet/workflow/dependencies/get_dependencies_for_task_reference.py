@@ -790,5 +790,18 @@ def create(
             manifest_task_reference_file_path=manifest_task_reference_file_path,
         )
 
+    elif section_name == constants.PREPARE_ACCOUNT_FOR_STACKS:
+        from servicecatalog_puppet.workflow.stack import prepare_account_for_stack_task
+
+        return prepare_account_for_stack_task.PrepareAccountForWorkspaceTask(
+            puppet_account_id=parameters_to_use.get("puppet_account_id"),
+            task_reference=parameters_to_use.get("task_reference"),
+            dependencies_by_reference=parameters_to_use.get(
+                "dependencies_by_reference"
+            ),
+            account_id=parameters_to_use.get("account_id"),
+            manifest_task_reference_file_path=manifest_task_reference_file_path,
+        )
+
     else:
         raise Exception(f"Unknown section_name: {section_name}")

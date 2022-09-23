@@ -333,3 +333,6 @@ WORKSPACE_ACCOUNT_PREPARATION = "workspace-account-preparation"
 RUN_DEPLOY_IN_SPOKE = "run-deploy-in-spoke"
 GENERATE_MANIFEST = "generate-manifest"
 GET_TEMPLATE_FROM_S3 = "get-template-from-s3"
+
+
+PREPARE_ACCOUNT_FOR_STACKS = "prepare-account-for-stacks"
