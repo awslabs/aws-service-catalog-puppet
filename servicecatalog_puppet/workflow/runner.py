@@ -24,6 +24,7 @@ from luigi import LuigiStatusCode
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import environmental_variables
+from servicecatalog_puppet.workflow.manager import scheduler
 from servicecatalog_puppet.workflow import tasks
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
@@ -56,6 +57,7 @@ def run_tasks(
     execution_mode="hub",
     on_complete_url=None,
     running_exploded=False,
+    tasks_to_run_filtered=[],
 ):
     codebuild_id = os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD")
     if is_list_launches:
@@ -120,12 +122,19 @@ def run_tasks(
         logger.info(f"should_use_shared_scheduler: {should_use_shared_scheduler}")
 
     output_cache_starting_point = config.get_output_cache_starting_point()
+    output_cache_starting_point = ""
     if output_cache_starting_point != "":
         dst = "GetSSMParamTask.zip"
         urlretrieve(output_cache_starting_point, dst)
         shutil.unpack_archive("GetSSMParamTask.zip", ".", "zip")
 
-    run_result = luigi.build(tasks_to_run, **build_params)
+
+    print("---STARTING---")
+    run_result = scheduler.run(num_workers, tasks_to_run_filtered)
+    print("---END---")
+    exit(1)
+
+    # run_result = luigi.build(tasks_to_run, **build_params)
 
     exit_status_codes = {
         LuigiStatusCode.SUCCESS: 0,

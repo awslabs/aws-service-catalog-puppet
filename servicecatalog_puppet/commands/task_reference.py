@@ -1503,12 +1503,18 @@ def generate_task_reference(f, overrides):
 def deploy_from_task_reference(path):
     f = f"{path}/manifest-task-reference.yaml"
     tasks_to_run = list()
+    tasks_to_run_filtered = list()
     reference = yaml_utils.load_as_jaon(open(f, "r").read())
     all_tasks = reference.get("all_tasks")
 
-    num_workers = config.get_num_workers()
-    puppet_account_id = config.get_puppet_account_id()
-    single_account_id = config.get_single_account_id()
+    # num_workers = config.get_num_workers()
+    # puppet_account_id = config.get_puppet_account_id()
+    # single_account_id = config.get_single_account_id()
+
+    num_workers = 20
+    puppet_account_id = "105463962595"
+    single_account_id = ""
+
 
     for task_reference, task in all_tasks.items():
         if single_account_id:
@@ -1516,6 +1522,7 @@ def deploy_from_task_reference(path):
                 task.get("account_id") == single_account_id
                 and task.get("section_name") != constants.RUN_DEPLOY_IN_SPOKE
             ):
+                tasks_to_run_filtered.append(task)
                 tasks_to_run.append(
                     get_dependencies_for_task_reference.create(
                         manifest_files_path=path,
@@ -1525,6 +1532,7 @@ def deploy_from_task_reference(path):
                     )
                 )
         else:
+            tasks_to_run_filtered.append(task)
             tasks_to_run.append(
                 get_dependencies_for_task_reference.create(
                     manifest_files_path=path,
@@ -1551,4 +1559,5 @@ def deploy_from_task_reference(path):
         execution_mode,
         on_complete_url,
         running_exploded,
+        tasks_to_run_filtered,
     )

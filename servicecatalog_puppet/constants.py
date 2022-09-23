@@ -333,3 +333,7 @@ WORKSPACE_ACCOUNT_PREPARATION = "workspace-account-preparation"
 RUN_DEPLOY_IN_SPOKE = "run-deploy-in-spoke"
 GENERATE_MANIFEST = "generate-manifest"
 GET_TEMPLATE_FROM_S3 = "get-template-from-s3"
+
+
+STATE_FILE_1 = "state1.json"
+STATE_FILE_2 = "ignored/src/ServiceCatalogPuppet/manifest-task-reference.yaml"
