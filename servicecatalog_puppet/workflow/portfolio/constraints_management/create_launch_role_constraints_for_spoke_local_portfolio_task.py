@@ -38,9 +38,13 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(tasks.TaskWithRefere
         ]
 
     def run(self):
-        portfolio_details = self.get_output_from_reference_dependency(self.portfolio_task_reference)
+        portfolio_details = self.get_output_from_reference_dependency(
+            self.portfolio_task_reference
+        )
         portfolio_id = portfolio_details.get("Id")
-        products_and_their_versions = self.get_output_from_reference_dependency(self.portfolio_get_all_products_and_their_versions_ref)
+        products_and_their_versions = self.get_output_from_reference_dependency(
+            self.portfolio_get_all_products_and_their_versions_ref
+        )
 
         tpl = t.Template()
         tpl.description = f"launch constraints for {self.portfolio}"

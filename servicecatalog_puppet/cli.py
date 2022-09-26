@@ -575,7 +575,9 @@ def deploy_from_task_reference(
     on_complete_url,
 ):
     params = dict()
-    if False and (parameter_override_forced or misc_commands.is_a_parameter_override_execution()):
+    if False and (
+        parameter_override_forced or misc_commands.is_a_parameter_override_execution()
+    ):
         overrides = dict(**yaml.safe_load(parameter_override_file.read()))
         if overrides.get("subset"):
             subset = overrides.get("subset")
@@ -590,20 +592,20 @@ def deploy_from_task_reference(
         )
         click.echo(f"Overridden parameters {params}")
 
-    # setup_config(
-    #     puppet_account_id=puppet_account_id,
-    #     single_account=single_account or params.get("single_account"),
-    #     num_workers=str(num_workers),
-    #     execution_mode=execution_mode,
-    #     home_region=home_region,
-    #     regions=regions,
-    #     should_collect_cloudformation_events=str(should_collect_cloudformation_events),
-    #     should_forward_events_to_eventbridge=str(should_forward_events_to_eventbridge),
-    #     should_forward_failures_to_opscenter=str(should_forward_failures_to_opscenter),
-    #     output_cache_starting_point=output_cache_starting_point,
-    #     is_caching_enabled=is_caching_enabled,
-    #     on_complete_url=on_complete_url,
-    # )
+    setup_config(
+        puppet_account_id=puppet_account_id,
+        single_account=single_account or params.get("single_account"),
+        num_workers=str(num_workers),
+        execution_mode=execution_mode,
+        home_region=home_region,
+        regions=regions,
+        should_collect_cloudformation_events=str(should_collect_cloudformation_events),
+        should_forward_events_to_eventbridge=str(should_forward_events_to_eventbridge),
+        should_forward_failures_to_opscenter=str(should_forward_failures_to_opscenter),
+        output_cache_starting_point=output_cache_starting_point,
+        is_caching_enabled=is_caching_enabled,
+        on_complete_url=on_complete_url,
+    )
 
     click.echo(
         f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"
@@ -830,7 +832,9 @@ def generate_deploy_viz(codebuild_execution_id, puppet_account_id, group_by_pid)
     setup_config(puppet_account_id=puppet_account_id)
     if puppet_account_id is None:
         puppet_account_id = config.get_puppet_account_id()
-    management_commands.export_deploy_viz(codebuild_execution_id, group_by_pid, puppet_account_id)
+    management_commands.export_deploy_viz(
+        codebuild_execution_id, group_by_pid, puppet_account_id
+    )
 
 
 @cli.command()

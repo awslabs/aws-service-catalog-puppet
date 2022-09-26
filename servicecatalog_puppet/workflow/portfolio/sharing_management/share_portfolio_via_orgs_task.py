@@ -30,7 +30,9 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
         ]
 
     def run(self):
-        hub_portfolio_details = self.get_output_from_reference_dependency(self.portfolio_task_reference)
+        hub_portfolio_details = self.get_output_from_reference_dependency(
+            self.portfolio_task_reference
+        )
         portfolio_id = hub_portfolio_details.get("Id")
 
         with self.hub_regional_client("servicecatalog") as servicecatalog:

@@ -24,7 +24,7 @@ from luigi import LuigiStatusCode
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import environmental_variables
-from servicecatalog_puppet.workflow.manager import scheduler
+from servicecatalog_puppet.waluigi import scheduler
 from servicecatalog_puppet.workflow import tasks
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
@@ -58,6 +58,8 @@ def run_tasks(
     on_complete_url=None,
     running_exploded=False,
     tasks_to_run_filtered=[],
+    manifest_files_path="",
+    manifest_task_reference_file_path="",
 ):
     codebuild_id = os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD")
     if is_list_launches:
@@ -128,9 +130,14 @@ def run_tasks(
         urlretrieve(output_cache_starting_point, dst)
         shutil.unpack_archive("GetSSMParamTask.zip", ".", "zip")
 
-
     print("---STARTING---")
-    run_result = scheduler.run(num_workers, tasks_to_run_filtered)
+    run_result = scheduler.run(
+        num_workers,
+        tasks_to_run_filtered,
+        manifest_files_path,
+        manifest_task_reference_file_path,
+        puppet_account_id,
+    )
     print("---END---")
     exit(1)
 

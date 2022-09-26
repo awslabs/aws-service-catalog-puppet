@@ -273,11 +273,13 @@ def validate(f):
                             ).get("ssm", []):
                                 if output_name == needle_output.get("param_name"):
                                     found = False
-                                    for d in collection_item.get(
-                                        "depends_on", []
-                                    ):
+                                    for d in collection_item.get("depends_on", []):
                                         if isinstance(d, str):
-                                            dependency = dict(type=constants.LAUNCH, name=d, affinity=constants.LAUNCH)
+                                            dependency = dict(
+                                                type=constants.LAUNCH,
+                                                name=d,
+                                                affinity=constants.LAUNCH,
+                                            )
                                         else:
                                             dependency = d
                                         plural = constants.SECTION_SINGULAR_TO_PLURAL.get(
@@ -303,7 +305,9 @@ def validate(f):
             )
             for d in collection_item.get("depends_on", []):
                 if isinstance(d, str):
-                    dependency = dict(type=constants.LAUNCH, name=d, affinity=constants.LAUNCH)
+                    dependency = dict(
+                        type=constants.LAUNCH, name=d, affinity=constants.LAUNCH
+                    )
                 else:
                     dependency = d
                 plural = constants.SECTION_SINGULAR_TO_PLURAL.get(

@@ -3,9 +3,10 @@
 
 import luigi
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, config
 from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow.stack import create_template_for_stack_task
+import troposphere as t
+from troposphere import iam
 
 
 class PrepareAccountForWorkspaceTask(tasks.PuppetTask):  # TODO make task with reference
@@ -16,8 +17,32 @@ class PrepareAccountForWorkspaceTask(tasks.PuppetTask):  # TODO make task with r
             "account_id": self.account_id,
         }
 
-    def requires(self):
-        return create_template_for_stack_task.CreateTemplateForStackTask()
+    def get_template(self):
+        puppet_version = constants.VERSION
+        description = f"""Bootstrap template used to configure spoke account for stack use
+                {{"version": "{puppet_version}", "framework": "servicecatalog-puppet", "role": "bootstrap-spoke-stack"}}"""
+        template = t.Template(Description=description)
+        template.add_resource(
+            iam.Role(
+                "PuppetStackRole",
+                RoleName="PuppetStackRole",
+                ManagedPolicyArns=[
+                    t.Sub("arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess")
+                ],
+                Path=config.get_puppet_role_path(),
+                AssumeRolePolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": ["sts:AssumeRole"],
+                            "Effect": "Allow",
+                            "Principal": {"Service": ["cloudformation.amazonaws.com"]},
+                        }
+                    ],
+                },
+            )
+        )
+        return template.to_yaml()
 
     def api_calls_used(self):
         return {
@@ -25,7 +50,7 @@ class PrepareAccountForWorkspaceTask(tasks.PuppetTask):  # TODO make task with r
         }
 
     def run(self):
-        template = self.input().open("r").read()
+        template = self.get_template()
         with self.spoke_client("cloudformation") as cloudformation:
             cloudformation.create_or_update(
                 StackName=constants.STACK_SPOKE_PREP_STACK_NAME,

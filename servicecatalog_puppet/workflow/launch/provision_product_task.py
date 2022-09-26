@@ -61,36 +61,40 @@ class ProvisionProductTask(tasks.TaskWithParameters):
     def priority(self):
         return self.requested_priority
 
-    def api_calls_used(self):
-        apis = [
-            # TODO fix check this list to see if all used
-            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_record_{self.account_id}_{self.region}",
-            f"cloudformation.get_template_summary_{self.account_id}_{self.region}",
-            f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
-            f"servicecatalog.list_provisioned_product_plans_single_page_{self.account_id}_{self.region}",
-            f"servicecatalog.delete_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.create_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.execute_provisioned_product_plan_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.update_provisioned_product_{self.account_id}_{self.region}",
-            f"servicecatalog.provision_product_{self.account_id}_{self.region}",
-        ]
-        if self.should_use_product_plans:
-            apis.append(
-                f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
-            )
-        return apis
+    # def api_calls_used(self):
+    #     apis = [
+    #         # TODO fix check this list to see if all used
+    #         f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
+    #         f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
+    #         f"servicecatalog.terminate_provisioned_product_{self.account_id}_{self.region}",
+    #         f"servicecatalog.describe_record_{self.account_id}_{self.region}",
+    #         f"cloudformation.get_template_summary_{self.account_id}_{self.region}",
+    #         f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
+    #         f"servicecatalog.list_provisioned_product_plans_single_page_{self.account_id}_{self.region}",
+    #         f"servicecatalog.delete_provisioned_product_plan_{self.account_id}_{self.region}",
+    #         f"servicecatalog.create_provisioned_product_plan_{self.account_id}_{self.region}",
+    #         f"servicecatalog.describe_provisioned_product_plan_{self.account_id}_{self.region}",
+    #         f"servicecatalog.execute_provisioned_product_plan_{self.account_id}_{self.region}",
+    #         f"servicecatalog.describe_provisioned_product_{self.account_id}_{self.region}",
+    #         f"servicecatalog.update_provisioned_product_{self.account_id}_{self.region}",
+    #         f"servicecatalog.provision_product_{self.account_id}_{self.region}",
+    #     ]
+    #     if self.should_use_product_plans:
+    #         apis.append(
+    #             f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
+    #         )
+    #     return apis
 
     def run(self):
-        products_and_their_versions = self.get_output_from_reference_dependency(self.portfolio_get_all_products_and_their_versions_ref)
+        products_and_their_versions = self.get_output_from_reference_dependency(
+            self.portfolio_get_all_products_and_their_versions_ref
+        )
         product = products_and_their_versions.get(self.product)
         product_id = product.get("ProductId")
         version_id = product.get("Versions").get(self.version).get("Id")
-        describe_provisioning_params = self.get_output_from_reference_dependency(self.describe_provisioning_params_ref)
+        describe_provisioning_params = self.get_output_from_reference_dependency(
+            self.describe_provisioning_params_ref
+        )
 
         task_output = dict(
             **self.params_for_results_display(),

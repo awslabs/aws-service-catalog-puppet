@@ -6,7 +6,10 @@ from servicecatalog_puppet import constants
 
 
 def create(
-    manifest_files_path, manifest_task_reference_file_path, puppet_account_id, parameters_to_use,
+    manifest_files_path,
+    manifest_task_reference_file_path,
+    puppet_account_id,
+    parameters_to_use,
 ):
     # TODO add in support for list launches and dry run
     section_name = parameters_to_use.get("section_name")

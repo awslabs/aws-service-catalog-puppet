@@ -41,10 +41,12 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
         return calls
 
     def run(self):
-        portfolio_details = self.get_output_from_reference_dependency(self.portfolio_task_reference)
+        portfolio_details = self.get_output_from_reference_dependency(
+            self.portfolio_task_reference
+        )
         portfolio_id = portfolio_details.get("Id")
 
-        yield delete_cloud_formation_stack_task.DeleteCloudFormationStackTask(
+        yield delete_cloud_formation_stack_task.DeleteCloudFormationStackTask(  # TODO move to task_registry approach
             account_id=self.account_id,
             region=self.region,
             stack_name=f"associations-for-portfolio-{portfolio_id}",

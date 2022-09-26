@@ -26,7 +26,9 @@ class GetAllProductsAndTheirVersionsTask(tasks.TaskWithReference):
         ]
 
     def run(self):
-        portfolio_details = self.get_output_from_reference_dependency(self.portfolio_task_reference)
+        portfolio_details = self.get_output_from_reference_dependency(
+            self.portfolio_task_reference
+        )
         portfolio_id = portfolio_details.get("Id")
         if portfolio_id is None:
             self.write_output({})

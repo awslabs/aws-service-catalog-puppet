@@ -11,13 +11,14 @@ from servicecatalog_puppet import constants
 from servicecatalog_puppet import manifest_utils
 from servicecatalog_puppet import yaml_utils
 from servicecatalog_puppet.commands import graph
+from servicecatalog_puppet.waluigi import tasks as waluigi_tasks
 from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow.dependencies import get_dependencies_for_task_reference
+from servicecatalog_puppet.workflow.dependencies import task_factory
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
-class TaskWithReference(tasks.PuppetTask):
+class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
     task_reference = luigi.Parameter()
     manifest_task_reference_file_path = luigi.Parameter()
     dependencies_by_reference = luigi.ListParameter()
@@ -31,9 +32,7 @@ class TaskWithReference(tasks.PuppetTask):
         f = self.input().get("reference_dependencies").get(reference).open("r")
         content = f.read()
         f.close()
-        return json.loads(
-            content
-        )
+        return json.loads(content)
 
     def get_output_from_reference_dependency_raw(self, reference):
         f = self.input().get("reference_dependencies").get(reference).open("r")
@@ -43,12 +42,12 @@ class TaskWithReference(tasks.PuppetTask):
 
     @functools.lru_cache(maxsize=32)
     def get_task_from_reference(self, task_reference):
-        f = open(f"{self.manifest_files_path}/tasks/{graph.escape(task_reference)}.json", "r")
+        f = open(
+            f"{self.manifest_files_path}/tasks/{graph.escape(task_reference)}.json", "r"
+        )
         c = f.read()
         f.close()
-        return yaml_utils.load_as_jaon(
-            c
-        )
+        return yaml_utils.load_as_jaon(c)
 
     @functools.lru_cache(maxsize=32)
     def dependencies_for_task_reference(self):
@@ -59,13 +58,15 @@ class TaskWithReference(tasks.PuppetTask):
         if this_task is None:
             raise Exception(f"Did not find {self.task_reference} within reference")
         for dependency_by_reference in this_task.get("dependencies_by_reference", []):
-            dependency_by_reference_params = self.get_task_from_reference(dependency_by_reference)
+            dependency_by_reference_params = self.get_task_from_reference(
+                dependency_by_reference
+            )
             if dependency_by_reference_params is None:
                 raise Exception(
                     f"{self.task_reference} has a dependency: {dependency_by_reference} unsatisfied by the manifest task reference"
                 )
             t_reference = dependency_by_reference_params.get("task_reference")
-            dependencies[t_reference] = get_dependencies_for_task_reference.create(
+            dependencies[t_reference] = task_factory.create(
                 self.manifest_files_path,
                 self.manifest_task_reference_file_path,
                 self.puppet_account_id,
@@ -122,7 +123,9 @@ class TaskWithParameters(TaskWithReference):
                 else:
                     required_task_reference = f"{constants.SSM_PARAMETERS}-{requested_param_account_id}-{requested_param_region}-{requested_param_name}"
 
-                parameter_task_output = self.get_output_from_reference_dependency(required_task_reference)
+                parameter_task_output = self.get_output_from_reference_dependency(
+                    required_task_reference
+                )
 
                 if parameter_task_output.get(requested_param_name):
                     all_params[param_name] = parameter_task_output.get(
@@ -159,7 +162,9 @@ class TaskWithParameters(TaskWithReference):
                     .replace("${AWS::PuppetAccountId}", self.puppet_account_id)
                     .replace("${AWS::Region}", self.region)
                 )
-                parameter_task_output = self.get_output_from_reference_dependency(task_ref)
+                parameter_task_output = self.get_output_from_reference_dependency(
+                    task_ref
+                )
                 all_params[param_name] = parameter_task_output
 
             if param_details.get("default"):

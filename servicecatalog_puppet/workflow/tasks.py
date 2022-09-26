@@ -266,7 +266,9 @@ class PuppetTask(luigi.Task):
 
     @property
     def should_use_caching(self):
-        return self.should_use_s3_target_if_caching_is_on and config.is_caching_enabled()
+        return (
+            self.should_use_s3_target_if_caching_is_on and config.is_caching_enabled()
+        )
 
     @property
     def should_use_s3_target_if_caching_is_on(self):
@@ -296,7 +298,7 @@ class PuppetTask(luigi.Task):
         else:
             f.write(json.dumps(content, indent=4, default=str,))
         f.close()
-        #gc.collect()
+        # gc.collect()
 
     @property
     def node_id(self):
@@ -338,17 +340,6 @@ def record_event(event_type, task, extra_event_data=None):
         f.write(json.dumps(event, default=str, indent=4,))
 
 
-@luigi.Task.event_handler(luigi.Event.FAILURE)
-def on_task_failure(task, exception):
-    exception_details = {
-        "exception_type": type(exception),
-        "exception_stack_trace": traceback.format_exception(
-            etype=type(exception), value=exception, tb=exception.__traceback__,
-        ),
-    }
-    record_event("failure", task, exception_details)
-
-
 def print_stats():
     pid = os.getpid()
     p = psutil.Process(pid)
@@ -358,6 +349,17 @@ def print_stats():
     logger.info(
         f"stats: process {pid} is using {memory_info}MB ({m_percent}%) of memory and {cpu_percent}% of CPU"
     )
+
+
+@luigi.Task.event_handler(luigi.Event.FAILURE)
+def on_task_failure(task, exception):
+    exception_details = {
+        "exception_type": type(exception),
+        "exception_stack_trace": traceback.format_exception(
+            etype=type(exception), value=exception, tb=exception.__traceback__,
+        ),
+    }
+    record_event("failure", task, exception_details)
 
 
 @luigi.Task.event_handler(luigi.Event.START)

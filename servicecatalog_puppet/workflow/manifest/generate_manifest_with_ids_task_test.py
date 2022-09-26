@@ -19,9 +19,7 @@ class GenerateManifestWithIdsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
 
         self.module = generate_manifest_with_ids_task
 
-        self.sut = self.module.GenerateManifestWithIdsTask(
-            **self.get_common_args()
-        )
+        self.sut = self.module.GenerateManifestWithIdsTask(**self.get_common_args())
 
         self.wire_up_mocks()
 

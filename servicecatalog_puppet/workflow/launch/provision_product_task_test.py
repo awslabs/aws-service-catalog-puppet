@@ -65,32 +65,6 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    def test_api_calls_used(self):
-        # setup
-        expected_result = [
-            "servicecatalog.scan_provisioned_products_single_page_account_id_region",
-            "servicecatalog.describe_provisioned_product_account_id_region",
-            "servicecatalog.terminate_provisioned_product_account_id_region",
-            "servicecatalog.describe_record_account_id_region",
-            "cloudformation.get_template_summary_account_id_region",
-            "cloudformation.describe_stacks_account_id_region",
-            "servicecatalog.list_provisioned_product_plans_single_page_account_id_region",
-            "servicecatalog.delete_provisioned_product_plan_account_id_region",
-            "servicecatalog.create_provisioned_product_plan_account_id_region",
-            "servicecatalog.describe_provisioned_product_plan_account_id_region",
-            "servicecatalog.execute_provisioned_product_plan_account_id_region",
-            "servicecatalog.describe_provisioned_product_account_id_region",
-            "servicecatalog.update_provisioned_product_account_id_region",
-            "servicecatalog.provision_product_account_id_region",
-            "servicecatalog.list_launch_paths_account_id_region",
-        ]
-
-        # exercise
-        actual_result = self.sut.api_calls_used()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
-
     @skip
     def test_run(self):
         # setup

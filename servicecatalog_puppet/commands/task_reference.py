@@ -11,7 +11,8 @@ from servicecatalog_puppet import manifest_utils, constants, yaml_utils, config
 from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.workflow import runner
 from servicecatalog_puppet.workflow.dependencies import (
-    get_dependencies_for_task_reference,
+    task_factory,
+    resources_factory,
 )
 import networkx as nx
 
@@ -90,12 +91,8 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                 regions_in_use,
             )
             for task_to_add in tasks_to_add:
-                task_to_add["manifest_section_names"] = {
-                    section_name: True
-                }
-                task_to_add["manifest_item_names"] = {
-                    item_name: True
-                }
+                task_to_add["manifest_section_names"] = {section_name: True}
+                task_to_add["manifest_item_names"] = {item_name: True}
                 task_to_add["manifest_account_ids"] = {
                     task_to_add.get("account_id"): True
                 }
@@ -286,7 +283,9 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         account_id=owning_account,
                         region=owning_region,
                         reverse_dependencies_by_reference=list(),
-                        manifest_section_names=dict(**task.get("manifest_section_names")),
+                        manifest_section_names=dict(
+                            **task.get("manifest_section_names")
+                        ),
                         manifest_item_names=dict(**task.get("manifest_item_names")),
                         manifest_account_ids=dict(**task.get("manifest_account_ids")),
                     )
@@ -413,7 +412,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
     all_tasks.update(new_tasks)
 
     #
-    # Third pass - replacing dependencies with dependencies_by_reference
+    # Third pass - replacing dependencies with dependencies_by_reference and adding resources
     #
     for task_reference, task in all_tasks.items():
         for dependency in task.get("dependencies", []):
@@ -469,9 +468,12 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                     raise Exception(
                         f"invalid use of account-and-region affinity - {name} is not deployed in the account_id and region: {account_and_region} for task {task_reference}"
                     )
-
         for dep in task["dependencies_by_reference"]:
             all_tasks[dep]["reverse_dependencies_by_reference"].append(task_reference)
+        resources = resources_factory.create(
+            task.get("section_name"), task, puppet_account_id
+        )
+        task["resources_required"] = resources
 
     reference = dict(all_tasks=all_tasks,)
     ensure_no_cyclic_dependencies("complete task reference", all_tasks)
@@ -1051,7 +1053,9 @@ def handle_spoke_local_portfolios(
                 section_name=f"portfolio-{product_generation_method}",
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_ref,
                 portfolio_get_all_products_and_their_versions_for_hub_ref=hub_portfolio_all_products_and_versions_before_ref,
-                manifest_section_names=dict(**task_to_add.get("manifest_section_names")),
+                manifest_section_names=dict(
+                    **task_to_add.get("manifest_section_names")
+                ),
                 manifest_item_names=dict(**task_to_add.get("manifest_item_names")),
                 manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
             )
@@ -1076,7 +1080,9 @@ def handle_spoke_local_portfolios(
                 spoke_local_portfolio_name=item_name,
                 section_name=constants.PORTFOLIO_ASSOCIATIONS,
                 associations=task_to_add.get("associations"),
-                manifest_section_names=dict(**task_to_add.get("manifest_section_names")),
+                manifest_section_names=dict(
+                    **task_to_add.get("manifest_section_names")
+                ),
                 manifest_item_names=dict(**task_to_add.get("manifest_item_names")),
                 manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
             )
@@ -1124,7 +1130,9 @@ def handle_spoke_local_portfolios(
                 spoke_local_portfolio_name=item_name,
                 launch_constraints=task_to_add["launch_constraints"],
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_after_ref,
-                manifest_section_names=dict(**task_to_add.get("manifest_section_names")),
+                manifest_section_names=dict(
+                    **task_to_add.get("manifest_section_names")
+                ),
                 manifest_item_names=dict(**task_to_add.get("manifest_item_names")),
                 manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
             )
@@ -1140,7 +1148,9 @@ def handle_spoke_local_portfolios(
                 spoke_local_portfolio_name=item_name,
                 resource_update_constraints=task_to_add["resource_update_constraints"],
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_after_ref,
-                manifest_section_names=dict(**task_to_add.get("manifest_section_names")),
+                manifest_section_names=dict(
+                    **task_to_add.get("manifest_section_names")
+                ),
                 manifest_item_names=dict(**task_to_add.get("manifest_item_names")),
                 manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
             )
@@ -1386,10 +1396,10 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
             # these should not override the previous decisions
             if not should_include:
                 # sharing should happen from the hub for spoke-local-portfolios in hub and spoke split mode
-                should_include = (
-                    task.get("section_name")
-                    in [constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT, constants.PORTFOLIO_SHARE_AND_ACCEPT_AWS_ORGANIZATIONS]
-                )
+                should_include = task.get("section_name") in [
+                    constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT,
+                    constants.PORTFOLIO_SHARE_AND_ACCEPT_AWS_ORGANIZATIONS,
+                ]
         else:
             raise Exception("Unhandled execution")
 
@@ -1495,9 +1505,7 @@ def generate_task_reference(f, overrides):
     for t_name, task in hub_tasks.get("all_tasks", {}).items():
         task_output_file_path = f"{task_output_path}/{graph.escape(t_name)}.json"
         task_output_content = yaml_utils.dump_as_json(task)
-        open(task_output_file_path, 'w').write(
-           task_output_content
-        )
+        open(task_output_file_path, "w").write(task_output_content)
 
 
 def deploy_from_task_reference(path):
@@ -1507,14 +1515,9 @@ def deploy_from_task_reference(path):
     reference = yaml_utils.load_as_jaon(open(f, "r").read())
     all_tasks = reference.get("all_tasks")
 
-    # num_workers = config.get_num_workers()
-    # puppet_account_id = config.get_puppet_account_id()
-    # single_account_id = config.get_single_account_id()
-
-    num_workers = 20
-    puppet_account_id = "105463962595"
-    single_account_id = ""
-
+    num_workers = config.get_num_workers()
+    puppet_account_id = config.get_puppet_account_id()
+    single_account_id = config.get_single_account_id()
 
     for task_reference, task in all_tasks.items():
         if single_account_id:
@@ -1524,7 +1527,7 @@ def deploy_from_task_reference(path):
             ):
                 tasks_to_run_filtered.append(task)
                 tasks_to_run.append(
-                    get_dependencies_for_task_reference.create(
+                    task_factory.create(
                         manifest_files_path=path,
                         manifest_task_reference_file_path=f,
                         puppet_account_id=puppet_account_id,
@@ -1534,7 +1537,7 @@ def deploy_from_task_reference(path):
         else:
             tasks_to_run_filtered.append(task)
             tasks_to_run.append(
-                get_dependencies_for_task_reference.create(
+                task_factory.create(
                     manifest_files_path=path,
                     manifest_task_reference_file_path=f,
                     puppet_account_id=puppet_account_id,
@@ -1560,4 +1563,6 @@ def deploy_from_task_reference(path):
         on_complete_url,
         running_exploded,
         tasks_to_run_filtered,
+        path,
+        f,
     )

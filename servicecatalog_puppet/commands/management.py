@@ -15,7 +15,13 @@ import yaml
 from betterboto import client as betterboto_client
 from jinja2 import Template
 
-from servicecatalog_puppet import constants, config, asset_helpers, viz_template, print_utils
+from servicecatalog_puppet import (
+    constants,
+    config,
+    asset_helpers,
+    viz_template,
+    print_utils,
+)
 
 
 def upload_config(config):
@@ -181,11 +187,7 @@ def export_puppet_pipeline_logs(execution_id, puppet_account_id):
 
 def get_data_for_viz(codebuild_build_id, output_file_name_prefix):
     with betterboto_client.ClientContextManager("codebuild") as codebuild:
-        build = codebuild.batch_get_builds(
-            ids=[
-                codebuild_build_id
-            ]
-        ).get("builds")[0]
+        build = codebuild.batch_get_builds(ids=[codebuild_build_id]).get("builds")[0]
         location = build.get("artifacts").get("location").split(":")
         bucket = location[5].split("/")[0]
         key = location[5].replace(f"{bucket}/", "")
@@ -202,7 +204,7 @@ def get_data_for_viz(codebuild_build_id, output_file_name_prefix):
         else:
             print(f"Unziping")
             os.makedirs(output_file_name_prefix)
-            with zipfile.ZipFile(zip_file_location, 'r') as zip_ref:
+            with zipfile.ZipFile(zip_file_location, "r") as zip_ref:
                 zip_ref.extractall(output_file_name_prefix)
     return f"{output_file_name_prefix}/results"
 
@@ -210,48 +212,36 @@ def get_data_for_viz(codebuild_build_id, output_file_name_prefix):
 def generate_data_for_viz(path_to_results, group_by_pid):
     results = list()
     groups = dict()
-    time_format = '%Y-%m-%d %H:%M:%S'
-    earliest_time = datetime.strptime('4022-09-14 00:54:33', time_format)
-    latest_time = datetime.strptime('2000-09-14 00:54:33', time_format)
-    for starter in glob.glob(
-            f"{path_to_results}/start/*.json"):
-        start = json.loads(open(starter, 'r').read())
+    time_format = "%Y-%m-%d %H:%M:%S"
+    earliest_time = datetime.strptime("4022-09-14 00:54:33", time_format)
+    latest_time = datetime.strptime("2000-09-14 00:54:33", time_format)
+    for starter in glob.glob(f"{path_to_results}/start/*.json"):
+        start = json.loads(open(starter, "r").read())
         name = os.path.basename(starter)
         end = None
         task_id = name.replace(".json", "")
         task_id = "-".join(task_id.split("-")[1:])
         processing_time = dict(duration="unknown")
 
-        if os.path.exists(
-                f"{path_to_results}/success/{name}"):
+        if os.path.exists(f"{path_to_results}/success/{name}"):
             result = "success"
-            end = json.loads(open(
-                f"{path_to_results}/success/{name}",
-                'r').read())
-        elif os.path.exists(
-                f"{path_to_results}/failure/{name}"):
+            end = json.loads(open(f"{path_to_results}/success/{name}", "r").read())
+        elif os.path.exists(f"{path_to_results}/failure/{name}"):
             result = "failure"
-            end = json.loads(open(
-                f"{path_to_results}/failure/{name}",
-                'r').read())
+            end = json.loads(open(f"{path_to_results}/failure/{name}", "r").read())
 
-        if os.path.exists(
-                f"{path_to_results}/processing_time/{name}"):
-            processing_time = json.loads(open(
-                f"{path_to_results}/processing_time/{name}",
-                'r').read())
+        if os.path.exists(f"{path_to_results}/processing_time/{name}"):
+            processing_time = json.loads(
+                open(f"{path_to_results}/processing_time/{name}", "r").read()
+            )
 
         if end:
             body = ""
-            starting_time = start.get('datetime')
-            ending_time = end.get('datetime')
-            pid = start.get('pid')
-            groups[pid] = dict(
-                id=pid,
-                content=pid,
-                value=pid,
-            )
-            for name2, value2 in start.get('params_for_results', {}).items():
+            starting_time = start.get("datetime")
+            ending_time = end.get("datetime")
+            pid = start.get("pid")
+            groups[pid] = dict(id=pid, content=pid, value=pid,)
+            for name2, value2 in start.get("params_for_results", {}).items():
                 body += f"<b>{name2}</b>:{value2}<br />"
             body += f"<b>pid</b>:{pid}<br />"
             body += f"<b>start</b>:{starting_time}<br />"
@@ -296,7 +286,12 @@ def generate_data_for_viz(path_to_results, group_by_pid):
     earliest_time = earliest_time - timedelta(minutes=2)
     latest_time = latest_time + timedelta(minutes=2)
     groups = list(groups.values())
-    return results, groups, earliest_time.strftime(time_format), latest_time.strftime(time_format)
+    return (
+        results,
+        groups,
+        earliest_time.strftime(time_format),
+        latest_time.strftime(time_format),
+    )
 
 
 def export_deploy_viz(codebuild_execution_id, group_by_pid, puppet_account_id):
@@ -308,12 +303,8 @@ def export_deploy_viz(codebuild_execution_id, group_by_pid, puppet_account_id):
     else:
         params = "container, items, options"
     output = viz_template.CONTENT.format(
-        DATASET=results,
-        START=start,
-        END=end,
-        GROUPS=groups,
-        PARAMS=params,
+        DATASET=results, START=start, END=end, GROUPS=groups, PARAMS=params,
     )
-    f = open(f"{output_file_name_prefix}.html", 'w')
+    f = open(f"{output_file_name_prefix}.html", "w")
     f.write(output)
     f.close()
