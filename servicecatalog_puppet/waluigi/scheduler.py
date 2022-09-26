@@ -1,6 +1,7 @@
 import multiprocessing
 import random
 import time
+import traceback
 
 import networkx as nx
 import json
@@ -61,6 +62,14 @@ def worker_task(
             end = time.time()
         except Exception as e:
             print_utils.error(f"{pid} Worker executed task with failures: {task_reference} failures: {e}")
+            print_utils.error('---- START OF ERROR----')
+            for l in traceback.format_exception(
+                    etype=type(e), value=e, tb=e.__traceback__,
+                ):
+                    print_utils.error(
+                        l
+                    )
+            print_utils.error('---- END OF ERROR ----')
             task.on_task_failure(e)
             output_tasks.put((ERRORED, task_reference,))
         else:
@@ -138,6 +147,7 @@ def orchestrate(input_tasks, output_task):
     with open(constants.STATE_FILE_1, "r") as f:
         tasks_in_order = json.loads(f.read())
     n_tasks_to_run = len(tasks_in_order)
+    tasks_errored = 0
     tasks_queued_so_far = 0
     tasks_completed_so_far = 0
     with open(constants.STATE_FILE_2, "r") as f:
@@ -156,6 +166,7 @@ def orchestrate(input_tasks, output_task):
                 for r in task_just_run.get("resources_required", []):
                     resources_in_use[r] = False
             elif result == ERRORED:
+                tasks_errored += 1
                 time.sleep(2)
                 task_just_run[QUEUE_STATUS] = ERRORED
                 for r in task_just_run.get("resources_required", []):
@@ -189,7 +200,7 @@ def orchestrate(input_tasks, output_task):
             print_utils.echo(f"{pid} Not scheduling anything for now",)
             time.sleep(1)
         print_utils.echo(
-            f"tasks complete: {tasks_completed_so_far}, queued: {tasks_queued_so_far}, total: {n_tasks_to_run}",
+            f"tasks complete: {tasks_completed_so_far}, errored: {tasks_errored}, queued: {tasks_queued_so_far}, total: {n_tasks_to_run}",
         )
 
 

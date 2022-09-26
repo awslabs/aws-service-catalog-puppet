@@ -8,7 +8,6 @@ import luigi
 from servicecatalog_puppet import config
 from servicecatalog_puppet import utils
 from servicecatalog_puppet.workflow.dependencies import tasks
-from servicecatalog_puppet.workflow.general import delete_cloud_formation_stack_task
 
 
 class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
@@ -45,13 +44,6 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
             self.portfolio_task_reference
         )
         portfolio_id = portfolio_details.get("Id")
-
-        yield delete_cloud_formation_stack_task.DeleteCloudFormationStackTask(  # TODO move to task_registry approach
-            account_id=self.account_id,
-            region=self.region,
-            stack_name=f"associations-for-portfolio-{portfolio_id}",
-            nonce="forever",
-        )
 
         used_wildcard = "*" in "".join(self.associations)
 

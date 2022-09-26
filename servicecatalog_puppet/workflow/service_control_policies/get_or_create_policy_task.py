@@ -6,18 +6,22 @@ import luigi
 
 from servicecatalog_puppet.workflow import tasks
 
+from servicecatalog_puppet.workflow.dependencies import tasks
 
-class GetOrCreatePolicyTask(tasks.PuppetTask):  # TODO make task with reference
-    puppet_account_id = luigi.Parameter()
+
+class GetOrCreatePolicyTask(tasks.TaskWithReference):
+    account_id = luigi.Parameter()
     region = luigi.Parameter()
     policy_name = luigi.Parameter()
     policy_description = luigi.Parameter()
     policy_content = luigi.DictParameter()
     tags = luigi.ListParameter()
 
+    manifest_file_path = luigi.Parameter()
+
     def params_for_results_display(self):
         return {
-            "puppet_account_id": self.puppet_account_id,
+            "account_id": self.account_id,
             "policy_name": self.policy_name,
             "cache_invalidator": self.cache_invalidator,
         }
@@ -39,7 +43,7 @@ class GetOrCreatePolicyTask(tasks.PuppetTask):  # TODO make task with reference
         if self.policy_content.get("default") is not None:
             unwrapped = tasks.unwrap(self.policy_content.get("default"))
         elif self.policy_content.get("s3") is not None:
-            with self.hub_client("s3") as s3:
+            with self.spoke_client("s3") as s3:
                 bucket = self.policy_content.get("s3").get("bucket")
                 key = self.policy_content.get("s3").get("key")
                 raw_data = (

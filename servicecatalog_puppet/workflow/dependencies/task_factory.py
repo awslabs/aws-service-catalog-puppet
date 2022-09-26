@@ -2,7 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 import functools
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, yaml_utils
 
 
 def create(
@@ -182,6 +182,7 @@ def create(
             return do_execute_tag_policies_task.DoExecuteTagPoliciesTask(
                 **common_parameters,
                 tag_policy_name=parameters_to_use.get("tag_policy_name"),
+                get_or_create_policy_ref=parameters_to_use.get("get_or_create_policy_ref"),
                 ou_name=parameters_to_use.get("ou_name"),
                 content=parameters_to_use.get("content"),
                 description=parameters_to_use.get("description"),
@@ -200,6 +201,7 @@ def create(
                 service_control_policy_name=parameters_to_use.get(
                     "service_control_policy_name"
                 ),
+                get_or_create_policy_ref=parameters_to_use.get("get_or_create_policy_ref"),
                 ou_name=parameters_to_use.get("ou_name"),
                 content=parameters_to_use.get("content"),
                 description=parameters_to_use.get("description"),
@@ -216,6 +218,7 @@ def create(
                 service_control_policy_name=parameters_to_use.get(
                     "service_control_policy_name"
                 ),
+                get_or_create_policy_ref=parameters_to_use.get("get_or_create_policy_ref"),
                 ou_name=parameters_to_use.get("ou_name"),
                 content=parameters_to_use.get("content"),
                 description=parameters_to_use.get("description"),
@@ -697,6 +700,49 @@ def create(
             bucket=parameters_to_use.get("bucket"),
             key=parameters_to_use.get("key"),
             version_id=parameters_to_use.get("version_id"),
+        )
+
+    elif section_name == constants.GET_OR_CREATE_SERVICE_CONTROL_POLICIES_POLICY:
+        from servicecatalog_puppet.workflow.service_control_policies import (
+            get_or_create_policy_task,
+        )
+
+        name = parameters_to_use.get("policy_name")
+        with open(manifest_file_path, 'r') as f:
+            m = yaml_utils.load(f.read())
+        tags = m.get(constants.SERVICE_CONTROL_POLICIES).get(name).get("tags", [])
+
+        return get_or_create_policy_task.GetOrCreatePolicyTask(
+            **common_parameters,
+
+            policy_name=name,
+            policy_description=parameters_to_use.get("policy_description"),
+            policy_content=parameters_to_use.get("policy_content"),
+
+            manifest_file_path=manifest_file_path,
+
+            tags=tags,
+        )
+
+    elif section_name == constants.GET_OR_CREATE_TAG_POLICIES_POLICY:
+        from servicecatalog_puppet.workflow.tag_policies import (
+            get_or_create_policy_task,
+        )
+
+        name = parameters_to_use.get("policy_name")
+        with open(manifest_file_path, 'r') as f:
+            m = yaml_utils.load(f.read())
+        tags = m.get(constants.TAG_POLICIES).get(name).get("tags", [])
+
+        return get_or_create_policy_task.GetOrCreatePolicyTask(
+            **common_parameters,
+
+            policy_name=name,
+            policy_description=parameters_to_use.get("policy_description"),
+            policy_content=parameters_to_use.get("policy_content"),
+
+            manifest_file_path=manifest_file_path,
+            tags=tags
         )
 
     else:

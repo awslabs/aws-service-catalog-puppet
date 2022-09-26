@@ -62,6 +62,15 @@ def bootstrap(
 
     all_regions = config.get_regions()
     with betterboto_client.MultiRegionClientContextManager(
+        "events", all_regions
+    ) as clients:
+        for _, client in clients.items():
+            try:
+                client.describe_event_bus(Name=constants.EVENT_BUS_NAME)
+            except events.exceptions.ResourceNotFoundException:
+                client.create_event_bus(Name=constants.EVENT_BUS_NAME)
+
+    with betterboto_client.MultiRegionClientContextManager(
         "cloudformation", all_regions
     ) as clients:
         click.echo("Creating {}-regional".format(constants.BOOTSTRAP_STACK_NAME))

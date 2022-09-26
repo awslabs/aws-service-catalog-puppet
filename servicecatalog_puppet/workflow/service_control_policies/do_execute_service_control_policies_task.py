@@ -17,6 +17,7 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     account_id = luigi.Parameter()
     ou_name = luigi.Parameter()
+    get_or_create_policy_ref = luigi.Parameter()
 
     content = luigi.DictParameter()
     description = luigi.Parameter()
@@ -35,21 +36,6 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def requires(self):
-        manifest = yaml_utils.load(open(self.manifest_file_path, "r").read())
-        return dict(
-            reference_dependencies=self.dependencies_for_task_reference(),
-            policy=get_or_create_policy_task.GetOrCreatePolicyTask(
-                puppet_account_id=self.puppet_account_id,
-                region=self.region,
-                policy_name=self.service_control_policy_name,
-                policy_description=self.description,
-                policy_content=self.content,
-                tags=manifest.get(constants.SERVICE_CONTROL_POLICIES)
-                .get(self.service_control_policy_name)
-                .get("tags", []),
-            ),
-        )
 
     def api_calls_used(self):
         return [
@@ -80,7 +66,7 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
     def run(self):
         with self.organizations_policy_client() as orgs:
             self.info("Ensuring attachments for policies")
-            policy_id = self.load_from_input("policy").get("Id")
+            policy_id = self.get_output_from_reference_dependency(self.get_or_create_policy_ref).get("Id")
             if self.has_policy_attached(orgs):
                 self.write_output("Skipped")
             else:

@@ -244,6 +244,28 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         task_to_add,
                     )
 
+                if section_name == constants.SERVICE_CONTROL_POLICIES:
+                    handle_service_control_policies(
+                        all_tasks,
+                        all_tasks_task_reference,
+                        item_name,
+                        puppet_account_id,
+                        section_name,
+                        task_reference,
+                        task_to_add,
+                    )
+
+                if section_name == constants.TAG_POLICIES:
+                    handle_tag_policies(
+                        all_tasks,
+                        all_tasks_task_reference,
+                        item_name,
+                        puppet_account_id,
+                        section_name,
+                        task_reference,
+                        task_to_add,
+                    )
+
     #
     # Second pass - adding get parameters
     #
@@ -480,6 +502,92 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
     # open(output_file_path, "w").write(yaml_utils.dump(reference))
     open(output_file_path, "w").write(yaml_utils.dump_as_json(reference))
     return reference
+
+
+def handle_service_control_policies(
+    all_tasks,
+    all_tasks_task_reference,
+    item_name,
+    puppet_account_id,
+    section_name,
+    task_reference,
+    task_to_add,
+):
+    get_or_create_policy_ref = f"{constants.GET_OR_CREATE_SERVICE_CONTROL_POLICIES_POLICY}-{item_name}"
+    if not all_tasks.get(get_or_create_policy_ref):
+        all_tasks[get_or_create_policy_ref] = dict(
+            task_reference=get_or_create_policy_ref,
+            execution="hub",
+
+            account_id=puppet_account_id,
+            region=task_to_add.get("region"),
+            policy_name=task_to_add.get("service_control_policy_name"),
+            policy_description=task_to_add.get("description"),
+            policy_content=task_to_add.get("content"),
+
+            dependencies_by_reference=list(),
+            reverse_dependencies_by_reference=list(),
+            manifest_section_names=dict(),
+            manifest_item_names=dict(),
+            manifest_account_ids=dict(),
+            section_name=constants.GET_OR_CREATE_SERVICE_CONTROL_POLICIES_POLICY,
+        )
+        all_tasks[all_tasks_task_reference]["get_or_create_policy_ref"] = get_or_create_policy_ref
+        all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
+            get_or_create_policy_ref
+        )
+        all_tasks[get_or_create_policy_ref]["manifest_section_names"].update(
+            task_to_add.get("manifest_section_names")
+        )
+        all_tasks[get_or_create_policy_ref]["manifest_item_names"].update(
+            task_to_add.get("manifest_item_names")
+        )
+        all_tasks[get_or_create_policy_ref]["manifest_account_ids"].update(
+            task_to_add.get("manifest_account_ids")
+        )
+
+
+def handle_tag_policies(
+    all_tasks,
+    all_tasks_task_reference,
+    item_name,
+    puppet_account_id,
+    section_name,
+    task_reference,
+    task_to_add,
+):
+    get_or_create_policy_ref = f"{constants.GET_OR_CREATE_TAG_POLICIES_POLICY}-{item_name}"
+    if not all_tasks.get(get_or_create_policy_ref):
+        all_tasks[get_or_create_policy_ref] = dict(
+            task_reference=get_or_create_policy_ref,
+            execution="hub",
+
+            account_id=puppet_account_id,
+            region=task_to_add.get("region"),
+            policy_name=task_to_add.get("tag_policy_name"),
+            policy_description=task_to_add.get("description"),
+            policy_content=task_to_add.get("content"),
+
+            dependencies_by_reference=list(),
+            reverse_dependencies_by_reference=list(),
+            manifest_section_names=dict(),
+            manifest_item_names=dict(),
+            manifest_account_ids=dict(),
+            section_name=constants.GET_OR_CREATE_TAG_POLICIES_POLICY,
+        )
+        all_tasks[all_tasks_task_reference]["get_or_create_policy_ref"] = get_or_create_policy_ref
+        all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
+            get_or_create_policy_ref
+        )
+        all_tasks[get_or_create_policy_ref]["manifest_section_names"].update(
+            task_to_add.get("manifest_section_names")
+        )
+        all_tasks[get_or_create_policy_ref]["manifest_item_names"].update(
+            task_to_add.get("manifest_item_names")
+        )
+        all_tasks[get_or_create_policy_ref]["manifest_account_ids"].update(
+            task_to_add.get("manifest_account_ids")
+        )
 
 
 def handle_stacks(
