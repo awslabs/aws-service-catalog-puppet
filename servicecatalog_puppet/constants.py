@@ -333,8 +333,12 @@ WORKSPACE_ACCOUNT_PREPARATION = "workspace-account-preparation"
 RUN_DEPLOY_IN_SPOKE = "run-deploy-in-spoke"
 GENERATE_MANIFEST = "generate-manifest"
 GET_TEMPLATE_FROM_S3 = "get-template-from-s3"
-GET_OR_CREATE_SERVICE_CONTROL_POLICIES_POLICY = "get-or-create-service-control-policies-policy"
+GET_OR_CREATE_SERVICE_CONTROL_POLICIES_POLICY = (
+    "get-or-create-service-control-policies-policy"
+)
 GET_OR_CREATE_TAG_POLICIES_POLICY = "get-or-create-tag-policies-policy"
 
 STATE_FILE_1 = "state1.json"
 STATE_FILE_2 = "ignored/src/ServiceCatalogPuppet/manifest-task-reference.yaml"
+STATE_FILE_3 = "ignored/src/ServiceCatalogPuppet/graph.pickle"
+RESOURCES = "ignored/src/ServiceCatalogPuppet/resources.json"

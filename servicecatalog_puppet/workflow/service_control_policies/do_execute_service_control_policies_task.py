@@ -36,7 +36,6 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-
     def api_calls_used(self):
         return [
             f"organizations.attach_policy_{self.region}",
@@ -66,7 +65,9 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
     def run(self):
         with self.organizations_policy_client() as orgs:
             self.info("Ensuring attachments for policies")
-            policy_id = self.get_output_from_reference_dependency(self.get_or_create_policy_ref).get("Id")
+            policy_id = self.get_output_from_reference_dependency(
+                self.get_or_create_policy_ref
+            ).get("Id")
             if self.has_policy_attached(orgs):
                 self.write_output("Skipped")
             else:

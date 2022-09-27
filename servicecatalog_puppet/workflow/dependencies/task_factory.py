@@ -182,7 +182,9 @@ def create(
             return do_execute_tag_policies_task.DoExecuteTagPoliciesTask(
                 **common_parameters,
                 tag_policy_name=parameters_to_use.get("tag_policy_name"),
-                get_or_create_policy_ref=parameters_to_use.get("get_or_create_policy_ref"),
+                get_or_create_policy_ref=parameters_to_use.get(
+                    "get_or_create_policy_ref"
+                ),
                 ou_name=parameters_to_use.get("ou_name"),
                 content=parameters_to_use.get("content"),
                 description=parameters_to_use.get("description"),
@@ -201,7 +203,9 @@ def create(
                 service_control_policy_name=parameters_to_use.get(
                     "service_control_policy_name"
                 ),
-                get_or_create_policy_ref=parameters_to_use.get("get_or_create_policy_ref"),
+                get_or_create_policy_ref=parameters_to_use.get(
+                    "get_or_create_policy_ref"
+                ),
                 ou_name=parameters_to_use.get("ou_name"),
                 content=parameters_to_use.get("content"),
                 description=parameters_to_use.get("description"),
@@ -218,7 +222,9 @@ def create(
                 service_control_policy_name=parameters_to_use.get(
                     "service_control_policy_name"
                 ),
-                get_or_create_policy_ref=parameters_to_use.get("get_or_create_policy_ref"),
+                get_or_create_policy_ref=parameters_to_use.get(
+                    "get_or_create_policy_ref"
+                ),
                 ou_name=parameters_to_use.get("ou_name"),
                 content=parameters_to_use.get("content"),
                 description=parameters_to_use.get("description"),
@@ -708,19 +714,16 @@ def create(
         )
 
         name = parameters_to_use.get("policy_name")
-        with open(manifest_file_path, 'r') as f:
+        with open(manifest_file_path, "r") as f:
             m = yaml_utils.load(f.read())
         tags = m.get(constants.SERVICE_CONTROL_POLICIES).get(name).get("tags", [])
 
         return get_or_create_policy_task.GetOrCreatePolicyTask(
             **common_parameters,
-
             policy_name=name,
             policy_description=parameters_to_use.get("policy_description"),
             policy_content=parameters_to_use.get("policy_content"),
-
             manifest_file_path=manifest_file_path,
-
             tags=tags,
         )
 
@@ -730,19 +733,17 @@ def create(
         )
 
         name = parameters_to_use.get("policy_name")
-        with open(manifest_file_path, 'r') as f:
+        with open(manifest_file_path, "r") as f:
             m = yaml_utils.load(f.read())
         tags = m.get(constants.TAG_POLICIES).get(name).get("tags", [])
 
         return get_or_create_policy_task.GetOrCreatePolicyTask(
             **common_parameters,
-
             policy_name=name,
             policy_description=parameters_to_use.get("policy_description"),
             policy_content=parameters_to_use.get("policy_content"),
-
             manifest_file_path=manifest_file_path,
-            tags=tags
+            tags=tags,
         )
 
     else:
