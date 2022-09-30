@@ -64,7 +64,10 @@ def unlock_resources_for_task(task_parameters, resources_file_path):
     with open(resources_file_path, "rb") as f:
         resources_in_use = serialisation_utils.json_loads(f.read())
     for r in task_parameters.get(RESOURCES_REQUIRED, []):
-        del resources_in_use[r]
+        try:
+            del resources_in_use[r]
+        except KeyError:
+            print_utils.warn(f"{task_parameters.get('task_reference')} tried to unlock {r} but it wasn't present")
     with open(resources_file_path, "wb") as f:
         f.write(serialisation_utils.json_dumps(resources_in_use))
 
@@ -140,11 +143,8 @@ def worker_task(
 
                     # print(f"{pid} Worker {task_reference} waiting for lock to unlock resources", flush=True)
                     with lock:
-                        # print(f"{pid} Worker {task_reference} got lock to unlock resources", flush=True)
+                        print_utils.echo(f"{pid} Worker executed task [success]: {task_reference} got lock to unlock resources")
                         unlock_resources_for_task(task_parameters, resources_file_path)
-                        print_utils.echo(
-                            f"{pid} Worker reporting task completed {result}: {task_reference}"
-                        )
                         results_queue.put((task_reference, result))
                 else:
                     time.sleep(0.01)
@@ -186,7 +186,7 @@ def scheduler(
 
                 there_are_tasks_left_in_this_generation = tasks_processed < tasks_queued
             print_utils.echo(
-                f"scheduler status: {tasks_queued}, tasks_processed: {tasks_processed}, there_are_tasks_left_in_this_generation: {there_are_tasks_left_in_this_generation}"
+                f"scheduler status: tasks_queued: {tasks_queued}, tasks_processed: {tasks_processed}, there_are_tasks_left_in_this_generation: {there_are_tasks_left_in_this_generation}"
             )
 
 

@@ -1,7 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import json
-from servicecatalog_puppet import serialisation_utils
 import os
 import logging
 import time
@@ -13,6 +12,7 @@ import psutil
 from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import constants, config
+from servicecatalog_puppet.commands import graph
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
@@ -57,7 +57,7 @@ def record_event(event_type, task, extra_event_data=None):
         with open(
             Path(constants.RESULTS_DIRECTORY)
             / "traces"
-            / f"{tz}-{task_reference}-{event_type}.json",
+            / f"{tz}-{graph.escape(task_reference)}-{event_type}.json",
             "w",
         ) as f:
             f.write(json.dumps(t, default=str, indent=4,))
