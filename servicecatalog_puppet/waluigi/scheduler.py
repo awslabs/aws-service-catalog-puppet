@@ -205,8 +205,6 @@ def run(
     multiprocessing.set_start_method("forkserver")
     lock = multiprocessing.Lock()
 
-    with open(constants.TASKS_TO_RUN_STATE_FILE, "wb") as f:
-        f.write(serialisation_utils.json_dumps(tasks_to_run))
     with open(constants.RESOURCES, "w") as f:
         f.write("{}")
 

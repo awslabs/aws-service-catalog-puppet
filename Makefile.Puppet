@@ -6,7 +6,14 @@ version:
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap
 bootstrap:
-	poetry run servicecatalog-puppet --info bootstrap --branch main
+	export SCM_BRANCH_NAME=main
+	poetry run servicecatalog-puppet --info bootstrap
+
+## @Puppet_commands Runs servicecatalog-puppet bootstrap to a branch
+bootstrap-branch:
+	export SCP_VERSION_OVERRIDE="https://github.com/awslabs/aws-service-catalog-puppet/archive/issues/yaml-to-json-for-task-reference.zip"
+	export SCM_BRANCH_NAME=main
+	poetry run servicecatalog-puppet --info bootstrap --branch-name main
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap-spoke for the current aws profile
 bootstrap-self-as-spoke:
@@ -18,10 +25,6 @@ bootstrap-spoke:
 	@echo "Bootstrapping $$(aws sts get-caller-identity --query Account --output text) as a spoke for $(PUPPET_ACCOUNT_ID)"
 	poetry run servicecatalog-puppet --info bootstrap-spoke $(PUPPET_ACCOUNT_ID)
 
-## @Puppet_commands Runs servicecatalog-puppet --info bootstrap-branch for the local checkout branch
-bootstrap-branch:
-	poetry run servicecatalog-puppet --info bootstrap-branch \
-		$$(git rev-parse --abbrev-ref HEAD)
 
 ## @Puppet_commands Runs servicecatalog-puppet --info expand for the checked out manifest file
 expand:
