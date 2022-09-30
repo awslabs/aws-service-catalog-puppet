@@ -339,7 +339,3 @@ GET_OR_CREATE_SERVICE_CONTROL_POLICIES_POLICY = (
 GET_OR_CREATE_TAG_POLICIES_POLICY = "get-or-create-tag-policies-policy"
 GENERATE_POLICIES = "generate-policies"
 
-# HARD_CODED_MANI_TASK_REFERENCE_FILE = "ignored/src/ServiceCatalogPuppet/manifest-task-reference.yaml"
-GRAPH_STATE_FILE = "ignored/src/ServiceCatalogPuppet/graph.pickle"
-TASKS_TO_RUN_STATE_FILE = "ignored/src/ServiceCatalogPuppet/tasks_to_run.json"
-RESOURCES = "ignored/src/ServiceCatalogPuppet/resources.json"

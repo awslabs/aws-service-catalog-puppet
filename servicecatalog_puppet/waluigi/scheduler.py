@@ -40,8 +40,8 @@ def build_the_dag(tasks_to_run):
     return g
 
 
-def are_resources_are_free_for_task(task_parameters):
-    with open(constants.RESOURCES, "rb") as f:
+def are_resources_are_free_for_task(task_parameters, resources_file_path):
+    with open(resources_file_path, "rb") as f:
         resources_in_use = serialisation_utils.json_loads(f.read())
     return (
         all(
@@ -52,20 +52,20 @@ def are_resources_are_free_for_task(task_parameters):
     )
 
 
-def lock_resources_for_task(task_reference, task_parameters, resources_in_use):
+def lock_resources_for_task(task_reference, task_parameters, resources_in_use, resources_file_path):
     print(f"Worker locking {task_reference}")
     for r in task_parameters.get(RESOURCES_REQUIRED, []):
         resources_in_use[r] = task_reference
-    with open(constants.RESOURCES, "wb") as f:
+    with open(resources_file_path, "wb") as f:
         f.write(serialisation_utils.json_dumps(resources_in_use))
 
 
-def unlock_resources_for_task(task_parameters):
-    with open(constants.RESOURCES, "rb") as f:
+def unlock_resources_for_task(task_parameters, resources_file_path):
+    with open(resources_file_path, "rb") as f:
         resources_in_use = serialisation_utils.json_loads(f.read())
     for r in task_parameters.get(RESOURCES_REQUIRED, []):
         del resources_in_use[r]
-    with open(constants.RESOURCES, "wb") as f:
+    with open(resources_file_path, "wb") as f:
         f.write(serialisation_utils.json_dumps(resources_in_use))
 
 
@@ -77,6 +77,7 @@ def worker_task(
     manifest_files_path,
     manifest_task_reference_file_path,
     puppet_account_id,
+    resources_file_path,
 ):
     pid = os.getpid()
 
@@ -98,11 +99,11 @@ def worker_task(
                     (
                         resources_are_free,
                         resources_in_use,
-                    ) = are_resources_are_free_for_task(task_parameters)
+                    ) = are_resources_are_free_for_task(task_parameters, resources_file_path)
                     # print(f"{pid} Worker {task_reference} resources_are_free: {resources_are_free}", flush=True)
                     if resources_are_free:
                         lock_resources_for_task(
-                            task_reference, task_parameters, resources_in_use
+                            task_reference, task_parameters, resources_in_use, resources_file_path
                         )
                         # print(f"{pid} Worker {task_reference} locked", flush=True)
 
@@ -140,7 +141,7 @@ def worker_task(
                     # print(f"{pid} Worker {task_reference} waiting for lock to unlock resources", flush=True)
                     with lock:
                         # print(f"{pid} Worker {task_reference} got lock to unlock resources", flush=True)
-                        unlock_resources_for_task(task_parameters)
+                        unlock_resources_for_task(task_parameters, resources_file_path)
                         print_utils.echo(
                             f"{pid} Worker reporting task completed {result}: {task_reference}"
                         )
@@ -196,6 +197,7 @@ def run(
     manifest_task_reference_file_path,
     puppet_account_id,
 ):
+    resources_file_path = f"{manifest_files_path}/resources.json"
     os.environ["SCT_START_TIME"] = str(time.time())
     # init_kwargs = get_tracer().init_kwargs
     init_kwargs = 1
@@ -205,7 +207,7 @@ def run(
     multiprocessing.set_start_method("forkserver")
     lock = multiprocessing.Lock()
 
-    with open(constants.RESOURCES, "w") as f:
+    with open(resources_file_path, "w") as f:
         f.write("{}")
 
     task_queue = multiprocessing.Queue()
@@ -223,6 +225,7 @@ def run(
                 manifest_files_path,
                 manifest_task_reference_file_path,
                 puppet_account_id,
+                resources_file_path
             ),
         )
         for i in range(num_workers)
