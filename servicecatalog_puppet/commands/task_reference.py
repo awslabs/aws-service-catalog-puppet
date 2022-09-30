@@ -20,7 +20,7 @@ logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
 def get_spoke_local_portfolio_common_args(
-        task_to_add, all_tasks_task_reference, extra_dependencies_by_reference=[]
+    task_to_add, all_tasks_task_reference, extra_dependencies_by_reference=[]
 ):
     return dict(
         status=task_to_add.get("status"),
@@ -29,7 +29,7 @@ def get_spoke_local_portfolio_common_args(
         portfolio=task_to_add.get("portfolio"),
         execution=task_to_add.get("execution"),
         dependencies_by_reference=[all_tasks_task_reference]
-                                  + extra_dependencies_by_reference,
+        + extra_dependencies_by_reference,
         reverse_dependencies_by_reference=list(),
         portfolio_task_reference=all_tasks_task_reference,
     )
@@ -41,7 +41,7 @@ def ensure_no_cyclic_dependencies(name, tasks):
         uid = t_name
         data = t
         g.add_nodes_from(
-            [(uid, data), ]
+            [(uid, data),]
         )
         for duid in t.get("dependencies_by_reference", []):
             g.add_edge(uid, duid)
@@ -70,8 +70,8 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
     # First pass - set up spoke local portfolios
     #
     for (
-            section_name_singular,
-            section_name,
+        section_name_singular,
+        section_name,
     ) in constants.ALL_SECTION_NAME_SINGULAR_AND_PLURAL_LIST:
         tasks_by_type[section_name_singular] = dict()
         tasks_by_region[section_name_singular] = dict()
@@ -113,7 +113,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                 )
 
                 if not tasks_by_region[section_name_singular][item_name].get(
-                        task_to_add.get("region")
+                    task_to_add.get("region")
                 ):
                     tasks_by_region[section_name_singular][item_name][
                         task_to_add.get("region")
@@ -124,7 +124,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                 ].append(all_tasks_task_reference)
 
                 if not tasks_by_account_id[section_name_singular][item_name].get(
-                        task_to_add.get("account_id")
+                    task_to_add.get("account_id")
                 ):
                     tasks_by_account_id[section_name_singular][item_name][
                         task_to_add.get("account_id")
@@ -174,8 +174,8 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                             manifest_account_ids=dict(),
                             task_reference=ssm_parameter_output_task_reference,
                             param_name=ssm_parameter_output.get("param_name")
-                                .replace("${AWS::Region}", task_to_add.get("region"))
-                                .replace(
+                            .replace("${AWS::Region}", task_to_add.get("region"))
+                            .replace(
                                 "${AWS::AccountId}", task_to_add.get("account_id")
                             ),
                             stack_output=ssm_parameter_output.get("stack_output"),
@@ -274,8 +274,8 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
         parameters = {}
         launch_parameters = (
             manifest.get(task.get("section_name"), {})
-                .get(task.get("item_name"), {})
-                .get("parameters", {})
+            .get(task.get("item_name"), {})
+            .get("parameters", {})
         )
         manifest_parameters = copy.deepcopy(manifest.get("parameters"))
         account_parameters = manifest.get_parameters_for_account(task.get("account_id"))
@@ -297,8 +297,8 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                     task_reference = f"{owning_account}-{owning_region}"
                     param_name = (
                         ssm_parameter_details.get("name")
-                            .replace("${AWS::Region}", interpolation_output_region)
-                            .replace("${AWS::AccountId}", interpolation_output_account)
+                        .replace("${AWS::Region}", interpolation_output_region)
+                        .replace("${AWS::AccountId}", interpolation_output_account)
                     )
 
                     task_def = dict(
@@ -341,8 +341,8 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         # AVOID DUPLICATE DEPENDENCIES IN THE SAME LIST
                         for dep in dependency:
                             if (
-                                    dep
-                                    not in existing_task_def["dependencies_by_reference"]
+                                dep
+                                not in existing_task_def["dependencies_by_reference"]
                             ):
                                 existing_task_def["dependencies_by_reference"].append(
                                     dep
@@ -370,8 +370,8 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         str(
                             boto3_parameter_details.get("account_id", puppet_account_id)
                         )
-                            .replace("${AWS::AccountId}", task.get("account_id"))
-                            .replace("${AWS::PuppetAccountId}", puppet_account_id)
+                        .replace("${AWS::AccountId}", task.get("account_id"))
+                        .replace("${AWS::PuppetAccountId}", puppet_account_id)
                     )
                     region_to_use_for_boto3_call = boto3_parameter_details.get(
                         "region", constants.HOME_REGION
@@ -384,8 +384,8 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         ]
                         stack_ref_account_id = (
                             str(cloudformation_stack_output.get("account_id"))
-                                .replace("${AWS::AccountId}", task.get("account_id"))
-                                .replace("${AWS::PuppetAccountId}", puppet_account_id)
+                            .replace("${AWS::AccountId}", task.get("account_id"))
+                            .replace("${AWS::PuppetAccountId}", puppet_account_id)
                         )
                         stack_ref_region = cloudformation_stack_output.get(
                             "region"
@@ -478,7 +478,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
             if affinity == constants.AFFINITY_ACCOUNT_AND_REGION:
                 account_and_region = f"{task.get('account_id')}-{task.get('region')}"
                 if tasks_by_account_id_and_region[section][name].get(
-                        account_and_region
+                    account_and_region
                 ):
                     task["dependencies_by_reference"].extend(
                         tasks_by_account_id_and_region[section][name][
@@ -497,7 +497,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
         )
         task["resources_required"] = resources
 
-    reference = dict(all_tasks=all_tasks, )
+    reference = dict(all_tasks=all_tasks,)
     ensure_no_cyclic_dependencies("complete task reference", all_tasks)
     # open(output_file_path, "w").write(serialisation_utils.dump(reference))
     open(output_file_path, "w").write(serialisation_utils.dump_as_json(reference))
@@ -505,13 +505,13 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
 
 
 def handle_service_control_policies(
-        all_tasks,
-        all_tasks_task_reference,
-        item_name,
-        puppet_account_id,
-        section_name,
-        task_reference,
-        task_to_add,
+    all_tasks,
+    all_tasks_task_reference,
+    item_name,
+    puppet_account_id,
+    section_name,
+    task_reference,
+    task_to_add,
 ):
     get_or_create_policy_ref = (
         f"{constants.GET_OR_CREATE_SERVICE_CONTROL_POLICIES_POLICY}-{item_name}"
@@ -550,13 +550,13 @@ def handle_service_control_policies(
 
 
 def handle_tag_policies(
-        all_tasks,
-        all_tasks_task_reference,
-        item_name,
-        puppet_account_id,
-        section_name,
-        task_reference,
-        task_to_add,
+    all_tasks,
+    all_tasks_task_reference,
+    item_name,
+    puppet_account_id,
+    section_name,
+    task_reference,
+    task_to_add,
 ):
     get_or_create_policy_ref = (
         f"{constants.GET_OR_CREATE_TAG_POLICIES_POLICY}-{item_name}"
@@ -595,13 +595,13 @@ def handle_tag_policies(
 
 
 def handle_stacks(
-        all_tasks,
-        all_tasks_task_reference,
-        item_name,
-        puppet_account_id,
-        section_name,
-        task_reference,
-        task_to_add,
+    all_tasks,
+    all_tasks_task_reference,
+    item_name,
+    puppet_account_id,
+    section_name,
+    task_reference,
+    task_to_add,
 ):
     get_s3_template_ref = f"{constants.GET_TEMPLATE_FROM_S3}-{section_name}-{item_name}"
     if not all_tasks.get(get_s3_template_ref):
@@ -637,13 +637,13 @@ def handle_stacks(
 
 
 def handle_workspaces(
-        all_tasks,
-        all_tasks_task_reference,
-        item_name,
-        puppet_account_id,
-        section_name,
-        task_reference,
-        task_to_add,
+    all_tasks,
+    all_tasks_task_reference,
+    item_name,
+    puppet_account_id,
+    section_name,
+    task_reference,
+    task_to_add,
 ):
     workspace_account_preparation_ref = (
         f"{constants.WORKSPACE_ACCOUNT_PREPARATION}-{task_to_add.get('account_id')}"
@@ -670,7 +670,7 @@ def handle_workspaces(
         task_to_add.get("manifest_account_ids")
     )
     if workspace_account_preparation_ref not in all_tasks[all_tasks_task_reference].get(
-            "dependencies_by_reference"
+        "dependencies_by_reference"
     ):
         all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
             workspace_account_preparation_ref
@@ -678,13 +678,13 @@ def handle_workspaces(
 
 
 def handle_spoke_local_portfolios(
-        all_tasks,
-        all_tasks_task_reference,
-        item_name,
-        puppet_account_id,
-        section_name,
-        task_reference,
-        task_to_add,
+    all_tasks,
+    all_tasks_task_reference,
+    item_name,
+    puppet_account_id,
+    section_name,
+    task_reference,
+    task_to_add,
 ):
     is_sharing_with_puppet_account = task_to_add.get("account_id") == puppet_account_id
 
@@ -1269,16 +1269,16 @@ def handle_spoke_local_portfolios(
 
 
 def handle_launches(
-        all_tasks,
-        all_tasks_task_reference,
-        item_name,
-        puppet_account_id,
-        section_name,
-        task_reference,
-        task_to_add,
+    all_tasks,
+    all_tasks_task_reference,
+    item_name,
+    puppet_account_id,
+    section_name,
+    task_reference,
+    task_to_add,
 ):
     is_deploying_into_puppet_account = (
-            task_to_add.get("account_id") == puppet_account_id
+        task_to_add.get("account_id") == puppet_account_id
     )
     # GET THE HUB DETAILS TASK
     hub_portfolio_ref = f"{constants.PORTFOLIO_LOCAL}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
@@ -1497,13 +1497,13 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
             # should_include = False
             # sharing should happen from the hub for launches in spoke mode
             should_include = (
-                    task.get("section_name") == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
+                task.get("section_name") == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
             )
 
         elif execution == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT:
             # cannot assume account_id role from spoke when it is the puppet account id
             should_include = (
-                    task.get("account_id", puppet_account_id) == puppet_account_id
+                task.get("account_id", puppet_account_id) == puppet_account_id
             )
             # these should not override the previous decisions
             if not should_include:
@@ -1538,7 +1538,7 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
                     section_name=constants.RUN_DEPLOY_IN_SPOKE,
                     task_reference=replacement_ref,
                     generate_manifest_ref=generate_manifest_ref,
-                    dependencies_by_reference=[generate_manifest_ref, ],
+                    dependencies_by_reference=[generate_manifest_ref,],
                     reverse_dependencies_by_reference=list(),
                 )
 
@@ -1567,7 +1567,7 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
 
 
 def generate_overridden_task_reference(
-        puppet_account_id, overrides, all_tasks, output_file_path
+    puppet_account_id, overrides, all_tasks, output_file_path
 ):
     if not overrides.get("single_account"):
         # open(output_file_path, "w").write(serialisation_utils.dump(all_tasks))
@@ -1579,10 +1579,10 @@ def generate_overridden_task_reference(
     for task_name, task in all_tasks.get("all_tasks").items():
         if single_account:
             if (
-                    task.get("manifest_account_ids").get(single_account)
-                    or task.get("manifest_account_ids").get(int(single_account))
-                    or task.get("manifest_account_ids").get(str(puppet_account_id))
-                    or task.get("manifest_account_ids").get(int(puppet_account_id))
+                task.get("manifest_account_ids").get(single_account)
+                or task.get("manifest_account_ids").get(int(single_account))
+                or task.get("manifest_account_ids").get(str(puppet_account_id))
+                or task.get("manifest_account_ids").get(int(puppet_account_id))
             ):
                 overridden_tasks[task_name] = task
 
@@ -1600,7 +1600,9 @@ def generate_task_reference(f, overrides):
     content = open(f.name, "r").read()
     manifest = manifest_utils.Manifest(serialisation_utils.load(content))
     complete = generate_complete_task_reference(
-        puppet_account_id, manifest, f.name.replace("-expanded.yaml", "-task-reference-full.json")
+        puppet_account_id,
+        manifest,
+        f.name.replace("-expanded.yaml", "-task-reference-full.json"),
     )
     filtered = generate_overridden_task_reference(
         puppet_account_id,
@@ -1609,7 +1611,9 @@ def generate_task_reference(f, overrides):
         f.name.replace("-expanded.yaml", "-task-reference-filtered.json"),
     )
     hub_tasks = generate_hub_task_reference(
-        puppet_account_id, filtered, f.name.replace("-expanded.yaml", "-task-reference.json"),
+        puppet_account_id,
+        filtered,
+        f.name.replace("-expanded.yaml", "-task-reference.json"),
     )
     task_output_path = f"{path}/tasks"
     if not os.path.exists(task_output_path):
@@ -1633,18 +1637,18 @@ def deploy_from_task_reference(path):
 
     for task_reference, task in all_tasks.items():
         for a in [
-            'manifest_section_names',
-            'manifest_item_names',
-            'manifest_account_ids',
-            'reverse_dependencies_by_reference',
+            "manifest_section_names",
+            "manifest_item_names",
+            "manifest_account_ids",
+            "reverse_dependencies_by_reference",
         ]:
             if task.get(a):
                 del task[a]
 
         if single_account_id:
             if (
-                    task.get("account_id") == single_account_id
-                    and task.get("section_name") != constants.RUN_DEPLOY_IN_SPOKE
+                task.get("account_id") == single_account_id
+                and task.get("section_name") != constants.RUN_DEPLOY_IN_SPOKE
             ):
                 tasks_to_run_filtered[task_reference] = task
                 # tasks_to_run.append(

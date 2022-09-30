@@ -3,6 +3,7 @@ import time
 import traceback
 
 import networkx as nx
+
 # from viztracer import get_tracer, VizTracer
 
 from servicecatalog_puppet import constants, serialisation_utils
@@ -32,7 +33,7 @@ def build_the_dag(tasks_to_run):
     for uid, task in tasks_to_run.items():
         data = task
         g.add_nodes_from(
-            [(uid, data), ]
+            [(uid, data),]
         )
         for duid in task.get("dependencies_by_reference", []):
             g.add_edge(uid, duid)
@@ -42,7 +43,13 @@ def build_the_dag(tasks_to_run):
 def are_resources_are_free_for_task(task_parameters):
     with open(constants.RESOURCES, "rb") as f:
         resources_in_use = serialisation_utils.json_loads(f.read())
-    return all(resources_in_use.get(r, False) is False for r in task_parameters.get(RESOURCES_REQUIRED, [])), resources_in_use
+    return (
+        all(
+            resources_in_use.get(r, False) is False
+            for r in task_parameters.get(RESOURCES_REQUIRED, [])
+        ),
+        resources_in_use,
+    )
 
 
 def lock_resources_for_task(task_reference, task_parameters, resources_in_use):
@@ -61,8 +68,15 @@ def unlock_resources_for_task(task_parameters):
     with open(constants.RESOURCES, "wb") as f:
         f.write(serialisation_utils.json_dumps(resources_in_use))
 
+
 def worker_task(
-    lock, task_queue, results_queue, tasks_to_run, manifest_files_path, manifest_task_reference_file_path, puppet_account_id
+    lock,
+    task_queue,
+    results_queue,
+    tasks_to_run,
+    manifest_files_path,
+    manifest_task_reference_file_path,
+    puppet_account_id,
 ):
     pid = os.getpid()
 
@@ -76,19 +90,24 @@ def worker_task(
         if task_reference:
             result = False
             while not result:
-                #print(f"{pid} Worker received {task_reference} waiting for lock", flush=True)
+                # print(f"{pid} Worker received {task_reference} waiting for lock", flush=True)
                 task_parameters = tasks_to_run.get(task_reference)
 
                 with lock:
-                    #print(f"{pid} Worker {task_reference} got the lock", flush=True)
-                    resources_are_free, resources_in_use = are_resources_are_free_for_task(task_parameters)
-                    #print(f"{pid} Worker {task_reference} resources_are_free: {resources_are_free}", flush=True)
+                    # print(f"{pid} Worker {task_reference} got the lock", flush=True)
+                    (
+                        resources_are_free,
+                        resources_in_use,
+                    ) = are_resources_are_free_for_task(task_parameters)
+                    # print(f"{pid} Worker {task_reference} resources_are_free: {resources_are_free}", flush=True)
                     if resources_are_free:
-                        lock_resources_for_task(task_reference, task_parameters, resources_in_use)
-                        #print(f"{pid} Worker {task_reference} locked", flush=True)
+                        lock_resources_for_task(
+                            task_reference, task_parameters, resources_in_use
+                        )
+                        # print(f"{pid} Worker {task_reference} locked", flush=True)
 
                 if resources_are_free:
-                    #print(f"{pid} Worker about to run {task_reference}", flush=True)
+                    # print(f"{pid} Worker about to run {task_reference}", flush=True)
                     task = task_factory.create(
                         manifest_files_path=manifest_files_path,
                         manifest_task_reference_file_path=manifest_task_reference_file_path,
@@ -118,11 +137,13 @@ def worker_task(
                         task.on_task_success()
                         task.on_task_processing_time(int(end - start))
 
-                    #print(f"{pid} Worker {task_reference} waiting for lock to unlock resources", flush=True)
+                    # print(f"{pid} Worker {task_reference} waiting for lock to unlock resources", flush=True)
                     with lock:
-                        #print(f"{pid} Worker {task_reference} got lock to unlock resources", flush=True)
+                        # print(f"{pid} Worker {task_reference} got lock to unlock resources", flush=True)
                         unlock_resources_for_task(task_parameters)
-                        print_utils.echo(f"{pid} Worker reporting task completed {result}: {task_reference}")
+                        print_utils.echo(
+                            f"{pid} Worker reporting task completed {result}: {task_reference}"
+                        )
                         results_queue.put((task_reference, result))
                 else:
                     time.sleep(0.01)
@@ -132,13 +153,13 @@ def worker_task(
 
 
 def scheduler(
-        task_queue,
-        results_queue,
-        tasks_to_run,
-        resources_in_use,
-        manifest_files_path,
-        manifest_task_reference_file_path,
-        puppet_account_id,
+    task_queue,
+    results_queue,
+    tasks_to_run,
+    resources_in_use,
+    manifest_files_path,
+    manifest_task_reference_file_path,
+    puppet_account_id,
 ):
     there_are_tasks_left_overall = True
     dag = build_the_dag(tasks_to_run)
@@ -150,32 +171,32 @@ def scheduler(
         for task_to_run_reference in current_generation:
             tasks_queued += 1
             print_utils.echo(f"scheduler sending: {task_to_run_reference}")
-            task_queue.put(
-                task_to_run_reference
-            )
+            task_queue.put(task_to_run_reference)
         there_are_tasks_left_in_this_generation = True
         while there_are_tasks_left_in_this_generation:
             task_reference, result = results_queue.get()
             if task_reference:
-                #print(f"scheduler receiving: {task_reference}, {result}")
+                # print(f"scheduler receiving: {task_reference}, {result}")
                 tasks_processed += 1
 
                 if result == COMPLETED:
-                    #print(f"scheduler removing {task_reference} from the dag")
+                    # print(f"scheduler removing {task_reference} from the dag")
                     dag.remove_node(task_reference)
 
                 there_are_tasks_left_in_this_generation = tasks_processed < tasks_queued
-            print_utils.echo(f"scheduler status: {tasks_queued}, tasks_processed: {tasks_processed}, there_are_tasks_left_in_this_generation: {there_are_tasks_left_in_this_generation}")
+            print_utils.echo(
+                f"scheduler status: {tasks_queued}, tasks_processed: {tasks_processed}, there_are_tasks_left_in_this_generation: {there_are_tasks_left_in_this_generation}"
+            )
 
 
 def run(
-        num_workers,
-        tasks_to_run,
-        manifest_files_path,
-        manifest_task_reference_file_path,
-        puppet_account_id,
+    num_workers,
+    tasks_to_run,
+    manifest_files_path,
+    manifest_task_reference_file_path,
+    puppet_account_id,
 ):
-    os.environ['SCT_START_TIME'] = str(time.time())
+    os.environ["SCT_START_TIME"] = str(time.time())
     # init_kwargs = get_tracer().init_kwargs
     init_kwargs = 1
 
@@ -185,9 +206,7 @@ def run(
     lock = multiprocessing.Lock()
 
     with open(constants.TASKS_TO_RUN_STATE_FILE, "wb") as f:
-        f.write(
-            serialisation_utils.json_dumps(tasks_to_run)
-        )
+        f.write(serialisation_utils.json_dumps(tasks_to_run))
     with open(constants.RESOURCES, "w") as f:
         f.write("{}")
 

@@ -187,7 +187,9 @@ def get_should_forward_failures_to_opscenter():
 
 
 def get_regions():
-    return serialisation_utils.json_loads(os.environ.get(environmental_variables.REGIONS))
+    return serialisation_utils.json_loads(
+        os.environ.get(environmental_variables.REGIONS)
+    )
 
 
 def get_output_cache_starting_point():

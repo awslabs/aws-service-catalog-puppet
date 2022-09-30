@@ -57,4 +57,6 @@ class GeneratePolicies(tasks.TaskWithReference):
 
     @lru_cache()
     def get_sharing_policies(self):
-        return serialisation_utils.json_loads(json.dumps(self.sharing_policies.get_wrapped()))
+        return serialisation_utils.json_loads(
+            json.dumps(self.sharing_policies.get_wrapped())
+        )

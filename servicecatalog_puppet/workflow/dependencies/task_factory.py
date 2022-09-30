@@ -751,9 +751,7 @@ def create(
         )
 
     elif section_name == constants.GENERATE_POLICIES:
-        from servicecatalog_puppet.workflow.generate import (
-            generate_policies_task,
-        )
+        from servicecatalog_puppet.workflow.generate import generate_policies_task
 
         return generate_policies_task.GeneratePolicies(
             **common_parameters,

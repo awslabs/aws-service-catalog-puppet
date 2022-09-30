@@ -43,7 +43,7 @@ def record_event(event_type, task, extra_event_data=None):
         f.write(json.dumps(event, default=str, indent=4,))
 
     if event_type in ["start", "success", "failure"]:
-        tz = (time.time() - float(os.getenv('SCT_START_TIME', 0))) * 1000000
+        tz = (time.time() - float(os.getenv("SCT_START_TIME", 0))) * 1000000
         task_reference = task.task_reference
         t = {
             "name": task_reference,
@@ -52,7 +52,7 @@ def record_event(event_type, task, extra_event_data=None):
             "pid": 1,
             "tid": pid,
             "ts": tz,
-            "args": task_params
+            "args": task_params,
         }
         with open(
             Path(constants.RESULTS_DIRECTORY)

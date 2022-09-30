@@ -17,7 +17,9 @@ class environmentalParams(luigi.Config):
     )
     regions = luigi.Parameter(
         # default=serialisation_utils.json_loads(os.environ.get(environmental_variables.REGIONS, ""))
-        default=serialisation_utils.json_loads(os.environ.get(environmental_variables.REGIONS, "[]"))
+        default=serialisation_utils.json_loads(
+            os.environ.get(environmental_variables.REGIONS, "[]")
+        )
     )
 
     should_collect_cloudformation_events = luigi.Parameter(

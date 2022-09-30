@@ -12,7 +12,12 @@ from betterboto import client as betterboto_client
 from luigi import format
 from luigi.contrib import s3
 
-from servicecatalog_puppet import constants, config, environmental_variables, serialisation_utils
+from servicecatalog_puppet import (
+    constants,
+    config,
+    environmental_variables,
+    serialisation_utils,
+)
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
@@ -295,9 +300,7 @@ class PuppetTask(luigi.Task):
     def write_output(self, content):
         with self.output().open("wb") as f:
             print(type(f))
-            f.write(
-                serialisation_utils.json_dumps(content)
-            )
+            f.write(serialisation_utils.json_dumps(content))
 
     @property
     def node_id(self):

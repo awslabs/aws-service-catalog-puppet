@@ -70,7 +70,9 @@ class GetOrCreatePolicyTask(tasks.TaskWithReference):
                             .get("Content")
                         )
 
-                        if unwrapped != serialisation_utils.json_loads(remote_policy_content):
+                        if unwrapped != serialisation_utils.json_loads(
+                            remote_policy_content
+                        ):
                             kwargs["Content"] = content
 
                         if len(kwargs.keys()) > 1:

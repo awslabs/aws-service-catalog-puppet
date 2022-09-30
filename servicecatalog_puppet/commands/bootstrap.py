@@ -53,7 +53,9 @@ def bootstrap(
 ):
     click.echo("Starting bootstrap")
     should_use_eventbridge = config.get_should_use_eventbridge()
-    initialiser_stack_tags = serialisation_utils.json_loads(config.get_initialiser_stack_tags())
+    initialiser_stack_tags = serialisation_utils.json_loads(
+        config.get_initialiser_stack_tags()
+    )
     if should_use_eventbridge:
         with betterboto_client.ClientContextManager("events") as events:
             try:

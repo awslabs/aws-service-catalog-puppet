@@ -226,10 +226,14 @@ def generate_data_for_viz(path_to_results, group_by_pid):
 
         if os.path.exists(f"{path_to_results}/success/{name}"):
             result = "success"
-            end = serialisation_utils.json_loads(open(f"{path_to_results}/success/{name}", "r").read())
+            end = serialisation_utils.json_loads(
+                open(f"{path_to_results}/success/{name}", "r").read()
+            )
         elif os.path.exists(f"{path_to_results}/failure/{name}"):
             result = "failure"
-            end = serialisation_utils.json_loads(open(f"{path_to_results}/failure/{name}", "r").read())
+            end = serialisation_utils.json_loads(
+                open(f"{path_to_results}/failure/{name}", "r").read()
+            )
 
         if os.path.exists(f"{path_to_results}/processing_time/{name}"):
             processing_time = serialisation_utils.json_loads(
