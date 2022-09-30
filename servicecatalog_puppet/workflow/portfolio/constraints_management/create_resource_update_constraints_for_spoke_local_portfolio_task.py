@@ -101,4 +101,4 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
             result = cloudformation.describe_stacks(StackName=stack_name,).get(
                 "Stacks"
             )[0]
-            self.write_output(result)
+            self.write_empty_output()

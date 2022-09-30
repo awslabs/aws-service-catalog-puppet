@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
+from servicecatalog_puppet import serialisation_utils
 import logging
 import os
 import time
@@ -27,6 +28,9 @@ def cli(info, info_line_numbers):
     logging.getLogger("boto3").setLevel(boto_level)
     logging.getLogger("botocore").setLevel(boto_level)
     logging.getLogger("urllib3").setLevel(boto_level)
+
+    luigi_level = os.environ.get("LUIGI_LOG_LEVEL", logging.CRITICAL)
+    logging.getLogger("luigi").setLevel(luigi_level)
 
     if info:
         logging.basicConfig(

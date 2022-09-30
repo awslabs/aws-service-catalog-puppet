@@ -15,7 +15,7 @@ from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import print_utils
 from servicecatalog_puppet import manifest_utils
-from servicecatalog_puppet import yaml_utils
+from servicecatalog_puppet import serialisation_utils
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +45,13 @@ def assemble_manifest_from_ssm(target_directory):
                 parts = parameter.get("Name").split("/")
                 action_type = parts[3]
                 action_name = parts[4]
-                manifest[action_type][action_name] = yaml_utils.load(
+                manifest[action_type][action_name] = serialisation_utils.load(
                     parameter.get("Value")
                 )
         if not os.path.exists(target_directory):
             os.makedirs(target_directory)
         open(f"{target_directory}{os.path.sep}ssm_manifest.yaml", "w").write(
-            yaml_utils.dump(manifest)
+            serialisation_utils.dump(manifest)
         )
 
 
@@ -146,7 +146,7 @@ def expand(f, puppet_account_id, regions, single_account, subset=None):
     new_name = f.name.replace(".yaml", "-expanded.yaml")
     logger.info("Writing new manifest: {}".format(new_name))
     with open(new_name, "w") as output:
-        output.write(yaml_utils.dump(new_manifest))
+        output.write(serialisation_utils.dump(new_manifest))
 
 
 def explode(f):
@@ -164,7 +164,7 @@ def explode(f):
     count = 0
     for mani in exploded:
         with open(original_name.replace(".yaml", f"-exploded-{count}.yaml"), "w") as f:
-            f.write(yaml_utils.dump(mani))
+            f.write(serialisation_utils.dump(mani))
         count += 1
 
 
@@ -177,11 +177,11 @@ def validate(f):
         Loader = yaml.CSafeLoader
     except AttributeError:  # System does not have libyaml
         Loader = yaml.SafeLoader
-    Loader.add_constructor("!Equals", yaml_utils.Equals.from_yaml)
-    Loader.add_constructor("!Not", yaml_utils.Not.from_yaml)
+    Loader.add_constructor("!Equals", serialisation_utils.Equals.from_yaml)
+    Loader.add_constructor("!Not", serialisation_utils.Not.from_yaml)
 
     schema = yamale.make_schema(asset_helpers.resolve_from_site_packages("schema.yaml"))
-    data = yamale.make_data(content=yaml_utils.dump(manifest))
+    data = yamale.make_data(content=serialisation_utils.dump(manifest))
 
     yamale.validate(schema, data, strict=False)
 
@@ -331,15 +331,15 @@ def import_product_set(f, name, portfolio_name):
     url = f"https://raw.githubusercontent.com/awslabs/aws-service-catalog-products/master/{name}/manifest.yaml"
     response = requests.get(url)
     logger.info(f"Getting {url}")
-    manifest = yaml_utils.load(f.read())
+    manifest = serialisation_utils.load(f.read())
     if manifest.get("launches") is None:
         manifest["launches"] = {}
-    manifest_segment = yaml_utils.load(response.text)
+    manifest_segment = serialisation_utils.load(response.text)
     for launch_name, details in manifest_segment.get("launches").items():
         details["portfolio"] = portfolio_name
         manifest["launches"][launch_name] = details
     with open(f.name, "w") as f:
-        f.write(yaml_utils.dump(manifest))
+        f.write(serialisation_utils.dump(manifest))
 
 
 def get_manifest():
@@ -348,7 +348,7 @@ def get_manifest():
             repositoryName=constants.SERVICE_CATALOG_PUPPET_REPO_NAME,
             filePath="manifest.yaml",
         ).get("fileContent")
-        return yaml_utils.load(content)
+        return serialisation_utils.load(content)
 
 
 def save_manifest(manifest):
@@ -364,7 +364,7 @@ def save_manifest(manifest):
         codecommit.put_file(
             repositoryName=constants.SERVICE_CATALOG_PUPPET_REPO_NAME,
             branchName="master",
-            fileContent=yaml_utils.dump(manifest),
+            fileContent=serialisation_utils.dump(manifest),
             parentCommitId=parent_commit_id,
             commitMessage="Auto generated commit",
             filePath=f"manifest.yaml",

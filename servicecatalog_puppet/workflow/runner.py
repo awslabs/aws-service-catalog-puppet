@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
+from servicecatalog_puppet import serialisation_utils
 import logging
 import os
 import shutil
@@ -86,6 +87,7 @@ def run_tasks(
         "process_failure",
         "processing_time",
         "broken_task",
+        "traces",
     ]:
         if not os.path.exists(Path(constants.RESULTS_DIRECTORY) / result_type):
             os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type)
@@ -165,7 +167,7 @@ def run_tasks(
         n_all_run_deploy_in_spoke_tasks = len(all_run_deploy_in_spoke_tasks)
         index = 0
         for filename in all_run_deploy_in_spoke_tasks:
-            result = json.loads(open(filename, "r").read())
+            result = serialisation_utils.json_loads(open(filename, "r").read())
             spoke_account_id = result.get("account_id")
             build = result.get("build")
             build_id = build.get("id")
@@ -240,7 +242,7 @@ def run_tasks(
             ]
 
             for filename in dry_run_tasks:
-                result = json.loads(open(filename, "r").read())
+                result = serialisation_utils.json_loads(open(filename, "r").read())
                 current_version = (
                     Color("{green}" + result.get("current_version") + "{/green}")
                     if result.get("current_version") == result.get("new_version")
@@ -282,7 +284,7 @@ def run_tasks(
                 f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
                 recursive=True,
             ):
-                result = json.loads(open(filename, "r").read())
+                result = serialisation_utils.json_loads(open(filename, "r").read())
                 account_id = result.get("params").get("account_id")
                 region = result.get("params").get("region")
                 launch_name = result.get("params").get("launch_name")
@@ -319,7 +321,7 @@ def run_tasks(
             ]
             table = terminaltables.AsciiTable(table_data)
             for filename in dry_run_tasks:
-                result = json.loads(open(filename, "r").read())
+                result = serialisation_utils.json_loads(open(filename, "r").read())
                 table_data.append(
                     [
                         result.get("effect"),
@@ -341,7 +343,7 @@ def run_tasks(
             table = terminaltables.AsciiTable(table_data)
             for filename in glob("results/processing_time/*.json"):
                 result_contents = open(filename, "r").read()
-                result = json.loads(result_contents)
+                result = serialisation_utils.json_loads(result_contents)
                 params = result.get("params_for_results")
                 if should_use_eventbridge:
                     entries.append(
@@ -366,7 +368,7 @@ def run_tasks(
                 )
             click.echo(table.table)
             for filename in glob("results/failure/*.json"):
-                result = json.loads(open(filename, "r").read())
+                result = serialisation_utils.json_loads(open(filename, "r").read())
                 params = result.get("params_for_results")
                 if should_forward_failures_to_opscenter:
                     title = f"{result.get('task_type')} failed: {params.get('launch_name')} - {params.get('account_id')} - {params.get('region')}"
@@ -473,6 +475,7 @@ def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
         "process_failure",
         "processing_time",
         "broken_task",
+        "traces",
     ]:
         os.makedirs(Path(constants.RESULTS_DIRECTORY) / result_type)
 
@@ -485,7 +488,7 @@ def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
     )
 
     for filename in glob("results/failure/*.json"):
-        result = json.loads(open(filename, "r").read())
+        result = serialisation_utils.json_loads(open(filename, "r").read())
         click.echo(
             colorclass.Color("{red}" + result.get("task_type") + " failed{/red}")
         )

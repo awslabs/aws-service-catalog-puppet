@@ -5,7 +5,7 @@ import time
 
 import luigi
 
-from servicecatalog_puppet import yaml_utils
+from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -56,7 +56,7 @@ class DoTerminateProductTask(tasks.TaskWithReference):
             try:
                 service_catalog.describe_provisioned_product(Name=self.launch_name)
             except service_catalog.exceptions.ResourceNotFoundException:
-                self.write_output("skipped deletion")
+                self.write_empty_output()
                 return
 
             record_detail = service_catalog.terminate_provisioned_product(
@@ -77,9 +77,9 @@ class DoTerminateProductTask(tasks.TaskWithReference):
                     time.sleep(3)
 
             if status not in ["CREATED", "SUCCEEDED"]:
-                self.info(yaml_utils.dump(record_detail.get("RecordErrors")))
+                self.info(serialisation_utils.dump(record_detail.get("RecordErrors")))
                 raise Exception(
                     f"Failed to terminate provisioned product: Status = {status}"
                 )
 
-            self.write_output("done")
+            self.write_empty_output()

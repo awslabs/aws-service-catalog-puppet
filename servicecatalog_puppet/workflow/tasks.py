@@ -1,7 +1,5 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-import gc
-import json
 import logging
 import os
 import traceback
@@ -9,13 +7,12 @@ from datetime import datetime
 from pathlib import Path
 
 import luigi
-import math
 import psutil
 from betterboto import client as betterboto_client
 from luigi import format
 from luigi.contrib import s3
 
-from servicecatalog_puppet import constants, config, environmental_variables
+from servicecatalog_puppet import constants, config, environmental_variables, serialisation_utils
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
@@ -55,7 +52,7 @@ class PuppetTask(luigi.Task):
             raise Exception(
                 f"You must export {environmental_variables.INITIALISER_STACK_TAGS}"
             )
-        return json.loads(initialiser_stack_tags_value)
+        return serialisation_utils.json_loads(initialiser_stack_tags_value)
 
     @property
     def executor_account_id(self):
@@ -209,11 +206,11 @@ class PuppetTask(luigi.Task):
             )
 
     def read_from_input(self, input_name):
-        with self.input().get(input_name).open("r") as f:
+        with self.input().get(input_name).open("rb") as f:
             return f.read()
 
     def load_from_input(self, input_name):
-        return json.loads(self.read_from_input(input_name))
+        return serialisation_utils.json_loads(self.read_from_input(input_name))
 
     def info(self, message):
         logger.info(f"{self.uid}: {message}")
@@ -278,7 +275,7 @@ class PuppetTask(luigi.Task):
         if self.should_use_caching:
             return s3.S3Target(self.output_location, format=format.UTF8)
         else:
-            return luigi.LocalTarget(self.output_location)
+            return luigi.LocalTarget(self.output_location, format=luigi.format.Nop)
 
     @property
     def output_suffix(self):
@@ -291,14 +288,16 @@ class PuppetTask(luigi.Task):
     def params_for_results_display(self):
         return {}
 
-    def write_output(self, content, skip_json_dump=False):
-        f = self.output().open("w")
-        if skip_json_dump:
-            f.write(content)
-        else:
-            f.write(json.dumps(content, indent=4, default=str,))
-        f.close()
-        # gc.collect()
+    def write_empty_output(self):
+        with self.output().open("w") as f:
+            f.write("{}")
+
+    def write_output(self, content):
+        with self.output().open("wb") as f:
+            print(type(f))
+            f.write(
+                serialisation_utils.json_dumps(content)
+            )
 
     @property
     def node_id(self):
@@ -319,14 +318,16 @@ class PuppetTask(luigi.Task):
 def record_event(event_type, task, extra_event_data=None):
     task_type = task.__class__.__name__
     task_params = task.param_kwargs
+    pid = os.getpid()
 
+    current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     event = {
         "event_type": event_type,
         "task_type": task_type,
         "task_params": task_params,
         "params_for_results": task.params_for_results_display(),
-        "datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "pid": os.getpid(),
+        "datetime": current_datetime,
+        "pid": pid,
     }
     if extra_event_data is not None:
         event.update(extra_event_data)
@@ -335,20 +336,39 @@ def record_event(event_type, task, extra_event_data=None):
         Path(constants.RESULTS_DIRECTORY)
         / event_type
         / f"{task_type}-{task.task_id}.json",
-        "w",
+        "wb",
     ) as f:
-        f.write(json.dumps(event, default=str, indent=4,))
+        f.write(serialisation_utils.json_dumps(event, default=str, indent=4,))
+
+    if event_type in ["start", "success", "failure"]:
+        task_reference = task.task_reference
+        t = {
+            "name": task_reference,
+            "cat": event_type,
+            "ph": "B" if event_type == "start" else "E",
+            "pid": pid,
+            "tid": 1,
+            "ts": current_datetime,
+        }
+        with open(
+            Path(constants.RESULTS_DIRECTORY)
+            / "traces"
+            / f"{current_datetime}-{task_reference}-{event_type}.json",
+            "wb",
+        ) as f:
+            f.write(serialisation_utils.json_dumps(t, default=str, indent=4,))
 
 
 def print_stats():
-    pid = os.getpid()
-    p = psutil.Process(pid)
-    m_percent = p.memory_percent()
-    memory_info = p.memory_info().rss / 1024 ** 2
-    cpu_percent = p.cpu_percent(interval=1)
-    logger.info(
-        f"stats: process {pid} is using {memory_info}MB ({m_percent}%) of memory and {cpu_percent}% of CPU"
-    )
+    pass
+    # pid = os.getpid()
+    # p = psutil.Process(pid)
+    # m_percent = p.memory_percent()
+    # memory_info = p.memory_info().rss / 1024 ** 2
+    # cpu_percent = p.cpu_percent(interval=1)
+    # logger.info(
+    #     f"stats: process {pid} is using {memory_info}MB ({m_percent}%) of memory and {cpu_percent}% of CPU"
+    # )
 
 
 @luigi.Task.event_handler(luigi.Event.FAILURE)

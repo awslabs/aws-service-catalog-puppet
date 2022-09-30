@@ -2,7 +2,13 @@
 #  SPDX-License-Identifier: Apache-2.0
 import functools
 
-from servicecatalog_puppet import constants, yaml_utils
+from servicecatalog_puppet import constants, serialisation_utils
+
+
+@functools.lru_cache(maxsize=5)
+def get_m(manifest_file_path):
+    with open(manifest_file_path, "r") as f:
+        return serialisation_utils.load(f.read())
 
 
 def create(
@@ -338,7 +344,6 @@ def create(
             **common_parameters,
             sharing_mode=parameters_to_use.get("sharing_mode"),
             portfolio=parameters_to_use.get("portfolio"),
-            status=parameters_to_use.get("status"),
         )
 
     elif section_name == constants.PORTFOLIO_ASSOCIATIONS:
@@ -714,8 +719,7 @@ def create(
         )
 
         name = parameters_to_use.get("policy_name")
-        with open(manifest_file_path, "r") as f:
-            m = yaml_utils.load(f.read())
+        m = get_m(manifest_file_path)
         tags = m.get(constants.SERVICE_CONTROL_POLICIES).get(name).get("tags", [])
 
         return get_or_create_policy_task.GetOrCreatePolicyTask(
@@ -734,7 +738,7 @@ def create(
 
         name = parameters_to_use.get("policy_name")
         with open(manifest_file_path, "r") as f:
-            m = yaml_utils.load(f.read())
+            m = serialisation_utils.load(f.read())
         tags = m.get(constants.TAG_POLICIES).get(name).get("tags", [])
 
         return get_or_create_policy_task.GetOrCreatePolicyTask(
@@ -744,6 +748,16 @@ def create(
             policy_content=parameters_to_use.get("policy_content"),
             manifest_file_path=manifest_file_path,
             tags=tags,
+        )
+
+    elif section_name == constants.GENERATE_POLICIES:
+        from servicecatalog_puppet.workflow.generate import (
+            generate_policies_task,
+        )
+
+        return generate_policies_task.GeneratePolicies(
+            **common_parameters,
+            sharing_policies=parameters_to_use.get("sharing_policies"),
         )
 
     else:

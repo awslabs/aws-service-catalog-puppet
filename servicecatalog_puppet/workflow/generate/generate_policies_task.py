@@ -2,48 +2,45 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
+from servicecatalog_puppet import serialisation_utils
 from functools import lru_cache
 
 import luigi
 
-from servicecatalog_puppet import config
-from servicecatalog_puppet.workflow import tasks
-from servicecatalog_puppet.workflow.generate import generate_policies_template_task
+from servicecatalog_puppet import config, constants
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class GeneratePolicies(tasks.PuppetTask):
-    puppet_account_id = luigi.Parameter()
-    manifest_file_path = luigi.Parameter()
+class GeneratePolicies(tasks.TaskWithReference):
+    account_id = luigi.Parameter()
     region = luigi.Parameter()
     sharing_policies = luigi.DictParameter()
 
     def params_for_results_display(self):
         return {
             "manifest_file_path": self.manifest_file_path,
-            "puppet_account_id": self.puppet_account_id,
+            "account_id": self.account_id,
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def requires(self):
-        return {
-            "template": generate_policies_template_task.GeneratePoliciesTemplate(
-                puppet_account_id=self.puppet_account_id,
-                manifest_file_path=self.manifest_file_path,
-                region=self.region,
-                sharing_policies=self.sharing_policies,
-            ),
-        }
-
     def api_calls_used(self):
         return {
-            f"cloudformation.create_or_update_{self.puppet_account_id}_{self.region}": 1,
+            f"cloudformation.create_or_update_{self.account_id}_{self.region}": 1,
         }
 
     def run(self):
-        template = self.read_from_input("template")
-        with self.hub_regional_client("cloudformation") as cloudformation:
-            self.info(template)
+        if len(self.sharing_policies.get("accounts")) > 50:
+            self.warning(
+                "You have specified more than 50 accounts will not create the eventbus policy and spoke execution mode will not work"
+            )
+        template = config.env.get_template("policies.template.yaml.j2").render(
+            sharing_policies=self.sharing_policies,
+            VERSION=constants.VERSION,
+            HOME_REGION=constants.HOME_REGION,
+        )
+
+        with self.spoke_regional_client("cloudformation") as cloudformation:
             cloudformation.create_or_update(
                 ShouldUseChangeSets=False,
                 StackName="servicecatalog-puppet-policies",
@@ -60,4 +57,4 @@ class GeneratePolicies(tasks.PuppetTask):
 
     @lru_cache()
     def get_sharing_policies(self):
-        return json.loads(json.dumps(self.sharing_policies.get_wrapped()))
+        return serialisation_utils.json_loads(json.dumps(self.sharing_policies.get_wrapped()))

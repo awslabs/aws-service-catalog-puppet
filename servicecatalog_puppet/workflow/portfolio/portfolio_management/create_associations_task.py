@@ -49,7 +49,7 @@ class CreateAssociationTask(tasks.TaskWithReference):
             was_present = self.check_was_present(portfolio_id, principal_to_associate)
             self.info(f"Check for association: {was_present}")
 
-        self.write_output(dict(was_present=was_present))
+        self.write_empty_output()
 
     def check_was_present(self, portfolio_id, principal_to_associate):
         with self.spoke_regional_client("servicecatalog") as servicecatalog:

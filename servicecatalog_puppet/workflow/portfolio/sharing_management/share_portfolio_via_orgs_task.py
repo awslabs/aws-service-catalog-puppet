@@ -63,4 +63,4 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
                 if len(errors) > 0:
                     raise Exception(yaml.safe_dump(response.get("ShareDetails")))
 
-        self.write_output(self.param_kwargs)
+        self.write_empty_output()

@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
+from servicecatalog_puppet import serialisation_utils
 
 import cfn_tools
 from botocore.exceptions import ClientError

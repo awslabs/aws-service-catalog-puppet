@@ -9,7 +9,7 @@ from deepmerge import always_merger
 
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import manifest_utils
-from servicecatalog_puppet import yaml_utils
+from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.waluigi import tasks as waluigi_tasks
 from servicecatalog_puppet.workflow import tasks
@@ -32,7 +32,7 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
         f = self.input().get("reference_dependencies").get(reference).open("r")
         content = f.read()
         f.close()
-        return json.loads(content)
+        return serialisation_utils.json_loads(content)
 
     def get_output_from_reference_dependency_raw(self, reference):
         f = self.input().get("reference_dependencies").get(reference).open("r")
@@ -47,11 +47,10 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
         )
         c = f.read()
         f.close()
-        return yaml_utils.load_as_jaon(c)
+        return serialisation_utils.load_as_json(c)
 
     @functools.lru_cache(maxsize=32)
     def dependencies_for_task_reference(self):
-        tasks.print_stats()
         dependencies = dict()
 
         this_task = self.get_task_from_reference(self.task_reference)
@@ -85,7 +84,7 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
 class TaskWithParameters(TaskWithReference):
     def get_merged_launch_account_and_manifest_parameters(self):
         content = open(self.manifest_file_path, "r").read()
-        manifest = manifest_utils.Manifest(yaml_utils.load(content))
+        manifest = manifest_utils.Manifest(serialisation_utils.load(content))
 
         result = dict()
         launch_parameters = (
@@ -175,7 +174,7 @@ class TaskWithParameters(TaskWithReference):
                 )
             if param_details.get("mapping"):
                 content = open(self.manifest_file_path, "r").read()
-                manifest = manifest_utils.Manifest(yaml_utils.load(content))
+                manifest = manifest_utils.Manifest(serialisation_utils.load(content))
 
                 all_params[param_name] = manifest.get_mapping(
                     param_details.get("mapping"), self.account_id, self.region

@@ -1,6 +1,8 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import json
+from servicecatalog_puppet import serialisation_utils
+import orjson
 
 import yaml
 
@@ -61,5 +63,14 @@ def dump_as_json(input):
     return json.dumps(input, default=str)
 
 
-def load_as_jaon(input):
-    return json.loads(input)
+def load_as_json(input):
+    return serialisation_utils.json_loads(input)
+
+
+def json_dumps(obj):
+    return orjson.dumps(obj, option=orjson.OPT_INDENT_2)
+
+
+def json_loads(s):
+    return orjson.loads(s)
+

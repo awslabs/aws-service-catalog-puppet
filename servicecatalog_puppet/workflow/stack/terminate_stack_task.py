@@ -96,4 +96,4 @@ class TerminateStackTask(tasks.TaskWithReference):
         with self.spoke_regional_client("cloudformation") as cloudformation:
             cloudformation.ensure_deleted(StackName=self.stack_name_to_use)
 
-        self.write_output(self.params_for_results_display())
+        self.write_empty_output()

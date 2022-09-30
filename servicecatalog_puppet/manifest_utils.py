@@ -15,7 +15,7 @@ from deepmerge import always_merger
 
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
-from servicecatalog_puppet import yaml_utils
+from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.macros import macros
 from servicecatalog_puppet.workflow import tasks
 
@@ -86,7 +86,7 @@ def load(f, puppet_account_id):
 
     contents = f.read()
     contents = interpolate_intrinsic_functions(contents, intrinsic_functions_map)
-    manifest.update(yaml_utils.load(contents))
+    manifest.update(serialisation_utils.load(contents))
     d = os.path.dirname(os.path.abspath(f.name))
 
     extendable = constants.ALL_SECTION_NAMES + ["parameters"]
@@ -100,7 +100,7 @@ def load(f, puppet_account_id):
                     contents = interpolate_intrinsic_functions(
                         contents, intrinsic_functions_map
                     )
-                    new = yaml_utils.load(contents)
+                    new = serialisation_utils.load(contents)
                     for n, v in new.items():
                         if manifest[t].get(n):
                             raise Exception(f"{source} declares a duplicate {t}: {n}")
@@ -113,7 +113,7 @@ def load(f, puppet_account_id):
                 contents = interpolate_intrinsic_functions(
                     contents, intrinsic_functions_map
                 )
-                ext = yaml_utils.load(contents)
+                ext = serialisation_utils.load(contents)
                 for t in extendable:
                     manifest[t].update(ext.get(t, {}))
 
@@ -124,7 +124,7 @@ def load(f, puppet_account_id):
                 contents = interpolate_intrinsic_functions(
                     contents, intrinsic_functions_map
                 )
-                ext = yaml_utils.load(contents)
+                ext = serialisation_utils.load(contents)
                 always_merger.merge(manifest, ext)
 
     for config_file in [
@@ -348,7 +348,7 @@ def rewrite_cfct(manifest):
                         )
                     with betterboto_client.ClientContextManager("s3") as s3:
                         p = s3.get_object(Bucket=bucket, Key=key).read()
-                        resource["parameters"] = json.loads(p)
+                        resource["parameters"] = serialisation_utils.json_loads(p)
 
                 for p in resource.get("parameters", []):
                     parameter_key = p.get("parameter_key")
@@ -429,7 +429,7 @@ def rewrite_cfct(manifest):
             elif deploy_method == "scp":
                 with betterboto_client.ClientContextManager("s3") as s3:
                     p = s3.get_object(Bucket=bucket, Key=key).read()
-                    content = json.loads(p)
+                    content = serialisation_utils.json_loads(p)
 
                 depends_on = list()
                 deploy_to_accounts = list()

@@ -5,7 +5,7 @@ import functools
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet import yaml_utils
+from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.workflow.dependencies import tasks
 from servicecatalog_puppet.workflow.service_control_policies import (
     get_or_create_policy_task,
@@ -69,7 +69,7 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
                 self.get_or_create_policy_ref
             ).get("Id")
             if self.has_policy_attached(orgs):
-                self.write_output("Skipped")
+                self.write_empty_output()
             else:
                 orgs.attach_policy(PolicyId=policy_id, TargetId=self.target())
-                self.write_output("applied")
+                self.write_empty_output()

@@ -5,7 +5,7 @@ import functools
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet import yaml_utils
+from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.workflow.dependencies import tasks
 from servicecatalog_puppet.workflow.service_control_policies import (
     get_or_create_policy_task,
@@ -37,7 +37,7 @@ class DoTerminateServiceControlPoliciesTask(tasks.TaskWithReference):
         }
 
     def requires(self):
-        manifest = yaml_utils.load(open(self.manifest_file_path, "r").read())
+        manifest = serialisation_utils.load(open(self.manifest_file_path, "r").read())
         return dict(
             reference_dependencies=self.dependencies_for_task_reference(),
             policy=get_or_create_policy_task.GetOrCreatePolicyTask(
@@ -84,6 +84,6 @@ class DoTerminateServiceControlPoliciesTask(tasks.TaskWithReference):
             policy_id = self.load_from_input("policy").get("Id")
             if self.has_policy_attached(orgs):
                 orgs.detach_policy(PolicyId=policy_id, TargetId=self.target())
-                self.write_output("terminated")
+                self.write_empty_output()
             else:
-                self.write_output("skipped")
+                self.write_empty_output()

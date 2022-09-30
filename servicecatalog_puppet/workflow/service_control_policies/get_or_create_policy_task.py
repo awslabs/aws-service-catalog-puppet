@@ -1,6 +1,7 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import json
+from servicecatalog_puppet import serialisation_utils
 
 import luigi
 
@@ -52,7 +53,7 @@ class GetOrCreatePolicyTask(tasks.TaskWithReference):
                     .read()
                     .decode("utf-8")
                 )
-                unwrapped = json.loads(raw_data)
+                unwrapped = serialisation_utils.json_loads(raw_data)
         else:
             raise Exception("Not supported policy content structure")
         return unwrapped
@@ -81,7 +82,7 @@ class GetOrCreatePolicyTask(tasks.TaskWithReference):
                             .get("Content")
                         )
 
-                        if unwrapped != json.loads(remote_policy_content):
+                        if unwrapped != serialisation_utils.json_loads(remote_policy_content):
                             kwargs["Content"] = content
 
                         if len(kwargs.keys()) > 1:

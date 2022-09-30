@@ -3,6 +3,7 @@
 
 
 import json
+from servicecatalog_puppet import serialisation_utils
 import os
 
 import luigi
@@ -15,8 +16,8 @@ class environmentalParams(luigi.Config):
         default=os.environ.get(environmental_variables.HOME_REGION)
     )
     regions = luigi.Parameter(
-        # default=json.loads(os.environ.get(environmental_variables.REGIONS, ""))
-        default=json.loads(os.environ.get(environmental_variables.REGIONS, "[]"))
+        # default=serialisation_utils.json_loads(os.environ.get(environmental_variables.REGIONS, ""))
+        default=serialisation_utils.json_loads(os.environ.get(environmental_variables.REGIONS, "[]"))
     )
 
     should_collect_cloudformation_events = luigi.Parameter(

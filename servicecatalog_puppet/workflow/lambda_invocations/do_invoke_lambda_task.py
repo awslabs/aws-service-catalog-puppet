@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
+from servicecatalog_puppet import serialisation_utils
 
 import luigi
 
@@ -68,9 +69,4 @@ class DoInvokeLambdaTask(tasks.TaskWithParameters):
                 error_payload = response.get("Payload").read()
                 raise Exception(error_payload)
             else:
-                output = dict(
-                    **self.params_for_results_display(),
-                    payload=payload,
-                    response=response,
-                )
-                self.write_output(output)
+                self.write_empty_output()

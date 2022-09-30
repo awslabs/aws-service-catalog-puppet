@@ -3,6 +3,7 @@
 
 import io
 import json
+from servicecatalog_puppet import serialisation_utils
 import zipfile
 
 import luigi
@@ -70,7 +71,7 @@ class TerminateWorkspaceTask(tasks.TaskWithParameters):
                 .read()
             )
 
-        options = json.loads(options)
+        options = serialisation_utils.json_loads(options)
 
         zip_file_path = f"s3://{self.bucket}/{self.key}"
         state_file_path = f"s3://sc-puppet-state-{self.account_id}/workspace/{self.workspace_name}/{self.account_id}/{self.region}.zip"
@@ -105,4 +106,4 @@ class TerminateWorkspaceTask(tasks.TaskWithParameters):
                 environmentVariablesOverride=parameters_to_use,
             )
 
-        self.write_output(self.params_for_results_display())
+        self.write_empty_output()

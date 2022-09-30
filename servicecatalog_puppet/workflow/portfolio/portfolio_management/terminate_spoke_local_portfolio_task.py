@@ -31,11 +31,11 @@ class TerminateSpokeLocalPortfolioTask(tasks.TaskWithReference):
     def run(self):
         with self.spoke_regional_client("servicecatalog") as servicecatalog:
             if self.puppet_account_id == self.account_id:
-                self.write_output(dict(result="skipped_delete"))
+                self.write_empty_output()
             else:
                 portfolio = aws.find_portfolio(servicecatalog, self.portfolio)
                 if portfolio is False:
-                    self.write_output(dict(result="not deleted"))
+                    self.write_empty_output()
                 else:
                     servicecatalog.delete_portfolio(Id=portfolio.get("Id"))
-                    self.write_output(dict(result="deleted"))
+                    self.write_empty_output()

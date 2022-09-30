@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 import datetime
 import json
+from servicecatalog_puppet import serialisation_utils
 
 import click
 import terminaltables

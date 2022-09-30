@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 import glob
 import json
+from servicecatalog_puppet import serialisation_utils
 import os
 import shutil
 import zipfile
@@ -216,7 +217,7 @@ def generate_data_for_viz(path_to_results, group_by_pid):
     earliest_time = datetime.strptime("4022-09-14 00:54:33", time_format)
     latest_time = datetime.strptime("2000-09-14 00:54:33", time_format)
     for starter in glob.glob(f"{path_to_results}/start/*.json"):
-        start = json.loads(open(starter, "r").read())
+        start = serialisation_utils.json_loads(open(starter, "r").read())
         name = os.path.basename(starter)
         end = None
         task_id = name.replace(".json", "")
@@ -225,13 +226,13 @@ def generate_data_for_viz(path_to_results, group_by_pid):
 
         if os.path.exists(f"{path_to_results}/success/{name}"):
             result = "success"
-            end = json.loads(open(f"{path_to_results}/success/{name}", "r").read())
+            end = serialisation_utils.json_loads(open(f"{path_to_results}/success/{name}", "r").read())
         elif os.path.exists(f"{path_to_results}/failure/{name}"):
             result = "failure"
-            end = json.loads(open(f"{path_to_results}/failure/{name}", "r").read())
+            end = serialisation_utils.json_loads(open(f"{path_to_results}/failure/{name}", "r").read())
 
         if os.path.exists(f"{path_to_results}/processing_time/{name}"):
-            processing_time = json.loads(
+            processing_time = serialisation_utils.json_loads(
                 open(f"{path_to_results}/processing_time/{name}", "r").read()
             )
 

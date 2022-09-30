@@ -266,4 +266,4 @@ class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
                 Tags=self.initialiser_stack_tags,
             )
 
-        self.write_output(self.params_for_results_display())
+        self.write_empty_output()

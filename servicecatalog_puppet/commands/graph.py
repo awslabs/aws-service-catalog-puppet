@@ -1,6 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-from servicecatalog_puppet import yaml_utils
+from servicecatalog_puppet import serialisation_utils
 
 colors = dict()
 
@@ -33,7 +33,7 @@ def generate_edge(task_reference, dependency_by_reference):
 
 def graph(content_file_path):
     content = open(content_file_path.name, "r").read()
-    reference = yaml_utils.load(content)
+    reference = serialisation_utils.load(content)
     all_tasks = reference.get("all_tasks")
 
     nodes = dict()

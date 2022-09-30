@@ -74,10 +74,4 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
         # ACCEPT
         accepted = self.accept_if_needed(portfolio_id)
 
-        self.write_output(
-            dict(
-                has_already_been_shared=has_already_been_shared,
-                accepted=accepted,
-                hub_added_principal=False,
-            )
-        )
+        self.write_empty_output()

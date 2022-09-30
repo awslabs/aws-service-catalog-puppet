@@ -3,6 +3,7 @@
 
 import io
 import json
+from servicecatalog_puppet import serialisation_utils
 
 from botocore.response import StreamingBody
 

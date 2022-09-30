@@ -33,7 +33,7 @@ class DoExecuteTagPoliciesTask(tasks.TaskWithReference):
         }
 
     # def requires(self):
-    #     manifest = yaml_utils.load(open(self.manifest_file_path, "r").read())
+    #     manifest = serialisation_utils.load(open(self.manifest_file_path, "r").read())
     #     return dict(
     #         reference_dependencies=self.dependencies_for_task_reference(),
     #         policy=get_or_create_policy_task.GetOrCreatePolicyTask(
@@ -79,7 +79,7 @@ class DoExecuteTagPoliciesTask(tasks.TaskWithReference):
                 self.get_or_create_policy_ref
             ).get("Id")
             if self.has_policy_attached(orgs):
-                self.write_output("Skipped")
+                self.write_empty_output()
             else:
                 orgs.attach_policy(PolicyId=policy_id, TargetId=self.target())
-                self.write_output("applied")
+                self.write_empty_output()

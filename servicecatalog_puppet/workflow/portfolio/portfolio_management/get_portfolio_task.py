@@ -51,7 +51,6 @@ class GetPortfolioImportedTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     sharing_mode = luigi.Parameter()
-    status = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -89,10 +88,7 @@ class GetPortfolioImportedTask(tasks.TaskWithReference):
                     if portfolio_details.get("DisplayName") == self.portfolio:
                         return portfolio_details
 
-        if self.status == constants.TERMINATED:
-            return {}
-        else:
-            raise Exception(f"Could not find portfolio: {self.portfolio}")
+        raise Exception(f"Could not find portfolio: {self.portfolio}")
 
     def run(self):
         self.write_output(self.get_portfolio_details())

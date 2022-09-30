@@ -34,6 +34,11 @@ generate-task-reference:
 		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
 
 ## @Puppet_commands Runs servicecatalog-puppet --info deploy-from-task-reference for the checked out manifest file
+deploy-from-task-reference-with-viz:
+	time poetry run viztracer servicecatalog-puppet --info deploy-from-task-reference --num-workers 5 \
+		ignored/src/ServiceCatalogPuppet/
+
+## @Puppet_commands Runs servicecatalog-puppet --info deploy-from-task-reference for the checked out manifest file
 deploy-from-task-reference:
 	time poetry run servicecatalog-puppet --info deploy-from-task-reference --num-workers 5 \
 		ignored/src/ServiceCatalogPuppet/
@@ -99,3 +104,6 @@ export-singleaccount-stats:
 ## @puppet_commands Runs servicecatalog-puppet --info show-pipelines
 show-pipelines:
 	poetry run servicecatalog-puppet --info show-pipelines
+
+vizviewer:
+	poetry run vizviewer result.json

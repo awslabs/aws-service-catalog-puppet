@@ -3,14 +3,14 @@ import time
 import traceback
 
 import networkx as nx
-import json
-from servicecatalog_puppet import constants
+# from viztracer import get_tracer, VizTracer
+
+from servicecatalog_puppet import constants, serialisation_utils
 
 import os
 
 from servicecatalog_puppet import print_utils
 from servicecatalog_puppet.workflow.dependencies import task_factory
-import pickle
 
 TIMEOUT = 60 * 60
 
@@ -24,32 +24,12 @@ BLOCKED = "BLOCKED"
 QUEUE_STATUS = "QUEUE_STATUS"
 
 
-def get_next_task(pid, g, tasks_to_run_ref, resources_in_use):
-    for node in g.nodes():
-        if g.out_degree(node) == 0:
-            next_task = tasks_to_run_ref.get(node)
-            print(f"{pid} found a task: ", node)
-            if next_task.get(QUEUE_STATUS, False) is False:
-                print(f"{pid} found a task: ", node, " not running")
-                can_run = True
-                for r in next_task.get("resources_required", []):
-                    if resources_in_use.get(r, False) is not False:
-                        print(f"{pid} found a task: {node} which is blocked by task: {resources_in_use.get('r')}, using resource {r}")
-                        can_run = False
-                if can_run:
-                    print(f"{pid} found a task: ", node, " and going to run it!")
-                    return next_task
-                else:
-                    print(
-                        f"{pid} Cannot schedule task {node} because of resources"
-                    )
-    return None
+RESOURCES_REQUIRED = "resources_required"
 
 
-def build_initial_g(tasks_to_run):
+def build_the_dag(tasks_to_run):
     g = nx.DiGraph()
-    for task in tasks_to_run:
-        uid = task.get("task_reference")
+    for uid, task in tasks_to_run.items():
         data = task
         g.add_nodes_from(
             [(uid, data), ]
@@ -59,102 +39,133 @@ def build_initial_g(tasks_to_run):
     return g
 
 
-def release_resources_for(pid, lock, task_parameters):
-    with lock:
-        with open(constants.RESOURCES, "r") as f:
-            resources_in_use = json.load(f)
-        for r in task_parameters.get("resources_required",  []):
-            del resources_in_use[r]
-        with open(constants.RESOURCES, "w") as f:
-            json.dump(resources_in_use, f)
+def are_resources_are_free_for_task(task_parameters):
+    with open(constants.RESOURCES, "rb") as f:
+        resources_in_use = serialisation_utils.json_loads(f.read())
+    return all(resources_in_use.get(r, False) is False for r in task_parameters.get(RESOURCES_REQUIRED, [])), resources_in_use
 
 
-def get_a_task_to_run(pid, lock):
-    with lock:
-        print(f"{pid} AQUIRED")
-        with open(constants.STATE_FILE_3, 'rb') as f:
-            g = pickle.load(f)
-        with open(constants.STATE_FILE_2, "r") as f:
-            tasks_to_run_ref = json.loads(f.read()).get("all_tasks")
-        with open(constants.RESOURCES, "r") as f:
-            resources_in_use = json.loads(f.read())
-        print(f"{pid} loaded files")
+def lock_resources_for_task(task_reference, task_parameters, resources_in_use):
+    print(f"Worker locking {task_reference}")
+    for r in task_parameters.get(RESOURCES_REQUIRED, []):
+        resources_in_use[r] = task_reference
+    with open(constants.RESOURCES, "wb") as f:
+        f.write(serialisation_utils.json_dumps(resources_in_use))
 
-        task_parameters_to_try = get_next_task(pid, g, tasks_to_run_ref, resources_in_use)
-        while task_parameters_to_try is not None:
-            print(f"{pid} got task_parameters")
-            if task_parameters_to_try:
-                task_reference = task_parameters_to_try.get("task_reference")
-                for r in task_parameters_to_try.get("resources_required", []):
-                    resources_in_use[r] = task_reference
-                tasks_to_run_ref[task_reference][QUEUE_STATUS] = PENDING
-                with open(constants.STATE_FILE_2, "w") as f:
-                    f.write(
-                        json.dumps(dict(all_tasks=tasks_to_run_ref))
-                    )
-                with open(constants.RESOURCES, "w") as f:
-                    f.write(
-                        json.dumps(resources_in_use)
-                    )
-                return task_parameters_to_try
-            time.sleep(0.5)
-            task_parameters_to_try = get_next_task(pid, g, tasks_to_run_ref, resources_in_use)
-    return None
 
+def unlock_resources_for_task(task_parameters):
+    with open(constants.RESOURCES, "rb") as f:
+        resources_in_use = serialisation_utils.json_loads(f.read())
+    for r in task_parameters.get(RESOURCES_REQUIRED, []):
+        del resources_in_use[r]
+    with open(constants.RESOURCES, "wb") as f:
+        f.write(serialisation_utils.json_dumps(resources_in_use))
 
 def worker_task(
-        lock,
+    lock, task_queue, results_queue, tasks_to_run, manifest_files_path, manifest_task_reference_file_path, puppet_account_id
+):
+    pid = os.getpid()
+
+    # tracer = VizTracer(**init_kwargs)
+    # tracer.register_exit()
+    # tracer.start()
+
+    print_utils.echo(f"{pid} Worker starting up")
+    while True:
+        task_reference = task_queue.get()
+        if task_reference:
+            result = False
+            while not result:
+                #print(f"{pid} Worker received {task_reference} waiting for lock", flush=True)
+                task_parameters = tasks_to_run.get(task_reference)
+
+                with lock:
+                    #print(f"{pid} Worker {task_reference} got the lock", flush=True)
+                    resources_are_free, resources_in_use = are_resources_are_free_for_task(task_parameters)
+                    #print(f"{pid} Worker {task_reference} resources_are_free: {resources_are_free}", flush=True)
+                    if resources_are_free:
+                        lock_resources_for_task(task_reference, task_parameters, resources_in_use)
+                        #print(f"{pid} Worker {task_reference} locked", flush=True)
+
+                if resources_are_free:
+                    #print(f"{pid} Worker about to run {task_reference}", flush=True)
+                    task = task_factory.create(
+                        manifest_files_path=manifest_files_path,
+                        manifest_task_reference_file_path=manifest_task_reference_file_path,
+                        puppet_account_id=puppet_account_id,
+                        parameters_to_use=task_parameters,
+                    )
+                    print_utils.echo(f"{pid} Worker executing task: {task_reference}")
+                    task.on_task_start()
+                    start = time.time()
+                    try:
+                        task.run()
+                        end = time.time()
+                    except Exception as e:
+                        result = ERRORED
+                        print_utils.error(
+                            f"{pid} Worker executed task [failure]: {task_reference} failures: {e}"
+                        )
+                        print_utils.error("---- START OF ERROR----")
+                        for l in traceback.format_exception(
+                            etype=type(e), value=e, tb=e.__traceback__,
+                        ):
+                            print_utils.error(l)
+                        print_utils.error("---- END OF ERROR ----")
+                        task.on_task_failure(e)
+                    else:
+                        result = COMPLETED
+                        task.on_task_success()
+                        task.on_task_processing_time(int(end - start))
+
+                    #print(f"{pid} Worker {task_reference} waiting for lock to unlock resources", flush=True)
+                    with lock:
+                        #print(f"{pid} Worker {task_reference} got lock to unlock resources", flush=True)
+                        unlock_resources_for_task(task_parameters)
+                        print_utils.echo(f"{pid} Worker reporting task completed {result}: {task_reference}")
+                        results_queue.put((task_reference, result))
+                else:
+                    time.sleep(0.01)
+
+        # time.sleep(10)
+    print_utils.echo(f"{pid} Worker shutting down")
+
+
+def scheduler(
+        task_queue,
+        results_queue,
+        tasks_to_run,
+        resources_in_use,
         manifest_files_path,
         manifest_task_reference_file_path,
         puppet_account_id,
 ):
-    pid = os.getpid()
-    print_utils.echo(f"{pid} Worker starting up")
-    while True:
-        print(f"{pid} about to acquire", flush=True)
-        task_parameters = get_a_task_to_run(pid, lock)
-        print(f"{pid} end of acquire", flush=True)
-        if task_parameters is None:
-            time.sleep(0.25)
-            continue
-
-        task = task_factory.create(
-            manifest_files_path=manifest_files_path,
-            manifest_task_reference_file_path=manifest_task_reference_file_path,
-            puppet_account_id=puppet_account_id,
-            parameters_to_use=task_parameters,
-        )
-        task_reference = task.task_reference
-        print_utils.echo(f"{pid} Worker executing task: {task_reference}")
-        task.on_task_start()
-        start = time.time()
-        try:
-            task.run()
-            end = time.time()
-        except Exception as e:
-            print_utils.error(
-                f"{pid} Worker executed task with failures: {task_reference} failures: {e}"
+    there_are_tasks_left_overall = True
+    dag = build_the_dag(tasks_to_run)
+    while there_are_tasks_left_overall:
+        generations = list(nx.topological_generations(dag))
+        tasks_queued = 0
+        tasks_processed = 0
+        current_generation = generations[-1]
+        for task_to_run_reference in current_generation:
+            tasks_queued += 1
+            print_utils.echo(f"scheduler sending: {task_to_run_reference}")
+            task_queue.put(
+                task_to_run_reference
             )
-            print_utils.error("---- START OF ERROR----")
-            for l in traceback.format_exception(
-                    etype=type(e), value=e, tb=e.__traceback__,
-            ):
-                print_utils.error(l)
-            print_utils.error("---- END OF ERROR ----")
-            task.on_task_failure(e)
-        else:
-            print_utils.echo(f"{pid} Worker executed task: {task_reference}")
-            task.on_task_success()
-            task.on_task_processing_time(int(end - start))
-            print_utils.echo(f"{pid} Worker reported task complete: {task_reference}")
-        release_resources_for(pid, lock, task_parameters)
+        there_are_tasks_left_in_this_generation = True
+        while there_are_tasks_left_in_this_generation:
+            task_reference, result = results_queue.get()
+            if task_reference:
+                #print(f"scheduler receiving: {task_reference}, {result}")
+                tasks_processed += 1
 
-        time.sleep(10)
-    print_utils.echo(f"{pid} Worker shutting down")
+                if result == COMPLETED:
+                    #print(f"scheduler removing {task_reference} from the dag")
+                    dag.remove_node(task_reference)
 
-
-def remove_task_from_graph(g, task_just_run):
-    g.remove_node(task_just_run)
+                there_are_tasks_left_in_this_generation = tasks_processed < tasks_queued
+            print_utils.echo(f"scheduler status: {tasks_queued}, tasks_processed: {tasks_processed}, there_are_tasks_left_in_this_generation: {there_are_tasks_left_in_this_generation}")
 
 
 def run(
@@ -164,33 +175,55 @@ def run(
         manifest_task_reference_file_path,
         puppet_account_id,
 ):
-    num_workers = 50
+    os.environ['SCT_START_TIME'] = str(time.time())
+    # init_kwargs = get_tracer().init_kwargs
+    init_kwargs = 1
 
     print_utils.echo(f"Running with {num_workers} processes!")
     start = time.time()
     multiprocessing.set_start_method("forkserver")
     lock = multiprocessing.Lock()
 
-    g = build_initial_g(tasks_to_run)
-    with open(constants.STATE_FILE_3, 'wb') as f:
-        pickle.dump(g, f)
-    with open(constants.RESOURCES, 'w') as f:
+    with open(constants.TASKS_TO_RUN_STATE_FILE, "wb") as f:
         f.write(
-            "{}"
+            serialisation_utils.json_dumps(tasks_to_run)
         )
+    with open(constants.RESOURCES, "w") as f:
+        f.write("{}")
+
+    task_queue = multiprocessing.Queue()
+    results_queue = multiprocessing.Queue()
+    resources_in_use = dict()
 
     processes = [
         multiprocessing.Process(
             target=worker_task,
             args=(
                 lock,
+                task_queue,
+                results_queue,
+                tasks_to_run,
                 manifest_files_path,
                 manifest_task_reference_file_path,
                 puppet_account_id,
             ),
         )
-        for _ in range(num_workers)
+        for i in range(num_workers)
     ]
+    processes.append(
+        multiprocessing.Process(
+            target=scheduler,
+            args=(
+                task_queue,
+                results_queue,
+                tasks_to_run,
+                resources_in_use,
+                manifest_files_path,
+                manifest_task_reference_file_path,
+                puppet_account_id,
+            ),
+        )
+    )
     for process in processes:
         process.start()
     for process in processes:

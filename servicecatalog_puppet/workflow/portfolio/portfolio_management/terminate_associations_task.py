@@ -34,7 +34,7 @@ class TerminateAssociationTask(tasks.TaskWithReference):
         )
         portfolio_id = portfolio_details.get("Id")
         if portfolio_id is None:
-            self.write_output(dict(skipped=True))
+            self.write_empty_output()
         else:
             with self.spoke_regional_client("servicecatalog") as servicecatalog:
                 principal_to_associate = config.get_puppet_role_arn(self.account_id)
@@ -52,7 +52,7 @@ class TerminateAssociationTask(tasks.TaskWithReference):
                         portfolio_id, principal_to_associate, servicecatalog
                     )
 
-            self.write_output(dict(was_present=was_present))
+            self.write_empty_output()
 
     def check_if_present(self, portfolio_id, principal_to_associate, servicecatalog):
         paginator = servicecatalog.get_paginator("list_principals_for_portfolio")

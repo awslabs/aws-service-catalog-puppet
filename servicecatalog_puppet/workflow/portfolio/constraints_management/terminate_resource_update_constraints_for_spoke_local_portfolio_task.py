@@ -31,4 +31,4 @@ class TerminateResourceUpdateConstraintsForSpokeLocalPortfolioTask(
         with self.spoke_regional_client("cloudformation") as cloudformation:
             self.info(f"About to delete the stack: {stack_name}")
             cloudformation.ensure_deleted(StackName=stack_name)
-        self.write_output(self.params_for_results_display())
+        self.write_empty_output()

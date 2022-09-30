@@ -78,4 +78,4 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
                     if product_to_check in products_ids:
                         products_found += 1
             self.info("Finished waiting for association of products to portfolio")
-            self.write_output({})
+            self.write_empty_output()

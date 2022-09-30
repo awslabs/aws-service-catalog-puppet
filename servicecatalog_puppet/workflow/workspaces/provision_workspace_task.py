@@ -3,6 +3,7 @@
 
 import io
 import json
+from servicecatalog_puppet import serialisation_utils
 import zipfile
 
 import luigi
@@ -70,7 +71,7 @@ class ProvisionWorkspaceTask(tasks.TaskWithParameters):
                 .read()
             )
 
-        options = json.loads(options)
+        options = serialisation_utils.json_loads(options)
 
         zip_file_path = f"s3://{self.bucket}/{self.key}"
         state_file_path = f"s3://sc-puppet-state-{self.account_id}/workspace/{self.workspace_name}/{self.account_id}/{self.region}.zip"
@@ -109,7 +110,7 @@ class ProvisionWorkspaceTask(tasks.TaskWithParameters):
             with self.spoke_client("s3") as s3:
                 output_bucket = f"sc-puppet-state-{self.account_id}"
                 output_key = f"terraform-executions/{build.get('id').split(':')[1]}/artifacts-execute/outputs.json"
-                outputs = json.loads(
+                outputs = serialisation_utils.json_loads(
                     s3.get_object(Bucket=output_bucket, Key=output_key)
                     .get("Body")
                     .read()
@@ -143,4 +144,4 @@ class ProvisionWorkspaceTask(tasks.TaskWithParameters):
                                 f"Could not find {ssm_param_output.get('stack_output')} in the outputs"
                             )
 
-        self.write_output(self.params_for_results_display())
+        self.write_empty_output()

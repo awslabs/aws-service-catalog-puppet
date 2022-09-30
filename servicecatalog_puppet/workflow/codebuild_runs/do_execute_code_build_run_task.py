@@ -72,4 +72,4 @@ class DoExecuteCodeBuildRunTask(tasks.TaskWithParameters):
                 projectName=self.project_name,
                 environmentVariablesOverride=parameters_to_use,
             )
-        self.write_output(self.params_for_results_display())
+        self.write_empty_output()

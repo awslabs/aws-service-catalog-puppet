@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
+from servicecatalog_puppet import serialisation_utils
 
 import luigi
 
@@ -80,7 +81,7 @@ class ProvisionProductDryRunTask(provision_product_task.ProvisionProductTask):
                     with self.input().get("provisioning_artifact_parameters").open(
                         "r"
                     ) as f:
-                        provisioning_artifact_parameters = json.loads(f.read())
+                        provisioning_artifact_parameters = serialisation_utils.json_loads(f.read())
 
                     params_to_use = {}
                     for p in provisioning_artifact_parameters:

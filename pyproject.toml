@@ -29,6 +29,9 @@ black = "^19.10b0"
 pycodestyle = "^2.6.0"
 nose2 = "^0.10.0"
 
+[tool.poetry.group.dev.dependencies]
+viztracer = "^0.15.4"
+
 [tool.dephell.main]
 versioning = "semver"
 from = {format = "poetrylock", path = "poetry.lock"}
@@ -48,7 +51,7 @@ colorclass = "==2.2.0"
 luigi = "3.1.1"
 psutil = "==5.7.0"
 cfn-flip = "==1.2.3"
-networkx = "^2.5"
+networkx = "2.6.3"
 troposphere = "3.1.0"
 awacs = "2.0.2"
 jmespath = "^0.10.0"
@@ -56,3 +59,4 @@ deepdiff = "^5.3.0"
 deepmerge = "^0.2.1"
 yamale = "^3.0.8"
 colorama = "^0.4.5"
+orjson = "^3.8.0"

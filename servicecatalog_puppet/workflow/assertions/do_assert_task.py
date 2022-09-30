@@ -66,4 +66,4 @@ class DoAssertTask(tasks.TaskWithParameters):
         if len(ddiff.keys()) > 0:
             raise Exception(ddiff)
         else:
-            self.write_output(self.params_for_results_display())
+            self.write_empty_output()

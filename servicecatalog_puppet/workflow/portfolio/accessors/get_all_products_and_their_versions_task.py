@@ -31,7 +31,7 @@ class GetAllProductsAndTheirVersionsTask(tasks.TaskWithReference):
         )
         portfolio_id = portfolio_details.get("Id")
         if portfolio_id is None:
-            self.write_output({})
+            self.write_empty_output()
         else:
             products = dict()
             with self.spoke_regional_client("servicecatalog") as servicecatalog:

@@ -32,7 +32,7 @@ class DisassociateProductsFromPortfolio(tasks.TaskWithReference):
         portfolio_id = portfolio.get("Id")
 
         if portfolio_id is None:
-            self.write_output(list())
+            self.write_empty_output()
             return
         else:
             disassociations = list()
@@ -50,4 +50,4 @@ class DisassociateProductsFromPortfolio(tasks.TaskWithReference):
                             dict(portfolio_id=portfolio_id, product_id=product_id)
                         )
 
-            self.write_output(disassociations)
+            self.write_empty_output()

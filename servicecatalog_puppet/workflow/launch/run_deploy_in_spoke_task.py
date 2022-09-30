@@ -7,7 +7,7 @@ from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet import environmental_variables_parameters
-from servicecatalog_puppet import yaml_utils
+from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -112,7 +112,7 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
         else:
             install_command = f"pip install aws-service-catalog-puppet=={self.version}"
 
-        build_spec = yaml_utils.dump(
+        build_spec = serialisation_utils.dump(
             dict(
                 version="0.2",
                 phases=dict(
