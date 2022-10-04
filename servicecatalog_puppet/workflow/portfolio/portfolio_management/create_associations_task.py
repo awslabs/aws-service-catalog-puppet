@@ -23,11 +23,6 @@ class CreateAssociationTask(tasks.TaskWithReference):
             "account_id": self.account_id,
         }
 
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
-        ]
-
     def run(self):
         portfolio_details = self.get_output_from_reference_dependency(
             self.portfolio_task_reference

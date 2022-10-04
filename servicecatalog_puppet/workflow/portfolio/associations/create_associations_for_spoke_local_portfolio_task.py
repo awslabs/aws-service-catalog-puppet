@@ -29,16 +29,6 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        calls = [
-            f"cloudformation.create_or_update_{self.account_id}_{self.region}",
-            f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
-        ]
-        used_wildcard = "*" in "".join(self.associations)
-        if used_wildcard:
-            calls.append(f"iam.list_roles_{self.account_id}_{self.region}")
-        return calls
-
     def run(self):
         portfolio_details = self.get_output_from_reference_dependency(
             self.portfolio_task_reference

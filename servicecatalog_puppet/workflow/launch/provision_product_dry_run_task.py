@@ -19,15 +19,7 @@ class ProvisionProductDryRunTask(provision_product_task.ProvisionProductTask):
     def output_location(self):
         return f"output/{self.uid}.{self.output_suffix}"
 
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
-            f"servicecatalog.list_launch_paths_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioning_artifact_{self.account_id}_{self.region}",
-            f"cloudformation.describe_provisioning_artifact_{self.account_id}_{self.region}",
-            f"cloudformation.get_template_summary_{self.account_id}_{self.region}",
-            f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
-        ]
+
 
     def run(self):
         details = self.load_from_input("details")

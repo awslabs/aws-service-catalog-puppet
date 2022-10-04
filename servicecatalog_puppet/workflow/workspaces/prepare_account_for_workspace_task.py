@@ -19,11 +19,6 @@ class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
             "account_id": self.account_id,
         }
 
-    def api_calls_used(self):
-        return {
-            f"cloudformation.create_or_update_{self.account_id}": 1,
-        }
-
     def get_template(self):
         puppet_version = constants.VERSION
         description = f"""Bootstrap template used to configure spoke account for terraform use

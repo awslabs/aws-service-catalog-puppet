@@ -47,19 +47,6 @@ class DoInvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    def test_api_calls_used(self):
-        # setup
-        self.sut.get_account_used = mock.MagicMock(name="get_account_used")
-        expected_result = {
-            f"lambda.invoke_{self.sut.get_account_used()}_{self.region}": 1,
-        }
-
-        # exercise
-        actual_result = self.sut.api_calls_used()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
-
     @skip
     def test_run(self):
         # setup

@@ -13,8 +13,6 @@ from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
-# from servicecatalog_puppet.workflow.workspaces import Limits
-
 
 class ProvisionStackTask(tasks.TaskWithParameters):
     stack_name = luigi.Parameter()
@@ -70,34 +68,6 @@ class ProvisionStackTask(tasks.TaskWithParameters):
     def priority(self):
         return self.requested_priority
 
-    # def resources_used(self):
-    #     uniq = f"{self.region}-{self.puppet_account_id}"
-    #     apis = [
-    #         (uniq, Limits.CLOUDFORMATION_ENSURE_DELETED_PER_REGION_OF_ACCOUNT),
-    #         (uniq, Limits.CLOUDFORMATION_GET_TEMPLATE_SUMMARY_PER_REGION_OF_ACCOUNT),
-    #         (uniq, Limits.CLOUDFORMATION_GET_TEMPLATE_PER_REGION_OF_ACCOUNT),
-    #         (uniq, Limits.CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT),
-    #     ]
-    #     if self.launch_name != "":
-    #         if "*" in self.launch_name:
-    #             apis.append(
-    #                 (
-    #                     uniq,
-    #                     Limits.SERVICE_CATALOG_SCAN_PROVISIONED_PRODUCTS_PER_REGION_OF_ACCOUNT,
-    #                 ),
-    #             )
-    #         else:
-    #             apis.append(
-    #                 (
-    #                     uniq,
-    #                     Limits.SERVICE_CATALOG_DESCRIBE_PROVISIONED_PRODUCT_PER_REGION_OF_ACCOUNT,
-    #                 ),
-    #             )
-    #     if self.stack_set_name != "":
-    #         apis.append(
-    #             (uniq, Limits.CLOUDFORMATION_LIST_STACKS_PER_REGION_OF_ACCOUNT),
-    #         )
-    #     return apis
 
     @property
     @functools.lru_cache(maxsize=32)

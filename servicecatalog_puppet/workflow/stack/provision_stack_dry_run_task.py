@@ -13,11 +13,6 @@ from servicecatalog_puppet.workflow.stack import provision_stack_task
 
 
 class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
-    def api_calls_used(self):
-        return [
-            f"cloudformation.get_template_summary_{self.account_id}_{self.region}",
-            f"cloudformation.describe_stacks_{self.account_id}_{self.region}",
-        ]
 
     def write_result(
         self, current_version, new_version, effect, current_status, active, notes=""

@@ -3,7 +3,6 @@
 import luigi
 
 from servicecatalog_puppet.workflow.dependencies import tasks
-from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 class GetSSMParameterTask(tasks.TaskWithReference):
@@ -19,12 +18,6 @@ class GetSSMParameterTask(tasks.TaskWithReference):
             "param_name": self.param_name,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def resources_used(self):
-        uniq = f"{self.region}-{self.puppet_account_id}"
-        return [
-            (uniq, Limits.SSM_GET_PARAMETER_PER_REGION_OF_ACCOUNT),
-        ]
 
     def run(self):
         parameter_name_to_use = self.param_name.replace(
@@ -53,12 +46,6 @@ class GetSSMParameterByPathTask(tasks.TaskWithReference):
             "path": self.path,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def resources_used(self):
-        uniq = f"{self.region}-{self.puppet_account_id}"
-        return [
-            (uniq, Limits.SSM_GET_PARAMETER_BY_PATH_PER_REGION_OF_ACCOUNT),
-        ]
 
     def run(self):
         path = self.path.replace("${AWS::Region}", self.region).replace(

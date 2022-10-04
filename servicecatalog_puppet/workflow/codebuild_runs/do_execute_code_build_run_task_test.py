@@ -43,20 +43,6 @@ class DoExecuteCodeBuildRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    def test_api_calls_used(self):
-        # setup
-        self.sut.get_account_used = mock.MagicMock(name="get_account_used")
-        expected_result = [
-            f"codebuild.start_build_{self.sut.get_account_used()}_{self.project_name}",
-            f"codebuild.batch_get_projects_{self.sut.get_account_used()}_{self.project_name}",
-        ]
-
-        # exercise
-        actual_result = self.sut.api_calls_used()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
-
     @skip
     def test_run(self):
         # setup

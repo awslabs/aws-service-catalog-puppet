@@ -13,6 +13,7 @@ class DoExecuteServiceControlPoliciesTaskTest(
     description = "description"
     manifest_file_path = "manifest_file_path"
     requested_priority = 1
+    get_or_create_policy_ref = "get_or_create_policy_ref"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.service_control_policies import (
@@ -31,6 +32,7 @@ class DoExecuteServiceControlPoliciesTaskTest(
             description=self.description,
             manifest_file_path=self.manifest_file_path,
             requested_priority=self.requested_priority,
+            get_or_create_policy_ref=self.get_or_create_policy_ref,
         )
 
         self.wire_up_mocks()
@@ -60,18 +62,6 @@ class DoExecuteServiceControlPoliciesTaskTest(
 
         # verify
         raise NotImplementedError()
-
-    def test_api_calls_used(self):
-        # setup
-        expected_result = [
-            f"organizations.attach_policy_{self.region}",
-        ]
-
-        # exercise
-        actual_result = self.sut.api_calls_used()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
 
     @skip
     def test_run(self):

@@ -37,10 +37,6 @@ class DoInvokeLambdaTask(tasks.TaskWithParameters):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return {
-            f"lambda.invoke_{self.get_account_used()}_{self.region}": 1,
-        }
 
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)

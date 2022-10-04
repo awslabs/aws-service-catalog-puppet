@@ -42,11 +42,6 @@ class DoExecuteSimulatePolicyTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return [
-            f"iam.simulate_{self.simulation_type}_policy_{self.account_id}_{self.region}"
-        ]
-
     def run(self):
         with self.spoke_regional_client("iam") as iam:
             kwargs = dict(ActionNames=self.action_names)

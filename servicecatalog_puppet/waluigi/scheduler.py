@@ -24,7 +24,6 @@ BLOCKED = "BLOCKED"
 
 QUEUE_STATUS = "QUEUE_STATUS"
 
-
 RESOURCES_REQUIRED = "resources_required"
 
 
@@ -33,7 +32,7 @@ def build_the_dag(tasks_to_run):
     for uid, task in tasks_to_run.items():
         data = task
         g.add_nodes_from(
-            [(uid, data),]
+            [(uid, data), ]
         )
         for duid in task.get("dependencies_by_reference", []):
             g.add_edge(uid, duid)
@@ -73,14 +72,14 @@ def unlock_resources_for_task(task_parameters, resources_file_path):
 
 
 def worker_task(
-    lock,
-    task_queue,
-    results_queue,
-    tasks_to_run,
-    manifest_files_path,
-    manifest_task_reference_file_path,
-    puppet_account_id,
-    resources_file_path,
+        lock,
+        task_queue,
+        results_queue,
+        tasks_to_run,
+        manifest_files_path,
+        manifest_task_reference_file_path,
+        puppet_account_id,
+        resources_file_path,
 ):
     pid = os.getpid()
 
@@ -131,7 +130,7 @@ def worker_task(
                         )
                         print_utils.error("---- START OF ERROR----")
                         for l in traceback.format_exception(
-                            etype=type(e), value=e, tb=e.__traceback__,
+                                etype=type(e), value=e, tb=e.__traceback__,
                         ):
                             print_utils.error(l)
                         print_utils.error("---- END OF ERROR ----")
@@ -143,7 +142,8 @@ def worker_task(
 
                     # print(f"{pid} Worker {task_reference} waiting for lock to unlock resources", flush=True)
                     with lock:
-                        print_utils.echo(f"{pid} Worker executed task [success]: {task_reference} got lock to unlock resources")
+                        print_utils.echo(
+                            f"{pid} Worker executed task [success]: {task_reference} got lock to unlock resources")
                         unlock_resources_for_task(task_parameters, resources_file_path)
                         results_queue.put((task_reference, result))
                 else:
@@ -154,48 +154,76 @@ def worker_task(
 
 
 def scheduler(
-    task_queue,
-    results_queue,
-    tasks_to_run,
-    resources_in_use,
-    manifest_files_path,
-    manifest_task_reference_file_path,
-    puppet_account_id,
+        num_workers,
+        task_queue,
+        results_queue,
+        tasks_to_run,
+        resources_in_use,
+        manifest_files_path,
+        manifest_task_reference_file_path,
+        puppet_account_id,
 ):
-    there_are_tasks_left_overall = True
+    number_of_target_tasks_in_flight = num_workers
+    workers_are_needed = True
     dag = build_the_dag(tasks_to_run)
-    while there_are_tasks_left_overall:
+    while workers_are_needed:
         generations = list(nx.topological_generations(dag))
-        tasks_queued = 0
-        tasks_processed = 0
-        current_generation = generations[-1]
-        for task_to_run_reference in current_generation:
-            tasks_queued += 1
-            print_utils.echo(f"scheduler sending: {task_to_run_reference}")
-            task_queue.put(task_to_run_reference)
-        there_are_tasks_left_in_this_generation = True
-        while there_are_tasks_left_in_this_generation:
+        if not generations:
+            workers_are_needed = False
+            continue
+
+        current_generation = list(generations[-1]) # may need to make list
+        number_of_tasks_in_flight = 0
+        number_of_tasks_processed = 0
+        number_of_tasks_in_generation = len(current_generation)
+        current_generation_in_progress = True
+
+        while current_generation_in_progress:
+            print("Starting a new generation", flush=True)
+            # start each iteration by checking if the queue has enough jobs in it
+            while current_generation and number_of_tasks_in_flight < number_of_target_tasks_in_flight:
+                print("generation has tasks and not enough tasks in flight", flush=True)
+                # there are enough jobs in the queue
+                number_of_tasks_in_flight += 1
+                task_to_run_reference = current_generation.pop()
+                print_utils.echo(f"scheduler sending: {task_to_run_reference}")
+                task_queue.put(task_to_run_reference, flush=True)
+
+            print("consuming tasks from workers now", flush=True)
+            # now handle a complete jobs from the workers
             task_reference, result = results_queue.get()
             if task_reference:
-                # print(f"scheduler receiving: {task_reference}, {result}")
-                tasks_processed += 1
+                number_of_tasks_in_flight -= 1
+                print_utils.echo(f"scheduler receiving: {task_reference}, {result}")
+                number_of_tasks_processed += 1
 
                 if result == COMPLETED:
                     # print(f"scheduler removing {task_reference} from the dag")
                     dag.remove_node(task_reference)
+                elif result == ERRORED:
+                    # need to remove node and all paths depending on it
+                    # also need to record that is was removed
+                    pass
 
-                there_are_tasks_left_in_this_generation = tasks_processed < tasks_queued
-            print_utils.echo(
-                f"scheduler status: tasks_queued: {tasks_queued}, tasks_processed: {tasks_processed}, there_are_tasks_left_in_this_generation: {there_are_tasks_left_in_this_generation}"
-            )
+            if not current_generation: # queue now empty - wait for all to complete
+                print("all tasks have been queued", flush=True)
+                while number_of_tasks_processed < number_of_tasks_in_generation:
+                    print("need to wait for another task to finish", flush=True)
+                    task_reference, result = results_queue.get()
+                    if task_reference:
+                        number_of_tasks_in_flight -= 1
+                        print_utils.echo(f"scheduler receiving: {task_reference}, {result}")
+                        number_of_tasks_processed += 1
+                else:
+                    print("finished waiting for all tasks in current generation", flush=True)
 
 
 def run(
-    num_workers,
-    tasks_to_run,
-    manifest_files_path,
-    manifest_task_reference_file_path,
-    puppet_account_id,
+        num_workers,
+        tasks_to_run,
+        manifest_files_path,
+        manifest_task_reference_file_path,
+        puppet_account_id,
 ):
     resources_file_path = f"{manifest_files_path}/resources.json"
     os.environ["SCT_START_TIME"] = str(time.time())
@@ -234,6 +262,7 @@ def run(
         multiprocessing.Process(
             target=scheduler,
             args=(
+                num_workers,
                 task_queue,
                 results_queue,
                 tasks_to_run,

@@ -18,13 +18,6 @@ class GetAllProductsAndTheirVersionsTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.search_products_as_admin_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_product_as_admin_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_product_as_admin_{self.account_id}_{self.region}",
-        ]
-
     def run(self):
         portfolio_details = self.get_output_from_reference_dependency(
             self.portfolio_task_reference

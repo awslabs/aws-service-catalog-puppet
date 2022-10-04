@@ -5,7 +5,6 @@ import luigi
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
-# from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 class SSMOutputsTasks(tasks.TaskWithReference):
@@ -27,12 +26,6 @@ class SSMOutputsTasks(tasks.TaskWithReference):
             "force_operation": self.force_operation,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    # def resources_used(self):
-    #     uniq = f"{self.region}-{self.puppet_account_id}"
-    #     return [
-    #         (uniq, Limits.SSM_PUT_PARAMETER_PER_REGION_OF_ACCOUNT),
-    #     ]
 
     def find_stack_output(
         self, generating_account_id, generating_region, generating_stack_name
@@ -116,12 +109,6 @@ class TerminateSSMOutputsTasks(tasks.TaskWithReference):  # TODO add by path par
             "param_name": self.param_name,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    # def resources_used(self):
-    #     uniq = f"{self.region}-{self.puppet_account_id}"
-    #     return [
-    #         (uniq, Limits.SSM_DELETE_PARAMETER_PER_REGION_OF_ACCOUNT),
-    #     ]
 
     def run(self):
         param_name_to_use = self.param_name.replace(

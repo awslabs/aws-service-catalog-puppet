@@ -37,11 +37,6 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return {
-            f"codebuild.start_build_{self.account_id}": 1,
-        }
-
     def run(self):
         generated_manifest = self.get_output_from_reference_dependency(
             self.generate_manifest_ref

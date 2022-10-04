@@ -40,20 +40,6 @@ class GetAllProductsAndTheirVersionsTaskTest(
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    def test_api_calls_used(self):
-        # setup
-        expected_result = [
-            f"servicecatalog.search_products_as_admin_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_product_as_admin_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_product_as_admin_{self.account_id}_{self.region}",
-        ]
-
-        # exercise
-        actual_result = self.sut.api_calls_used()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
-
     @skip
     def test_run(self):
         # setup

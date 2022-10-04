@@ -30,18 +30,6 @@ class PrepareAccountForWorkspaceTaskTest(tasks_unit_tests_helper.PuppetTaskUnitT
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    def test_api_calls_used(self):
-        # setup
-        expected_result = {
-            f"cloudformation.create_or_update_{self.account_id}": 1,
-        }
-
-        # exercise
-        actual_result = self.sut.api_calls_used()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
-
     @skip
     def test_run(self):
         # setup

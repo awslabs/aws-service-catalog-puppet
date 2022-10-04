@@ -52,11 +52,6 @@ class DoTerminateServiceControlPoliciesTask(tasks.TaskWithReference):
             ),
         )
 
-    def api_calls_used(self):
-        return [
-            f"organizations.detach_policy_{self.region}",
-        ]
-
     @functools.lru_cache(maxsize=32)
     def target(self):
         with self.organizations_policy_client() as orgs:

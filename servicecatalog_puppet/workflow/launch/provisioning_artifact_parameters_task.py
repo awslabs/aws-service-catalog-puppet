@@ -27,11 +27,6 @@ class ProvisioningArtifactParametersTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.describe_provisioning_parameters_{self.puppet_account_id}_{self.region}",
-        ]
-
     def run(self):
         with self.hub_regional_client("servicecatalog") as service_catalog:
             provisioning_artifact_parameters = None

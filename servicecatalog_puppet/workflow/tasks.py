@@ -229,27 +229,6 @@ class PuppetTask(luigi.Task):
     def warning(self, message):
         logger.warning(f"{self.uid}: {message}")
 
-    def api_calls_used(self):
-        return []
-
-    def resources_used(self):
-        return []
-
-    @property
-    def resources(self):
-        result = {}
-        api_calls = self.api_calls_used()
-        if isinstance(api_calls, list):
-            for a in self.api_calls_used():
-                result[a] = 1
-        elif isinstance(api_calls, dict):
-            for a, r in api_calls.items():
-                result[a] = r
-
-        for i, r in self.resources_used():
-            result[f"{i}-{r[0]}"] = 1 / r[1]
-        return result
-
     def get_output_location_path(self):
         return f"output/{self.uid}.{self.output_suffix}"
 
@@ -294,8 +273,12 @@ class PuppetTask(luigi.Task):
         return {}
 
     def write_empty_output(self):
-        with self.output().open("w") as f:
-            f.write("{}")
+        if self.should_use_caching:
+            with self.output().open("w") as f:
+                f.write("{}")
+        else:
+            with self.output().open("wb") as f:
+                f.write(b"{}")
 
     def write_output(self, content):
         with self.output().open("wb") as f:

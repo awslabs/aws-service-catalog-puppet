@@ -40,19 +40,6 @@ class TerminateSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUni
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    def test_api_calls_used(self):
-        # setup
-        expected_result = [
-            f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
-            f"servicecatalog.create_portfolio_{self.account_id}_{self.region}",
-        ]
-
-        # exercise
-        actual_result = self.sut.api_calls_used()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
-
     @skip
     def test_run(self):
         # setup

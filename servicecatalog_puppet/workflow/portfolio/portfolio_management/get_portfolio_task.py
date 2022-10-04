@@ -25,11 +25,6 @@ class GetPortfolioLocalTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
-        ]
-
     def get_portfolio_details(self):
         with self.spoke_regional_client("servicecatalog") as servicecatalog:
             paginator = servicecatalog.get_paginator("list_portfolios")
@@ -62,11 +57,6 @@ class GetPortfolioImportedTask(tasks.TaskWithReference):
             "account_id": self.account_id,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.list_accepted_portfolio_shares_{self.account_id}_{self.region}",
-        ]
 
     def get_portfolio_details(self):
         mode = sharing_mode_map.get(self.sharing_mode)

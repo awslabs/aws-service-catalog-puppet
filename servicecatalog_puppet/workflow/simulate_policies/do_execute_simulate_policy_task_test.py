@@ -67,18 +67,6 @@ class DoExecuteSimulatePolicyTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    def test_api_calls_used(self):
-        # setup
-        expected_result = [
-            f"iam.simulate_{self.simulation_type}_policy_{self.account_id}_{self.region}"
-        ]
-
-        # exercise
-        actual_result = self.sut.api_calls_used()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
-
     @skip
     def test_run(self):
         # setup

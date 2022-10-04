@@ -18,27 +18,12 @@ class GetOrCreatePolicyTask(tasks.TaskWithReference):
     policy_content = luigi.DictParameter()
     tags = luigi.ListParameter()
 
-    manifest_file_path = luigi.Parameter()
-
     def params_for_results_display(self):
         return {
             "account_id": self.account_id,
             "policy_name": self.policy_name,
             "cache_invalidator": self.cache_invalidator,
         }
-
-    def api_calls_used(self):
-        calls = [
-            f"organizations.list_policies_{self.region}",
-            f"organizations.create_policy_{self.region}",
-            f"organizations.describe_policy_{self.region}",
-            f"organizations.update_policy_{self.region}",
-        ]
-        if self.policy_content.get("s3"):
-            calls.append(
-                f"s3.get_object_{self.policy_content.get('s3').get('bucket')}",
-            )
-        return calls
 
     def get_unwrapped_policy(self):
         if self.policy_content.get("default") is not None:

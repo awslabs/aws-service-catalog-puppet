@@ -62,4 +62,4 @@ class ProvisionAppTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         self.sut.run()
 
         # verify
-        self.assert_output(self.sut.params_for_results_display())
+        self.assert_empty_output()

@@ -18,24 +18,23 @@ class GeneratePolicies(tasks.TaskWithReference):
 
     def params_for_results_display(self):
         return {
-            "manifest_file_path": self.manifest_file_path,
             "account_id": self.account_id,
             "region": self.region,
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return {
-            f"cloudformation.create_or_update_{self.account_id}_{self.region}": 1,
-        }
-
     def run(self):
-        if len(self.sharing_policies.get("accounts")) > 50:
+        sharing_policies = dict(
+            accounts=self.sharing_policies.get("accounts", []),
+            organizations=self.sharing_policies.get("organizations", []),
+        )
+
+        if len(sharing_policies.get("accounts", [])) > 50:
             self.warning(
                 "You have specified more than 50 accounts will not create the eventbus policy and spoke execution mode will not work"
             )
         template = config.env.get_template("policies.template.yaml.j2").render(
-            sharing_policies=self.sharing_policies,
+            sharing_policies=sharing_policies,
             VERSION=constants.VERSION,
             HOME_REGION=constants.HOME_REGION,
         )

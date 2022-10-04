@@ -22,11 +22,6 @@ class TerminateSpokeLocalPortfolioTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
-            f"servicecatalog.create_portfolio_{self.account_id}_{self.region}",
-        ]
 
     def run(self):
         with self.spoke_regional_client("servicecatalog") as servicecatalog:

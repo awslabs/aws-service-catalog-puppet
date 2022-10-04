@@ -25,18 +25,6 @@ class GetOrCreatePolicyTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        calls = [
-            f"organizations.list_policies_{self.region}",
-            f"organizations.create_policy_{self.region}",
-            f"organizations.describe_policy_{self.region}",
-            f"organizations.update_policy_{self.region}",
-        ]
-        if self.policy_content.get("s3"):
-            calls.append(
-                f"s3.get_object_{self.policy_content.get('s3').get('bucket')}",
-            )
-        return calls
 
     def run(self):
         with self.organizations_policy_client() as orgs:

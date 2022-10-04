@@ -22,11 +22,6 @@ class TerminateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return [
-            f"cloudformation.ensure_deleted_{self.account_id}_{self.region}",
-        ]
-
     def run(self):
         stack_name = f"associations-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
 

@@ -34,10 +34,6 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return [
-            f"cloudformation.create_or_update_{self.account_id}_{self.region}",
-        ]
 
     def run(self):
         portfolio_details = self.get_output_from_reference_dependency(

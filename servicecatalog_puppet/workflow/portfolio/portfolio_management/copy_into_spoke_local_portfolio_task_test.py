@@ -47,23 +47,6 @@ class CopyIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnit
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    def test_api_calls_used(self):
-        # setup
-        expected_result = [
-            f"servicecatalog.search_products_as_admin_{self.account_id}_{self.region}",
-            f"servicecatalog.list_provisioning_artifacts_{self.account_id}_{self.region}",
-            f"servicecatalog.copy_product_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_copy_product_status_{self.account_id}_{self.region}",
-            f"servicecatalog.associate_product_with_portfolio_{self.account_id}_{self.region}",
-            f"servicecatalog.update_provisioning_artifact_{self.account_id}_{self.region}",
-        ]
-
-        # exercise
-        actual_result = self.sut.api_calls_used()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
-
     @skip
     def test_run(self):
         # setup

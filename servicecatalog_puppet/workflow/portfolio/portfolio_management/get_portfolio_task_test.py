@@ -42,18 +42,6 @@ class GetPortfolioLocalTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    def test_api_calls_used(self):
-        # setup
-        expected_result = [
-            f"servicecatalog.list_portfolios_{self.account_id}_{self.region}",
-        ]
-
-        # exercise
-        actual_result = self.sut.api_calls_used()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
-
     def test_run(self):
         # setup
         self.sut.get_portfolio_details = mock.MagicMock(name="get_portfolio_details")
@@ -70,7 +58,6 @@ class GetPortfolioImportedTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     region = "region"
     portfolio = "portfolio"
     sharing_mode = "sharing_mode"
-    status = "status"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
@@ -85,7 +72,6 @@ class GetPortfolioImportedTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             region=self.region,
             portfolio=self.portfolio,
             sharing_mode=self.sharing_mode,
-            status=self.status,
         )
 
         self.wire_up_mocks()
@@ -104,18 +90,6 @@ class GetPortfolioImportedTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         # exercise
         actual_result = self.sut.params_for_results_display()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
-
-    def test_api_calls_used(self):
-        # setup
-        expected_result = [
-            f"servicecatalog.list_accepted_portfolio_shares_{self.account_id}_{self.region}",
-        ]
-
-        # exercise
-        actual_result = self.sut.api_calls_used()
 
         # verify
         self.assertEqual(expected_result, actual_result)

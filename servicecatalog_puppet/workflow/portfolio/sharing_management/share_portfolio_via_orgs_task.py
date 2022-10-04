@@ -23,11 +23,6 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
             "ou_to_share_with": self.ou_to_share_with,
         }
 
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.create_portfolio_share",
-            f"servicecatalog.describe_portfolio_share_status",
-        ]
 
     def run(self):
         hub_portfolio_details = self.get_output_from_reference_dependency(

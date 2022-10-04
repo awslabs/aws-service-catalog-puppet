@@ -28,12 +28,13 @@ class FakeInput(object):
 class PuppetTaskUnitTest(unittest.TestCase):
     task_reference = "task_reference"
     puppet_account_id = "puppet_account_id"
+    manifest_file_path="manifest_file_path"
 
     def get_common_args(self):
         return dict(
             task_reference="task_reference",
             manifest_task_reference_file_path="manifest_task_reference_file_path",
-            manifest_files_path="manifest_files_path",
+            manifest_files_path=self.manifest_file_path,
             dependencies_by_reference="dependencies_by_reference",
             puppet_account_id="puppet_account_id",
         )
@@ -54,6 +55,7 @@ class PuppetTaskUnitTest(unittest.TestCase):
         self.regional_client_mock, self.sut.regional_client = mocked_client()
 
         self.sut.write_output = mock.MagicMock()
+        self.sut.write_empty_output = mock.MagicMock()
         self.sut.input = mock.MagicMock()
 
         self.fake_inputs = FakeInput()
@@ -138,3 +140,6 @@ class PuppetTaskUnitTest(unittest.TestCase):
 
     def assert_output(self, expected_output):
         self.sut.write_output.assert_called_once_with(expected_output)
+
+    def assert_empty_output(self):
+        self.sut.write_empty_output.assert_called_once()

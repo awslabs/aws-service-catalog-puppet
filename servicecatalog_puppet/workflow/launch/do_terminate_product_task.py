@@ -43,14 +43,6 @@ class DoTerminateProductTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        uniq = f"{self.account_id}_{self.region}"
-        return [
-            f"servicecatalog.describe_provisioned_product_{uniq}",
-            f"servicecatalog.terminate_provisioned_product_{uniq}",
-            f"servicecatalog.describe_record_{uniq}",
-        ]
-
     def run(self):
         with self.spoke_regional_client("servicecatalog") as service_catalog:
             try:

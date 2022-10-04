@@ -2,7 +2,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import io
-import json
 from servicecatalog_puppet import serialisation_utils
 import zipfile
 
@@ -10,7 +9,6 @@ import luigi
 
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
-from servicecatalog_puppet.workflow.workspaces import Limits
 
 
 class ProvisionDryRunWorkspaceTask(tasks.TaskWithParameters):
@@ -44,10 +42,6 @@ class ProvisionDryRunWorkspaceTask(tasks.TaskWithParameters):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def resources_used(self):
-        return [
-            (self.account_id, Limits.CODEBUILD_CONCURRENT_PROJECTS),
-        ]
 
     def run(self):
         with self.hub_client("s3") as s3:

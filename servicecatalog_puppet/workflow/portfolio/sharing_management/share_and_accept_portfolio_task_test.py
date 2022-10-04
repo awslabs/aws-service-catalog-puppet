@@ -43,21 +43,6 @@ class ShareAndAcceptPortfolioForAccountTaskTest(
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    def test_api_calls_used(self):
-        # setup
-        expected_result = [
-            f"servicecatalog.list_accepted_portfolio_shares_{self.account_id}_{self.region}",
-            f"servicecatalog.list_portfolio_access_{self.account_id}_{self.region}",
-            f"servicecatalog.create_portfolio_share_{self.account_id}_{self.region}",
-            f"servicecatalog.accept_portfolio_share_{self.account_id}_{self.region}",
-        ]
-
-        # exercise
-        actual_result = self.sut.api_calls_used()
-
-        # verify
-        self.assertEqual(expected_result, actual_result)
-
     @skip
     def test_run(self):
         # setup

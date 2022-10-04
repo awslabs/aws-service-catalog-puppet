@@ -53,12 +53,6 @@ class TerminateProductDryRunTask(do_terminate_product_task.DoTerminateProductTas
                 )
             )
 
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.scan_provisioned_products_single_page_{self.account_id}_{self.region}",
-            f"servicecatalog.describe_provisioning_artifact_{self.account_id}_{self.region}",
-        ]
-
     def run(self):
         details = self.load_from_input("details")
         product_id = details.get("product_details").get("ProductId")

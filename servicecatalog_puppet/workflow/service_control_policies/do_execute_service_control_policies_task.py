@@ -36,11 +36,6 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return [
-            f"organizations.attach_policy_{self.region}",
-        ]
-
     @functools.lru_cache(maxsize=32)
     def target(self):
         with self.organizations_policy_client() as orgs:

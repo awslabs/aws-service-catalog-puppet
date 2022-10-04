@@ -24,12 +24,6 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.search_products_as_admin_{self.account_id}_{self.region}",
-            f"servicecatalog.list_provisioning_artifacts_{self.account_id}_{self.region}",
-            f"servicecatalog.associate_product_with_portfolio_{self.account_id}_{self.region}",
-        ]
 
     def run(self):
         spoke_portfolio_details = self.get_output_from_reference_dependency(

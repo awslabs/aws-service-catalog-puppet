@@ -21,13 +21,6 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
             "account_id": self.account_id,
         }
 
-    def api_calls_used(self):
-        return [
-            f"servicecatalog.list_accepted_portfolio_shares_{self.account_id}_{self.region}",
-            f"servicecatalog.list_portfolio_access_{self.account_id}_{self.region}",
-            f"servicecatalog.create_portfolio_share_{self.account_id}_{self.region}",
-            f"servicecatalog.accept_portfolio_share_{self.account_id}_{self.region}",
-        ]
 
     def has_already_been_shared(self, portfolio_id):
         with self.hub_regional_client("servicecatalog") as servicecatalog:

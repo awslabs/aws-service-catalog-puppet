@@ -20,11 +20,6 @@ class DisassociateProductsFromPortfolio(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return {
-            f"servicecatalog.disassociate_product_from_portfolio_{self.account_id}_{self.region}": 1,
-        }
-
     def run(self):
         portfolio = self.get_output_from_reference_dependency(
             self.portfolio_task_reference

@@ -32,11 +32,6 @@ class DoExecuteCodeBuildRunTask(tasks.TaskWithParameters):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def api_calls_used(self):
-        return [
-            f"codebuild.start_build_{self.get_account_used()}_{self.project_name}",
-            f"codebuild.batch_get_projects_{self.get_account_used()}_{self.project_name}",
-        ]
 
     def run(self):
         with self.hub_client("codebuild") as codebuild:
