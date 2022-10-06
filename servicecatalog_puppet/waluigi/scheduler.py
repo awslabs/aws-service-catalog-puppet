@@ -167,6 +167,7 @@ def scheduler(
     workers_are_needed = True
     dag = build_the_dag(tasks_to_run)
     while workers_are_needed:
+        print("the top loop")
         generations = list(nx.topological_generations(dag))
         if not generations:
             workers_are_needed = False
@@ -187,7 +188,7 @@ def scheduler(
                 number_of_tasks_in_flight += 1
                 task_to_run_reference = current_generation.pop()
                 print_utils.echo(f"scheduler sending: {task_to_run_reference}")
-                task_queue.put(task_to_run_reference, flush=True)
+                task_queue.put(task_to_run_reference)
 
             print("consuming tasks from workers now", flush=True)
             # now handle a complete jobs from the workers
@@ -215,6 +216,7 @@ def scheduler(
                         print_utils.echo(f"scheduler receiving: {task_reference}, {result}")
                         number_of_tasks_processed += 1
                 else:
+                    current_generation_in_progress = False
                     print("finished waiting for all tasks in current generation", flush=True)
 
 
