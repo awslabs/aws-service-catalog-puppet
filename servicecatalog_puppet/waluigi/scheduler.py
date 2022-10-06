@@ -234,7 +234,7 @@ def run(
 
     print_utils.echo(f"Running with {num_workers} processes!")
     start = time.time()
-    multiprocessing.set_start_method("forkserver")
+    multiprocessing.set_start_method("spawn")
     lock = multiprocessing.Lock()
 
     with open(resources_file_path, "w") as f:
