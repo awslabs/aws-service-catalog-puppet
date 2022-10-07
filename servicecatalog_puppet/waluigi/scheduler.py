@@ -16,6 +16,7 @@ from servicecatalog_puppet.workflow.dependencies import task_factory
 TIMEOUT = 60 * 60
 
 COMPLETED = "COMPLETED"
+NOT_SET = "NOT_SET"
 ERRORED = "ERRORED"
 PENDING = "PENDING"
 TRIGGER = "TRIGGER"
@@ -30,12 +31,14 @@ RESOURCES_REQUIRED = "resources_required"
 def build_the_dag(tasks_to_run):
     g = nx.DiGraph()
     for uid, task in tasks_to_run.items():
-        data = task
-        g.add_nodes_from(
-            [(uid, data), ]
-        )
-        for duid in task.get("dependencies_by_reference", []):
-            g.add_edge(uid, duid)
+        if task.get(QUEUE_STATUS, NOT_SET) is NOT_SET:
+            data = task
+            g.add_nodes_from(
+                [(uid, data), ]
+            )
+            for duid in task.get("dependencies_by_reference", []):
+                if tasks_to_run.get(duid).get(QUEUE_STATUS, NOT_SET) is NOT_SET:
+                    g.add_edge(uid, duid)
     return g
 
 
@@ -93,24 +96,24 @@ def worker_task(
         if task_reference:
             result = False
             while not result:
-                # print(f"{pid} Worker received {task_reference} waiting for lock", flush=True)
+                print(f"{pid} Worker received {task_reference} waiting for lock", flush=True)
                 task_parameters = tasks_to_run.get(task_reference)
 
                 with lock:
-                    # print(f"{pid} Worker {task_reference} got the lock", flush=True)
+                    print(f"{pid} Worker {task_reference} got the lock", flush=True)
                     (
                         resources_are_free,
                         resources_in_use,
                     ) = are_resources_are_free_for_task(task_parameters, resources_file_path)
-                    # print(f"{pid} Worker {task_reference} resources_are_free: {resources_are_free}", flush=True)
+                    print(f"{pid} Worker {task_reference} resources_are_free: {resources_are_free}", flush=True)
                     if resources_are_free:
                         lock_resources_for_task(
                             task_reference, task_parameters, resources_in_use, resources_file_path
                         )
-                        # print(f"{pid} Worker {task_reference} locked", flush=True)
+                        print(f"{pid} Worker {task_reference} locked", flush=True)
 
                 if resources_are_free:
-                    # print(f"{pid} Worker about to run {task_reference}", flush=True)
+                    print(f"{pid} Worker about to run {task_reference}", flush=True)
                     task = task_factory.create(
                         manifest_files_path=manifest_files_path,
                         manifest_task_reference_file_path=manifest_task_reference_file_path,
@@ -165,15 +168,18 @@ def scheduler(
 ):
     number_of_target_tasks_in_flight = num_workers
     workers_are_needed = True
-    dag = build_the_dag(tasks_to_run)
     while workers_are_needed:
         print("the top loop")
+        dag = build_the_dag(tasks_to_run)
         generations = list(nx.topological_generations(dag))
+        print(f"generations are {generations}", flush=True)
         if not generations:
+            print("no generations found", flush=True)
             workers_are_needed = False
             continue
 
         current_generation = list(generations[-1]) # may need to make list
+        print(f"current_generation is {current_generation}", flush=True)
         number_of_tasks_in_flight = 0
         number_of_tasks_processed = 0
         number_of_tasks_in_generation = len(current_generation)
@@ -197,14 +203,7 @@ def scheduler(
                 number_of_tasks_in_flight -= 1
                 print_utils.echo(f"scheduler receiving: {task_reference}, {result}")
                 number_of_tasks_processed += 1
-
-                if result == COMPLETED:
-                    # print(f"scheduler removing {task_reference} from the dag")
-                    dag.remove_node(task_reference)
-                elif result == ERRORED:
-                    # need to remove node and all paths depending on it
-                    # also need to record that is was removed
-                    pass
+                tasks_to_run[task_reference][QUEUE_STATUS] = result
 
             if not current_generation: # queue now empty - wait for all to complete
                 print("all tasks have been queued", flush=True)
@@ -215,9 +214,11 @@ def scheduler(
                         number_of_tasks_in_flight -= 1
                         print_utils.echo(f"scheduler receiving: {task_reference}, {result}")
                         number_of_tasks_processed += 1
+                        tasks_to_run[task_reference][QUEUE_STATUS] = result
                 else:
                     current_generation_in_progress = False
                     print("finished waiting for all tasks in current generation", flush=True)
+    print("everything is finished")
 
 
 def run(
@@ -234,7 +235,7 @@ def run(
 
     print_utils.echo(f"Running with {num_workers} processes!")
     start = time.time()
-    multiprocessing.set_start_method("spawn")
+    multiprocessing.set_start_method("forkserver")
     lock = multiprocessing.Lock()
 
     with open(resources_file_path, "w") as f:
