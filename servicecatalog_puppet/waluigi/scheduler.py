@@ -24,6 +24,7 @@ READY = "READY"
 BLOCKED = "BLOCKED"
 
 QUEUE_STATUS = "QUEUE_STATUS"
+SHUTDOWN = "SHUTDOWN"
 
 RESOURCES_REQUIRED = "resources_required"
 
@@ -160,6 +161,7 @@ def scheduler(
         num_workers,
         task_queue,
         results_queue,
+        control_queue,
         tasks_to_run,
         resources_in_use,
         manifest_files_path,
@@ -219,6 +221,7 @@ def scheduler(
                     current_generation_in_progress = False
                     print("finished waiting for all tasks in current generation", flush=True)
     print("everything is finished")
+    control_queue.put(SHUTDOWN)
 
 
 def run(
@@ -243,6 +246,7 @@ def run(
 
     task_queue = multiprocessing.Queue()
     results_queue = multiprocessing.Queue()
+    control_queue = multiprocessing.Queue()
     resources_in_use = dict()
 
     processes = [
@@ -259,7 +263,7 @@ def run(
                 resources_file_path
             ),
         )
-        for i in range(num_workers)
+        for _ in range(num_workers)
     ]
     processes.append(
         multiprocessing.Process(
@@ -268,6 +272,7 @@ def run(
                 num_workers,
                 task_queue,
                 results_queue,
+                control_queue,
                 tasks_to_run,
                 resources_in_use,
                 manifest_files_path,
@@ -278,7 +283,19 @@ def run(
     )
     for process in processes:
         process.start()
-    for process in processes:
-        process.join()
+
+    processes_running = num_workers + 1
+    while processes_running:
+        print("running some stuff")
+        command = control_queue.get()
+        if command == SHUTDOWN:
+            print("SHOULD BE SHUTTINGN DOWN PROCESSES", flush=True)
+            for process in processes:
+                process.terminate()
+                process.join(timeout=1)
+                process.close()
+                time.sleep(0.1)
+                processes_running -= 1
+                print(f"Process is closed: {processes_running}", flush=True)
 
     print_utils.echo(f"Time taken = {time.time() - start:.10f}")
