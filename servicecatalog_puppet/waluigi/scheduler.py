@@ -31,15 +31,33 @@ RESOURCES_REQUIRED = "resources_required"
 
 def build_the_dag(tasks_to_run):
     g = nx.DiGraph()
+    print("-- BUILDING THE DAG!!!")
     for uid, task in tasks_to_run.items():
-        if task.get(QUEUE_STATUS, NOT_SET) is NOT_SET:
-            data = task
-            g.add_nodes_from(
-                [(uid, data), ]
-            )
-            for duid in task.get("dependencies_by_reference", []):
-                if tasks_to_run.get(duid).get(QUEUE_STATUS, NOT_SET) is NOT_SET:
-                    g.add_edge(uid, duid)
+        g.add_nodes_from(
+            [(uid, task), ]
+        )
+        for duid in task.get("dependencies_by_reference", []):
+            g.add_edge(uid, duid)
+
+    for uid, task in tasks_to_run.items():
+        if task.get(QUEUE_STATUS, NOT_SET) == COMPLETED:
+            try:
+                g.remove_node(uid)
+            except nx.exception.NetworkXError as e:
+                pass
+
+        elif task.get(QUEUE_STATUS, NOT_SET) == ERRORED:
+            print(f"looking at task {uid} with status {task.get(QUEUE_STATUS, NOT_SET)}")
+            for n in nx.ancestors(g, uid):
+                try:
+                    g.remove_node(n)
+                except nx.exception.NetworkXError as e:
+                    pass
+            try:
+                g.remove_node(uid)
+            except nx.exception.NetworkXError as e:
+                pass
+
     return g
 
 
@@ -124,8 +142,8 @@ def worker_task(
                     start = time.time()
                     try:
                         task.run()
-                        end = time.time()
                     except Exception as e:
+                        end = time.time()
                         duration = end - start
                         result = ERRORED
                         print_utils.error(
@@ -140,6 +158,7 @@ def worker_task(
                         print_utils.error("---- END OF ERROR ----")
                         task.on_task_failure(e, duration)
                     else:
+                        end = time.time()
                         duration = end - start
                         result = COMPLETED
                         task.on_task_success(duration)

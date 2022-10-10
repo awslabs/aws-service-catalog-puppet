@@ -471,6 +471,11 @@ def create(section_name, parameters_to_use, puppet_account_id):
             CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
         ]
 
+    elif section_name == constants.PREPARE_ACCOUNT_FOR_STACKS:
+        resources = [
+            CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
+        ]
+
     else:
         raise Exception(f"Unknown section_name: {section_name}")
 

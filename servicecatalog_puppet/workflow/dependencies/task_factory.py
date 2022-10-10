@@ -758,5 +758,12 @@ def create(
             sharing_policies=parameters_to_use.get("sharing_policies"),
         )
 
+    elif section_name == constants.PREPARE_ACCOUNT_FOR_STACKS:
+        from servicecatalog_puppet.workflow.stack import prepare_account_for_stack_task
+
+        return prepare_account_for_stack_task.PrepareAccountForStackTask(
+            **common_parameters,
+        )
+
     else:
         raise Exception(f"Unknown section_name: {section_name}")

@@ -305,6 +305,9 @@ def run_tasks(
                 result_contents = open(filename, "r").read()
                 result = serialisation_utils.json_loads(result_contents)
                 params = result.get("params_for_results")
+                if not params.get("task_reference"):
+                    print(filename)
+                    params['task_reference'] = result.get("task_params").get("task_reference")
                 if should_use_eventbridge:
                     entries.append(
                         {
