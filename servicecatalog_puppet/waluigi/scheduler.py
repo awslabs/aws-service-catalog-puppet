@@ -115,6 +115,12 @@ def worker_task(
             while not result:
                 print(f"{pid} Worker received {task_reference} waiting for lock", flush=True)
                 task_parameters = tasks_to_run.get(task_reference)
+                print(f"{pid} Worker received {task_reference} waiting for lock and the task is {task_parameters}", flush=True)
+
+                print("-----")
+                print("-----")
+                print("-----")
+                print(task_parameters)
 
                 with lock:
                     print(f"{pid} Worker {task_reference} got the lock", flush=True)

@@ -612,6 +612,7 @@ def deploy_from_task_reference(
         f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"
     )
 
+    # EPF
     task_reference_commands.deploy_from_task_reference(path)
 
 
@@ -671,6 +672,7 @@ def deploy_in_spoke_from_task_reference(
         f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"
     )
 
+    # EPF
     task_reference_commands.deploy_from_task_reference(p)
 
 

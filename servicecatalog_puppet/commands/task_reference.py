@@ -88,7 +88,6 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
         dependencies_by_reference=list(),
         reverse_dependencies_by_reference=list(),
         section_name=constants.CREATE_POLICIES,
-        resources_required=[],
         organizations_to_share_with=list(organizations_to_share_with.keys()),
         ous_to_share_with=list(ous_to_share_with.keys()),
         accounts_to_share_with=list(accounts_to_share_with.keys()),
