@@ -4,9 +4,8 @@ import traceback
 
 import networkx as nx
 
-# from viztracer import get_tracer, VizTracer
 
-from servicecatalog_puppet import constants, serialisation_utils
+from servicecatalog_puppet import serialisation_utils
 
 import os
 
@@ -87,12 +86,9 @@ def worker_task(
 ):
     pid = os.getpid()
 
-    # tracer = VizTracer(**init_kwargs)
-    # tracer.register_exit()
-    # tracer.start()
-
     print_utils.echo(f"{pid} Worker starting up")
     while True:
+        time.sleep(0.1)
         task_reference = task_queue.get()
         if task_reference:
             result = False
@@ -136,7 +132,8 @@ def worker_task(
                         for l in traceback.format_exception(
                                 etype=type(e), value=e, tb=e.__traceback__,
                         ):
-                            print_utils.error(l)
+                            for sl in l.split("\n"):
+                                print_utils.error(f"ERROR:\t{sl}")
                         print_utils.error("---- END OF ERROR ----")
                         task.on_task_failure(e)
                     else:
@@ -163,10 +160,6 @@ def scheduler(
         results_queue,
         control_queue,
         tasks_to_run,
-        resources_in_use,
-        manifest_files_path,
-        manifest_task_reference_file_path,
-        puppet_account_id,
 ):
     number_of_target_tasks_in_flight = num_workers
     workers_are_needed = True
@@ -233,8 +226,6 @@ def run(
 ):
     resources_file_path = f"{manifest_files_path}/resources.json"
     os.environ["SCT_START_TIME"] = str(time.time())
-    # init_kwargs = get_tracer().init_kwargs
-    init_kwargs = 1
 
     print_utils.echo(f"Running with {num_workers} processes!")
     start = time.time()
@@ -247,7 +238,6 @@ def run(
     task_queue = multiprocessing.Queue()
     results_queue = multiprocessing.Queue()
     control_queue = multiprocessing.Queue()
-    resources_in_use = dict()
 
     processes = [
         multiprocessing.Process(
@@ -274,10 +264,6 @@ def run(
                 results_queue,
                 control_queue,
                 tasks_to_run,
-                resources_in_use,
-                manifest_files_path,
-                manifest_task_reference_file_path,
-                puppet_account_id,
             ),
         )
     )
