@@ -147,7 +147,6 @@ def worker_task(
                         task_processing_time_queue.put(
                             (duration, task_type, task_details,),
                         )
-                        # task.on_task_processing_time()
 
                     # print(f"{pid} Worker {task_reference} waiting for lock to unlock resources", flush=True)
                     with lock:
