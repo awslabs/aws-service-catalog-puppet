@@ -616,7 +616,7 @@ def deploy_from_task_reference(
 
 
 @cli.command()
-@click.argument("f", type=click.File())
+@click.argument("p", type=click.Path())
 @click.option("--num-workers", default=10)
 @click.option("--execution-mode", default="hub")
 @click.option("--puppet-account-id")
@@ -639,7 +639,7 @@ def deploy_from_task_reference(
     "--global-sharing-mode-default", default="", envvar="SCT_GLOBAL_SHARING_MODE",
 )
 def deploy_in_spoke_from_task_reference(
-    f,
+    p,
     num_workers,
     execution_mode,
     puppet_account_id,
@@ -671,7 +671,7 @@ def deploy_in_spoke_from_task_reference(
         f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"
     )
 
-    task_reference_commands.deploy_from_task_reference(f)
+    task_reference_commands.deploy_from_task_reference(p)
 
 
 @cli.command()

@@ -58,12 +58,10 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
 
     def get_signed_url_for_task_reference(self, bucket, s3):
         task_reference_content = open(
-            self.manifest_task_reference_file_path.replace(
-                "task-reference.yaml", "task-reference-filtered.yaml"
-            ),
+            self.manifest_task_reference_file_path,
             "r",
         ).read()
-        key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-reference.yaml"
+        key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-reference.json"
         self.debug(f"Uploading task reference {key} to {bucket}")
         s3.put_object(
             Body=task_reference_content, Bucket=bucket, Key=key,
@@ -76,9 +74,7 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
 
     def get_signed_url_for_manifest(self, bucket, s3):
         task_reference_content = open(
-            self.manifest_task_reference_file_path.replace(
-                "task-reference.yaml", "expanded.yaml"
-            ),
+            f"{self.manifest_files_path}/manifest-expanded.yaml",
             "r",
         ).read()
         key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-manifest.yaml"
