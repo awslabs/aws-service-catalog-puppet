@@ -121,6 +121,7 @@ def worker_task(
                 print("-----")
                 print("-----")
                 print(task_parameters)
+                print(tasks_to_run)
 
                 with lock:
                     print(f"{pid} Worker {task_reference} got the lock", flush=True)
