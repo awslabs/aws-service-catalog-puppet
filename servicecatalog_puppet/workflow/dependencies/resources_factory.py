@@ -466,12 +466,12 @@ def create(section_name, parameters_to_use, puppet_account_id):
             ORGANIZATIONS_UPDATE_POLICIES_PER_REGION,
         ]
 
-    elif section_name == constants.GENERATE_POLICIES:
+    elif section_name == constants.PREPARE_ACCOUNT_FOR_STACKS:
         resources = [
             CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
         ]
 
-    elif section_name == constants.PREPARE_ACCOUNT_FOR_STACKS:
+    elif section_name == constants.CREATE_POLICIES:
         resources = [
             CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
         ]

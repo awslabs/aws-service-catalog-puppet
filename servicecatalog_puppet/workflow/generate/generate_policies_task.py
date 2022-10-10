@@ -14,7 +14,10 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 class GeneratePolicies(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
-    sharing_policies = luigi.DictParameter()
+
+    organizations_to_share_with = luigi.ListParameter()
+    ous_to_share_with = luigi.ListParameter()
+    accounts_to_share_with = luigi.ListParameter()
 
     def params_for_results_display(self):
         return {
@@ -25,8 +28,9 @@ class GeneratePolicies(tasks.TaskWithReference):
 
     def run(self):
         sharing_policies = dict(
-            accounts=self.sharing_policies.get("accounts", []),
-            organizations=self.sharing_policies.get("organizations", []),
+            accounts=self.accounts_to_share_with,
+            ous=self.ous_to_share_with,
+            organizations=self.organizations_to_share_with,
         )
 
         if len(sharing_policies.get("accounts", [])) > 50:
@@ -52,10 +56,4 @@ class GeneratePolicies(tasks.TaskWithReference):
                 ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
                 Tags=self.initialiser_stack_tags,
             )
-        self.write_output(self.get_sharing_policies())
-
-    @lru_cache()
-    def get_sharing_policies(self):
-        return serialisation_utils.json_loads(
-            json.dumps(self.sharing_policies.get_wrapped())
-        )
+        self.write_empty_output()

@@ -750,19 +750,21 @@ def create(
             tags=tags,
         )
 
-    elif section_name == constants.GENERATE_POLICIES:
-        from servicecatalog_puppet.workflow.generate import generate_policies_task
-
-        return generate_policies_task.GeneratePolicies(
-            **common_parameters,
-            sharing_policies=parameters_to_use.get("sharing_policies"),
-        )
-
     elif section_name == constants.PREPARE_ACCOUNT_FOR_STACKS:
         from servicecatalog_puppet.workflow.stack import prepare_account_for_stack_task
 
         return prepare_account_for_stack_task.PrepareAccountForStackTask(
             **common_parameters,
+        )
+
+    elif section_name == constants.CREATE_POLICIES:
+        from servicecatalog_puppet.workflow.generate import generate_policies_task
+
+        return generate_policies_task.GeneratePolicies(
+            **common_parameters,
+            organizations_to_share_with=parameters_to_use.get("organizations_to_share_with"),
+            ous_to_share_with=parameters_to_use.get("ous_to_share_with"),
+            accounts_to_share_with=parameters_to_use.get("accounts_to_share_with"),
         )
 
     else:

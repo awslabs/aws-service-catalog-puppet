@@ -65,6 +65,35 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
     tasks_by_account_id_and_region = dict()
 
     #
+    # ZERO pass - generate policies
+    #
+    organizations_to_share_with = dict()
+    ous_to_share_with = dict()
+    accounts_to_share_with = dict()
+    for a in manifest.get("accounts", []):
+        if a.get("organization"):
+            organizations_to_share_with[a.get("organization")] = True
+        if a.get("expanded_from"):
+            ous_to_share_with[a.get("expanded_from")] = True
+        else:
+            accounts_to_share_with[a.get("account_id")] = True
+
+    all_tasks[constants.CREATE_POLICIES] = dict(
+        manifest_section_names=dict(),
+        manifest_item_names=dict(),
+        account_id=puppet_account_id,
+        region=default_region,
+        manifest_account_ids=dict(),
+        task_reference=constants.CREATE_POLICIES,
+        dependencies_by_reference=list(),
+        reverse_dependencies_by_reference=list(),
+        section_name=constants.CREATE_POLICIES,
+        organizations_to_share_with=list(organizations_to_share_with.keys()),
+        ous_to_share_with=list(ous_to_share_with.keys()),
+        accounts_to_share_with=list(accounts_to_share_with.keys()),
+    )
+
+    #
     # First pass - handle tasks
     # First pass - create ssm output tasks
     # First pass - set up spoke local portfolios
@@ -99,7 +128,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                 task_to_add["section_name"] = section_name
                 task_to_add["item_name"] = item_name
                 # set up for later pass
-                task_to_add["dependencies_by_reference"] = list()
+                task_to_add["dependencies_by_reference"] = [constants.CREATE_POLICIES]
                 task_to_add["reverse_dependencies_by_reference"] = list()
 
                 task_reference = (
@@ -612,7 +641,7 @@ def handle_stacks(
             region=constants.HOME_REGION,
             puppet_account_id=puppet_account_id,
 
-            dependencies_by_reference=list(),
+            dependencies_by_reference=[constants.CREATE_POLICIES],
             reverse_dependencies_by_reference=list(),
 
             manifest_section_names=dict(),
@@ -645,7 +674,7 @@ def handle_stacks(
             version_id=task_to_add.get("version_id"),
             puppet_account_id=puppet_account_id,
             account_id=puppet_account_id,
-            dependencies_by_reference=list(),
+            dependencies_by_reference=[constants.CREATE_POLICIES],
             reverse_dependencies_by_reference=list(),
             manifest_section_names=dict(),
             manifest_item_names=dict(),
@@ -683,7 +712,7 @@ def handle_workspaces(
         all_tasks[workspace_account_preparation_ref] = dict(
             puppet_account_id=puppet_account_id,
             task_reference=workspace_account_preparation_ref,
-            dependencies_by_reference=[],
+            dependencies_by_reference=[constants.CREATE_POLICIES],
             reverse_dependencies_by_reference=[],
             account_id=task_to_add.get("account_id"),
             section_name=constants.WORKSPACE_ACCOUNT_PREPARATION,
@@ -733,7 +762,7 @@ def handle_spoke_local_portfolios(
                     region=task_to_add.get("region"),
                     portfolio=task_to_add.get("portfolio"),
                     execution=task_to_add.get("execution"),
-                    dependencies_by_reference=[],
+                    dependencies_by_reference=[constants.CREATE_POLICIES],
                     reverse_dependencies_by_reference=list(),
                     task_reference=ref,
                     spoke_local_portfolio_name=item_name,
@@ -764,7 +793,7 @@ def handle_spoke_local_portfolios(
                     region=task_to_add.get("region"),
                     portfolio=task_to_add.get("portfolio"),
                     execution=task_to_add.get("execution"),
-                    dependencies_by_reference=[],
+                    dependencies_by_reference=[constants.CREATE_POLICIES],
                     reverse_dependencies_by_reference=list(),
                     task_reference=ref,
                     section_name=constants.PORTFOLIO_CONSTRAINTS_LAUNCH,
@@ -795,7 +824,7 @@ def handle_spoke_local_portfolios(
                     region=task_to_add.get("region"),
                     portfolio=task_to_add.get("portfolio"),
                     execution=task_to_add.get("execution"),
-                    dependencies_by_reference=[],
+                    dependencies_by_reference=[constants.CREATE_POLICIES],
                     reverse_dependencies_by_reference=list(),
                     task_reference=ref,
                     section_name=constants.PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE,
@@ -822,7 +851,7 @@ def handle_spoke_local_portfolios(
             all_tasks[spoke_portfolio_ref] = dict(
                 puppet_account_id=puppet_account_id,
                 task_reference=spoke_portfolio_ref,
-                dependencies_by_reference=[],
+                dependencies_by_reference=[constants.CREATE_POLICIES],
                 reverse_dependencies_by_reference=[],
                 account_id=task_to_add.get("account_id"),
                 region=task_to_add.get("region"),
@@ -881,6 +910,7 @@ def handle_spoke_local_portfolios(
                     dependencies_by_reference=[
                         spoke_portfolio_all_products_and_versions_ref,
                         spoke_portfolio_ref,
+                        constants.CREATE_POLICIES,
                     ],
                     reverse_dependencies_by_reference=[],
                     account_id=task_to_add.get("account_id"),
@@ -912,7 +942,7 @@ def handle_spoke_local_portfolios(
                 puppet_account_id=puppet_account_id,
                 task_reference=spoke_portfolio_puppet_association_ref,
                 portfolio_task_reference=spoke_portfolio_ref,
-                dependencies_by_reference=[spoke_portfolio_ref],
+                dependencies_by_reference=[spoke_portfolio_ref, constants.CREATE_POLICIES],
                 reverse_dependencies_by_reference=[],
                 account_id=task_to_add.get("account_id"),
                 region=task_to_add.get("region"),
@@ -946,7 +976,7 @@ def handle_spoke_local_portfolios(
                     puppet_account_id=puppet_account_id,
                     task_reference=spoke_portfolio_puppet_association_ref,
                     portfolio_task_reference=all_tasks_task_reference,
-                    dependencies_by_reference=[all_tasks_task_reference],
+                    dependencies_by_reference=[all_tasks_task_reference, constants.CREATE_POLICIES],
                     reverse_dependencies_by_reference=[],
                     account_id=task_to_add.get("account_id"),
                     region=task_to_add.get("region"),
@@ -1037,7 +1067,7 @@ def handle_spoke_local_portfolios(
                     puppet_account_id=puppet_account_id,
                     task_reference=hub_portfolio_puppet_association_ref,
                     portfolio_task_reference=hub_portfolio_ref,
-                    dependencies_by_reference=[hub_portfolio_ref],
+                    dependencies_by_reference=[hub_portfolio_ref, constants.CREATE_POLICIES],
                     reverse_dependencies_by_reference=[],
                     account_id=puppet_account_id,
                     region=task_to_add.get("region"),
@@ -1075,7 +1105,7 @@ def handle_spoke_local_portfolios(
                     account_id=task_to_add.get("account_id"),
                     region=task_to_add.get("region"),
                     task_reference=share_and_accept_ref,
-                    dependencies_by_reference=[hub_portfolio_ref],
+                    dependencies_by_reference=[hub_portfolio_ref, constants.CREATE_POLICIES],
                     reverse_dependencies_by_reference=[],
                     portfolio=task_to_add.get("portfolio"),
                     execution=task_to_add.get("execution"),
@@ -1133,7 +1163,7 @@ def handle_spoke_local_portfolios(
                     puppet_account_id=puppet_account_id,
                     task_reference=spoke_portfolio_puppet_association_ref,
                     portfolio_task_reference=all_tasks_task_reference,
-                    dependencies_by_reference=[all_tasks_task_reference],
+                    dependencies_by_reference=[all_tasks_task_reference, constants.CREATE_POLICIES],
                     reverse_dependencies_by_reference=[],
                     account_id=task_to_add.get("account_id"),
                     region=task_to_add.get("region"),
@@ -1217,7 +1247,7 @@ def handle_spoke_local_portfolios(
             ref = f"portfolio_associations-{shared_ref}"
             all_tasks[ref] = dict(
                 **get_spoke_local_portfolio_common_args(
-                    task_to_add, all_tasks_task_reference
+                    task_to_add, all_tasks_task_reference, [constants.CREATE_POLICIES],
                 ),
                 task_reference=ref,
                 spoke_local_portfolio_name=item_name,
@@ -1258,7 +1288,8 @@ def handle_spoke_local_portfolios(
                 "manifest_account_ids"
             ].update(task_to_add.get("manifest_account_ids"))
             dependencies_for_constraints.append(
-                spoke_portfolio_all_products_and_versions_after_ref
+                spoke_portfolio_all_products_and_versions_after_ref,
+                constants.CREATE_POLICIES
             )
 
         if task_to_add.get("launch_constraints"):
@@ -1359,7 +1390,7 @@ def handle_launches(
                 account_id=task_to_add.get("account_id"),
                 region=task_to_add.get("region"),
                 task_reference=share_and_accept_ref,
-                dependencies_by_reference=[hub_portfolio_ref],
+                dependencies_by_reference=[hub_portfolio_ref, constants.CREATE_POLICIES],
                 reverse_dependencies_by_reference=[],
                 portfolio=task_to_add.get("portfolio"),
                 execution=task_to_add.get("execution"),

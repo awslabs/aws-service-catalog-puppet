@@ -337,6 +337,6 @@ GET_OR_CREATE_SERVICE_CONTROL_POLICIES_POLICY = (
     "get-or-create-service-control-policies-policy"
 )
 GET_OR_CREATE_TAG_POLICIES_POLICY = "get-or-create-tag-policies-policy"
-GENERATE_POLICIES = "generate-policies"
 
 PREPARE_ACCOUNT_FOR_STACKS = "prepare-account-for-stacks"
+CREATE_POLICIES = "create-policies"
