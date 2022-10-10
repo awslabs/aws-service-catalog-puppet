@@ -100,39 +100,12 @@ def run_tasks(
     if not (running_exploded or is_list_launches):
         tasks.print_stats()
 
-    should_use_shared_scheduler = False
-    if is_list_launches:
-        should_use_shared_scheduler = False
-    else:
-        pass
-        # should_use_shared_scheduler = config.get_should_use_shared_scheduler( #TODO reenable
-        #     puppet_account_id
-        # )
-
-    build_params = dict(
-        detailed_summary=True,
-        workers=num_workers,
-        # parallel_scheduling=True,
-        # parallel_scheduling_processes=40,
-        log_level=os.environ.get("LUIGI_LOG_LEVEL", constants.LUIGI_DEFAULT_LOG_LEVEL),
-    )
-
-    if should_use_shared_scheduler:
-        os.system(constants.START_SHARED_SCHEDULER_COMMAND)
-    else:
-        build_params["local_scheduler"] = True
-
-    if should_use_shared_scheduler:
-        logger.info(f"should_use_shared_scheduler: {should_use_shared_scheduler}")
-
     output_cache_starting_point = config.get_output_cache_starting_point()
-    output_cache_starting_point = ""
     if output_cache_starting_point != "":
         dst = "GetSSMParamTask.zip"
         urlretrieve(output_cache_starting_point, dst)
         shutil.unpack_archive("GetSSMParamTask.zip", ".", "zip")
 
-    print("---STARTING---")
     run_result = scheduler.run(
         num_workers,
         tasks_to_run_filtered,
@@ -140,23 +113,10 @@ def run_tasks(
         manifest_task_reference_file_path,
         puppet_account_id,
     )
-    print("---END---")
-    exit(1)
-
-    # run_result = luigi.build(tasks_to_run, **build_params)
-
-    exit_status_codes = {
-        LuigiStatusCode.SUCCESS: 0,
-        LuigiStatusCode.SUCCESS_WITH_RETRY: 0,
-        LuigiStatusCode.FAILED: 1,
-        LuigiStatusCode.FAILED_AND_SCHEDULING_FAILED: 2,
-        LuigiStatusCode.SCHEDULING_FAILED: 3,
-        LuigiStatusCode.NOT_RUN: 4,
-        LuigiStatusCode.MISSING_EXT: 5,
-    }
 
     cache_invalidator = os.environ.get(environmental_variables.CACHE_INVALIDATOR)
 
+    has_failures = len(glob("results/failure/*", recursive=True))
     has_spoke_failures = False
 
     if execution_mode == constants.EXECUTION_MODE_HUB:
@@ -341,7 +301,7 @@ def run_tasks(
                 ["Action", "Params", "Duration"],
             ]
             table = terminaltables.AsciiTable(table_data)
-            for filename in glob("results/processing_time/*.json"):
+            for filename in glob("results/success/*.json") + glob("results/failure/*.json"):
                 result_contents = open(filename, "r").read()
                 result = serialisation_utils.json_loads(result_contents)
                 params = result.get("params_for_results")
@@ -431,11 +391,9 @@ def run_tasks(
                         time.sleep(1)
                 logging.info(f"Finished sending {len(entries)} events to eventbridge")
 
-    exit_status_code = exit_status_codes.get(run_result.status)
-
     if on_complete_url:
         logger.info(f"About to post results")
-        if exit_status_code == 0:
+        if not has_failures:
             result = dict(
                 Status="SUCCESS",
                 Reason=f"All tasks run with success: {codebuild_id}",
@@ -460,10 +418,10 @@ def run_tasks(
     if running_exploded:
         pass
     else:
-        if has_spoke_failures:
+        if has_spoke_failures or has_failures:
             sys.exit(1)
         else:
-            sys.exit(exit_status_code)
+            sys.exit(0)
 
 
 def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):

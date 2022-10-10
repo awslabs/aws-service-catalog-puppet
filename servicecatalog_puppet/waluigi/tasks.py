@@ -76,12 +76,18 @@ def print_stats():
 
 
 class WaluigiTaskMixin:
-    def on_task_failure(self, exception):
+    def get_processing_time_details(self):
+        task_details = dict(**self.param_kwargs)
+        task_details.update(self.params_for_results_display())
+        return self.__class__.__name__, task_details
+
+    def on_task_failure(self, exception, duration):
         exception_details = {
             "exception_type": type(exception),
             "exception_stack_trace": traceback.format_exception(
                 etype=type(exception), value=exception, tb=exception.__traceback__,
             ),
+            "duration": duration,
         }
         record_event("failure", self, exception_details)
 
@@ -93,9 +99,9 @@ class WaluigiTaskMixin:
         logger.info(f"{to_string} started")
         record_event("start", self)
 
-    def on_task_success(self):
+    def on_task_success(self, duration):
         print_stats()
-        record_event("success", self)
+        record_event("success", self, dict(duration=duration))
 
     def on_task_timeout(self):
         print_stats()
@@ -108,60 +114,6 @@ class WaluigiTaskMixin:
             "exception_stack_trace": error_msg,
         }
         record_event("process_failure", self, exception_details)
-
-    def on_task_processing_time(self, duration):
-        print_stats()
-        record_event("processing_time", self, {"duration": duration})
-
-        task_params = dict(**self.param_kwargs)
-        task_params.update(self.params_for_results_display())
-
-        # this takes a long time to run around 1.5 seconds per task
-        if False:
-            with betterboto_client.CrossAccountClientContextManager(
-                "cloudwatch",
-                config.get_puppet_role_arn(config.get_executor_account_id()),
-                "cloudwatch-puppethub",
-            ) as cloudwatch:
-
-                dimensions = [
-                    dict(Name="task_type", Value=self.__class__.__name__,),
-                    dict(
-                        Name="codebuild_build_id",
-                        Value=os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD"),
-                    ),
-                ]
-                for note_worthy in [
-                    "launch_name",
-                    "region",
-                    "account_id",
-                    "puppet_account_id",
-                    "portfolio",
-                    "product",
-                    "version",
-                ]:
-                    if task_params.get(note_worthy):
-                        dimensions.append(
-                            dict(
-                                Name=str(note_worthy),
-                                Value=str(task_params.get(note_worthy)),
-                            )
-                        )
-
-                cloudwatch.put_metric_data(
-                    Namespace=f"ServiceCatalogTools/Puppet/v2/ProcessingTime/Tasks",
-                    MetricData=[
-                        dict(
-                            MetricName="Tasks",
-                            Dimensions=[
-                                dict(Name="TaskType", Value=self.__class__.__name__)
-                            ]
-                            + dimensions,
-                            Value=duration,
-                            Unit="Seconds",
-                        ),
-                    ],
-                )
 
     def on_task_broken_task(self, exception):
         print_stats()

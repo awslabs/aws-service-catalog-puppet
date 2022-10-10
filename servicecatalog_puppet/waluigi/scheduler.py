@@ -5,12 +5,13 @@ import traceback
 import networkx as nx
 
 
-from servicecatalog_puppet import serialisation_utils
+from servicecatalog_puppet import serialisation_utils, config
 
 import os
 
 from servicecatalog_puppet import print_utils
 from servicecatalog_puppet.workflow.dependencies import task_factory
+from betterboto import client as betterboto_client
 
 TIMEOUT = 60 * 60
 
@@ -78,6 +79,7 @@ def worker_task(
         lock,
         task_queue,
         results_queue,
+        task_processing_time_queue,
         tasks_to_run,
         manifest_files_path,
         manifest_task_reference_file_path,
@@ -124,6 +126,7 @@ def worker_task(
                         task.run()
                         end = time.time()
                     except Exception as e:
+                        duration = end - start
                         result = ERRORED
                         print_utils.error(
                             f"{pid} Worker executed task [failure]: {task_reference} failures: {e}"
@@ -135,11 +138,16 @@ def worker_task(
                             for sl in l.split("\n"):
                                 print_utils.error(f"ERROR:\t{sl}")
                         print_utils.error("---- END OF ERROR ----")
-                        task.on_task_failure(e)
+                        task.on_task_failure(e, duration)
                     else:
+                        duration = end - start
                         result = COMPLETED
-                        task.on_task_success()
-                        task.on_task_processing_time(int(end - start))
+                        task.on_task_success(duration)
+                        task_type, task_details = task.get_processing_time_details()
+                        task_processing_time_queue.put(
+                            (duration, task_type, task_details,),
+                        )
+                        # task.on_task_processing_time()
 
                     # print(f"{pid} Worker {task_reference} waiting for lock to unlock resources", flush=True)
                     with lock:
@@ -217,6 +225,55 @@ def scheduler(
     control_queue.put(SHUTDOWN)
 
 
+def on_task_processing_time(task_processing_time_queue):
+    with betterboto_client.CrossAccountClientContextManager(
+            "cloudwatch",
+            config.get_puppet_role_arn(config.get_executor_account_id()),
+            "cloudwatch-puppethub",
+    ) as cloudwatch:
+        while True:
+            time.sleep(0.1)
+            duration, task_type, task_params = task_processing_time_queue.get()
+            if task_params:
+                dimensions = [
+                    dict(Name="task_type", Value=task_type,),
+                    dict(
+                        Name="codebuild_build_id",
+                        Value=os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD"),
+                    ),
+                ]
+                for note_worthy in [
+                    "launch_name",
+                    "region",
+                    "account_id",
+                    "puppet_account_id",
+                    "portfolio",
+                    "product",
+                    "version",
+                ]:
+                    if task_params.get(note_worthy):
+                        dimensions.append(
+                            dict(
+                                Name=str(note_worthy),
+                                Value=str(task_params.get(note_worthy)),
+                            )
+                        )
+                cloudwatch.put_metric_data(
+                    Namespace=f"ServiceCatalogTools/Puppet/v2/ProcessingTime/Tasks",
+                    MetricData=[
+                        dict(
+                            MetricName="Tasks",
+                            Dimensions=[
+                                dict(Name="TaskType", Value=task_type)
+                            ]
+                            + dimensions,
+                            Value=duration,
+                            Unit="Seconds",
+                        ),
+                    ],
+                )
+
+
 def run(
         num_workers,
         tasks_to_run,
@@ -238,6 +295,7 @@ def run(
     task_queue = multiprocessing.Queue()
     results_queue = multiprocessing.Queue()
     control_queue = multiprocessing.Queue()
+    task_processing_time_queue = multiprocessing.Queue()
 
     processes = [
         multiprocessing.Process(
@@ -246,6 +304,7 @@ def run(
                 lock,
                 task_queue,
                 results_queue,
+                task_processing_time_queue,
                 tasks_to_run,
                 manifest_files_path,
                 manifest_task_reference_file_path,
@@ -267,10 +326,18 @@ def run(
             ),
         )
     )
+    processes.append(
+        multiprocessing.Process(
+            target=on_task_processing_time,
+            args=(
+                task_processing_time_queue,
+            ),
+        )
+    )
     for process in processes:
         process.start()
 
-    processes_running = num_workers + 1
+    processes_running = num_workers + 2
     while processes_running:
         print("running some stuff")
         command = control_queue.get()
