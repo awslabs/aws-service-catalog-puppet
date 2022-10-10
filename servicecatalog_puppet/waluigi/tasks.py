@@ -76,6 +76,34 @@ def print_stats():
 
 
 class WaluigiTaskMixin:
+    def execute(self):
+        print("CACHING execute the task beginning", flush=True)
+        if self.should_use_caching:
+            if self.complete():
+                print("CACHING WAS RUN BEFORE - going to download the file from the cache", flush=True)
+                for task_reference, output in (
+                        self.input().get("reference_dependencies", {}).items()
+                ):
+                    s3_url = output.path.split("/")
+                    bucket = s3_url[2]
+                    key = "/".join(s3_url[3:])
+                    if key.endswith("latest.json"):
+                        target = key
+                    else:
+                        target = ".".join(key.split(".")[0:-1])
+                    target_dir = target.replace("/latest.json", "")
+                    if not os.path.exists(target_dir):
+                        os.makedirs(target_dir)
+                    if not os.path.exists(target):
+                        with self.hub_client("s3") as s3:
+                            s3.download_file(Bucket=bucket, Key=key, Filename=target)
+            else:
+                print("CACHING WAS NOT YET RUN - going to run and then execute again", flush=True)
+                self.run()
+                self.execute()
+        else:
+            self.run()
+
     def get_processing_time_details(self):
         task_details = dict(**self.param_kwargs)
         task_details.update(self.params_for_results_display())

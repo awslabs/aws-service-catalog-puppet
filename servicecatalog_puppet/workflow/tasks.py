@@ -7,7 +7,6 @@ from datetime import datetime
 from pathlib import Path
 
 import luigi
-import psutil
 from betterboto import client as betterboto_client
 from luigi import format
 from luigi.contrib import s3
@@ -281,9 +280,12 @@ class PuppetTask(luigi.Task):
                 f.write(b"{}")
 
     def write_output(self, content):
-        with self.output().open("wb") as f:
-            print(type(f))
-            f.write(serialisation_utils.json_dumps(content))
+        if self.should_use_caching:
+            with self.output().open("w") as f:
+                f.write(serialisation_utils.json_dumps(content).decode("utf-8"))
+        else:
+            with self.output().open("wb") as f:
+                f.write(serialisation_utils.json_dumps(content))
 
     @property
     def node_id(self):

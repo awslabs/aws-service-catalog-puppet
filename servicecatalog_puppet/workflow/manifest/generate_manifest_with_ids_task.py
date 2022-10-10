@@ -6,7 +6,6 @@ import os
 import zipfile
 
 from servicecatalog_puppet.workflow.dependencies import tasks
-from luigi.contrib.s3 import S3Target
 
 
 class GenerateManifestWithIdsTask(tasks.TaskWithReference):
@@ -16,28 +15,7 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    def download_all_cached_tasks_outputs(self):
-        for task_reference, output in (
-            self.input().get("reference_dependencies", {}).items()
-        ):
-            if isinstance(output, S3Target):
-                s3_url = output.path.split("/")
-                bucket = s3_url[2]
-                key = "/".join(s3_url[3:])
-                if key.endswith("latest.json"):
-                    target = key
-                else:
-                    target = ".".join(key.split(".")[0:-1])
-                target_dir = target.replace("/latest.json", "")
-                if not os.path.exists(target_dir):
-                    os.makedirs(target_dir)
-                if not os.path.exists(target):
-                    with self.hub_client("s3") as s3:
-                        s3.download_file(Bucket=bucket, Key=key, Filename=target)
-
     def run(self):
-        self.download_all_cached_tasks_outputs()
-
         bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
 
         with zipfile.ZipFile(

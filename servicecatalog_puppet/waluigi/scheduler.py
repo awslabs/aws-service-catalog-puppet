@@ -141,7 +141,8 @@ def worker_task(
                     task.on_task_start()
                     start = time.time()
                     try:
-                        task.run()
+                        print("CHECKER:", task_reference, task.output(), task.complete())
+                        task.execute()
                     except Exception as e:
                         end = time.time()
                         duration = end - start
@@ -180,7 +181,7 @@ def worker_task(
     print_utils.echo(f"{pid} Worker shutting down")
 
 
-def scheduler(
+def scheduler_task(
         num_workers,
         task_queue,
         results_queue,
@@ -190,56 +191,50 @@ def scheduler(
     number_of_target_tasks_in_flight = num_workers
     workers_are_needed = True
     while workers_are_needed:
-        print("the top loop")
         dag = build_the_dag(tasks_to_run)
         generations = list(nx.topological_generations(dag))
-        print(f"generations are {generations}", flush=True)
         if not generations:
-            print("no generations found", flush=True)
+            print_utils.echo("Scheduler: No more batches to run")
             workers_are_needed = False
             continue
 
         current_generation = list(generations[-1]) # may need to make list
-        print(f"current_generation is {current_generation}", flush=True)
         number_of_tasks_in_flight = 0
         number_of_tasks_processed = 0
         number_of_tasks_in_generation = len(current_generation)
         current_generation_in_progress = True
 
         while current_generation_in_progress:
-            print("Starting a new generation", flush=True)
+            print_utils.echo("Scheduler: starting batch")
             # start each iteration by checking if the queue has enough jobs in it
             while current_generation and number_of_tasks_in_flight < number_of_target_tasks_in_flight:
-                print("generation has tasks and not enough tasks in flight", flush=True)
                 # there are enough jobs in the queue
                 number_of_tasks_in_flight += 1
                 task_to_run_reference = current_generation.pop()
-                print_utils.echo(f"scheduler sending: {task_to_run_reference}")
+                print_utils.echo(f"Scheduler: sending: {task_to_run_reference}")
                 task_queue.put(task_to_run_reference)
 
-            print("consuming tasks from workers now", flush=True)
             # now handle a complete jobs from the workers
             task_reference, result = results_queue.get()
             if task_reference:
                 number_of_tasks_in_flight -= 1
-                print_utils.echo(f"scheduler receiving: {task_reference}, {result}")
                 number_of_tasks_processed += 1
+                print_utils.echo(f"Scheduler: receiving: [{number_of_tasks_processed}]: {task_reference}, {result}")
                 tasks_to_run[task_reference][QUEUE_STATUS] = result
 
             if not current_generation: # queue now empty - wait for all to complete
-                print("all tasks have been queued", flush=True)
+                print_utils.echo("Scheduler: all tasks now scheduled")
                 while number_of_tasks_processed < number_of_tasks_in_generation:
-                    print("need to wait for another task to finish", flush=True)
                     task_reference, result = results_queue.get()
                     if task_reference:
                         number_of_tasks_in_flight -= 1
-                        print_utils.echo(f"scheduler receiving: {task_reference}, {result}")
                         number_of_tasks_processed += 1
+                        print_utils.echo(f"Scheduler: receiving: [{number_of_tasks_processed}]: {task_reference}, {result}")
                         tasks_to_run[task_reference][QUEUE_STATUS] = result
                 else:
                     current_generation_in_progress = False
-                    print("finished waiting for all tasks in current generation", flush=True)
-    print("everything is finished")
+                    print_utils.echo("Scheduler: finished batch")
+    print_utils.echo("Scheduler: finished all batches")
     control_queue.put(SHUTDOWN)
 
 
@@ -334,7 +329,7 @@ def run(
     ]
     processes.append(
         multiprocessing.Process(
-            target=scheduler,
+            target=scheduler_task,
             args=(
                 num_workers,
                 task_queue,
