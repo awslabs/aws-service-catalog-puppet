@@ -79,6 +79,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
             accounts_to_share_with[a.get("account_id")] = True
 
     all_tasks[constants.CREATE_POLICIES] = dict(
+        execution=constants.EXECUTION_MODE_HUB,
         manifest_section_names=dict(),
         manifest_item_names=dict(),
         account_id=puppet_account_id,
@@ -1711,26 +1712,12 @@ def deploy_from_task_reference(path):
             if (
                 task.get("account_id") == single_account_id
                 and task.get("section_name") != constants.RUN_DEPLOY_IN_SPOKE
+                and task.get("section_name") != constants.CREATE_POLICIES
             ):
                 tasks_to_run_filtered[task_reference] = task
-                # tasks_to_run.append(
-                #     task_factory.create(
-                #         manifest_files_path=path,
-                #         manifest_task_reference_file_path=f,
-                #         puppet_account_id=puppet_account_id,
-                #         parameters_to_use=task,
-                #     )
-                # )
+                task["dependencies_by_reference"] = [d for d in task.get("dependencies_by_reference", []) if all_tasks.get(d).get("section_name") != constants.CREATE_POLICIES]
         else:
             tasks_to_run_filtered[task_reference] = task
-            # tasks_to_run.append(
-            #     task_factory.create(
-            #         manifest_files_path=path,
-            #         manifest_task_reference_file_path=f,
-            #         puppet_account_id=puppet_account_id,
-            #         parameters_to_use=task,
-            #     )
-            # )
 
     executor_account_id = config.get_executor_account_id()
     is_dry_run = is_list_launches = False
