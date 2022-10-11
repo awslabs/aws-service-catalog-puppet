@@ -115,13 +115,6 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
                         "runtime-versions": dict(python=3.7),
                         "commands": ["echo $VERSION", install_command],
                     },
-                    pre_build=dict(
-                        commands=[
-                            "echo '[core]' > luigi.cfg",
-                            "echo 'parallel_scheduling=true' >> luigi.cfg",
-                            "echo 'parallel_scheduling_processes=20' >> luigi.cfg",
-                        ]
-                    ),
                     build=dict(
                         commands=[
                             "curl $TASK_REFERENCE_URL > manifest-task-reference.json",

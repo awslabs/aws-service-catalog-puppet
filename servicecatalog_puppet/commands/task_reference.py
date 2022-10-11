@@ -1645,53 +1645,20 @@ def generate_hub_task_reference(puppet_account_id, all_tasks, output_file_path):
     return result
 
 
-def generate_overridden_task_reference(
-    puppet_account_id, overrides, all_tasks, output_file_path
-):
-    if not overrides.get("single_account"):
-        # open(output_file_path, "w").write(serialisation_utils.dump(all_tasks))
-        open(output_file_path, "w").write(serialisation_utils.dump_as_json(all_tasks))
-        return all_tasks
-
-    single_account = str(overrides.get("single_account"))
-    overridden_tasks = dict()
-    for task_name, task in all_tasks.get("all_tasks").items():
-        if single_account:
-            if (
-                task.get("manifest_account_ids").get(single_account)
-                or task.get("manifest_account_ids").get(int(single_account))
-                or task.get("manifest_account_ids").get(str(puppet_account_id))
-                or task.get("manifest_account_ids").get(int(puppet_account_id))
-            ):
-                overridden_tasks[task_name] = task
-
-    result = dict(all_tasks=overridden_tasks)
-    ensure_no_cyclic_dependencies("overridden task reference", overridden_tasks)
-    # open(output_file_path, "w").write(serialisation_utils.dump(result))
-    open(output_file_path, "w").write(serialisation_utils.dump_as_json(result))
-    return result
-
-
-def generate_task_reference(f, overrides):
+def generate_task_reference(f):
     path = os.path.dirname(f.name)
     puppet_account_id = config.get_puppet_account_id()
 
     content = open(f.name, "r").read()
     manifest = manifest_utils.Manifest(serialisation_utils.load(content))
-    complete = generate_complete_task_reference(
+    complete = generate_complete_task_reference( # hub and spokes
         puppet_account_id,
         manifest,
         f.name.replace("-expanded.yaml", "-task-reference-full.json"),
     )
-    filtered = generate_overridden_task_reference(  # hub + all spokes
-        puppet_account_id,
-        overrides,
-        complete,
-        f.name.replace("-expanded.yaml", "-task-reference-filtered.json"),
-    )
     hub_tasks = generate_hub_task_reference(  # hub only
         puppet_account_id,
-        filtered,
+        complete,
         f.name.replace("-expanded.yaml", "-task-reference.json"),
     )
     task_output_path = f"{path}/tasks"

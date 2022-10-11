@@ -899,15 +899,12 @@ def get_template(
             pre_build={
                 "commands": [
                     "servicecatalog-puppet --info expand --parameter-override-file $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml manifest.yaml",
-                    "servicecatalog-puppet --info generate-task-reference --parameter-override-file $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml  $PWD/manifest-expanded.yaml",
-                    'echo "[core]" > luigi.cfg',
-                    'echo "parallel_scheduling=true" >> luigi.cfg',
-                    'echo "parallel_scheduling_processes=10" >> luigi.cfg',
+                    "servicecatalog-puppet --info generate-task-reference $PWD/manifest-expanded.yaml",
                 ]
             },
             build={
                 "commands": [
-                    "servicecatalog-puppet --info deploy-from-task-reference --num-workers ${NUM_WORKERS} .",
+                    "servicecatalog-puppet --info deploy-from-task-reference --parameter-override-file $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml --num-workers ${NUM_WORKERS} .",
                 ]
             },
         ),

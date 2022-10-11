@@ -60,7 +60,7 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
 
     def get_signed_url_for_task_reference(self, bucket, s3):
         task_reference_content = open(
-            self.manifest_task_reference_file_path.replace(".json", "-filtered.json"),
+            self.manifest_task_reference_file_path.replace(".json", "-full.json"),
             "r",
         ).read()
         key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-reference.json"
