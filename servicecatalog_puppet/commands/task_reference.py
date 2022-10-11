@@ -1667,13 +1667,13 @@ def generate_task_reference(f, overrides):
         manifest,
         f.name.replace("-expanded.yaml", "-task-reference-full.json"),
     )
-    filtered = generate_overridden_task_reference(
+    filtered = generate_overridden_task_reference( # hub + all spokes
         puppet_account_id,
         overrides,
         complete,
         f.name.replace("-expanded.yaml", "-task-reference-filtered.json"),
     )
-    hub_tasks = generate_hub_task_reference(
+    hub_tasks = generate_hub_task_reference( # hub only
         puppet_account_id,
         filtered,
         f.name.replace("-expanded.yaml", "-task-reference.json"),
@@ -1712,10 +1712,8 @@ def deploy_from_task_reference(path):
             if (
                 task.get("account_id") == single_account_id
                 and task.get("section_name") != constants.RUN_DEPLOY_IN_SPOKE
-                and task.get("section_name") != constants.CREATE_POLICIES
             ):
                 tasks_to_run_filtered[task_reference] = task
-                task["dependencies_by_reference"] = [d for d in task.get("dependencies_by_reference", []) if all_tasks.get(d).get("section_name") != constants.CREATE_POLICIES]
         else:
             tasks_to_run_filtered[task_reference] = task
 

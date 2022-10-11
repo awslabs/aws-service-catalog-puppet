@@ -102,7 +102,8 @@ class WaluigiTaskMixin:
                 self.run()
                 self.execute()
         else:
-            self.run()
+            if not self.complete():
+                self.run()
 
     def get_processing_time_details(self):
         task_details = dict(**self.param_kwargs)
