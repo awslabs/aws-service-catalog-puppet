@@ -102,7 +102,9 @@ class WaluigiTaskMixin:
                 self.run()
                 self.execute()
         else:
+            print(f"checking if {self.task_reference} is complete: {self.complete()}")
             if not self.complete():
+                print("running!")
                 self.run()
 
     def get_processing_time_details(self):
