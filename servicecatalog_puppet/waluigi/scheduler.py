@@ -37,7 +37,10 @@ def build_the_dag(tasks_to_run):
             [(uid, task), ]
         )
         for duid in task.get("dependencies_by_reference", []):
-            g.add_edge(uid, duid)
+            if tasks_to_run.get(duid):
+                g.add_edge(uid, duid)
+            else:
+                print_utils.warn(f"{duid} is not in the task reference - this is fine when running in spoke execution mode and when the task was executed within the hub")
 
     for uid, task in tasks_to_run.items():
         if task.get(QUEUE_STATUS, NOT_SET) == COMPLETED:
