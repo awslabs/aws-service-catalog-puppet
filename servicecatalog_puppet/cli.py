@@ -383,6 +383,9 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
         if subset.get("single_account"):
             del subset["single_account"]
 
+        if overrides.get("single_account"):
+            del overrides["single_account"]
+
         extra_params = dict(
             single_account=overrides.get("single_account"), subset=subset
         )
