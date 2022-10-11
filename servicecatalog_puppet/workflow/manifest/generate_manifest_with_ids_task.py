@@ -25,6 +25,8 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
             files.extend(glob.glob(f"output/*/**", recursive=True))
             for filename in files:
                 zip.write(filename, filename)
+            for f in glob.glob(f"{self.manifest_files_path}/tasks/*"):
+                zip.write(f, f"tasks/{os.path.basename(f)}")
 
         with self.hub_client("s3") as s3:
             key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-cached-output.zip"
