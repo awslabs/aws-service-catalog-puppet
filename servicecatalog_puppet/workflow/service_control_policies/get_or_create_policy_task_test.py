@@ -17,9 +17,9 @@ class GetOrCreatePolicyTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     manifest_file_path = "manifest_file_path"
     manifest_task_reference_file_path = "manifest_task_reference_file_path"
-    task_reference="task_reference"
-    dependencies_by_reference=[]
-    account_id='account_id'
+    task_reference = "task_reference"
+    dependencies_by_reference = []
+    account_id = "account_id"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.service_control_policies import (

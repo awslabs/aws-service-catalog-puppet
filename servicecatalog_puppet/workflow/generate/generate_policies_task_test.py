@@ -11,7 +11,7 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     region = "region"
     sharing_policies = {}
-    account_id= "account_id"
+    account_id = "account_id"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.generate import generate_policies_task

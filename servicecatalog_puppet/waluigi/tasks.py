@@ -80,9 +80,8 @@ class WaluigiTaskMixin:
         print("CACHING execute the task beginning", flush=True)
         if self.should_use_caching:
             if self.complete():
-                print("CACHING WAS RUN BEFORE - going to download the file from the cache", flush=True)
                 for task_reference, output in (
-                        self.input().get("reference_dependencies", {}).items()
+                    self.input().get("reference_dependencies", {}).items()
                 ):
                     s3_url = output.path.split("/")
                     bucket = s3_url[2]
@@ -98,13 +97,10 @@ class WaluigiTaskMixin:
                         with self.hub_client("s3") as s3:
                             s3.download_file(Bucket=bucket, Key=key, Filename=target)
             else:
-                print("CACHING WAS NOT YET RUN - going to run and then execute again", flush=True)
                 self.run()
                 self.execute()
         else:
-            print(f"checking if {self.task_reference} is complete: {self.complete()}")
             if not self.complete():
-                print("running!")
                 self.run()
 
     def get_processing_time_details(self):

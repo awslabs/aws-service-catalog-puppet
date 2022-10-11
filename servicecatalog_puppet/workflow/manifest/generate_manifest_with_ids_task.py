@@ -76,8 +76,7 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
 
     def get_signed_url_for_manifest(self, bucket, s3):
         task_reference_content = open(
-            f"{self.manifest_files_path}/manifest-expanded.yaml",
-            "r",
+            f"{self.manifest_files_path}/manifest-expanded.yaml", "r",
         ).read()
         key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-manifest.yaml"
         self.debug(f"Uploading manifest {key} to {bucket}")

@@ -13,7 +13,6 @@ from servicecatalog_puppet.workflow.stack import provision_stack_task
 
 
 class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
-
     def write_result(
         self, current_version, new_version, effect, current_status, active, notes=""
     ):

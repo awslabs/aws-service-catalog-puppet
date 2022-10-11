@@ -42,7 +42,6 @@ class ProvisionDryRunWorkspaceTask(tasks.TaskWithParameters):
             "cache_invalidator": self.cache_invalidator,
         }
 
-
     def run(self):
         with self.hub_client("s3") as s3:
             options = (

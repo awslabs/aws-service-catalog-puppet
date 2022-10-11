@@ -23,7 +23,6 @@ class TerminateAssociationTask(tasks.TaskWithReference):
             "account_id": self.account_id,
         }
 
-
     def run(self):
         portfolio_details = self.get_output_from_reference_dependency(
             self.portfolio_task_reference

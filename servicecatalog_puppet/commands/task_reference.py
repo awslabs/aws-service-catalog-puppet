@@ -633,22 +633,20 @@ def handle_stacks(
     task_reference,
     task_to_add,
 ):
-    prepare_task_reference = f"{constants.PREPARE_ACCOUNT_FOR_STACKS}-{task_to_add.get('account_id')}"
+    prepare_task_reference = (
+        f"{constants.PREPARE_ACCOUNT_FOR_STACKS}-{task_to_add.get('account_id')}"
+    )
     if not all_tasks.get(prepare_task_reference):
         all_tasks[prepare_task_reference] = dict(
             task_reference=prepare_task_reference,
-
-            account_id=task_to_add.get('account_id'),
+            account_id=task_to_add.get("account_id"),
             region=constants.HOME_REGION,
             puppet_account_id=puppet_account_id,
-
             dependencies_by_reference=[constants.CREATE_POLICIES],
             reverse_dependencies_by_reference=list(),
-
             manifest_section_names=dict(),
             manifest_item_names=dict(),
             manifest_account_ids=dict(),
-
             section_name=constants.PREPARE_ACCOUNT_FOR_STACKS,
         )
     all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
@@ -943,7 +941,10 @@ def handle_spoke_local_portfolios(
                 puppet_account_id=puppet_account_id,
                 task_reference=spoke_portfolio_puppet_association_ref,
                 portfolio_task_reference=spoke_portfolio_ref,
-                dependencies_by_reference=[spoke_portfolio_ref, constants.CREATE_POLICIES],
+                dependencies_by_reference=[
+                    spoke_portfolio_ref,
+                    constants.CREATE_POLICIES,
+                ],
                 reverse_dependencies_by_reference=[],
                 account_id=task_to_add.get("account_id"),
                 region=task_to_add.get("region"),
@@ -977,7 +978,10 @@ def handle_spoke_local_portfolios(
                     puppet_account_id=puppet_account_id,
                     task_reference=spoke_portfolio_puppet_association_ref,
                     portfolio_task_reference=all_tasks_task_reference,
-                    dependencies_by_reference=[all_tasks_task_reference, constants.CREATE_POLICIES],
+                    dependencies_by_reference=[
+                        all_tasks_task_reference,
+                        constants.CREATE_POLICIES,
+                    ],
                     reverse_dependencies_by_reference=[],
                     account_id=task_to_add.get("account_id"),
                     region=task_to_add.get("region"),
@@ -1068,7 +1072,10 @@ def handle_spoke_local_portfolios(
                     puppet_account_id=puppet_account_id,
                     task_reference=hub_portfolio_puppet_association_ref,
                     portfolio_task_reference=hub_portfolio_ref,
-                    dependencies_by_reference=[hub_portfolio_ref, constants.CREATE_POLICIES],
+                    dependencies_by_reference=[
+                        hub_portfolio_ref,
+                        constants.CREATE_POLICIES,
+                    ],
                     reverse_dependencies_by_reference=[],
                     account_id=puppet_account_id,
                     region=task_to_add.get("region"),
@@ -1106,7 +1113,10 @@ def handle_spoke_local_portfolios(
                     account_id=task_to_add.get("account_id"),
                     region=task_to_add.get("region"),
                     task_reference=share_and_accept_ref,
-                    dependencies_by_reference=[hub_portfolio_ref, constants.CREATE_POLICIES],
+                    dependencies_by_reference=[
+                        hub_portfolio_ref,
+                        constants.CREATE_POLICIES,
+                    ],
                     reverse_dependencies_by_reference=[],
                     portfolio=task_to_add.get("portfolio"),
                     execution=task_to_add.get("execution"),
@@ -1164,7 +1174,10 @@ def handle_spoke_local_portfolios(
                     puppet_account_id=puppet_account_id,
                     task_reference=spoke_portfolio_puppet_association_ref,
                     portfolio_task_reference=all_tasks_task_reference,
-                    dependencies_by_reference=[all_tasks_task_reference, constants.CREATE_POLICIES],
+                    dependencies_by_reference=[
+                        all_tasks_task_reference,
+                        constants.CREATE_POLICIES,
+                    ],
                     reverse_dependencies_by_reference=[],
                     account_id=task_to_add.get("account_id"),
                     region=task_to_add.get("region"),
@@ -1290,7 +1303,7 @@ def handle_spoke_local_portfolios(
             ].update(task_to_add.get("manifest_account_ids"))
             dependencies_for_constraints.append(
                 spoke_portfolio_all_products_and_versions_after_ref,
-                constants.CREATE_POLICIES
+                constants.CREATE_POLICIES,
             )
 
         if task_to_add.get("launch_constraints"):
@@ -1391,7 +1404,10 @@ def handle_launches(
                 account_id=task_to_add.get("account_id"),
                 region=task_to_add.get("region"),
                 task_reference=share_and_accept_ref,
-                dependencies_by_reference=[hub_portfolio_ref, constants.CREATE_POLICIES],
+                dependencies_by_reference=[
+                    hub_portfolio_ref,
+                    constants.CREATE_POLICIES,
+                ],
                 reverse_dependencies_by_reference=[],
                 portfolio=task_to_add.get("portfolio"),
                 execution=task_to_add.get("execution"),
@@ -1667,13 +1683,13 @@ def generate_task_reference(f, overrides):
         manifest,
         f.name.replace("-expanded.yaml", "-task-reference-full.json"),
     )
-    filtered = generate_overridden_task_reference( # hub + all spokes
+    filtered = generate_overridden_task_reference(  # hub + all spokes
         puppet_account_id,
         overrides,
         complete,
         f.name.replace("-expanded.yaml", "-task-reference-filtered.json"),
     )
-    hub_tasks = generate_hub_task_reference( # hub only
+    hub_tasks = generate_hub_task_reference(  # hub only
         puppet_account_id,
         filtered,
         f.name.replace("-expanded.yaml", "-task-reference.json"),
@@ -1681,6 +1697,12 @@ def generate_task_reference(f, overrides):
     task_output_path = f"{path}/tasks"
     if not os.path.exists(task_output_path):
         os.makedirs(task_output_path)
+
+    for t_name, task in complete.get("all_tasks", {}).items():
+        task_output_file_path = f"{task_output_path}/{graph.escape(t_name)}.json"
+        task_output_content = serialisation_utils.dump_as_json(task)
+        open(task_output_file_path, "w").write(task_output_content)
+
     for t_name, task in hub_tasks.get("all_tasks", {}).items():
         task_output_file_path = f"{task_output_path}/{graph.escape(t_name)}.json"
         task_output_content = serialisation_utils.dump_as_json(task)
@@ -1709,10 +1731,26 @@ def deploy_from_task_reference(path):
                 del task[a]
 
         if single_account_id:
-            if (
-                task.get("account_id") == single_account_id
-                and task.get("section_name") != constants.RUN_DEPLOY_IN_SPOKE
-            ):
+            task_section_name = task.get("section_name")
+            task_account_id = task.get("account_id")
+            if str(config.get_executor_account_id()) != str(
+                puppet_account_id
+            ):  # SPOKE EXECUTION
+                if (
+                    task_account_id == single_account_id
+                    and task_section_name != constants.RUN_DEPLOY_IN_SPOKE
+                ):
+                    tasks_to_run_filtered[task_reference] = task
+
+            else:  # HUB EXECUTION
+                print(task.get("task_reference"))
+
+                if task.get("task_reference") == constants.CREATE_POLICIES:
+                    continue
+
+                if task_account_id and str(task_account_id) not in [str(single_account_id), str(puppet_account_id)]:
+                    continue
+
                 tasks_to_run_filtered[task_reference] = task
         else:
             tasks_to_run_filtered[task_reference] = task

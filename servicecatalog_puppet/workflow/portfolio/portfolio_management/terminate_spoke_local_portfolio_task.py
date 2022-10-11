@@ -22,7 +22,6 @@ class TerminateSpokeLocalPortfolioTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-
     def run(self):
         with self.spoke_regional_client("servicecatalog") as servicecatalog:
             if self.puppet_account_id == self.account_id:

@@ -25,7 +25,6 @@ class GetOrCreatePolicyTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-
     def run(self):
         with self.organizations_policy_client() as orgs:
             if self.policy_content.get("default") is not None:

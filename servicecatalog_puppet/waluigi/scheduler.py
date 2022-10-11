@@ -34,13 +34,15 @@ def build_the_dag(tasks_to_run):
     print("-- BUILDING THE DAG!!!")
     for uid, task in tasks_to_run.items():
         g.add_nodes_from(
-            [(uid, task), ]
+            [(uid, task),]
         )
         for duid in task.get("dependencies_by_reference", []):
             if tasks_to_run.get(duid):
                 g.add_edge(uid, duid)
             else:
-                print_utils.warn(f"{duid} is not in the task reference - this is fine when running in spoke execution mode and when the task was executed within the hub")
+                print_utils.warn(
+                    f"{duid} is not in the task reference - this is fine when running in spoke execution mode and when the task was executed within the hub"
+                )
 
     for uid, task in tasks_to_run.items():
         if task.get(QUEUE_STATUS, NOT_SET) == COMPLETED:
@@ -50,7 +52,9 @@ def build_the_dag(tasks_to_run):
                 pass
 
         elif task.get(QUEUE_STATUS, NOT_SET) == ERRORED:
-            print(f"looking at task {uid} with status {task.get(QUEUE_STATUS, NOT_SET)}")
+            print(
+                f"looking at task {uid} with status {task.get(QUEUE_STATUS, NOT_SET)}"
+            )
             for n in nx.ancestors(g, uid):
                 try:
                     g.remove_node(n)
@@ -76,7 +80,9 @@ def are_resources_are_free_for_task(task_parameters, resources_file_path):
     )
 
 
-def lock_resources_for_task(task_reference, task_parameters, resources_in_use, resources_file_path):
+def lock_resources_for_task(
+    task_reference, task_parameters, resources_in_use, resources_file_path
+):
     print(f"Worker locking {task_reference}")
     for r in task_parameters.get(RESOURCES_REQUIRED, []):
         resources_in_use[r] = task_reference
@@ -91,21 +97,23 @@ def unlock_resources_for_task(task_parameters, resources_file_path):
         try:
             del resources_in_use[r]
         except KeyError:
-            print_utils.warn(f"{task_parameters.get('task_reference')} tried to unlock {r} but it wasn't present")
+            print_utils.warn(
+                f"{task_parameters.get('task_reference')} tried to unlock {r} but it wasn't present"
+            )
     with open(resources_file_path, "wb") as f:
         f.write(serialisation_utils.json_dumps(resources_in_use))
 
 
 def worker_task(
-        lock,
-        task_queue,
-        results_queue,
-        task_processing_time_queue,
-        tasks_to_run,
-        manifest_files_path,
-        manifest_task_reference_file_path,
-        puppet_account_id,
-        resources_file_path,
+    lock,
+    task_queue,
+    results_queue,
+    task_processing_time_queue,
+    tasks_to_run,
+    manifest_files_path,
+    manifest_task_reference_file_path,
+    puppet_account_id,
+    resources_file_path,
 ):
     pid = os.getpid()
 
@@ -116,25 +124,39 @@ def worker_task(
         if task_reference:
             result = False
             while not result:
-                print(f"{pid} Worker received {task_reference} waiting for lock", flush=True)
+                # print(
+                #     f"{pid} Worker received {task_reference} waiting for lock",
+                #     flush=True,
+                # )
                 task_parameters = tasks_to_run.get(task_reference)
-                print(f"{pid} Worker received {task_reference} waiting for lock and the task is {task_parameters}", flush=True)
+                # print(
+                #     f"{pid} Worker received {task_reference} waiting for lock and the task is {task_parameters}",
+                #     flush=True,
+                # )
 
                 with lock:
-                    print(f"{pid} Worker {task_reference} got the lock", flush=True)
+                    # print(f"{pid} Worker {task_reference} got the lock", flush=True)
                     (
                         resources_are_free,
                         resources_in_use,
-                    ) = are_resources_are_free_for_task(task_parameters, resources_file_path)
-                    print(f"{pid} Worker {task_reference} resources_are_free: {resources_are_free}", flush=True)
+                    ) = are_resources_are_free_for_task(
+                        task_parameters, resources_file_path
+                    )
+                    # print(
+                    #     f"{pid} Worker {task_reference} resources_are_free: {resources_are_free}",
+                    #     flush=True,
+                    # )
                     if resources_are_free:
                         lock_resources_for_task(
-                            task_reference, task_parameters, resources_in_use, resources_file_path
+                            task_reference,
+                            task_parameters,
+                            resources_in_use,
+                            resources_file_path,
                         )
-                        print(f"{pid} Worker {task_reference} locked", flush=True)
+                        # print(f"{pid} Worker {task_reference} locked", flush=True)
 
                 if resources_are_free:
-                    print(f"{pid} Worker about to run {task_reference}", flush=True)
+                    # print(f"{pid} Worker about to run {task_reference}", flush=True)
                     task = task_factory.create(
                         manifest_files_path=manifest_files_path,
                         manifest_task_reference_file_path=manifest_task_reference_file_path,
@@ -145,7 +167,6 @@ def worker_task(
                     task.on_task_start()
                     start = time.time()
                     try:
-                        print("CHECKER:", task_reference, task.output(), task.complete())
                         task.execute()
                     except Exception as e:
                         end = time.time()
@@ -154,13 +175,13 @@ def worker_task(
                         print_utils.error(
                             f"{pid} Worker executed task [failure]: {task_reference} failures: {e}"
                         )
-                        print_utils.error("---- START OF ERROR----")
+                        print_utils.error(f"{pid} ---- START OF ERROR----")
                         for l in traceback.format_exception(
-                                etype=type(e), value=e, tb=e.__traceback__,
+                            etype=type(e), value=e, tb=e.__traceback__,
                         ):
                             for sl in l.split("\n"):
-                                print_utils.error(f"ERROR:\t{sl}")
-                        print_utils.error("---- END OF ERROR ----")
+                                print_utils.error(f"{pid} ERROR:\t{sl}")
+                        print_utils.error(f"{pid} ---- END OF ERROR ----")
                         task.on_task_failure(e, duration)
                     else:
                         end = time.time()
@@ -175,7 +196,8 @@ def worker_task(
                     # print(f"{pid} Worker {task_reference} waiting for lock to unlock resources", flush=True)
                     with lock:
                         print_utils.echo(
-                            f"{pid} Worker executed task [success]: {task_reference} got lock to unlock resources")
+                            f"{pid} Worker executed task [success]: {task_reference} got lock to unlock resources"
+                        )
                         unlock_resources_for_task(task_parameters, resources_file_path)
                         results_queue.put((task_reference, result))
                 else:
@@ -186,11 +208,7 @@ def worker_task(
 
 
 def scheduler_task(
-        num_workers,
-        task_queue,
-        results_queue,
-        control_queue,
-        tasks_to_run,
+    num_workers, task_queue, results_queue, control_queue, tasks_to_run,
 ):
     number_of_target_tasks_in_flight = num_workers
     workers_are_needed = True
@@ -202,7 +220,7 @@ def scheduler_task(
             workers_are_needed = False
             continue
 
-        current_generation = list(generations[-1]) # may need to make list
+        current_generation = list(generations[-1])  # may need to make list
         number_of_tasks_in_flight = 0
         number_of_tasks_processed = 0
         number_of_tasks_in_generation = len(current_generation)
@@ -211,7 +229,10 @@ def scheduler_task(
         while current_generation_in_progress:
             print_utils.echo("Scheduler: starting batch")
             # start each iteration by checking if the queue has enough jobs in it
-            while current_generation and number_of_tasks_in_flight < number_of_target_tasks_in_flight:
+            while (
+                current_generation
+                and number_of_tasks_in_flight < number_of_target_tasks_in_flight
+            ):
                 # there are enough jobs in the queue
                 number_of_tasks_in_flight += 1
                 task_to_run_reference = current_generation.pop()
@@ -223,17 +244,21 @@ def scheduler_task(
             if task_reference:
                 number_of_tasks_in_flight -= 1
                 number_of_tasks_processed += 1
-                print_utils.echo(f"Scheduler: receiving: [{number_of_tasks_processed}]: {task_reference}, {result}")
+                print_utils.echo(
+                    f"Scheduler: receiving: [{number_of_tasks_processed}]: {task_reference}, {result}"
+                )
                 tasks_to_run[task_reference][QUEUE_STATUS] = result
 
-            if not current_generation: # queue now empty - wait for all to complete
+            if not current_generation:  # queue now empty - wait for all to complete
                 print_utils.echo("Scheduler: all tasks now scheduled")
                 while number_of_tasks_processed < number_of_tasks_in_generation:
                     task_reference, result = results_queue.get()
                     if task_reference:
                         number_of_tasks_in_flight -= 1
                         number_of_tasks_processed += 1
-                        print_utils.echo(f"Scheduler: receiving: [{number_of_tasks_processed}]: {task_reference}, {result}")
+                        print_utils.echo(
+                            f"Scheduler: receiving: [{number_of_tasks_processed}]: {task_reference}, {result}"
+                        )
                         tasks_to_run[task_reference][QUEUE_STATUS] = result
                 else:
                     current_generation_in_progress = False
@@ -244,9 +269,9 @@ def scheduler_task(
 
 def on_task_processing_time(task_processing_time_queue):
     with betterboto_client.CrossAccountClientContextManager(
-            "cloudwatch",
-            config.get_puppet_role_arn(config.get_executor_account_id()),
-            "cloudwatch-puppethub",
+        "cloudwatch",
+        config.get_puppet_role_arn(config.get_executor_account_id()),
+        "cloudwatch-puppethub",
     ) as cloudwatch:
         while True:
             time.sleep(0.1)
@@ -280,9 +305,7 @@ def on_task_processing_time(task_processing_time_queue):
                     MetricData=[
                         dict(
                             MetricName="Tasks",
-                            Dimensions=[
-                                dict(Name="TaskType", Value=task_type)
-                            ]
+                            Dimensions=[dict(Name="TaskType", Value=task_type)]
                             + dimensions,
                             Value=duration,
                             Unit="Seconds",
@@ -292,11 +315,11 @@ def on_task_processing_time(task_processing_time_queue):
 
 
 def run(
-        num_workers,
-        tasks_to_run,
-        manifest_files_path,
-        manifest_task_reference_file_path,
-        puppet_account_id,
+    num_workers,
+    tasks_to_run,
+    manifest_files_path,
+    manifest_task_reference_file_path,
+    puppet_account_id,
 ):
     resources_file_path = f"{manifest_files_path}/resources.json"
     os.environ["SCT_START_TIME"] = str(time.time())
@@ -326,7 +349,7 @@ def run(
                 manifest_files_path,
                 manifest_task_reference_file_path,
                 puppet_account_id,
-                resources_file_path
+                resources_file_path,
             ),
         )
         for _ in range(num_workers)
@@ -334,21 +357,12 @@ def run(
     processes.append(
         multiprocessing.Process(
             target=scheduler_task,
-            args=(
-                num_workers,
-                task_queue,
-                results_queue,
-                control_queue,
-                tasks_to_run,
-            ),
+            args=(num_workers, task_queue, results_queue, control_queue, tasks_to_run,),
         )
     )
     processes.append(
         multiprocessing.Process(
-            target=on_task_processing_time,
-            args=(
-                task_processing_time_queue,
-            ),
+            target=on_task_processing_time, args=(task_processing_time_queue,),
         )
     )
     for process in processes:

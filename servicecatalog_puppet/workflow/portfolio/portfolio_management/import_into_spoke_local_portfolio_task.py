@@ -24,7 +24,6 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-
     def run(self):
         spoke_portfolio_details = self.get_output_from_reference_dependency(
             self.portfolio_task_reference

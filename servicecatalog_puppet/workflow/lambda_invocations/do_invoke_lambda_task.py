@@ -37,7 +37,6 @@ class DoInvokeLambdaTask(tasks.TaskWithParameters):
             "cache_invalidator": self.cache_invalidator,
         }
 
-
     def run(self):
         home_region = config.get_home_region(self.puppet_account_id)
         with self.hub_regional_client(

@@ -762,7 +762,9 @@ def create(
 
         return generate_policies_task.GeneratePolicies(
             **common_parameters,
-            organizations_to_share_with=parameters_to_use.get("organizations_to_share_with"),
+            organizations_to_share_with=parameters_to_use.get(
+                "organizations_to_share_with"
+            ),
             ous_to_share_with=parameters_to_use.get("ous_to_share_with"),
             accounts_to_share_with=parameters_to_use.get("accounts_to_share_with"),
         )

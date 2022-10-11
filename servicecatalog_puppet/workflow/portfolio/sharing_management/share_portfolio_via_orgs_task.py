@@ -23,7 +23,6 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
             "ou_to_share_with": self.ou_to_share_with,
         }
 
-
     def run(self):
         hub_portfolio_details = self.get_output_from_reference_dependency(
             self.portfolio_task_reference

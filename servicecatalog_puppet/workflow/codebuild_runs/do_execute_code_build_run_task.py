@@ -32,7 +32,6 @@ class DoExecuteCodeBuildRunTask(tasks.TaskWithParameters):
             "cache_invalidator": self.cache_invalidator,
         }
 
-
     def run(self):
         with self.hub_client("codebuild") as codebuild:
             provided_parameters = self.get_parameter_values()

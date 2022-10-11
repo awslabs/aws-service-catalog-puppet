@@ -40,7 +40,6 @@ class DisassociateProductsFromPortfolioTest(tasks_unit_tests_helper.PuppetTaskUn
         # verify
         self.assertEqual(expected_result, actual_result)
 
-
     @skip
     def test_run(self):
         # setup

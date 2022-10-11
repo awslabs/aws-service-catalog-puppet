@@ -68,7 +68,6 @@ class ProvisionStackTask(tasks.TaskWithParameters):
     def priority(self):
         return self.requested_priority
 
-
     @property
     @functools.lru_cache(maxsize=32)
     def stack_name_to_use(self):

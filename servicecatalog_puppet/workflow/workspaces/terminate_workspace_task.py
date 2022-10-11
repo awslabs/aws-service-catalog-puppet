@@ -12,7 +12,6 @@ from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-
 class TerminateWorkspaceTask(tasks.TaskWithParameters):
     workspace_name = luigi.Parameter()
     region = luigi.Parameter()

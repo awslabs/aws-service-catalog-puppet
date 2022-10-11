@@ -19,8 +19,6 @@ class ProvisionProductDryRunTask(provision_product_task.ProvisionProductTask):
     def output_location(self):
         return f"output/{self.uid}.{self.output_suffix}"
 
-
-
     def run(self):
         details = self.load_from_input("details")
         product_id = details.get("product_details").get("ProductId")

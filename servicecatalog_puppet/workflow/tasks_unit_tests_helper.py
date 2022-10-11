@@ -28,7 +28,7 @@ class FakeInput(object):
 class PuppetTaskUnitTest(unittest.TestCase):
     task_reference = "task_reference"
     puppet_account_id = "puppet_account_id"
-    manifest_file_path="manifest_file_path"
+    manifest_file_path = "manifest_file_path"
 
     def get_common_args(self):
         return dict(

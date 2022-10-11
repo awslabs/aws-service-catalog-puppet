@@ -21,7 +21,6 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
             "account_id": self.account_id,
         }
 
-
     def has_already_been_shared(self, portfolio_id):
         with self.hub_regional_client("servicecatalog") as servicecatalog:
             p = dict(PortfolioId=portfolio_id)

@@ -303,13 +303,17 @@ def run_tasks(
                 ["Action", "Params", "Duration"],
             ]
             table = terminaltables.AsciiTable(table_data)
-            for filename in glob("results/success/*.json") + glob("results/failure/*.json"):
+            for filename in glob("results/success/*.json") + glob(
+                "results/failure/*.json"
+            ):
                 result_contents = open(filename, "r").read()
                 result = serialisation_utils.json_loads(result_contents)
                 params = result.get("params_for_results")
                 if not params.get("task_reference"):
                     print(filename)
-                    params['task_reference'] = result.get("task_params").get("task_reference")
+                    params["task_reference"] = result.get("task_params").get(
+                        "task_reference"
+                    )
                 if should_use_eventbridge:
                     entries.append(
                         {

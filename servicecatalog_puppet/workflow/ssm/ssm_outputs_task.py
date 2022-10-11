@@ -6,7 +6,6 @@ from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-
 class SSMOutputsTasks(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     region = luigi.Parameter()

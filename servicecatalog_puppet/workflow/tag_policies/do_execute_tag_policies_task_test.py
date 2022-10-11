@@ -11,7 +11,7 @@ class DoExecuteTagPoliciesTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     description = "description"
     manifest_file_path = "manifest_file_path"
     requested_priority = 1
-    get_or_create_policy_ref="get_or_create_policy_ref"
+    get_or_create_policy_ref = "get_or_create_policy_ref"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.tag_policies import (
