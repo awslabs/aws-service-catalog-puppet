@@ -1,4 +1,5 @@
-import multiprocessing
+
+import queue
 import threading
 import time
 import traceback
@@ -328,16 +329,15 @@ def run(
 
     print_utils.echo(f"Running with {num_workers} processes!")
     start = time.time()
-    multiprocessing.set_start_method("forkserver")
-    lock = multiprocessing.Lock()
+    lock = threading.Lock()
 
     with open(resources_file_path, "w") as f:
         f.write("{}")
 
-    task_queue = multiprocessing.Queue()
-    results_queue = multiprocessing.Queue()
-    control_queue = multiprocessing.Queue()
-    task_processing_time_queue = multiprocessing.Queue()
+    task_queue = queue.Queue()
+    results_queue = queue.Queue()
+    control_queue = queue.Queue()
+    task_processing_time_queue = queue.Queue()
 
     processes = [
         threading.Thread(
