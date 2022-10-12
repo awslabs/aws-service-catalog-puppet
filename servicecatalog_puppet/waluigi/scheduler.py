@@ -239,7 +239,6 @@ def scheduler_task(
                 task_to_run_reference = current_generation.pop()
                 print_utils.echo(f"Scheduler: sending: {task_to_run_reference}")
                 task_queue.put(task_to_run_reference)
-                time.sleep(0.1)
 
             # now handle a complete jobs from the workers
             task_reference, result = results_queue.get()
@@ -250,7 +249,6 @@ def scheduler_task(
                     f"Scheduler: receiving: [{number_of_tasks_processed}]: {task_reference}, {result}"
                 )
                 tasks_to_run[task_reference][QUEUE_STATUS] = result
-                time.sleep(0.1)
 
             if not current_generation:  # queue now empty - wait for all to complete
                 print_utils.echo("Scheduler: all tasks now scheduled")
@@ -263,7 +261,6 @@ def scheduler_task(
                             f"Scheduler: receiving: [{number_of_tasks_processed}]: {task_reference}, {result}"
                         )
                         tasks_to_run[task_reference][QUEUE_STATUS] = result
-                    time.sleep(0.1)
                 else:
                     current_generation_in_progress = False
                     print_utils.echo("Scheduler: finished batch")
