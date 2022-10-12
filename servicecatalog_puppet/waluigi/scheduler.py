@@ -1,4 +1,5 @@
 import multiprocessing
+import threading
 import time
 import traceback
 
@@ -339,7 +340,7 @@ def run(
     task_processing_time_queue = multiprocessing.Queue()
 
     processes = [
-        multiprocessing.Process(
+        threading.Thread(
             target=worker_task,
             args=(
                 lock,
@@ -356,13 +357,13 @@ def run(
         for _ in range(num_workers)
     ]
     processes.append(
-        multiprocessing.Process(
+        threading.Thread(
             target=scheduler_task,
             args=(num_workers, task_queue, results_queue, control_queue, tasks_to_run,),
         )
     )
     processes.append(
-        multiprocessing.Process(
+        threading.Thread(
             target=on_task_processing_time, args=(task_processing_time_queue,),
         )
     )
@@ -373,14 +374,18 @@ def run(
     while processes_running:
         print("running some stuff")
         command = control_queue.get()
+        # if command == SHUTDOWN:
+            # print("SHOULD BE SHUTTINGN DOWN PROCESSES", flush=True)
+            # for process in processes:
+            #     process.terminate()
+            #     process.join(timeout=1)
+            #     process.close()
+            #     time.sleep(0.1)
+            #     processes_running -= 1
+            #     print(f"Process is closed: {processes_running}", flush=True)
+
         if command == SHUTDOWN:
-            print("SHOULD BE SHUTTINGN DOWN PROCESSES", flush=True)
-            for process in processes:
-                process.terminate()
-                process.join(timeout=1)
-                process.close()
-                time.sleep(0.1)
-                processes_running -= 1
-                print(f"Process is closed: {processes_running}", flush=True)
+            print_utils.echo(f"Time taken = {time.time() - start:.10f}")
+            return
 
     print_utils.echo(f"Time taken = {time.time() - start:.10f}")
