@@ -232,6 +232,7 @@ CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS = "should_delete_rollback_complete
 CONFIG_SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS_DEFAULT = False
 
 PUPPET_LOGGER_NAME = "puppet-logger"
+PUPPET_SCHEDULER_LOGGER_NAME = "puppet-logger-scheduler"
 
 SPOKE_EXECUTION_MODE_DEPLOY_ENV_PARAMETER_NAME = (
     "/servicecatalog-puppet/spoke/deploy-environment-compute-type"

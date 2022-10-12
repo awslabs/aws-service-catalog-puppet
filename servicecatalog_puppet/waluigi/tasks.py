@@ -77,7 +77,6 @@ def print_stats():
 
 class WaluigiTaskMixin:
     def execute(self):
-        print("CACHING execute the task beginning", flush=True)
         if self.should_use_caching:
             if self.complete():
                 for task_reference, output in (
