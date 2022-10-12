@@ -126,7 +126,6 @@ def worker_task(
     logger.info(f"starting up")
     while not control_event.is_set():
         time.sleep(0.1)
-        logger.info(0)
         try:
             task_reference = task_queue.get(timeout=5)
         except queue.Empty:
@@ -134,7 +133,6 @@ def worker_task(
         else:
             result = False
             while not result:
-                logger.info(1)
                 # print(
                 #     f"{pid} Worker received {task_reference} waiting for lock",
                 #     flush=True,
@@ -146,7 +144,6 @@ def worker_task(
                 # )
 
                 with lock:
-                    logger.info(2)
                     # print(f"{pid} Worker {task_reference} got the lock", flush=True)
                     (
                         resources_are_free,
@@ -167,9 +164,7 @@ def worker_task(
                         )
                         # print(f"{pid} Worker {task_reference} locked", flush=True)
 
-                logger.info(3)
                 if resources_are_free:
-                    logger.info(4)
                     # print(f"{pid} Worker about to run {task_reference}", flush=True)
                     task = task_factory.create(
                         manifest_files_path=manifest_files_path,
@@ -208,23 +203,15 @@ def worker_task(
                         )
 
                     # print(f"{pid} Worker {task_reference} waiting for lock to unlock resources", flush=True)
-                    logger.info(5)
                     with lock:
-                        logger.info(6)
                         logger.info(
                             f"executed task [success]: {task_reference} got lock to unlock resources"
                         )
                         unlock_resources_for_task(task_parameters, resources_file_path)
                         results_queue.put((task_reference, result))
                         time.sleep(0.1)
-                    logger.info(7)
                 else:
-                    logger.info(8)
                     time.sleep(0.01)
-                logger.info(9)
-            logger.info(10)
-        logger.info(11)
-    logger.info(12)
 
         # time.sleep(10)
     logger.info(f"shutting down")
