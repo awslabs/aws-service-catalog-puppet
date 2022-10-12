@@ -7,14 +7,17 @@ import traceback
 import networkx as nx
 
 
-from servicecatalog_puppet import serialisation_utils, config, constants
+from servicecatalog_puppet import serialisation_utils, config, constants, environmental_variables
 
 import os
 
+from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.workflow.dependencies import task_factory
 from betterboto import client as betterboto_client
 
 import logging
+
+from servicecatalog_puppet.workflow.tasks import unwrap
 
 logger = logging.getLogger(constants.PUPPET_SCHEDULER_LOGGER_NAME)
 # for handler in logger.handlers:
@@ -112,10 +115,12 @@ def unlock_resources_for_task(task_parameters, resources_file_path):
 
 
 def worker_task(
+    thread_name,
     lock,
     task_queue,
     results_queue,
     task_processing_time_queue,
+    task_trace_queue,
     control_event,
     tasks_to_run,
     manifest_files_path,
@@ -175,6 +180,16 @@ def worker_task(
                     logger.info(f"executing task: {task_reference}")
                     task.on_task_start()
                     start = time.time()
+                    task_type, task_details = task.get_processing_time_details()
+                    task_trace_queue.put(
+                        (
+                            start,
+                            task_type,
+                            task_details,
+                            True,
+                            thread_name
+                        ),
+                    )
                     try:
                         task.execute()
                     except Exception as e:
@@ -197,10 +212,19 @@ def worker_task(
                         duration = end - start
                         result = COMPLETED
                         task.on_task_success(duration)
-                        task_type, task_details = task.get_processing_time_details()
-                        task_processing_time_queue.put(
-                            (duration, task_type, task_details,),
-                        )
+
+                    task_processing_time_queue.put(
+                        (duration, task_type, task_details,),
+                    )
+                    task_trace_queue.put(
+                        (
+                            end,
+                            task_type,
+                            task_details,
+                            False,
+                            thread_name
+                        ),
+                    )
 
                     # print(f"{pid} Worker {task_reference} waiting for lock to unlock resources", flush=True)
                     with lock:
@@ -326,6 +350,43 @@ def on_task_processing_time(task_processing_time_queue, complete_event):
         logger.info("shutting down")
 
 
+def on_task_trace(task_trace_queue, complete_event, puppet_account_id):
+    bucket = f"sc-puppet-log-store-{puppet_account_id}"
+    key_prefix = f"{os.getenv('CODEBUILD_BUILD_ID', f'local/{os.getenv(environmental_variables.CACHE_INVALIDATOR)}')}/traces"
+    with betterboto_client.CrossAccountClientContextManager(
+        "s3",
+        config.get_puppet_role_arn(config.get_executor_account_id()),
+        "s3",
+    ) as s3:
+        while not complete_event.is_set():
+            time.sleep(0.1)
+            try:
+                t, task_type, task_params, is_start, thread_name = task_trace_queue.get(timeout=5)
+            except queue.Empty:
+                continue
+            else:
+                tz = (t - float(os.getenv("SCT_START_TIME", 0))) * 1000000
+                task_reference = task_params.get("task_reference")
+                s3.put_object(
+                    Bucket=bucket,
+                    Key=f"{key_prefix}/{tz}-{graph.escape(task_reference)}-{'start' if is_start else 'end'}.json",
+                    Body=serialisation_utils.json_dumps(
+                        {
+                            "name": task_reference,
+                            "cat": task_type,
+                            "ph": "B" if is_start else "E",
+                            "pid": 1,
+                            "tid": thread_name,
+                            "ts": tz,
+                            "args": unwrap(task_params),
+                        }
+                    )
+
+                )
+
+        logger.info("shutting down")
+
+
 def run(
     num_workers,
     tasks_to_run,
@@ -346,6 +407,7 @@ def run(
     task_queue = queue.Queue()
     results_queue = queue.Queue()
     task_processing_time_queue = queue.Queue()
+    task_trace_queue = queue.Queue()
     control_event = threading.Event()
     complete_event = threading.Event()
 
@@ -354,10 +416,12 @@ def run(
             name=f"worker#{i}",
             target=worker_task,
             args=(
+                str(i),
                 lock,
                 task_queue,
                 results_queue,
                 task_processing_time_queue,
+                task_trace_queue,
                 control_event,
                 tasks_to_run,
                 manifest_files_path,
@@ -377,7 +441,12 @@ def run(
         name="on_task_processing_time", target=on_task_processing_time,
         args=(task_processing_time_queue, complete_event,),
     )
+    on_task_trace_thread = threading.Thread(
+        name="on_task_trace", target=on_task_trace,
+        args=(task_trace_queue, complete_event, puppet_account_id),
+    )
     on_task_processing_time_thread.start()
+    on_task_trace_thread.start()
     for process in processes:
         process.start()
     scheduler_thread.start()

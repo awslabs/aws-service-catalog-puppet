@@ -42,25 +42,25 @@ def record_event(event_type, task, extra_event_data=None):
     ) as f:
         f.write(json.dumps(event, default=str, indent=4,))
 
-    if event_type in ["start", "success", "failure"]:
-        tz = (time.time() - float(os.getenv("SCT_START_TIME", 0))) * 1000000
-        task_reference = task.task_reference
-        t = {
-            "name": task_reference,
-            "cat": task_type,
-            "ph": "B" if event_type == "start" else "E",
-            "pid": 1,
-            "tid": pid,
-            "ts": tz,
-            "args": task_params,
-        }
-        with open(
-            Path(constants.RESULTS_DIRECTORY)
-            / "traces"
-            / f"{tz}-{graph.escape(task_reference)}-{event_type}.json",
-            "w",
-        ) as f:
-            f.write(json.dumps(t, default=str, indent=4,))
+    # if event_type in ["start", "success", "failure"]: #TODO delete
+    #     tz = (time.time() - float(os.getenv("SCT_START_TIME", 0))) * 1000000
+    #     task_reference = task.task_reference
+    #     t = {
+    #         "name": task_reference,
+    #         "cat": task_type,
+    #         "ph": "B" if event_type == "start" else "E",
+    #         "pid": 1,
+    #         "tid": pid,
+    #         "ts": tz,
+    #         "args": task_params,
+    #     }
+    #     with open(
+    #         Path(constants.RESULTS_DIRECTORY)
+    #         / "traces"
+    #         / f"{tz}-{graph.escape(task_reference)}-{event_type}.json",
+    #         "w",
+    #     ) as f:
+    #         f.write(json.dumps(t, default=str, indent=4,))
 
 
 def print_stats():
