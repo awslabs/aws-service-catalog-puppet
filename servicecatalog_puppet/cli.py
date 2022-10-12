@@ -470,16 +470,16 @@ def setup_config(
         else should_forward_failures_to_opscenter
     )
 
-    # os.environ[environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS] = str( #TODO make dynamic
-    #     remote_config.get_should_delete_rollback_complete_stacks(
-    #         puppet_account_id_to_use
-    #     )
-    # )
-    # os.environ[environmental_variables.SHOULD_USE_PRODUCT_PLANS] = str( #TODO make dynamic
-    #     remote_config.get_should_use_product_plans(
-    #         puppet_account_id_to_use, os.environ.get("AWS_DEFAULT_REGION")
-    #     )
-    # )
+    os.environ[environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS] = str(
+        remote_config.get_should_delete_rollback_complete_stacks(
+            puppet_account_id_to_use
+        )
+    )
+    os.environ[environmental_variables.SHOULD_USE_PRODUCT_PLANS] = str(
+        remote_config.get_should_use_product_plans(
+            puppet_account_id_to_use, os.environ.get("AWS_DEFAULT_REGION")
+        )
+    )
 
     if not os.environ.get(environmental_variables.INITIALISER_STACK_TAGS):
         os.environ[
@@ -818,6 +818,18 @@ def generate_deploy_viz(codebuild_execution_id, puppet_account_id, group_by_pid)
         puppet_account_id = config.get_puppet_account_id()
     management_commands.export_deploy_viz(
         codebuild_execution_id, group_by_pid, puppet_account_id
+    )
+
+
+@cli.command()
+@click.argument("codebuild_execution_id")
+@click.option("--puppet-account-id", default=None)
+def export_traces(codebuild_execution_id, puppet_account_id):
+    setup_config(puppet_account_id=puppet_account_id)
+    if puppet_account_id is None:
+        puppet_account_id = config.get_puppet_account_id()
+    management_commands.export_traces(
+        codebuild_execution_id, puppet_account_id
     )
 
 

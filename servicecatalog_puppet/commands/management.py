@@ -1,7 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import glob
-import json
 from servicecatalog_puppet import serialisation_utils
 import os
 import shutil
@@ -313,3 +312,38 @@ def export_deploy_viz(codebuild_execution_id, group_by_pid, puppet_account_id):
     f = open(f"{output_file_name_prefix}.html", "w")
     f.write(output)
     f.close()
+
+
+def generate_data_for_traces(path_to_results):
+    results = list()
+    for f in glob.glob(f"{path_to_results}/traces/*.json"):
+        results.append(
+            open(f, 'r').read()
+        )
+    return f'{{"traceEvents": [{",".join(results)}]}}'
+
+
+def export_traces(codebuild_execution_id, puppet_account_id):
+    bucket = f"sc-puppet-log-store-{puppet_account_id}"
+    key_prefix = f"{codebuild_execution_id}/traces"
+
+    results = list()
+    with betterboto_client.ClientContextManager("s3") as s3:
+        paginator = s3.get_paginator('list_objects_v2')
+        for page in paginator.paginate(
+            Bucket=bucket,
+            Prefix=key_prefix,
+        ):
+            print("new page", len(page.get("Contents", [])))
+            for obj in page.get("Contents", []):
+                key = obj.get("Key")
+                results.append(
+                    s3.get_object(
+                        Bucket=bucket,
+                        Key=key
+                    ).get("Body").read().decode('utf-8')
+                )
+
+    traces = f'{{"traceEvents": [{",".join(results)}]}}'
+    with open(f"{codebuild_execution_id.split('/')[-1]}-traces.json", "w") as f:
+        f.write(traces)

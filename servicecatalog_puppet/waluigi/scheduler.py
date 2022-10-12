@@ -6,7 +6,6 @@ import traceback
 
 import networkx as nx
 
-
 from servicecatalog_puppet import serialisation_utils, config, constants, environmental_variables
 
 import os
