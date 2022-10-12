@@ -200,6 +200,7 @@ def worker_task(
                         )
                         unlock_resources_for_task(task_parameters, resources_file_path)
                         results_queue.put((task_reference, result))
+                        time.sleep(0.1)
                 else:
                     time.sleep(0.01)
 
