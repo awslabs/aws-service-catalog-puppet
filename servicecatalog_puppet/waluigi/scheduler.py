@@ -23,21 +23,11 @@ import logging
 from servicecatalog_puppet.workflow.tasks import unwrap
 
 logger = logging.getLogger(constants.PUPPET_SCHEDULER_LOGGER_NAME)
-# for handler in logger.handlers:
-#     handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)s | %(threadName)s | %(message)s'))
-
-TIMEOUT = 60 * 60
 
 COMPLETED = "COMPLETED"
 NOT_SET = "NOT_SET"
 ERRORED = "ERRORED"
-PENDING = "PENDING"
-TRIGGER = "TRIGGER"
-READY = "READY"
-BLOCKED = "BLOCKED"
-
 QUEUE_STATUS = "QUEUE_STATUS"
-SHUTDOWN = "SHUTDOWN"
 
 RESOURCES_REQUIRED = "resources_required"
 

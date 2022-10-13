@@ -101,9 +101,9 @@ def run_tasks(
         tasks.print_stats()
 
     output_cache_starting_point = config.get_output_cache_starting_point()
-    print("CHECKING output_cache_starting_point")
+    logger.info("CHECKING output_cache_starting_point")
     if output_cache_starting_point != "":
-        print("UNZIPPING output_cache_starting_point")
+        logger.info("UNZIPPING output_cache_starting_point")
         dst = "GetSSMParamTask.zip"
         urlretrieve(output_cache_starting_point, dst)
         shutil.unpack_archive("GetSSMParamTask.zip", ".", "zip")

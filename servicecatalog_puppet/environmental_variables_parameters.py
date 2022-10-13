@@ -16,7 +16,6 @@ class environmentalParams(luigi.Config):
         default=os.environ.get(environmental_variables.HOME_REGION)
     )
     regions = luigi.Parameter(
-        # default=serialisation_utils.json_loads(os.environ.get(environmental_variables.REGIONS, ""))
         default=serialisation_utils.json_loads(
             os.environ.get(environmental_variables.REGIONS, "[]")
         )

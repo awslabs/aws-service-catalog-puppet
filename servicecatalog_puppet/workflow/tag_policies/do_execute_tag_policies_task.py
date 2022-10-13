@@ -32,22 +32,6 @@ class DoExecuteTagPoliciesTask(tasks.TaskWithReference):
             "cache_invalidator": self.cache_invalidator,
         }
 
-    # def requires(self):
-    #     manifest = serialisation_utils.load(open(self.manifest_file_path, "r").read())
-    #     return dict(
-    #         reference_dependencies=self.dependencies_for_task_reference(),
-    #         policy=get_or_create_policy_task.GetOrCreatePolicyTask(
-    #             puppet_account_id=self.puppet_account_id,
-    #             region=self.region,
-    #             policy_name=self.tag_policy_name,
-    #             policy_description=self.description,
-    #             policy_content=self.content,
-    #             tags=manifest.get(constants.TAG_POLICIES)
-    #             .get(self.tag_policy_name)
-    #             .get("tags", []),
-    #         ),
-    #     )
-
     @functools.lru_cache(maxsize=32)
     def target(self):
         with self.organizations_policy_client() as orgs:

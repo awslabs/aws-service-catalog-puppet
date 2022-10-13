@@ -179,8 +179,6 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                 ].append(all_tasks_task_reference)
 
                 # ssm outputs
-                # TODO add check that execution mode is spoke or hub
-                # TODO add support to terminate outputs when task_to_add should be terminated
                 for ssm_parameter_output in task_to_add.get("ssm_param_outputs", []):
                     output_region = ssm_parameter_output.get("region", default_region)
                     output_account_id = ssm_parameter_output.get(
@@ -360,7 +358,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                     if all_tasks.get(potential_output_task_ref):
                         dependency = [
                             potential_output_task_ref
-                        ]  # TODO do I need to update the ssm output too!?!?!
+                        ]
                     else:
                         dependency = []
                     task_def["dependencies_by_reference"] = dependency
@@ -529,7 +527,6 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
 
     reference = dict(all_tasks=all_tasks,)
     ensure_no_cyclic_dependencies("complete task reference", all_tasks)
-    # open(output_file_path, "w").write(serialisation_utils.dump(reference))
     open(output_file_path, "w").write(serialisation_utils.dump_as_json(reference))
     return reference
 
