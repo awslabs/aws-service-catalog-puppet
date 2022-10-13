@@ -557,9 +557,7 @@ def deploy_from_task_reference(
     on_complete_url,
 ):
     params = dict()
-    if (
-        parameter_override_forced or misc_commands.is_a_parameter_override_execution()
-    ):
+    if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
         overrides = dict(**yaml.safe_load(parameter_override_file.read()))
         if overrides.get("subset"):
             subset = overrides.get("subset")
@@ -828,9 +826,7 @@ def export_traces(codebuild_execution_id, puppet_account_id):
     setup_config(puppet_account_id=puppet_account_id)
     if puppet_account_id is None:
         puppet_account_id = config.get_puppet_account_id()
-    management_commands.export_traces(
-        codebuild_execution_id, puppet_account_id
-    )
+    management_commands.export_traces(codebuild_execution_id, puppet_account_id)
 
 
 @cli.command()

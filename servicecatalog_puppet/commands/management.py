@@ -317,9 +317,7 @@ def export_deploy_viz(codebuild_execution_id, group_by_pid, puppet_account_id):
 def generate_data_for_traces(path_to_results):
     results = list()
     for f in glob.glob(f"{path_to_results}/traces/*.json"):
-        results.append(
-            open(f, 'r').read()
-        )
+        results.append(open(f, "r").read())
     return f'{{"traceEvents": [{",".join(results)}]}}'
 
 
@@ -329,19 +327,16 @@ def export_traces(codebuild_execution_id, puppet_account_id):
 
     results = list()
     with betterboto_client.ClientContextManager("s3") as s3:
-        paginator = s3.get_paginator('list_objects_v2')
-        for page in paginator.paginate(
-            Bucket=bucket,
-            Prefix=key_prefix,
-        ):
+        paginator = s3.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=bucket, Prefix=key_prefix,):
             print("new page", len(page.get("Contents", [])))
             for obj in page.get("Contents", []):
                 key = obj.get("Key")
                 results.append(
-                    s3.get_object(
-                        Bucket=bucket,
-                        Key=key
-                    ).get("Body").read().decode('utf-8')
+                    s3.get_object(Bucket=bucket, Key=key)
+                    .get("Body")
+                    .read()
+                    .decode("utf-8")
                 )
 
     traces = f'{{"traceEvents": [{",".join(results)}]}}'

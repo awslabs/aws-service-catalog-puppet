@@ -1,4 +1,3 @@
-
 import queue
 import threading
 import time
@@ -6,7 +5,12 @@ import traceback
 
 import networkx as nx
 
-from servicecatalog_puppet import serialisation_utils, config, constants, environmental_variables
+from servicecatalog_puppet import (
+    serialisation_utils,
+    config,
+    constants,
+    environmental_variables,
+)
 
 import os
 
@@ -181,13 +185,7 @@ def worker_task(
                     start = time.time()
                     task_type, task_details = task.get_processing_time_details()
                     task_trace_queue.put(
-                        (
-                            start,
-                            task_type,
-                            task_details,
-                            True,
-                            thread_name
-                        ),
+                        (start, task_type, task_details, True, thread_name),
                     )
                     try:
                         task.execute()
@@ -219,13 +217,7 @@ def worker_task(
                         (duration, task_type, task_details,),
                     )
                     task_trace_queue.put(
-                        (
-                            end,
-                            task_type,
-                            task_details,
-                            False,
-                            thread_name
-                        ),
+                        (end, task_type, task_details, False, thread_name),
                     )
 
                     # print(f"{pid} Worker {task_reference} waiting for lock to unlock resources", flush=True)
@@ -310,7 +302,9 @@ def on_task_processing_time(task_processing_time_queue, complete_event):
         while not complete_event.is_set():
             time.sleep(0.1)
             try:
-                duration, task_type, task_params = task_processing_time_queue.get(timeout=5)
+                duration, task_type, task_params = task_processing_time_queue.get(
+                    timeout=5
+                )
             except queue.Empty:
                 continue
             else:
@@ -356,14 +350,14 @@ def on_task_trace(task_trace_queue, complete_event, puppet_account_id):
     bucket = f"sc-puppet-log-store-{puppet_account_id}"
     key_prefix = f"{os.getenv('CODEBUILD_BUILD_ID', f'local/{os.getenv(environmental_variables.CACHE_INVALIDATOR)}')}/traces"
     with betterboto_client.CrossAccountClientContextManager(
-        "s3",
-        config.get_puppet_role_arn(config.get_executor_account_id()),
-        "s3",
+        "s3", config.get_puppet_role_arn(config.get_executor_account_id()), "s3",
     ) as s3:
         while not complete_event.is_set():
             time.sleep(0.1)
             try:
-                t, task_type, task_params, is_start, thread_name = task_trace_queue.get(timeout=5)
+                t, task_type, task_params, is_start, thread_name = task_trace_queue.get(
+                    timeout=5
+                )
             except queue.Empty:
                 continue
             else:
@@ -382,8 +376,7 @@ def on_task_trace(task_trace_queue, complete_event, puppet_account_id):
                             "ts": tz,
                             "args": unwrap(task_params),
                         }
-                    )
-
+                    ),
                 )
 
         logger.info("shutting down")
@@ -434,17 +427,26 @@ def run(
         )
         for i in range(num_workers)
     ]
-    scheduler_thread =  threading.Thread(
-            name="scheduler",
-            target=scheduler_task,
-            args=(num_workers, task_queue, results_queue, control_event,complete_event, tasks_to_run,),
-        )
+    scheduler_thread = threading.Thread(
+        name="scheduler",
+        target=scheduler_task,
+        args=(
+            num_workers,
+            task_queue,
+            results_queue,
+            control_event,
+            complete_event,
+            tasks_to_run,
+        ),
+    )
     on_task_processing_time_thread = threading.Thread(
-        name="on_task_processing_time", target=on_task_processing_time,
+        name="on_task_processing_time",
+        target=on_task_processing_time,
         args=(task_processing_time_queue, complete_event,),
     )
     on_task_trace_thread = threading.Thread(
-        name="on_task_trace", target=on_task_trace,
+        name="on_task_trace",
+        target=on_task_trace,
         args=(task_trace_queue, complete_event, puppet_account_id),
     )
     on_task_processing_time_thread.start()

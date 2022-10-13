@@ -10,8 +10,10 @@ from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     puppet_account_id = "puppet_account_id"
     region = "region"
-    sharing_policies = {}
     account_id = "account_id"
+    organizations_to_share_with = dict(a=1)
+    ous_to_share_with = dict(b=2)
+    accounts_to_share_with = dict(c=3)
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.generate import generate_policies_task
@@ -22,7 +24,9 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             **self.get_common_args(),
             account_id=self.account_id,
             region=self.region,
-            sharing_policies=self.sharing_policies,
+            organizations_to_share_with=self.organizations_to_share_with,
+            ous_to_share_with=self.ous_to_share_with,
+            accounts_to_share_with=self.accounts_to_share_with,
         )
 
         self.wire_up_mocks()

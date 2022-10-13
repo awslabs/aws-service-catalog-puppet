@@ -1651,7 +1651,7 @@ def generate_task_reference(f):
 
     content = open(f.name, "r").read()
     manifest = manifest_utils.Manifest(serialisation_utils.load(content))
-    complete = generate_complete_task_reference( # hub and spokes
+    complete = generate_complete_task_reference(  # hub and spokes
         puppet_account_id,
         manifest,
         f.name.replace("-expanded.yaml", "-task-reference-full.json"),
@@ -1715,7 +1715,10 @@ def deploy_from_task_reference(path):
                 if task.get("task_reference") == constants.CREATE_POLICIES:
                     continue
 
-                if task_account_id and str(task_account_id) not in [str(single_account_id), str(puppet_account_id)]:
+                if task_account_id and str(task_account_id) not in [
+                    str(single_account_id),
+                    str(puppet_account_id),
+                ]:
                     continue
 
                 tasks_to_run_filtered[task_reference] = task
