@@ -3,16 +3,11 @@
 import json
 import os
 import logging
-import time
 import traceback
 from datetime import datetime
 from pathlib import Path
 
-import psutil
-from betterboto import client as betterboto_client
-
-from servicecatalog_puppet import constants, config
-from servicecatalog_puppet.commands import graph
+from servicecatalog_puppet import constants
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
@@ -41,38 +36,6 @@ def record_event(event_type, task, extra_event_data=None):
         "w",
     ) as f:
         f.write(json.dumps(event, default=str, indent=4,))
-
-    # if event_type in ["start", "success", "failure"]: #TODO delete
-    #     tz = (time.time() - float(os.getenv("SCT_START_TIME", 0))) * 1000000
-    #     task_reference = task.task_reference
-    #     t = {
-    #         "name": task_reference,
-    #         "cat": task_type,
-    #         "ph": "B" if event_type == "start" else "E",
-    #         "pid": 1,
-    #         "tid": pid,
-    #         "ts": tz,
-    #         "args": task_params,
-    #     }
-    #     with open(
-    #         Path(constants.RESULTS_DIRECTORY)
-    #         / "traces"
-    #         / f"{tz}-{graph.escape(task_reference)}-{event_type}.json",
-    #         "w",
-    #     ) as f:
-    #         f.write(json.dumps(t, default=str, indent=4,))
-
-
-def print_stats():
-    pass
-    # pid = os.getpid()
-    # p = psutil.Process(pid)
-    # m_percent = p.memory_percent()
-    # memory_info = p.memory_info().rss / 1024 ** 2
-    # cpu_percent = p.cpu_percent(interval=1)
-    # logger.info(
-    #     f"stats: process {pid} is using {memory_info}MB ({m_percent}%) of memory and {cpu_percent}% of CPU"
-    # )
 
 
 class WaluigiTaskMixin:
@@ -119,22 +82,16 @@ class WaluigiTaskMixin:
 
     def on_task_start(self):
         task_name = self.__class__.__name__
-        to_string = f"{task_name}: "
-        for name, value in self.param_kwargs.items():
-            to_string += f"{name}={value}, "
-        logger.info(f"{to_string} started")
+        logger.info(f"{task_name}:{self.task_reference} started")
         record_event("start", self)
 
     def on_task_success(self, duration):
-        print_stats()
         record_event("success", self, dict(duration=duration))
 
     def on_task_timeout(self):
-        print_stats()
         record_event("timeout", self)
 
     def on_task_process_failure(self, error_msg):
-        print_stats()
         exception_details = {
             "exception_type": "PROCESS_FAILURE",
             "exception_stack_trace": error_msg,
@@ -142,5 +99,4 @@ class WaluigiTaskMixin:
         record_event("process_failure", self, exception_details)
 
     def on_task_broken_task(self, exception):
-        print_stats()
         record_event("broken_task", self, {"exception": exception})

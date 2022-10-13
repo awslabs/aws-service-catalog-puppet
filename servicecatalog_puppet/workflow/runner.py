@@ -310,7 +310,6 @@ def run_tasks(
                 result = serialisation_utils.json_loads(result_contents)
                 params = result.get("params_for_results")
                 if not params.get("task_reference"):
-                    print(filename)
                     params["task_reference"] = result.get("task_params").get(
                         "task_reference"
                     )
@@ -340,7 +339,7 @@ def run_tasks(
                 result = serialisation_utils.json_loads(open(filename, "r").read())
                 params = result.get("params_for_results")
                 if should_forward_failures_to_opscenter:
-                    title = f"{result.get('task_type')} failed: {params.get('launch_name')} - {params.get('account_id')} - {params.get('region')}"
+                    title = f"{result.get('task_type')} failed: {params.get('task_reference')}"
                     logging.info(f"Sending failure to opscenter: {title}")
                     operational_data = dict(
                         codebuild_id=dict(Value=codebuild_id, Type="SearchableString")
@@ -361,17 +360,17 @@ def run_tasks(
                             {"Key": "ServiceCatalogPuppet:Actor", "Value": "ops-item"},
                         ],
                     )
-
-                click.echo(
-                    colorclass.Color(
-                        "{red}" + result.get("task_type") + " failed{/red}"
+                if "RunDeployInSpoke" in filename:
+                    click.echo(
+                        colorclass.Color(
+                            "{red}" + result.get("task_type") + " failed{/red}"
+                        )
                     )
-                )
-                click.echo(
-                    f"{yaml.safe_dump({'parameters': result.get('task_params')})}"
-                )
-                click.echo("\n".join(result.get("exception_stack_trace")))
-                click.echo("")
+                    click.echo(
+                        f"{yaml.safe_dump({'parameters': result.get('task_params')})}"
+                    )
+                    click.echo("\n".join(result.get("exception_stack_trace")))
+                    click.echo("")
 
             if should_use_eventbridge:
                 logging.info(f"Sending {len(entries)} events to eventbridge")
