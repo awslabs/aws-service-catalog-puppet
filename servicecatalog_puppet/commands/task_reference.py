@@ -1300,7 +1300,6 @@ def handle_spoke_local_portfolios(
             ].update(task_to_add.get("manifest_account_ids"))
             dependencies_for_constraints.append(
                 spoke_portfolio_all_products_and_versions_after_ref,
-                constants.CREATE_POLICIES,
             )
 
         if task_to_add.get("launch_constraints"):
