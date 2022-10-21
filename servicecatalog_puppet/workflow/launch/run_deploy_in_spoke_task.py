@@ -100,6 +100,21 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
                 "value": config.get_global_sharing_mode_default(),
                 "type": "PLAINTEXT",
             },
+            {
+                "name": environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS,
+                "value": config.get_should_delete_rollback_complete_stacks(),
+                "type": "PLAINTEXT",
+            },
+            {
+                "name": environmental_variables.SHOULD_USE_PRODUCT_PLANS,
+                "value": config.get_should_use_product_plans(),
+                "type": "PLAINTEXT",
+            },
+            {
+                "name": environmental_variables.SPOKE_EXECUTION_MODE_DEPLOY_ENV,
+                "value": config.get_spoke_execution_mode_deploy_env(),
+                "type": "PLAINTEXT",
+            },
         ]
 
         if "http" in self.version:
