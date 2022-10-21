@@ -160,5 +160,6 @@ def get_spoke_deploy_environment_compute_type(puppet_account_id, default_region)
         )
     )
     return get_config(puppet_account_id, default_region).get(
-        "spoke_deploy_environment_compute_type", constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_DEFAULT
+        "spoke_deploy_environment_compute_type",
+        constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_DEFAULT,
     )
