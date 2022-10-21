@@ -512,6 +512,9 @@ def setup_config(
         ] = global_sharing_mode_default
     if on_complete_url:
         os.environ[environmental_variables.ON_COMPLETE_URL] = on_complete_url
+    os.environ[
+        environmental_variables.SPOKE_EXECUTION_MODE_DEPLOY_ENV
+    ] = remote_config.get_spoke_deploy_environment_compute_type(puppet_account_id_to_use, home_region)
 
 
 @cli.command()
@@ -784,7 +787,8 @@ def set_regions(regions):
 @click.argument("name")
 @click.argument("value")
 def set_config_value(name, value):
-    management_commands.set_config_value(name, value)
+    is_a_boolean = dict(spoke_deploy_environment_compute_type=False).get(name, True)
+    management_commands.set_config_value(name, value, is_a_boolean)
 
 
 @cli.command()

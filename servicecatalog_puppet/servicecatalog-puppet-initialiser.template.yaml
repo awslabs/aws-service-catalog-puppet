@@ -406,6 +406,7 @@ Resources:
                 - servicecatalog-puppet set-config-value should_use_stacks_service_role ${SHOULD_USE_STACKS_SERVICE_ROLE}
                 - servicecatalog-puppet set-config-value should_delete_rollback_complete_stacks ${SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS}
                 - servicecatalog-puppet set-config-value is_caching_enabled ${IS_CACHING_ENABLED}
+                - servicecatalog-puppet set-config-value spoke_deploy_environment_compute_type ${SPOKE_DEPLOY_ENVIRONMENT_COMPUTE_TYPE}
                 - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID} --permission-boundary ${PUPPET_ROLE_PERMISSION_BOUNDARY} --puppet-role-name ${PUPPET_ROLE_NAME} --puppet-role-path ${PUPPET_ROLE_PATH}
             build:
               commands:

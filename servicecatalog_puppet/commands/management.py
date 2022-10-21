@@ -89,7 +89,7 @@ def list_resources():
     click.echo(f"n.b. AWS::StackName evaluates to {constants.BOOTSTRAP_STACK_NAME}")
 
 
-def set_config_value(name, value):
+def set_config_value(name, value, is_a_boolean=True):
     with betterboto_client.ClientContextManager(
         "ssm", region_name=constants.HOME_REGION
     ) as ssm:
@@ -102,7 +102,10 @@ def set_config_value(name, value):
         if name == "regions":
             config["regions"] = value if len(value) > 1 else value[0].split(",")
         else:
-            config[name] = value.upper() == "TRUE"
+            if is_a_boolean:
+                config[name] = value.upper() == "TRUE"
+            else:
+                config[name] = value
 
         upload_config(config)
 

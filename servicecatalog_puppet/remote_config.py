@@ -151,3 +151,14 @@ def get_global_sharing_mode_default(puppet_account_id, default_region=None):
     return get_config(puppet_account_id, default_region).get(
         "global_sharing_mode_default", constants.SHARING_MODE_DEFAULT
     )
+
+
+def get_spoke_deploy_environment_compute_type(puppet_account_id, default_region):
+    logger.info(
+        "getting spoke_deploy_environment_compute_type,  default_region: {}".format(
+            default_region
+        )
+    )
+    return get_config(puppet_account_id, default_region).get(
+        "spoke_deploy_environment_compute_type", constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_DEFAULT
+    )
