@@ -316,10 +316,8 @@ def run_tasks(
                 if should_use_eventbridge:
                     entries.append(
                         {
-                            # 'Time': ,
                             "Source": constants.SERVICE_CATALOG_PUPPET_EVENT_SOURCE,
                             "Resources": [
-                                # 'string',
                             ],
                             "DetailType": result.get("task_type"),
                             "Detail": result_contents,
@@ -344,11 +342,13 @@ def run_tasks(
                     operational_data = dict(
                         codebuild_id=dict(Value=codebuild_id, Type="SearchableString")
                     )
-                    for param_name, param in params.items():
-                        operational_data[param_name] = {
-                            "Value": json.dumps(param, default=str),
-                            "Type": "SearchableString",
-                        }
+
+                    for param_name in constants.PARAMETERS_TO_TRY_AS_OPERATIONAL_DATA:
+                        if params.get(param_name):
+                            operational_data[param_name] = {
+                                "Value": json.dumps(params.get(param_name), default=str),
+                                "Type": "SearchableString",
+                            }
                     description = "\n".join(result.get("exception_stack_trace"))[-1024:]
                     ssm_client.create_ops_item(
                         Title=title,
@@ -379,21 +379,7 @@ def run_tasks(
                     config.get_puppet_role_arn(current_account_id),
                     f"{current_account_id}-{config.get_puppet_role_name()}",
                 ) as events:
-                    batches = [
-                        entries[
-                            i
-                            * constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL : (i + 1)
-                            * constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL
-                        ]
-                        for i in range(
-                            (
-                                len(entries)
-                                + constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL
-                                - 1
-                            )
-                            // constants.EVENTBRIDGE_MAX_EVENTS_PER_CALL
-                        )
-                    ]
+                    batches = generate_batches(entries)
                     for batch in batches:
                         events.put_events(Entries=batch)
                         time.sleep(1)
@@ -430,6 +416,32 @@ def run_tasks(
             sys.exit(1)
         else:
             sys.exit(0)
+
+
+def generate_batches(entries):
+    batches = list()
+    current_batch = list()
+    batches.append(
+        current_batch
+    )
+    current_batch_size = 0
+    batch_size_limit = 256000
+    for e in entries:
+        current_entry_size = sys.getsizeof(e.get("Source"))
+        current_entry_size += sys.getsizeof(e.get("DetailType"))
+        current_entry_size += sys.getsizeof(serialisation_utils.json_dumps(e.get("Detail")))
+
+        if current_batch_size + current_entry_size > batch_size_limit or len(current_batch) >= 10:
+            current_batch_size = 0
+            current_batch = list()
+            batches.append(
+                current_batch
+            )
+
+        current_batch.append(e)
+        current_batch_size += current_entry_size
+
+    return batches
 
 
 def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
