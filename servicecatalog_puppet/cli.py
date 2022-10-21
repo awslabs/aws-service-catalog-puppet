@@ -470,16 +470,19 @@ def setup_config(
         else should_forward_failures_to_opscenter
     )
 
-    os.environ[environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS] = str(
-        remote_config.get_should_delete_rollback_complete_stacks(
-            puppet_account_id_to_use
+    if not os.environ.get(environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS):
+        os.environ[environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS] = str(
+            remote_config.get_should_delete_rollback_complete_stacks(
+                puppet_account_id_to_use
+            )
         )
-    )
-    os.environ[environmental_variables.SHOULD_USE_PRODUCT_PLANS] = str(
-        remote_config.get_should_use_product_plans(
-            puppet_account_id_to_use, os.environ.get("AWS_DEFAULT_REGION")
+
+    if not os.environ.get(environmental_variables.SHOULD_USE_PRODUCT_PLANS):
+        os.environ[environmental_variables.SHOULD_USE_PRODUCT_PLANS] = str(
+            remote_config.get_should_use_product_plans(
+                puppet_account_id_to_use, os.environ.get("AWS_DEFAULT_REGION")
+            )
         )
-    )
 
     if not os.environ.get(environmental_variables.INITIALISER_STACK_TAGS):
         os.environ[
@@ -512,11 +515,12 @@ def setup_config(
         ] = global_sharing_mode_default
     if on_complete_url:
         os.environ[environmental_variables.ON_COMPLETE_URL] = on_complete_url
-    os.environ[
-        environmental_variables.SPOKE_EXECUTION_MODE_DEPLOY_ENV
-    ] = remote_config.get_spoke_deploy_environment_compute_type(
-        puppet_account_id_to_use, home_region
-    )
+    if not os.environ.get(environmental_variables.SPOKE_EXECUTION_MODE_DEPLOY_ENV):
+        os.environ[
+            environmental_variables.SPOKE_EXECUTION_MODE_DEPLOY_ENV
+        ] = remote_config.get_spoke_deploy_environment_compute_type(
+            puppet_account_id_to_use, home_region
+        )
 
 
 @cli.command()

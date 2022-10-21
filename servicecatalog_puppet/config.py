@@ -210,3 +210,15 @@ def get_global_sharing_mode_default():
 
 def get_on_complete_url():
     return os.environ.get(environmental_variables.ON_COMPLETE_URL, "")
+
+
+def get_should_delete_rollback_complete_stacks():
+    return os.environ.get(environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS)
+
+
+def get_should_use_product_plans():
+    return os.environ.get(environmental_variables.SHOULD_USE_PRODUCT_PLANS)
+
+
+def get_spoke_execution_mode_deploy_env():
+    return os.environ.get(environmental_variables.SPOKE_EXECUTION_MODE_DEPLOY_ENV)
