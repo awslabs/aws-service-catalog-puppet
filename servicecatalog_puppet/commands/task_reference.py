@@ -356,9 +356,7 @@ def generate_complete_task_reference(puppet_account_id, manifest, output_file_pa
                         f"{constants.SSM_PARAMETERS}-", f"{constants.SSM_OUTPUTS}-"
                     )
                     if all_tasks.get(potential_output_task_ref):
-                        dependency = [
-                            potential_output_task_ref
-                        ]
+                        dependency = [potential_output_task_ref]
                     else:
                         dependency = []
                     task_def["dependencies_by_reference"] = dependency

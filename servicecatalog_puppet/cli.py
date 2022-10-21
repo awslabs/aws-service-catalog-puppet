@@ -514,7 +514,9 @@ def setup_config(
         os.environ[environmental_variables.ON_COMPLETE_URL] = on_complete_url
     os.environ[
         environmental_variables.SPOKE_EXECUTION_MODE_DEPLOY_ENV
-    ] = remote_config.get_spoke_deploy_environment_compute_type(puppet_account_id_to_use, home_region)
+    ] = remote_config.get_spoke_deploy_environment_compute_type(
+        puppet_account_id_to_use, home_region
+    )
 
 
 @cli.command()
