@@ -314,13 +314,17 @@ def run_tasks(
                         "task_reference"
                     )
                 if should_use_eventbridge:
+                    if result.get("task_params"):
+                        del result["task_params"]
                     entries.append(
                         {
                             "Source": constants.SERVICE_CATALOG_PUPPET_EVENT_SOURCE,
                             "Resources": [
                             ],
                             "DetailType": result.get("task_type"),
-                            "Detail": result_contents,
+                            "Detail": json.dumps(
+                                result
+                            ),
                             "EventBusName": constants.EVENT_BUS_IN_SPOKE_NAME
                             if execution_mode == constants.EXECUTION_MODE_SPOKE
                             else constants.EVENT_BUS_NAME,
