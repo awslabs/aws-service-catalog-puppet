@@ -343,4 +343,9 @@ PREPARE_ACCOUNT_FOR_STACKS = "prepare-account-for-stacks"
 CREATE_POLICIES = "create-policies"
 
 
-PARAMETERS_TO_TRY_AS_OPERATIONAL_DATA = ["puppet_account_id", "account_id", "region", "task_reference"]
+PARAMETERS_TO_TRY_AS_OPERATIONAL_DATA = [
+    "puppet_account_id",
+    "account_id",
+    "region",
+    "task_reference",
+]

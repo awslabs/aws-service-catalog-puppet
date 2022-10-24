@@ -470,8 +470,12 @@ def setup_config(
         else should_forward_failures_to_opscenter
     )
 
-    if not os.environ.get(environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS):
-        os.environ[environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS] = str(
+    if not os.environ.get(
+        environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS
+    ):
+        os.environ[
+            environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS
+        ] = str(
             remote_config.get_should_delete_rollback_complete_stacks(
                 puppet_account_id_to_use
             )

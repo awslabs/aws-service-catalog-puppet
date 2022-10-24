@@ -213,7 +213,9 @@ def get_on_complete_url():
 
 
 def get_should_delete_rollback_complete_stacks():
-    return os.environ.get(environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS)
+    return os.environ.get(
+        environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS
+    )
 
 
 def get_should_use_product_plans():

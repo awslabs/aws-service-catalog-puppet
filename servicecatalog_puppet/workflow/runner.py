@@ -108,7 +108,7 @@ def run_tasks(
         urlretrieve(output_cache_starting_point, dst)
         shutil.unpack_archive("GetSSMParamTask.zip", ".", "zip")
 
-    run_result = scheduler.run(
+    scheduler.run(
         num_workers,
         tasks_to_run_filtered,
         manifest_files_path,
@@ -319,12 +319,9 @@ def run_tasks(
                     entries.append(
                         {
                             "Source": constants.SERVICE_CATALOG_PUPPET_EVENT_SOURCE,
-                            "Resources": [
-                            ],
+                            "Resources": [],
                             "DetailType": result.get("task_type"),
-                            "Detail": json.dumps(
-                                result
-                            ),
+                            "Detail": json.dumps(result),
                             "EventBusName": constants.EVENT_BUS_IN_SPOKE_NAME
                             if execution_mode == constants.EXECUTION_MODE_SPOKE
                             else constants.EVENT_BUS_NAME,
@@ -350,7 +347,9 @@ def run_tasks(
                     for param_name in constants.PARAMETERS_TO_TRY_AS_OPERATIONAL_DATA:
                         if params.get(param_name):
                             operational_data[param_name] = {
-                                "Value": json.dumps(params.get(param_name), default=str),
+                                "Value": json.dumps(
+                                    params.get(param_name), default=str
+                                ),
                                 "Type": "SearchableString",
                             }
                     description = "\n".join(result.get("exception_stack_trace"))[-1024:]
@@ -425,22 +424,23 @@ def run_tasks(
 def generate_batches(entries):
     batches = list()
     current_batch = list()
-    batches.append(
-        current_batch
-    )
+    batches.append(current_batch)
     current_batch_size = 0
     batch_size_limit = 256000
     for e in entries:
         current_entry_size = sys.getsizeof(e.get("Source"))
         current_entry_size += sys.getsizeof(e.get("DetailType"))
-        current_entry_size += sys.getsizeof(serialisation_utils.json_dumps(e.get("Detail")))
+        current_entry_size += sys.getsizeof(
+            serialisation_utils.json_dumps(e.get("Detail"))
+        )
 
-        if current_batch_size + current_entry_size > batch_size_limit or len(current_batch) >= 10:
+        if (
+            current_batch_size + current_entry_size > batch_size_limit
+            or len(current_batch) >= 10
+        ):
             current_batch_size = 0
             current_batch = list()
-            batches.append(
-                current_batch
-            )
+            batches.append(current_batch)
 
         current_batch.append(e)
         current_batch_size += current_entry_size
