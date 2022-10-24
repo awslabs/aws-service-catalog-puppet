@@ -343,4 +343,30 @@ PREPARE_ACCOUNT_FOR_STACKS = "prepare-account-for-stacks"
 CREATE_POLICIES = "create-policies"
 
 
-PARAMETERS_TO_TRY_AS_OPERATIONAL_DATA = ["puppet_account_id", "account_id", "region", "task_reference"]
+PARAMETERS_TO_TRY_AS_OPERATIONAL_DATA = [
+    "puppet_account_id",
+    "account_id",
+    "region",
+    "task_reference",
+]
+
+
+RUN_DEPLOY_IN_SPOKE_BUILDSPEC = """
+      version: 0.2
+      phases:
+        install:
+          runtime-versions:
+            python: 3.7
+          commands:
+            - {}
+        build:
+          commands:
+            - curl $TASK_REFERENCE_URL > manifest-task-reference.json
+            - curl $MANIFEST_URL > manifest-expanded.yaml
+            - servicecatalog-puppet --info deploy-in-spoke-from-task-reference --execution-mode spoke --puppet-account-id $PUPPET_ACCOUNT_ID --single-account $(aws sts get-caller-identity --query Account --output text) --home-region $HOME_REGION --regions $REGIONS --should-collect-cloudformation-events $SHOULD_COLLECT_CLOUDFORMATION_EVENTS --should-forward-events-to-eventbridge $SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE --should-forward-failures-to-opscenter $SHOULD_FORWARD_FAILURES_TO_OPSCENTER ${{PWD}}
+      artifacts:
+        files:
+          - results/*/*
+          - output/*/*
+        name: DeployInSpokeProject
+"""

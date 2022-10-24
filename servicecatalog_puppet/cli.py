@@ -470,8 +470,12 @@ def setup_config(
         else should_forward_failures_to_opscenter
     )
 
-    if not os.environ.get(environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS):
-        os.environ[environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS] = str(
+    if not os.environ.get(
+        environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS
+    ):
+        os.environ[
+            environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS
+        ] = str(
             remote_config.get_should_delete_rollback_complete_stacks(
                 puppet_account_id_to_use
             )
@@ -611,9 +615,9 @@ def deploy_from_task_reference(
 @click.option("--single-account", default=None)
 @click.option("--home-region", default=None)
 @click.option("--regions", default="")
-@click.option("--should-collect-cloudformation-events", default=None, type=bool)
-@click.option("--should-forward-events-to-eventbridge", default=None, type=bool)
-@click.option("--should-forward-failures-to-opscenter", default=None, type=bool)
+@click.option("--should-collect-cloudformation-events", default=None, type=bool, envvar="SHOULD_COLLECT_CLOUDFORMATION_EVENTS")
+@click.option("--should-forward-events-to-eventbridge", default=None, type=bool, envvar="SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE")
+@click.option("--should-forward-failures-to-opscenter", default=None, type=bool, envvar="SHOULD_FORWARD_FAILURES_TO_OPSCENTER")
 @click.option(
     "--output-cache-starting-point",
     default="",
