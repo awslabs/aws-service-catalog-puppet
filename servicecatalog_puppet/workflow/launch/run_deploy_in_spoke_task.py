@@ -6,27 +6,12 @@ import luigi
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import environmental_variables
-from servicecatalog_puppet import environmental_variables_parameters
-from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class RunDeployInSpokeTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     generate_manifest_ref = luigi.Parameter()
-
-    home_region = environmental_variables_parameters.environmentalParams().home_region
-    regions = environmental_variables_parameters.environmentalParams().regions
-
-    should_collect_cloudformation_events = (
-        environmental_variables_parameters.environmentalParams().should_collect_cloudformation_events
-    )
-    should_forward_events_to_eventbridge = (
-        environmental_variables_parameters.environmentalParams().should_forward_events_to_eventbridge
-    )
-    should_forward_failures_to_opscenter = (
-        environmental_variables_parameters.environmentalParams().should_forward_failures_to_opscenter
-    )
 
     def params_for_results_display(self):
         return {
@@ -45,6 +30,7 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
         cached_output_signed_url = generated_manifest.get("cached_output_signed_url")
 
         version = constants.VERSION
+        home_region = constants.HOME_REGION
 
         vars = [
             {
@@ -64,21 +50,21 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
                 "value": self.puppet_account_id,
                 "type": "PLAINTEXT",
             },
-            {"name": "HOME_REGION", "value": self.home_region, "type": "PLAINTEXT",},
-            {"name": "REGIONS", "value": ",".join(self.regions), "type": "PLAINTEXT",},
+            {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
+            {"name": "REGIONS", "value": ",".join(config.get_regions()), "type": "PLAINTEXT",},
             {
                 "name": "SHOULD_COLLECT_CLOUDFORMATION_EVENTS",
-                "value": str(self.should_collect_cloudformation_events),
+                "value": str(config.get_should_use_sns()),
                 "type": "PLAINTEXT",
             },
             {
                 "name": "SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE",
-                "value": str(self.should_forward_events_to_eventbridge),
+                "value": str(config.get_should_use_eventbridge()),
                 "type": "PLAINTEXT",
             },
             {
                 "name": "SHOULD_FORWARD_FAILURES_TO_OPSCENTER",
-                "value": str(self.should_forward_failures_to_opscenter),
+                "value": str(config.get_should_forward_failures_to_opscenter()),
                 "type": "PLAINTEXT",
             },
             {

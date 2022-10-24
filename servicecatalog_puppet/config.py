@@ -224,3 +224,7 @@ def get_should_use_product_plans():
 
 def get_spoke_execution_mode_deploy_env():
     return os.environ.get(environmental_variables.SPOKE_EXECUTION_MODE_DEPLOY_ENV)
+
+
+def get_should_use_sns():
+    return os.environ.get(environmental_variables.SHOULD_USE_SNS, "FALSE").upper() == "TRUE"
