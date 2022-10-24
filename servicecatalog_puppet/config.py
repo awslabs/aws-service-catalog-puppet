@@ -179,11 +179,11 @@ def get_executor_account_id():
 
 
 def get_should_use_eventbridge():
-    return os.environ.get(environmental_variables.SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE)
+    return os.environ.get(environmental_variables.SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE, "FALSE").upper() == "TRUE"
 
 
 def get_should_forward_failures_to_opscenter():
-    return os.environ.get(environmental_variables.SHOULD_FORWARD_FAILURES_TO_OPSCENTER)
+    return os.environ.get(environmental_variables.SHOULD_FORWARD_FAILURES_TO_OPSCENTER, "FALSE").upper() == "TRUE"
 
 
 def get_regions():
