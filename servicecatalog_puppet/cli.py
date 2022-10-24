@@ -803,7 +803,10 @@ def set_regions(regions):
 @click.argument("name")
 @click.argument("value")
 def set_config_value(name, value):
-    is_a_boolean = dict(spoke_deploy_environment_compute_type=False).get(name, True)
+    is_a_boolean = dict(
+        spoke_deploy_environment_compute_type=False,
+        scheduler_threads_or_processes=False,
+    ).get(name, True)
     management_commands.set_config_value(name, value, is_a_boolean)
 
 
