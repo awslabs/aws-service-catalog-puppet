@@ -163,3 +163,15 @@ def get_spoke_deploy_environment_compute_type(puppet_account_id, default_region)
         "spoke_deploy_environment_compute_type",
         constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_DEFAULT,
     )
+
+
+def get_scheduler_threads_or_processes(puppet_account_id, default_region):
+    logger.info(
+        "getting scheduler_threads_or_processes,  default_region: {}".format(
+            default_region
+        )
+    )
+    return get_config(puppet_account_id, default_region).get(
+        "scheduler_threads_or_processes",
+        constants.SCHEDULER_THREADS_OR_PROCESSES_DEFAULT,
+    )
