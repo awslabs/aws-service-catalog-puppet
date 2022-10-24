@@ -2,7 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
-from servicecatalog_puppet import serialisation_utils
+from servicecatalog_puppet import serialisation_utils, remote_config
 import logging
 import os
 import shutil
@@ -25,7 +25,7 @@ from luigi import LuigiStatusCode
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import environmental_variables
-from servicecatalog_puppet.waluigi import scheduler
+from servicecatalog_puppet.waluigi import scheduler_factory
 from servicecatalog_puppet.workflow import tasks
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
@@ -108,6 +108,8 @@ def run_tasks(
         urlretrieve(output_cache_starting_point, dst)
         shutil.unpack_archive("GetSSMParamTask.zip", ".", "zip")
 
+    threads_or_processes = config.get_scheduler_threads_or_processes()
+    scheduler = scheduler_factory.get_scheduler(threads_or_processes, "topological_generations")
     scheduler.run(
         num_workers,
         tasks_to_run_filtered,

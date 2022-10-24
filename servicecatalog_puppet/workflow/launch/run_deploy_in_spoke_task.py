@@ -102,6 +102,11 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
                 "value": config.get_spoke_execution_mode_deploy_env(),
                 "type": "PLAINTEXT",
             },
+            {
+                "name": environmental_variables.SCHEDULER_THREADS_OR_PROCESSES,
+                "value": config.get_scheduler_threads_or_processes(),
+                "type": "PLAINTEXT",
+            },
         ]
 
         if "http" in version:

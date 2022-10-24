@@ -228,3 +228,6 @@ def get_spoke_execution_mode_deploy_env():
 
 def get_should_use_sns():
     return os.environ.get(environmental_variables.SHOULD_USE_SNS, "FALSE").upper() == "TRUE"
+
+def get_scheduler_threads_or_processes():
+    return os.environ.get(environmental_variables.SCHEDULER_THREADS_OR_PROCESSES, constants.SCHEDULER_THREADS_OR_PROCESSES_DEFAULT)

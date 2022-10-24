@@ -370,3 +370,5 @@ RUN_DEPLOY_IN_SPOKE_BUILDSPEC = """
           - output/*/*
         name: DeployInSpokeProject
 """
+
+SCHEDULER_THREADS_OR_PROCESSES_DEFAULT = "threads"

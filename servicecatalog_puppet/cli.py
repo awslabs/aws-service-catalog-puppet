@@ -525,6 +525,12 @@ def setup_config(
         ] = remote_config.get_spoke_deploy_environment_compute_type(
             puppet_account_id_to_use, home_region
         )
+    if not os.environ.get(environmental_variables.SCHEDULER_THREADS_OR_PROCESSES):
+        os.environ[
+            environmental_variables.SCHEDULER_THREADS_OR_PROCESSES
+        ] = remote_config.get_scheduler_threads_or_processes(
+            puppet_account_id_to_use, home_region
+        )
 
 
 @cli.command()
@@ -797,7 +803,10 @@ def set_regions(regions):
 @click.argument("name")
 @click.argument("value")
 def set_config_value(name, value):
-    is_a_boolean = dict(spoke_deploy_environment_compute_type=False).get(name, True)
+    is_a_boolean = dict(
+        spoke_deploy_environment_compute_type=False,
+        scheduler_threads_or_processes=False,
+    ).get(name, True)
     management_commands.set_config_value(name, value, is_a_boolean)
 
 
