@@ -27,7 +27,6 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
     should_forward_failures_to_opscenter = (
         environmental_variables_parameters.environmentalParams().should_forward_failures_to_opscenter
     )
-    version = environmental_variables_parameters.environmentalParams().version
 
     def params_for_results_display(self):
         return {
@@ -45,13 +44,15 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
         manifest_signed_url = generated_manifest.get("manifest_signed_url")
         cached_output_signed_url = generated_manifest.get("cached_output_signed_url")
 
+        version = constants.VERSION
+
         vars = [
             {
                 "name": environmental_variables.CACHE_INVALIDATOR,
                 "value": self.cache_invalidator,
                 "type": "PLAINTEXT",
             },
-            {"name": "VERSION", "value": self.version, "type": "PLAINTEXT"},
+            {"name": "VERSION", "value": version, "type": "PLAINTEXT"},
             {"name": "MANIFEST_URL", "value": manifest_signed_url, "type": "PLAINTEXT"},
             {
                 "name": "TASK_REFERENCE_URL",
@@ -117,41 +118,12 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
             },
         ]
 
-        if "http" in self.version:
-            install_command = f"pip install {self.version}"
+        if "http" in version:
+            install_command = f"pip install {version}"
         else:
-            install_command = f"pip install aws-service-catalog-puppet=={self.version}"
+            install_command = f"pip install aws-service-catalog-puppet=={version}"
 
-        build_spec = serialisation_utils.dump(
-            dict(
-                version="0.2",
-                phases=dict(
-                    install={
-                        "runtime-versions": dict(python=3.7),
-                        "commands": ["echo $VERSION", install_command],
-                    },
-                    build=dict(
-                        commands=[
-                            "curl $TASK_REFERENCE_URL > manifest-task-reference.json",
-                            "curl $MANIFEST_URL > manifest-expanded.yaml",
-                            """servicecatalog-puppet --info deploy-in-spoke-from-task-reference \
-                      --execution-mode spoke \
-                      --puppet-account-id $PUPPET_ACCOUNT_ID \
-                      --single-account $(aws sts get-caller-identity --query Account --output text) \
-                      --home-region $HOME_REGION \
-                      --regions $REGIONS \
-                      --should-collect-cloudformation-events $SHOULD_COLLECT_CLOUDFORMATION_EVENTS \
-                      --should-forward-events-to-eventbridge $SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE \
-                      --should-forward-failures-to-opscenter $SHOULD_FORWARD_FAILURES_TO_OPSCENTER \
-                      ${PWD}""",
-                        ]
-                    ),
-                ),
-                artifacts=dict(
-                    files=["results/*/*", "output/*/*"], name="DeployInSpokeProject"
-                ),
-            )
-        )
+        build_spec = constants.RUN_DEPLOY_IN_SPOKE_BUILDSPEC.format(install_command)
 
         with self.spoke_client("codebuild") as codebuild:
             response = codebuild.start_build(
