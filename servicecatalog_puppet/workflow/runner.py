@@ -353,16 +353,19 @@ def run_tasks(
                                 "Type": "SearchableString",
                             }
                     description = "\n".join(result.get("exception_stack_trace"))[-1024:]
-                    ssm_client.create_ops_item(
-                        Title=title,
-                        Description=description,
-                        OperationalData=operational_data,
-                        Priority=1,
-                        Source=constants.SERVICE_CATALOG_PUPPET_OPS_CENTER_SOURCE,
-                        Tags=[
-                            {"Key": "ServiceCatalogPuppet:Actor", "Value": "ops-item"},
-                        ],
-                    )
+                    try:
+                        ssm_client.create_ops_item(
+                            Title=title,
+                            Description=description,
+                            OperationalData=operational_data,
+                            Priority=1,
+                            Source=constants.SERVICE_CATALOG_PUPPET_OPS_CENTER_SOURCE,
+                            Tags=[
+                                {"Key": "ServiceCatalogPuppet:Actor", "Value": "ops-item"},
+                            ],
+                        )
+                    except ssm_client.exceptions.OpsItemLimitExceededException:
+                        logging.error(f"OpsItem: {title} creation failed due to OpsItemLimitExceededException. OperationalData: {operational_data}")
                 if "RunDeployInSpoke" in filename:
                     click.echo(
                         colorclass.Color(
