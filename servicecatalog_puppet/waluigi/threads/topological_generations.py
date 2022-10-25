@@ -32,12 +32,12 @@ QUEUE_STATUS = "QUEUE_STATUS"
 RESOURCES_REQUIRED = "resources_required"
 
 
-def build_the_dag(tasks_to_run):
+def build_the_dag(tasks_to_run: dict):
     g = nx.DiGraph()
     print("-- BUILDING THE DAG!!!")
     for uid, task in tasks_to_run.items():
         g.add_nodes_from(
-            [(uid, task),]
+            [(uid, task), ]
         )
         for duid in task.get("dependencies_by_reference", []):
             if tasks_to_run.get(duid):
@@ -71,7 +71,7 @@ def build_the_dag(tasks_to_run):
     return g
 
 
-def are_resources_are_free_for_task(task_parameters, resources_file_path):
+def are_resources_are_free_for_task(task_parameters: dict, resources_file_path: str):
     with open(resources_file_path, "rb") as f:
         resources_in_use = serialisation_utils.json_loads(f.read())
     return (
@@ -84,7 +84,7 @@ def are_resources_are_free_for_task(task_parameters, resources_file_path):
 
 
 def lock_resources_for_task(
-    task_reference, task_parameters, resources_in_use, resources_file_path
+    task_reference: str, task_parameters: dict, resources_in_use: dict, resources_file_path: str
 ):
     print(f"Worker locking {task_reference}")
     for r in task_parameters.get(RESOURCES_REQUIRED, []):
@@ -93,7 +93,7 @@ def lock_resources_for_task(
         f.write(serialisation_utils.json_dumps(resources_in_use))
 
 
-def unlock_resources_for_task(task_parameters, resources_file_path):
+def unlock_resources_for_task(task_parameters: dict, resources_file_path: str):
     with open(resources_file_path, "rb") as f:
         resources_in_use = serialisation_utils.json_loads(f.read())
     for r in task_parameters.get(RESOURCES_REQUIRED, []):
@@ -237,7 +237,7 @@ def scheduler_task(
             control_event.set()
             return
 
-        current_generation = list(generations[-1])  # may need to make list
+        current_generation = list(generations[-1])
         number_of_tasks_in_flight = 0
         number_of_tasks_processed = 0
         number_of_tasks_in_generation = len(current_generation)
@@ -255,6 +255,7 @@ def scheduler_task(
                 task_to_run_reference = current_generation.pop()
                 logger.info(f"sending: {task_to_run_reference}")
                 task_queue.put(task_to_run_reference)
+                time.sleep(0.1)
 
             # now handle a complete jobs from the workers
             task_reference, result = results_queue.get()

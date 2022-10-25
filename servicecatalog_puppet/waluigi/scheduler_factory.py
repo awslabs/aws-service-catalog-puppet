@@ -2,7 +2,7 @@ from servicecatalog_puppet.waluigi.threads import topological_generations as thr
 from servicecatalog_puppet.waluigi.processes import topological_generations as processes_topological_generations
 
 
-def get_scheduler(threads_or_processes, algorithm):
+def get_scheduler(threads_or_processes: str, algorithm: str):
     name = f"{threads_or_processes}.{algorithm}"
     print(f"Using scheduler: {name}")
     if name == "threads.topological_generations":

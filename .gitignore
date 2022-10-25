@@ -31,3 +31,4 @@ coverage.xml
 ignored.html
 *.html
 state1.json
+.fleet
