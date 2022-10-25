@@ -264,7 +264,7 @@ def scheduler_task(
                 task_to_run_reference = current_generation.pop()
                 logger.info(f"sending: {task_to_run_reference}")
                 task_queue.put(task_to_run_reference)
-                time.sleep(0.2)
+                time.sleep(1)
 
             # now handle a complete jobs from the workers
             task_reference, result = results_queue.get()
