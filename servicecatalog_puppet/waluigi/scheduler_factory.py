@@ -1,5 +1,9 @@
-from servicecatalog_puppet.waluigi.threads import topological_generations as threads_topological_generations
-from servicecatalog_puppet.waluigi.processes import topological_generations as processes_topological_generations
+from servicecatalog_puppet.waluigi.threads import (
+    topological_generations as threads_topological_generations,
+)
+from servicecatalog_puppet.waluigi.processes import (
+    topological_generations as processes_topological_generations,
+)
 
 
 def get_scheduler(threads_or_processes: str, algorithm: str):

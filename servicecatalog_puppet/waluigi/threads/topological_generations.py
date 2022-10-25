@@ -37,7 +37,7 @@ def build_the_dag(tasks_to_run: dict):
     print("-- BUILDING THE DAG!!!")
     for uid, task in tasks_to_run.items():
         g.add_nodes_from(
-            [(uid, task), ]
+            [(uid, task),]
         )
         for duid in task.get("dependencies_by_reference", []):
             if tasks_to_run.get(duid):
@@ -84,7 +84,10 @@ def are_resources_are_free_for_task(task_parameters: dict, resources_file_path: 
 
 
 def lock_resources_for_task(
-    task_reference: str, task_parameters: dict, resources_in_use: dict, resources_file_path: str
+    task_reference: str,
+    task_parameters: dict,
+    resources_in_use: dict,
+    resources_file_path: str,
 ):
     print(f"Worker locking {task_reference}")
     for r in task_parameters.get(RESOURCES_REQUIRED, []):
