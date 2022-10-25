@@ -621,9 +621,24 @@ def deploy_from_task_reference(
 @click.option("--single-account", default=None)
 @click.option("--home-region", default=None)
 @click.option("--regions", default="")
-@click.option("--should-collect-cloudformation-events", default=None, type=bool, envvar="SHOULD_COLLECT_CLOUDFORMATION_EVENTS")
-@click.option("--should-forward-events-to-eventbridge", default=None, type=bool, envvar="SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE")
-@click.option("--should-forward-failures-to-opscenter", default=None, type=bool, envvar="SHOULD_FORWARD_FAILURES_TO_OPSCENTER")
+@click.option(
+    "--should-collect-cloudformation-events",
+    default=None,
+    type=bool,
+    envvar="SHOULD_COLLECT_CLOUDFORMATION_EVENTS",
+)
+@click.option(
+    "--should-forward-events-to-eventbridge",
+    default=None,
+    type=bool,
+    envvar="SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE",
+)
+@click.option(
+    "--should-forward-failures-to-opscenter",
+    default=None,
+    type=bool,
+    envvar="SHOULD_FORWARD_FAILURES_TO_OPSCENTER",
+)
 @click.option(
     "--output-cache-starting-point",
     default="",

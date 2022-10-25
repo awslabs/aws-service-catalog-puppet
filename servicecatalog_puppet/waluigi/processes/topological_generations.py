@@ -230,11 +230,7 @@ def worker_task(
 
 
 def scheduler_task(
-        num_workers,
-        task_queue,
-        results_queue,
-        control_queue,
-        tasks_to_run,
+    num_workers, task_queue, results_queue, control_queue, tasks_to_run,
 ):
     number_of_target_tasks_in_flight = num_workers
     should_be_running = True
@@ -264,6 +260,7 @@ def scheduler_task(
                 task_to_run_reference = current_generation.pop()
                 logger.info(f"sending: {task_to_run_reference}")
                 task_queue.put(task_to_run_reference)
+                time.sleep(1)
 
             # now handle a complete jobs from the workers
             task_reference, result = results_queue.get()
@@ -299,7 +296,7 @@ def on_task_processing_time(task_processing_time_queue, complete_event):
         "cloudwatch-puppethub",
     ) as cloudwatch:
         while not complete_event.is_set():
-        # while True:
+            # while True:
             time.sleep(0.1)
             try:
                 duration, task_type, task_params = task_processing_time_queue.get(
@@ -353,7 +350,7 @@ def on_task_trace(task_trace_queue, complete_event, puppet_account_id):
         "s3", config.get_puppet_role_arn(config.get_executor_account_id()), "s3",
     ) as s3:
         while not complete_event.is_set():
-        # while True:
+            # while True:
             time.sleep(0.1)
             try:
                 t, task_type, task_params, is_start, thread_name = task_trace_queue.get(
@@ -430,13 +427,7 @@ def run(
     scheduler_thread = multiprocessing.Process(
         name="scheduler",
         target=scheduler_task,
-        args=(
-            num_workers,
-            task_queue,
-            results_queue,
-            control_queue,
-            tasks_to_run,
-        ),
+        args=(num_workers, task_queue, results_queue, control_queue, tasks_to_run,),
     )
     on_task_processing_time_thread = multiprocessing.Process(
         name="on_task_processing_time",

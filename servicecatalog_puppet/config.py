@@ -179,11 +179,21 @@ def get_executor_account_id():
 
 
 def get_should_use_eventbridge():
-    return os.environ.get(environmental_variables.SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE, "FALSE").upper() == "TRUE"
+    return (
+        os.environ.get(
+            environmental_variables.SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE, "FALSE"
+        ).upper()
+        == "TRUE"
+    )
 
 
 def get_should_forward_failures_to_opscenter():
-    return os.environ.get(environmental_variables.SHOULD_FORWARD_FAILURES_TO_OPSCENTER, "FALSE").upper() == "TRUE"
+    return (
+        os.environ.get(
+            environmental_variables.SHOULD_FORWARD_FAILURES_TO_OPSCENTER, "FALSE"
+        ).upper()
+        == "TRUE"
+    )
 
 
 def get_regions():
@@ -227,7 +237,14 @@ def get_spoke_execution_mode_deploy_env():
 
 
 def get_should_use_sns():
-    return os.environ.get(environmental_variables.SHOULD_USE_SNS, "FALSE").upper() == "TRUE"
+    return (
+        os.environ.get(environmental_variables.SHOULD_USE_SNS, "FALSE").upper()
+        == "TRUE"
+    )
+
 
 def get_scheduler_threads_or_processes():
-    return os.environ.get(environmental_variables.SCHEDULER_THREADS_OR_PROCESSES, constants.SCHEDULER_THREADS_OR_PROCESSES_DEFAULT)
+    return os.environ.get(
+        environmental_variables.SCHEDULER_THREADS_OR_PROCESSES,
+        constants.SCHEDULER_THREADS_OR_PROCESSES_DEFAULT,
+    )

@@ -109,7 +109,9 @@ def run_tasks(
         shutil.unpack_archive("GetSSMParamTask.zip", ".", "zip")
 
     threads_or_processes = config.get_scheduler_threads_or_processes()
-    scheduler = scheduler_factory.get_scheduler(threads_or_processes, "topological_generations")
+    scheduler = scheduler_factory.get_scheduler(
+        threads_or_processes, "topological_generations"
+    )
     scheduler.run(
         num_workers,
         tasks_to_run_filtered,
@@ -363,11 +365,16 @@ def run_tasks(
                             Priority=1,
                             Source=constants.SERVICE_CATALOG_PUPPET_OPS_CENTER_SOURCE,
                             Tags=[
-                                {"Key": "ServiceCatalogPuppet:Actor", "Value": "ops-item"},
+                                {
+                                    "Key": "ServiceCatalogPuppet:Actor",
+                                    "Value": "ops-item",
+                                },
                             ],
                         )
                     except ssm_client.exceptions.OpsItemLimitExceededException:
-                        logging.error(f"OpsItem: {title} creation failed due to OpsItemLimitExceededException. OperationalData: {operational_data}")
+                        logging.error(
+                            f"OpsItem: {title} creation failed due to OpsItemLimitExceededException. OperationalData: {operational_data}"
+                        )
                 if "RunDeployInSpoke" in filename:
                     click.echo(
                         colorclass.Color(

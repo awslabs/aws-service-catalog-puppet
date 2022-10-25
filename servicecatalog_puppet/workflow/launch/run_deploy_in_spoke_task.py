@@ -51,7 +51,11 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
                 "type": "PLAINTEXT",
             },
             {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
-            {"name": "REGIONS", "value": ",".join(config.get_regions()), "type": "PLAINTEXT",},
+            {
+                "name": "REGIONS",
+                "value": ",".join(config.get_regions()),
+                "type": "PLAINTEXT",
+            },
             {
                 "name": "SHOULD_COLLECT_CLOUDFORMATION_EVENTS",
                 "value": str(config.get_should_use_sns()),
