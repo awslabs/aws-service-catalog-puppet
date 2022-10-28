@@ -48,16 +48,16 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
 
         for resource_update_constraint in self.resource_update_constraints:
             products_to_constrain = list()
-            constraint = resource_update_constraint.get("products") or resource_update_constraint.get("product")
+            constraint = resource_update_constraint.get(
+                "products"
+            ) or resource_update_constraint.get("product")
             if isinstance(constraint, tuple):
                 for p in constraint:
                     products_to_constrain.append(p)
             elif isinstance(constraint, str):
                 products_to_constrain.append(constraint)
             else:
-                raise Exception(
-                    f'Unexpected launch constraint type {type(constraint)}'
-                )
+                raise Exception(f"Unexpected launch constraint type {type(constraint)}")
 
             validate_tag_update = resource_update_constraint.get(
                 "tag_update_on_provisioned_product"

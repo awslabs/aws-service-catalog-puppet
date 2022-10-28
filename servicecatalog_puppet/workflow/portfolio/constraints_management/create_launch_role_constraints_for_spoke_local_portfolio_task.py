@@ -46,7 +46,9 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(tasks.TaskWithRefere
 
         for launch_constraint in self.launch_constraints:
             products_to_constrain = list()
-            constraint = launch_constraint.get("products") or launch_constraint.get("product")
+            constraint = launch_constraint.get("products") or launch_constraint.get(
+                "product"
+            )
             if isinstance(constraint, tuple):
                 for p in constraint:
                     products_to_constrain.append(p)
@@ -54,7 +56,7 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(tasks.TaskWithRefere
                 products_to_constrain.append(constraint)
             else:
                 raise Exception(
-                    f'Unexpected launch constraint type in {type(constraint)}'
+                    f"Unexpected launch constraint type in {type(constraint)}"
                 )
 
             for role_arn in launch_constraint.get("roles"):

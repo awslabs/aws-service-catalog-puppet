@@ -192,7 +192,9 @@ def worker_task(
                         try:
                             logger.error(f"---- START OF ERROR----")
                             logger.error(f"Task {task_type}:")
-                            for l in serialisation_utils.dump(unwrap(task_details)).split("\n"):
+                            for l in serialisation_utils.dump(
+                                unwrap(task_details)
+                            ).split("\n"):
                                 logger.error(l)
                             for l in traceback.format_exception(
                                 etype=type(e), value=e, tb=e.__traceback__,
@@ -201,7 +203,9 @@ def worker_task(
                                     logger.error(f"{sl}")
                             logger.error(f"---- END OF ERROR ----")
                         except Exception as e2:
-                            logger.error(f"Exception raised: {e2}  whilst logging exection: {e}")
+                            logger.error(
+                                f"Exception raised: {e2}  whilst logging exection: {e}"
+                            )
                         task.on_task_failure(e, duration)
                     else:
                         end = time.time()
