@@ -54,7 +54,6 @@ install_requires = \
  'luigi==3.1.1',
  'networkx==2.6.3',
  'orjson>=3.8.0,<4.0.0',
- 'psutil==5.7.0',
  'pyyaml==5.4',
  'requests==2.26.0',
  'terminaltables==3.1.0',
