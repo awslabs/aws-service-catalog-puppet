@@ -1,7 +1,13 @@
+import logging
+import multiprocessing
+import os
+import queue
+import threading
 import time
 import traceback
 
 import networkx as nx
+from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import (
     serialisation_utils,
@@ -9,19 +15,8 @@ from servicecatalog_puppet import (
     constants,
     environmental_variables,
 )
-
-import multiprocessing
-import threading
-import os
-import queue
-
-
 from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.workflow.dependencies import task_factory
-from betterboto import client as betterboto_client
-
-import logging
-
 from servicecatalog_puppet.workflow.tasks import unwrap
 
 CONTROL_EVENT__COMPLETE = "CONTROL_EVENT__COMPLETE"
