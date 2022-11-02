@@ -3,7 +3,7 @@ schema: enum("puppet-2019-04-01", required=False)
 
 accounts: list(include('account_or_ou'), min=1)
 
-parameters: map(any(include('default_parameter'), include('ssm_parameter'), include('boto3_parameter')), required=False)
+parameters: map(any(include('default_parameter'), include('ssm_parameter'), include('boto3_parameter'), include('mapping_parameter')), required=False)
 
 mappings: map(include('mapping'), required=False)
 
@@ -76,7 +76,7 @@ exclude:
 ou_path_or_id: str()
 
 mapping: map()
-parameter: map(any(include('default_parameter'), include('ssm_parameter'), include('boto3_parameter'), include('cloudformation_stack_output_parameter'), include('servicecatalog_provisioned_product_output_parameter')))
+parameter: map(any(include('default_parameter'), include('ssm_parameter'), include('boto3_parameter'), include('cloudformation_stack_output_parameter'), include('servicecatalog_provisioned_product_output_parameter'), include('mapping_parameter')))
 
 default_parameter:
   default: str()
@@ -87,6 +87,9 @@ ssm_parameter:
     region: include('region', required=False)
     path: str(required=False)
     default_value: str(required=False)
+
+mapping_parameter:
+  mapping: list(str())
 
 account_id_str: any(str(min=12, max=12), int(min=100000000000, max=999999999999))
 
