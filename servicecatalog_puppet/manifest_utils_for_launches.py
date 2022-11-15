@@ -31,5 +31,3 @@ def get_configuration_from_launch(manifest, launch_name):
     }
     configuration.update(get_configuration_overrides(manifest, launch_details))
     return configuration
-
-
