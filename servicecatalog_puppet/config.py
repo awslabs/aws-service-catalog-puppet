@@ -178,6 +178,10 @@ def get_executor_account_id():
     return os.environ.get(environmental_variables.EXECUTOR_ACCOUNT_ID)
 
 
+def get_execution_mode():
+    return os.environ.get(environmental_variables.EXECUTION_MODE)
+
+
 def get_should_use_eventbridge():
     return (
         os.environ.get(

@@ -28,7 +28,7 @@ class GetCloudFormationTemplateFromS3(tasks.TaskWithReference):
 
     def run(self):
         with self.hub_client("s3") as s3:
-            regional_template = self.key.replace("-${AWS::Region}", f"-{self.region}-ffff")
+            regional_template = self.key.replace("-${AWS::Region}", f"-{self.region}")
             global_template = self.key.replace("-${AWS::Region}", "")
             p = dict(Bucket=self.bucket)
             if self.version_id != "":
@@ -42,8 +42,10 @@ class GetCloudFormationTemplateFromS3(tasks.TaskWithReference):
             try:
                 s3.download_file(Key=regional_template, Filename=output, **p)
             except botocore.exceptions.ClientError as e:
-                if "404" == str(e.response['Error']['Code']):
-                    self.info(f"Didnt find regional template: {regional_template}, will try global: {global_template}")
+                if "404" == str(e.response["Error"]["Code"]):
+                    self.info(
+                        f"Didnt find regional template: {regional_template}, will try global: {global_template}"
+                    )
                     s3.download_file(Key=global_template, Filename=output, **p)
                 else:
                     raise e

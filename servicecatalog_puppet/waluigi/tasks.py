@@ -42,22 +42,22 @@ class WaluigiTaskMixin:
     def execute(self):
         if self.should_use_caching:
             if self.complete():
-                for task_reference, output in (
-                    self.input().get("reference_dependencies", {}).items()
-                ):
-                    s3_url = output.path.split("/")
-                    bucket = s3_url[2]
-                    key = "/".join(s3_url[3:])
-                    if key.endswith("latest.json"):
-                        target = key
-                    else:
-                        target = ".".join(key.split(".")[0:-1])
-                    target_dir = target.replace("/latest.json", "")
-                    if not os.path.exists(target_dir):
-                        os.makedirs(target_dir)
-                    if not os.path.exists(target):
-                        with self.hub_client("s3") as s3:
-                            s3.download_file(Bucket=bucket, Key=key, Filename=target)
+                s3_location = self.output().path
+                s3_url = s3_location.split("/")
+                bucket = s3_url[2]
+                key = "/".join(s3_url[3:])
+                if key.endswith("latest.json"):
+                    target = key
+                else:
+                    target = ".".join(key.split(".")[0:-1])
+                target_dir = target.replace("/latest.json", "")
+                if not os.path.exists(target_dir):
+                    os.makedirs(target_dir)
+                if not os.path.exists(target):
+                    with self.hub_client("s3") as s3:
+                        s3.download_file(Bucket=bucket, Key=key, Filename=target)
+                if not os.path.exists(target):
+                    raise Exception(f"{target} was not downloaded from the cache")
             else:
                 self.run()
                 self.execute()

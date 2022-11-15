@@ -118,6 +118,7 @@ def run_tasks(
         manifest_files_path,
         manifest_task_reference_file_path,
         puppet_account_id,
+        execution_mode,
     )
 
     cache_invalidator = os.environ.get(environmental_variables.CACHE_INVALIDATOR)
