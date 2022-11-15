@@ -1686,7 +1686,7 @@ def deploy_from_task_reference(path):
 
     executor_account_id = config.get_executor_account_id()
     is_dry_run = is_list_launches = False
-    execution_mode = "hub"
+    execution_mode = config.get_execution_mode()
     on_complete_url = config.get_on_complete_url()
     running_exploded = False
     output_cache_starting_point = ""
