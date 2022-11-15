@@ -347,7 +347,7 @@ def on_task_processing_time(task_processing_time_queue, complete_event):
         logger.info("shutting down")
 
 
-def on_task_trace(task_trace_queue, complete_event, puppet_account_id):
+def on_task_trace(task_trace_queue, complete_event, puppet_account_id, execution_mode):
     bucket = f"sc-puppet-log-store-{puppet_account_id}"
     key_prefix = f"{os.getenv('CODEBUILD_BUILD_ID', f'local/{os.getenv(environmental_variables.CACHE_INVALIDATOR)}')}/traces"
     with betterboto_client.CrossAccountClientContextManager(
@@ -362,6 +362,8 @@ def on_task_trace(task_trace_queue, complete_event, puppet_account_id):
             except queue.Empty:
                 continue
             else:
+                if execution_mode == constants.EXECUTION_MODE_SPOKE:
+                    continue
                 tz = (t - float(os.getenv("SCT_START_TIME", 0))) * 1000000
                 task_reference = task_params.get("task_reference")
                 s3.put_object(
@@ -389,6 +391,7 @@ def run(
     manifest_files_path,
     manifest_task_reference_file_path,
     puppet_account_id,
+    execution_mode,
 ):
     resources_file_path = f"{manifest_files_path}/resources.json"
     os.environ["SCT_START_TIME"] = str(time.time())
@@ -448,7 +451,7 @@ def run(
     on_task_trace_thread = threading.Thread(
         name="on_task_trace",
         target=on_task_trace,
-        args=(task_trace_queue, complete_event, puppet_account_id),
+        args=(task_trace_queue, complete_event, puppet_account_id, execution_mode),
     )
     on_task_processing_time_thread.start()
     on_task_trace_thread.start()
