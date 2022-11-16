@@ -9,6 +9,7 @@ class ShareAndAcceptPortfolioForAccountTaskTest(
     region = "region"
     portfolio = "portfolio"
     portfolio_task_reference = "portfolio_task_reference"
+    share_tag_options = True
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.portfolio.sharing_management import (
@@ -23,6 +24,7 @@ class ShareAndAcceptPortfolioForAccountTaskTest(
             region=self.region,
             portfolio=self.portfolio,
             portfolio_task_reference=self.portfolio_task_reference,
+            share_tag_options=self.share_tag_options,
         )
 
         self.wire_up_mocks()
@@ -35,6 +37,7 @@ class ShareAndAcceptPortfolioForAccountTaskTest(
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
+            "share_tag_options": self.share_tag_options,
         }
 
         # exercise
