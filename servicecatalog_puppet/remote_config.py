@@ -153,6 +153,18 @@ def get_global_sharing_mode_default(puppet_account_id, default_region=None):
     )
 
 
+@functools.lru_cache(maxsize=32)
+def get_global_share_tag_options_default(puppet_account_id, default_region=None):
+    logger.info(
+        "getting global_share_tag_options_default,  default_region: {}".format(
+            default_region
+        )
+    )
+    return get_config(puppet_account_id, default_region).get(
+        "global_share_tag_options_default", constants.SHARE_TAG_OPTIONS_DEFAULT
+    )
+
+
 def get_spoke_deploy_environment_compute_type(puppet_account_id, default_region):
     logger.info(
         "getting spoke_deploy_environment_compute_type,  default_region: {}".format(

@@ -501,6 +501,7 @@ def create(
             return share_and_accept_portfolio_task.ShareAndAcceptPortfolioForAccountTask(
                 **common_parameters,
                 portfolio=parameters_to_use.get("portfolio"),
+                share_tag_options=parameters_to_use.get("share_tag_options"),
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
@@ -518,6 +519,7 @@ def create(
                 **minimum_common_parameters,
                 region=parameters_to_use.get("region"),
                 portfolio=parameters_to_use.get("portfolio"),
+                share_tag_options=parameters_to_use.get("share_tag_options"),
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),

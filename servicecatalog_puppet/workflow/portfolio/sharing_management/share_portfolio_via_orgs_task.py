@@ -12,6 +12,7 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
+    share_tag_options = luigi.BoolParameter()
     ou_to_share_with = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
 
@@ -21,6 +22,7 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
             "portfolio": self.portfolio,
             "region": self.region,
             "ou_to_share_with": self.ou_to_share_with,
+            "share_tag_options": self.share_tag_options,
         }
 
     def run(self):
@@ -32,6 +34,7 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
         with self.hub_regional_client("servicecatalog") as servicecatalog:
             portfolio_share_token = servicecatalog.create_portfolio_share(
                 PortfolioId=portfolio_id,
+                ShareTagOptions=self.share_tag_options,
                 OrganizationNode=dict(
                     Type="ORGANIZATIONAL_UNIT", Value=self.ou_to_share_with
                 ),

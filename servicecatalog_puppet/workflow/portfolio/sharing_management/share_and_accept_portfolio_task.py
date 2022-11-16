@@ -10,6 +10,7 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
+    share_tag_options = luigi.BoolParameter()
     portfolio_task_reference = luigi.Parameter()
 
     def params_for_results_display(self):
@@ -19,6 +20,7 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
+            "share_tag_options": self.share_tag_options,
         }
 
     def has_already_been_shared(self, portfolio_id):
@@ -60,7 +62,9 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
             self.info(f"sharing {portfolio_id} with {self.account_id}")
             with self.hub_regional_client("servicecatalog") as servicecatalog:
                 servicecatalog.create_portfolio_share(
-                    PortfolioId=portfolio_id, AccountId=self.account_id,
+                    PortfolioId=portfolio_id,
+                    AccountId=self.account_id,
+                    ShareTagOptions=self.share_tag_options,
                 )
 
         # ACCEPT

@@ -185,6 +185,7 @@ launch:
   portfolio: str()
   product: str()
   version: str()
+  share_tag_options: bool(required=False)
   parameters: include('parameters', required=False)
   depends_on: list(include('depends_on'), required=False)
   tags: list(include('tags_for_resources'), required=False)
@@ -223,6 +224,7 @@ assertion:
 spoke-local-portfolio:
   portfolio: str()
   sharing_mode: enum('AWS_ORGANIZATIONS', "ACCOUNT", required=False)
+  share_tag_options: bool(required=False)
   product_generation_method: enum('copy', 'import', required=False)
   depends_on: list(include('depends_on'), required=False)
   associations: list(include('associations_arns'), required=False)
