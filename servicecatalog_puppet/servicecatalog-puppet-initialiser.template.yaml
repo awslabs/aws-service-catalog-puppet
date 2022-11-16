@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.196.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.206.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -62,6 +62,10 @@ Metadata:
           - CloudFormationDeployRolePermissionsBoundary
           - PuppetRolePermissionBoundary
       - Label:
+          default: "ServiceCatalog"
+        Parameters:
+          - ShouldShareTagOptions
+      - Label:
           default: "Stacks"
         Parameters:
           - ShouldUseStacksServiceRole
@@ -98,6 +102,14 @@ Parameters:
     Default: False
   ShouldForwardFailuresToOpscenter:
     Type: String
+    AllowedValues:
+      - True
+      - False
+    Default: True
+  ShouldShareTagOptions:
+    Type: String
+    Description: |
+      What value should ShareTagOptions be when creating portfolio shares with AWS Service Catalog
     AllowedValues:
       - True
       - False
@@ -389,6 +401,9 @@ Resources:
           - Name: SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS
             Type: PLAINTEXT
             Value: !Ref ShouldDeleteRollbackCompleteStacks
+          - Name: SHOULD_SHARE_TAG_OPTIONS
+            Type: PLAINTEXT
+            Value: !Ref ShouldShareTagOptions
       Source:
         Type: NO_SOURCE
         BuildSpec: |
@@ -407,6 +422,7 @@ Resources:
                 - servicecatalog-puppet set-config-value should_delete_rollback_complete_stacks ${SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS}
                 - servicecatalog-puppet set-config-value is_caching_enabled ${IS_CACHING_ENABLED}
                 - servicecatalog-puppet set-config-value spoke_deploy_environment_compute_type ${SPOKE_DEPLOY_ENVIRONMENT_COMPUTE_TYPE}
+                - servicecatalog-puppet set-config-value global_share_tag_options_default ${SHOULD_SHARE_TAG_OPTIONS}
                 - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID} --permission-boundary ${PUPPET_ROLE_PERMISSION_BOUNDARY} --puppet-role-name ${PUPPET_ROLE_NAME} --puppet-role-path ${PUPPET_ROLE_PATH}
             build:
               commands:
