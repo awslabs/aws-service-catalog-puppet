@@ -416,6 +416,7 @@ def setup_config(
     output_cache_starting_point="",
     is_caching_enabled="",
     global_sharing_mode_default="",
+    global_share_tag_options_default="",
     on_complete_url=None,
 ):
     home_region_to_use = home_region or constants.HOME_REGION
@@ -514,9 +515,20 @@ def setup_config(
             puppet_account_id_to_use, home_region
         )
     else:
+        os.environ[environmental_variables.GLOBAL_SHARING_MODE] = str(
+            global_sharing_mode_default
+        )
+
+    if global_share_tag_options_default == "":
+        os.environ[environmental_variables.GLOBAL_SHARE_TAG_OPTIONS] = str(
+            remote_config.get_global_share_tag_options_default(
+                puppet_account_id_to_use, home_region
+            )
+        )
+    else:
         os.environ[
-            environmental_variables.GLOBAL_SHARING_MODE
-        ] = global_sharing_mode_default
+            environmental_variables.GLOBAL_SHARE_TAG_OPTIONS
+        ] = global_share_tag_options_default
     if on_complete_url:
         os.environ[environmental_variables.ON_COMPLETE_URL] = on_complete_url
     if not os.environ.get(environmental_variables.SPOKE_EXECUTION_MODE_DEPLOY_ENV):
@@ -651,6 +663,11 @@ def deploy_from_task_reference(
 @click.option(
     "--global-sharing-mode-default", default="", envvar="SCT_GLOBAL_SHARING_MODE",
 )
+@click.option(
+    "--global-share-tag-options-default",
+    default="",
+    envvar="SCT_GLOBAL_SHARE_TAG_OPTIONS",
+)
 def deploy_in_spoke_from_task_reference(
     p,
     num_workers,
@@ -665,6 +682,7 @@ def deploy_in_spoke_from_task_reference(
     output_cache_starting_point,
     is_caching_enabled,
     global_sharing_mode_default,
+    global_share_tag_options_default,
 ):
     setup_config(
         puppet_account_id=puppet_account_id,
@@ -679,6 +697,7 @@ def deploy_in_spoke_from_task_reference(
         output_cache_starting_point=output_cache_starting_point,
         is_caching_enabled=is_caching_enabled,
         global_sharing_mode_default=global_sharing_mode_default,
+        global_share_tag_options_default=global_share_tag_options_default,
     )
     click.echo(
         f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"

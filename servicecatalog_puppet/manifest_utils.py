@@ -741,6 +741,7 @@ class Manifest(dict):
         provisioning_tasks = list()
         item = section[item_name]
         sharing_mode_default = config.get_global_sharing_mode_default()
+        share_tag_options_default = config.get_global_share_tag_options_default()
 
         deploy_to = {
             "launches": "deploy_to",
@@ -768,6 +769,9 @@ class Manifest(dict):
                 # launch_parameters=item.get("parameters", {}),
                 # manifest_parameters=self.get("parameters", {}),
                 ssm_param_outputs=item.get("outputs", {}).get("ssm", []),
+                share_tag_options=item.get(
+                    "share_tag_options", share_tag_options_default
+                ),
                 portfolio=item.get("portfolio"),
                 product=item.get("product"),
                 version=item.get("version"),
@@ -820,6 +824,9 @@ class Manifest(dict):
                 ),
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
                 sharing_mode=item.get("sharing_mode", sharing_mode_default),
+                share_tag_options=item.get(
+                    "share_tag_options", share_tag_options_default
+                ),
                 associations=item.get("associations", list()),
                 launch_constraints=item.get("constraints", {}).get("launch", []),
                 resource_update_constraints=item.get("constraints", {}).get(
