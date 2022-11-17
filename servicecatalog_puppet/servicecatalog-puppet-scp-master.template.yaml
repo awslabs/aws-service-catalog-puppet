@@ -50,6 +50,9 @@ Resources:
                   - organizations:UpdatePolicy
 
                   - organizations:TagResource
+
+                  - organizations:DescribeOrganizationalUnit
+                  - organizations:CreateOrganizationalUnit
                 Resource: "*"
 
       AssumeRolePolicyDocument:

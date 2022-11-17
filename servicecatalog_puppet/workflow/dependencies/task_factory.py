@@ -12,10 +12,10 @@ def get_m(manifest_file_path):
 
 
 def create(
-    manifest_files_path,
-    manifest_task_reference_file_path,
-    puppet_account_id,
-    parameters_to_use,
+        manifest_files_path,
+        manifest_task_reference_file_path,
+        puppet_account_id,
+        parameters_to_use,
 ):
     # TODO add in support for list launches and dry run
     section_name = parameters_to_use.get("section_name")
@@ -668,7 +668,7 @@ def create(
             )
 
     elif (
-        section_name == constants.PORTFOLIO_DISASSOCIATE_ALL_PRODUCTS_AND_THEIR_VERSIONS
+            section_name == constants.PORTFOLIO_DISASSOCIATE_ALL_PRODUCTS_AND_THEIR_VERSIONS
     ):
         if status == "terminated":
             raise Exception("Not supported")
@@ -769,6 +769,18 @@ def create(
             ),
             ous_to_share_with=parameters_to_use.get("ous_to_share_with"),
             accounts_to_share_with=parameters_to_use.get("accounts_to_share_with"),
+        )
+
+    elif section_name == constants.ORGANIZATIONAL_UNITS:
+        from servicecatalog_puppet.workflow.organizational_units import get_or_create_organizational_unit_task
+
+        return get_or_create_organizational_unit_task.GetOrCreateOrganizationalUnitTask(
+            **common_parameters,
+            path=parameters_to_use.get("path"),
+            parent_ou_id=parameters_to_use.get("parent_ou_id"),
+            name=parameters_to_use.get("name"),
+            tags=parameters_to_use.get("tags"),
+            parent_ou_task_ref=parameters_to_use.get("parent_ou_task_ref"),
         )
 
     else:

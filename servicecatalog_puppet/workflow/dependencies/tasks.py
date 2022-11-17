@@ -29,9 +29,8 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
         return dict(reference_dependencies=self.dependencies_for_task_reference())
 
     def get_output_from_reference_dependency(self, reference):
-        f = self.input().get("reference_dependencies").get(reference).open("r")
-        content = f.read()
-        f.close()
+        with self.input().get("reference_dependencies").get(reference).open("r") as f:
+            content = f.read()
         return serialisation_utils.json_loads(content)
 
     def get_output_from_reference_dependency_raw(self, reference):

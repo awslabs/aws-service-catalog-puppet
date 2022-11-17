@@ -111,7 +111,7 @@ class TestManifestForExpand(unittest.TestCase):
         )
 
         # exercise
-        actual_results = self.sut(expanded_manifest, self.client_mock)
+        _, actual_results = self.sut(expanded_manifest, self.client_mock)
 
         # verify
         self.assertDictEqual(expected_results, actual_results)
@@ -182,7 +182,7 @@ class TestManifestForExpand(unittest.TestCase):
         self.client_mock.convert_path_to_ou = MagicMock(return_value="ou-aaaa-bbbbbbbb")
 
         # exercise
-        actual_results = self.sut(expanded_manifest, self.client_mock)
+        _, actual_results = self.sut(expanded_manifest, self.client_mock)
 
         # verify
         self.assertDictEqual(expected_results, actual_results)
