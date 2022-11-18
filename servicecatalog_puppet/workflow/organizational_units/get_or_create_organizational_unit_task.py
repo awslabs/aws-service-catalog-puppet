@@ -26,11 +26,13 @@ class GetOrCreateOrganizationalUnitTask(tasks.TaskWithReference):
         }
 
     def find_ou_in_parent(self, orgs, parent_id):
-        paginator = orgs.get_paginator('list_children')
-        for page in paginator.paginate(ParentId=parent_id, ChildType="ORGANIZATIONAL_UNIT"):
+        paginator = orgs.get_paginator("list_children")
+        for page in paginator.paginate(
+            ParentId=parent_id, ChildType="ORGANIZATIONAL_UNIT"
+        ):
             for child in page.get("Children", []):
                 child_details = orgs.describe_organizational_unit(
-                    OrganizationalUnitId=child.get('Id')
+                    OrganizationalUnitId=child.get("Id")
                 ).get("OrganizationalUnit")
                 if child_details.get("Name") == self.name:
                     return child_details.get("Id")
@@ -41,7 +43,9 @@ class GetOrCreateOrganizationalUnitTask(tasks.TaskWithReference):
             if self.path == "/":
                 result = [orgs.convert_path_to_ou(self.path)]
             else:
-                result = self.get_output_from_reference_dependency(self.parent_ou_task_ref)
+                result = self.get_output_from_reference_dependency(
+                    self.parent_ou_task_ref
+                )
                 parent_id = result[-1]
                 ou_id = self.find_ou_in_parent(orgs, parent_id)
                 if ou_id:
@@ -51,7 +55,8 @@ class GetOrCreateOrganizationalUnitTask(tasks.TaskWithReference):
                         ParentId=parent_id,
                         Name=self.name,
                         Tags=[
-                            dict(Key=tag.get("Key"), Value=tag.get("Value")) for tag in self.tags
+                            dict(Key=tag.get("Key"), Value=tag.get("Value"))
+                            for tag in self.tags
                         ],
                     ).get("OrganizationalUnit")
                     result.append(organizational_unit.get("Id"))

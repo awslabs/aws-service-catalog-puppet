@@ -161,7 +161,7 @@ def get_template(
         )
     )
 
-    template.add_resource(
+    log_bucket = template.add_resource(
         s3.Bucket(
             "LogStore",
             BucketName=t.Sub("sc-puppet-log-store-${AWS::AccountId}"),
@@ -233,7 +233,7 @@ def get_template(
             Value=t.Ref(puppet_role_path_template_parameter),
         )
     )
-    share_accept_function_role = template.add_resource(
+    template.add_resource(
         iam.Role(
             "ShareAcceptFunctionRole",
             RoleName="ShareAcceptFunctionRole",
@@ -273,7 +273,7 @@ def get_template(
         )
     )
 
-    provisioning_role = template.add_resource(
+    template.add_resource(
         iam.Role(
             "ProvisioningRole",
             RoleName="PuppetProvisioningRole",
@@ -302,7 +302,7 @@ def get_template(
         )
     )
 
-    cloud_formation_deploy_role = template.add_resource(
+    template.add_resource(
         iam.Role(
             "CloudFormationDeployRole",
             RoleName="CloudFormationDeployRole",
@@ -331,7 +331,7 @@ def get_template(
         )
     )
 
-    pipeline_role = template.add_resource(
+    template.add_resource(
         iam.Role(
             "PipelineRole",
             RoleName="PuppetCodePipelineRole",
@@ -355,7 +355,7 @@ def get_template(
         )
     )
 
-    source_role = template.add_resource(
+    template.add_resource(
         iam.Role(
             "SourceRole",
             RoleName="PuppetSourceRole",
@@ -386,7 +386,50 @@ def get_template(
         )
     )
 
-    dry_run_notification_topic = template.add_resource(
+    template.add_resource(
+        iam.Role(
+            constants.REPORTING_ROLE_NAME,
+            RoleName=constants.REPORTING_ROLE_NAME,
+            MaxSessionDuration=43200,
+            AssumeRolePolicyDocument={
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": ["sts:AssumeRole"],
+                        "Effect": "Allow",
+                        "Principal": {
+                            "AWS": {
+                                "Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+                            }
+                        },
+                    },
+                ],
+            },
+            Policies=[
+                iam.Policy(
+                    PolicyName="ReportingActions",
+                    PolicyDocument={
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Action": ["s3:PutObject"],
+                                "Resource": t.Sub("${LogStore.Arn}/*"),
+                                "Effect": "Allow",
+                            },
+                            {
+                                "Action": ["cloudwatch:PutMetricData"],
+                                "Resource": "*",
+                                "Effect": "Allow",
+                            },
+                        ],
+                    },
+                )
+            ],
+            Path=t.Ref(puppet_role_path_template_parameter),
+        )
+    )
+
+    template.add_resource(
         sns.Topic(
             "DryRunNotificationTopic",
             DisplayName="service-catalog-puppet-dry-run-approvals",

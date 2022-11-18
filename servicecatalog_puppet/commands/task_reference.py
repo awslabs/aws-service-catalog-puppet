@@ -599,7 +599,15 @@ def handle_organizational_units(
                 else:
                     parent_task_to_add["name"] = os.path.basename(parent_path)
                 all_tasks[parent_task_reference] = parent_task_to_add
-                handle_organizational_units(all_tasks, all_tasks_task_reference, item_name, puppet_account_id, section_name, parent_task_reference, parent_task_to_add)
+                handle_organizational_units(
+                    all_tasks,
+                    all_tasks_task_reference,
+                    item_name,
+                    puppet_account_id,
+                    section_name,
+                    parent_task_reference,
+                    parent_task_to_add,
+                )
             task_to_add["parent_ou_task_ref"] = parent_task_reference
             task_to_add["dependencies_by_reference"].append(parent_task_reference)
 
