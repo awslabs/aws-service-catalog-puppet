@@ -11,6 +11,7 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 import troposphere as t
 from troposphere import s3, servicecatalog
 
+
 class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
     portfolio_task_reference = luigi.Parameter()
     spoke_local_portfolio_name = luigi.Parameter()
@@ -92,30 +93,35 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
 
             v2_stack_name = f"associations-v2-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
             if associations_to_use:
-                    tpl = t.Template()
-                    tpl.description = f"Associations for {self.portfolio}"
-                    for association_to_use in associations_to_use:
-                        logical_name = "".join(filter(str.isalnum, f"{portfolio_id}{association_to_use.split(':')[-1]}"))
-                        tpl.add_resource(
-                            servicecatalog.PortfolioPrincipalAssociation(
-                                logical_name,
-                                PortfolioId=portfolio_id,
-                                PrincipalARN=association_to_use,
-                                PrincipalType="IAM",
-                            )
+                tpl = t.Template()
+                tpl.description = f"Associations for {self.portfolio}"
+                for association_to_use in associations_to_use:
+                    logical_name = "".join(
+                        filter(
+                            str.isalnum,
+                            f"{portfolio_id}{association_to_use.split(':')[-1]}",
                         )
-                    template = tpl.to_yaml()
-                    cloudformation.create_or_update(
-                        StackName=v2_stack_name,
-                        TemplateBody=template,
-                        NotificationARNs=[
-                            f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-                        ]
-                        if self.should_use_sns
-                        else [],
-                        ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
-                        Tags=self.initialiser_stack_tags,
                     )
+                    tpl.add_resource(
+                        servicecatalog.PortfolioPrincipalAssociation(
+                            logical_name,
+                            PortfolioId=portfolio_id,
+                            PrincipalARN=association_to_use,
+                            PrincipalType="IAM",
+                        )
+                    )
+                template = tpl.to_yaml()
+                cloudformation.create_or_update(
+                    StackName=v2_stack_name,
+                    TemplateBody=template,
+                    NotificationARNs=[
+                        f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                    ]
+                    if self.should_use_sns
+                    else [],
+                    ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
+                    Tags=self.initialiser_stack_tags,
+                )
             else:
                 cloudformation.ensure_deleted(StackName=v2_stack_name)
         self.write_empty_output()
