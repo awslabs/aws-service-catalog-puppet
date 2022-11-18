@@ -148,6 +148,7 @@ ORGANIZATIONS_DESCRIBE_POLICIES_PER_REGION = (
     "ORGANIZATIONS_DESCRIBE_POLICIES" + PER_REGION
 )
 ORGANIZATIONS_UPDATE_POLICIES_PER_REGION = "ORGANIZATIONS_UPDATE_POLICIES" + PER_REGION
+ORGANIZATIONS_CREATE_OU = "ORGANIZATIONS_CREATE_POLICIES"
 
 IAM_SIMULATE_POLICY_PER_REGION_OF_ACCOUNT = (
     "IAM_SIMULATE_POLICY_{simulation_type}" + PER_REGION_OF_ACCOUNT
@@ -472,6 +473,11 @@ def create(section_name, parameters_to_use, puppet_account_id):
     elif section_name == constants.CREATE_POLICIES:
         resources = [
             CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
+        ]
+
+    elif section_name == constants.ORGANIZATIONAL_UNITS:
+        resources = [
+            ORGANIZATIONS_CREATE_OU,
         ]
 
     else:

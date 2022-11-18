@@ -294,7 +294,7 @@ def scheduler_task(
 def on_task_processing_time(task_processing_time_queue, complete_event):
     with betterboto_client.CrossAccountClientContextManager(
         "cloudwatch",
-        config.get_puppet_role_arn(config.get_executor_account_id()),
+        config.get_reporting_role_arn(config.get_executor_account_id()),
         "cloudwatch-puppethub",
     ) as cloudwatch:
         while not complete_event.is_set():
@@ -349,7 +349,7 @@ def on_task_trace(task_trace_queue, complete_event, puppet_account_id, execution
     bucket = f"sc-puppet-log-store-{puppet_account_id}"
     key_prefix = f"{os.getenv('CODEBUILD_BUILD_ID', f'local/{os.getenv(environmental_variables.CACHE_INVALIDATOR)}')}/traces"
     with betterboto_client.CrossAccountClientContextManager(
-        "s3", config.get_puppet_role_arn(config.get_executor_account_id()), "s3",
+        "s3", config.get_reporting_role_arn(config.get_executor_account_id()), "s3",
     ) as s3:
         while not complete_event.is_set():
             # while True:

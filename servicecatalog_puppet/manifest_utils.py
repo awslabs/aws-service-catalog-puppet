@@ -166,6 +166,7 @@ def load(f, puppet_account_id):
 def expand_manifest(manifest, client):
     new_manifest = deepcopy(manifest)
     temp_accounts = []
+    conversions = dict()
 
     logger.info("Starting the expand")
 
@@ -183,9 +184,11 @@ def expand_manifest(manifest, client):
             ou = account.get("ou")
             logger.info("Found an ou: {}".format(ou))
             if ou.startswith("/"):
-                temp_accounts += expand_path(account, client, manifest)
-            else:
-                temp_accounts += expand_ou(account, client, manifest)
+                ou = client.convert_path_to_ou(account.get("ou"))
+                conversions[account.get("ou")] = ou
+                account["ou_name"] = account["ou"]
+                account["ou"] = ou
+            temp_accounts += expand_ou(account, client, manifest)
 
     for parameter_name, parameter_details in new_manifest.get("parameters", {}).items():
         if parameter_details.get("macro"):
@@ -281,7 +284,7 @@ def expand_manifest(manifest, client):
                     parameter_details["default"] = result
                     del parameter_details["macro"]
 
-    return new_manifest
+    return conversions, new_manifest
 
 
 def rewrite_deploy_as_share_to_for_spoke_local_portfolios(manifest):
@@ -755,6 +758,7 @@ class Manifest(dict):
             "service-control-policies": "apply_to",
             "tag-policies": "apply_to",
             "simulate-policies": "simulate_for",
+            constants.ORGANIZATIONAL_UNITS: "create_in",
         }.get(section_name)
 
         if (
@@ -883,6 +887,13 @@ class Manifest(dict):
                 caller_arn=item.get("caller_arn", ""),
                 context_entries=item.get("context_entries", []),
                 resource_handling_option=item.get("resource_handling_option", ""),
+            ),
+            constants.ORGANIZATIONAL_UNITS: dict(
+                organizational_unit_name=item_name,
+                path=item.get("path"),
+                parent_ou_id=item.get("parent_ou_id"),
+                name=item.get("name"),
+                tags=item.get("tags"),
             ),
         }.get(section_name)
 
@@ -1014,6 +1025,7 @@ class Manifest(dict):
                 "service-control-policies": dict(account_id=account_id, ou_name="",),
                 "tag-policies": dict(account_id=account_id, ou_name="",),
                 constants.SIMULATE_POLICIES: dict(account_id=account_id,),
+                constants.ORGANIZATIONAL_UNITS: dict(account_id=account_id,),
             }.get(section_name)
 
             if isinstance(regions, str):
@@ -1512,4 +1524,17 @@ def parse_conditions(manifest):
                         logger.info(
                             f"Removed {item_name} from {section_name} because condition ({item.get('condition')}) evaluated to false"
                         )
+    return manifest
+
+
+def rewrite_organizational_units(manifest, conversions, client):
+    for item_name, item in manifest.get(constants.ORGANIZATIONAL_UNITS, {}).items():
+        path = item.get("path")
+        if not item.get("parent_ou_id"):
+            parent_path = os.path.dirname(path)
+            if conversions.get(parent_path):
+                item["parent_ou_id"] = conversions.get(parent_path)
+        if not item.get("name"):
+            item["name"] = os.path.basename(path)
+
     return manifest

@@ -140,6 +140,7 @@ def test_constants_values():
         (constants.SERVICE_CONTROL_POLICY, constants.SERVICE_CONTROL_POLICIES),
         (constants.SIMULATE_POLICY, constants.SIMULATE_POLICIES),
         (constants.TAG_POLICY, constants.TAG_POLICIES),
+        (constants.ORGANIZATIONAL_UNIT, constants.ORGANIZATIONAL_UNITS),
     ]
     assert constants.SECTION_NAME_SINGULAR_AND_PLURAL_LIST_THAT_SUPPORTS_PARAMETERS == [
         (constants.LAUNCH, constants.LAUNCHES),

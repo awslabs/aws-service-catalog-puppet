@@ -69,7 +69,10 @@ def expand(f, puppet_account_id, regions, single_account, subset=None):
         with betterboto_client.CrossAccountClientContextManager(
             "organizations", org_iam_role_arn, "org-iam-role"
         ) as client:
-            new_manifest = manifest_utils.expand_manifest(manifest, client)
+            conversions, new_manifest = manifest_utils.expand_manifest(manifest, client)
+            new_manifest = manifest_utils.rewrite_organizational_units(
+                new_manifest, conversions, client
+            )
     click.echo("Expanded")
 
     new_manifest = manifest_utils.rewrite_deploy_as_share_to_for_spoke_local_portfolios(
