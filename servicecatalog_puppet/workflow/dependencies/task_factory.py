@@ -506,6 +506,7 @@ def create(
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
+                describe_portfolio_shares_task_ref=parameters_to_use.get("describe_portfolio_shares_task_ref")
             )
 
     elif section_name == constants.PORTFOLIO_SHARE_AND_ACCEPT_AWS_ORGANIZATIONS:
@@ -526,6 +527,7 @@ def create(
                     "portfolio_task_reference"
                 ),
                 ou_to_share_with=parameters_to_use.get("ou_to_share_with"),
+                describe_portfolio_shares_task_ref=parameters_to_use.get("describe_portfolio_shares_task_ref")
             )
 
     elif section_name == constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS:
@@ -785,6 +787,17 @@ def create(
             name=parameters_to_use.get("name"),
             tags=parameters_to_use.get("tags"),
             parent_ou_task_ref=parameters_to_use.get("parent_ou_task_ref"),
+        )
+
+    elif section_name == constants.DESCRIBE_PORTFOLIO_SHARES:
+        from servicecatalog_puppet.workflow.portfolio.sharing_management import (
+            describe_portfolio_shares_task,
+        )
+
+        return describe_portfolio_shares_task.DescribePortfolioSharesTask(
+            **common_parameters,
+            portfolio_task_reference=parameters_to_use.get("portfolio_task_reference"),
+            type=parameters_to_use.get("type"),
         )
 
     else:

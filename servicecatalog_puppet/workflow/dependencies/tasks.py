@@ -35,6 +35,9 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
             content = f.read()
         return serialisation_utils.json_loads(content)
 
+    def get_attribute_from_output_from_reference_dependency(self, attribute, reference):
+        return self.get_output_from_reference_dependency(reference).get(attribute)
+
     def get_output_from_reference_dependency_raw(self, reference):
         f = self.input().get("reference_dependencies").get(reference).open("r")
         content = f.read()
@@ -80,6 +83,11 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
 
     def get_output_location_path(self):
         return f"output/{self.__class__.__name__}/{self.task_reference}/{self.params_for_results_display().get('cache_invalidator', self.task_version)}.{self.output_suffix}"
+
+
+class TaskWithReferenceAndCommonParameters(TaskWithReference):
+    region = luigi.Parameter()
+    account_id = luigi.Parameter()
 
 
 class TaskWithParameters(TaskWithReference):

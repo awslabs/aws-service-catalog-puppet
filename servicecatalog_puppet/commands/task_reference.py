@@ -765,6 +765,33 @@ def handle_workspaces(
         )
 
 
+def get_or_create_describe_portfolio_shares_task_ref(
+    all_tasks, puppet_account_id, sharing_type, portfolio_task_ref, task_to_add
+):
+    describe_portfolio_shares_task_ref = (
+        f"{constants.DESCRIBE_PORTFOLIO_SHARES}-{sharing_type}-{portfolio_task_ref}"
+    )
+    if not all_tasks.get(describe_portfolio_shares_task_ref):
+        all_tasks[describe_portfolio_shares_task_ref] = dict(
+            section_name=constants.DESCRIBE_PORTFOLIO_SHARES,
+            task_reference=describe_portfolio_shares_task_ref,
+            account_id=puppet_account_id,
+            region=task_to_add.get("region"),
+            type=sharing_type,
+            portfolio_task_reference=portfolio_task_ref,
+            dependencies_by_reference=[portfolio_task_ref],
+            manifest_section_names=dict(),
+            manifest_item_names=dict(),
+            manifest_account_ids=dict(),
+        )
+    task = all_tasks[describe_portfolio_shares_task_ref]
+    task["manifest_section_names"].update(task_to_add.get("manifest_section_names"))
+    task["manifest_item_names"].update(task_to_add.get("manifest_item_names"))
+    task["manifest_account_ids"].update(task_to_add.get("manifest_account_ids"))
+
+    return describe_portfolio_shares_task_ref
+
+
 def handle_spoke_local_portfolios(
     all_tasks,
     all_tasks_task_reference,
@@ -1121,10 +1148,16 @@ def handle_spoke_local_portfolios(
             )
             if sharing_mode == constants.SHARING_MODE_ACCOUNT:
                 share_and_accept_ref = f"portfolio_share_and_accept-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+                sharing_type = "ACCOUNT"
             elif sharing_mode == constants.SHARING_MODE_AWS_ORGANIZATIONS:
                 share_and_accept_ref = f"portfolio_share_and_accept-{task_to_add.get('ou')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+                sharing_type = "ORGANIZATIONAL_UNIT" if task_to_add.get("ou")[0:3] == "ou-" else "ORGANIZATION"
             else:
                 raise Exception(f"Unknown sharing mode: {sharing_mode}")
+
+            describe_portfolio_shares_task_ref = get_or_create_describe_portfolio_shares_task_ref(
+                all_tasks, puppet_account_id, sharing_type, hub_portfolio_ref, task_to_add
+            )
 
             if not all_tasks.get(share_and_accept_ref):
                 all_tasks[share_and_accept_ref] = dict(
@@ -1137,7 +1170,9 @@ def handle_spoke_local_portfolios(
                     dependencies_by_reference=[
                         hub_portfolio_ref,
                         constants.CREATE_POLICIES,
+                        describe_portfolio_shares_task_ref,
                     ],
+                    describe_portfolio_shares_task_ref=describe_portfolio_shares_task_ref,
                     portfolio=task_to_add.get("portfolio"),
                     execution=task_to_add.get("execution"),
                     portfolio_task_reference=hub_portfolio_ref,
@@ -1410,10 +1445,17 @@ def handle_launches(
         )
         if sharing_mode == constants.SHARING_MODE_ACCOUNT:
             share_and_accept_ref = f"portfolio_share_and_accept-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+            sharing_type = "ACCOUNT"
         elif sharing_mode == constants.SHARING_MODE_AWS_ORGANIZATIONS:
             share_and_accept_ref = f"portfolio_share_and_accept-{task_to_add.get('ou')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+            sharing_type = "ORGANIZATIONAL_UNIT" if task_to_add.get("ou")[0:3] == "ou-" else "ORGANIZATION"
         else:
             raise Exception(f"Unknown sharing mode: {sharing_mode}")
+
+        describe_portfolio_shares_task_ref = get_or_create_describe_portfolio_shares_task_ref(
+            all_tasks, puppet_account_id, sharing_type, hub_portfolio_ref, task_to_add
+        )
+
         if not all_tasks.get(share_and_accept_ref):
             all_tasks[share_and_accept_ref] = dict(
                 puppet_account_id=puppet_account_id,
@@ -1425,7 +1467,9 @@ def handle_launches(
                 dependencies_by_reference=[
                     hub_portfolio_ref,
                     constants.CREATE_POLICIES,
+                    describe_portfolio_shares_task_ref,
                 ],
+                describe_portfolio_shares_task_ref=describe_portfolio_shares_task_ref,
                 portfolio=task_to_add.get("portfolio"),
                 execution=task_to_add.get("execution"),
                 portfolio_task_reference=hub_portfolio_ref,
