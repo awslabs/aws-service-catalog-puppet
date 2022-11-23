@@ -531,7 +531,6 @@ def setup_config(
             environmental_variables.GLOBAL_SHARE_TAG_OPTIONS
         ] = global_share_tag_options_default
 
-
     if global_share_principals_default == "":
         os.environ[environmental_variables.GLOBAL_SHARE_PRINCIPALS] = str(
             remote_config.get_global_share_principals_default(

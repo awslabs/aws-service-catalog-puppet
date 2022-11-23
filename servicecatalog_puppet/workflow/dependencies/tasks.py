@@ -25,6 +25,8 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
     puppet_account_id = luigi.Parameter()
     manifest_files_path = luigi.Parameter()
 
+    task_version = "latest"
+
     def requires(self):
         return dict(reference_dependencies=self.dependencies_for_task_reference())
 
@@ -77,7 +79,7 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
         return f"{self.task_reference}"
 
     def get_output_location_path(self):
-        return f"output/{self.__class__.__name__}/{self.task_reference}/{self.params_for_results_display().get('cache_invalidator', 'latest')}.{self.output_suffix}"
+        return f"output/{self.__class__.__name__}/{self.task_reference}/{self.params_for_results_display().get('cache_invalidator', self.task_version)}.{self.output_suffix}"
 
 
 class TaskWithParameters(TaskWithReference):

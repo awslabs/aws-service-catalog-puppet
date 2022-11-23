@@ -17,6 +17,8 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
     ou_to_share_with = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
 
+    task_version = "1"
+
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
@@ -37,6 +39,7 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
             portfolio_share_token = servicecatalog.create_portfolio_share(
                 PortfolioId=portfolio_id,
                 ShareTagOptions=self.share_tag_options,
+                SharePrincipals=self.share_principals,
                 OrganizationNode=dict(
                     Type="ORGANIZATIONAL_UNIT", Value=self.ou_to_share_with
                 ),
