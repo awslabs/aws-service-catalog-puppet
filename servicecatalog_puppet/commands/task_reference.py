@@ -1151,12 +1151,20 @@ def handle_spoke_local_portfolios(
                 sharing_type = "ACCOUNT"
             elif sharing_mode == constants.SHARING_MODE_AWS_ORGANIZATIONS:
                 share_and_accept_ref = f"portfolio_share_and_accept-{task_to_add.get('ou')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-                sharing_type = "ORGANIZATIONAL_UNIT" if task_to_add.get("ou")[0:3] == "ou-" else "ORGANIZATION"
+                sharing_type = (
+                    "ORGANIZATIONAL_UNIT"
+                    if task_to_add.get("ou")[0:3] == "ou-"
+                    else "ORGANIZATION"
+                )
             else:
                 raise Exception(f"Unknown sharing mode: {sharing_mode}")
 
             describe_portfolio_shares_task_ref = get_or_create_describe_portfolio_shares_task_ref(
-                all_tasks, puppet_account_id, sharing_type, hub_portfolio_ref, task_to_add
+                all_tasks,
+                puppet_account_id,
+                sharing_type,
+                hub_portfolio_ref,
+                task_to_add,
             )
 
             if not all_tasks.get(share_and_accept_ref):
@@ -1448,7 +1456,11 @@ def handle_launches(
             sharing_type = "ACCOUNT"
         elif sharing_mode == constants.SHARING_MODE_AWS_ORGANIZATIONS:
             share_and_accept_ref = f"portfolio_share_and_accept-{task_to_add.get('ou')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
-            sharing_type = "ORGANIZATIONAL_UNIT" if task_to_add.get("ou")[0:3] == "ou-" else "ORGANIZATION"
+            sharing_type = (
+                "ORGANIZATIONAL_UNIT"
+                if task_to_add.get("ou")[0:3] == "ou-"
+                else "ORGANIZATION"
+            )
         else:
             raise Exception(f"Unknown sharing mode: {sharing_mode}")
 

@@ -57,9 +57,7 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
             if changes:
                 with self.hub_regional_client("servicecatalog") as servicecatalog:
                     servicecatalog.update_portfolio_share(
-                        PortfolioId=portfolio_id,
-                        AccountId=self.account_id,
-                        **changes
+                        PortfolioId=portfolio_id, AccountId=self.account_id, **changes
                     )
         else:
             # SHARE

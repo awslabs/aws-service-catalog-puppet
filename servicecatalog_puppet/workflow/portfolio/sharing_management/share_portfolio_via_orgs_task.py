@@ -50,10 +50,10 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
                     servicecatalog.update_portfolio_share(
                         PortfolioId=portfolio_id,
                         OrganizationNode={
-                            'Type': existing_share_details.get("Type"),
-                            'Value': self.ou_to_share_with
+                            "Type": existing_share_details.get("Type"),
+                            "Value": self.ou_to_share_with,
                         },
-                        **changes
+                        **changes,
                     )
         else:
             with self.hub_regional_client("servicecatalog") as servicecatalog:

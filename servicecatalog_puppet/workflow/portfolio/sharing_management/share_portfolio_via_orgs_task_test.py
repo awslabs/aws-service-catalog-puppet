@@ -9,6 +9,7 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     portfolio_task_reference = "portfolio_task_reference"
     share_tag_options = True
     share_principals = True
+    describe_portfolio_shares_task_ref = "describe_portfolio_shares_task_ref"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.portfolio.sharing_management import (
@@ -25,6 +26,7 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             portfolio_task_reference=self.portfolio_task_reference,
             share_tag_options=self.share_tag_options,
             share_principals=self.share_principals,
+            describe_portfolio_shares_task_ref=self.describe_portfolio_shares_task_ref,
         )
 
         self.wire_up_mocks()
@@ -38,6 +40,7 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "ou_to_share_with": self.ou_to_share_with,
             "share_tag_options": self.share_tag_options,
             "share_principals": self.share_principals,
+            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise
