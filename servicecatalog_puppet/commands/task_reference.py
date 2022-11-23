@@ -1718,8 +1718,6 @@ def deploy_from_task_reference(path):
                     tasks_to_run_filtered[task_reference] = task
 
             else:  # HUB EXECUTION
-                print(task.get("task_reference"))
-
                 if task.get("task_reference") == constants.CREATE_POLICIES:
                     continue
 
