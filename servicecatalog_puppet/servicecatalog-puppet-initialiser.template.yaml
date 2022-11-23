@@ -114,6 +114,14 @@ Parameters:
       - True
       - False
     Default: True
+  ShouldSharePrincipals:
+    Type: String
+    Description: |
+      What value should SharePrincipals be when creating portfolio shares with AWS Service Catalog
+    AllowedValues:
+      - True
+      - False
+    Default: True
   ShouldUseStacksServiceRole:
     Type: String
     Description: |
@@ -404,6 +412,9 @@ Resources:
           - Name: SHOULD_SHARE_TAG_OPTIONS
             Type: PLAINTEXT
             Value: !Ref ShouldShareTagOptions
+          - Name: SHOULD_SHARE_PRINCIPALS
+            Type: PLAINTEXT
+            Value: !Ref ShouldSharePrincipals
       Source:
         Type: NO_SOURCE
         BuildSpec: |
