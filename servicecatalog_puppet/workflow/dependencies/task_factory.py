@@ -502,6 +502,7 @@ def create(
                 **common_parameters,
                 portfolio=parameters_to_use.get("portfolio"),
                 share_tag_options=parameters_to_use.get("share_tag_options"),
+                share_principals=parameters_to_use.get("share_principals"),
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),
@@ -520,6 +521,7 @@ def create(
                 region=parameters_to_use.get("region"),
                 portfolio=parameters_to_use.get("portfolio"),
                 share_tag_options=parameters_to_use.get("share_tag_options"),
+                share_principals=parameters_to_use.get("share_principals"),
                 portfolio_task_reference=parameters_to_use.get(
                     "portfolio_task_reference"
                 ),

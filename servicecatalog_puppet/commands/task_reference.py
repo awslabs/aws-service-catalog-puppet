@@ -1133,6 +1133,7 @@ def handle_spoke_local_portfolios(
                     region=task_to_add.get("region"),
                     task_reference=share_and_accept_ref,
                     share_tag_options=task_to_add.get("share_tag_options"),
+                    share_principals=task_to_add.get("share_principals"),
                     dependencies_by_reference=[
                         hub_portfolio_ref,
                         constants.CREATE_POLICIES,
@@ -1419,6 +1420,7 @@ def handle_launches(
                 account_id=task_to_add.get("account_id"),
                 region=task_to_add.get("region"),
                 share_tag_options=task_to_add.get("share_tag_options"),
+                share_principals=task_to_add.get("share_principals"),
                 task_reference=share_and_accept_ref,
                 dependencies_by_reference=[
                     hub_portfolio_ref,

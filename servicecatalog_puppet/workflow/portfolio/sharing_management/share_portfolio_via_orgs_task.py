@@ -13,6 +13,7 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     share_tag_options = luigi.BoolParameter()
+    share_principals = luigi.BoolParameter()
     ou_to_share_with = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
 
@@ -23,6 +24,7 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
             "region": self.region,
             "ou_to_share_with": self.ou_to_share_with,
             "share_tag_options": self.share_tag_options,
+            "share_principals": self.share_principals,
         }
 
     def run(self):

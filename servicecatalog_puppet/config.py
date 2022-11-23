@@ -232,6 +232,10 @@ def get_global_share_tag_options_default():
     return os.environ.get(environmental_variables.GLOBAL_SHARE_TAG_OPTIONS)
 
 
+def get_global_share_principals_default():
+    return os.environ.get(environmental_variables.GLOBAL_SHARE_PRINCIPALS)
+
+
 def get_on_complete_url():
     return os.environ.get(environmental_variables.ON_COMPLETE_URL, "")
 
