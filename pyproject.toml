@@ -39,7 +39,7 @@ envs = ["main"]
 to = {format = "poetry", path = "pyproject.toml"}
 
 [tool.poetry.dependencies]
-python = ">=3.7,<4" 
+python = "^3.9" 
 requests = "2.26.0"
 pyyaml = "==5.4"
 jinja2 = "==2.11.3"
@@ -59,3 +59,4 @@ deepmerge = "^0.2.1"
 yamale = "^3.0.8"
 colorama = "^0.4.5"
 orjson = "^3.8.0"
+MarkupSafe = "2.0.1"

@@ -423,7 +423,7 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.7
+                python: 3.9
               commands:
                 - pip install ${VERSION}
                 - servicecatalog-puppet --info set-regions ${ENABLED_REGIONS}

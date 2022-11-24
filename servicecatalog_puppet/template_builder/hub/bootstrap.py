@@ -516,7 +516,7 @@ def get_template(
     )
 
     install_spec = {
-        "runtime-versions": dict(python="3.7"),
+        "runtime-versions": dict(python="3.9"),
         "commands": [
             f"pip install {puppet_version}"
             if "http" in puppet_version
@@ -767,7 +767,7 @@ def get_template(
                             version="0.2",
                             phases={
                                 "install": {
-                                    "runtime-versions": {"python": "3.7",},
+                                    "runtime-versions": {"python": "3.9",},
                                     "commands": [
                                         f"pip install {puppet_version}"
                                         if "http" in puppet_version
@@ -956,7 +956,7 @@ def get_template(
         version=0.2,
         phases=dict(
             install={
-                "runtime-versions": dict(python="3.7"),
+                "runtime-versions": dict(python="3.9"),
                 "commands": [
                     f"pip install {puppet_version}"
                     if "http" in puppet_version
@@ -1060,7 +1060,7 @@ def get_template(
                 ],
             ),
             Source=codebuild.Source(
-                BuildSpec="version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.7\n    commands:\n      - pip install aws-service-catalog-puppet\n  build:\n    commands:\n      - servicecatalog-puppet bootstrap-spokes-in-ou $OU_OR_PATH $IAM_ROLE_NAME $IAM_ROLE_ARNS ${OPTIONS}\nartifacts:\n  files:\n    - results/*/*\n    - output/*/*\n  name: BootstrapProject\n",
+                BuildSpec="version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.9\n    commands:\n      - pip install aws-service-catalog-puppet\n  build:\n    commands:\n      - servicecatalog-puppet bootstrap-spokes-in-ou $OU_OR_PATH $IAM_ROLE_NAME $IAM_ROLE_ARNS ${OPTIONS}\nartifacts:\n  files:\n    - results/*/*\n    - output/*/*\n  name: BootstrapProject\n",
                 Type="NO_SOURCE",
             ),
             Description="Bootstrap all the accounts in an OU",
