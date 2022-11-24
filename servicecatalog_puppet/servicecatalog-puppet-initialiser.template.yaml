@@ -65,6 +65,7 @@ Metadata:
           default: "ServiceCatalog"
         Parameters:
           - ShouldShareTagOptions
+          - ShouldSharePrincipals
       - Label:
           default: "Stacks"
         Parameters:
