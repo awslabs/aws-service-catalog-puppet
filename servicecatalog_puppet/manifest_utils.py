@@ -745,6 +745,7 @@ class Manifest(dict):
         item = section[item_name]
         sharing_mode_default = config.get_global_sharing_mode_default()
         share_tag_options_default = config.get_global_share_tag_options_default()
+        share_principals_default = config.get_global_share_principals_default()
 
         deploy_to = {
             "launches": "deploy_to",
@@ -776,6 +777,7 @@ class Manifest(dict):
                 share_tag_options=item.get(
                     "share_tag_options", share_tag_options_default
                 ),
+                share_principals=item.get("share_principals", share_principals_default),
                 portfolio=item.get("portfolio"),
                 product=item.get("product"),
                 version=item.get("version"),
@@ -831,6 +833,7 @@ class Manifest(dict):
                 share_tag_options=item.get(
                     "share_tag_options", share_tag_options_default
                 ),
+                share_principals=item.get("share_principals", share_principals_default),
                 associations=item.get("associations", list()),
                 launch_constraints=item.get("constraints", {}).get("launch", []),
                 resource_update_constraints=item.get("constraints", {}).get(

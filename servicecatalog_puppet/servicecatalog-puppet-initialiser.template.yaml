@@ -65,6 +65,7 @@ Metadata:
           default: "ServiceCatalog"
         Parameters:
           - ShouldShareTagOptions
+          - ShouldSharePrincipals
       - Label:
           default: "Stacks"
         Parameters:
@@ -110,6 +111,14 @@ Parameters:
     Type: String
     Description: |
       What value should ShareTagOptions be when creating portfolio shares with AWS Service Catalog
+    AllowedValues:
+      - True
+      - False
+    Default: True
+  ShouldSharePrincipals:
+    Type: String
+    Description: |
+      What value should SharePrincipals be when creating portfolio shares with AWS Service Catalog
     AllowedValues:
       - True
       - False
@@ -404,6 +413,9 @@ Resources:
           - Name: SHOULD_SHARE_TAG_OPTIONS
             Type: PLAINTEXT
             Value: !Ref ShouldShareTagOptions
+          - Name: SHOULD_SHARE_PRINCIPALS
+            Type: PLAINTEXT
+            Value: !Ref ShouldSharePrincipals
       Source:
         Type: NO_SOURCE
         BuildSpec: |
@@ -411,7 +423,7 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.7
+                python: 3.9
               commands:
                 - pip install ${VERSION}
                 - servicecatalog-puppet --info set-regions ${ENABLED_REGIONS}
@@ -423,6 +435,7 @@ Resources:
                 - servicecatalog-puppet set-config-value is_caching_enabled ${IS_CACHING_ENABLED}
                 - servicecatalog-puppet set-config-value spoke_deploy_environment_compute_type ${SPOKE_DEPLOY_ENVIRONMENT_COMPUTE_TYPE}
                 - servicecatalog-puppet set-config-value global_share_tag_options_default ${SHOULD_SHARE_TAG_OPTIONS}
+                - servicecatalog-puppet set-config-value global_share_principals_default ${SHOULD_SHARE_PRINCIPALS}
                 - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID} --permission-boundary ${PUPPET_ROLE_PERMISSION_BOUNDARY} --puppet-role-name ${PUPPET_ROLE_NAME} --puppet-role-path ${PUPPET_ROLE_PATH}
             build:
               commands:
@@ -564,6 +577,8 @@ Resources:
           - !Ref IsCachingEnabled
           - !Ref PollForSourceChanges
           - !Ref ShouldDeleteRollbackCompleteStacks
+          - !Ref ShouldShareTagOptions
+          - !Ref ShouldSharePrincipals
 Outputs:
   ServiceCatalogPuppetRepoConsoleURL:
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codecommit/repositories/ServiceCatalogPuppet/browse"

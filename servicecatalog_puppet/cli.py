@@ -417,6 +417,7 @@ def setup_config(
     is_caching_enabled="",
     global_sharing_mode_default="",
     global_share_tag_options_default="",
+    global_share_principals_default="",
     on_complete_url=None,
 ):
     home_region_to_use = home_region or constants.HOME_REGION
@@ -529,6 +530,18 @@ def setup_config(
         os.environ[
             environmental_variables.GLOBAL_SHARE_TAG_OPTIONS
         ] = global_share_tag_options_default
+
+    if global_share_principals_default == "":
+        os.environ[environmental_variables.GLOBAL_SHARE_PRINCIPALS] = str(
+            remote_config.get_global_share_principals_default(
+                puppet_account_id_to_use, home_region
+            )
+        )
+    else:
+        os.environ[
+            environmental_variables.GLOBAL_SHARE_PRINCIPALS
+        ] = global_share_principals_default
+
     if on_complete_url:
         os.environ[environmental_variables.ON_COMPLETE_URL] = on_complete_url
     if not os.environ.get(environmental_variables.SPOKE_EXECUTION_MODE_DEPLOY_ENV):
@@ -668,6 +681,11 @@ def deploy_from_task_reference(
     default="",
     envvar="SCT_GLOBAL_SHARE_TAG_OPTIONS",
 )
+@click.option(
+    "--global-share-principals-default",
+    default="",
+    envvar="SCT_GLOBAL_SHARE_PRINCIPALS",
+)
 def deploy_in_spoke_from_task_reference(
     p,
     num_workers,
@@ -683,6 +701,7 @@ def deploy_in_spoke_from_task_reference(
     is_caching_enabled,
     global_sharing_mode_default,
     global_share_tag_options_default,
+    global_share_principals_default,
 ):
     setup_config(
         puppet_account_id=puppet_account_id,
@@ -698,6 +717,7 @@ def deploy_in_spoke_from_task_reference(
         is_caching_enabled=is_caching_enabled,
         global_sharing_mode_default=global_sharing_mode_default,
         global_share_tag_options_default=global_share_tag_options_default,
+        global_share_principals_default=global_share_principals_default,
     )
     click.echo(
         f"running in partition: {config.get_partition()} as {config.get_puppet_role_path()}{config.get_puppet_role_name()}"

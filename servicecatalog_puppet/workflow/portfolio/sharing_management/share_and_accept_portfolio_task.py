@@ -11,7 +11,9 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     share_tag_options = luigi.BoolParameter()
+    share_principals = luigi.BoolParameter()
     portfolio_task_reference = luigi.Parameter()
+    describe_portfolio_shares_task_ref = luigi.Parameter()
 
     def params_for_results_display(self):
         return {
@@ -21,21 +23,9 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
             "region": self.region,
             "account_id": self.account_id,
             "share_tag_options": self.share_tag_options,
+            "share_principals": self.share_principals,
+            "cache_invalidator": self.cache_invalidator,
         }
-
-    def has_already_been_shared(self, portfolio_id):
-        with self.hub_regional_client("servicecatalog") as servicecatalog:
-            p = dict(PortfolioId=portfolio_id)
-            has_more = True
-            while has_more:
-                response = servicecatalog.list_portfolio_access(**p)
-                if self.account_id in response.get("AccountIds"):
-                    return True
-                if response.get("NextPageToken"):
-                    p["PageToken"] = response.get("NextPageToken")
-                else:
-                    has_more = False
-        return False
 
     def accept_if_needed(self, portfolio_id):
         accepted = False
@@ -51,14 +41,26 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
         return False
 
     def run(self):
-        hub_portfolio_details = self.get_output_from_reference_dependency(
-            self.portfolio_task_reference
+        portfolio_id = self.get_attribute_from_output_from_reference_dependency(
+            "Id", self.portfolio_task_reference
         )
-        portfolio_id = hub_portfolio_details.get("Id")
 
-        # SHARE
-        has_already_been_shared = self.has_already_been_shared(portfolio_id)
-        if not has_already_been_shared:
+        changes = dict()
+        existing_share_details = self.get_attribute_from_output_from_reference_dependency(
+            self.account_id, self.describe_portfolio_shares_task_ref
+        )
+
+        if existing_share_details:
+            if existing_share_details.get("ShareTagOptions") != self.share_tag_options:
+                changes["ShareTagOptions"] = self.share_tag_options
+
+            if changes:
+                with self.hub_regional_client("servicecatalog") as servicecatalog:
+                    servicecatalog.update_portfolio_share(
+                        PortfolioId=portfolio_id, AccountId=self.account_id, **changes
+                    )
+        else:
+            # SHARE
             self.info(f"sharing {portfolio_id} with {self.account_id}")
             with self.hub_regional_client("servicecatalog") as servicecatalog:
                 servicecatalog.create_portfolio_share(
@@ -67,7 +69,7 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
                     ShareTagOptions=self.share_tag_options,
                 )
 
-        # ACCEPT
-        accepted = self.accept_if_needed(portfolio_id)
+            # ACCEPT
+            self.accept_if_needed(portfolio_id)
 
         self.write_empty_output()

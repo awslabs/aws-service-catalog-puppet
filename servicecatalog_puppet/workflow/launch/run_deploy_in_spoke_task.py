@@ -116,6 +116,11 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
                 "value": config.get_global_share_tag_options_default(),
                 "type": "PLAINTEXT",
             },
+            {
+                "name": environmental_variables.GLOBAL_SHARE_PRINCIPALS,
+                "value": config.get_global_share_principals_default(),
+                "type": "PLAINTEXT",
+            },
         ]
 
         if "http" in version:

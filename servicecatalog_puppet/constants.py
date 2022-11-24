@@ -362,7 +362,7 @@ RUN_DEPLOY_IN_SPOKE_BUILDSPEC = """
       phases:
         install:
           runtime-versions:
-            python: 3.7
+            python: 3.9
           commands:
             - {}
         build:
@@ -381,3 +381,7 @@ SCHEDULER_THREADS_OR_PROCESSES_DEFAULT = "threads"
 
 
 REPORTING_ROLE_NAME = "PuppetRoleForReporting"
+
+SHARE_PRINCIPALS_DEFAULT = False
+
+DESCRIBE_PORTFOLIO_SHARES = "describe-portfolio-shares"
