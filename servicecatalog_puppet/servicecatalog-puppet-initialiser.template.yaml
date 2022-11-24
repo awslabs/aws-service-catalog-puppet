@@ -577,6 +577,8 @@ Resources:
           - !Ref IsCachingEnabled
           - !Ref PollForSourceChanges
           - !Ref ShouldDeleteRollbackCompleteStacks
+          - !Ref ShouldShareTagOptions
+          - !Ref ShouldSharePrincipals
 Outputs:
   ServiceCatalogPuppetRepoConsoleURL:
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codecommit/repositories/ServiceCatalogPuppet/browse"
