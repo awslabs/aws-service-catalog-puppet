@@ -681,6 +681,11 @@ def deploy_from_task_reference(
     default="",
     envvar="SCT_GLOBAL_SHARE_TAG_OPTIONS",
 )
+@click.option(
+    "--global-share-principals-default",
+    default="",
+    envvar="SCT_GLOBAL_SHARE_PRINCIPALS",
+)
 def deploy_in_spoke_from_task_reference(
     p,
     num_workers,
