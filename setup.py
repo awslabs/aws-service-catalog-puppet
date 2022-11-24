@@ -41,9 +41,10 @@ package_data = \
 {'': ['*'], 'servicecatalog_puppet': ['manifests/*', 'templates/*']}
 
 install_requires = \
-['awacs==2.0.2',
+['MarkupSafe==2.0.1',
+ 'awacs==2.0.2',
  'better-boto==0.42.0',
- 'boto3==1.20.5',
+ 'boto3==1.26.15',
  'cfn-flip==1.2.3',
  'click==7.0',
  'colorama>=0.4.5,<0.5.0',
@@ -79,7 +80,7 @@ setup_kwargs = {
     'package_data': package_data,
     'install_requires': install_requires,
     'entry_points': entry_points,
-    'python_requires': '>=3.7,<4',
+    'python_requires': '>=3.9,<4.0',
 }
 
 
