@@ -106,7 +106,7 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
                         servicecatalog.PortfolioPrincipalAssociation(
                             logical_name,
                             PortfolioId=portfolio_id,
-                            PrincipalARN=association_to_use,
+                            PrincipalARN=t.Sub(association_to_use),
                             PrincipalType="IAM",
                         )
                     )
