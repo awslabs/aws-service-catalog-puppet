@@ -20,6 +20,7 @@ class GetOrCreatePolicyTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     task_reference = "task_reference"
     dependencies_by_reference = []
     account_id = "account_id"
+    manifest_file_path = "manifest_file_path"
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.service_control_policies import (
@@ -46,6 +47,7 @@ class GetOrCreatePolicyTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             policy_name="my_policy",
             policy_description="my description",
             policy_content=dict(default=self.policy),
+            manifest_file_path=self.manifest_file_path,
             tags=[],
         )
 
