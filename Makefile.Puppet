@@ -46,55 +46,23 @@ deploy-from-task-reference:
 	time poetry run servicecatalog-puppet --info deploy-from-task-reference --num-workers 5 \
 		ignored/src/ServiceCatalogPuppet/
 
-deploy-from-task-reference-spoke:
-	time poetry run servicecatalog-puppet --info deploy-from-task-reference \
+## @Puppet_commands Runs servicecatalog-puppet --info deploy-from-task-reference for the checked out manifest file
+deploy-from-task-reference-single-account:
+	time poetry run servicecatalog-puppet --info deploy-in-spoke-from-task-reference \
+	    --execution-mode spoke \
 	    --puppet-account-id 105463962595 \
-	    --single-account 022042407650 \
-	    --num-workers 40 \
+	    --single-account 648052676434 \
 	    --home-region eu-west-1 \
 	    --regions eu-west-1,eu-west-2,eu-west-3,us-east-1,us-west-1 \
 	    --should-collect-cloudformation-events False \
 	    --should-forward-events-to-eventbridge False \
-        --should-forward-failures-to-opscenter False \
-		ignored/src/ServiceCatalogPuppet/manifest-task-reference-full.yaml
+	    --should-forward-failures-to-opscenter True \
+	    ignored/src/ServiceCatalogPuppet/
 
-## @Puppet_commands Runs servicecatalog-puppet --info deploy
-deploy:
-	time poetry run servicecatalog-puppet --info-line-numbers deploy --num-workers 40 \
-		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
-
-deploy-with-put:
-	time poetry run servicecatalog-puppet --info deploy \
-		--on-complete-url https://localhost/foo?sdsds=sdsd \
-		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
-
-
-## @Puppet_commands Runs servicecatalog-puppet --info deploy
-dry-run:
-	poetry run servicecatalog-puppet --info dry-run \
-		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
-
-## @Puppet_commands Runs servicecatalog-puppet --info deploy for a spoke
-deploy-spoke:
-	poetry run servicecatalog-puppet --info deploy \
-		--execution-mode spoke \
-		--puppet-account-id $(PUPPET_ACCOUNT_ID) \
-		--single-account $(SPOKE_ACCOUNT_ID) \
-		--home-region eu-west-1 \
-		--regions eu-west-1,eu-west-2,eu-west-3,us-east-1 \
-		--should-collect-cloudformation-events true \
-		--should-forward-events-to-eventbridge true \
-		--should-forward-failures-to-opscenter true \
-		ignored/src/ServiceCatalogPuppet/manifest-spoke.yaml
 
 ## @Puppet_commands Runs servicecatalog-puppet validate for a spoke
 validate:
 	poetry run servicecatalog-puppet validate ignored/src/ServiceCatalogPuppet/manifest.yaml
-
-## @Puppet_commands Runs servicecatalog-puppet --info list-launches
-list-launches:
-	time poetry run servicecatalog-puppet --info list-launches \
-		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
 
 ## @Puppet_commands Runs servicecatalog-puppet codebuild full-pipeline export functionality
 export-full-puppet-stats:

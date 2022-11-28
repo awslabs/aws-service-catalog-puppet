@@ -27,6 +27,14 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
 
     task_version = "latest"
 
+    def get_expanded_manifest_file_path(self):
+        return f"{self.manifest_files_path}/manifest-expanded.yaml"
+
+    def get_from_manifest(self, section_name, item_name):
+        with open(self.get_expanded_manifest_file_path(), "r") as f:
+            m = serialisation_utils.load(f.read())
+            return m[section_name][item_name]
+
     def requires(self):
         return dict(reference_dependencies=self.dependencies_for_task_reference())
 
@@ -109,7 +117,6 @@ class TaskWithParameters(TaskWithReference):
 
     def get_parameter_values(self):
         all_params = {}
-        self.info(f"collecting all_params")
         p = self.get_merged_launch_account_and_manifest_parameters()
         for param_name, param_details in p.items():
             if param_details.get("ssm"):
@@ -189,20 +196,6 @@ class TaskWithParameters(TaskWithReference):
                     param_details.get("mapping"), self.account_id, self.region
                 )
         return all_params
-
-    def terminate_ssm_outputs(self):
-        for ssm_param_output in self.ssm_param_outputs:
-            param_name = ssm_param_output.get("param_name")
-            param_name = param_name.replace("${AWS::Region}", self.region)
-            param_name = param_name.replace("${AWS::AccountId}", self.account_id)
-            self.info(f"deleting SSM Param: {param_name}")
-            with self.hub_client("ssm") as ssm:
-                try:
-                    # todo push into another task
-                    ssm.delete_parameter(Name=param_name,)
-                    self.info(f"deleting SSM Param: {param_name}")
-                except ssm.exceptions.ParameterNotFound:
-                    self.info(f"SSM Param: {param_name} not found")
 
 
 def unwrap(what):

@@ -18,6 +18,8 @@ class GetOrCreatePolicyTask(tasks.TaskWithReference):
     policy_content = luigi.DictParameter()
     tags = luigi.ListParameter()
 
+    manifest_file_path = luigi.Parameter()
+
     def params_for_results_display(self):
         return {
             "account_id": self.account_id,

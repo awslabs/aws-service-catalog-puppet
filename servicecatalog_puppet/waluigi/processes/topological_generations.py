@@ -42,7 +42,7 @@ def build_the_dag(tasks_to_run):
             if tasks_to_run.get(duid):
                 g.add_edge(uid, duid)
             else:
-                logger.warn(
+                logger.debug(
                     f"{duid} is not in the task reference - this is fine when running in spoke execution mode and when the task was executed within the hub"
                 )
 
