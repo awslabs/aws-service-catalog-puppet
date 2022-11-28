@@ -1,3 +1,5 @@
+#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
 from servicecatalog_puppet import constants, config
 from servicecatalog_puppet.commands.task_reference_helpers.generators import portfolios
 
