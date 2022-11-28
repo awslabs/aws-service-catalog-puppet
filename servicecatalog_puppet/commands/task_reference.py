@@ -54,6 +54,39 @@ def deploy_from_task_reference(path):
     single_account_id = config.get_single_account_id()
 
     for task_reference, task in all_tasks.items():
+        if single_account_id:
+            task_section_name = task.get("section_name")
+            task_account_id = task.get("account_id")
+            spoke_execution = str(config.get_executor_account_id()) != str(puppet_account_id)
+            if spoke_execution:
+                if (
+                    task_account_id == single_account_id
+                    and task_section_name != constants.RUN_DEPLOY_IN_SPOKE
+                ):
+                    tasks_to_run_filtered[task_reference] = task
+
+            else:
+                if task.get("task_reference") == constants.CREATE_POLICIES:
+                    continue
+
+                if task.get("section_name") == constants.SSM_OUTPUTS:
+                    if not any([
+                        task.get("manifest_account_ids").get(str(single_account_id)),
+                        task.get("manifest_account_ids").get(str(puppet_account_id)),
+                    ]):
+                        continue
+
+                else:
+                    if task_account_id and str(task_account_id) not in [
+                        str(single_account_id),
+                        str(puppet_account_id),
+                    ]:
+                        continue
+
+                tasks_to_run_filtered[task_reference] = task
+        else:
+            tasks_to_run_filtered[task_reference] = task
+
         for a in [
             "manifest_section_names",
             "manifest_item_names",
@@ -61,32 +94,6 @@ def deploy_from_task_reference(path):
         ]:
             if task.get(a):
                 del task[a]
-
-        if single_account_id:
-            task_section_name = task.get("section_name")
-            task_account_id = task.get("account_id")
-            if str(config.get_executor_account_id()) != str(
-                puppet_account_id
-            ):  # SPOKE EXECUTION
-                if (
-                    task_account_id == single_account_id
-                    and task_section_name != constants.RUN_DEPLOY_IN_SPOKE
-                ):
-                    tasks_to_run_filtered[task_reference] = task
-
-            else:  # HUB EXECUTION
-                if task.get("task_reference") == constants.CREATE_POLICIES:
-                    continue
-
-                if task_account_id and str(task_account_id) not in [
-                    str(single_account_id),
-                    str(puppet_account_id),
-                ]:
-                    continue
-
-                tasks_to_run_filtered[task_reference] = task
-        else:
-            tasks_to_run_filtered[task_reference] = task
 
     executor_account_id = config.get_executor_account_id()
     is_dry_run = is_list_launches = False

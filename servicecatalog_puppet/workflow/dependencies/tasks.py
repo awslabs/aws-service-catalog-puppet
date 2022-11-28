@@ -117,7 +117,6 @@ class TaskWithParameters(TaskWithReference):
 
     def get_parameter_values(self):
         all_params = {}
-        self.info(f"collecting all_params")
         p = self.get_merged_launch_account_and_manifest_parameters()
         for param_name, param_details in p.items():
             if param_details.get("ssm"):
