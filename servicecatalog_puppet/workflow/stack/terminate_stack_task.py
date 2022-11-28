@@ -90,7 +90,11 @@ class TerminateStackTask(tasks.TaskWithReference):
         return self.stack_name
 
     def terminate_ssm_outputs(self):
-        outputs = self.get_from_manifest(constants.STACKS, self.stack_name).get("outputs", {}).get("ssm", [])
+        outputs = (
+            self.get_from_manifest(constants.STACKS, self.stack_name)
+            .get("outputs", {})
+            .get("ssm", [])
+        )
         for ssm_param_output in outputs:
             param_name = ssm_param_output.get("param_name")
             param_name = param_name.replace("${AWS::Region}", self.region)

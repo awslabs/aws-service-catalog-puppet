@@ -191,7 +191,6 @@ def generate(puppet_account_id, manifest, output_file_path):
                     task_to_add,
                 )
 
-
     #
     # Second pass - adding get parameters
     #

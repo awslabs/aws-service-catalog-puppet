@@ -18,6 +18,7 @@ def get_spoke_local_portfolio_common_args(
         portfolio_task_reference=all_tasks_task_reference,
     )
 
+
 def handle_spoke_local_portfolios(
     all_tasks,
     all_tasks_task_reference,

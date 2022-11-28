@@ -28,4 +28,3 @@ def get_or_create_describe_portfolio_shares_task_ref(
     task["manifest_account_ids"].update(task_to_add.get("manifest_account_ids"))
 
     return describe_portfolio_shares_task_ref
-

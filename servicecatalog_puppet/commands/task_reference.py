@@ -6,10 +6,14 @@ import os
 
 from servicecatalog_puppet import manifest_utils, constants, serialisation_utils, config
 from servicecatalog_puppet.commands import graph
-from servicecatalog_puppet.commands.task_reference_helpers import hub_generator, complete_generator
+from servicecatalog_puppet.commands.task_reference_helpers import (
+    hub_generator,
+    complete_generator,
+)
 from servicecatalog_puppet.workflow import runner, workflow_utils
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
+
 
 def generate_task_reference(f):
     path = os.path.dirname(f.name)
@@ -57,7 +61,9 @@ def deploy_from_task_reference(path):
         if single_account_id:
             task_section_name = task.get("section_name")
             task_account_id = task.get("account_id")
-            spoke_execution = str(config.get_executor_account_id()) != str(puppet_account_id)
+            spoke_execution = str(config.get_executor_account_id()) != str(
+                puppet_account_id
+            )
             if spoke_execution:
                 if (
                     task_account_id == single_account_id
@@ -70,10 +76,16 @@ def deploy_from_task_reference(path):
                     continue
 
                 if task.get("section_name") == constants.SSM_OUTPUTS:
-                    if not any([
-                        task.get("manifest_account_ids").get(str(single_account_id)),
-                        task.get("manifest_account_ids").get(str(puppet_account_id)),
-                    ]):
+                    if not any(
+                        [
+                            task.get("manifest_account_ids").get(
+                                str(single_account_id)
+                            ),
+                            task.get("manifest_account_ids").get(
+                                str(puppet_account_id)
+                            ),
+                        ]
+                    ):
                         continue
 
                 else:

@@ -40,4 +40,3 @@ def handle_organizational_units(
                 )
             task_to_add["parent_ou_task_ref"] = parent_task_reference
             task_to_add["dependencies_by_reference"].append(parent_task_reference)
-

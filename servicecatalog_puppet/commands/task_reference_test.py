@@ -2,7 +2,6 @@ import unittest
 
 
 class PuppetTaskUnitTest(unittest.TestCase):
-
     def setUp(self) -> None:
         from servicecatalog_puppet.commands import task_reference
 

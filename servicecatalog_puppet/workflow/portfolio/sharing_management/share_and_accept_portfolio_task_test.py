@@ -28,7 +28,7 @@ class ShareAndAcceptPortfolioForAccountTaskTest(
             portfolio_task_reference=self.portfolio_task_reference,
             share_tag_options=self.share_tag_options,
             share_principals=self.share_principals,
-            describe_portfolio_shares_task_ref = self.describe_portfolio_shares_task_ref,
+            describe_portfolio_shares_task_ref=self.describe_portfolio_shares_task_ref,
         )
 
         self.wire_up_mocks()

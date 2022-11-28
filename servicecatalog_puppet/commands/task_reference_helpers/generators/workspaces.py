@@ -41,4 +41,3 @@ def handle_workspaces(
         all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
             workspace_account_preparation_ref
         )
-

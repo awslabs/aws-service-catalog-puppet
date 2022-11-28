@@ -232,4 +232,3 @@ def handle_launches(
     all_tasks[all_tasks_task_reference][
         "describe_provisioning_params_ref"
     ] = describe_provisioning_params_ref
-
