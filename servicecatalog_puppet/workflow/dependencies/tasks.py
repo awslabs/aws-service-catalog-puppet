@@ -198,20 +198,6 @@ class TaskWithParameters(TaskWithReference):
                 )
         return all_params
 
-    def terminate_ssm_outputs(self):
-        for ssm_param_output in self.ssm_param_outputs:
-            param_name = ssm_param_output.get("param_name")
-            param_name = param_name.replace("${AWS::Region}", self.region)
-            param_name = param_name.replace("${AWS::AccountId}", self.account_id)
-            self.info(f"deleting SSM Param: {param_name}")
-            with self.hub_client("ssm") as ssm:
-                try:
-                    # todo push into another task
-                    ssm.delete_parameter(Name=param_name,)
-                    self.info(f"deleting SSM Param: {param_name}")
-                except ssm.exceptions.ParameterNotFound:
-                    self.info(f"SSM Param: {param_name} not found")
-
 
 def unwrap(what):
     if hasattr(what, "get_wrapped"):
