@@ -89,6 +89,20 @@ class TerminateStackTask(tasks.TaskWithReference):
 
         return self.stack_name
 
+    def terminate_ssm_outputs(self):
+        outputs = self.get_from_manifest(constants.STACKS, self.stack_name).get("outputs", {}).get("ssm", [])
+        for ssm_param_output in outputs:
+            param_name = ssm_param_output.get("param_name")
+            param_name = param_name.replace("${AWS::Region}", self.region)
+            param_name = param_name.replace("${AWS::AccountId}", self.account_id)
+            self.info(f"deleting SSM Param: {param_name}")
+            with self.hub_client("ssm") as ssm:
+                try:
+                    ssm.delete_parameter(Name=param_name,)
+                    self.info(f"deleting SSM Param: {param_name}")
+                except ssm.exceptions.ParameterNotFound:
+                    self.info(f"SSM Param: {param_name} not found")
+
     def run(self):
         if self.execution == constants.EXECUTION_MODE_HUB:
             self.terminate_ssm_outputs()

@@ -27,6 +27,14 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
 
     task_version = "latest"
 
+    def get_expanded_manifest_file_path(self):
+        return f"{self.manifest_files_path}/manifest-expanded.yaml"
+
+    def get_from_manifest(self, section_name, item_name):
+        with open(self.get_expanded_manifest_file_path(), 'r') as f:
+            m = serialisation_utils.load(f.read())
+            return m[section_name][item_name]
+
     def requires(self):
         return dict(reference_dependencies=self.dependencies_for_task_reference())
 
