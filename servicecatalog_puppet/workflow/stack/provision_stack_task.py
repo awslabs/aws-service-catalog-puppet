@@ -3,6 +3,7 @@
 import functools
 import re
 import time
+from collections import OrderedDict
 
 import cfn_tools
 import luigi
@@ -221,15 +222,18 @@ class ProvisionStackTask(tasks.TaskWithParameters):
                     template_body = cloudformation.get_template(
                         StackName=self.stack_name_to_use, TemplateStage="Original"
                     ).get("TemplateBody")
-                    try:
-                        existing_template = cfn_tools.load_yaml(template_body)
-                    except Exception:
+                    if isinstance(template_body, OrderedDict):
+                        existing_template = template_body
+                    else:
                         try:
-                            existing_template = cfn_tools.load_json(template_body)
+                            existing_template = cfn_tools.load_yaml(template_body)
                         except Exception:
-                            raise Exception(
-                                "Could not parse existing template as YAML or JSON"
-                            )
+                            try:
+                                existing_template = cfn_tools.load_json(template_body)
+                            except Exception:
+                                raise Exception(
+                                    "Could not parse existing template as YAML or JSON"
+                                )
 
         template_to_use = cfn_tools.dump_yaml(template_to_provision)
         if status in ["UPDATE_ROLLBACK_COMPLETE", "NoStack"]:
