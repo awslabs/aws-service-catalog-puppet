@@ -3,7 +3,6 @@
 import functools
 import re
 import time
-from collections import OrderedDict
 
 import cfn_tools
 import luigi
@@ -222,7 +221,7 @@ class ProvisionStackTask(tasks.TaskWithParameters):
                     template_body = cloudformation.get_template(
                         StackName=self.stack_name_to_use, TemplateStage="Original"
                     ).get("TemplateBody")
-                    if isinstance(template_body, OrderedDict):
+                    if isinstance(template_body, dict):
                         existing_template = template_body
                     else:
                         try:
