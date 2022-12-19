@@ -13,7 +13,7 @@ from troposphere import sns
 from troposphere import sqs
 from troposphere import ssm
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, config
 
 
 def get_template(
@@ -760,6 +760,13 @@ def get_template(
                     ComputeType="BUILD_GENERAL1_SMALL",
                     Image="aws/codebuild/standard:4.0",
                     Type="LINUX_CONTAINER",
+                    EnvironmentVariables=[
+                        {
+                            "Type": "PLAINTEXT",
+                            "Name": constants.PARTITION_ENVIRONMENTAL_VARIABLE_NAME,
+                            "Value": config.get_partition(),
+                        },
+                    ],
                 ),
                 Source=codebuild.Source(
                     BuildSpec=yaml.safe_dump(

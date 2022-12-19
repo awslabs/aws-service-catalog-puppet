@@ -6,8 +6,7 @@ version:
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap
 bootstrap:
-	export SCM_BRANCH_NAME=main
-	poetry run servicecatalog-puppet --info bootstrap
+	poetry run servicecatalog-puppet --info bootstrap --branch-name main --should-validate
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap to a branch
 bootstrap-branch:
