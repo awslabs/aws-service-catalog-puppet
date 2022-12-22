@@ -70,7 +70,7 @@ def bootstrap(
         for _, client in clients.items():
             try:
                 client.describe_event_bus(Name=constants.EVENT_BUS_NAME)
-            except events.exceptions.ResourceNotFoundException:
+            except client.exceptions.ResourceNotFoundException:
                 client.create_event_bus(Name=constants.EVENT_BUS_NAME)
 
     with betterboto_client.MultiRegionClientContextManager(
