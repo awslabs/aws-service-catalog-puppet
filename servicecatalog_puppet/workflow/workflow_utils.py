@@ -13,10 +13,19 @@ def ensure_no_cyclic_dependencies(name, tasks):
         )
         for duid in t.get("dependencies_by_reference", []):
             g.add_edge(uid, duid)
-    try:
-        cycle = nx.find_cycle(g)
-        raise Exception(
-            f"found cyclic dependency task reference file {name} between: {cycle}"
+
+    is_directed_acyclic_graph = nx.is_directed_acyclic_graph(g)
+    if not is_directed_acyclic_graph:
+        print(
+            f"Generated graph is not a DAG, looking for cycles to help debug (this may take 1 - 2 hours)"
         )
-    except nx.exception.NetworkXNoCycle:
-        pass
+        try:
+            cycle = nx.find_cycle(g)
+            raise Exception(
+                f"found cyclic dependency task reference file {name} between: {cycle}"
+            )
+        except nx.exception.NetworkXNoCycle:
+            pass
+        raise Exception(
+            "Generated graph is not a DAG but could not find cycles to help debug."
+        )
