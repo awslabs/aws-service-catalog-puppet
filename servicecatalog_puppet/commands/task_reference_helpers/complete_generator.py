@@ -5,6 +5,7 @@ import copy
 from deepmerge import always_merger
 
 from servicecatalog_puppet import config, constants, serialisation_utils
+from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.commands.task_reference_helpers.generators import generator
 from servicecatalog_puppet.workflow import workflow_utils
 from servicecatalog_puppet.workflow.dependencies import resources_factory
@@ -86,8 +87,8 @@ def generate(puppet_account_id, manifest, output_file_path):
                 # set up for later pass
                 task_to_add["dependencies_by_reference"] = [constants.CREATE_POLICIES]
 
-                task_reference = (
-                    f"{task_to_add.get('account_id')}-{task_to_add.get('region')}"
+                task_reference = graph.escape(
+                    f"{task_to_add.get('ou_name', task_to_add.get('account_id'))}-{task_to_add.get('region')}"
                 )
                 all_tasks_task_reference = f"{task_reference_prefix}_{task_reference}"
                 task_to_add["task_reference"] = all_tasks_task_reference
