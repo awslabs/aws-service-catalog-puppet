@@ -30,18 +30,18 @@ def handle_service_control_policies(
             manifest_account_ids=dict(),
             section_name=constants.GET_OR_CREATE_SERVICE_CONTROL_POLICIES_POLICY,
         )
-        all_tasks[all_tasks_task_reference][
-            "get_or_create_policy_ref"
-        ] = get_or_create_policy_ref
-        all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
-            get_or_create_policy_ref
-        )
-        all_tasks[get_or_create_policy_ref]["manifest_section_names"].update(
-            task_to_add.get("manifest_section_names")
-        )
-        all_tasks[get_or_create_policy_ref]["manifest_item_names"].update(
-            task_to_add.get("manifest_item_names")
-        )
-        all_tasks[get_or_create_policy_ref]["manifest_account_ids"].update(
-            task_to_add.get("manifest_account_ids")
-        )
+    all_tasks[all_tasks_task_reference][
+        "get_or_create_policy_ref"
+    ] = get_or_create_policy_ref
+    all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
+        get_or_create_policy_ref
+    )
+    all_tasks[get_or_create_policy_ref]["manifest_section_names"].update(
+        task_to_add.get("manifest_section_names")
+    )
+    all_tasks[get_or_create_policy_ref]["manifest_item_names"].update(
+        task_to_add.get("manifest_item_names")
+    )
+    all_tasks[get_or_create_policy_ref]["manifest_account_ids"].update(
+        task_to_add.get("manifest_account_ids")
+    )
