@@ -49,8 +49,6 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
                 bucket, s3
             )
 
-
-
         version = constants.VERSION
         home_region = constants.HOME_REGION
 

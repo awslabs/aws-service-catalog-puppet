@@ -26,7 +26,9 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
             self.generate_manifest_ref
         )
         build_spec = generated_manifest.get("build_spec")
-        spoke_execution_mode_deploy_env = generated_manifest.get("spoke_execution_mode_deploy_env")
+        spoke_execution_mode_deploy_env = generated_manifest.get(
+            "spoke_execution_mode_deploy_env"
+        )
         vars = generated_manifest.get("vars")
 
         with self.spoke_client("codebuild") as codebuild:
