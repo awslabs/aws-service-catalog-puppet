@@ -31,7 +31,7 @@ QUEUE_STATUS = "QUEUE_STATUS"
 RESOURCES_REQUIRED = "resources_required"
 
 
-def build_the_dag(tasks_to_run):
+def build_the_dag(tasks_to_run: dict):
     g = nx.DiGraph()
     print("-- BUILDING THE DAG!!!")
     for uid, task in tasks_to_run.items():
@@ -70,7 +70,7 @@ def build_the_dag(tasks_to_run):
     return g
 
 
-def are_resources_are_free_for_task(task_parameters, resources_file_path):
+def are_resources_are_free_for_task(task_parameters: dict, resources_file_path: str):
     with open(resources_file_path, "rb") as f:
         resources_in_use = serialisation_utils.json_loads(f.read())
     return (
@@ -83,7 +83,10 @@ def are_resources_are_free_for_task(task_parameters, resources_file_path):
 
 
 def lock_resources_for_task(
-    task_reference, task_parameters, resources_in_use, resources_file_path
+    task_reference: str,
+    task_parameters: dict,
+    resources_in_use: dict,
+    resources_file_path: str,
 ):
     print(f"Worker locking {task_reference}")
     for r in task_parameters.get(RESOURCES_REQUIRED, []):
@@ -92,7 +95,7 @@ def lock_resources_for_task(
         f.write(serialisation_utils.json_dumps(resources_in_use))
 
 
-def unlock_resources_for_task(task_parameters, resources_file_path):
+def unlock_resources_for_task(task_parameters: dict, resources_file_path: str):
     with open(resources_file_path, "rb") as f:
         resources_in_use = serialisation_utils.json_loads(f.read())
     for r in task_parameters.get(RESOURCES_REQUIRED, []):
@@ -298,7 +301,6 @@ def on_task_processing_time(task_processing_time_queue, complete_event):
         "cloudwatch-puppethub",
     ) as cloudwatch:
         while not complete_event.is_set():
-            # while True:
             time.sleep(0.1)
             try:
                 duration, task_type, task_params = task_processing_time_queue.get(
@@ -352,7 +354,6 @@ def on_task_trace(task_trace_queue, complete_event, puppet_account_id, execution
         "s3", config.get_reporting_role_arn(config.get_executor_account_id()), "s3",
     ) as s3:
         while not complete_event.is_set():
-            # while True:
             time.sleep(0.1)
             try:
                 t, task_type, task_params, is_start, thread_name = task_trace_queue.get(
@@ -448,7 +449,6 @@ def run(
     for process in processes:
         process.start()
     scheduler_thread.start()
-    # while True:
     while True:
         message = control_queue.get()
         if message == CONTROL_EVENT__COMPLETE:
