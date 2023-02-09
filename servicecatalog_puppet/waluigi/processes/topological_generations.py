@@ -1,7 +1,6 @@
 import multiprocessing
 import os
 import queue
-import threading
 import time
 import traceback
 
@@ -229,7 +228,7 @@ def run(
         f.write("{}")
 
     QueueKlass = multiprocessing.Queue
-    EventKlass = threading.Event
+    EventKlass = multiprocessing.Event
     ExecutorKlass = multiprocessing.Process
     LockKlass = multiprocessing.Lock
 
@@ -263,7 +262,7 @@ def run(
     task_processing_time_args = (
         task_processing_time_queue,
         complete_event,
-    ),
+    )
     task_trace_args = (
         task_trace_queue,
         complete_event,
