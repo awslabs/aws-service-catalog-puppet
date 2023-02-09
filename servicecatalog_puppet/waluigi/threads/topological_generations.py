@@ -5,15 +5,8 @@ import time
 import traceback
 
 import networkx as nx
-from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import (
-    serialisation_utils,
-    config,
-    constants,
-    environmental_variables,
-)
-from servicecatalog_puppet.commands import graph
+from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.waluigi.constants import COMPLETED, ERRORED, QUEUE_STATUS
 from servicecatalog_puppet.waluigi.dag_utils import build_the_dag, logger
 from servicecatalog_puppet.waluigi.locks.external import (
@@ -21,6 +14,7 @@ from servicecatalog_puppet.waluigi.locks.external import (
     lock_resources_for_task,
     unlock_resources_for_task,
 )
+from servicecatalog_puppet.waluigi.shared_tasks import task_processing_time, task_trace
 from servicecatalog_puppet.workflow.dependencies import task_factory
 from servicecatalog_puppet.workflow.tasks import unwrap
 
@@ -209,97 +203,6 @@ def scheduler_task(
     logger.info("finished all batches")
 
 
-def on_task_processing_time(task_processing_time_queue, complete_event):
-    with betterboto_client.CrossAccountClientContextManager(
-        "cloudwatch",
-        config.get_reporting_role_arn(config.get_executor_account_id()),
-        "cloudwatch-puppethub",
-    ) as cloudwatch:
-        while not complete_event.is_set():
-            time.sleep(0.1)
-            try:
-                duration, task_type, task_params = task_processing_time_queue.get(
-                    timeout=5
-                )
-            except queue.Empty:
-                continue
-            else:
-                dimensions = [
-                    dict(Name="task_type", Value=task_type,),
-                    dict(
-                        Name="codebuild_build_id",
-                        Value=os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD"),
-                    ),
-                ]
-                for note_worthy in [
-                    "launch_name",
-                    "region",
-                    "account_id",
-                    "puppet_account_id",
-                    "portfolio",
-                    "product",
-                    "version",
-                ]:
-                    if task_params.get(note_worthy):
-                        dimensions.append(
-                            dict(
-                                Name=str(note_worthy),
-                                Value=str(task_params.get(note_worthy)),
-                            )
-                        )
-                cloudwatch.put_metric_data(
-                    Namespace=f"ServiceCatalogTools/Puppet/v2/ProcessingTime/Tasks",
-                    MetricData=[
-                        dict(
-                            MetricName="Tasks",
-                            Dimensions=[dict(Name="TaskType", Value=task_type)]
-                            + dimensions,
-                            Value=duration,
-                            Unit="Seconds",
-                        ),
-                    ],
-                )
-        logger.info("shutting down")
-
-
-def on_task_trace(task_trace_queue, complete_event, puppet_account_id, execution_mode):
-    logger.info(f"execution_mode: {execution_mode}")
-    bucket = f"sc-puppet-log-store-{puppet_account_id}"
-    key_prefix = f"{os.getenv('CODEBUILD_BUILD_ID', f'local/{os.getenv(environmental_variables.CACHE_INVALIDATOR)}')}/traces"
-    with betterboto_client.CrossAccountClientContextManager(
-        "s3", config.get_reporting_role_arn(config.get_executor_account_id()), "s3",
-    ) as s3:
-        while not complete_event.is_set():
-            time.sleep(0.1)
-            try:
-                t, task_type, task_params, is_start, thread_name = task_trace_queue.get(
-                    timeout=5
-                )
-            except queue.Empty:
-                continue
-            else:
-                if execution_mode != constants.EXECUTION_MODE_SPOKE:
-                    tz = (t - float(os.getenv("SCT_START_TIME", 0))) * 1000000
-                    task_reference = task_params.get("task_reference")
-                    s3.put_object(
-                        Bucket=bucket,
-                        Key=f"{key_prefix}/{tz}-{graph.escape(task_reference)}-{'start' if is_start else 'end'}.json",
-                        Body=serialisation_utils.json_dumps(
-                            {
-                                "name": task_reference,
-                                "cat": task_type,
-                                "ph": "B" if is_start else "E",
-                                "pid": 1,
-                                "tid": thread_name,
-                                "ts": tz,
-                                "args": unwrap(task_params),
-                            }
-                        ),
-                    )
-
-        logger.info("shutting down")
-
-
 def run(
     num_workers,
     tasks_to_run,
@@ -308,66 +211,78 @@ def run(
     puppet_account_id,
     execution_mode,
 ):
-    resources_file_path = f"{manifest_files_path}/resources.json"
-    os.environ["SCT_START_TIME"] = str(time.time())
+    logger.info(f"Running with {num_workers} processes in {execution_mode}!")
 
-    logger.info(f"Running with {num_workers} processes!")
+    resources_file_path = f"{manifest_files_path}/resources.json"
     start = time.time()
-    lock = threading.Lock()
+    os.environ["SCT_START_TIME"] = str(start)
 
     with open(resources_file_path, "w") as f:
         f.write("{}")
 
-    task_queue = queue.Queue()
-    results_queue = queue.Queue()
-    task_processing_time_queue = queue.Queue()
-    task_trace_queue = queue.Queue()
-    control_event = threading.Event()
-    complete_event = threading.Event()
+    QueueKlass = queue.Queue
+    EventKlass = threading.Event
+    ExecutorKlass = threading.Thread
+    LockKlass = threading.Lock
+
+    lock = LockKlass()
+    task_queue = QueueKlass()
+    results_queue = QueueKlass()
+    task_processing_time_queue = QueueKlass()
+    task_trace_queue = QueueKlass()
+    control_event = EventKlass()
+    complete_event = EventKlass()
+
+    worker_task_args = (
+        lock,
+        task_queue,
+        results_queue,
+        task_processing_time_queue,
+        task_trace_queue,
+        control_event,
+        tasks_to_run,
+        manifest_files_path,
+        manifest_task_reference_file_path,
+        puppet_account_id,
+        resources_file_path,
+    )
+    scheduler_task_args = (
+        num_workers,
+        task_queue,
+        results_queue,
+        control_event,
+        complete_event,
+        tasks_to_run,
+    )
+    task_processing_time_args = (
+        task_processing_time_queue,
+        complete_event,
+    )
+    task_trace_args = (
+        task_trace_queue,
+        complete_event,
+        puppet_account_id,
+        execution_mode,
+    )
 
     processes = [
-        threading.Thread(
-            name=f"worker#{i}",
-            target=worker_task,
-            args=(
-                str(i),
-                lock,
-                task_queue,
-                results_queue,
-                task_processing_time_queue,
-                task_trace_queue,
-                control_event,
-                tasks_to_run,
-                manifest_files_path,
-                manifest_task_reference_file_path,
-                puppet_account_id,
-                resources_file_path,
-            ),
+        ExecutorKlass(
+            name=f"worker#{i}", target=worker_task, args=(str(i),) + worker_task_args,
         )
         for i in range(num_workers)
     ]
-    scheduler_thread = threading.Thread(
-        name="scheduler",
-        target=scheduler_task,
-        args=(
-            num_workers,
-            task_queue,
-            results_queue,
-            control_event,
-            complete_event,
-            tasks_to_run,
-        ),
+    scheduler_thread = ExecutorKlass(
+        name="scheduler", target=scheduler_task, args=scheduler_task_args,
     )
-    on_task_processing_time_thread = threading.Thread(
+    on_task_processing_time_thread = ExecutorKlass(
         name="on_task_processing_time",
-        target=on_task_processing_time,
-        args=(task_processing_time_queue, complete_event,),
+        target=task_processing_time.on_task_processing_time_task,
+        args=task_processing_time_args,
     )
-    on_task_trace_thread = threading.Thread(
-        name="on_task_trace",
-        target=on_task_trace,
-        args=(task_trace_queue, complete_event, puppet_account_id, execution_mode),
+    on_task_trace_thread = ExecutorKlass(
+        name="on_task_trace", target=task_trace.on_task_trace, args=task_trace_args,
     )
+
     on_task_processing_time_thread.start()
     on_task_trace_thread.start()
     for process in processes:
