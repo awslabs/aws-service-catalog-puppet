@@ -118,7 +118,7 @@ def run_tasks(
         manifest_task_reference_file_path,
         puppet_account_id,
         execution_mode,
-        "topological_generations",
+        config.get_scheduler_algorithm(),
     )
 
     cache_invalidator = os.environ.get(environmental_variables.CACHE_INVALIDATOR)

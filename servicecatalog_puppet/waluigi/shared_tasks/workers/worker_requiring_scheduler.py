@@ -21,6 +21,7 @@ def worker_task(
     results_queue,
     task_processing_time_queue,
     task_trace_queue,
+    control_queue,
     control_event,
     tasks_to_run,
     manifest_files_path,

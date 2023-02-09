@@ -3,7 +3,6 @@ import queue
 import threading
 import time
 
-import servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_with_scheduler
 from servicecatalog_puppet.waluigi.dag_utils import logger
 from servicecatalog_puppet.waluigi.shared_tasks import task_processing_time, task_trace
 from servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_with_scheduler import (
@@ -62,6 +61,7 @@ def run(
         results_queue,
         task_processing_time_queue,
         task_trace_queue,
+        control_queue,
         control_event,
         tasks_to_run,
         manifest_files_path,
@@ -99,9 +99,10 @@ def run(
         )
         for i in range(num_workers)
     ]
-    scheduler_thread = ExecutorKlass(
-        name="scheduler", target=scheduler_task_to_use, args=scheduler_task_args,
-    )
+    if scheduler_task_to_use:
+        scheduler_thread = ExecutorKlass(
+            name="scheduler", target=scheduler_task_to_use, args=scheduler_task_args,
+        )
     on_task_processing_time_thread = ExecutorKlass(
         name="on_task_processing_time",
         target=task_processing_time.on_task_processing_time_task,
@@ -115,7 +116,8 @@ def run(
     on_task_trace_thread.start()
     for process in processes:
         process.start()
-    scheduler_thread.start()
+    if scheduler_task_to_use:
+        scheduler_thread.start()
     while not control_event.is_set():
         time.sleep(5)
     for process in processes:

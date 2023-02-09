@@ -556,6 +556,12 @@ def setup_config(
         ] = remote_config.get_scheduler_threads_or_processes(
             puppet_account_id_to_use, home_region
         )
+    if not os.environ.get(environmental_variables.SCHEDULER_ALGORITHM):
+        os.environ[
+            environmental_variables.SCHEDULER_ALGORITHM
+        ] = remote_config.get_scheduler_algorithm(
+            puppet_account_id_to_use, home_region
+        )
 
 
 @cli.command()

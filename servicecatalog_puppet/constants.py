@@ -385,3 +385,6 @@ REPORTING_ROLE_NAME = "PuppetRoleForReporting"
 SHARE_PRINCIPALS_DEFAULT = False
 
 DESCRIBE_PORTFOLIO_SHARES = "describe-portfolio-shares"
+
+
+SCHEDULER_ALGORITHM_DEFAULT = "topological_generations"

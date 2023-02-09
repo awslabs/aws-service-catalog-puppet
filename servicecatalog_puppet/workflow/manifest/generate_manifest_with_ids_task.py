@@ -132,6 +132,11 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
                 "type": "PLAINTEXT",
             },
             {
+                "name": environmental_variables.SCHEDULER_ALGORITHM,
+                "value": config.get_scheduler_algorithm(),
+                "type": "PLAINTEXT",
+            },
+            {
                 "name": environmental_variables.GLOBAL_SHARE_TAG_OPTIONS,
                 "value": config.get_global_share_tag_options_default(),
                 "type": "PLAINTEXT",

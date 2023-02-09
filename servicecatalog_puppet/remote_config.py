@@ -199,3 +199,14 @@ def get_scheduler_threads_or_processes(puppet_account_id, default_region):
         "scheduler_threads_or_processes",
         constants.SCHEDULER_THREADS_OR_PROCESSES_DEFAULT,
     )
+
+def get_scheduler_algorithm(puppet_account_id, default_region):
+    logger.info(
+        "getting scheduler_algorithm,  default_region: {}".format(
+            default_region
+        )
+    )
+    return get_config(puppet_account_id, default_region).get(
+        "scheduler_algorithm",
+        constants.SCHEDULER_ALGORITHM_DEFAULT,
+    )

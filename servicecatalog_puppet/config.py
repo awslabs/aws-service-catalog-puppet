@@ -267,6 +267,12 @@ def get_scheduler_threads_or_processes():
         constants.SCHEDULER_THREADS_OR_PROCESSES_DEFAULT,
     )
 
+def get_scheduler_algorithm():
+    return os.environ.get(
+        environmental_variables.SCHEDULER_ALGORITHM,
+        constants.SCHEDULER_ALGORITHM_DEFAULT,
+    )
+
 
 def get_reporting_role_arn(puppet_account_id):
     return get_role_arn(puppet_account_id, constants.REPORTING_ROLE_NAME)

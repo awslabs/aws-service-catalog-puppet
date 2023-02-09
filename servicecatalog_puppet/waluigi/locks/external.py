@@ -6,6 +6,10 @@ from servicecatalog_puppet.waluigi.dag_utils import logger
 def are_resources_are_free_for_task(task_parameters: dict, resources_file_path: str):
     with open(resources_file_path, "rb") as f:
         resources_in_use = serialisation_utils.json_loads(f.read())
+    return are_resources_are_free_for_task_dict(task_parameters, resources_in_use)
+
+
+def are_resources_are_free_for_task_dict(task_parameters, resources_in_use):
     return (
         all(
             resources_in_use.get(r, False) is False
