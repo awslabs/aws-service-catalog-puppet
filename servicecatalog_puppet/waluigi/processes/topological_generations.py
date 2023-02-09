@@ -1,4 +1,3 @@
-import logging
 import multiprocessing
 import os
 import queue
@@ -16,97 +15,20 @@ from servicecatalog_puppet import (
     environmental_variables,
 )
 from servicecatalog_puppet.commands import graph
+from servicecatalog_puppet.waluigi.constants import (
+    COMPLETED,
+    ERRORED,
+    QUEUE_STATUS,
+    CONTROL_EVENT__COMPLETE,
+)
+from servicecatalog_puppet.waluigi.dag_utils import build_the_dag, logger
+from servicecatalog_puppet.waluigi.locks.external import (
+    are_resources_are_free_for_task,
+    lock_resources_for_task,
+    unlock_resources_for_task,
+)
 from servicecatalog_puppet.workflow.dependencies import task_factory
 from servicecatalog_puppet.workflow.tasks import unwrap
-
-CONTROL_EVENT__COMPLETE = "CONTROL_EVENT__COMPLETE"
-
-logger = logging.getLogger(constants.PUPPET_SCHEDULER_LOGGER_NAME)
-
-COMPLETED = "COMPLETED"
-NOT_SET = "NOT_SET"
-ERRORED = "ERRORED"
-QUEUE_STATUS = "QUEUE_STATUS"
-
-RESOURCES_REQUIRED = "resources_required"
-
-
-def build_the_dag(tasks_to_run: dict):
-    g = nx.DiGraph()
-    print("-- BUILDING THE DAG!!!")
-    for uid, task in tasks_to_run.items():
-        g.add_nodes_from(
-            [(uid, task),]
-        )
-        for duid in task.get("dependencies_by_reference", []):
-            if tasks_to_run.get(duid):
-                g.add_edge(uid, duid)
-            else:
-                logger.debug(
-                    f"{duid} is not in the task reference - this is fine when running in spoke execution mode and when the task was executed within the hub"
-                )
-
-    for uid, task in tasks_to_run.items():
-        if task.get(QUEUE_STATUS, NOT_SET) == COMPLETED:
-            try:
-                g.remove_node(uid)
-            except nx.exception.NetworkXError as e:
-                pass
-
-        elif task.get(QUEUE_STATUS, NOT_SET) == ERRORED:
-            print(
-                f"looking at task {uid} with status {task.get(QUEUE_STATUS, NOT_SET)}"
-            )
-            for n in nx.ancestors(g, uid):
-                try:
-                    g.remove_node(n)
-                except nx.exception.NetworkXError as e:
-                    pass
-            try:
-                g.remove_node(uid)
-            except nx.exception.NetworkXError as e:
-                pass
-
-    return g
-
-
-def are_resources_are_free_for_task(task_parameters: dict, resources_file_path: str):
-    with open(resources_file_path, "rb") as f:
-        resources_in_use = serialisation_utils.json_loads(f.read())
-    return (
-        all(
-            resources_in_use.get(r, False) is False
-            for r in task_parameters.get(RESOURCES_REQUIRED, [])
-        ),
-        resources_in_use,
-    )
-
-
-def lock_resources_for_task(
-    task_reference: str,
-    task_parameters: dict,
-    resources_in_use: dict,
-    resources_file_path: str,
-):
-    print(f"Worker locking {task_reference}")
-    for r in task_parameters.get(RESOURCES_REQUIRED, []):
-        resources_in_use[r] = task_reference
-    with open(resources_file_path, "wb") as f:
-        f.write(serialisation_utils.json_dumps(resources_in_use))
-
-
-def unlock_resources_for_task(task_parameters: dict, resources_file_path: str):
-    with open(resources_file_path, "rb") as f:
-        resources_in_use = serialisation_utils.json_loads(f.read())
-    for r in task_parameters.get(RESOURCES_REQUIRED, []):
-        try:
-            del resources_in_use[r]
-        except KeyError:
-            logger.warn(
-                f"{task_parameters.get('task_reference')} tried to unlock {r} but it wasn't present"
-            )
-    with open(resources_file_path, "wb") as f:
-        f.write(serialisation_utils.json_dumps(resources_in_use))
 
 
 def worker_task(
