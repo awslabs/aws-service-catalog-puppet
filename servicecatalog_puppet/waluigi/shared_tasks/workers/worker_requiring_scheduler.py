@@ -26,11 +26,17 @@ def worker_task(
     resources_file_path,
 ):
     logger.info(f"starting up")
-    while not control_event.is_set():
-        time.sleep(0.1)
+    should_be_running = True
+    if control_event:
+        should_be_running = not control_event.is_set()
+    while should_be_running:
+        if control_event:
+            time.sleep(0.1)
         try:
             task_reference = task_queue.get(timeout=5)
         except queue.Empty:
+            if control_event:
+                should_be_running = not control_event.is_set()
             continue
         else:
             result = False
@@ -133,4 +139,6 @@ def worker_task(
                     time.sleep(0.01)
 
         # time.sleep(10)
+        if control_event:
+            should_be_running = not control_event.is_set()
     logger.info(f"shutting down")

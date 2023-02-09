@@ -3,17 +3,17 @@ import queue
 import threading
 import time
 
+import servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_with_scheduler
 from servicecatalog_puppet.waluigi.dag_utils import logger
 from servicecatalog_puppet.waluigi.shared_tasks import task_processing_time, task_trace
-from servicecatalog_puppet.waluigi.threads import worker
-from servicecatalog_puppet.waluigi.shared_tasks import task_topological_generations_scheduler
-
+from servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_with_scheduler import scheduler_task
+from servicecatalog_puppet.waluigi.shared_tasks.workers.worker_requiring_scheduler import worker_task
 
 QUEUE_REFILL_SLEEP_DURATION = 0.2
 
-def get_scheduler_task(scheduling_algorithm):
+def get_tasks(scheduling_algorithm):
     if scheduling_algorithm == "topological_generations":
-        return task_topological_generations_scheduler.scheduler_task
+        return worker_task, scheduler_task
     raise ValueError(f"Unsupported scheduling_algorithm: {scheduling_algorithm}")
 
 
@@ -82,14 +82,16 @@ def run(
         execution_mode,
     )
 
+    worker_task_to_use, scheduler_task_to_use = get_tasks(scheduling_algorithm)
+
     processes = [
         ExecutorKlass(
-            name=f"worker#{i}", target=worker.worker_task, args=(str(i),) + worker_task_args,
+            name=f"worker#{i}", target=worker_task_to_use, args=(str(i),) + worker_task_args,
         )
         for i in range(num_workers)
     ]
     scheduler_thread = ExecutorKlass(
-        name="scheduler", target=get_scheduler_task(scheduling_algorithm), args=scheduler_task_args,
+        name="scheduler", target=scheduler_task_to_use, args=scheduler_task_args,
     )
     on_task_processing_time_thread = ExecutorKlass(
         name="on_task_processing_time",
