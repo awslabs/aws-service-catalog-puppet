@@ -2,11 +2,21 @@ import time
 
 import networkx as nx
 
-from servicecatalog_puppet.waluigi.constants import CONTROL_EVENT__COMPLETE, QUEUE_STATUS
+from servicecatalog_puppet.waluigi.constants import (
+    CONTROL_EVENT__COMPLETE,
+    QUEUE_STATUS,
+)
 from servicecatalog_puppet.waluigi.dag_utils import build_the_dag, logger
 
+
 def scheduler_task(
-    num_workers, task_queue, results_queue, control_queue, control_event, queue_refill_sleep_duration, tasks_to_run,
+    num_workers,
+    task_queue,
+    results_queue,
+    control_queue,
+    control_event,
+    queue_refill_sleep_duration,
+    tasks_to_run,
 ):
     number_of_target_tasks_in_flight = num_workers
     should_be_running = True
@@ -70,5 +80,3 @@ def scheduler_task(
         if control_event:
             should_be_running = not control_event.is_set()
     logger.info("finished all batches")
-
-

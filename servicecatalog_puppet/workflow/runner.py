@@ -109,9 +109,7 @@ def run_tasks(
         shutil.unpack_archive("GetSSMParamTask.zip", ".", "zip")
 
     threads_or_processes = config.get_scheduler_threads_or_processes()
-    runner = runner_factory.get_runner(
-        threads_or_processes
-    )
+    runner = runner_factory.get_runner(threads_or_processes)
 
     runner.run(
         num_workers,

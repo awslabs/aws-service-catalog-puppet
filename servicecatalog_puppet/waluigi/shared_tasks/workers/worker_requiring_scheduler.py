@@ -5,8 +5,11 @@ import traceback
 from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.waluigi.constants import ERRORED, COMPLETED
 from servicecatalog_puppet.waluigi.dag_utils import logger
-from servicecatalog_puppet.waluigi.locks.external import are_resources_are_free_for_task, lock_resources_for_task, \
-    unlock_resources_for_task
+from servicecatalog_puppet.waluigi.locks.external import (
+    are_resources_are_free_for_task,
+    lock_resources_for_task,
+    unlock_resources_for_task,
+)
 from servicecatalog_puppet.workflow.dependencies import task_factory
 from servicecatalog_puppet.workflow.tasks import unwrap
 

@@ -6,10 +6,15 @@ import time
 import servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_with_scheduler
 from servicecatalog_puppet.waluigi.dag_utils import logger
 from servicecatalog_puppet.waluigi.shared_tasks import task_processing_time, task_trace
-from servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_with_scheduler import scheduler_task
-from servicecatalog_puppet.waluigi.shared_tasks.workers.worker_requiring_scheduler import worker_task
+from servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_with_scheduler import (
+    scheduler_task,
+)
+from servicecatalog_puppet.waluigi.shared_tasks.workers.worker_requiring_scheduler import (
+    worker_task,
+)
 
 QUEUE_REFILL_SLEEP_DURATION = 0.2
+
 
 def get_tasks(scheduling_algorithm):
     if scheduling_algorithm == "topological_generations":
@@ -24,9 +29,11 @@ def run(
     manifest_task_reference_file_path,
     puppet_account_id,
     execution_mode,
-    scheduling_algorithm
+    scheduling_algorithm,
 ):
-    logger.info(f"Running with {range(500)[num_workers]} threads in {execution_mode} with scheduling_algorithm {scheduling_algorithm}!")
+    logger.info(
+        f"Running with {range(500)[num_workers]} threads in {execution_mode} with scheduling_algorithm {scheduling_algorithm}!"
+    )
 
     resources_file_path = f"{manifest_files_path}/resources.json"
     start = time.time()
@@ -86,7 +93,9 @@ def run(
 
     processes = [
         ExecutorKlass(
-            name=f"worker#{i}", target=worker_task_to_use, args=(str(i),) + worker_task_args,
+            name=f"worker#{i}",
+            target=worker_task_to_use,
+            args=(str(i),) + worker_task_args,
         )
         for i in range(num_workers)
     ]
