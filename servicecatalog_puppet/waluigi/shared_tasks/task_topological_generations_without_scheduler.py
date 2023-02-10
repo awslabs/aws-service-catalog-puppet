@@ -102,7 +102,7 @@ def worker_task(
             next_task, has_tried_every_task = setup_next_task_to_run(
                 lock, tasks_to_run, resources, all_tasks
             )
-            print(f"has_tried_every_task {has_tried_every_task}")
+            logger.info(f"has_tried_every_task {has_tried_every_task}")
             if has_tried_every_task:
                 if control_queue:
                     control_queue.put(CONTROL_EVENT__COMPLETE)
