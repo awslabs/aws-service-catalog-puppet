@@ -148,8 +148,10 @@ def run(
     if scheduler_thread:
         scheduler_thread.start()
     while True:
+        logger.info("Waiting for shutdown message")
         message = control_queue.get()
         if message == CONTROL_EVENT__COMPLETE:
+            logger.info(f"Got the {message}, starting shutdown process")
             break
 
     for process in processes:
