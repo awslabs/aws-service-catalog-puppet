@@ -23,7 +23,7 @@ def get_tasks(scheduling_algorithm):
 
 def run(
     num_workers,
-    tasks_to_run,
+    tasks_reference,
     manifest_files_path,
     manifest_task_reference_file_path,
     puppet_account_id,
@@ -33,6 +33,10 @@ def run(
     logger.info(
         f"Running with {range(500)[num_workers]} threads in {execution_mode} with scheduling_algorithm {scheduling_algorithm}!"
     )
+
+    all_tasks = tasks_reference
+    resources = dict()
+    tasks_to_run = list()
 
     resources_file_path = f"{manifest_files_path}/resources.json"
     start = time.time()
@@ -63,11 +67,13 @@ def run(
         task_trace_queue,
         control_queue,
         control_event,
-        tasks_to_run,
         manifest_files_path,
         manifest_task_reference_file_path,
         puppet_account_id,
         resources_file_path,
+        all_tasks,
+        resources,
+        tasks_to_run,
     )
     scheduler_task_args = (
         num_workers,
@@ -76,6 +82,7 @@ def run(
         control_queue,
         control_event,
         QUEUE_REFILL_SLEEP_DURATION,
+        all_tasks,
         tasks_to_run,
     )
     task_processing_time_args = (

@@ -23,11 +23,13 @@ def worker_task(
     task_trace_queue,
     control_queue,
     control_event,
-    tasks_to_run,
     manifest_files_path,
     manifest_task_reference_file_path,
     puppet_account_id,
     resources_file_path,
+        all_tasks,
+        resources,
+        tasks_to_run,
 ):
     logger.info(f"starting up")
     should_be_running = True
@@ -49,7 +51,7 @@ def worker_task(
                 #     f"{pid} Worker received {task_reference} waiting for lock",
                 #     flush=True,
                 # )
-                task_parameters = tasks_to_run.get(task_reference)
+                task_parameters = all_tasks.get(task_reference)
                 # print(
                 #     f"{pid} Worker received {task_reference} waiting for lock and the task is {task_parameters}",
                 #     flush=True,

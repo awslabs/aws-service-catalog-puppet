@@ -16,6 +16,7 @@ def scheduler_task(
     control_queue,
     control_event,
     queue_refill_sleep_duration,
+    all_tasks,
     tasks_to_run,
 ):
     number_of_target_tasks_in_flight = num_workers
@@ -23,7 +24,7 @@ def scheduler_task(
     if control_event:
         should_be_running = not control_event.is_set()
     while should_be_running:
-        dag = build_the_dag(tasks_to_run)
+        dag = build_the_dag(all_tasks)
         generations = list(nx.topological_generations(dag))
         if not generations:
             logger.info("No more batches to run")
@@ -61,7 +62,9 @@ def scheduler_task(
                 logger.info(
                     f"receiving: [{number_of_tasks_processed}]: {task_reference}, {result}"
                 )
-                tasks_to_run[task_reference][QUEUE_STATUS] = result
+                task_just_run = all_tasks[task_reference]
+                task_just_run[QUEUE_STATUS] = result
+                all_tasks[task_reference] = task_just_run
 
             if not current_generation:  # queue now empty - wait for all to complete
                 logger.info("tasks now scheduled")
@@ -73,7 +76,9 @@ def scheduler_task(
                         logger.info(
                             f"receiving: [{number_of_tasks_processed}]: {task_reference}, {result}"
                         )
-                        tasks_to_run[task_reference][QUEUE_STATUS] = result
+                        task_just_run = all_tasks[task_reference]
+                        task_just_run[QUEUE_STATUS] = result
+                        all_tasks[task_reference] = task_just_run
                 else:
                     current_generation_in_progress = False
                     logger.info("finished batch")

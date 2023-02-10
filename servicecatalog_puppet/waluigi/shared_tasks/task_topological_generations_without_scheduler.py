@@ -84,7 +84,6 @@ def worker_task(
     task_trace_queue,
     control_queue,
     control_event,
-    tasks_to_run_,
     manifest_files_path,
     manifest_task_reference_file_path,
     puppet_account_id,
