@@ -92,9 +92,11 @@ def worker_task(
     resources,
     tasks_to_run,
 ):
+    logger.info(f"starting up")
     should_run = True
 
     while should_run:
+        logger.info(f"should_run")
         next_task = None
         while next_task is None:
             next_task, has_tried_every_task = setup_next_task_to_run(
@@ -146,6 +148,7 @@ def worker_task(
             end = time.time()
             duration = end - start
             result = COMPLETED
+            logger.error(f"executed task [{result}]: {task_reference}")
             task.on_task_success(duration)
 
         task_processing_time_queue.put((duration, task_type, task_details,),)
