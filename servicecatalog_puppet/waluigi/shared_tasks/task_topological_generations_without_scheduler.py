@@ -36,8 +36,10 @@ def get_next_task_to_run(tasks_to_run, resources, all_tasks):
     has_tried_every_task = True
     for task_reference_to_run in tasks_to_run:
         task_to_run = all_tasks[task_reference_to_run]
-        if task_to_run.get(QUEUE_STATUS, NOT_SET) == NOT_SET:
+        status = task_to_run.get(QUEUE_STATUS, NOT_SET)
+        if status in [IN_PROGRESS, NOT_SET]:
             has_tried_every_task = False
+        if status == NOT_SET:
             if not has_dependencies_remaining(task_to_run, all_tasks):
                 if are_resources_are_free_for_task_dict(task_to_run, resources):
                     return task_to_run, has_tried_every_task
