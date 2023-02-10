@@ -3,7 +3,7 @@ import queue
 import threading
 import time
 
-from servicecatalog_puppet.waluigi.dag_utils import logger
+from servicecatalog_puppet.waluigi.dag_utils import logger, make_readable_in_codebuild_logs
 from servicecatalog_puppet.waluigi.shared_tasks import task_processing_time, task_trace
 from servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_with_scheduler import (
     scheduler_task,
@@ -30,15 +30,8 @@ def run(
     execution_mode,
     scheduling_algorithm,
 ):
-    numbers = "zero one two three four five six seven eight nine".split()
-    numbers.extend("ten eleven twelve thirteen fourteen fifteen sixteen".split())
-    numbers.extend("seventeen eighteen nineteen".split())
-    numbers.extend(tens if ones == "zero" else (tens + "-" + ones)
-                   for tens in "twenty thirty forty fifty sixty seventy eighty ninety".split()
-                   for ones in numbers[0:10])
-
     logger.info(
-        f"Running with {numbers[num_workers]} threads in {execution_mode} with scheduling_algorithm {scheduling_algorithm}!"
+        f"Running with {make_readable_in_codebuild_logs(num_workers)} threads in {execution_mode} with scheduling_algorithm {scheduling_algorithm}!"
     )
 
     all_tasks = tasks_reference
