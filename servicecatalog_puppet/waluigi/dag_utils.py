@@ -36,9 +36,9 @@ def build_the_dag(tasks_to_run: dict):
                 pass
 
         elif task.get(QUEUE_STATUS, NOT_SET) == ERRORED:
-            print(
-                f"looking at task {uid} with status {task.get(QUEUE_STATUS, NOT_SET)}"
-            )
+            # print(
+            #     f"looking at task {uid} with status {task.get(QUEUE_STATUS, NOT_SET)}"
+            # )
             for n in nx.ancestors(g, uid):
                 try:
                     g.remove_node(n)
