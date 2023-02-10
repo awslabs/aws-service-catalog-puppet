@@ -42,7 +42,7 @@ def run(
     scheduling_algorithm,
 ):
     logger.info(
-        f"Running with {make_readable_in_codebuild_logs(num_workers)} processes in {execution_mode} with scheduling_algorithm {scheduling_algorithm}!"
+        f"Executing {len(tasks_reference.keys())} tasks with {make_readable_in_codebuild_logs(num_workers)} processes in {execution_mode} with scheduling_algorithm {scheduling_algorithm}!"
     )
 
     manager = multiprocessing.Manager()
