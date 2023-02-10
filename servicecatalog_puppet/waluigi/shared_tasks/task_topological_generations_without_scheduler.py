@@ -148,7 +148,7 @@ def worker_task(
             end = time.time()
             duration = end - start
             result = COMPLETED
-            logger.error(f"executed task [{result}]: {task_reference}")
+            logger.info(f"executed task [{result}]: {task_reference}")
             task.on_task_success(duration)
 
         task_processing_time_queue.put((duration, task_type, task_details,),)
