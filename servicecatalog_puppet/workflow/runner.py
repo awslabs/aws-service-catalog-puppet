@@ -25,7 +25,7 @@ from luigi import LuigiStatusCode
 from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
 from servicecatalog_puppet import environmental_variables
-from servicecatalog_puppet.waluigi import scheduler_factory
+from servicecatalog_puppet.waluigi import runner_factory
 from servicecatalog_puppet.workflow import tasks
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
@@ -109,16 +109,16 @@ def run_tasks(
         shutil.unpack_archive("GetSSMParamTask.zip", ".", "zip")
 
     threads_or_processes = config.get_scheduler_threads_or_processes()
-    scheduler = scheduler_factory.get_scheduler(
-        threads_or_processes, "topological_generations"
-    )
-    scheduler.run(
+    runner = runner_factory.get_runner(threads_or_processes)
+
+    runner.run(
         num_workers,
         tasks_to_run_filtered,
         manifest_files_path,
         manifest_task_reference_file_path,
         puppet_account_id,
         execution_mode,
+        config.get_scheduler_algorithm(),
     )
 
     cache_invalidator = os.environ.get(environmental_variables.CACHE_INVALIDATOR)
