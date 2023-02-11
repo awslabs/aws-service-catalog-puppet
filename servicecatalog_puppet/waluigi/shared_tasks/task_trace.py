@@ -18,19 +18,19 @@ from servicecatalog_puppet.workflow.tasks import unwrap
 def on_task_trace(task_trace_queue, complete_event, puppet_account_id, execution_mode):
     bucket = f"sc-puppet-log-store-{puppet_account_id}"
     key_prefix = f"{os.getenv('CODEBUILD_BUILD_ID', f'local/{os.getenv(environmental_variables.CACHE_INVALIDATOR)}')}/traces"
-    with betterboto_client.CrossAccountClientContextManager(
-        "s3", config.get_reporting_role_arn(config.get_executor_account_id()), "s3",
-    ) as s3:
-        while not complete_event.is_set():
-            time.sleep(0.1)
-            try:
-                t, task_type, task_params, is_start, thread_name = task_trace_queue.get(
-                    timeout=5
-                )
-            except queue.Empty:
-                continue
-            else:
-                if execution_mode != constants.EXECUTION_MODE_SPOKE:
+    if execution_mode != constants.EXECUTION_MODE_SPOKE:
+        with betterboto_client.CrossAccountClientContextManager(
+            "s3", config.get_reporting_role_arn(config.get_executor_account_id()), "s3",
+        ) as s3:
+            while not complete_event.is_set():
+                time.sleep(0.1)
+                try:
+                    t, task_type, task_params, is_start, thread_name = task_trace_queue.get(
+                        timeout=5
+                    )
+                except queue.Empty:
+                    continue
+                else:
                     tz = (t - float(os.getenv("SCT_START_TIME", 0))) * 1000000
                     task_reference = task_params.get("task_reference")
                     s3.put_object(

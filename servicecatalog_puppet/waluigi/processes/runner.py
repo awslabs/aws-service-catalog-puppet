@@ -107,6 +107,7 @@ def run(
     task_processing_time_args = (
         task_processing_time_queue,
         complete_event,
+        execution_mode,
     )
     task_trace_args = (
         task_trace_queue,
