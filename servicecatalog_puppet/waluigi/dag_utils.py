@@ -15,7 +15,7 @@ logger = logging.getLogger(constants.PUPPET_SCHEDULER_LOGGER_NAME)
 
 def build_the_dag(tasks_to_run: dict):
     g = nx.DiGraph()
-    print("-- BUILDING THE DAG!!!")
+    #print("-- BUILDING THE DAG!!!")
     for uid, task in tasks_to_run.items():
         g.add_nodes_from(
             [(uid, task),]
