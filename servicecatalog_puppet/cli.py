@@ -559,9 +559,7 @@ def setup_config(
     if not os.environ.get(environmental_variables.SCHEDULER_ALGORITHM):
         os.environ[
             environmental_variables.SCHEDULER_ALGORITHM
-        ] = remote_config.get_scheduler_algorithm(
-            puppet_account_id_to_use, home_region
-        )
+        ] = remote_config.get_scheduler_algorithm(puppet_account_id_to_use, home_region)
 
 
 @cli.command()

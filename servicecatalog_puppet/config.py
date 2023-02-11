@@ -2,7 +2,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import functools
-import json
 from servicecatalog_puppet import serialisation_utils
 import logging
 import os
@@ -266,6 +265,7 @@ def get_scheduler_threads_or_processes():
         environmental_variables.SCHEDULER_THREADS_OR_PROCESSES,
         constants.SCHEDULER_THREADS_OR_PROCESSES_DEFAULT,
     )
+
 
 def get_scheduler_algorithm():
     return os.environ.get(

@@ -3,7 +3,10 @@ import queue
 import threading
 import time
 
-from servicecatalog_puppet.waluigi.dag_utils import logger, make_readable_in_codebuild_logs
+from servicecatalog_puppet.waluigi.dag_utils import (
+    logger,
+    make_readable_in_codebuild_logs,
+)
 from servicecatalog_puppet.waluigi.shared_tasks import task_processing_time, task_trace
 from servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_with_scheduler import (
     scheduler_task,

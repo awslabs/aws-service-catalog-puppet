@@ -8,7 +8,9 @@ from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.waluigi.dag_utils import logger
 
 
-def on_task_processing_time_task(task_processing_time_queue, complete_event, execution_mode):
+def on_task_processing_time_task(
+    task_processing_time_queue, complete_event, execution_mode
+):
     if execution_mode != constants.EXECUTION_MODE_SPOKE:
         with betterboto_client.CrossAccountClientContextManager(
             "cloudwatch",

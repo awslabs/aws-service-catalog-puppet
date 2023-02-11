@@ -34,7 +34,8 @@ def cli(info, info_line_numbers):
 
     if info:
         logging.basicConfig(
-            format="%(levelname)s %(process)s %(threadName)s %(message)s", level=logging.INFO
+            format="%(levelname)s %(process)s %(threadName)s %(message)s",
+            level=logging.INFO,
         )
     if info_line_numbers:
         logging.basicConfig(

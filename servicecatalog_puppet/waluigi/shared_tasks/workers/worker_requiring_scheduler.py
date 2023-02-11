@@ -27,9 +27,9 @@ def worker_task(
     manifest_task_reference_file_path,
     puppet_account_id,
     resources_file_path,
-        all_tasks,
-        resources,
-        tasks_to_run,
+    all_tasks,
+    resources,
+    tasks_to_run,
 ):
     logger.info(f"starting up")
     should_be_running = True

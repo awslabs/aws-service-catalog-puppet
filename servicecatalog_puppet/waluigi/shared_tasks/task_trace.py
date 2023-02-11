@@ -25,9 +25,13 @@ def on_task_trace(task_trace_queue, complete_event, puppet_account_id, execution
             while not complete_event.is_set():
                 time.sleep(0.1)
                 try:
-                    t, task_type, task_params, is_start, thread_name = task_trace_queue.get(
-                        timeout=5
-                    )
+                    (
+                        t,
+                        task_type,
+                        task_params,
+                        is_start,
+                        thread_name,
+                    ) = task_trace_queue.get(timeout=5)
                 except queue.Empty:
                     continue
                 else:

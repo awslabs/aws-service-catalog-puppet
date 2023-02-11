@@ -5,7 +5,11 @@ import time
 import networkx as nx
 
 from servicecatalog_puppet.waluigi.constants import CONTROL_EVENT__COMPLETE
-from servicecatalog_puppet.waluigi.dag_utils import logger, build_the_dag, make_readable_in_codebuild_logs
+from servicecatalog_puppet.waluigi.dag_utils import (
+    logger,
+    build_the_dag,
+    make_readable_in_codebuild_logs,
+)
 from servicecatalog_puppet.waluigi.shared_tasks import task_processing_time
 from servicecatalog_puppet.waluigi.shared_tasks import task_trace
 from servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_with_scheduler import (
