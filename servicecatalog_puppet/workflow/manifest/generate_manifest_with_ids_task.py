@@ -128,12 +128,12 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
             },
             {
                 "name": environmental_variables.SCHEDULER_THREADS_OR_PROCESSES,
-                "value": config.get_scheduler_threads_or_processes(),
+                "value": config.get_spoke_scheduler_threads_or_processes(),
                 "type": "PLAINTEXT",
             },
             {
                 "name": environmental_variables.SCHEDULER_ALGORITHM,
-                "value": config.get_scheduler_algorithm(),
+                "value": config.get_spoke_scheduler_algorithm(),
                 "type": "PLAINTEXT",
             },
             {

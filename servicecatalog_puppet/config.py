@@ -276,3 +276,17 @@ def get_scheduler_algorithm():
 
 def get_reporting_role_arn(puppet_account_id):
     return get_role_arn(puppet_account_id, constants.REPORTING_ROLE_NAME)
+
+
+def get_spoke_scheduler_threads_or_processes():
+    return os.environ.get(
+        environmental_variables.SPOKE_SCHEDULER_THREADS_OR_PROCESSES,
+        constants.SPOKE_SCHEDULER_THREADS_OR_PROCESSES_DEFAULT,
+    )
+
+
+def get_spoke_scheduler_algorithm():
+    return os.environ.get(
+        environmental_variables.SPOKE_SCHEDULER_ALGORITHM,
+        constants.SPOKE_SCHEDULER_ALGORITHM_DEFAULT,
+    )

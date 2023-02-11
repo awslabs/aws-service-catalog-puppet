@@ -1,8 +1,5 @@
-import queue
 import time
 import traceback
-
-import networkx as nx
 
 from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.waluigi.constants import (
@@ -14,11 +11,8 @@ from servicecatalog_puppet.waluigi.constants import (
     NOT_SET,
     RESOURCES_REQUIRED,
 )
-from servicecatalog_puppet.waluigi.dag_utils import build_the_dag, logger
+from servicecatalog_puppet.waluigi.dag_utils import logger
 from servicecatalog_puppet.waluigi.locks.external import (
-    are_resources_are_free_for_task,
-    lock_resources_for_task,
-    unlock_resources_for_task,
     are_resources_are_free_for_task_dict,
 )
 from servicecatalog_puppet.workflow.dependencies import task_factory
