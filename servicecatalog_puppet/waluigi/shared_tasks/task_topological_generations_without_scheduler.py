@@ -27,11 +27,7 @@ from servicecatalog_puppet.workflow.tasks import unwrap
 
 def has_dependencies_remaining(task_to_run, all_tasks):
     for dependency in task_to_run.get("dependencies_by_reference"):
-        if all_tasks.get(dependency):
-            if all_tasks[dependency].get(QUEUE_STATUS, NOT_SET) != COMPLETED:
-                return True
-        else:
-            logger.info(f"{dependency} is not in task reference, skipping check for dependency completion")
+        if all_tasks[dependency].get(QUEUE_STATUS, NOT_SET) != COMPLETED:
             return True
     return False
 
