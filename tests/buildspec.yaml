@@ -1,0 +1,27 @@
+artifacts:
+  files:
+  - '*.yaml'
+  - manifest-expanded.yaml
+  - results/*/*
+  - output/*/*
+  - exploded_results/*/*
+  - tasks/*.json
+  name: DeployProject
+phases:
+  build:
+    commands:
+    - servicecatalog-puppet --info deploy-from-task-reference --parameter-override-file
+      $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml --num-workers ${NUM_WORKERS}
+      .
+  install:
+    commands:
+    - pip install https://github.com/awslabs/aws-service-catalog-puppet/archive/feat/non-wave-scheduler.zip
+    runtime-versions:
+      python: '3.9'
+  pre_build:
+    commands:
+    - servicecatalog-puppet --info expand --parameter-override-file $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml
+      manifest.yaml
+    - servicecatalog-puppet --info generate-task-reference $PWD/manifest-expanded.yaml
+version: 0.2
+
