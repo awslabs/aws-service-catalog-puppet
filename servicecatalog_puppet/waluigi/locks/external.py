@@ -25,7 +25,7 @@ def lock_resources_for_task(
     resources_in_use: dict,
     resources_file_path: str,
 ):
-    #print(f"Worker locking {task_reference}")
+    # print(f"Worker locking {task_reference}")
     for r in task_parameters.get(RESOURCES_REQUIRED, []):
         resources_in_use[r] = task_reference
     with open(resources_file_path, "wb") as f:
