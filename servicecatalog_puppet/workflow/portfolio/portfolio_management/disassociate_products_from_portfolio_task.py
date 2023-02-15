@@ -17,7 +17,7 @@ class DisassociateProductsFromPortfolio(tasks.TaskWithReference):
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def run(self):

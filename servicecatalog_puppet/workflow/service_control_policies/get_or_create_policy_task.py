@@ -24,7 +24,7 @@ class GetOrCreatePolicyTask(tasks.TaskWithReference):
         return {
             "account_id": self.account_id,
             "policy_name": self.policy_name,
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def get_unwrapped_policy(self):

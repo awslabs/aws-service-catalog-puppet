@@ -23,7 +23,7 @@ class GetCloudFormationTemplateFromS3(tasks.TaskWithReference):
             "key": self.key.replace("-${AWS::Region}", f"-{self.region}"),
             "region": self.region,
             "version_id": self.version_id,
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def run(self):

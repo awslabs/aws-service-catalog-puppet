@@ -105,8 +105,8 @@ class PuppetTask(luigi.Task):
             return False
 
     @property
-    def cache_invalidator(self):
-        return os.environ.get(environmental_variables.CACHE_INVALIDATOR, "NOW")
+    def task_idempotency_token(self):
+        return os.environ.get(environmental_variables.TASK_IDEMPOTENCY_TOKEN, "NOW")
 
     @property
     def is_dry_run(self):
@@ -252,7 +252,7 @@ class PuppetTask(luigi.Task):
 
     @property
     def should_use_s3_target_if_caching_is_on(self):
-        return "cache_invalidator" not in self.params_for_results_display().keys()
+        return "task_idempotency_token" not in self.params_for_results_display().keys()
 
     def output(self):
         if self.should_use_caching:

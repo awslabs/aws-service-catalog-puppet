@@ -37,7 +37,7 @@ class TerminateResourceUpdateConstraintsForSpokeLocalPortfolioTaskTest(
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise

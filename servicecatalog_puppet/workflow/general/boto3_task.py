@@ -35,7 +35,7 @@ class Boto3Task(tasks.TaskWithReference):
             "call": self.call,
             "arguments": hash(self.arguments),
             "filter": hash(self.filter),
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def run(self):

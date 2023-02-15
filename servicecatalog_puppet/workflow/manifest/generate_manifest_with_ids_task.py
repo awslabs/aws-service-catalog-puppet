@@ -13,7 +13,7 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def run(self):
@@ -54,8 +54,8 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
 
         vars = [
             {
-                "name": environmental_variables.CACHE_INVALIDATOR,
-                "value": self.cache_invalidator,
+                "name": environmental_variables.TASK_IDEMPOTENCY_TOKEN,
+                "value": self.task_idempotency_token,
                 "type": "PLAINTEXT",
             },
             {"name": "VERSION", "value": version, "type": "PLAINTEXT"},

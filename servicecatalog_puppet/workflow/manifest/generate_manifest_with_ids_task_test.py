@@ -27,7 +27,7 @@ class GenerateManifestWithIdsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
         # setup
         expected_result = {
             "puppet_account_id": self.puppet_account_id,
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise

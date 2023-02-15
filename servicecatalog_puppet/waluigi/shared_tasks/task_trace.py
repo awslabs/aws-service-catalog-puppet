@@ -17,7 +17,7 @@ from servicecatalog_puppet.workflow.tasks import unwrap
 
 def on_task_trace(task_trace_queue, complete_event, puppet_account_id, execution_mode):
     bucket = f"sc-puppet-log-store-{puppet_account_id}"
-    key_prefix = f"{os.getenv('CODEBUILD_BUILD_ID', f'local/{os.getenv(environmental_variables.CACHE_INVALIDATOR)}')}/traces"
+    key_prefix = f"{os.getenv('CODEBUILD_BUILD_ID', f'local/{os.getenv(environmental_variables.TASK_IDEMPOTENCY_TOKEN)}')}/traces"
     if execution_mode != constants.EXECUTION_MODE_SPOKE:
         with betterboto_client.CrossAccountClientContextManager(
             "s3", config.get_reporting_role_arn(config.get_executor_account_id()), "s3",

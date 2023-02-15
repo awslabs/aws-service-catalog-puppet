@@ -90,7 +90,7 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
         return f"{self.task_reference}"
 
     def get_output_location_path(self):
-        return f"output/{self.__class__.__name__}/{self.task_reference}/{self.params_for_results_display().get('cache_invalidator', self.task_version)}.{self.output_suffix}"
+        return f"output/{self.__class__.__name__}/{self.task_reference}/{self.params_for_results_display().get('task_idempotency_token', self.task_version)}.{self.output_suffix}"
 
 
 class TaskWithReferenceAndCommonParameters(TaskWithReference):

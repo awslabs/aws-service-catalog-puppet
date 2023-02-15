@@ -121,7 +121,9 @@ def run_tasks(
         config.get_scheduler_algorithm(),
     )
 
-    cache_invalidator = os.environ.get(environmental_variables.CACHE_INVALIDATOR)
+    task_idempotency_token = os.environ.get(
+        environmental_variables.TASK_IDEMPOTENCY_TOKEN
+    )
 
     has_failures = len(glob("results/failure/*", recursive=True))
     has_spoke_failures = False
@@ -129,7 +131,8 @@ def run_tasks(
     if execution_mode == constants.EXECUTION_MODE_HUB:
         logger.info("Checking spoke executions...")
         all_run_deploy_in_spoke_tasks = glob(
-            f"output/RunDeployInSpokeTask/**/{cache_invalidator}.json", recursive=True,
+            f"output/RunDeployInSpokeTask/**/{task_idempotency_token}.json",
+            recursive=True,
         )
         n_all_run_deploy_in_spoke_tasks = len(all_run_deploy_in_spoke_tasks)
         index = 0
@@ -175,19 +178,19 @@ def run_tasks(
 
     dry_run_tasks = (
         glob(
-            f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
+            f"output/ProvisionProductDryRunTask/**/{task_idempotency_token}.json",
             recursive=True,
         )
         + glob(
-            f"output/TerminateProductDryRunTask/**/{cache_invalidator}.json",
+            f"output/TerminateProductDryRunTask/**/{task_idempotency_token}.json",
             recursive=True,
         )
         + glob(
-            f"output/ProvisionStackDryRunTask/**/{cache_invalidator}.json",
+            f"output/ProvisionStackDryRunTask/**/{task_idempotency_token}.json",
             recursive=True,
         )
         + glob(
-            f"output/TerminateStackDryRunTask/**/{cache_invalidator}.json",
+            f"output/TerminateStackDryRunTask/**/{task_idempotency_token}.json",
             recursive=True,
         )
     )
@@ -248,7 +251,7 @@ def run_tasks(
         elif is_list_launches == "json":
             results = dict()
             for filename in glob(
-                f"output/ProvisionProductDryRunTask/**/{cache_invalidator}.json",
+                f"output/ProvisionProductDryRunTask/**/{task_idempotency_token}.json",
                 recursive=True,
             ):
                 result = serialisation_utils.json_loads(open(filename, "r").read())

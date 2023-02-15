@@ -34,7 +34,7 @@ class SSMOutputsTasksTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "param_name": self.param_name,
             "stack_output": self.stack_output,
             "force_operation": self.force_operation,
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise
@@ -81,7 +81,7 @@ class TerminateSSMOutputsTasksTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "account_id": self.account_id,
             "region": self.region,
             "param_name": self.param_name,
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise

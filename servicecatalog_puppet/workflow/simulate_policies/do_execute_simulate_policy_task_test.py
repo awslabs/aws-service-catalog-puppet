@@ -58,7 +58,7 @@ class DoExecuteSimulatePolicyTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest
             "simulate_policy_name": self.simulate_policy_name,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise

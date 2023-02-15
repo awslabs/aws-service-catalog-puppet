@@ -440,12 +440,12 @@ def setup_config(
         if regions != ""
         else remote_config.get_regions(puppet_account_id_to_use, home_region_to_use)
     )
-    if os.environ.get(environmental_variables.CACHE_INVALIDATOR):
+    if os.environ.get(environmental_variables.TASK_IDEMPOTENCY_TOKEN):
         click.echo(
-            f"Found existing {environmental_variables.CACHE_INVALIDATOR}: {os.environ.get(environmental_variables.CACHE_INVALIDATOR)}"
+            f"Found existing {environmental_variables.TASK_IDEMPOTENCY_TOKEN}: {os.environ.get(environmental_variables.TASK_IDEMPOTENCY_TOKEN)}"
         )
     else:
-        os.environ[environmental_variables.CACHE_INVALIDATOR] = str(datetime.now())
+        os.environ[environmental_variables.TASK_IDEMPOTENCY_TOKEN] = str(datetime.now())
 
     os.environ[environmental_variables.SHOULD_USE_SNS] = (
         str(remote_config.get_should_use_sns(puppet_account_id_to_use, home_region))

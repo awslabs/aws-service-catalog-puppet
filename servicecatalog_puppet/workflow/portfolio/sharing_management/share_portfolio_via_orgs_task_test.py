@@ -40,7 +40,7 @@ class SharePortfolioViaOrgsTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "ou_to_share_with": self.ou_to_share_with,
             "share_tag_options": self.share_tag_options,
             "share_principals": self.share_principals,
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise

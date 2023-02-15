@@ -35,7 +35,7 @@ class ProvisioningArtifactParametersTaskTest(
             "region": self.region,
             "product": self.product,
             "version": self.version,
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise

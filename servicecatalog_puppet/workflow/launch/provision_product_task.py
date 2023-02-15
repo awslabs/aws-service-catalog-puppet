@@ -55,7 +55,7 @@ class ProvisionProductTask(tasks.TaskWithParameters):
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
     @property

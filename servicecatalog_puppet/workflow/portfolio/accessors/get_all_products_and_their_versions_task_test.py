@@ -31,7 +31,7 @@ class GetAllProductsAndTheirVersionsTaskTest(
         # setup
         expected_result = {
             "task_reference": self.task_reference,
-            "cache_invalidator": self.cache_invalidator,
+            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise
