@@ -40,6 +40,7 @@ class PuppetTaskUnitTest(unittest.TestCase):
         )
 
     task_idempotency_token = "NOW"
+    run_idempotency_token = "NOW"
 
     def wire_up_mocks(self):
         self.spoke_client_mock, self.sut.spoke_client = mocked_client()

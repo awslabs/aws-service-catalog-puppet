@@ -30,7 +30,6 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
             "region": self.region,
             "account_id": self.account_id,
             "ou_name": self.ou_name,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
     @functools.lru_cache(maxsize=32)

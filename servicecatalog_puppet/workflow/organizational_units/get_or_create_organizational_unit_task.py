@@ -24,7 +24,6 @@ class GetOrCreateOrganizationalUnitTask(tasks.TaskWithReference):
             "parent_ou_id": self.parent_ou_id,
             "name": self.name,
             "task_reference": self.task_reference,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def find_ou_in_parent(self, orgs, parent_id):

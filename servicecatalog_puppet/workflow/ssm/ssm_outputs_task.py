@@ -24,7 +24,6 @@ class SSMOutputsTasks(tasks.TaskWithReference):
             "param_name": self.param_name,
             "stack_output": self.stack_output,
             "force_operation": self.force_operation,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def find_stack_output(
@@ -107,7 +106,6 @@ class TerminateSSMOutputsTasks(tasks.TaskWithReference):  # TODO add by path par
             "account_id": self.account_id,
             "region": self.region,
             "param_name": self.param_name,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
     cachable_level = constants.CACHE_LEVEL_NORMAL

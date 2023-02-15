@@ -38,7 +38,6 @@ class CopyIntoSpokeLocalPortfolioTaskTest(tasks_unit_tests_helper.PuppetTaskUnit
             "puppet_account_id": self.puppet_account_id,
             "region": self.region,
             "account_id": self.account_id,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise

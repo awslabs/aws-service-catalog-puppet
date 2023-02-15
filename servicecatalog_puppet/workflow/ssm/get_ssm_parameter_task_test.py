@@ -28,7 +28,6 @@ class GetSSMParameterTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "account_id": self.account_id,
             "region": self.region,
             "param_name": self.param_name,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise
@@ -73,7 +72,6 @@ class GetSSMParameterByPathTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "account_id": self.account_id,
             "region": self.region,
             "path": self.path,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise

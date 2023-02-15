@@ -35,7 +35,6 @@ class GetCloudFormationTemplateFromS3Test(tasks_unit_tests_helper.PuppetTaskUnit
             "key": self.key.replace("-${AWS::Region}", f"-{self.region}"),
             "region": self.region,
             "version_id": self.version_id,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise

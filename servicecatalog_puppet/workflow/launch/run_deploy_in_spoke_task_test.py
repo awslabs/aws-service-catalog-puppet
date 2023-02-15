@@ -31,7 +31,6 @@ class RunDeployInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "task_reference": self.task_reference,
             "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise

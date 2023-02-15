@@ -31,6 +31,7 @@ nose2 = "^0.10.0"
 
 [tool.poetry.group.dev.dependencies]
 viztracer = "^0.15.4"
+importanize = "^0.7.0"
 
 [tool.dephell.main]
 versioning = "semver"

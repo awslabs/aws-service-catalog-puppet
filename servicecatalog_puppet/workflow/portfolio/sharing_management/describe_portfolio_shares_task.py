@@ -16,7 +16,6 @@ class DescribePortfolioSharesTask(tasks.TaskWithReferenceAndCommonParameters):
             "account_id": self.account_id,
             "portfolio_task_reference": self.portfolio_task_reference,
             "type": self.type,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def run(self):

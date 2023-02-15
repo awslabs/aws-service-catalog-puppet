@@ -34,7 +34,6 @@ class DoExecuteCodeBuildRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "code_build_run_name": self.code_build_run_name,
             "region": self.region,
             "account_id": self.account_id,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise

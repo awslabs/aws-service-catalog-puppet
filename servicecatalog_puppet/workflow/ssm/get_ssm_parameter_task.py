@@ -18,7 +18,6 @@ class GetSSMParameterTask(tasks.TaskWithReference):
             "account_id": self.account_id,
             "region": self.region,
             "param_name": self.param_name,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def run(self):
@@ -47,7 +46,6 @@ class GetSSMParameterByPathTask(tasks.TaskWithReference):
             "account_id": self.account_id,
             "region": self.region,
             "path": self.path,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def run(self):

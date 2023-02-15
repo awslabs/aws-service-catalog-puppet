@@ -13,7 +13,6 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
     def params_for_results_display(self):
         return {
             "puppet_account_id": self.puppet_account_id,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
     cachable_level = constants.CACHE_LEVEL_NORMAL
@@ -58,6 +57,11 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
             {
                 "name": environmental_variables.TASK_IDEMPOTENCY_TOKEN,
                 "value": self.task_idempotency_token,
+                "type": "PLAINTEXT",
+            },
+            {
+                "name": environmental_variables.RUN_IDEMPOTENCY_TOKEN,
+                "value": self.run_idempotency_token,
                 "type": "PLAINTEXT",
             },
             {"name": "VERSION", "value": version, "type": "PLAINTEXT"},

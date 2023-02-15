@@ -58,7 +58,6 @@ class ProvisionStackTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "stack_name": self.stack_name,
             "account_id": self.account_id,
             "region": self.region,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
         # exercise

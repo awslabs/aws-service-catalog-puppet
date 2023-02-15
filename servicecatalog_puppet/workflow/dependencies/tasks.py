@@ -25,7 +25,7 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
     puppet_account_id = luigi.Parameter()
     manifest_files_path = luigi.Parameter()
 
-    task_version = "latest"
+    cachable_level = constants.CACHE_LEVEL_HIGH
 
     def get_expanded_manifest_file_path(self):
         return f"{self.manifest_files_path}/manifest-expanded.yaml"
@@ -85,12 +85,16 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
             )
         return dependencies
 
-    @property
-    def uid(self):
-        return f"{self.task_reference}"
-
-    def get_output_location_path(self):
-        return f"output/{self.__class__.__name__}/{self.task_reference}/{self.params_for_results_display().get('task_idempotency_token', self.task_version)}.{self.output_suffix}"
+    def get_output_location_path(self):  # TODO EPF
+        if self.cachable_level == constants.CACHE_LEVEL_LOW:
+            path = self.run_idempotency_token
+        elif self.cachable_level == constants.CACHE_LEVEL_NORMAL:
+            path = self.task_idempotency_token
+        elif self.cachable_level == constants.CACHE_LEVEL_HIGH:
+            path = "latest"
+        else:
+            raise Exception(f"unknown cachable_level: {self.cachable_level}")
+        return f"output/{self.__class__.__name__}/{self.task_reference}/{path}.{self.output_suffix}"
 
 
 class TaskWithReferenceAndCommonParameters(TaskWithReference):

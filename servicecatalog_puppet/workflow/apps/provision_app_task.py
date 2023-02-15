@@ -37,7 +37,6 @@ class ProvisionAppTask(tasks.TaskWithParameters):
             "app_name": self.app_name,
             "region": self.region,
             "account_id": self.account_id,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def run(self):

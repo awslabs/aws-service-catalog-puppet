@@ -115,6 +115,16 @@ def get_should_forward_failures_to_opscenter(puppet_account_id, default_region=N
 
 
 @functools.lru_cache(maxsize=32)
+def get_task_idempotency_token(puppet_account_id, default_region=None):
+    logger.info(
+        "getting task_idempotency_token,  default_region: {}".format(default_region)
+    )
+    return get_config(puppet_account_id, default_region).get(
+        "task_idempotency_token", None
+    )
+
+
+@functools.lru_cache(maxsize=32)
 def get_regions(puppet_account_id, default_region=None):
     logger.info(
         f"getting {constants.CONFIG_REGIONS},  default_region: {default_region}"

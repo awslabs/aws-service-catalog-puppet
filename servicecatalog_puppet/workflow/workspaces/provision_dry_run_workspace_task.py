@@ -40,7 +40,6 @@ class ProvisionDryRunWorkspaceTask(tasks.TaskWithParameters):
             "workspace_name": self.workspace_name,
             "region": self.region,
             "account_id": self.account_id,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def run(self):

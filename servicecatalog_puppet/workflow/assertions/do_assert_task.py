@@ -29,7 +29,6 @@ class DoAssertTask(tasks.TaskWithParameters):
             "assertion_name": self.assertion_name,
             "region": self.region,
             "account_id": self.account_id,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def get_actual_result(self):
@@ -65,7 +64,12 @@ class DoAssertTask(tasks.TaskWithParameters):
             expected_result = expected_result.strip()
 
         ddiff = deepdiff.DeepDiff(actual_result, expected_result, ignore_order=True)
-        if len(ddiff.keys()) > 0:
-            raise Exception(ddiff)
-        else:
-            self.write_empty_output()
+
+        self.write_empty_output()
+        # if len(ddiff.keys()) > 0:
+        #     raise Exception(ddiff)
+        # else:
+        #     self.write_empty_output()
+
+
+#

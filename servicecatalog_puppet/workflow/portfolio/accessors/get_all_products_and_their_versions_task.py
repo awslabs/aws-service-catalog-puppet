@@ -17,7 +17,6 @@ class GetAllProductsAndTheirVersionsTask(tasks.TaskWithReference):
     def params_for_results_display(self):
         return {
             "task_reference": self.task_reference,
-            "task_idempotency_token": self.task_idempotency_token,
         }
 
     def run(self):

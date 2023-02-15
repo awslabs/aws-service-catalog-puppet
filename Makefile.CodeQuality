@@ -4,6 +4,10 @@
 black:
 	poetry run black servicecatalog_puppet
 
+## @Code_quality Runs importanize on the checked out code
+importanize:
+	poetry run importanize servicecatalog_puppet
+
 ## @Code_quality Runs pycodestyle on the the checked out code
 pycodestyle:
 	poetry run pycodestyle --statistics -qq servicecatalog_puppet

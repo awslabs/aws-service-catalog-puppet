@@ -445,7 +445,26 @@ def setup_config(
             f"Found existing {environmental_variables.TASK_IDEMPOTENCY_TOKEN}: {os.environ.get(environmental_variables.TASK_IDEMPOTENCY_TOKEN)}"
         )
     else:
-        os.environ[environmental_variables.TASK_IDEMPOTENCY_TOKEN] = str(datetime.now())
+        task_idempotency_token = remote_config.get_task_idempotency_token(
+            puppet_account_id_to_use, home_region_to_use
+        )
+        if task_idempotency_token is None:
+            task_idempotency_token = str(datetime.now())
+            click.echo(f"Created new task_idempotency_token: {task_idempotency_token}")
+        else:
+            click.echo(
+                f"Found existing task_idempotency_token: {task_idempotency_token}"
+            )
+        os.environ[
+            environmental_variables.TASK_IDEMPOTENCY_TOKEN
+        ] = task_idempotency_token
+
+    if os.environ.get(environmental_variables.RUN_IDEMPOTENCY_TOKEN):
+        click.echo(
+            f"Found existing {environmental_variables.RUN_IDEMPOTENCY_TOKEN}: {os.environ.get(environmental_variables.RUN_IDEMPOTENCY_TOKEN)}"
+        )
+    else:
+        os.environ[environmental_variables.RUN_IDEMPOTENCY_TOKEN] = str(datetime.now())
 
     os.environ[environmental_variables.SHOULD_USE_SNS] = (
         str(remote_config.get_should_use_sns(puppet_account_id_to_use, home_region))
