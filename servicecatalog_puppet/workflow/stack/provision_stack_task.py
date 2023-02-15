@@ -48,6 +48,7 @@ class ProvisionStackTask(tasks.TaskWithParameters):
     tags = luigi.ListParameter()
 
     section_name = constants.STACKS
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     @property
     def item_name(self):

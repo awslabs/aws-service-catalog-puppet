@@ -14,6 +14,7 @@ class SSMOutputsTasks(tasks.TaskWithReference):
     stack_output = luigi.Parameter()
     task_generating_output = luigi.Parameter()
     force_operation = luigi.BoolParameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -108,6 +109,8 @@ class TerminateSSMOutputsTasks(tasks.TaskWithReference):  # TODO add by path par
             "param_name": self.param_name,
             "task_idempotency_token": self.task_idempotency_token,
         }
+    
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def run(self):
         param_name_to_use = self.param_name.replace(

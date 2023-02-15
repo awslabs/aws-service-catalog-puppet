@@ -4,6 +4,7 @@
 import luigi
 
 from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet import constants
 
 
 class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
@@ -14,6 +15,7 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
     share_principals = luigi.BoolParameter()
     portfolio_task_reference = luigi.Parameter()
     describe_portfolio_shares_task_ref = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {

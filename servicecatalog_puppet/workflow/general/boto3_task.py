@@ -1,7 +1,7 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import json
-from servicecatalog_puppet import serialisation_utils
+from servicecatalog_puppet import constants
 
 import jmespath
 import luigi
@@ -25,6 +25,8 @@ class Boto3Task(tasks.TaskWithReference):
     call = luigi.Parameter()
     arguments = luigi.DictParameter()
     filter = luigi.Parameter()
+
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {

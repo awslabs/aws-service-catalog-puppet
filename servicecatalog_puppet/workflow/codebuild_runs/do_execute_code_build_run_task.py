@@ -3,8 +3,8 @@
 
 import luigi
 
-from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet import constants
 
 
 class DoExecuteCodeBuildRunTask(tasks.TaskWithParameters):
@@ -18,6 +18,7 @@ class DoExecuteCodeBuildRunTask(tasks.TaskWithParameters):
     manifest_file_path = luigi.Parameter()
 
     section_name = constants.CODE_BUILD_RUNS
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     @property
     def item_name(self):

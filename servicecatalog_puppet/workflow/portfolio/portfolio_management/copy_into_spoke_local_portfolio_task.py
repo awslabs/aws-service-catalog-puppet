@@ -5,6 +5,7 @@ import time
 
 import luigi
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -15,6 +16,7 @@ class CopyIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
 
     portfolio_get_all_products_and_their_versions_ref = luigi.Parameter()
     portfolio_get_all_products_and_their_versions_for_hub_ref = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {

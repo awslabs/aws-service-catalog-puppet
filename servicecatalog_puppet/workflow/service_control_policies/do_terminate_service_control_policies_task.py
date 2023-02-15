@@ -25,6 +25,7 @@ class DoTerminateServiceControlPoliciesTask(tasks.TaskWithReference):
     requested_priority = luigi.IntParameter()
 
     manifest_file_path = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {

@@ -2,7 +2,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
-from servicecatalog_puppet import serialisation_utils
 import time
 
 import luigi
@@ -42,6 +41,7 @@ class ProvisionProductTask(tasks.TaskWithParameters):
     tags = luigi.ListParameter()
 
     section_name = constants.LAUNCHES
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     @property
     def item_name(self):

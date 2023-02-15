@@ -40,6 +40,7 @@ class TerminateStackTask(tasks.TaskWithReference):
     execution = luigi.Parameter()
 
     try_count = 1
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {

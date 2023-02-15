@@ -5,6 +5,7 @@ import time
 import luigi
 
 from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet import constants
 
 
 class ProvisioningArtifactParametersTask(tasks.TaskWithReference):
@@ -12,6 +13,7 @@ class ProvisioningArtifactParametersTask(tasks.TaskWithReference):
     product = luigi.Parameter()
     version = luigi.Parameter()
     region = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     @property
     def retry_count(self):

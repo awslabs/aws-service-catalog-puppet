@@ -5,6 +5,7 @@ import luigi as luigi
 
 from servicecatalog_puppet import utils
 from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet import constants
 
 
 class TerminateResourceUpdateConstraintsForSpokeLocalPortfolioTask(
@@ -14,6 +15,7 @@ class TerminateResourceUpdateConstraintsForSpokeLocalPortfolioTask(
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     spoke_local_portfolio_name = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {

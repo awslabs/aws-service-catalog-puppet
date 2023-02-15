@@ -2,7 +2,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import io
-import json
 from servicecatalog_puppet import serialisation_utils
 import zipfile
 
@@ -36,6 +35,7 @@ class TerminateWorkspaceTask(tasks.TaskWithParameters):
     manifest_file_path = luigi.Parameter()
 
     section_name = constants.WORKSPACES
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     @property
     def item_name(self):

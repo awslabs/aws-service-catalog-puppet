@@ -14,6 +14,7 @@ class GetPortfolioLocalTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     status = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -46,6 +47,7 @@ class GetPortfolioImportedTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     sharing_mode = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {

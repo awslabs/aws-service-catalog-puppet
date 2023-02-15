@@ -8,6 +8,7 @@ import luigi
 from servicecatalog_puppet.workflow import tasks
 
 from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet import constants
 
 
 class GetOrCreatePolicyTask(tasks.TaskWithReference):
@@ -19,6 +20,7 @@ class GetOrCreatePolicyTask(tasks.TaskWithReference):
     tags = luigi.ListParameter()
 
     manifest_file_path = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {

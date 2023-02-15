@@ -9,7 +9,9 @@ from servicecatalog_puppet import config
 from servicecatalog_puppet import utils
 from servicecatalog_puppet.workflow.dependencies import tasks
 import troposphere as t
-from troposphere import s3, servicecatalog
+from troposphere import servicecatalog
+from servicecatalog_puppet import constants
+
 
 
 class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
@@ -20,6 +22,7 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
     portfolio = luigi.Parameter()
 
     associations = luigi.ListParameter(default=[])
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {

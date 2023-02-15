@@ -4,6 +4,7 @@
 import luigi
 
 from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet import constants
 
 
 class GetAllProductsAndTheirVersionsTask(tasks.TaskWithReference):
@@ -11,6 +12,7 @@ class GetAllProductsAndTheirVersionsTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {

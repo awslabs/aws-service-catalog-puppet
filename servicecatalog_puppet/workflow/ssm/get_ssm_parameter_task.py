@@ -3,12 +3,14 @@
 import luigi
 
 from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet import constants
 
 
 class GetSSMParameterTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     param_name = luigi.Parameter()
     region = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -37,6 +39,7 @@ class GetSSMParameterByPathTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     path = luigi.Parameter()
     region = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {

@@ -6,6 +6,7 @@ import botocore
 import luigi
 
 from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet import constants
 
 
 class GetCloudFormationTemplateFromS3(tasks.TaskWithReference):
@@ -15,6 +16,7 @@ class GetCloudFormationTemplateFromS3(tasks.TaskWithReference):
     key = luigi.Parameter()
     region = luigi.Parameter()
     version_id = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
