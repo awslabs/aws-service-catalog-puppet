@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 from servicecatalog_puppet import serialisation_utils
 
+
 colors = dict()
 
 default_color = "#88000022"

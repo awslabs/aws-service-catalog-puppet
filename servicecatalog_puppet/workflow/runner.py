@@ -2,7 +2,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
-from servicecatalog_puppet import serialisation_utils, remote_config
 import logging
 import os
 import shutil
@@ -22,11 +21,16 @@ from betterboto import client as betterboto_client
 from colorclass import Color
 from luigi import LuigiStatusCode
 
-from servicecatalog_puppet import config
-from servicecatalog_puppet import constants
-from servicecatalog_puppet import environmental_variables
+from servicecatalog_puppet import (
+    config,
+    constants,
+    environmental_variables,
+    remote_config,
+    serialisation_utils,
+)
 from servicecatalog_puppet.waluigi import runner_factory
 from servicecatalog_puppet.workflow import tasks
+
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 

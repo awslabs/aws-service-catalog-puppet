@@ -3,12 +3,12 @@ import traceback
 
 from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.waluigi.constants import (
-    CONTROL_EVENT__COMPLETE,
-    QUEUE_STATUS,
-    ERRORED,
     COMPLETED,
+    CONTROL_EVENT__COMPLETE,
+    ERRORED,
     IN_PROGRESS,
     NOT_SET,
+    QUEUE_STATUS,
     RESOURCES_REQUIRED,
 )
 from servicecatalog_puppet.waluigi.dag_utils import logger

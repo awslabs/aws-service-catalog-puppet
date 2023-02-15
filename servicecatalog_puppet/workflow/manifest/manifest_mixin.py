@@ -6,8 +6,7 @@ from functools import lru_cache
 import luigi
 import yaml
 
-from servicecatalog_puppet import constants
-from servicecatalog_puppet import manifest_utils
+from servicecatalog_puppet import constants, manifest_utils
 
 
 class ManifestMixen(object):

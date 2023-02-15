@@ -2,12 +2,11 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import io
-from servicecatalog_puppet import serialisation_utils
 import zipfile
 
 import luigi
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, serialisation_utils
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 

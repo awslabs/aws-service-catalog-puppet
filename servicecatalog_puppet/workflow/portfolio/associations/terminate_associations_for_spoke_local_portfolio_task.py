@@ -2,9 +2,8 @@
 #  SPDX-License-Identifier: Apache-2.0
 import luigi
 
-from servicecatalog_puppet import utils
+from servicecatalog_puppet import constants, utils
 from servicecatalog_puppet.workflow.dependencies import tasks
-from servicecatalog_puppet import constants
 
 
 class TerminateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):

@@ -2,7 +2,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import functools
-from servicecatalog_puppet import serialisation_utils
 import logging
 import os
 
@@ -10,8 +9,13 @@ import yaml
 from betterboto import client as betterboto_client
 from jinja2 import Environment, FileSystemLoader
 
-from servicecatalog_puppet import asset_helpers
-from servicecatalog_puppet import constants, environmental_variables
+from servicecatalog_puppet import (
+    asset_helpers,
+    constants,
+    environmental_variables,
+    serialisation_utils,
+)
+
 
 logger = logging.getLogger()
 

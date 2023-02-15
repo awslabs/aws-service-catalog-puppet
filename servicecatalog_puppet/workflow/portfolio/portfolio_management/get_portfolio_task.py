@@ -6,6 +6,7 @@ import luigi
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
+
 sharing_mode_map = dict(ACCOUNT="IMPORTED", AWS_ORGANIZATIONS="AWS_ORGANIZATIONS",)
 
 

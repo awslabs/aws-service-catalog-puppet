@@ -4,8 +4,7 @@ import functools
 
 import luigi
 
-from servicecatalog_puppet import constants
-from servicecatalog_puppet import serialisation_utils
+from servicecatalog_puppet import constants, serialisation_utils
 from servicecatalog_puppet.workflow.dependencies import tasks
 from servicecatalog_puppet.workflow.service_control_policies import (
     get_or_create_policy_task,

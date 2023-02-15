@@ -3,14 +3,19 @@
 import logging
 import os
 
-
-from servicecatalog_puppet import manifest_utils, constants, serialisation_utils, config
+from servicecatalog_puppet import (
+    config,
+    constants,
+    manifest_utils,
+    serialisation_utils,
+)
 from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.commands.task_reference_helpers import (
-    hub_generator,
     complete_generator,
+    hub_generator,
 )
 from servicecatalog_puppet.workflow import runner, workflow_utils
+
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 

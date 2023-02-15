@@ -3,9 +3,8 @@
 
 import luigi
 
-from servicecatalog_puppet import aws
+from servicecatalog_puppet import aws, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
-from servicecatalog_puppet import constants
 
 
 class TerminateSpokeLocalPortfolioTask(tasks.TaskWithReference):

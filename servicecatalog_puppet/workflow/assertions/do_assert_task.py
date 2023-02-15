@@ -6,8 +6,8 @@ import jmespath
 import luigi
 from deepmerge import always_merger
 
-from servicecatalog_puppet.workflow.dependencies import tasks
 from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class DoAssertTask(tasks.TaskWithParameters):
@@ -65,11 +65,10 @@ class DoAssertTask(tasks.TaskWithParameters):
 
         ddiff = deepdiff.DeepDiff(actual_result, expected_result, ignore_order=True)
 
-        self.write_empty_output()
-        # if len(ddiff.keys()) > 0:
-        #     raise Exception(ddiff)
-        # else:
-        #     self.write_empty_output()
+        if len(ddiff.keys()) > 0:
+            raise Exception(ddiff)
+        else:
+            self.write_empty_output()
 
 
 #

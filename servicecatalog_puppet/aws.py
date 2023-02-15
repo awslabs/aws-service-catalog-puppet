@@ -11,6 +11,7 @@ from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import config, constants
 
+
 logger = logging.getLogger(__file__)
 
 

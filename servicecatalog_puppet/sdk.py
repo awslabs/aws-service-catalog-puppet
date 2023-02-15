@@ -1,10 +1,12 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-from servicecatalog_puppet.commands import bootstrap as bootstrap_commands
-from servicecatalog_puppet.commands import management as management_commands
-from servicecatalog_puppet.commands import manifest as manifest_commands
-from servicecatalog_puppet.commands import misc as misc_commands
-from servicecatalog_puppet.commands import spoke_management as spoke_management_commands
+from servicecatalog_puppet.commands import (
+    bootstrap as bootstrap_commands,
+    management as management_commands,
+    manifest as manifest_commands,
+    misc as misc_commands,
+    spoke_management as spoke_management_commands,
+)
 
 
 def run(what="puppet", wait_for_completion=False):

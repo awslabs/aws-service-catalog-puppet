@@ -7,10 +7,8 @@ import luigi
 import troposphere as t
 from troposphere import servicecatalog
 
-from servicecatalog_puppet import config
-from servicecatalog_puppet import utils
+from servicecatalog_puppet import config, constants, utils
 from servicecatalog_puppet.workflow.dependencies import tasks
-from servicecatalog_puppet import constants
 
 
 class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(

@@ -3,7 +3,6 @@
 
 import io
 import json
-from servicecatalog_puppet import serialisation_utils
 import os
 import zipfile
 from threading import Thread
@@ -12,10 +11,10 @@ import botocore
 import click
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import config, constants
+from servicecatalog_puppet import config, constants, serialisation_utils
 from servicecatalog_puppet.template_builder.hub import (
-    bootstrap_region as hub_bootstrap_region,
     bootstrap as hub_bootstrap,
+    bootstrap_region as hub_bootstrap_region,
 )
 
 

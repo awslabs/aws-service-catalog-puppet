@@ -2,7 +2,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
-from servicecatalog_puppet import serialisation_utils
 import os
 import sys
 from datetime import datetime
@@ -10,20 +9,26 @@ from datetime import datetime
 import click
 import yaml
 
-from servicecatalog_puppet import config, remote_config
-from servicecatalog_puppet import constants
-from servicecatalog_puppet import environmental_variables
-from servicecatalog_puppet.commands import bootstrap as bootstrap_commands
-from servicecatalog_puppet.commands import graph as graph_commands
-from servicecatalog_puppet.commands import management as management_commands
-from servicecatalog_puppet.commands import manifest as manifest_commands
-from servicecatalog_puppet.commands import misc as misc_commands
-from servicecatalog_puppet.commands import orgs as orgs_commands
-from servicecatalog_puppet.commands import show_codebuilds as show_codebuilds_commands
-from servicecatalog_puppet.commands import show_pipelines as show_pipelines_commands
-from servicecatalog_puppet.commands import spoke_management as spoke_management_commands
-from servicecatalog_puppet.commands import task_reference as task_reference_commands
-from servicecatalog_puppet.commands import version as version_commands
+from servicecatalog_puppet import (
+    config,
+    constants,
+    environmental_variables,
+    remote_config,
+    serialisation_utils,
+)
+from servicecatalog_puppet.commands import (
+    bootstrap as bootstrap_commands,
+    graph as graph_commands,
+    management as management_commands,
+    manifest as manifest_commands,
+    misc as misc_commands,
+    orgs as orgs_commands,
+    show_codebuilds as show_codebuilds_commands,
+    show_pipelines as show_pipelines_commands,
+    spoke_management as spoke_management_commands,
+    task_reference as task_reference_commands,
+    version as version_commands,
+)
 
 
 @click.group()
@@ -459,12 +464,17 @@ def setup_config(
             environmental_variables.TASK_IDEMPOTENCY_TOKEN
         ] = task_idempotency_token
 
-    if os.environ.get(environmental_variables.RUN_IDEMPOTENCY_TOKEN):
-        click.echo(
-            f"Found existing {environmental_variables.RUN_IDEMPOTENCY_TOKEN}: {os.environ.get(environmental_variables.RUN_IDEMPOTENCY_TOKEN)}"
-        )
+    run_idempotency_token = os.environ.get(
+        environmental_variables.RUN_IDEMPOTENCY_TOKEN
+    )
+    if run_idempotency_token:
+        click.echo(f"Found existing run_idempotency_token: {run_idempotency_token}")
     else:
-        os.environ[environmental_variables.RUN_IDEMPOTENCY_TOKEN] = str(datetime.now())
+        run_idempotency_token = str(datetime.now())
+        os.environ[
+            environmental_variables.RUN_IDEMPOTENCY_TOKEN
+        ] = run_idempotency_token
+        click.echo(f"Created new run_idempotency_token: {run_idempotency_token}")
 
     os.environ[environmental_variables.SHOULD_USE_SNS] = (
         str(remote_config.get_should_use_sns(puppet_account_id_to_use, home_region))

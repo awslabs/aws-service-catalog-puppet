@@ -5,8 +5,7 @@ import json
 
 import luigi
 
-from servicecatalog_puppet import config
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 

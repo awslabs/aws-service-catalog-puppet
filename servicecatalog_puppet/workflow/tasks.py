@@ -12,11 +12,12 @@ from luigi import format
 from luigi.contrib import s3
 
 from servicecatalog_puppet import (
-    constants,
     config,
+    constants,
     environmental_variables,
     serialisation_utils,
 )
+
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
@@ -220,18 +221,6 @@ class PuppetTask(luigi.Task):
     def load_from_input(self, input_name):
         return serialisation_utils.json_loads(self.read_from_input(input_name))
 
-    def info(self, message):
-        logger.info(f"{self.uid}: {message}")
-
-    def debug(self, message):
-        logger.debug(f"{self.uid}: {message}")
-
-    def error(self, message):
-        logger.error(f"{self.uid}: {message}")
-
-    def warning(self, message):
-        logger.warning(f"{self.uid}: {message}")
-
     @property
     def cached_output_location(self):
         puppet_account_id = config.get_puppet_account_id()
@@ -253,7 +242,7 @@ class PuppetTask(luigi.Task):
 
     @property
     def should_use_s3_target_if_caching_is_on(self):
-        return self.cachable_level == constants.CACHE_LEVEL_NORMAL
+        return self.cachable_level != constants.CACHE_LEVEL_NO_CACHE
 
     def output(self):
         if self.should_use_caching:

@@ -1,4 +1,4 @@
-.PHONY: black pycodestyle
+.PHONY: black pycodestyle importanize
 
 ## @Code_quality Runs black on the checked out code
 black:
@@ -11,3 +11,5 @@ importanize:
 ## @Code_quality Runs pycodestyle on the the checked out code
 pycodestyle:
 	poetry run pycodestyle --statistics -qq servicecatalog_puppet
+
+pre-commit: importanize black unit-tests

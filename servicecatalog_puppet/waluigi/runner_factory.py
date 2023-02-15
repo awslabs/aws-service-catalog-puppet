@@ -1,5 +1,5 @@
-from servicecatalog_puppet.waluigi.threads import runner as threads_runner
 from servicecatalog_puppet.waluigi.processes import runner as processes_runner
+from servicecatalog_puppet.waluigi.threads import runner as threads_runner
 
 
 def get_runner(threads_or_processes: str):

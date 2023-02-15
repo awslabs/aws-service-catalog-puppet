@@ -3,8 +3,8 @@
 
 import luigi
 
-from servicecatalog_puppet.workflow.dependencies import tasks
 from servicecatalog_puppet import constants
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class ImportIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):

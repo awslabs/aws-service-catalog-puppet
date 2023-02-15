@@ -1,10 +1,11 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import json
-from servicecatalog_puppet import serialisation_utils
-import orjson
 
+import orjson
 import yaml
+
+from servicecatalog_puppet import serialisation_utils
 
 
 class Equals(yaml.YAMLObject):

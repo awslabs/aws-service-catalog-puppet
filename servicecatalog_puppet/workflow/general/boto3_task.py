@@ -1,13 +1,14 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import json
-from servicecatalog_puppet import constants
 
 import jmespath
 import luigi
 from deepmerge import always_merger
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
+
 
 remove_punctuation_map = dict((ord(char), None) for char in '\/*?:"<>|\n')
 

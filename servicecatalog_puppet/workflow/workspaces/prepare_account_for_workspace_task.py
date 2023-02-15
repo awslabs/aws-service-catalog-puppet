@@ -5,7 +5,7 @@ import copy
 import luigi
 import troposphere as t
 import yaml
-from troposphere import s3, codebuild
+from troposphere import codebuild, s3
 
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks

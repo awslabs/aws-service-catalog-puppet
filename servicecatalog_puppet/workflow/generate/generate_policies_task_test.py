@@ -2,8 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 import os
 
-from servicecatalog_puppet import constants
-from servicecatalog_puppet import environmental_variables
+from servicecatalog_puppet import constants, environmental_variables
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 

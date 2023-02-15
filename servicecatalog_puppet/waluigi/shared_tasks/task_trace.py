@@ -5,9 +5,9 @@ import time
 from betterboto import client as betterboto_client
 
 from servicecatalog_puppet import (
-    environmental_variables,
     config,
     constants,
+    environmental_variables,
     serialisation_utils,
 )
 from servicecatalog_puppet.commands import graph

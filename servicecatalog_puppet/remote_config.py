@@ -7,7 +7,8 @@ import logging
 import yaml
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import constants, config
+from servicecatalog_puppet import config, constants
+
 
 logger = logging.getLogger()
 

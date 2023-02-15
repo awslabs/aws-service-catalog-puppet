@@ -1,11 +1,10 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
-import luigi as luigi
+import luigi
 
-from servicecatalog_puppet import utils
+from servicecatalog_puppet import constants, utils
 from servicecatalog_puppet.workflow.dependencies import tasks
-from servicecatalog_puppet import constants
 
 
 class TerminateLaunchRoleConstraintsForSpokeLocalPortfolioTask(tasks.TaskWithReference):

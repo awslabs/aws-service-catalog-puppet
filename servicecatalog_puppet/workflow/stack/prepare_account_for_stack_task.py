@@ -2,12 +2,10 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import luigi
-
-from servicecatalog_puppet import constants, config
-
 import troposphere as t
 from troposphere import iam
 
+from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 

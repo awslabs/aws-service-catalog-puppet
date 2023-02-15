@@ -2,9 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import troposphere as t
-from troposphere import s3
-from troposphere import sns
-from troposphere import ssm
+from troposphere import s3, sns, ssm
 
 
 def get_template(version: str, default_region_value) -> t.Template:

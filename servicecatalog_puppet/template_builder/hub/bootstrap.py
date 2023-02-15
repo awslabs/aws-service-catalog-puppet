@@ -4,16 +4,18 @@
 import troposphere as t
 import yaml
 from awacs import iam as awscs_iam
-from troposphere import codebuild
-from troposphere import codecommit
-from troposphere import codepipeline
-from troposphere import iam
-from troposphere import s3
-from troposphere import sns
-from troposphere import sqs
-from troposphere import ssm
+from troposphere import (
+    codebuild,
+    codecommit,
+    codepipeline,
+    iam,
+    s3,
+    sns,
+    sqs,
+    ssm,
+)
 
-from servicecatalog_puppet import constants, config
+from servicecatalog_puppet import config, constants
 
 
 def get_template(

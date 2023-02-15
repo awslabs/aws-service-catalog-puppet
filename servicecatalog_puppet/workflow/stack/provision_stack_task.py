@@ -8,9 +8,7 @@ import cfn_tools
 import luigi
 from botocore.exceptions import ClientError
 
-from servicecatalog_puppet import aws
-from servicecatalog_puppet import config
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import aws, config, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 

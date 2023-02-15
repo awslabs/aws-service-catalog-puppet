@@ -5,8 +5,8 @@ import glob
 import os
 import zipfile
 
+from servicecatalog_puppet import config, constants, environmental_variables
 from servicecatalog_puppet.workflow.dependencies import tasks
-from servicecatalog_puppet import constants, environmental_variables, config
 
 
 class GenerateManifestWithIdsTask(tasks.TaskWithReference):
@@ -15,7 +15,7 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
             "puppet_account_id": self.puppet_account_id,
         }
 
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_LOW
 
     def run(self):
         bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
