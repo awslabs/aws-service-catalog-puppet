@@ -109,7 +109,7 @@ class TerminateSSMOutputsTasks(tasks.TaskWithReference):  # TODO add by path par
             "param_name": self.param_name,
             "task_idempotency_token": self.task_idempotency_token,
         }
-    
+
     cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def run(self):

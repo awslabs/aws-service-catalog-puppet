@@ -13,7 +13,6 @@ from troposphere import servicecatalog
 from servicecatalog_puppet import constants
 
 
-
 class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
     portfolio_task_reference = luigi.Parameter()
     spoke_local_portfolio_name = luigi.Parameter()
