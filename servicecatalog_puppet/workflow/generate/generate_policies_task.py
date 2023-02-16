@@ -52,4 +52,5 @@ class GeneratePolicies(tasks.TaskWithReference):
                 ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
                 Tags=self.initialiser_stack_tags,
             )
+
         self.write_empty_output()

@@ -3,6 +3,7 @@ import traceback
 
 from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.waluigi.constants import (
+    BLOCKED,
     COMPLETED,
     CONTROL_EVENT__COMPLETE,
     ERRORED,
@@ -20,24 +21,38 @@ from servicecatalog_puppet.workflow.tasks import unwrap
 
 
 def has_dependencies_remaining(task_to_run, all_tasks):
+    is_currently_blocked = False
+    is_permanently_blocked = False
     for dependency in task_to_run.get("dependencies_by_reference"):
-        if all_tasks[dependency].get(QUEUE_STATUS, NOT_SET) != COMPLETED:
-            return True
-    return False
+        dependency_status = all_tasks[dependency].get(QUEUE_STATUS, NOT_SET)
+        if dependency_status in [ERRORED, BLOCKED]:
+            is_currently_blocked = is_permanently_blocked = True
+            return is_currently_blocked, is_permanently_blocked
+        else:
+            if dependency_status != COMPLETED:
+                is_currently_blocked = True
+                return is_currently_blocked, is_permanently_blocked
+    return is_currently_blocked, is_permanently_blocked
 
 
 def get_next_task_to_run(tasks_to_run, resources, all_tasks):
-    has_tried_every_task = True
+    task_permanently_blocked_status = list()
     for task_reference_to_run in tasks_to_run:
         task_to_run = all_tasks[task_reference_to_run]
         status = task_to_run.get(QUEUE_STATUS, NOT_SET)
-        if status in [IN_PROGRESS, NOT_SET]:
-            has_tried_every_task = False
+        # check if not running or has previously run
         if status == NOT_SET:
-            if not has_dependencies_remaining(task_to_run, all_tasks):
+            is_currently_blocked, is_permanently_blocked = has_dependencies_remaining(
+                task_to_run, all_tasks
+            )
+            if is_permanently_blocked:
+                task_to_run[QUEUE_STATUS] = BLOCKED
+                all_tasks[task_reference_to_run] = task_to_run
+            task_permanently_blocked_status.append(is_permanently_blocked)
+            if not is_currently_blocked:
                 if are_resources_are_free_for_task_dict(task_to_run, resources):
-                    return task_to_run, has_tried_every_task
-    return None, has_tried_every_task
+                    return task_to_run, False
+    return None, all(task_permanently_blocked_status)
 
 
 def lock_next_task_to_run(next_task, resources, all_tasks):
@@ -50,15 +65,16 @@ def lock_next_task_to_run(next_task, resources, all_tasks):
 
 def setup_next_task_to_run(lock, tasks_to_run, resources, all_tasks):
     with lock:
-        next_task, has_tried_every_task = get_next_task_to_run(
+        next_task, can_shut_down = get_next_task_to_run(
             tasks_to_run, resources, all_tasks
         )
         if next_task:
             lock_next_task_to_run(next_task, resources, all_tasks)
-    return next_task, has_tried_every_task
+    return next_task, can_shut_down
 
 
 def set_task_as_run(lock, next_task, all_tasks, resources, result):
+    print(f"{next_task['task_reference']} is complete with result of {result}")
     with lock:
         for r in next_task.get(RESOURCES_REQUIRED, []):
             try:
@@ -94,10 +110,10 @@ def worker_task(
     while should_run:
         next_task = None
         while next_task is None:
-            next_task, has_tried_every_task = setup_next_task_to_run(
+            next_task, can_shut_down = setup_next_task_to_run(
                 lock, tasks_to_run, resources, all_tasks
             )
-            if has_tried_every_task:
+            if can_shut_down:
                 if control_queue:
                     control_queue.put(CONTROL_EVENT__COMPLETE)
                 if control_event:
