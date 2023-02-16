@@ -2,7 +2,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
-from servicecatalog_puppet import serialisation_utils
 import logging
 import os
 import time
@@ -12,11 +11,8 @@ import urllib
 import click
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import (
-    aws,
-    config,
-    constants,
-)
+from servicecatalog_puppet import aws, config, constants, serialisation_utils
+
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
@@ -34,12 +30,12 @@ def cli(info, info_line_numbers):
 
     if info:
         logging.basicConfig(
-            format="%(levelname)s %(process)s %(threadName)s %(message)s",
+            format="%(levelname)s %(processName)s %(threadName)s %(message)s",
             level=logging.INFO,
         )
     if info_line_numbers:
         logging.basicConfig(
-            format="%(asctime)s %(levelname)s %(process)s %(threadName)s [%(filename)s:%(lineno)d] %(message)s",
+            format="%(asctime)s %(levelname)s %(processName)s %(threadName)s [%(filename)s:%(lineno)d] %(message)s",
             datefmt="%Y-%m-%d:%H:%M:%S",
             level=logging.INFO,
         )

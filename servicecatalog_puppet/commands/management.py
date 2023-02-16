@@ -1,7 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import glob
-from servicecatalog_puppet import serialisation_utils
 import os
 import shutil
 import zipfile
@@ -16,11 +15,12 @@ from betterboto import client as betterboto_client
 from jinja2 import Template
 
 from servicecatalog_puppet import (
-    constants,
-    config,
     asset_helpers,
-    viz_template,
+    config,
+    constants,
     print_utils,
+    serialisation_utils,
+    viz_template,
 )
 
 

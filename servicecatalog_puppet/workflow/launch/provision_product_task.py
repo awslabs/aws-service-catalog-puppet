@@ -2,13 +2,11 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
-from servicecatalog_puppet import serialisation_utils
 import time
 
 import luigi
 
-from servicecatalog_puppet import aws
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import aws, constants
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.dependencies import tasks
 
@@ -42,6 +40,7 @@ class ProvisionProductTask(tasks.TaskWithParameters):
     tags = luigi.ListParameter()
 
     section_name = constants.LAUNCHES
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     @property
     def item_name(self):
@@ -55,7 +54,6 @@ class ProvisionProductTask(tasks.TaskWithParameters):
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     @property

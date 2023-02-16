@@ -2,8 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 import os
 
-from servicecatalog_puppet import constants
-from servicecatalog_puppet import environmental_variables
+from servicecatalog_puppet import constants, environmental_variables
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -36,7 +35,6 @@ class GeneratePoliciesTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         expected_result = {
             "account_id": self.account_id,
             "region": self.region,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

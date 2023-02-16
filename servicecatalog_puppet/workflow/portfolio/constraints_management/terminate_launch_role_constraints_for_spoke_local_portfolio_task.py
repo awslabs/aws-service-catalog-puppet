@@ -1,9 +1,9 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
-import luigi as luigi
+import luigi
 
-from servicecatalog_puppet import utils
+from servicecatalog_puppet import constants, utils
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -12,6 +12,7 @@ class TerminateLaunchRoleConstraintsForSpokeLocalPortfolioTask(tasks.TaskWithRef
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     spoke_local_portfolio_name = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -20,7 +21,6 @@ class TerminateLaunchRoleConstraintsForSpokeLocalPortfolioTask(tasks.TaskWithRef
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):

@@ -8,9 +8,7 @@ import cfn_tools
 import luigi
 from botocore.exceptions import ClientError
 
-from servicecatalog_puppet import aws
-from servicecatalog_puppet import config
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import aws, config, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -48,6 +46,7 @@ class ProvisionStackTask(tasks.TaskWithParameters):
     tags = luigi.ListParameter()
 
     section_name = constants.STACKS
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     @property
     def item_name(self):
@@ -61,7 +60,6 @@ class ProvisionStackTask(tasks.TaskWithParameters):
             "stack_name": self.stack_name,
             "account_id": self.account_id,
             "region": self.region,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     @property

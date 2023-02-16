@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 import luigi
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -9,6 +10,7 @@ class GetSSMParameterTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     param_name = luigi.Parameter()
     region = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -16,7 +18,6 @@ class GetSSMParameterTask(tasks.TaskWithReference):
             "account_id": self.account_id,
             "region": self.region,
             "param_name": self.param_name,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):
@@ -37,6 +38,7 @@ class GetSSMParameterByPathTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     path = luigi.Parameter()
     region = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -44,7 +46,6 @@ class GetSSMParameterByPathTask(tasks.TaskWithReference):
             "account_id": self.account_id,
             "region": self.region,
             "path": self.path,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):

@@ -1,4 +1,5 @@
 from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -31,7 +32,6 @@ class DisassociateProductsFromPortfolioTest(tasks_unit_tests_helper.PuppetTaskUn
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

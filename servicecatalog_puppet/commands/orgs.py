@@ -7,7 +7,8 @@ import click
 from betterboto import client as betterboto_client
 from jinja2 import Template
 
-from servicecatalog_puppet import constants, asset_helpers
+from servicecatalog_puppet import asset_helpers, constants
+
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 

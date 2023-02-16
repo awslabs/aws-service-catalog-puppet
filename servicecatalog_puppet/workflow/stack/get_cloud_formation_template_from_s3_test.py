@@ -1,4 +1,5 @@
 from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -35,7 +36,6 @@ class GetCloudFormationTemplateFromS3Test(tasks_unit_tests_helper.PuppetTaskUnit
             "key": self.key.replace("-${AWS::Region}", f"-{self.region}"),
             "region": self.region,
             "version_id": self.version_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

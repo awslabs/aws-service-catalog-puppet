@@ -1,4 +1,5 @@
 from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -35,7 +36,6 @@ class ProvisioningArtifactParametersTaskTest(
             "region": self.region,
             "product": self.product,
             "version": self.version,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

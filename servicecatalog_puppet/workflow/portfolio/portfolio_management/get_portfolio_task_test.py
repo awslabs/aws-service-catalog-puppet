@@ -1,4 +1,5 @@
-from unittest import skip, mock
+from unittest import mock, skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -33,7 +34,6 @@ class GetPortfolioLocalTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise
@@ -85,7 +85,6 @@ class GetPortfolioImportedTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "sharing_mode": self.sharing_mode,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

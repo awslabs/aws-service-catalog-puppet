@@ -1,13 +1,14 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import json
-from servicecatalog_puppet import serialisation_utils
 
 import jmespath
 import luigi
 from deepmerge import always_merger
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
+
 
 remove_punctuation_map = dict((ord(char), None) for char in '\/*?:"<>|\n')
 
@@ -26,6 +27,8 @@ class Boto3Task(tasks.TaskWithReference):
     arguments = luigi.DictParameter()
     filter = luigi.Parameter()
 
+    cachable_level = constants.CACHE_LEVEL_NORMAL
+
     def params_for_results_display(self):
         return {
             "account_id": self.account_id,
@@ -35,7 +38,6 @@ class Boto3Task(tasks.TaskWithReference):
             "call": self.call,
             "arguments": hash(self.arguments),
             "filter": hash(self.filter),
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):

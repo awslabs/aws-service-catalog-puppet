@@ -1,4 +1,5 @@
 from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -47,7 +48,6 @@ class ProvisionAppTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "app_name": self.app_name,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

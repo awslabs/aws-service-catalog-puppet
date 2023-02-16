@@ -5,17 +5,21 @@ import logging
 import os
 
 import click
+import networkx as nx
 import requests
 import yamale
 import yaml
 from betterboto import client as betterboto_client
-import networkx as nx
-from servicecatalog_puppet import asset_helpers
-from servicecatalog_puppet import config
-from servicecatalog_puppet import constants
-from servicecatalog_puppet import print_utils
-from servicecatalog_puppet import manifest_utils
-from servicecatalog_puppet import serialisation_utils
+
+from servicecatalog_puppet import (
+    asset_helpers,
+    config,
+    constants,
+    manifest_utils,
+    print_utils,
+    serialisation_utils,
+)
+
 
 logger = logging.getLogger(__name__)
 

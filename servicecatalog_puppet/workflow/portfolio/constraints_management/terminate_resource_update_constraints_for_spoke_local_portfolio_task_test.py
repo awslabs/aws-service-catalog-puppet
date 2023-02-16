@@ -1,4 +1,5 @@
 from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -37,7 +38,6 @@ class TerminateResourceUpdateConstraintsForSpokeLocalPortfolioTaskTest(
             "spoke_local_portfolio_name": self.spoke_local_portfolio_name,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

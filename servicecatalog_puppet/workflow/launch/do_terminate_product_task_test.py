@@ -1,4 +1,5 @@
 from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -46,7 +47,6 @@ class DoTerminateProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

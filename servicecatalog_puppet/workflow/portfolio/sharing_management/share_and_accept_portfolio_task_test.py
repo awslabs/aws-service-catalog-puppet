@@ -1,4 +1,5 @@
 from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -43,7 +44,6 @@ class ShareAndAcceptPortfolioForAccountTaskTest(
             "account_id": self.account_id,
             "share_tag_options": self.share_tag_options,
             "share_principals": self.share_principals,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

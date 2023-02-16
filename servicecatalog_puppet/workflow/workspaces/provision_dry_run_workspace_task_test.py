@@ -1,4 +1,5 @@
 from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -48,7 +49,6 @@ class ProvisionDryRunWorkspaceTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTes
             "workspace_name": self.workspace_name,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

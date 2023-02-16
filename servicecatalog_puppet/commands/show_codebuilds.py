@@ -1,14 +1,14 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import json
-from servicecatalog_puppet import serialisation_utils
 import logging
 import operator
 
 import click
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, serialisation_utils
+
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 

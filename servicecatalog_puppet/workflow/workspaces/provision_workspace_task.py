@@ -2,13 +2,11 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import io
-import json
-from servicecatalog_puppet import serialisation_utils
 import zipfile
 
 import luigi
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, serialisation_utils
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -36,6 +34,7 @@ class ProvisionWorkspaceTask(tasks.TaskWithParameters):
     manifest_file_path = luigi.Parameter()
 
     section_name = constants.WORKSPACES
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     @property
     def item_name(self):
@@ -47,7 +46,6 @@ class ProvisionWorkspaceTask(tasks.TaskWithParameters):
             "workspace_name": self.workspace_name,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):

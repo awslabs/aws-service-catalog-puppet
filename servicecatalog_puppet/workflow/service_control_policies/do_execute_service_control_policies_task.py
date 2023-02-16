@@ -5,11 +5,7 @@ import functools
 import luigi
 
 from servicecatalog_puppet import constants
-from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.workflow.dependencies import tasks
-from servicecatalog_puppet.workflow.service_control_policies import (
-    get_or_create_policy_task,
-)
 
 
 class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
@@ -25,6 +21,7 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
     requested_priority = luigi.IntParameter()
 
     manifest_file_path = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -33,7 +30,6 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
             "region": self.region,
             "account_id": self.account_id,
             "ou_name": self.ou_name,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     @functools.lru_cache(maxsize=32)

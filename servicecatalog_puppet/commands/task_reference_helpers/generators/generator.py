@@ -3,12 +3,12 @@
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.commands.task_reference_helpers.generators import (
     launches,
-    spoke_local_portfolios,
-    workspaces,
-    stacks,
-    service_control_policies,
-    tag_policies,
     organizational_units,
+    service_control_policies,
+    spoke_local_portfolios,
+    stacks,
+    tag_policies,
+    workspaces,
 )
 
 

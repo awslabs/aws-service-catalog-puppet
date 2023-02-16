@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 import luigi
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -14,6 +15,7 @@ class GetOrCreateOrganizationalUnitTask(tasks.TaskWithReference):
     name = luigi.Parameter()
     tags = luigi.ListParameter()
     parent_ou_task_ref = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -22,7 +24,6 @@ class GetOrCreateOrganizationalUnitTask(tasks.TaskWithReference):
             "parent_ou_id": self.parent_ou_id,
             "name": self.name,
             "task_reference": self.task_reference,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def find_ou_in_parent(self, orgs, parent_id):

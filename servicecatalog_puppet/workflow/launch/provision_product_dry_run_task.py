@@ -2,12 +2,10 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
-from servicecatalog_puppet import serialisation_utils
 
 import luigi
 
-from servicecatalog_puppet import aws
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import aws, constants, serialisation_utils
 from servicecatalog_puppet.workflow.launch import provision_product_task
 
 
@@ -17,7 +15,7 @@ class ProvisionProductDryRunTask(provision_product_task.ProvisionProductTask):
 
     @property
     def output_location(self):
-        return f"output/{self.uid}.{self.output_suffix}"
+        return f"output/{self.task_reference}.{self.output_suffix}"
 
     def run(self):
         details = self.load_from_input("details")

@@ -1,4 +1,5 @@
 from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -45,7 +46,6 @@ class DoExecuteServiceControlPoliciesTaskTest(
             "region": self.region,
             "account_id": self.account_id,
             "ou_name": self.ou_name,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

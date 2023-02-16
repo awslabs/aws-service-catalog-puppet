@@ -7,13 +7,12 @@ import logging
 import luigi
 from deepmerge import always_merger
 
-from servicecatalog_puppet import constants
-from servicecatalog_puppet import manifest_utils
-from servicecatalog_puppet import serialisation_utils
+from servicecatalog_puppet import constants, manifest_utils, serialisation_utils
 from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.waluigi import tasks as waluigi_tasks
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.dependencies import task_factory
+
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
@@ -25,7 +24,7 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
     puppet_account_id = luigi.Parameter()
     manifest_files_path = luigi.Parameter()
 
-    task_version = "latest"
+    cachable_level = constants.CACHE_LEVEL_HIGH
 
     def get_expanded_manifest_file_path(self):
         return f"{self.manifest_files_path}/manifest-expanded.yaml"
@@ -85,12 +84,30 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
             )
         return dependencies
 
-    @property
-    def uid(self):
-        return f"{self.task_reference}"
+    def get_output_location_path(self):  # TODO EPF
+        if self.cachable_level == constants.CACHE_LEVEL_LOW:
+            path = self.run_idempotency_token
+        elif self.cachable_level == constants.CACHE_LEVEL_NORMAL:
+            path = self.task_idempotency_token
+        elif self.cachable_level == constants.CACHE_LEVEL_HIGH:
+            path = "latest"
+        elif self.cachable_level == constants.CACHE_LEVEL_NO_CACHE:
+            path = self.run_idempotency_token
+        else:
+            raise Exception(f"unknown cachable_level: {self.cachable_level}")
+        return f"output/{self.__class__.__name__}/{self.task_reference}/{path}.{self.output_suffix}"
 
-    def get_output_location_path(self):
-        return f"output/{self.__class__.__name__}/{self.task_reference}/{self.params_for_results_display().get('cache_invalidator', self.task_version)}.{self.output_suffix}"
+    def info(self, message):
+        logger.info(f"{self.task_reference}: {message}")
+
+    def debug(self, message):
+        logger.debug(f"{self.task_reference}: {message}")
+
+    def error(self, message):
+        logger.error(f"{self.task_reference}: {message}")
+
+    def warning(self, message):
+        logger.warning(f"{self.task_reference}: {message}")
 
 
 class TaskWithReferenceAndCommonParameters(TaskWithReference):

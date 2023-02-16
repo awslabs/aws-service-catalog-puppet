@@ -6,6 +6,7 @@ import time
 import luigi
 import yaml
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -17,6 +18,7 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
     ou_to_share_with = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
     describe_portfolio_shares_task_ref = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -26,7 +28,6 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
             "ou_to_share_with": self.ou_to_share_with,
             "share_tag_options": self.share_tag_options,
             "share_principals": self.share_principals,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):

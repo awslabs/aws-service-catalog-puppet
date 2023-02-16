@@ -2,12 +2,10 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import json
-from servicecatalog_puppet import serialisation_utils
 
 import luigi
 
-from servicecatalog_puppet import config
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -23,6 +21,7 @@ class DoInvokeLambdaTask(tasks.TaskWithParameters):
     manifest_file_path = luigi.Parameter()
 
     section_name = constants.LAMBDA_INVOCATIONS
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     @property
     def item_name(self):
@@ -34,7 +33,6 @@ class DoInvokeLambdaTask(tasks.TaskWithParameters):
             "lambda_invocation_name": self.lambda_invocation_name,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):

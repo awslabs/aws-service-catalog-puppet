@@ -4,12 +4,11 @@
 import re
 
 import luigi
-
-from servicecatalog_puppet import config
-from servicecatalog_puppet import utils
-from servicecatalog_puppet.workflow.dependencies import tasks
 import troposphere as t
-from troposphere import s3, servicecatalog
+from troposphere import servicecatalog
+
+from servicecatalog_puppet import config, constants, utils
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
@@ -20,6 +19,7 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
     portfolio = luigi.Parameter()
 
     associations = luigi.ListParameter(default=[])
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -28,7 +28,6 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):

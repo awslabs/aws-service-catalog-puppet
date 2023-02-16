@@ -1,4 +1,5 @@
-from unittest import skip, mock
+from unittest import mock, skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -34,7 +35,6 @@ class DoExecuteCodeBuildRunTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "code_build_run_name": self.code_build_run_name,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

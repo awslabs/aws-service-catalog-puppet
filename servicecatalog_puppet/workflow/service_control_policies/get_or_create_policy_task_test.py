@@ -5,10 +5,9 @@ import io
 import json
 import unittest
 
-from servicecatalog_puppet import serialisation_utils
-
 from botocore.response import StreamingBody
 
+from servicecatalog_puppet import serialisation_utils
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 

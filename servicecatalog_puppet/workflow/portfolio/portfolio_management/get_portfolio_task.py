@@ -6,6 +6,7 @@ import luigi
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
+
 sharing_mode_map = dict(ACCOUNT="IMPORTED", AWS_ORGANIZATIONS="AWS_ORGANIZATIONS",)
 
 
@@ -14,6 +15,7 @@ class GetPortfolioLocalTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     status = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -22,7 +24,6 @@ class GetPortfolioLocalTask(tasks.TaskWithReference):
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def get_portfolio_details(self):
@@ -46,6 +47,7 @@ class GetPortfolioImportedTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     sharing_mode = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -55,7 +57,6 @@ class GetPortfolioImportedTask(tasks.TaskWithReference):
             "sharing_mode": self.sharing_mode,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def get_portfolio_details(self):

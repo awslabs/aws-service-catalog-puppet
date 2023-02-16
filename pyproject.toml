@@ -3,7 +3,7 @@
 
 [tool.poetry]
 name = "aws-service-catalog-puppet"
-version = "0.219.0"
+version = "0.220.0"
 description = "Making it easier to deploy ServiceCatalog products"
 classifiers = ["Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "Programming Language :: Python :: 3", "License :: OSI Approved :: Apache Software License", "Operating System :: OS Independent", "Natural Language :: English"]
 homepage = "https://service-catalog-tools-workshop.com/"
@@ -31,6 +31,7 @@ nose2 = "^0.10.0"
 
 [tool.poetry.group.dev.dependencies]
 viztracer = "^0.15.4"
+importanize = "^0.7.0"
 
 [tool.dephell.main]
 versioning = "semver"

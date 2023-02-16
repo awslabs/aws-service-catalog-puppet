@@ -4,6 +4,7 @@
 import luigi
 import yaml
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.dependencies import tasks
 
@@ -32,6 +33,7 @@ class DoExecuteSimulatePolicyTask(tasks.TaskWithReference):
     caller_arn = luigi.Parameter()
     context_entries = luigi.ListParameter()
     resource_handling_option = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -39,7 +41,6 @@ class DoExecuteSimulatePolicyTask(tasks.TaskWithReference):
             "simulate_policy_name": self.simulate_policy_name,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):

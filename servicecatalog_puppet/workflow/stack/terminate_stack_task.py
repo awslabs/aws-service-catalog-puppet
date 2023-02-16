@@ -5,8 +5,7 @@ import functools
 
 import luigi
 
-from servicecatalog_puppet import aws
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import aws, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -40,6 +39,7 @@ class TerminateStackTask(tasks.TaskWithReference):
     execution = luigi.Parameter()
 
     try_count = 1
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -47,7 +47,6 @@ class TerminateStackTask(tasks.TaskWithReference):
             "stack_name": self.stack_name,
             "account_id": self.account_id,
             "region": self.region,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     @property

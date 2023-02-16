@@ -12,11 +12,12 @@ from luigi import format
 from luigi.contrib import s3
 
 from servicecatalog_puppet import (
-    constants,
     config,
+    constants,
     environmental_variables,
     serialisation_utils,
 )
+
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
@@ -105,8 +106,12 @@ class PuppetTask(luigi.Task):
             return False
 
     @property
-    def cache_invalidator(self):
-        return os.environ.get(environmental_variables.CACHE_INVALIDATOR, "NOW")
+    def task_idempotency_token(self):
+        return os.environ.get(environmental_variables.TASK_IDEMPOTENCY_TOKEN, "NOW")
+
+    @property
+    def run_idempotency_token(self):
+        return os.environ.get(environmental_variables.RUN_IDEMPOTENCY_TOKEN, "NOW")
 
     @property
     def is_dry_run(self):
@@ -216,21 +221,6 @@ class PuppetTask(luigi.Task):
     def load_from_input(self, input_name):
         return serialisation_utils.json_loads(self.read_from_input(input_name))
 
-    def info(self, message):
-        logger.info(f"{self.uid}: {message}")
-
-    def debug(self, message):
-        logger.debug(f"{self.uid}: {message}")
-
-    def error(self, message):
-        logger.error(f"{self.uid}: {message}")
-
-    def warning(self, message):
-        logger.warning(f"{self.uid}: {message}")
-
-    def get_output_location_path(self):
-        return f"output/{self.uid}.{self.output_suffix}"
-
     @property
     def cached_output_location(self):
         puppet_account_id = config.get_puppet_account_id()
@@ -252,7 +242,7 @@ class PuppetTask(luigi.Task):
 
     @property
     def should_use_s3_target_if_caching_is_on(self):
-        return "cache_invalidator" not in self.params_for_results_display().keys()
+        return self.cachable_level != constants.CACHE_LEVEL_NO_CACHE
 
     def output(self):
         if self.should_use_caching:
@@ -263,10 +253,6 @@ class PuppetTask(luigi.Task):
     @property
     def output_suffix(self):
         return "json"
-
-    @property
-    def uid(self):
-        return f"{self.__class__.__name__}/{self.node_id}"
 
     def params_for_results_display(self):
         return {}
@@ -286,21 +272,6 @@ class PuppetTask(luigi.Task):
         else:
             with self.output().open("wb") as f:
                 f.write(serialisation_utils.json_dumps(content))
-
-    @property
-    def node_id(self):
-        values = [self.__class__.__name__.replace("Task", "")] + [
-            str(v) for v in self.params_for_results_display().values()
-        ]
-        return "/".join(values)
-
-    def graph_node(self):
-        task_friendly_name = self.__class__.__name__.replace("Task", "")
-        task_description = ""
-        for param, value in self.params_for_results_display().items():
-            task_description += f"<br/>{param}: {value}"
-        label = f"<b>{task_friendly_name}</b>{task_description}"
-        return f'"{self.node_id}" [fillcolor=lawngreen style=filled label= < {label} >]'
 
 
 def record_event(event_type, task, extra_event_data=None):

@@ -1,13 +1,14 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import json
-import os
 import logging
+import os
 import traceback
 from datetime import datetime
 from pathlib import Path
 
 from servicecatalog_puppet import constants
+
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 

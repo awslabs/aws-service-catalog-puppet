@@ -1,12 +1,11 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import json
-from servicecatalog_puppet import serialisation_utils
 
 import luigi
 
+from servicecatalog_puppet import constants, serialisation_utils
 from servicecatalog_puppet.workflow import tasks
-
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -19,12 +18,12 @@ class GetOrCreatePolicyTask(tasks.TaskWithReference):
     tags = luigi.ListParameter()
 
     manifest_file_path = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
             "account_id": self.account_id,
             "policy_name": self.policy_name,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def get_unwrapped_policy(self):

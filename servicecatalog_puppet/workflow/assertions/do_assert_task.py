@@ -6,6 +6,7 @@ import jmespath
 import luigi
 from deepmerge import always_merger
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -20,6 +21,7 @@ class DoAssertTask(tasks.TaskWithParameters):
     actual = luigi.DictParameter()
 
     requested_priority = luigi.IntParameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -27,7 +29,6 @@ class DoAssertTask(tasks.TaskWithParameters):
             "assertion_name": self.assertion_name,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def get_actual_result(self):
@@ -63,7 +64,11 @@ class DoAssertTask(tasks.TaskWithParameters):
             expected_result = expected_result.strip()
 
         ddiff = deepdiff.DeepDiff(actual_result, expected_result, ignore_order=True)
+
         if len(ddiff.keys()) > 0:
             raise Exception(ddiff)
         else:
             self.write_empty_output()
+
+
+#

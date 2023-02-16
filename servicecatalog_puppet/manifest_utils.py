@@ -13,11 +13,10 @@ import networkx as nx
 from betterboto import client as betterboto_client
 from deepmerge import always_merger
 
-from servicecatalog_puppet import config
-from servicecatalog_puppet import constants
-from servicecatalog_puppet import serialisation_utils
+from servicecatalog_puppet import config, constants, serialisation_utils
 from servicecatalog_puppet.macros import macros
 from servicecatalog_puppet.workflow import tasks
+
 
 logger = logging.getLogger(__file__)
 

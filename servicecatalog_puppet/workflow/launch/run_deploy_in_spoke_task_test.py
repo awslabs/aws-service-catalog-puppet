@@ -1,4 +1,5 @@
 from unittest import skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -31,7 +32,6 @@ class RunDeployInSpokeTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "task_reference": self.task_reference,
             "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

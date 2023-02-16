@@ -1,4 +1,5 @@
-from unittest import skip, mock
+from unittest import mock, skip
+
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 
@@ -38,7 +39,6 @@ class DoInvokeLambdaTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "lambda_invocation_name": self.lambda_invocation_name,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
         # exercise

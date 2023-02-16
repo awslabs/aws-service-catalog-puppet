@@ -4,6 +4,7 @@ import jinja2
 
 from servicecatalog_puppet.asset_helpers import resolve_from_site_packages
 
+
 TEMPLATE_DIR = resolve_from_site_packages("templates")
 
 

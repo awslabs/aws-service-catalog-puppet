@@ -14,6 +14,7 @@ class SSMOutputsTasks(tasks.TaskWithReference):
     stack_output = luigi.Parameter()
     task_generating_output = luigi.Parameter()
     force_operation = luigi.BoolParameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -23,7 +24,6 @@ class SSMOutputsTasks(tasks.TaskWithReference):
             "param_name": self.param_name,
             "stack_output": self.stack_output,
             "force_operation": self.force_operation,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def find_stack_output(
@@ -106,8 +106,9 @@ class TerminateSSMOutputsTasks(tasks.TaskWithReference):  # TODO add by path par
             "account_id": self.account_id,
             "region": self.region,
             "param_name": self.param_name,
-            "cache_invalidator": self.cache_invalidator,
         }
+
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def run(self):
         param_name_to_use = self.param_name.replace(

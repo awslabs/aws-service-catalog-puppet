@@ -3,6 +3,7 @@
 
 import luigi
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -11,13 +12,13 @@ class DisassociateProductsFromPortfolio(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
             "account_id": self.account_id,
             "region": self.region,
             "portfolio": self.portfolio,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):

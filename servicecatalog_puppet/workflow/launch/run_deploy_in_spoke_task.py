@@ -3,22 +3,20 @@
 
 import luigi
 
-from servicecatalog_puppet import config
 from servicecatalog_puppet import constants
-from servicecatalog_puppet import environmental_variables
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class RunDeployInSpokeTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     generate_manifest_ref = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_LOW
 
     def params_for_results_display(self):
         return {
             "task_reference": self.task_reference,
             "puppet_account_id": self.puppet_account_id,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):

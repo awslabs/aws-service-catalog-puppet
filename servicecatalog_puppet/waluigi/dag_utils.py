@@ -5,10 +5,11 @@ import networkx as nx
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.waluigi.constants import (
     COMPLETED,
-    NOT_SET,
     ERRORED,
+    NOT_SET,
     QUEUE_STATUS,
 )
+
 
 logger = logging.getLogger(constants.PUPPET_SCHEDULER_LOGGER_NAME)
 

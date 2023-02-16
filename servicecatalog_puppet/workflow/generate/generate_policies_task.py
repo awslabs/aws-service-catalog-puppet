@@ -1,10 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
-import json
-from servicecatalog_puppet import serialisation_utils
-from functools import lru_cache
-
 import luigi
 
 from servicecatalog_puppet import config, constants
@@ -18,12 +14,12 @@ class GeneratePolicies(tasks.TaskWithReference):
     organizations_to_share_with = luigi.ListParameter()
     ous_to_share_with = luigi.ListParameter()
     accounts_to_share_with = luigi.ListParameter()
+    cachable_level = constants.CACHE_LEVEL_LOW
 
     def params_for_results_display(self):
         return {
             "account_id": self.account_id,
             "region": self.region,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):
@@ -56,4 +52,5 @@ class GeneratePolicies(tasks.TaskWithReference):
                 ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
                 Tags=self.initialiser_stack_tags,
             )
+
         self.write_empty_output()

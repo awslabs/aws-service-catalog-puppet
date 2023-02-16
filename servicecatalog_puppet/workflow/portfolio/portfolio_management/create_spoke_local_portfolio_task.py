@@ -3,7 +3,7 @@
 
 import luigi
 
-from servicecatalog_puppet import aws
+from servicecatalog_puppet import aws, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -12,6 +12,7 @@ class CreateSpokeLocalPortfolioTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -20,7 +21,6 @@ class CreateSpokeLocalPortfolioTask(tasks.TaskWithReference):
             "portfolio": self.portfolio,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):

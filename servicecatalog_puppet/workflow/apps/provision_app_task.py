@@ -3,6 +3,7 @@
 
 import luigi
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -27,6 +28,7 @@ class ProvisionAppTask(tasks.TaskWithParameters):
     requested_priority = luigi.IntParameter(significant=False, default=0)
 
     execution = luigi.Parameter()
+    cachable_level = constants.CACHE_LEVEL_NORMAL
 
     def params_for_results_display(self):
         return {
@@ -35,7 +37,6 @@ class ProvisionAppTask(tasks.TaskWithParameters):
             "app_name": self.app_name,
             "region": self.region,
             "account_id": self.account_id,
-            "cache_invalidator": self.cache_invalidator,
         }
 
     def run(self):
