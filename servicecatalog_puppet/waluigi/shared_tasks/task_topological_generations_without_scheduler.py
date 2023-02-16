@@ -59,8 +59,11 @@ def lock_next_task_to_run(next_task, resources, all_tasks):
     task_reference = next_task["task_reference"]
     next_task[QUEUE_STATUS] = IN_PROGRESS
     all_tasks[task_reference] = next_task
+    logger.info(f"before lock: {resources}")
     for r in next_task.get(RESOURCES_REQUIRED, []):
+        logger.info(f"locking: {r} because of: {task_reference}")
         resources[r] = task_reference
+    logger.info(f"after lock: {resources}")
 
 
 def setup_next_task_to_run(lock, tasks_to_run, resources, all_tasks):
@@ -68,7 +71,7 @@ def setup_next_task_to_run(lock, tasks_to_run, resources, all_tasks):
         next_task, can_shut_down = get_next_task_to_run(
             tasks_to_run, resources, all_tasks
         )
-        if next_task:
+        if next_task is not None:
             lock_next_task_to_run(next_task, resources, all_tasks)
     return next_task, can_shut_down
 
