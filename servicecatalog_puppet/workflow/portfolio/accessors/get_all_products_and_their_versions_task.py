@@ -7,6 +7,9 @@ from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
+retry_max_attempts = 50
+
+
 class GetAllProductsAndTheirVersionsTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     region = luigi.Parameter()
@@ -28,7 +31,9 @@ class GetAllProductsAndTheirVersionsTask(tasks.TaskWithReference):
             self.write_empty_output()
         else:
             products = dict()
-            with self.spoke_regional_client("servicecatalog") as servicecatalog:
+            with self.spoke_regional_client(
+                "servicecatalog", retry_max_attempts=retry_max_attempts
+            ) as servicecatalog:
                 paginator = servicecatalog.get_paginator("search_products_as_admin")
                 for page in paginator.paginate(
                     PortfolioId=portfolio_id, ProductSource="ACCOUNT",

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import luigi
 from betterboto import client as betterboto_client
+from botocore.config import Config
 from luigi import format
 from luigi.contrib import s3
 
@@ -148,9 +149,11 @@ class PuppetTask(luigi.Task):
             **kwargs,
         )
 
-    def spoke_regional_client(self, service, region_name=None):
+    def spoke_regional_client(self, service, region_name=None, retry_max_attempts=None):
         region = region_name or self.region
         kwargs = dict(region_name=region)
+        if retry_max_attempts is not None:
+            kwargs["config"] = Config(retries={"max_attempts": retry_max_attempts,})
         if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
             kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
 
