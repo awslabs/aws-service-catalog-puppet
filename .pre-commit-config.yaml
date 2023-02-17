@@ -13,3 +13,9 @@ repos:
       language: system
       types: [ python ]
       require_serial: true
+    - id: make-prepare-for-testing
+      name: make-prepare-for-testing
+      entry: make prepare-for-testing
+      language: system
+      types: [ python ]
+      require_serial: true
