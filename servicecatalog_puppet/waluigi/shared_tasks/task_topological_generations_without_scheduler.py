@@ -50,7 +50,10 @@ def get_next_task_to_run(tasks_to_run, resources, all_tasks):
                 all_tasks[task_reference_to_run] = task_to_run
             task_permanently_blocked_status.append(is_permanently_blocked)
             if not is_currently_blocked:
-                if are_resources_are_free_for_task_dict(task_to_run, resources):
+                are_resources_are_free, _ = are_resources_are_free_for_task_dict(
+                    task_to_run, resources
+                )
+                if are_resources_are_free:
                     return task_to_run, False
     return None, all(task_permanently_blocked_status)
 
@@ -59,11 +62,8 @@ def lock_next_task_to_run(next_task, resources, all_tasks):
     task_reference = next_task["task_reference"]
     next_task[QUEUE_STATUS] = IN_PROGRESS
     all_tasks[task_reference] = next_task
-    logger.info(f"before lock: {resources}")
     for r in next_task.get(RESOURCES_REQUIRED, []):
-        logger.info(f"locking: {r} because of: {task_reference}")
         resources[r] = task_reference
-    logger.info(f"after lock: {resources}")
 
 
 def setup_next_task_to_run(lock, tasks_to_run, resources, all_tasks):
