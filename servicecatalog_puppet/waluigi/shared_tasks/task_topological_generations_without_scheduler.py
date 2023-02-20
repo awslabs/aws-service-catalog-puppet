@@ -41,7 +41,9 @@ def get_next_task_to_run(tasks_to_run, resources, all_tasks):
         task_to_run = all_tasks[task_reference_to_run]
         status = task_to_run.get(QUEUE_STATUS, NOT_SET)
         # check if not running or has previously run
-        if status == NOT_SET:
+        if status == IN_PROGRESS:
+            task_permanently_blocked_status.append(False)
+        elif status == NOT_SET:
             is_currently_blocked, is_permanently_blocked = has_dependencies_remaining(
                 task_to_run, all_tasks
             )

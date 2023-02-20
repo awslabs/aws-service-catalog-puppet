@@ -760,7 +760,7 @@ def get_template(
                 TimeoutInMinutes=60,
                 Environment=codebuild.Environment(
                     ComputeType="BUILD_GENERAL1_SMALL",
-                    Image="aws/codebuild/standard:4.0",
+                    Image=constants.CODEBUILD_DEFAULT_IMAGE,
                     Type="LINUX_CONTAINER",
                     EnvironmentVariables=[
                         {
@@ -1005,7 +1005,7 @@ def get_template(
         TimeoutInMinutes=480,
         Environment=codebuild.Environment(
             ComputeType=t.Ref(deploy_environment_compute_type_parameter),
-            Image="aws/codebuild/standard:4.0",
+            Image=constants.CODEBUILD_DEFAULT_IMAGE,
             Type="LINUX_CONTAINER",
             EnvironmentVariables=[
                 {
@@ -1055,7 +1055,7 @@ def get_template(
             TimeoutInMinutes=60,
             Environment=codebuild.Environment(
                 ComputeType="BUILD_GENERAL1_SMALL",
-                Image="aws/codebuild/standard:4.0",
+                Image=constants.CODEBUILD_DEFAULT_IMAGE,
                 Type="LINUX_CONTAINER",
                 EnvironmentVariables=[
                     {"Type": "PLAINTEXT", "Name": "OU_OR_PATH", "Value": "CHANGE_ME"},
@@ -1086,7 +1086,7 @@ def get_template(
             TimeoutInMinutes=60,
             Environment=codebuild.Environment(
                 ComputeType="BUILD_GENERAL1_SMALL",
-                Image="aws/codebuild/standard:4.0",
+                Image=constants.CODEBUILD_DEFAULT_IMAGE,
                 Type="LINUX_CONTAINER",
                 EnvironmentVariables=[
                     {
@@ -1283,7 +1283,7 @@ def generate_single_account_run_projects(
         TimeoutInMinutes=480,
         Environment=codebuild.Environment(
             ComputeType=t.Ref(deploy_environment_compute_type_parameter),
-            Image="aws/codebuild/standard:4.0",
+            Image=constants.CODEBUILD_DEFAULT_IMAGE,
             Type="LINUX_CONTAINER",
             EnvironmentVariables=[
                 {
@@ -1374,7 +1374,7 @@ def generate_single_action_run_projects(
         TimeoutInMinutes=480,
         Environment=codebuild.Environment(
             ComputeType=t.Ref(deploy_environment_compute_type_parameter),
-            Image="aws/codebuild/standard:4.0",
+            Image=constants.CODEBUILD_DEFAULT_IMAGE,
             Type="LINUX_CONTAINER",
             EnvironmentVariables=[
                 {

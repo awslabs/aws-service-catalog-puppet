@@ -16,6 +16,7 @@ Metadata:
           - ShouldCollectCloudformationEvents
           - ShouldForwardEventsToEventbridge
           - ShouldForwardFailuresToOpscenter
+          - CodeBuildEnvironmentImage
       - Label:
           default: "Options"
         Parameters:
@@ -85,6 +86,9 @@ Metadata:
 
 
 Parameters:
+  CodeBuildEnvironmentImage:
+    Type: String
+    Default: "aws/codebuild/standard:5.0"
   EnabledRegions:
     Type: String
     Description: |
@@ -300,7 +304,7 @@ Resources:
       Environment:
         Type: linuxContainer
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:4.0
+        Image: !Ref CodeBuildEnvironmentImage
         EnvironmentVariables:
           - Name: VERSION
             Type: PLAINTEXT
