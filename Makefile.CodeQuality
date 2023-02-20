@@ -12,4 +12,4 @@ importanize:
 pycodestyle:
 	poetry run pycodestyle --statistics -qq servicecatalog_puppet
 
-pre-commit: importanize black unit-tests
+pre-commit: importanize black unit-tests prepare-for-testing

@@ -435,3 +435,49 @@ class TestTaskTopologicalGenerationsWithoutScheduler(unittest.TestCase):
         # verify
         self.assertEqual(expected_should_shutdown, actual_should_shutdown)
         self.assertEqual(expected_next_task, actual_next_task)
+
+    def generate_missing_generate_policies(self):
+        all_tasks = {
+            "non-specific-task": {
+                "task_reference": "non-specific-task",
+                "dependencies_by_reference": ["create-policies"],
+            },
+        }
+
+        task_to_run = all_tasks.get("non-specific-task")
+
+        return task_to_run, all_tasks, list(all_tasks.keys())
+
+    def test_has_dependencies_remaining_with_missing_generate_policies(self,):
+        # setup
+        (task_to_run, all_tasks, _,) = self.generate_missing_generate_policies()
+
+        expected_is_currently_blocked = False
+        expected_is_permanently_blocked = False
+
+        # exercise
+        (
+            actual_is_currently_blocked,
+            actual_is_permanently_blocked,
+        ) = self.sut.has_dependencies_remaining(task_to_run, all_tasks)
+
+        # verify
+        self.assertEqual(expected_is_currently_blocked, actual_is_currently_blocked)
+        self.assertEqual(expected_is_permanently_blocked, actual_is_permanently_blocked)
+
+    def test_get_next_task_to_run_with_missing_generate_policies(self,):
+        # setup
+        (_, all_tasks, tasks_to_run,) = self.generate_missing_generate_policies()
+        resources = dict()
+
+        expected_next_task = all_tasks.get("non-specific-task")
+        expected_should_shutdown = False
+
+        # execute
+        actual_next_task, actual_should_shutdown = self.sut.get_next_task_to_run(
+            tasks_to_run, resources, all_tasks
+        )
+
+        # verify
+        self.assertEqual(expected_should_shutdown, actual_should_shutdown)
+        self.assertEqual(expected_next_task, actual_next_task)
