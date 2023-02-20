@@ -14,7 +14,7 @@ class GeneratePolicies(tasks.TaskWithReference):
     organizations_to_share_with = luigi.ListParameter()
     ous_to_share_with = luigi.ListParameter()
     accounts_to_share_with = luigi.ListParameter()
-    cachable_level = constants.CACHE_LEVEL_LOW
+    cachable_level = constants.CACHE_LEVEL_NO_CACHE
 
     def params_for_results_display(self):
         return {

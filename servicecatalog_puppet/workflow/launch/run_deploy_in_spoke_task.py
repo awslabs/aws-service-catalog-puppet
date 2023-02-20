@@ -10,7 +10,7 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 class RunDeployInSpokeTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     generate_manifest_ref = luigi.Parameter()
-    cachable_level = constants.CACHE_LEVEL_LOW
+    cachable_level = constants.CACHE_LEVEL_NO_CACHE
 
     def params_for_results_display(self):
         return {
@@ -35,5 +35,6 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
                 environmentVariablesOverride=vars,
                 computeTypeOverride=spoke_execution_mode_deploy_env,
                 buildspecOverride=build_spec,
+                imageOverride=constants.CODEBUILD_DEFAULT_IMAGE,
             )
         self.write_output(dict(account_id=self.account_id, **response))

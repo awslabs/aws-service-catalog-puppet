@@ -4,6 +4,7 @@ from servicecatalog_puppet.waluigi.constants import (
     BLOCKED,
     COMPLETED,
     ERRORED,
+    IN_PROGRESS,
     NOT_SET,
     QUEUE_STATUS,
 )
@@ -366,6 +367,65 @@ class TestTaskTopologicalGenerationsWithoutScheduler(unittest.TestCase):
 
         expected_next_task = None
         expected_should_shutdown = True
+
+        # execute
+        actual_next_task, actual_should_shutdown = self.sut.get_next_task_to_run(
+            tasks_to_run, resources, all_tasks
+        )
+
+        # verify
+        self.assertEqual(expected_should_shutdown, actual_should_shutdown)
+        self.assertEqual(expected_next_task, actual_next_task)
+
+    def generate_spoke_execution(self):
+        all_tasks = {
+            "create-policies": {
+                "task_reference": "create-policies",
+                "resources_required": [
+                    "CLOUDFORMATION_CREATE_OR_UPDATE_eu-west-1_OF_XXXX"
+                ],
+                QUEUE_STATUS: COMPLETED,
+            },
+            "generate-manifest": {
+                "task_reference": "generate-manifest",
+                "dependencies_by_reference": ["create-policies"],
+                QUEUE_STATUS: COMPLETED,
+            },
+            "run-deploy-in-spoke_YYYYY": {
+                "task_reference": "run-deploy-in-spoke_YYYYY",
+                "dependencies_by_reference": ["generate-manifest"],
+                QUEUE_STATUS: IN_PROGRESS,
+            },
+        }
+
+        task_to_run = all_tasks.get("run-deploy-in-spoke_YYYYY")
+
+        return task_to_run, all_tasks, list(all_tasks.keys())
+
+    def test_has_dependencies_remaining_with_spoke_execution(self,):
+        # setup
+        (task_to_run, all_tasks, _,) = self.generate_spoke_execution()
+
+        expected_is_currently_blocked = False
+        expected_is_permanently_blocked = False
+
+        # exercise
+        (
+            actual_is_currently_blocked,
+            actual_is_permanently_blocked,
+        ) = self.sut.has_dependencies_remaining(task_to_run, all_tasks)
+
+        # verify
+        self.assertEqual(expected_is_currently_blocked, actual_is_currently_blocked)
+        self.assertEqual(expected_is_permanently_blocked, actual_is_permanently_blocked)
+
+    def test_get_next_task_to_run_with_spoke_execution(self,):
+        # setup
+        (_, all_tasks, tasks_to_run,) = self.generate_spoke_execution()
+        resources = dict()
+
+        expected_next_task = None
+        expected_should_shutdown = False
 
         # execute
         actual_next_task, actual_should_shutdown = self.sut.get_next_task_to_run(
