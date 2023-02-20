@@ -24,14 +24,15 @@ def has_dependencies_remaining(task_to_run, all_tasks):
     is_currently_blocked = False
     is_permanently_blocked = False
     for dependency in task_to_run.get("dependencies_by_reference"):
-        dependency_status = all_tasks[dependency].get(QUEUE_STATUS, NOT_SET)
-        if dependency_status in [ERRORED, BLOCKED]:
-            is_currently_blocked = is_permanently_blocked = True
-            return is_currently_blocked, is_permanently_blocked
-        else:
-            if dependency_status != COMPLETED:
-                is_currently_blocked = True
+        if all_tasks.get(dependency):
+            dependency_status = all_tasks[dependency].get(QUEUE_STATUS, NOT_SET)
+            if dependency_status in [ERRORED, BLOCKED]:
+                is_currently_blocked = is_permanently_blocked = True
                 return is_currently_blocked, is_permanently_blocked
+            else:
+                if dependency_status != COMPLETED:
+                    is_currently_blocked = True
+                    return is_currently_blocked, is_permanently_blocked
     return is_currently_blocked, is_permanently_blocked
 
 
