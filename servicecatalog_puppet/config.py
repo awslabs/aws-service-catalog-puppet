@@ -282,6 +282,10 @@ def get_reporting_role_arn(puppet_account_id):
     return get_role_arn(puppet_account_id, constants.REPORTING_ROLE_NAME)
 
 
+def get_cache_download_role_arn(puppet_account_id):
+    return get_role_arn(puppet_account_id, constants.CACHE_DOWNLOADING_ROLE_NAME)
+
+
 def get_spoke_scheduler_threads_or_processes():
     return os.environ.get(
         environmental_variables.SPOKE_SCHEDULER_THREADS_OR_PROCESSES,
