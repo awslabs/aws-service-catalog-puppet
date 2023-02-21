@@ -1,5 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+import functools
 import json
 import logging
 import os
@@ -7,7 +8,9 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-from servicecatalog_puppet import constants
+from betterboto import client as betterboto_client
+
+from servicecatalog_puppet import config, constants
 
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
@@ -39,6 +42,15 @@ def record_event(event_type, task, extra_event_data=None):
         f.write(json.dumps(event, default=str, indent=4,))
 
 
+@functools.lru_cache(maxsize=10)
+def get_cache_download_client():
+    return betterboto_client.CrossAccountClientContextManager(
+        "s3",
+        config.get_cache_download_role_arn(config.get_executor_account_id()),
+        "s3-client",
+    )
+
+
 class WaluigiTaskMixin:
     def execute(self):
         if self.should_use_caching:
@@ -55,7 +67,7 @@ class WaluigiTaskMixin:
                 if not os.path.exists(target_dir):
                     os.makedirs(target_dir)
                 if not os.path.exists(target):
-                    with self.hub_client("s3") as s3:
+                    with get_cache_download_client() as s3:
                         s3.download_file(Bucket=bucket, Key=key, Filename=target)
                 if not os.path.exists(target):
                     raise Exception(f"{target} was not downloaded from the cache")

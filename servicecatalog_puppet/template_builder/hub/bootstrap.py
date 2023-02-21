@@ -432,6 +432,44 @@ def get_template(
     )
 
     template.add_resource(
+        iam.Role(
+            constants.CACHE_DOWNLOADING_ROLE_NAME,
+            RoleName=constants.CACHE_DOWNLOADING_ROLE_NAME,
+            MaxSessionDuration=43200,
+            AssumeRolePolicyDocument={
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": ["sts:AssumeRole"],
+                        "Effect": "Allow",
+                        "Principal": {
+                            "AWS": {
+                                "Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+                            }
+                        },
+                    },
+                ],
+            },
+            Policies=[
+                iam.Policy(
+                    PolicyName="DownloadingCacheActions",
+                    PolicyDocument={
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Action": ["s3:GetObject"],
+                                "Resource": t.Sub("${CachingBucket.Arn}/*"),
+                                "Effect": "Allow",
+                            },
+                        ],
+                    },
+                )
+            ],
+            Path=t.Ref(puppet_role_path_template_parameter),
+        )
+    )
+
+    template.add_resource(
         sns.Topic(
             "DryRunNotificationTopic",
             DisplayName="service-catalog-puppet-dry-run-approvals",
