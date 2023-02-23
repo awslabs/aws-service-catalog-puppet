@@ -10,11 +10,29 @@ from servicecatalog_puppet import config, constants, serialisation_utils
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
+def escape(input):
+    return "".join(x for x in input if x.isalnum() or x in "._- ")
+
+
+def convert_to_path(input_dict):
+    outputs = list()
+    for key_name, value in input_dict.items():
+        outputs.extend([key_name, escape(value)])
+    return "/".join(outputs)
+
+
 class IOMixin:
+    @property
+    def task_idempotency_parameters(self):
+        raise NotImplementedError(
+            f"{self.__class__.__name__} has cachable_level of TASK but has not implemented task_idempotency_parameters"
+        )
+
     @property
     def output_location_non_cached(self):
         if self.cachable_level == constants.CACHE_LEVEL_TASK:
-            path = self.task_idempotency_token
+            path = f"{convert_to_path(self.task_idempotency_parameters)}/{self.task_idempotency_token}"
+            # path = self.task_idempotency_token
         elif self.cachable_level == constants.CACHE_LEVEL_RUN:
             path = self.run_idempotency_token
         elif self.cachable_level == constants.CACHE_LEVEL_PERMANENT:
@@ -23,11 +41,12 @@ class IOMixin:
             path = self.run_idempotency_token
         else:
             raise Exception(f"unknown cachable_level: {self.cachable_level}")
+
         return f"output/{self.__class__.__name__}/{self.task_reference}/{path}.json"
 
     @property
     def output_location_cached(self):
-        return f"s3://sc-puppet-caching-bucket-{config.get_puppet_account_id()}-{config.get_home_region(self.puppet_account_id)}/{self.output_location_non_cached}"
+        return f"s3://sc-puppet-caching-bucket-{self.puppet_account_id}-{constants.HOME_REGION}/{self.output_location_non_cached}"
 
     @property
     def should_use_caching(self):

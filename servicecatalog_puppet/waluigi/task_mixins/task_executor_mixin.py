@@ -18,18 +18,10 @@ class TaskExecutorMixin:
     def execute(self):
         if self.should_use_caching:
             if self.complete():
-                s3_location = self.output().path
-                s3_url = s3_location.split("/")
-                bucket = s3_url[2]
-                key = "/".join(s3_url[3:])
-                if key.endswith("latest.json"):
-                    target = key
-                else:
-                    target = ".".join(key.split(".")[0:-1])
-                target_dir = target.replace("/latest.json", "")
-                if not os.path.exists(target_dir):
-                    os.makedirs(target_dir)
-
+                target = self.output_location_non_cached
+                bucket = f"sc-puppet-caching-bucket-{self.puppet_account_id}-{constants.HOME_REGION}"
+                key = target
+                os.makedirs(os.path.dirname(target), exist_ok=True)
                 if not os.path.exists(target):
                     with get_cache_download_client() as s3:
                         s3.download_file(Bucket=bucket, Key=key, Filename=target)
