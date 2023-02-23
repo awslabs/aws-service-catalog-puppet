@@ -101,8 +101,8 @@ def run_tasks(
 
     logger.info(f"About to run workflow with {num_workers} workers")
 
-    if not (running_exploded or is_list_launches):
-        tasks.print_stats()
+    # if not (running_exploded or is_list_launches):
+    # tasks.print_stats()
 
     output_cache_starting_point = config.get_output_cache_starting_point()
     logger.info("CHECKING output_cache_starting_point")

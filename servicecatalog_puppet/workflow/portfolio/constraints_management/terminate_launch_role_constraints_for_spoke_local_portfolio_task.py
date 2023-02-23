@@ -12,7 +12,7 @@ class TerminateLaunchRoleConstraintsForSpokeLocalPortfolioTask(tasks.TaskWithRef
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     spoke_local_portfolio_name = luigi.Parameter()
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {

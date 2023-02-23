@@ -4,6 +4,8 @@ import json
 
 import luigi
 
+import servicecatalog_puppet.manifest_utils
+import servicecatalog_puppet.serialisation_utils
 from servicecatalog_puppet import constants, serialisation_utils
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.dependencies import tasks
@@ -18,7 +20,7 @@ class GetOrCreatePolicyTask(tasks.TaskWithReference):
     tags = luigi.ListParameter()
 
     manifest_file_path = luigi.Parameter()
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {
@@ -28,7 +30,9 @@ class GetOrCreatePolicyTask(tasks.TaskWithReference):
 
     def get_unwrapped_policy(self):
         if self.policy_content.get("default") is not None:
-            unwrapped = tasks.unwrap(self.policy_content.get("default"))
+            unwrapped = servicecatalog_puppet.serialisation_utils.unwrap(
+                self.policy_content.get("default")
+            )
         elif self.policy_content.get("s3") is not None:
             with self.spoke_client("s3") as s3:
                 bucket = self.policy_content.get("s3").get("bucket")

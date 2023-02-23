@@ -11,8 +11,8 @@ from servicecatalog_puppet import (
     serialisation_utils,
 )
 from servicecatalog_puppet.commands import graph
+from servicecatalog_puppet.serialisation_utils import unwrap
 from servicecatalog_puppet.waluigi.dag_utils import logger
-from servicecatalog_puppet.workflow.tasks import unwrap
 
 
 def on_task_trace(task_trace_queue, complete_event, puppet_account_id, execution_mode):

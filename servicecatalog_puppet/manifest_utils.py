@@ -15,7 +15,7 @@ from deepmerge import always_merger
 
 from servicecatalog_puppet import config, constants, serialisation_utils
 from servicecatalog_puppet.macros import macros
-from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet.serialisation_utils import unwrap
 
 
 logger = logging.getLogger(__file__)
@@ -865,12 +865,12 @@ class Manifest(dict):
             "service-control-policies": dict(
                 service_control_policy_name=item_name,
                 description=item.get("description"),
-                content=tasks.unwrap(item.get("content")),
+                content=unwrap(item.get("content")),
             ),
             "tag-policies": dict(
                 tag_policy_name=item_name,
                 description=item.get("description"),
-                content=tasks.unwrap(item.get("content")),
+                content=unwrap(item.get("content")),
             ),
             constants.SIMULATE_POLICIES: dict(
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),

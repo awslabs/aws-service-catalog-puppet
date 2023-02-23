@@ -74,3 +74,28 @@ def json_dumps(obj):
 
 def json_loads(s):
     return orjson.loads(s)
+
+
+def unwrap(what):
+    if hasattr(what, "get_wrapped"):
+        return unwrap(what.get_wrapped())
+
+    if isinstance(what, dict):
+        thing = dict()
+        for k, v in what.items():
+            thing[k] = unwrap(v)
+        return thing
+
+    if isinstance(what, tuple):
+        thing = list()
+        for v in what:
+            thing.append(unwrap(v))
+        return thing
+
+    if isinstance(what, list):
+        thing = list()
+        for v in what:
+            thing.append(unwrap(v))
+        return thing
+
+    return what

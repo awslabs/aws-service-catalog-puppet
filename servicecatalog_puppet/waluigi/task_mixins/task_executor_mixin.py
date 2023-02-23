@@ -1,60 +1,26 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-import functools
-import json
 import logging
 import os
 import traceback
-from datetime import datetime
-from pathlib import Path
 
-from betterboto import client as betterboto_client
-
-from servicecatalog_puppet import config, constants
+from servicecatalog_puppet import constants
+from servicecatalog_puppet.waluigi.cache_download_client import (
+    get_cache_download_client,
+)
+from servicecatalog_puppet.waluigi.event_recorder import record_event
 
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
-def record_event(event_type, task, extra_event_data=None):
-    task_type = task.__class__.__name__
-    task_params = task.param_kwargs
-    pid = os.getpid()
-    current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    event = {
-        "event_type": event_type,
-        "task_type": task_type,
-        "task_params": task_params,
-        "params_for_results": task.params_for_results_display(),
-        "datetime": current_datetime,
-        "pid": os.getpid(),
-    }
-    if extra_event_data is not None:
-        event.update(extra_event_data)
-
-    with open(
-        Path(constants.RESULTS_DIRECTORY)
-        / event_type
-        / f"{task_type}-{task.task_id}.json",
-        "w",
-    ) as f:
-        f.write(json.dumps(event, default=str, indent=4,))
-
-
-@functools.lru_cache(maxsize=10)
-def get_cache_download_client():
-    return betterboto_client.CrossAccountClientContextManager(
-        "s3",
-        config.get_cache_download_role_arn(config.get_executor_account_id()),
-        "s3-client",
-    )
-
-
-class WaluigiTaskMixin:
+class TaskExecutorMixin:
     def execute(self):
+        print(f"{self.task_reference} execute")
         if self.should_use_caching:
+            print(f"{self.task_reference} execute should use caching")
             if self.complete():
+                print(f"{self.task_reference} execute is complete")
                 s3_location = self.output().path
                 s3_url = s3_location.split("/")
                 bucket = s3_url[2]
@@ -66,12 +32,14 @@ class WaluigiTaskMixin:
                 target_dir = target.replace("/latest.json", "")
                 if not os.path.exists(target_dir):
                     os.makedirs(target_dir)
+
                 if not os.path.exists(target):
                     with get_cache_download_client() as s3:
                         s3.download_file(Bucket=bucket, Key=key, Filename=target)
                 if not os.path.exists(target):
                     raise Exception(f"{target} was not downloaded from the cache")
             else:
+                print(f"{self.task_reference} execute is not complete")
                 self.run()
                 self.execute()
         else:

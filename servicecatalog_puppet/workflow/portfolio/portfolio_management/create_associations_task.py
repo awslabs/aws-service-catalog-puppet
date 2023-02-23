@@ -4,7 +4,7 @@ import time
 
 import luigi
 
-from servicecatalog_puppet import config
+from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -13,6 +13,8 @@ class CreateAssociationTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
+
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {

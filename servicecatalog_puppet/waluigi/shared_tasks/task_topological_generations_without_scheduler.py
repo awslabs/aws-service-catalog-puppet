@@ -2,6 +2,7 @@ import time
 import traceback
 
 from servicecatalog_puppet import serialisation_utils
+from servicecatalog_puppet.serialisation_utils import unwrap
 from servicecatalog_puppet.waluigi.constants import (
     BLOCKED,
     COMPLETED,
@@ -17,7 +18,6 @@ from servicecatalog_puppet.waluigi.locks.external import (
     are_resources_are_free_for_task_dict,
 )
 from servicecatalog_puppet.workflow.dependencies import task_factory
-from servicecatalog_puppet.workflow.tasks import unwrap
 
 
 def has_dependencies_remaining(task_to_run, all_tasks):

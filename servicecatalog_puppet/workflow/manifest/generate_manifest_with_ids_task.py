@@ -15,7 +15,7 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
             "puppet_account_id": self.puppet_account_id,
         }
 
-    cachable_level = constants.CACHE_LEVEL_LOW
+    cachable_level = constants.CACHE_LEVEL_NO_CACHE
 
     def run(self):
         bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"

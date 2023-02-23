@@ -4,6 +4,8 @@
 import luigi
 import yaml
 
+import servicecatalog_puppet.manifest_utils
+import servicecatalog_puppet.serialisation_utils
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.dependencies import tasks
@@ -33,7 +35,7 @@ class DoExecuteSimulatePolicyTask(tasks.TaskWithReference):
     caller_arn = luigi.Parameter()
     context_entries = luigi.ListParameter()
     resource_handling_option = luigi.Parameter()
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {
@@ -67,7 +69,11 @@ class DoExecuteSimulatePolicyTask(tasks.TaskWithReference):
                 kwargs["CallerArn"] = self.caller_arn
 
             if len(self.context_entries) > 0:
-                kwargs["ContextEntries"] = tasks.unwrap(self.context_entries)
+                kwargs[
+                    "ContextEntries"
+                ] = servicecatalog_puppet.serialisation_utils.unwrap(
+                    self.context_entries
+                )
 
             if self.resource_handling_option != "":
                 kwargs["ResourceHandlingOption"] = self.resource_handling_option

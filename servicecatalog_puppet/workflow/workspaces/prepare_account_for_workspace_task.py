@@ -14,6 +14,8 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
 
+    cachable_level = constants.CACHE_LEVEL_PERMANENT
+
     def params_for_results_display(self):
         return {
             "account_id": self.account_id,
