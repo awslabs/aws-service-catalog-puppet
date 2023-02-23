@@ -14,7 +14,6 @@ from servicecatalog_puppet import (
     constants,
     environmental_variables,
     remote_config,
-    serialisation_utils,
 )
 from servicecatalog_puppet.commands import (
     bootstrap as bootstrap_commands,

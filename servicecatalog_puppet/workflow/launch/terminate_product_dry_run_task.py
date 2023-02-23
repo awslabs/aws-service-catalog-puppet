@@ -5,7 +5,7 @@ import json
 
 import luigi
 
-from servicecatalog_puppet import aws, constants, serialisation_utils
+from servicecatalog_puppet import aws, constants
 from servicecatalog_puppet.workflow.launch import do_terminate_product_task
 
 

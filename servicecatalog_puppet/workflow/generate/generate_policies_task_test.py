@@ -1,8 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-import os
 
-from servicecatalog_puppet import constants, environmental_variables
 from servicecatalog_puppet.workflow import tasks_unit_tests_helper
 
 

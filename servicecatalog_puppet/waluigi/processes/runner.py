@@ -12,16 +12,12 @@ from servicecatalog_puppet.waluigi.dag_utils import (
 )
 from servicecatalog_puppet.waluigi.shared_tasks import (
     task_processing_time,
+    task_topological_generations_with_scheduler,
+    task_topological_generations_without_scheduler,
     task_trace,
 )
-from servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_with_scheduler import (
-    scheduler_task as task_topological_generations_with_scheduler_scheduler_task,
-)
-from servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_without_scheduler import (
-    worker_task as task_topological_generations_without_scheduler_worker_task,
-)
-from servicecatalog_puppet.waluigi.shared_tasks.workers.worker_requiring_scheduler import (
-    worker_task as worker_requiring_scheduler_worker_task,
+from servicecatalog_puppet.waluigi.shared_tasks.workers import (
+    worker_requiring_scheduler,
 )
 
 
@@ -31,11 +27,11 @@ QUEUE_REFILL_SLEEP_DURATION = 1
 def get_tasks(scheduling_algorithm):
     if scheduling_algorithm == "topological_generations":
         return (
-            worker_requiring_scheduler_worker_task,
-            task_topological_generations_with_scheduler_scheduler_task,
+            worker_requiring_scheduler.worker_task,
+            task_topological_generations_with_scheduler.scheduler_task,
         )
     if scheduling_algorithm == "topological_generations_without_scheduler":
-        return task_topological_generations_without_scheduler_worker_task, None
+        return task_topological_generations_without_scheduler.worker_task, None
     raise ValueError(f"Unsupported scheduling_algorithm: {scheduling_algorithm}")
 
 

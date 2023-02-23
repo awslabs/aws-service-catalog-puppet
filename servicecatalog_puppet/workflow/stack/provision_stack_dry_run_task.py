@@ -8,8 +8,7 @@ from botocore.exceptions import ClientError
 
 import servicecatalog_puppet.manifest_utils
 import servicecatalog_puppet.serialisation_utils
-from servicecatalog_puppet import constants, serialisation_utils
-from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.stack import provision_stack_task
 
 

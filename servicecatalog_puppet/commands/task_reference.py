@@ -14,7 +14,7 @@ from servicecatalog_puppet.commands.task_reference_helpers import (
     complete_generator,
     hub_generator,
 )
-from servicecatalog_puppet.workflow import runner, workflow_utils
+from servicecatalog_puppet.workflow import runner
 
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)

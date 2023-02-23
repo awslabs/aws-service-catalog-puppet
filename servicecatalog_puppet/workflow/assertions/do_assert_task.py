@@ -65,11 +65,7 @@ class DoAssertTask(tasks.TaskWithParameters):
 
         ddiff = deepdiff.DeepDiff(actual_result, expected_result, ignore_order=True)
 
-        # if len(ddiff.keys()) > 0:
-        #     raise Exception(ddiff)
-        # else:
-        #     self.write_empty_output()
-        self.write_empty_output()
-
-
-#
+        if len(ddiff.keys()) > 0:
+            raise Exception(ddiff)
+        else:
+            self.write_empty_output()

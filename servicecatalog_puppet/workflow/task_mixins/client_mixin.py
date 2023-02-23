@@ -3,7 +3,7 @@ import os
 from betterboto import client as betterboto_client
 from botocore.config import Config
 
-from servicecatalog_puppet import config, constants, environmental_variables
+from servicecatalog_puppet import config, constants
 
 
 class ClientMixin:

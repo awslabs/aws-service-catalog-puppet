@@ -25,11 +25,9 @@ from servicecatalog_puppet import (
     config,
     constants,
     environmental_variables,
-    remote_config,
     serialisation_utils,
 )
 from servicecatalog_puppet.waluigi import runner_factory
-from servicecatalog_puppet.workflow import tasks
 
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
