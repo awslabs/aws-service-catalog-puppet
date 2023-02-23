@@ -16,11 +16,8 @@ logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 class TaskExecutorMixin:
     def execute(self):
-        print(f"{self.task_reference} execute")
         if self.should_use_caching:
-            print(f"{self.task_reference} execute should use caching")
             if self.complete():
-                print(f"{self.task_reference} execute is complete")
                 s3_location = self.output().path
                 s3_url = s3_location.split("/")
                 bucket = s3_url[2]
@@ -39,7 +36,6 @@ class TaskExecutorMixin:
                 if not os.path.exists(target):
                     raise Exception(f"{target} was not downloaded from the cache")
             else:
-                print(f"{self.task_reference} execute is not complete")
                 self.run()
                 self.execute()
         else:

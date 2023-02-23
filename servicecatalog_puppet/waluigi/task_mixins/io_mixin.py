@@ -40,12 +40,9 @@ class IOMixin:
         return self.cachable_level != constants.CACHE_LEVEL_NO_CACHE
 
     def output(self):
-        print("output")
         if self.should_use_caching:
-            print("output should use caching")
             return s3.S3Target(self.output_location_cached, format=format.UTF8)
         else:
-            print("output should not use caching")
             return luigi.LocalTarget(
                 self.output_location_non_cached, format=luigi.format.Nop
             )

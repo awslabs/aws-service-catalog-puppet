@@ -80,7 +80,6 @@ def setup_next_task_to_run(lock, tasks_to_run, resources, all_tasks):
 
 
 def set_task_as_run(lock, next_task, all_tasks, resources, result):
-    print(f"{next_task['task_reference']} is complete with result of {result}")
     with lock:
         for r in next_task.get(RESOURCES_REQUIRED, []):
             try:
