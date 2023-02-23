@@ -11,7 +11,8 @@ logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
 class IOMixin:
-    def get_output_location_path(self):
+    @property
+    def output_location_non_cached(self):
         if self.cachable_level == constants.CACHE_LEVEL_TASK:
             path = self.task_idempotency_token
         elif self.cachable_level == constants.CACHE_LEVEL_RUN:
@@ -22,19 +23,11 @@ class IOMixin:
             path = self.run_idempotency_token
         else:
             raise Exception(f"unknown cachable_level: {self.cachable_level}")
-        return f"output/{self.__class__.__name__}/{self.task_reference}/{path}.{self.output_suffix}"
+        return f"output/{self.__class__.__name__}/{self.task_reference}/{path}.json"
 
     @property
-    def cached_output_location(self):
-        path = self.get_output_location_path()
-        return f"s3://sc-puppet-caching-bucket-{config.get_puppet_account_id()}-{config.get_home_region(self.puppet_account_id)}/{path}"
-
-    @property
-    def output_location(self):
-        if self.should_use_caching:
-            return self.cached_output_location
-        else:
-            return self.get_output_location_path()
+    def output_location_cached(self):
+        return f"s3://sc-puppet-caching-bucket-{config.get_puppet_account_id()}-{config.get_home_region(self.puppet_account_id)}/{self.output_location_non_cached}"
 
     @property
     def should_use_caching(self):
@@ -47,14 +40,15 @@ class IOMixin:
         return self.cachable_level != constants.CACHE_LEVEL_NO_CACHE
 
     def output(self):
+        print("output")
         if self.should_use_caching:
-            return s3.S3Target(self.output_location, format=format.UTF8)
+            print("output should use caching")
+            return s3.S3Target(self.output_location_cached, format=format.UTF8)
         else:
-            return luigi.LocalTarget(self.output_location, format=luigi.format.Nop)
-
-    @property
-    def output_suffix(self):
-        return "json"
+            print("output should not use caching")
+            return luigi.LocalTarget(
+                self.output_location_non_cached, format=luigi.format.Nop
+            )
 
     def params_for_results_display(self):
         return {}

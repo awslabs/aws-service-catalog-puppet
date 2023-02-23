@@ -12,7 +12,6 @@ from servicecatalog_puppet.waluigi.task_mixins import (
     io_mixin,
     task_executor_mixin,
 )
-from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.dependencies import task_factory
 from servicecatalog_puppet.workflow.task_mixins import (
     client_mixin,
@@ -24,11 +23,11 @@ logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
 class TaskWithReference(
-    tasks.PuppetTask,
     task_executor_mixin.TaskExecutorMixin,
-    client_mixin.ClientMixin,
     env_var_mixin.EnvVarMixin,
     io_mixin.IOMixin,
+    luigi.Task,
+    client_mixin.ClientMixin,
 ):
     task_reference = luigi.Parameter()
     manifest_task_reference_file_path = luigi.Parameter()

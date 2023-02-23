@@ -35,7 +35,7 @@ class GetCloudFormationTemplateFromS3(tasks.TaskWithReference):
             if self.version_id != "":
                 p["VersionId"] = self.version_id
 
-            output = self.output_location
+            output = self.output_location_non_cached
             self.info(f"Trying regional template: {regional_template} to {output}")
             if not os.path.exists(os.path.dirname(output)):
                 os.makedirs(os.path.dirname(output))
