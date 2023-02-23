@@ -56,13 +56,13 @@ class ProvisionStackTask(tasks.TaskWithParameters):
 
     @property
     def task_idempotency_parameters(self):
-        return dict(
-            stack_name=self.stack_name,
-            launch_name=self.launch_name,
-            stack_set_name=self.stack_set_name,
-            bucket=self.bucket,
-            key=self.key,
-            execution=self.execution,
+        return (
+            f"stack_name/{self.stack_name}/"
+            f"launch_name/{self.launch_name}/"
+            f"stack_set_name/{self.stack_set_name}/"
+            f"bucket/{self.bucket}/"
+            f"key/{self.key}/"
+            f"execution/{self.execution}"
         )
 
     def params_for_results_display(self):

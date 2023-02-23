@@ -14,13 +14,6 @@ def escape(input):
     return "".join(x for x in input if x.isalnum() or x in "._- ")
 
 
-def convert_to_path(input_dict):
-    outputs = list()
-    for key_name, value in input_dict.items():
-        outputs.extend([key_name, escape(value)])
-    return "/".join(outputs)
-
-
 class IOMixin:
     @property
     def task_idempotency_parameters(self):
@@ -31,7 +24,7 @@ class IOMixin:
     @property
     def output_location_non_cached(self):
         if self.cachable_level == constants.CACHE_LEVEL_TASK:
-            path = f"{convert_to_path(self.task_idempotency_parameters)}/{self.task_idempotency_token}"
+            path = f"{escape(self.task_idempotency_parameters)}/{self.task_idempotency_token}"
             # path = self.task_idempotency_token
         elif self.cachable_level == constants.CACHE_LEVEL_RUN:
             path = self.run_idempotency_token
