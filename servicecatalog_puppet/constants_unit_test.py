@@ -32,6 +32,7 @@ def test_constants_values():
     assert constants.LAUNCHES == "launches"
     assert constants.STACKS == "stacks"
     assert constants.SPOKE_LOCAL_PORTFOLIOS == "spoke-local-portfolios"
+    assert constants.IMPORTED_PORTFOLIOS == "imported-portfolios"
     assert constants.LAMBDA_INVOCATIONS == "lambda-invocations"
     assert constants.ASSERTIONS == "assertions"
     assert constants.ASSERTION == "assertion"
@@ -54,6 +55,7 @@ def test_constants_values():
         constants.LAUNCHES,
         constants.STACKS,
         constants.SPOKE_LOCAL_PORTFOLIOS,
+        constants.IMPORTED_PORTFOLIOS,
         constants.LAMBDA_INVOCATIONS,
         constants.CODE_BUILD_RUNS,
         constants.ASSERTIONS,
@@ -132,6 +134,7 @@ def test_constants_values():
         (constants.LAUNCH, constants.LAUNCHES),
         (constants.STACK, constants.STACKS),
         (constants.SPOKE_LOCAL_PORTFOLIO, constants.SPOKE_LOCAL_PORTFOLIOS),
+        (constants.IMPORTED_PORTFOLIO, constants.IMPORTED_PORTFOLIOS),
         (constants.LAMBDA_INVOCATION, constants.LAMBDA_INVOCATIONS),
         (constants.CODE_BUILD_RUN, constants.CODE_BUILD_RUNS),
         (constants.ASSERTION, constants.ASSERTIONS),
@@ -154,6 +157,7 @@ def test_constants_values():
         constants.LAUNCH: constants.LAUNCHES,
         constants.STACK: constants.STACKS,
         constants.SPOKE_LOCAL_PORTFOLIO: constants.SPOKE_LOCAL_PORTFOLIOS,
+        constants.IMPORTED_PORTFOLIO: constants.IMPORTED_PORTFOLIOS,
         constants.LAMBDA_INVOCATION: constants.LAMBDA_INVOCATIONS,
         constants.CODE_BUILD_RUN: constants.CODE_BUILD_RUNS,
         constants.ASSERTION: constants.ASSERTIONS,

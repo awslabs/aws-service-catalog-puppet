@@ -2,6 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.commands.task_reference_helpers.generators import (
+    imported_portfolios,
     launches,
     organizational_units,
     service_control_policies,
@@ -35,6 +36,17 @@ def generate(
 
     if section_name == constants.SPOKE_LOCAL_PORTFOLIOS:
         spoke_local_portfolios.handle_spoke_local_portfolios(
+            all_tasks,
+            all_tasks_task_reference,
+            item_name,
+            puppet_account_id,
+            section_name,
+            task_reference,
+            task_to_add,
+        )
+
+    if section_name == constants.IMPORTED_PORTFOLIOS:
+        imported_portfolios.handle_imported_portfolios(
             all_tasks,
             all_tasks_task_reference,
             item_name,
