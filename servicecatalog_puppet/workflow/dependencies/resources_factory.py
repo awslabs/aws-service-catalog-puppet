@@ -492,10 +492,7 @@ def create(section_name, parameters_to_use, puppet_account_id):
         ]
 
     elif section_name == constants.IMPORTED_PORTFOLIOS:
-        resources = [
-            SERVICE_CATALOG_LIST_PORTFOLIOS_PER_REGION_OF_ACCOUNT,
-            SERVICE_CATALOG_CREATE_PORTFOLIOS_PER_REGION_OF_ACCOUNT,
-        ]
+        resources = []
 
     else:
         raise Exception(f"Unknown section_name: {section_name}")
