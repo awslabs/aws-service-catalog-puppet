@@ -1,4 +1,5 @@
 import unittest
+from unittest import skip
 
 from servicecatalog_puppet import constants
 
@@ -12,7 +13,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
 
         self.sut = imported_portfolios
 
-    def test_for_accounts(self):
+    def test_for_ous(self):
         # setup
         puppet_account_id = "hub_account_id"
         account_id = "spoke_account_id"
@@ -205,3 +206,187 @@ class ImportedPortfoliosTest(unittest.TestCase):
         )
 
         self.assertEqual(7, n_all_tasks)
+
+    def test_for_ous_terminated(self):
+        # setup
+        puppet_account_id = "hub_account_id"
+        account_id = "spoke_account_id"
+        region = "eu-west-0"
+        item_name = "depsrefactor"
+        portfolio = "DepsRefactor"
+
+        section_name = constants.IMPORTED_PORTFOLIOS
+        task_to_add = {
+            "imported_portfolio_name": item_name,
+            "execution": "hub",
+            "sharing_mode": "AWS_ORGANIZATIONS",
+            "share_tag_options": "True",
+            "share_principals": "True",
+            "associations": ["arn:aws:iam::${AWS::AccountId}:role/Admin"],
+            "portfolio": portfolio,
+            "puppet_account_id": puppet_account_id,
+            "status": constants.TERMINATED,
+            "requested_priority": 0,
+            "was_a_spoke_local_portfolio": False,
+            "dependencies": [],
+            "account_id": account_id,
+            "organization": "o-sw3edla4pd",
+            "ou": "ou-do8d-me7f39on",
+            "region": region,
+            "manifest_section_names": {"imported-portfolios": True},
+            "manifest_item_names": {item_name: True},
+            "manifest_account_ids": {account_id: True},
+            "section_name": section_name,
+            "item_name": item_name,
+            "dependencies_by_reference": [
+                f"imported-portfolios_{item_name}_{account_id}_{region}",
+                "create-policies",
+            ],
+            "task_reference": f"imported-portfolios_{item_name}_{account_id}_{region}",
+            "resources_required": [
+                f"SERVICE_CATALOG_LIST_PORTFOLIOS_{region}_OF_{account_id}",
+                f"SERVICE_CATALOG_CREATE_PORTFOLIOS_{region}_OF_{account_id}",
+            ],
+        }
+        all_tasks_task_reference = task_to_add["task_reference"]
+        all_tasks = {all_tasks_task_reference: task_to_add}
+        task_reference = f"{account_id}-{region}"
+
+        # exercise
+        self.sut.handle_imported_portfolios(
+            all_tasks,
+            all_tasks_task_reference,
+            item_name,
+            puppet_account_id,
+            section_name,
+            task_reference,
+            task_to_add,
+        )
+
+        # verify
+        n_all_tasks = len(all_tasks.keys())
+        self.assertEqual(
+            {
+                "account_id": account_id,
+                "associations": ["arn:aws:iam::${AWS::AccountId}:role/Admin"],
+                "dependencies_by_reference": [
+                    f"imported-portfolios_{item_name}_{account_id}_{region}",
+                    "create-policies",
+                ],
+                "execution": "hub",
+                "portfolio_task_reference": f"imported-portfolios_{item_name}_{account_id}_{region}",
+                "spoke_local_portfolio_name": item_name,
+                "manifest_account_ids": {account_id: True},
+                "manifest_item_names": {item_name: True},
+                "manifest_section_names": {"imported-portfolios": True},
+                "portfolio": portfolio,
+                "region": region,
+                "section_name": "portfolio-associations",
+                "status": constants.TERMINATED,
+                "task_reference": f"portfolio_associations-imported-portfolios-{item_name}-{account_id}-{region}",
+            },
+            all_tasks[
+                f"portfolio_associations-imported-portfolios-{item_name}-{account_id}-{region}"
+            ],
+        )
+
+        self.assertEqual(2, n_all_tasks)
+
+    def test_for_was_spoke_local_portfolio(self):
+        # setup
+        puppet_account_id = "hub_account_id"
+        account_id = "spoke_account_id"
+        region = "eu-west-0"
+        item_name = "depsrefactor"
+        portfolio = "DepsRefactor"
+
+        section_name = constants.IMPORTED_PORTFOLIOS
+        task_to_add = {
+            "imported_portfolio_name": item_name,
+            "execution": "hub",
+            "sharing_mode": "AWS_ORGANIZATIONS",
+            "share_tag_options": "True",
+            "share_principals": "True",
+            "associations": ["arn:aws:iam::${AWS::AccountId}:role/Admin"],
+            "portfolio": portfolio,
+            "puppet_account_id": puppet_account_id,
+            "status": None,
+            "was_a_spoke_local_portfolio": True,
+            "requested_priority": 0,
+            "dependencies": [],
+            "account_id": account_id,
+            "organization": "o-sw3edla4pd",
+            "ou": "ou-do8d-me7f39on",
+            "region": region,
+            "manifest_section_names": {"imported-portfolios": True},
+            "manifest_item_names": {item_name: True},
+            "manifest_account_ids": {account_id: True},
+            "section_name": section_name,
+            "launch_constraints": "thisisignored",
+            "resource_update_constraints": "thisisignored",
+            "item_name": item_name,
+            "dependencies_by_reference": ["create-policies"],
+            "task_reference": f"imported-portfolios_{item_name}_{account_id}_{region}",
+            "resources_required": [
+                f"SERVICE_CATALOG_LIST_PORTFOLIOS_{region}_OF_{account_id}",
+                f"SERVICE_CATALOG_CREATE_PORTFOLIOS_{region}_OF_{account_id}",
+            ],
+        }
+        all_tasks_task_reference = task_to_add["task_reference"]
+        all_tasks = {all_tasks_task_reference: task_to_add}
+        task_reference = f"{account_id}-{region}"
+
+        # exercise
+        self.sut.handle_imported_portfolios(
+            all_tasks,
+            all_tasks_task_reference,
+            item_name,
+            puppet_account_id,
+            section_name,
+            task_reference,
+            task_to_add,
+        )
+
+        # verify
+        n_all_tasks = len(all_tasks.keys())
+        self.assertEqual(9, n_all_tasks)
+        self.assertEqual(task_to_add, all_tasks[all_tasks_task_reference])
+        self.assertEqual(
+            {
+                "imported_portfolio_name": item_name,
+                "account_id": account_id,
+                "dependencies_by_reference": ["create-policies"],
+                "execution": "hub",
+                "launch_constraints": "thisisignored",
+                "manifest_account_ids": {account_id: True},
+                "manifest_item_names": {item_name: True},
+                "manifest_section_names": {"imported-portfolios": True},
+                "portfolio": portfolio,
+                "region": region,
+                "section_name": constants.PORTFOLIO_CONSTRAINTS_LAUNCH,
+                "status": constants.TERMINATED,
+                "task_reference": f"launch_constraints-imported-portfolios-{item_name}-{account_id}-{region}",
+            },
+            all_tasks[
+                f"launch_constraints-imported-portfolios-{item_name}-{account_id}-{region}"
+            ],
+        )
+        self.assertEqual(
+            {
+                "account_id": account_id,
+                "dependencies_by_reference": ["create-policies",],
+                "resource_update_constraints": "thisisignored",
+                "execution": "hub",
+                "manifest_account_ids": {account_id: True},
+                "manifest_item_names": {item_name: True},
+                "manifest_section_names": {"imported-portfolios": True},
+                "portfolio": portfolio,
+                "region": region,
+                "section_name": constants.PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE,
+                "status": constants.TERMINATED,
+                "task_reference": f"resource_update_constraints-imported-portfolios-{item_name}-{account_id}-{region}",
+            },
+            all_tasks[
+                f"resource_update_constraints-imported-portfolios-{item_name}-{account_id}-{region}"
+            ],
+        )

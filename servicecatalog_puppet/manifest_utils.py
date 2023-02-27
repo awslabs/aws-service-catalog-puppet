@@ -845,6 +845,10 @@ class Manifest(dict):
                 imported_portfolio_name=item_name,
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
                 sharing_mode=item.get("sharing_mode", sharing_mode_default),
+                was_a_spoke_local_portfolio=item.get(
+                    "was_a_spoke_local_portfolio",
+                    constants.WAS_A_SPOKE_LOCAL_PORTFOLIO_DEFAULT,
+                ),
                 share_tag_options=item.get(
                     "share_tag_options", share_tag_options_default
                 ),
