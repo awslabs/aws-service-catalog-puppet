@@ -269,12 +269,8 @@ class ImportedPortfoliosTest(unittest.TestCase):
             {
                 "account_id": account_id,
                 "associations": ["arn:aws:iam::${AWS::AccountId}:role/Admin"],
-                "dependencies_by_reference": [
-                    f"imported-portfolios_{item_name}_{account_id}_{region}",
-                    "create-policies",
-                ],
+                "dependencies_by_reference": ["create-policies",],
                 "execution": "hub",
-                "portfolio_task_reference": f"imported-portfolios_{item_name}_{account_id}_{region}",
                 "spoke_local_portfolio_name": item_name,
                 "manifest_account_ids": {account_id: True},
                 "manifest_item_names": {item_name: True},
@@ -353,7 +349,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
         self.assertEqual(task_to_add, all_tasks[all_tasks_task_reference])
         self.assertEqual(
             {
-                "imported_portfolio_name": item_name,
+                "spoke_local_portfolio_name": item_name,
                 "account_id": account_id,
                 "dependencies_by_reference": ["create-policies"],
                 "execution": "hub",
@@ -383,6 +379,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "portfolio": portfolio,
                 "region": region,
                 "section_name": constants.PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE,
+                "spoke_local_portfolio_name": "depsrefactor",
                 "status": constants.TERMINATED,
                 "task_reference": f"resource_update_constraints-imported-portfolios-{item_name}-{account_id}-{region}",
             },

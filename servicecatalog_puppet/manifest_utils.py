@@ -69,6 +69,7 @@ def load(f, puppet_account_id):
         constants.LAUNCHES: {},
         constants.STACKS: {},
         constants.SPOKE_LOCAL_PORTFOLIOS: {},
+        constants.IMPORTED_PORTFOLIOS: {},
         constants.ASSERTIONS: {},
         constants.CODE_BUILD_RUNS: {},
         constants.LAMBDA_INVOCATIONS: {},

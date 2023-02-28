@@ -325,27 +325,15 @@ def create(
             )
 
     elif section_name == constants.IMPORTED_PORTFOLIOS:
-        if status == "terminated":
-            raise Exception("NOT YET SUPPORTED")
-            # from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
-            #     terminate_spoke_local_portfolio_task,
-            # )
-            #
-            # return terminate_spoke_local_portfolio_task.TerminateSpokeLocalPortfolioTask(
-            #     **common_parameters, portfolio=parameters_to_use.get("portfolio"),
-            # )
-        else:
-            from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
-                pass_portfolio_id_task,
-            )
+        from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
+            pass_portfolio_id_task,
+        )
 
-            return pass_portfolio_id_task.PassPortfolioIdTask(
-                **common_parameters,
-                portfolio=parameters_to_use.get("portfolio"),
-                portfolio_task_reference=parameters_to_use.get(
-                    "portfolio_task_reference"
-                ),
-            )
+        return pass_portfolio_id_task.PassPortfolioIdTask(
+            **common_parameters,
+            portfolio=parameters_to_use.get("portfolio"),
+            portfolio_task_reference=parameters_to_use.get("portfolio_task_reference"),
+        )
 
     elif section_name == constants.PORTFOLIO_LOCAL:
         from servicecatalog_puppet.workflow.portfolio.portfolio_management import (

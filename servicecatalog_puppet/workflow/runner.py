@@ -313,7 +313,7 @@ def run_tasks(
             click.echo(table.table)
         else:
             table_data = [
-                ["Action", "Params", "Duration"],
+                ["Action", "Params", "Duration", "Result"],
             ]
             table = terminaltables.AsciiTable(table_data)
             for filename in glob("results/success/*.json") + glob(
@@ -344,7 +344,12 @@ def run_tasks(
                 params = yaml.safe_dump(params)
 
                 table_data.append(
-                    [result.get("task_type"), params, result.get("duration"),]
+                    [
+                        result.get("task_type"),
+                        params,
+                        result.get("duration"),
+                        result.get("event_type"),
+                    ]
                 )
             click.echo(table.table)
             for filename in glob("results/failure/*.json"):
