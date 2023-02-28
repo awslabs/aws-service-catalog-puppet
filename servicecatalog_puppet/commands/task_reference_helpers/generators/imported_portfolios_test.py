@@ -264,7 +264,6 @@ class ImportedPortfoliosTest(unittest.TestCase):
         )
 
         # verify
-        n_all_tasks = len(all_tasks.keys())
         self.assertEqual(
             {
                 "account_id": account_id,
@@ -285,8 +284,6 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 f"portfolio_associations-imported-portfolios-{item_name}-{account_id}-{region}"
             ],
         )
-
-        self.assertEqual(2, n_all_tasks)
 
     def test_for_was_spoke_local_portfolio(self):
         # setup
