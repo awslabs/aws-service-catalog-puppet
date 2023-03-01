@@ -67,7 +67,6 @@ class ImportedPortfoliosTest(unittest.TestCase):
 
         # verify
         n_all_tasks = len(all_tasks.keys())
-        self.assertEqual(task_to_add, all_tasks[all_tasks_task_reference])
         self.assertEqual(
             {
                 "account_id": puppet_account_id,
@@ -161,7 +160,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
             {
                 "account_id": account_id,
                 "dependencies_by_reference": [
-                    f"imported-portfolios_{item_name}_{account_id}_{region}",
+                    f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                     "create-policies",
                 ],
                 "execution": "hub",
@@ -169,7 +168,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "manifest_item_names": {item_name: True},
                 "manifest_section_names": {"imported-portfolios": True},
                 "portfolio": portfolio,
-                "portfolio_task_reference": f"imported-portfolios_{item_name}_{account_id}_{region}",
+                "portfolio_task_reference": f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                 "puppet_account_id": puppet_account_id,
                 "region": region,
                 "section_name": "portfolio-puppet-role-association",
@@ -185,7 +184,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "account_id": account_id,
                 "associations": ["arn:aws:iam::${AWS::AccountId}:role/Admin"],
                 "dependencies_by_reference": [
-                    f"imported-portfolios_{item_name}_{account_id}_{region}",
+                    f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                     "create-policies",
                 ],
                 "execution": "hub",
@@ -194,7 +193,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "manifest_item_names": {item_name: True},
                 "manifest_section_names": {"imported-portfolios": True},
                 "portfolio": portfolio,
-                "portfolio_task_reference": f"imported-portfolios_{item_name}_{account_id}_{region}",
+                "portfolio_task_reference": f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                 "region": region,
                 "section_name": "portfolio-associations",
                 "status": None,
@@ -205,7 +204,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
             ],
         )
 
-        self.assertEqual(7, n_all_tasks)
+        self.assertEqual(6, n_all_tasks)
 
     def test_for_ous_terminated(self):
         # setup
@@ -342,8 +341,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
 
         # verify
         n_all_tasks = len(all_tasks.keys())
-        self.assertEqual(9, n_all_tasks)
-        self.assertEqual(task_to_add, all_tasks[all_tasks_task_reference])
+        self.assertEqual(8, n_all_tasks)
         self.assertEqual(
             {
                 "spoke_local_portfolio_name": item_name,

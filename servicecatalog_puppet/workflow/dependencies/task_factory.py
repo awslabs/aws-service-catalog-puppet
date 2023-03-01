@@ -324,17 +324,6 @@ def create(
                 ),
             )
 
-    elif section_name == constants.IMPORTED_PORTFOLIOS:
-        from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
-            pass_portfolio_id_task,
-        )
-
-        return pass_portfolio_id_task.PassPortfolioIdTask(
-            **common_parameters,
-            portfolio=parameters_to_use.get("portfolio"),
-            portfolio_task_reference=parameters_to_use.get("portfolio_task_reference"),
-        )
-
     elif section_name == constants.PORTFOLIO_LOCAL:
         from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
             get_portfolio_task,
