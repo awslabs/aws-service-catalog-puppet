@@ -55,7 +55,7 @@ class ProvisionStackTask(tasks.TaskWithParameters):
     try_count = 1
 
     @property
-    def task_idempotency_parameters(self):
+    def drift_token_parameters(self):
         return (
             f"stack_name/{self.stack_name}/"
             f"launch_name/{self.launch_name}/"

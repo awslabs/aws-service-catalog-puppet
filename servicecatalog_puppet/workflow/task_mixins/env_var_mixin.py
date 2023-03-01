@@ -9,12 +9,12 @@ from servicecatalog_puppet import (
 
 class EnvVarMixin:
     @property
-    def task_idempotency_token(self):
-        return os.environ.get(environmental_variables.TASK_IDEMPOTENCY_TOKEN, "NOW")
+    def drift_token(self):
+        return os.environ.get(environmental_variables.DRIFT_TOKEN, "NOW")
 
     @property
-    def run_idempotency_token(self):
-        return os.environ.get(environmental_variables.RUN_IDEMPOTENCY_TOKEN, "NOW")
+    def run_token(self):
+        return os.environ.get(environmental_variables.RUN_TOKEN, "NOW")
 
     @property
     def should_use_product_plans(self):

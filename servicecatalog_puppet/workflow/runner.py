@@ -123,12 +123,8 @@ def run_tasks(
         config.get_scheduler_algorithm(),
     )
 
-    task_idempotency_token = os.environ.get(
-        environmental_variables.TASK_IDEMPOTENCY_TOKEN
-    )
-    run_idempotency_token = os.environ.get(
-        environmental_variables.RUN_IDEMPOTENCY_TOKEN
-    )
+    drift_token = os.environ.get(environmental_variables.DRIFT_TOKEN)
+    run_token = os.environ.get(environmental_variables.RUN_TOKEN)
 
     has_failures = len(glob("results/failure/*", recursive=True))
     has_spoke_failures = False
@@ -136,7 +132,7 @@ def run_tasks(
     if execution_mode == constants.EXECUTION_MODE_HUB:
         logger.info("Checking spoke executions...")
         all_run_deploy_in_spoke_tasks = glob(
-            f"output/RunDeployInSpokeTask/**/{run_idempotency_token}.json",  # TODO EPF
+            f"output/RunDeployInSpokeTask/**/{run_token}.json",  # TODO EPF
             recursive=True,
         )
         n_all_run_deploy_in_spoke_tasks = len(all_run_deploy_in_spoke_tasks)
@@ -183,19 +179,19 @@ def run_tasks(
 
     dry_run_tasks = (
         glob(
-            f"output/ProvisionProductDryRunTask/**/{task_idempotency_token}.json",  # TODO EPF
+            f"output/ProvisionProductDryRunTask/**/{drift_token}.json",  # TODO EPF
             recursive=True,
         )
         + glob(
-            f"output/TerminateProductDryRunTask/**/{task_idempotency_token}.json",  # TODO EPF
+            f"output/TerminateProductDryRunTask/**/{drift_token}.json",  # TODO EPF
             recursive=True,
         )
         + glob(
-            f"output/ProvisionStackDryRunTask/**/{task_idempotency_token}.json",  # TODO EPF
+            f"output/ProvisionStackDryRunTask/**/{drift_token}.json",  # TODO EPF
             recursive=True,
         )
         + glob(
-            f"output/TerminateStackDryRunTask/**/{task_idempotency_token}.json",  # TODO EPF
+            f"output/TerminateStackDryRunTask/**/{drift_token}.json",  # TODO EPF
             recursive=True,
         )
     )
@@ -256,7 +252,7 @@ def run_tasks(
         elif is_list_launches == "json":
             results = dict()
             for filename in glob(
-                f"output/ProvisionProductDryRunTask/**/{task_idempotency_token}.json",  # TODO EPF
+                f"output/ProvisionProductDryRunTask/**/{drift_token}.json",  # TODO EPF
                 recursive=True,
             ):
                 result = serialisation_utils.json_loads(open(filename, "r").read())

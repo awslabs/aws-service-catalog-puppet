@@ -16,22 +16,22 @@ def escape(input):
 
 class IOMixin:
     @property
-    def task_idempotency_parameters(self):
+    def drift_token_parameters(self):
         raise NotImplementedError(
-            f"{self.__class__.__name__} has cachable_level of TASK but has not implemented task_idempotency_parameters"
+            f"{self.__class__.__name__} has cachable_level of TASK but has not implemented drift_token_parameters"
         )
 
     @property
     def output_location_non_cached(self):
         if self.cachable_level == constants.CACHE_LEVEL_TASK:
-            path = f"{escape(self.task_idempotency_parameters)}/{self.task_idempotency_token}"
-            # path = self.task_idempotency_token
+            path = f"{escape(self.drift_token_parameters)}/{self.drift_token}"
+            # path = self.drift_token
         elif self.cachable_level == constants.CACHE_LEVEL_RUN:
-            path = self.run_idempotency_token
+            path = self.run_token
         elif self.cachable_level == constants.CACHE_LEVEL_PERMANENT:
             path = "latest"
         elif self.cachable_level == constants.CACHE_LEVEL_NO_CACHE:
-            path = self.run_idempotency_token
+            path = self.run_token
         else:
             raise Exception(f"unknown cachable_level: {self.cachable_level}")
 
