@@ -15,7 +15,7 @@ from deepmerge import always_merger
 
 from servicecatalog_puppet import config, constants, serialisation_utils
 from servicecatalog_puppet.macros import macros
-from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet.serialisation_utils import unwrap
 
 
 logger = logging.getLogger(__file__)
@@ -69,6 +69,7 @@ def load(f, puppet_account_id):
         constants.LAUNCHES: {},
         constants.STACKS: {},
         constants.SPOKE_LOCAL_PORTFOLIOS: {},
+        constants.IMPORTED_PORTFOLIOS: {},
         constants.ASSERTIONS: {},
         constants.CODE_BUILD_RUNS: {},
         constants.LAMBDA_INVOCATIONS: {},
@@ -752,6 +753,7 @@ class Manifest(dict):
             "apps": "deploy_to",
             "workspaces": "deploy_to",
             "spoke-local-portfolios": "share_with",
+            "imported-portfolios": "share_with",
             "lambda-invocations": "invoke_for",
             "code-build-runs": "run_for",
             "assertions": "assert_for",
@@ -840,6 +842,21 @@ class Manifest(dict):
                 ),
                 portfolio=item.get("portfolio"),
             ),
+            "imported-portfolios": dict(
+                imported_portfolio_name=item_name,
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
+                sharing_mode=item.get("sharing_mode", sharing_mode_default),
+                was_a_spoke_local_portfolio=item.get(
+                    "was_a_spoke_local_portfolio",
+                    constants.WAS_A_SPOKE_LOCAL_PORTFOLIO_DEFAULT,
+                ),
+                share_tag_options=item.get(
+                    "share_tag_options", share_tag_options_default
+                ),
+                share_principals=item.get("share_principals", share_principals_default),
+                associations=item.get("associations", list()),
+                portfolio=item.get("portfolio"),
+            ),
             "lambda-invocations": dict(
                 lambda_invocation_name=item_name,
                 function_name=item.get("function_name"),
@@ -865,12 +882,12 @@ class Manifest(dict):
             "service-control-policies": dict(
                 service_control_policy_name=item_name,
                 description=item.get("description"),
-                content=tasks.unwrap(item.get("content")),
+                content=unwrap(item.get("content")),
             ),
             "tag-policies": dict(
                 tag_policy_name=item_name,
                 description=item.get("description"),
-                content=tasks.unwrap(item.get("content")),
+                content=unwrap(item.get("content")),
             ),
             constants.SIMULATE_POLICIES: dict(
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
@@ -925,6 +942,11 @@ class Manifest(dict):
                     "workspaces": dict(account_id=account_id,),
                     "stacks": dict(account_id=account_id,),
                     "spoke-local-portfolios": dict(
+                        account_id=account_id,
+                        organization=account.get("organization", ""),
+                        ou=account.get("expanded_from", ""),
+                    ),
+                    "imported-portfolios": dict(
                         account_id=account_id,
                         organization=account.get("organization", ""),
                         ou=account.get("expanded_from", ""),
@@ -1021,6 +1043,7 @@ class Manifest(dict):
                 "launches": dict(account_id=account_id,),
                 "stacks": dict(account_id=account_id,),
                 "spoke-local-portfolios": dict(account_id=account_id,),
+                "imported-portfolios": dict(account_id=account_id,),
                 "assertions": dict(account_id=account_id,),
                 "lambda-invocations": dict(account_id=account_id,),
                 "code-build-runs": dict(account_id=account_id,),
@@ -1289,6 +1312,10 @@ class Manifest(dict):
         elif launch_or_spoke_local_portfolio == "launches":
             deploy_to = launch_details.get("deploy_to")
         elif launch_or_spoke_local_portfolio == "spoke-local-portfolios":
+            deploy_to = launch_details.get("deploy_to") or launch_details.get(
+                "share_with"
+            )
+        elif launch_or_spoke_local_portfolio == "imported-portfolios":
             deploy_to = launch_details.get("deploy_to") or launch_details.get(
                 "share_with"
             )

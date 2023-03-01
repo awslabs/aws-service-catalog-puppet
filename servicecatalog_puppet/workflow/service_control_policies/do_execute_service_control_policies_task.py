@@ -21,7 +21,7 @@ class DoExecuteServiceControlPoliciesTask(tasks.TaskWithReference):
     requested_priority = luigi.IntParameter()
 
     manifest_file_path = luigi.Parameter()
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {

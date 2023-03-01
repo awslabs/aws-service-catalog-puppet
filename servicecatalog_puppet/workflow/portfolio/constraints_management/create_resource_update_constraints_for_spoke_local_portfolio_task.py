@@ -22,7 +22,7 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
     resource_update_constraints = luigi.ListParameter()
 
     portfolio_get_all_products_and_their_versions_ref = luigi.Parameter()
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {

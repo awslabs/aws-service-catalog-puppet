@@ -33,7 +33,7 @@ class DoTerminateProductTask(tasks.TaskWithReference):
     execution = luigi.Parameter()
 
     try_count = 1
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {

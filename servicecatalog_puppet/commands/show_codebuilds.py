@@ -7,7 +7,7 @@ import operator
 import click
 from betterboto import client as betterboto_client
 
-from servicecatalog_puppet import constants, serialisation_utils
+from servicecatalog_puppet import constants
 
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)

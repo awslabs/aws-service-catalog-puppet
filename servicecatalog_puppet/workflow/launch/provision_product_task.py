@@ -6,8 +6,9 @@ import time
 
 import luigi
 
+import servicecatalog_puppet.manifest_utils
+import servicecatalog_puppet.serialisation_utils
 from servicecatalog_puppet import aws, constants
-from servicecatalog_puppet.workflow import tasks
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -40,7 +41,7 @@ class ProvisionProductTask(tasks.TaskWithParameters):
     tags = luigi.ListParameter()
 
     section_name = constants.LAUNCHES
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     @property
     def item_name(self):
@@ -73,9 +74,15 @@ class ProvisionProductTask(tasks.TaskWithParameters):
 
         task_output = dict(
             **self.params_for_results_display(),
-            account_parameters=tasks.unwrap(self.account_parameters),
-            launch_parameters=tasks.unwrap(self.launch_parameters),
-            manifest_parameters=tasks.unwrap(self.manifest_parameters),
+            account_parameters=servicecatalog_puppet.serialisation_utils.unwrap(
+                self.account_parameters
+            ),
+            launch_parameters=servicecatalog_puppet.serialisation_utils.unwrap(
+                self.launch_parameters
+            ),
+            manifest_parameters=servicecatalog_puppet.serialisation_utils.unwrap(
+                self.manifest_parameters
+            ),
         )
 
         all_params = self.get_parameter_values()
@@ -139,7 +146,7 @@ class ProvisionProductTask(tasks.TaskWithParameters):
                 task_output["section_name"] = self.section_name
                 if need_to_provision:
                     self.info(
-                        f"about to provision with params: {json.dumps(tasks.unwrap(params_to_use))}"
+                        f"about to provision with params: {json.dumps(servicecatalog_puppet.serialisation_utils.unwrap(params_to_use))}"
                     )
 
                     if provisioned_product_id:

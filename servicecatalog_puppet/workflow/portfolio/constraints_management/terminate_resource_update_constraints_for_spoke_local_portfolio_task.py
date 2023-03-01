@@ -14,7 +14,11 @@ class TerminateResourceUpdateConstraintsForSpokeLocalPortfolioTask(
     region = luigi.Parameter()
     portfolio = luigi.Parameter()
     spoke_local_portfolio_name = luigi.Parameter()
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_TASK
+
+    @property
+    def drift_token_parameters(self):
+        return f"portfolio/{self.portfolio}"
 
     def params_for_results_display(self):
         return {

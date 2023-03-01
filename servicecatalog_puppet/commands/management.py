@@ -332,7 +332,6 @@ def export_traces(codebuild_execution_id, puppet_account_id):
     with betterboto_client.ClientContextManager("s3") as s3:
         paginator = s3.get_paginator("list_objects_v2")
         for page in paginator.paginate(Bucket=bucket, Prefix=key_prefix,):
-            print("new page", len(page.get("Contents", [])))
             for obj in page.get("Contents", []):
                 key = obj.get("Key")
                 results.append(

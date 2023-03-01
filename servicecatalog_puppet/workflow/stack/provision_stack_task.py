@@ -46,13 +46,24 @@ class ProvisionStackTask(tasks.TaskWithParameters):
     tags = luigi.ListParameter()
 
     section_name = constants.STACKS
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_TASK
 
     @property
     def item_name(self):
         return self.stack_name
 
     try_count = 1
+
+    @property
+    def drift_token_parameters(self):
+        return (
+            f"stack_name/{self.stack_name}/"
+            f"launch_name/{self.launch_name}/"
+            f"stack_set_name/{self.stack_set_name}/"
+            f"bucket/{self.bucket}/"
+            f"key/{self.key}/"
+            f"execution/{self.execution}"
+        )
 
     def params_for_results_display(self):
         return {

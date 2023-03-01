@@ -102,7 +102,7 @@ def get_puppet_role_path():
 
 @functools.lru_cache()
 def get_puppet_role_arn(puppet_account_id):
-    logger.info("getting puppet_role_arn")
+    logger.info("getting get_puppet_role_arn")
     return get_role_arn(puppet_account_id, get_puppet_role_name())
 
 
@@ -114,7 +114,7 @@ def get_role_arn(puppet_account_id, role_name):
 
 @functools.lru_cache()
 def get_puppet_stack_role_arn(puppet_account_id):
-    logger.info("getting puppet_role_arn")
+    logger.info("getting get_puppet_stack_role_arn")
     return f"arn:{get_partition()}:iam::{puppet_account_id}:role{get_puppet_role_path()}{get_puppet_stack_role_name()}"
 
 

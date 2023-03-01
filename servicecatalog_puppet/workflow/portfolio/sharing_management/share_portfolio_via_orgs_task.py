@@ -18,7 +18,7 @@ class SharePortfolioViaOrgsTask(tasks.TaskWithReference):
     ou_to_share_with = luigi.Parameter()
     portfolio_task_reference = luigi.Parameter()
     describe_portfolio_shares_task_ref = luigi.Parameter()
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {

@@ -2,6 +2,7 @@ import time
 import traceback
 
 from servicecatalog_puppet import serialisation_utils
+from servicecatalog_puppet.serialisation_utils import unwrap
 from servicecatalog_puppet.waluigi.constants import (
     BLOCKED,
     COMPLETED,
@@ -17,7 +18,6 @@ from servicecatalog_puppet.waluigi.locks.external import (
     are_resources_are_free_for_task_dict,
 )
 from servicecatalog_puppet.workflow.dependencies import task_factory
-from servicecatalog_puppet.workflow.tasks import unwrap
 
 
 def has_dependencies_remaining(task_to_run, all_tasks):
@@ -80,7 +80,6 @@ def setup_next_task_to_run(lock, tasks_to_run, resources, all_tasks):
 
 
 def set_task_as_run(lock, next_task, all_tasks, resources, result):
-    print(f"{next_task['task_reference']} is complete with result of {result}")
     with lock:
         for r in next_task.get(RESOURCES_REQUIRED, []):
             try:

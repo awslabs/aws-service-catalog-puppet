@@ -13,7 +13,7 @@ class ProvisioningArtifactParametersTask(tasks.TaskWithReference):
     product = luigi.Parameter()
     version = luigi.Parameter()
     region = luigi.Parameter()
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_TASK
 
     @property
     def retry_count(self):

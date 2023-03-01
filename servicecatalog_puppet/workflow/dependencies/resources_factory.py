@@ -1,6 +1,5 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-import functools
 
 from servicecatalog_puppet import constants
 
@@ -491,9 +490,6 @@ def create(section_name, parameters_to_use, puppet_account_id):
         resources = [
             SERVICE_CATALOG_DESCRIBE_PORTFOLIO_SHARES_PER_REGION,
         ]
-
-    else:
-        raise Exception(f"Unknown section_name: {section_name}")
 
     result = list()
     for r in resources:

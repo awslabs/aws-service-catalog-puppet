@@ -10,7 +10,7 @@ class GetSSMParameterTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     param_name = luigi.Parameter()
     region = luigi.Parameter()
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {
@@ -38,7 +38,7 @@ class GetSSMParameterByPathTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     path = luigi.Parameter()
     region = luigi.Parameter()
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {

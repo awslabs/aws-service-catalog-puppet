@@ -1,7 +1,6 @@
 #  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import functools
-import json
 import logging
 
 import luigi
@@ -9,22 +8,34 @@ from deepmerge import always_merger
 
 from servicecatalog_puppet import constants, manifest_utils, serialisation_utils
 from servicecatalog_puppet.commands import graph
-from servicecatalog_puppet.waluigi import tasks as waluigi_tasks
-from servicecatalog_puppet.workflow import tasks
+from servicecatalog_puppet.waluigi.task_mixins import (
+    io_mixin,
+    task_executor_mixin,
+)
 from servicecatalog_puppet.workflow.dependencies import task_factory
+from servicecatalog_puppet.workflow.task_mixins import (
+    client_mixin,
+    env_var_mixin,
+)
 
 
 logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
-class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
+class TaskWithReference(
+    task_executor_mixin.TaskExecutorMixin,
+    env_var_mixin.EnvVarMixin,
+    io_mixin.IOMixin,
+    luigi.Task,
+    client_mixin.ClientMixin,
+):
     task_reference = luigi.Parameter()
     manifest_task_reference_file_path = luigi.Parameter()
     dependencies_by_reference = luigi.ListParameter()
     puppet_account_id = luigi.Parameter()
     manifest_files_path = luigi.Parameter()
 
-    cachable_level = constants.CACHE_LEVEL_HIGH
+    cachable_level = constants.CACHE_LEVEL_DEFAULT
 
     def get_expanded_manifest_file_path(self):
         return f"{self.manifest_files_path}/manifest-expanded.yaml"
@@ -36,6 +47,13 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
 
     def requires(self):
         return dict(reference_dependencies=self.dependencies_for_task_reference())
+
+    def read_from_input(self, input_name):
+        with self.input().get(input_name).open("rb") as f:
+            return f.read()
+
+    def load_from_input(self, input_name):
+        return serialisation_utils.json_loads(self.read_from_input(input_name))
 
     def get_output_from_reference_dependency(self, reference):
         with self.input().get("reference_dependencies").get(reference).open("r") as f:
@@ -83,19 +101,6 @@ class TaskWithReference(tasks.PuppetTask, waluigi_tasks.WaluigiTaskMixin):
                 dependency_by_reference_params,
             )
         return dependencies
-
-    def get_output_location_path(self):  # TODO EPF
-        if self.cachable_level == constants.CACHE_LEVEL_LOW:
-            path = self.run_idempotency_token
-        elif self.cachable_level == constants.CACHE_LEVEL_NORMAL:
-            path = self.task_idempotency_token
-        elif self.cachable_level == constants.CACHE_LEVEL_HIGH:
-            path = "latest"
-        elif self.cachable_level == constants.CACHE_LEVEL_NO_CACHE:
-            path = self.run_idempotency_token
-        else:
-            raise Exception(f"unknown cachable_level: {self.cachable_level}")
-        return f"output/{self.__class__.__name__}/{self.task_reference}/{path}.{self.output_suffix}"
 
     def info(self, message):
         logger.info(f"{self.task_reference}: {message}")
@@ -213,28 +218,3 @@ class TaskWithParameters(TaskWithReference):
                     param_details.get("mapping"), self.account_id, self.region
                 )
         return all_params
-
-
-def unwrap(what):
-    if hasattr(what, "get_wrapped"):
-        return unwrap(what.get_wrapped())
-
-    if isinstance(what, dict):
-        thing = dict()
-        for k, v in what.items():
-            thing[k] = unwrap(v)
-        return thing
-
-    if isinstance(what, tuple):
-        thing = list()
-        for v in what:
-            thing.append(unwrap(v))
-        return thing
-
-    if isinstance(what, list):
-        thing = list()
-        for v in what:
-            thing.append(unwrap(v))
-        return thing
-
-    return what

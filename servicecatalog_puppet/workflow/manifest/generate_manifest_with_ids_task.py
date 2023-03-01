@@ -15,7 +15,7 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
             "puppet_account_id": self.puppet_account_id,
         }
 
-    cachable_level = constants.CACHE_LEVEL_LOW
+    cachable_level = constants.CACHE_LEVEL_NO_CACHE
 
     def run(self):
         bucket = f"sc-puppet-spoke-deploy-{self.puppet_account_id}"
@@ -55,13 +55,13 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
 
         vars = [
             {
-                "name": environmental_variables.TASK_IDEMPOTENCY_TOKEN,
-                "value": self.task_idempotency_token,
+                "name": environmental_variables.DRIFT_TOKEN,
+                "value": self.drift_token,
                 "type": "PLAINTEXT",
             },
             {
-                "name": environmental_variables.RUN_IDEMPOTENCY_TOKEN,
-                "value": self.run_idempotency_token,
+                "name": environmental_variables.RUN_TOKEN,
+                "value": self.run_token,
                 "type": "PLAINTEXT",
             },
             {"name": "VERSION", "value": version, "type": "PLAINTEXT"},

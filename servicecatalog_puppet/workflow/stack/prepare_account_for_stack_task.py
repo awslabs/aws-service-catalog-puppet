@@ -13,6 +13,8 @@ class PrepareAccountForStackTask(tasks.TaskWithReference):
     region = luigi.Parameter()
     account_id = luigi.Parameter()
 
+    cachable_level = constants.CACHE_LEVEL_PERMANENT
+
     def params_for_results_display(self):
         return {
             "region": self.region,

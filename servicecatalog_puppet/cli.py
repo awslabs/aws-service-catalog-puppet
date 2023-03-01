@@ -14,7 +14,6 @@ from servicecatalog_puppet import (
     constants,
     environmental_variables,
     remote_config,
-    serialisation_utils,
 )
 from servicecatalog_puppet.commands import (
     bootstrap as bootstrap_commands,
@@ -445,36 +444,28 @@ def setup_config(
         if regions != ""
         else remote_config.get_regions(puppet_account_id_to_use, home_region_to_use)
     )
-    if os.environ.get(environmental_variables.TASK_IDEMPOTENCY_TOKEN):
+    if os.environ.get(environmental_variables.DRIFT_TOKEN):
         click.echo(
-            f"Found existing {environmental_variables.TASK_IDEMPOTENCY_TOKEN}: {os.environ.get(environmental_variables.TASK_IDEMPOTENCY_TOKEN)}"
+            f"Found existing {environmental_variables.DRIFT_TOKEN}: {os.environ.get(environmental_variables.DRIFT_TOKEN)}"
         )
     else:
-        task_idempotency_token = remote_config.get_task_idempotency_token(
+        drift_token = remote_config.get_drift_token(
             puppet_account_id_to_use, home_region_to_use
         )
-        if task_idempotency_token is None:
-            task_idempotency_token = str(datetime.now())
-            click.echo(f"Created new task_idempotency_token: {task_idempotency_token}")
+        if drift_token is None:
+            drift_token = str(datetime.now())
+            click.echo(f"Created new drift_token: {drift_token}")
         else:
-            click.echo(
-                f"Found existing task_idempotency_token: {task_idempotency_token}"
-            )
-        os.environ[
-            environmental_variables.TASK_IDEMPOTENCY_TOKEN
-        ] = task_idempotency_token
+            click.echo(f"Found existing drift_token: {drift_token}")
+        os.environ[environmental_variables.DRIFT_TOKEN] = drift_token
 
-    run_idempotency_token = os.environ.get(
-        environmental_variables.RUN_IDEMPOTENCY_TOKEN
-    )
-    if run_idempotency_token:
-        click.echo(f"Found existing run_idempotency_token: {run_idempotency_token}")
+    run_token = os.environ.get(environmental_variables.RUN_TOKEN)
+    if run_token:
+        click.echo(f"Found existing run_token: {run_token}")
     else:
-        run_idempotency_token = str(datetime.now())
-        os.environ[
-            environmental_variables.RUN_IDEMPOTENCY_TOKEN
-        ] = run_idempotency_token
-        click.echo(f"Created new run_idempotency_token: {run_idempotency_token}")
+        run_token = str(datetime.now())
+        os.environ[environmental_variables.RUN_TOKEN] = run_token
+        click.echo(f"Created new run_token: {run_token}")
 
     os.environ[environmental_variables.SHOULD_USE_SNS] = (
         str(remote_config.get_should_use_sns(puppet_account_id_to_use, home_region))

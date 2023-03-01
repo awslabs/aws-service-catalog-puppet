@@ -7,7 +7,7 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 class DescribePortfolioSharesTask(tasks.TaskWithReferenceAndCommonParameters):
     portfolio_task_reference = luigi.Parameter()
     type = luigi.Parameter()
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {

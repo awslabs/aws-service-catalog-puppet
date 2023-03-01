@@ -18,7 +18,7 @@ class DoExecuteCodeBuildRunTask(tasks.TaskWithParameters):
     manifest_file_path = luigi.Parameter()
 
     section_name = constants.CODE_BUILD_RUNS
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     @property
     def item_name(self):

@@ -6,6 +6,8 @@ import jmespath
 import luigi
 from deepmerge import always_merger
 
+import servicecatalog_puppet.manifest_utils
+import servicecatalog_puppet.serialisation_utils
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
@@ -14,7 +16,9 @@ remove_punctuation_map = dict((ord(char), None) for char in '\/*?:"<>|\n')
 
 
 def hash(what):
-    return json.dumps(tasks.unwrap(what), indent=0).translate(remove_punctuation_map)
+    return json.dumps(
+        servicecatalog_puppet.serialisation_utils.unwrap(what), indent=0
+    ).translate(remove_punctuation_map)
 
 
 class Boto3Task(tasks.TaskWithReference):
@@ -27,7 +31,7 @@ class Boto3Task(tasks.TaskWithReference):
     arguments = luigi.DictParameter()
     filter = luigi.Parameter()
 
-    cachable_level = constants.CACHE_LEVEL_NORMAL
+    cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {

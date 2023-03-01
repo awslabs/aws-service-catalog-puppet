@@ -6,8 +6,9 @@ import json
 import cfn_tools
 from botocore.exceptions import ClientError
 
-from servicecatalog_puppet import constants, serialisation_utils
-from servicecatalog_puppet.workflow import tasks
+import servicecatalog_puppet.manifest_utils
+import servicecatalog_puppet.serialisation_utils
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.stack import provision_stack_task
 
 
@@ -83,9 +84,15 @@ class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
         else:
             task_output = dict(
                 **self.params_for_results_display(),
-                account_parameters=tasks.unwrap(self.account_parameters),
-                launch_parameters=tasks.unwrap(self.launch_parameters),
-                manifest_parameters=tasks.unwrap(self.manifest_parameters),
+                account_parameters=servicecatalog_puppet.serialisation_utils.unwrap(
+                    self.account_parameters
+                ),
+                launch_parameters=servicecatalog_puppet.serialisation_utils.unwrap(
+                    self.launch_parameters
+                ),
+                manifest_parameters=servicecatalog_puppet.serialisation_utils.unwrap(
+                    self.manifest_parameters
+                ),
             )
 
             all_params = self.get_parameter_values()
