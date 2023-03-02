@@ -491,6 +491,21 @@ def create(section_name, parameters_to_use, puppet_account_id):
             SERVICE_CATALOG_DESCRIBE_PORTFOLIO_SHARES_PER_REGION,
         ]
 
+    elif section_name == constants.C7N_CREATE_EVENT_BUS:
+        resources = [
+            CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
+        ]
+
+    elif section_name == constants.C7N_FORWARD_EVENTS_TASK:
+        resources = [
+            CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
+        ]
+
+    elif section_name == constants.C7N_CREATE_CUSTODIAN_ROLE_TASK:
+        resources = [
+            CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
+        ]
+
     result = list()
     for r in resources:
         try:

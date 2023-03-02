@@ -804,5 +804,37 @@ def create(
             type=parameters_to_use.get("type"),
         )
 
+    elif section_name == constants.C7N_CREATE_EVENT_BUS:
+        from servicecatalog_puppet.workflow.c7n import create_event_bus_task
+
+        return create_event_bus_task.CreateEventBusTask(
+            **common_parameters,
+            organization=parameters_to_use.get("organization",),
+            event_bus_name=parameters_to_use.get("event_bus_name",),
+            role_name=parameters_to_use.get("role_name",),
+            role_path=parameters_to_use.get("role_path",),
+            role_managed_policy_arns=parameters_to_use.get("role_managed_policy_arns",),
+        )
+
+    elif section_name == constants.C7N_FORWARD_EVENTS_TASK:
+        from servicecatalog_puppet.workflow.c7n import forward_events_tasks
+
+        return forward_events_tasks.ForwardEventsTask(
+            **common_parameters,
+            create_event_bus_task_ref=parameters_to_use.get(
+                "create_event_bus_task_ref",
+            ),
+        )
+
+    elif section_name == constants.C7N_CREATE_CUSTODIAN_ROLE_TASK:
+        from servicecatalog_puppet.workflow.c7n import create_custodian_role_task
+
+        return create_custodian_role_task.CreateCustodianRoleTask(
+            **common_parameters,
+            create_event_bus_task_ref=parameters_to_use.get(
+                "create_event_bus_task_ref",
+            ),
+        )
+
     else:
         raise Exception(f"Unknown section_name: {section_name}")

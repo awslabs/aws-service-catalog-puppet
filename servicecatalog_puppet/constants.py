@@ -320,7 +320,6 @@ CLOUDFORMATION_IN_PROGRESS_STATUS = [
     "IMPORT_ROLLBACK_IN_PROGRESS",
 ]
 
-
 SSM_OUTPUTS = "ssm_outputs"
 SSM_PARAMETERS = "ssm_parameters"
 BOTO3_PARAMETERS = "boto3_parameters"
@@ -356,14 +355,12 @@ GET_OR_CREATE_TAG_POLICIES_POLICY = "get-or-create-tag-policies-policy"
 PREPARE_ACCOUNT_FOR_STACKS = "prepare-account-for-stacks"
 CREATE_POLICIES = "create-policies"
 
-
 PARAMETERS_TO_TRY_AS_OPERATIONAL_DATA = [
     "puppet_account_id",
     "account_id",
     "region",
     "task_reference",
 ]
-
 
 RUN_DEPLOY_IN_SPOKE_BUILDSPEC = """
       version: 0.2
@@ -387,7 +384,6 @@ RUN_DEPLOY_IN_SPOKE_BUILDSPEC = """
 
 SCHEDULER_THREADS_OR_PROCESSES_DEFAULT = "threads"
 
-
 REPORTING_ROLE_NAME = "PuppetRoleForReporting"
 CACHE_DOWNLOADING_ROLE_NAME = "PuppetRoleForDownloadingFromCache"
 
@@ -395,11 +391,9 @@ SHARE_PRINCIPALS_DEFAULT = False
 
 DESCRIBE_PORTFOLIO_SHARES = "describe-portfolio-shares"
 
-
 SCHEDULER_ALGORITHM_DEFAULT = "topological_generations"
 SPOKE_SCHEDULER_THREADS_OR_PROCESSES_DEFAULT = SCHEDULER_THREADS_OR_PROCESSES_DEFAULT
 SPOKE_SCHEDULER_ALGORITHM_DEFAULT = SCHEDULER_ALGORITHM_DEFAULT
-
 
 CACHE_LEVEL_RUN = "CACHE_LEVEL_RUN"
 CACHE_LEVEL_TASK = "CACHE_LEVEL_TASK"
@@ -409,3 +403,14 @@ CACHE_LEVEL_NO_CACHE = "CACHE_LEVEL_NO_CACHE"
 CACHE_LEVEL_DEFAULT = CACHE_LEVEL_RUN
 
 WAS_A_SPOKE_LOCAL_PORTFOLIO_DEFAULT = False
+
+C7N_ORGS_INPUT_FILE_TASK = "c7n_orgs_input_file_task"
+C7N_FORWARD_EVENTS_TASK = "c7n_forward_events_task"
+C7N_CREATE_EVENT_BUS = "c7n_create_event_bus"
+C7N_CREATE_CUSTODIAN_ROLE_TASK = "c7n_create_custodian_role_task"
+C7N_CUSTODIAN_ROLE_NAME_DEFAULT = "Custodian"
+C7N_CUSTODIAN_ROLE_PATH_DEFAULT = "/servicecatalog-puppet/c7n/"
+C7N_CUSTODIAN_MANAGED_POLICY_ARNS = [
+    "arn:aws:iam::${AWS::Partition}:policy/AdministratorAccess"
+]
+C7N_EVENT_BUS_NAME_DEFAULT = "c7n"

@@ -21,6 +21,7 @@ packages = \
  'servicecatalog_puppet.workflow',
  'servicecatalog_puppet.workflow.apps',
  'servicecatalog_puppet.workflow.assertions',
+ 'servicecatalog_puppet.workflow.c7n',
  'servicecatalog_puppet.workflow.codebuild_runs',
  'servicecatalog_puppet.workflow.dependencies',
  'servicecatalog_puppet.workflow.general',
