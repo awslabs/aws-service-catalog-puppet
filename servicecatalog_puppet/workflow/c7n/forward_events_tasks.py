@@ -1,10 +1,13 @@
 import luigi
 import troposphere as t
 from awacs.aws import Statement
-from troposphere import s3
+from troposphere import cloudtrail, events, iam, s3
 
 from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
+
+
+c7nTrailBucket = "c7nTrailBucket"
 
 
 class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
@@ -31,6 +34,9 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
         role_managed_policy_arns = self.get_attribute_from_output_from_reference_dependency(
             "role_managed_policy_arns", self.create_event_bus_task_ref
         )
+        event_bus_name = self.get_attribute_from_output_from_reference_dependency(
+            "event_bus_name", self.create_event_bus_task_ref
+        )
 
         tpl = t.Template()
         tpl.description = (
@@ -38,7 +44,7 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
         )
         tpl.add_resource(
             s3.Bucket(
-                "c7nTrailBucket",
+                c7nTrailBucket,
                 PublicAccessBlockConfiguration=s3.PublicAccessBlockConfiguration(
                     BlockPublicAcls=True,
                     BlockPublicPolicy=True,
@@ -61,14 +67,14 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
         tpl.add_resource(
             s3.BucketPolicy(
                 "c7nTrailBucketPolicy",
-                Bucket=t.Ref("c7nTrailBucket"),
+                Bucket=t.Ref(c7nTrailBucket),
                 PolicyDocument={
                     "Version": "2012-10-17",
                     "Statement": [
                         {
                             "Action": ["s3:GetBucketAcl",],
                             "Principal": {"Service": "cloudtrail.amazonaws.com"},
-                            "Resource": t.GetAtt("c7nTrailBucket", "Arn"),
+                            "Resource": t.GetAtt(c7nTrailBucket, "Arn"),
                             "Effect": "Allow",
                             "Sid": "AWSCloudTrailAclCheck",
                         },
@@ -88,6 +94,89 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
                         },
                     ],
                 },
+            )
+        )
+
+        tpl.add_resource(
+            cloudtrail.Trail(
+                "c7nTrail",
+                S3BucketName=t.Ref(c7nTrailBucket),
+                IsLogging=True,
+                IsMultiRegionTrail=True,
+                IncludeGlobalServiceEvents=True,
+            )
+        )
+
+        tpl.add_resource(
+            iam.Role(
+                "c7nEventForwarder",
+                RoleName="c7nEventForwarder",
+                Path="/servicecatalog-puppet/c7n/",
+                Policies=[
+                    iam.Policy(
+                        PolicyName="AllowPutEvents",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Action": ["events:PutEvents"],
+                                    "Resource": {
+                                        "Fn::Sub": "arn:${AWS::Partition}:events:${AWS::Region}:"
+                                        + c7n_account_id
+                                        + ":event-bus/"
+                                        + event_bus_name
+                                    },
+                                    "Effect": "Allow",
+                                }
+                            ],
+                        },
+                    )
+                ],
+                AssumeRolePolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": ["sts:AssumeRole"],
+                            "Effect": "Allow",
+                            "Principal": {"Service": ["events.amazonaws.com"]},
+                        },
+                        {
+                            "Action": ["sts:AssumeRole"],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": t.Sub(
+                                    "arn:${AWS::Partition}:iam::"
+                                    + c7n_account_id
+                                    + ":root"
+                                )
+                            },
+                        },
+                    ],
+                },
+            )
+        )
+
+        tpl.add_resource(
+            events.Rule(
+                "ForwardAll",
+                Description="Forward all events for c7n to do its job",
+                EventPattern={
+                    "detail-type": ["AWS API Call via CloudTrail"],
+                    "detail": {"eventSource": ["cloudtrail.amazonaws.com"]},
+                },
+                State="ENABLED",
+                Targets=[
+                    events.Target(
+                        Arn=t.Sub(
+                            "arn:${AWS::Partition}:events:${AWS::Region}:"
+                            + c7n_account_id
+                            + ":event-bus/"
+                            + event_bus_name
+                        ),
+                        Id="CloudCustodianHubEventBusArn",
+                        RoleArn=t.GetAtt("c7nEventForwarder", "Arn"),
+                    )
+                ],
             )
         )
         template = tpl.to_yaml()
