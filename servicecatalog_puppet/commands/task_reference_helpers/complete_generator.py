@@ -27,49 +27,97 @@ def generate(puppet_account_id, manifest, output_file_path):
     organizations_to_share_with = dict()
     ous_to_share_with = dict()
     accounts_to_share_with = dict()
-    is_c7n_enabled = False
+
+    custodians = dict()
+    if manifest.get("c7n", {}).get("aws", {}).get("modes", {}).get("cloudtrail", {}):
+        cloudtrail = (
+            manifest.get("c7n", {})
+            .get("aws", {})
+            .get("modes", {})
+            .get("cloudtrail", {})
+        )
+        for custodian_name, custodian_config in cloudtrail.get(
+            "custodians", {}
+        ).items():
+            account_id = custodian_config.get("account_id")
+            event_bus_name = custodian_config.get(
+                "event_bus_name", constants.C7N_EVENT_BUS_NAME_DEFAULT
+            )
+            account_details = None
+            for a in manifest.get("accounts", []):
+                if a.get("account_id") == account_id:
+                    account_details = a
+                    break
+            if account_details is None:
+                raise Exception(
+                    f"Could not find custodian {custodian_name} ({account_id}) in accounts section"
+                )
+            custodians[custodian_name] = account_details
+            custodian_region = account_details.get("default_region")
+            custodian_task_ref = f"{constants.C7N_CREATE_EVENT_BUS}-{custodian_name}"
+            all_tasks[custodian_task_ref] = dict(
+                task_reference=custodian_task_ref,
+                section_name=constants.C7N_CREATE_EVENT_BUS,
+                account_id=account_id,
+                region=custodian_region,
+                organization=account_details.get("organization"),
+                event_bus_name=event_bus_name,
+                manifest_section_names=dict(),
+                manifest_item_names=dict(),
+                dependencies_by_reference=[],
+            )
+
     for a in manifest.get("accounts", []):
         if a.get("c7n"):
-            c7n = a.get("c7n")
-            is_c7n_enabled = True
-            if c7n.get("manager"):
-                c7n_account = a
-            if c7n.get("managed"):
+            cloudtrail = a["c7n"]["modes"]["cloudtrail"]
+
+            for custodian_name in cloudtrail.get("custodians", []):
+                custodian = custodians.get(custodian_name)
+                custodian_account_id = custodian.get("account_id")
+                event_bus_name = custodian.get(
+                    "event_bus_name", constants.C7N_EVENT_BUS_NAME_DEFAULT
+                )
+                custodian_region = custodian.get("default_region")
                 account_id = a.get("account_id")
                 create_custodian_role_ref = (
                     f"{constants.C7N_CREATE_CUSTODIAN_ROLE_TASK}-{account_id}"
                 )
-                region = a.get("default_region")
                 all_tasks[create_custodian_role_ref] = dict(
                     section_name=constants.C7N_CREATE_CUSTODIAN_ROLE_TASK,
                     task_reference=create_custodian_role_ref,
                     account_id=account_id,
-                    region=region,
-                    create_event_bus_task_ref=f"{constants.C7N_CREATE_EVENT_BUS}-{region}",
+                    region=custodian_region,
+                    c7n_account_id=custodian_account_id,
+                    role_name=cloudtrail.get(
+                        "role_name", constants.C7N_CUSTODIAN_ROLE_NAME_DEFAULT
+                    ),
+                    role_path=cloudtrail.get(
+                        "role_path", constants.C7N_CUSTODIAN_ROLE_PATH_DEFAULT
+                    ),
+                    role_managed_policy_arns=cloudtrail.get(
+                        "role_managed_policy_arns",
+                        constants.C7N_CUSTODIAN_MANAGED_POLICY_ARNS,
+                    ),
+                    manifest_section_names=dict(),
+                    manifest_item_names=dict(),
+                    dependencies_by_reference=[],
+                )
+                forward_events_tasks = (
+                    f"{constants.C7N_FORWARD_EVENTS_TASK}-{account_id}"
+                )
+                all_tasks[forward_events_tasks] = dict(
+                    section_name=constants.C7N_FORWARD_EVENTS_TASK,
+                    task_reference=forward_events_tasks,
+                    account_id=account_id,
+                    region=custodian_region,
+                    c7n_account_id=custodian_account_id,
+                    event_bus_name=event_bus_name,
                     manifest_section_names=dict(),
                     manifest_item_names=dict(),
                     dependencies_by_reference=[
-                        f"{constants.C7N_CREATE_EVENT_BUS}-{region}"
+                        f"{constants.C7N_CREATE_EVENT_BUS}-{custodian_name}",
                     ],
                 )
-                for region in a.get("regions_enabled", []) + a.get(
-                    "enabled_regions", []
-                ):
-                    forward_events_tasks = (
-                        f"{constants.C7N_FORWARD_EVENTS_TASK}-{account_id}-{region}"
-                    )
-                    all_tasks[forward_events_tasks] = dict(
-                        section_name=constants.C7N_FORWARD_EVENTS_TASK,
-                        task_reference=forward_events_tasks,
-                        account_id=account_id,
-                        region=region,
-                        create_event_bus_task_ref=f"{constants.C7N_CREATE_EVENT_BUS}-{region}",
-                        manifest_section_names=dict(),
-                        manifest_item_names=dict(),
-                        dependencies_by_reference=[
-                            f"{constants.C7N_CREATE_EVENT_BUS}-{region}",
-                        ],
-                    )
         if a.get("organization"):
             organizations_to_share_with[a.get("organization")] = True
         if a.get("expanded_from"):
@@ -77,35 +125,6 @@ def generate(puppet_account_id, manifest, output_file_path):
         else:
             accounts_to_share_with[a.get("account_id")] = True
 
-    if is_c7n_enabled:
-        for region in c7n_account.get("regions_enabled", []) + c7n_account.get(
-            "enabled_regions", []
-        ):
-            create_event_bus_ref = f"{constants.C7N_CREATE_EVENT_BUS}-{region}"
-            c7n = c7n_account.get("c7n")
-            all_tasks[create_event_bus_ref] = dict(
-                task_reference=create_event_bus_ref,
-                section_name=constants.C7N_CREATE_EVENT_BUS,
-                account_id=c7n_account.get("account_id"),
-                region=region,
-                organization=c7n.get("organization"),
-                event_bus_name=c7n.get(
-                    "event_bus_name", constants.C7N_EVENT_BUS_NAME_DEFAULT
-                ),
-                role_name=c7n.get(
-                    "role_name", constants.C7N_CUSTODIAN_ROLE_NAME_DEFAULT
-                ),
-                role_path=c7n.get(
-                    "role_path", constants.C7N_CUSTODIAN_ROLE_PATH_DEFAULT
-                ),
-                role_managed_policy_arns=c7n.get(
-                    "role_managed_policy_arns",
-                    constants.C7N_CUSTODIAN_MANAGED_POLICY_ARNS,
-                ),
-                manifest_section_names=dict(),
-                manifest_item_names=dict(),
-                dependencies_by_reference=[],
-            )
     all_tasks[constants.CREATE_POLICIES] = dict(
         execution=constants.EXECUTION_MODE_HUB,
         manifest_section_names=dict(),

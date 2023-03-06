@@ -7,29 +7,22 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class CreateCustodianRoleTask(tasks.TaskWithReferenceAndCommonParameters):
-    create_event_bus_task_ref = luigi.Parameter()
+    c7n_account_id = luigi.Parameter()
+    role_name = luigi.Parameter()
+    role_path = luigi.Parameter()
+    role_managed_policy_arns = luigi.ListParameter()
     cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {
             "task_reference": self.task_reference,
-            "region": self.region,
-            "account_id": self.account_id,
         }
 
     def run(self):
-        c7n_account_id = self.get_attribute_from_output_from_reference_dependency(
-            "c7n_account_id", self.create_event_bus_task_ref
-        )
-        role_name = self.get_attribute_from_output_from_reference_dependency(
-            "role_name", self.create_event_bus_task_ref
-        )
-        role_path = self.get_attribute_from_output_from_reference_dependency(
-            "role_path", self.create_event_bus_task_ref
-        )
-        role_managed_policy_arns = self.get_attribute_from_output_from_reference_dependency(
-            "role_managed_policy_arns", self.create_event_bus_task_ref
-        )
+        c7n_account_id = self.c7n_account_id
+        role_name = self.role_name
+        role_path = self.role_path
+        role_managed_policy_arns = self.role_managed_policy_arns
 
         tpl = t.Template()
         tpl.description = (

@@ -7,9 +7,6 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 class CreateEventBusTask(tasks.TaskWithReferenceAndCommonParameters):
     organization = luigi.Parameter()
     event_bus_name = luigi.Parameter()
-    role_name = luigi.Parameter()
-    role_path = luigi.Parameter()
-    role_managed_policy_arns = luigi.ListParameter()
 
     cachable_level = constants.CACHE_LEVEL_RUN
 
@@ -25,10 +22,11 @@ class CreateEventBusTask(tasks.TaskWithReferenceAndCommonParameters):
         template = f"""Description: event bus template for c7n created by service catalog puppet
 Resources:
   eventbus:
+    Type: AWS::Events::EventBus
     Properties:
       Name: {self.event_bus_name}
-    Type: AWS::Events::EventBus
   eventbuspolicy:
+    Type: AWS::Events::EventBusPolicy
     Properties:
       Condition:
         Key: aws:PrincipalOrgID
@@ -37,7 +35,7 @@ Resources:
       Action: events:PutEvents
       Principal: '*'
       StatementId: OrganizationAccounts
-    Type: AWS::Events::EventBusPolicy"""
+    """
         with self.spoke_regional_client("cloudformation") as cloudformation:
             cloudformation.create_or_update(
                 ShouldUseChangeSets=False,
@@ -52,11 +50,5 @@ Resources:
                 Tags=self.initialiser_stack_tags,
             )
         self.write_output(
-            dict(
-                c7n_account_id=self.account_id,
-                event_bus_name=self.event_bus_name,
-                role_name=self.role_name,
-                role_path=self.role_path,
-                role_managed_policy_arns=self.role_managed_policy_arns,
-            )
+            dict(c7n_account_id=self.account_id, event_bus_name=self.event_bus_name,)
         )

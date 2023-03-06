@@ -811,9 +811,6 @@ def create(
             **common_parameters,
             organization=parameters_to_use.get("organization",),
             event_bus_name=parameters_to_use.get("event_bus_name",),
-            role_name=parameters_to_use.get("role_name",),
-            role_path=parameters_to_use.get("role_path",),
-            role_managed_policy_arns=parameters_to_use.get("role_managed_policy_arns",),
         )
 
     elif section_name == constants.C7N_FORWARD_EVENTS_TASK:
@@ -821,9 +818,8 @@ def create(
 
         return forward_events_tasks.ForwardEventsTask(
             **common_parameters,
-            create_event_bus_task_ref=parameters_to_use.get(
-                "create_event_bus_task_ref",
-            ),
+            c7n_account_id=parameters_to_use.get("c7n_account_id",),
+            event_bus_name=parameters_to_use.get("event_bus_name",),
         )
 
     elif section_name == constants.C7N_CREATE_CUSTODIAN_ROLE_TASK:
@@ -831,9 +827,10 @@ def create(
 
         return create_custodian_role_task.CreateCustodianRoleTask(
             **common_parameters,
-            create_event_bus_task_ref=parameters_to_use.get(
-                "create_event_bus_task_ref",
-            ),
+            c7n_account_id=parameters_to_use.get("c7n_account_id",),
+            role_name=parameters_to_use.get("role_name",),
+            role_path=parameters_to_use.get("role_path",),
+            role_managed_policy_arns=parameters_to_use.get("role_managed_policy_arns",),
         )
 
     else:

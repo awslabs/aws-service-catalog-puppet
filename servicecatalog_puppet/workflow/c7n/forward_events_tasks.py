@@ -1,6 +1,5 @@
 import luigi
 import troposphere as t
-from awacs.aws import Statement
 from troposphere import cloudtrail, events, iam, s3
 
 from servicecatalog_puppet import config, constants
@@ -11,7 +10,8 @@ c7nTrailBucket = "c7nTrailBucket"
 
 
 class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
-    create_event_bus_task_ref = luigi.Parameter()
+    c7n_account_id = luigi.Parameter()
+    event_bus_name = luigi.Parameter()
     cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
@@ -22,22 +22,6 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
         }
 
     def run(self):
-        c7n_account_id = self.get_attribute_from_output_from_reference_dependency(
-            "c7n_account_id", self.create_event_bus_task_ref
-        )
-        role_name = self.get_attribute_from_output_from_reference_dependency(
-            "role_name", self.create_event_bus_task_ref
-        )
-        role_path = self.get_attribute_from_output_from_reference_dependency(
-            "role_path", self.create_event_bus_task_ref
-        )
-        role_managed_policy_arns = self.get_attribute_from_output_from_reference_dependency(
-            "role_managed_policy_arns", self.create_event_bus_task_ref
-        )
-        event_bus_name = self.get_attribute_from_output_from_reference_dependency(
-            "event_bus_name", self.create_event_bus_task_ref
-        )
-
         tpl = t.Template()
         tpl.description = (
             "event forwarder template for c7n created by service catalog puppet"
@@ -122,9 +106,9 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
                                     "Action": ["events:PutEvents"],
                                     "Resource": {
                                         "Fn::Sub": "arn:${AWS::Partition}:events:${AWS::Region}:"
-                                        + c7n_account_id
+                                        + self.c7n_account_id
                                         + ":event-bus/"
-                                        + event_bus_name
+                                        + self.event_bus_name
                                     },
                                     "Effect": "Allow",
                                 }
@@ -146,7 +130,7 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
                             "Principal": {
                                 "AWS": t.Sub(
                                     "arn:${AWS::Partition}:iam::"
-                                    + c7n_account_id
+                                    + self.c7n_account_id
                                     + ":root"
                                 )
                             },
@@ -169,9 +153,9 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
                     events.Target(
                         Arn=t.Sub(
                             "arn:${AWS::Partition}:events:${AWS::Region}:"
-                            + c7n_account_id
+                            + self.c7n_account_id
                             + ":event-bus/"
-                            + event_bus_name
+                            + self.event_bus_name
                         ),
                         Id="CloudCustodianHubEventBusArn",
                         RoleArn=t.GetAtt("c7nEventForwarder", "Arn"),
