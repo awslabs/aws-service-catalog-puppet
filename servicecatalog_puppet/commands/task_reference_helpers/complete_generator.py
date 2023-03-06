@@ -43,6 +43,9 @@ def generate(puppet_account_id, manifest, output_file_path):
             event_bus_name = custodian_config.get(
                 "event_bus_name", constants.C7N_EVENT_BUS_NAME_DEFAULT
             )
+            c7n_version = custodian_config.get(
+                "c7n_version", constants.C7N_VERSION_DEFAULT
+            )
             account_details = None
             for a in manifest.get("accounts", []):
                 if a.get("account_id") == account_id:
@@ -62,10 +65,37 @@ def generate(puppet_account_id, manifest, output_file_path):
                 region=custodian_region,
                 organization=account_details.get("organization"),
                 event_bus_name=event_bus_name,
+                c7n_version=c7n_version,
                 manifest_section_names=dict(),
                 manifest_item_names=dict(),
                 dependencies_by_reference=[],
             )
+            create_custodian_role_ref = (
+                f"{constants.C7N_CREATE_CUSTODIAN_ROLE_TASK}-{account_id}"
+            )
+            cloudtrail = (
+                account_details.get("c7n", {}).get("modes", {}).get("cloudtrail", {})
+            )
+            all_tasks[create_custodian_role_ref] = dict(
+                section_name=constants.C7N_CREATE_CUSTODIAN_ROLE_TASK,
+                task_reference=create_custodian_role_ref,
+                account_id=account_id,
+                region=custodian_region,
+                c7n_account_id=account_id,
+                role_name=cloudtrail.get(
+                    "role_name", constants.C7N_CUSTODIAN_ROLE_NAME_DEFAULT
+                ),
+                role_path=cloudtrail.get(
+                    "role_path", constants.C7N_CUSTODIAN_ROLE_PATH_DEFAULT
+                ),
+                role_managed_policy_arns=cloudtrail.get(
+                    "role_managed_policy_arns",
+                    constants.C7N_CUSTODIAN_MANAGED_POLICY_ARNS,
+                ),
+                manifest_section_names=dict(),
+                manifest_item_names=dict(),
+                dependencies_by_reference=[],
+            )  # TODO make sure c7n-aws-policies depends on c7n account create custodian role task
 
     for a in manifest.get("accounts", []):
         if a.get("c7n"):
@@ -153,7 +183,9 @@ def generate(puppet_account_id, manifest, output_file_path):
         tasks_by_region[section_name_singular] = dict()
         tasks_by_account_id[section_name_singular] = dict()
         tasks_by_account_id_and_region[section_name_singular] = dict()
+        print(f"Looking at: {section_name_singular}")
         for item_name, item in manifest.get(section_name, {}).items():
+            print(f"Looking at: {section_name_singular} - {item_name}")
             tasks_by_type[section_name_singular][item_name] = list()
             tasks_by_region[section_name_singular][item_name] = dict()
             tasks_by_account_id[section_name_singular][item_name] = dict()
@@ -166,6 +198,7 @@ def generate(puppet_account_id, manifest, output_file_path):
                 default_region,
                 regions_in_use,
             )
+            print(len(tasks_to_add))
             for task_to_add in tasks_to_add:
                 task_to_add["manifest_section_names"] = {section_name: True}
                 task_to_add["manifest_item_names"] = {item_name: True}

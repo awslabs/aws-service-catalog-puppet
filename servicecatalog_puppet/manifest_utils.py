@@ -79,6 +79,7 @@ def load(f, puppet_account_id):
         constants.SERVICE_CONTROL_POLICIES: {},
         constants.SIMULATE_POLICIES: {},
         constants.TAG_POLICIES: {},
+        constants.C7N_AWS_CLOUDTRAILS: {},
     }
     intrinsic_functions_map = get_intrinsic_functions_map(
         manifest_name, puppet_account_id
@@ -615,6 +616,35 @@ def rewrite_scps(manifest, puppet_account_id):
     return manifest
 
 
+def rewrite_aws_c7n_cloudtrails(manifest, puppet_account_id):
+    for item, details in manifest.get(constants.C7N_AWS_CLOUDTRAILS, {}).items():
+        custodians = details.get("apply_to").get("custodians")
+        for custodian_details in custodians:
+            custodian_details.update(
+                manifest["c7n"]["aws"]["modes"]["cloudtrail"]["custodians"][
+                    custodian_details.get("custodian")
+                ]
+            )
+            for a in manifest.get("accounts"):
+                if a.get("account_id") == custodian_details.get("account_id"):
+                    custodian_details["regions"] = [a.get("default_region")]
+        details["apply_to"]["accounts"] = custodians
+        del details["apply_to"]["custodians"]
+
+    new_section = dict()
+    for item, details in manifest.get(constants.C7N_AWS_CLOUDTRAILS, {}).items():
+        for account in details.get("apply_to").get("accounts"):
+            custodian = account.get("custodian")
+            if not new_section.get(custodian):
+                new_section[custodian] = dict(
+                    policies=dict(), apply_to=dict(accounts=[account])
+                )
+            new_section[custodian]["policies"][item] = details.get("policy")
+    manifest[constants.C7N_AWS_CLOUDTRAILS] = new_section
+
+    return manifest
+
+
 def expand_path(account, client, manifest):
     ou = client.convert_path_to_ou(account.get("ou"))
     account["ou_name"] = account["ou"]
@@ -739,6 +769,7 @@ class Manifest(dict):
         regions_configured,
         single_account="None",
     ):
+        print("section_name is: ", section_name)
         accounts = self.get(constants.ACCOUNTS)
         section = self.get(section_name)
         provisioning_tasks = list()
@@ -761,6 +792,7 @@ class Manifest(dict):
             "tag-policies": "apply_to",
             "simulate-policies": "simulate_for",
             constants.ORGANIZATIONAL_UNITS: "create_in",
+            constants.C7N_AWS_CLOUDTRAILS: "apply_to",
         }.get(section_name)
 
         if (
@@ -914,6 +946,7 @@ class Manifest(dict):
                 name=item.get("name"),
                 tags=item.get("tags"),
             ),
+            constants.C7N_AWS_CLOUDTRAILS: dict(policies=item.get("policies")),
         }.get(section_name)
 
         common_parameters.update(
@@ -959,6 +992,7 @@ class Manifest(dict):
                     ),
                     "tag-policies": dict(account_id=account_id, ou_name="",),
                     constants.SIMULATE_POLICIES: dict(account_id=account_id,),
+                    constants.C7N_AWS_CLOUDTRAILS: dict(account_id=account_id,),
                 }.get(section_name)
                 if tag_name in account.get("tags"):
                     if isinstance(regions, str):
@@ -1051,6 +1085,7 @@ class Manifest(dict):
                 "tag-policies": dict(account_id=account_id, ou_name="",),
                 constants.SIMULATE_POLICIES: dict(account_id=account_id,),
                 constants.ORGANIZATIONAL_UNITS: dict(account_id=account_id,),
+                constants.C7N_AWS_CLOUDTRAILS: dict(account_id=account_id,),
             }.get(section_name)
 
             if isinstance(regions, str):

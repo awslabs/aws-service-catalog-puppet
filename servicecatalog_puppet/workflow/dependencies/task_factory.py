@@ -809,6 +809,7 @@ def create(
 
         return create_event_bus_task.CreateEventBusTask(
             **common_parameters,
+            c7n_version=parameters_to_use.get("c7n_version",),
             organization=parameters_to_use.get("organization",),
             event_bus_name=parameters_to_use.get("event_bus_name",),
         )
@@ -831,6 +832,13 @@ def create(
             role_name=parameters_to_use.get("role_name",),
             role_path=parameters_to_use.get("role_path",),
             role_managed_policy_arns=parameters_to_use.get("role_managed_policy_arns",),
+        )
+
+    elif section_name == constants.C7N_AWS_CLOUDTRAILS:
+        from servicecatalog_puppet.workflow.c7n import deploy_c7n_policies
+
+        return deploy_c7n_policies.DeployC7NPolicies(
+            **common_parameters, policies=parameters_to_use.get("policies",),
         )
 
     else:

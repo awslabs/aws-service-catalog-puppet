@@ -1,10 +1,14 @@
 import luigi
+import troposphere as t
+import yaml
+from troposphere import codebuild, events, iam, s3
 
 from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class CreateEventBusTask(tasks.TaskWithReferenceAndCommonParameters):
+    c7n_version = luigi.Parameter()
     organization = luigi.Parameter()
     event_bus_name = luigi.Parameter()
 
@@ -19,15 +23,11 @@ class CreateEventBusTask(tasks.TaskWithReferenceAndCommonParameters):
 
     def run(self):
         # TODO move to troposphere
-        template = f"""Description: event bus template for c7n created by service catalog puppet
-Resources:
-  eventbus:
-    Type: AWS::Events::EventBus
-    Properties:
-      Name: {self.event_bus_name}
+        template = f"""
   eventbuspolicy:
     Type: AWS::Events::EventBusPolicy
     Properties:
+      EventBusName: !Ref eventbus
       Condition:
         Key: aws:PrincipalOrgID
         Type: StringEquals
@@ -36,10 +36,162 @@ Resources:
       Principal: '*'
       StatementId: OrganizationAccounts
     """
+        tpl = t.Template()
+        tpl.description = "event bus template for c7n created by service catalog puppet"
+        tpl.add_resource(events.EventBus("eventbus", Name=self.event_bus_name))
+
+        # tpl.add_resource(  # TODO FIX
+        #     events.EventBusPolicy(
+        #         "eventbuspolicy",
+        #         EventBusName=t.Ref("eventbus"),
+        #         Condition=events.Condition(
+        #             Key="aws:PrincipalOrgID",
+        #             Type="StringEquals",
+        #             Value=self.organization,
+        #         ),
+        #         Action="events:PutEvents",
+        #         Principal="*",
+        #         StatementId="OrgAccounts",
+        #     )
+        # )
+        #
+
+        tpl.add_resource(
+            iam.Role(
+                "C7NRunRole",
+                RoleName="C7NRunRole",
+                AssumeRolePolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": ["sts:AssumeRole"],
+                            "Effect": "Allow",
+                            "Principal": {"Service": ["codebuild.amazonaws.com"]},
+                        }
+                    ],
+                },
+                Policies=[
+                    iam.Policy(
+                        PolicyName="C7NRunRoleActions",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "logs:CreateLogStream",
+                                        "logs:CreateLogGroup",
+                                        "logs:PutLogEvents",
+                                    ],
+                                    "Resource": t.Sub(
+                                        "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/servicecatalog-puppet-deploy-c7n:log-stream:*"
+                                    ),
+                                    "Effect": "Allow",
+                                },
+                                {
+                                    "Action": ["logs:GetLogEvents",],
+                                    "Resource": t.Sub(
+                                        "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/servicecatalog-puppet-deploy-c7n:log-stream:*"
+                                    ),
+                                    "Effect": "Allow",
+                                },
+                            ],
+                        },
+                    )
+                ],
+                # ManagedPolicyArns=[
+                #     t.Sub("arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess")
+                # ],
+                Path=config.get_puppet_role_path(),
+            )
+        )
+
+        tpl.add_resource(
+            s3.Bucket(
+                "c7nPoliciesBucket",
+                BucketName=t.Sub(
+                    "sc-puppet-c7n-artifacts-${AWS::AccountId}-${AWS::Region}"
+                ),
+                VersioningConfiguration=s3.VersioningConfiguration(Status="Enabled"),
+                BucketEncryption=s3.BucketEncryption(
+                    ServerSideEncryptionConfiguration=[
+                        s3.ServerSideEncryptionRule(
+                            ServerSideEncryptionByDefault=s3.ServerSideEncryptionByDefault(
+                                SSEAlgorithm="AES256"
+                            )
+                        )
+                    ]
+                ),
+                PublicAccessBlockConfiguration=s3.PublicAccessBlockConfiguration(
+                    BlockPublicAcls=True,
+                    BlockPublicPolicy=True,
+                    IgnorePublicAcls=True,
+                    RestrictPublicBuckets=True,
+                ),
+                Tags=t.Tags({"ServiceCatalogPuppet:Actor": "Framework"}),
+            )
+        )
+
+        tpl.add_resource(
+            codebuild.Project(
+                "DeployC7N",
+                Name="servicecatalog-puppet-deploy-c7n",
+                ServiceRole=t.GetAtt("C7NRunRole", "Arn"),
+                Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
+                Artifacts=codebuild.Artifacts(Type="NO_ARTIFACTS"),
+                TimeoutInMinutes=60,
+                Environment=codebuild.Environment(
+                    ComputeType="BUILD_GENERAL1_SMALL",
+                    Image=constants.CODEBUILD_DEFAULT_IMAGE,
+                    Type="LINUX_CONTAINER",
+                    EnvironmentVariables=[
+                        {
+                            "Type": "PLAINTEXT",
+                            "Name": "C7N_VERSION",
+                            "Value": self.c7n_version,
+                        },
+                        {
+                            "Type": "PLAINTEXT",
+                            "Name": "POLICIES_FILE_URL",
+                            "Value": "CHANGE_ME",
+                        },
+                        {"Type": "PLAINTEXT", "Name": "REGIONS", "Value": "CHANGE_ME",},
+                        {
+                            "Type": "PLAINTEXT",
+                            "Name": "CUSTODIAN_ROLE_ARN",
+                            "Value": "CHANGE_ME",
+                        },
+                    ],
+                ),
+                Source=codebuild.Source(
+                    BuildSpec=yaml.safe_dump(
+                        dict(
+                            version=0.2,
+                            phases=dict(
+                                install={
+                                    "commands": ["pip install c7n==${C7N_VERSION}"]
+                                },
+                                build={
+                                    "commands": [
+                                        "curl -L ${POLICIES_FILE_URL} > policies.yaml",
+                                        "custodian run -s output/logs -r ${REGIONS} --assume ${CUSTODIAN_ROLE_ARN} policies.yaml",
+                                    ]
+                                },
+                            ),
+                        )
+                    ),
+                    Type="NO_SOURCE",
+                ),
+                Description="Run c7n",
+            )
+        )
+
+        template = tpl.to_yaml() + template
+
         with self.spoke_regional_client("cloudformation") as cloudformation:
             cloudformation.create_or_update(
                 ShouldUseChangeSets=False,
                 StackName="servicecatalog-puppet-c7n-eventbus",
+                Capabilities=["CAPABILITY_NAMED_IAM"],
                 TemplateBody=template,
                 NotificationARNs=[
                     f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
