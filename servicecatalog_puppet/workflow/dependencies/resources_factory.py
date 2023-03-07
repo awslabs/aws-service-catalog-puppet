@@ -491,7 +491,7 @@ def create(section_name, parameters_to_use, puppet_account_id):
             SERVICE_CATALOG_DESCRIBE_PORTFOLIO_SHARES_PER_REGION,
         ]
 
-    elif section_name == constants.C7N_CREATE_EVENT_BUS:
+    elif section_name == constants.C7N_PREPARE_HUB_ACCOUNT_TASK:
         resources = [
             CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
         ]

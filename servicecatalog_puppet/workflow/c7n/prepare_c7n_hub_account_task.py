@@ -7,17 +7,17 @@ from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-class CreateEventBusTask(tasks.TaskWithReferenceAndCommonParameters):
+class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
     c7n_version = luigi.Parameter()
     organization = luigi.Parameter()
+    role_name = luigi.Parameter()
+    role_path = luigi.Parameter()
 
     cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
         return {
             "task_reference": self.task_reference,
-            "region": self.region,
-            "account_id": self.account_id,
         }
 
     def run(self):
@@ -36,21 +36,6 @@ class CreateEventBusTask(tasks.TaskWithReferenceAndCommonParameters):
     """
         tpl = t.Template()
         tpl.description = "event bus template for c7n created by service catalog puppet"
-        # tpl.add_resource(  # TODO FIX
-        #     events.EventBusPolicy(
-        #         "eventbuspolicy",
-        #         EventBusName=t.Ref("eventbus"),
-        #         Condition=events.Condition(
-        #             Key="aws:PrincipalOrgID",
-        #             Type="StringEquals",
-        #             Value=self.organization,
-        #         ),
-        #         Action="events:PutEvents",
-        #         Principal="*",
-        #         StatementId="OrgAccounts",
-        #     )
-        # )
-        #
 
         tpl.add_resource(
             iam.Role(
@@ -75,7 +60,9 @@ class CreateEventBusTask(tasks.TaskWithReferenceAndCommonParameters):
                                 {
                                     "Action": ["sts:AssumeRole",],
                                     "Resource": t.Sub(
-                                        "arn:${AWS::Partition}:iam::*:role/servicecatalog-puppet/c7n/Custodian"
+                                        "arn:${AWS::Partition}:iam::*:role"
+                                        + self.role_path
+                                        + self.role_name
                                     ),
                                     "Effect": "Allow",
                                 },
@@ -101,9 +88,6 @@ class CreateEventBusTask(tasks.TaskWithReferenceAndCommonParameters):
                         },
                     )
                 ],
-                # ManagedPolicyArns=[
-                #     t.Sub("arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess")
-                # ],
                 Path=config.get_puppet_role_path(),
             )
         )

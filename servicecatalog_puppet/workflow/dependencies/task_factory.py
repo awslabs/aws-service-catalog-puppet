@@ -804,13 +804,15 @@ def create(
             type=parameters_to_use.get("type"),
         )
 
-    elif section_name == constants.C7N_CREATE_EVENT_BUS:
-        from servicecatalog_puppet.workflow.c7n import create_event_bus_task
+    elif section_name == constants.C7N_PREPARE_HUB_ACCOUNT_TASK:
+        from servicecatalog_puppet.workflow.c7n import prepare_c7n_hub_account_task
 
-        return create_event_bus_task.CreateEventBusTask(
+        return prepare_c7n_hub_account_task.PrepareC7NHubAccountTask(
             **common_parameters,
             c7n_version=parameters_to_use.get("c7n_version",),
             organization=parameters_to_use.get("organization",),
+            role_name=parameters_to_use.get("role_name",),
+            role_path=parameters_to_use.get("role_path",),
         )
 
     elif section_name == constants.C7N_FORWARD_EVENTS_TASK:
@@ -837,7 +839,10 @@ def create(
         from servicecatalog_puppet.workflow.c7n import deploy_c7n_policies
 
         return deploy_c7n_policies.DeployC7NPolicies(
-            **common_parameters, policies=parameters_to_use.get("policies",),
+            **common_parameters,
+            role_name=parameters_to_use.get("role_name",),
+            role_path=parameters_to_use.get("role_path",),
+            policies=parameters_to_use.get("policies",),
         )
 
     else:

@@ -413,7 +413,7 @@ WAS_A_SPOKE_LOCAL_PORTFOLIO_DEFAULT = False
 
 C7N_ORGS_INPUT_FILE_TASK = "c7n_orgs_input_file_task"
 C7N_FORWARD_EVENTS_TASK = "c7n_forward_events_task"
-C7N_CREATE_EVENT_BUS = "c7n_create_event_bus"
+C7N_PREPARE_HUB_ACCOUNT_TASK = "c7n_prepare_hub_account_task"
 C7N_CREATE_CUSTODIAN_ROLE_TASK = "c7n_create_custodian_role_task"
 C7N_CUSTODIAN_ROLE_NAME_DEFAULT = "Custodian"
 C7N_CUSTODIAN_ROLE_PATH_DEFAULT = "/servicecatalog-puppet/c7n/"

@@ -8,6 +8,8 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class DeployC7NPolicies(tasks.TaskWithReferenceAndCommonParameters):
+    role_name = luigi.Parameter()
+    role_path = luigi.Parameter()
     policies = luigi.DictParameter()
     cachable_level = constants.CACHE_LEVEL_RUN
 
@@ -21,9 +23,11 @@ class DeployC7NPolicies(tasks.TaskWithReferenceAndCommonParameters):
         for policy_name, policy in self.policies.items():
             p = unwrap(policy)
             p["mode"]["type"] = "cloudtrail"
-            p["mode"][
-                "member-role"
-            ] = "arn:aws:iam::{account_id}:role/servicecatalog-puppet/c7n/Custodian"
+            p["mode"]["member-role"] = (
+                "arn:aws:iam::{account_id}:role/servicecatalog-puppet"
+                + self.role_path
+                + self.role_name
+            )
             p["name"] = policy_name
             policies["policies"].append(p)
 
@@ -40,7 +44,11 @@ class DeployC7NPolicies(tasks.TaskWithReferenceAndCommonParameters):
             )
         regions = "eu-west-1"
         policies_file_url = cached_output_signed_url
-        custodian_role_arn = f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet/c7n/Custodian"  # TODO make dynamic
+        custodian_role_arn = (
+            f"arn:aws:iam::{self.account_id}:role/servicecatalog-puppet"
+            + self.role_path
+            + self.role_name
+        )
         parameters_to_use = [
             dict(name="POLICIES_FILE_URL", value=policies_file_url, type="PLAINTEXT",),
             dict(name="REGIONS", value=regions, type="PLAINTEXT",),
@@ -50,9 +58,11 @@ class DeployC7NPolicies(tasks.TaskWithReferenceAndCommonParameters):
         ]
 
         with self.spoke_regional_client("codebuild") as codebuild:
-            codebuild.start_build_and_wait_for_completion(
+            result = codebuild.start_build_and_wait_for_completion(
                 projectName="servicecatalog-puppet-deploy-c7n",
                 environmentVariablesOverride=parameters_to_use,
             )
+            if result.get("buildStatus") != "SUCCEEDED":
+                raise Exception(f"Deploying policy failed: {result.get('buildStatus')}")
 
         self.write_empty_output()
