@@ -28,6 +28,8 @@ def generate(puppet_account_id, manifest, output_file_path):
     ous_to_share_with = dict()
     accounts_to_share_with = dict()
 
+    c7n_aws_cloudtrail_dependencies = list()
+
     custodians = dict()
     if manifest.get("c7n", {}).get("aws", {}).get("modes", {}).get("cloudtrail", {}):
         cloudtrail = (
@@ -40,9 +42,6 @@ def generate(puppet_account_id, manifest, output_file_path):
             "custodians", {}
         ).items():
             account_id = custodian_config.get("account_id")
-            event_bus_name = custodian_config.get(
-                "event_bus_name", constants.C7N_EVENT_BUS_NAME_DEFAULT
-            )
             c7n_version = custodian_config.get(
                 "c7n_version", constants.C7N_VERSION_DEFAULT
             )
@@ -57,14 +56,16 @@ def generate(puppet_account_id, manifest, output_file_path):
                 )
             custodians[custodian_name] = account_details
             custodian_region = account_details.get("default_region")
-            custodian_task_ref = f"{constants.C7N_CREATE_EVENT_BUS}-{custodian_name}"
-            all_tasks[custodian_task_ref] = dict(
-                task_reference=custodian_task_ref,
+            create_custodian_event_bus_task_ref = (
+                f"{constants.C7N_CREATE_EVENT_BUS}-{custodian_name}"
+            )
+            c7n_aws_cloudtrail_dependencies.append(create_custodian_event_bus_task_ref)
+            all_tasks[create_custodian_event_bus_task_ref] = dict(
+                task_reference=create_custodian_event_bus_task_ref,
                 section_name=constants.C7N_CREATE_EVENT_BUS,
                 account_id=account_id,
                 region=custodian_region,
                 organization=account_details.get("organization"),
-                event_bus_name=event_bus_name,
                 c7n_version=c7n_version,
                 manifest_section_names=dict(),
                 manifest_item_names=dict(),
@@ -95,7 +96,8 @@ def generate(puppet_account_id, manifest, output_file_path):
                 manifest_section_names=dict(),
                 manifest_item_names=dict(),
                 dependencies_by_reference=[],
-            )  # TODO make sure c7n-aws-policies depends on c7n account create custodian role task
+            )
+            c7n_aws_cloudtrail_dependencies.append(create_custodian_role_ref)
 
     for a in manifest.get("accounts", []):
         if a.get("c7n"):
@@ -104,9 +106,6 @@ def generate(puppet_account_id, manifest, output_file_path):
             for custodian_name in cloudtrail.get("custodians", []):
                 custodian = custodians.get(custodian_name)
                 custodian_account_id = custodian.get("account_id")
-                event_bus_name = custodian.get(
-                    "event_bus_name", constants.C7N_EVENT_BUS_NAME_DEFAULT
-                )
                 custodian_region = custodian.get("default_region")
                 account_id = a.get("account_id")
                 create_custodian_role_ref = (
@@ -141,7 +140,6 @@ def generate(puppet_account_id, manifest, output_file_path):
                     account_id=account_id,
                     region=custodian_region,
                     c7n_account_id=custodian_account_id,
-                    event_bus_name=event_bus_name,
                     manifest_section_names=dict(),
                     manifest_item_names=dict(),
                     dependencies_by_reference=[
@@ -183,9 +181,7 @@ def generate(puppet_account_id, manifest, output_file_path):
         tasks_by_region[section_name_singular] = dict()
         tasks_by_account_id[section_name_singular] = dict()
         tasks_by_account_id_and_region[section_name_singular] = dict()
-        print(f"Looking at: {section_name_singular}")
         for item_name, item in manifest.get(section_name, {}).items():
-            print(f"Looking at: {section_name_singular} - {item_name}")
             tasks_by_type[section_name_singular][item_name] = list()
             tasks_by_region[section_name_singular][item_name] = dict()
             tasks_by_account_id[section_name_singular][item_name] = dict()
@@ -198,7 +194,6 @@ def generate(puppet_account_id, manifest, output_file_path):
                 default_region,
                 regions_in_use,
             )
-            print(len(tasks_to_add))
             for task_to_add in tasks_to_add:
                 task_to_add["manifest_section_names"] = {section_name: True}
                 task_to_add["manifest_item_names"] = {item_name: True}
@@ -209,6 +204,10 @@ def generate(puppet_account_id, manifest, output_file_path):
                 task_to_add["item_name"] = item_name
                 # set up for later pass
                 task_to_add["dependencies_by_reference"] = [constants.CREATE_POLICIES]
+                if section_name_singular == constants.C7N_AWS_CLOUDTRAIL:
+                    task_to_add["dependencies_by_reference"].extend(
+                        c7n_aws_cloudtrail_dependencies
+                    )
 
                 task_reference = graph.escape(
                     f"{task_to_add.get('ou_name', task_to_add.get('account_id'))}-{task_to_add.get('region')}"

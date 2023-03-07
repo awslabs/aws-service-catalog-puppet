@@ -20,6 +20,10 @@ class DeployC7NPolicies(tasks.TaskWithReferenceAndCommonParameters):
         policies = dict(policies=[])
         for policy_name, policy in self.policies.items():
             p = unwrap(policy)
+            p["mode"]["type"] = "cloudtrail"
+            p["mode"][
+                "member-role"
+            ] = "arn:aws:iam::{account_id}:role/servicecatalog-puppet/c7n/Custodian"
             p["name"] = policy_name
             policies["policies"].append(p)
 

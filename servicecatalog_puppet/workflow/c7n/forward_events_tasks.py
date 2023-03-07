@@ -1,6 +1,6 @@
 import luigi
 import troposphere as t
-from troposphere import cloudtrail, events, iam, s3
+from troposphere import events, iam, s3
 
 from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
@@ -27,71 +27,6 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
             "event forwarder template for c7n created by service catalog puppet"
         )
         tpl.add_resource(
-            s3.Bucket(
-                c7nTrailBucket,
-                PublicAccessBlockConfiguration=s3.PublicAccessBlockConfiguration(
-                    BlockPublicAcls=True,
-                    BlockPublicPolicy=True,
-                    IgnorePublicAcls=True,
-                    RestrictPublicBuckets=True,
-                ),
-                BucketEncryption=s3.BucketEncryption(
-                    ServerSideEncryptionConfiguration=[
-                        s3.ServerSideEncryptionRule(
-                            ServerSideEncryptionByDefault=s3.ServerSideEncryptionByDefault(
-                                SSEAlgorithm="AES256"
-                            )
-                        )
-                    ]
-                ),
-                VersioningConfiguration=s3.VersioningConfiguration(Status="Enabled"),
-            )
-        )
-
-        tpl.add_resource(
-            s3.BucketPolicy(
-                "c7nTrailBucketPolicy",
-                Bucket=t.Ref(c7nTrailBucket),
-                PolicyDocument={
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Action": ["s3:GetBucketAcl",],
-                            "Principal": {"Service": "cloudtrail.amazonaws.com"},
-                            "Resource": t.GetAtt(c7nTrailBucket, "Arn"),
-                            "Effect": "Allow",
-                            "Sid": "AWSCloudTrailAclCheck",
-                        },
-                        {
-                            "Action": ["s3:PutObject",],
-                            "Principal": {"Service": "cloudtrail.amazonaws.com"},
-                            "Resource": t.Sub(
-                                "arn:${AWS::Partition}:s3:::${c7nTrailBucket}/AWSLogs/${AWS::AccountId}/*"
-                            ),
-                            "Effect": "Allow",
-                            "Sid": "AWSCloudTrailWrite",
-                            "Condition": {
-                                "StringEquals": {
-                                    "s3:x-amz-acl": "bucket-owner-full-control"
-                                }
-                            },
-                        },
-                    ],
-                },
-            )
-        )
-
-        tpl.add_resource(
-            cloudtrail.Trail(
-                "c7nTrail",
-                S3BucketName=t.Ref(c7nTrailBucket),
-                IsLogging=True,
-                IsMultiRegionTrail=True,
-                IncludeGlobalServiceEvents=True,
-            )
-        )
-
-        tpl.add_resource(
             iam.Role(
                 "c7nEventForwarder",
                 RoleName="c7nEventForwarder",
@@ -107,8 +42,7 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
                                     "Resource": {
                                         "Fn::Sub": "arn:${AWS::Partition}:events:${AWS::Region}:"
                                         + self.c7n_account_id
-                                        + ":event-bus/"
-                                        + self.event_bus_name
+                                        + ":event-bus/default"
                                     },
                                     "Effect": "Allow",
                                 }
@@ -123,18 +57,7 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
                             "Action": ["sts:AssumeRole"],
                             "Effect": "Allow",
                             "Principal": {"Service": ["events.amazonaws.com"]},
-                        },
-                        {
-                            "Action": ["sts:AssumeRole"],
-                            "Effect": "Allow",
-                            "Principal": {
-                                "AWS": t.Sub(
-                                    "arn:${AWS::Partition}:iam::"
-                                    + self.c7n_account_id
-                                    + ":root"
-                                )
-                            },
-                        },
+                        }
                     ],
                 },
             )
@@ -144,18 +67,14 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
             events.Rule(
                 "ForwardAll",
                 Description="Forward all events for c7n to do its job",
-                EventPattern={
-                    "detail-type": ["AWS API Call via CloudTrail"],
-                    "detail": {"eventSource": ["cloudtrail.amazonaws.com"]},
-                },
+                EventPattern={"account": [self.account_id],},
                 State="ENABLED",
                 Targets=[
                     events.Target(
                         Arn=t.Sub(
                             "arn:${AWS::Partition}:events:${AWS::Region}:"
                             + self.c7n_account_id
-                            + ":event-bus/"
-                            + self.event_bus_name
+                            + ":event-bus/default"
                         ),
                         Id="CloudCustodianHubEventBusArn",
                         RoleArn=t.GetAtt("c7nEventForwarder", "Arn"),

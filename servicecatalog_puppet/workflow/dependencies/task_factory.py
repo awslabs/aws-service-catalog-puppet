@@ -811,7 +811,6 @@ def create(
             **common_parameters,
             c7n_version=parameters_to_use.get("c7n_version",),
             organization=parameters_to_use.get("organization",),
-            event_bus_name=parameters_to_use.get("event_bus_name",),
         )
 
     elif section_name == constants.C7N_FORWARD_EVENTS_TASK:

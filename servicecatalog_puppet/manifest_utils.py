@@ -769,7 +769,6 @@ class Manifest(dict):
         regions_configured,
         single_account="None",
     ):
-        print("section_name is: ", section_name)
         accounts = self.get(constants.ACCOUNTS)
         section = self.get(section_name)
         provisioning_tasks = list()

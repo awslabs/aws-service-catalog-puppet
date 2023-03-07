@@ -10,7 +10,6 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 class CreateEventBusTask(tasks.TaskWithReferenceAndCommonParameters):
     c7n_version = luigi.Parameter()
     organization = luigi.Parameter()
-    event_bus_name = luigi.Parameter()
 
     cachable_level = constants.CACHE_LEVEL_RUN
 
@@ -27,7 +26,6 @@ class CreateEventBusTask(tasks.TaskWithReferenceAndCommonParameters):
   eventbuspolicy:
     Type: AWS::Events::EventBusPolicy
     Properties:
-      EventBusName: !Ref eventbus
       Condition:
         Key: aws:PrincipalOrgID
         Type: StringEquals
@@ -38,8 +36,6 @@ class CreateEventBusTask(tasks.TaskWithReferenceAndCommonParameters):
     """
         tpl = t.Template()
         tpl.description = "event bus template for c7n created by service catalog puppet"
-        tpl.add_resource(events.EventBus("eventbus", Name=self.event_bus_name))
-
         # tpl.add_resource(  # TODO FIX
         #     events.EventBusPolicy(
         #         "eventbuspolicy",
@@ -76,6 +72,13 @@ class CreateEventBusTask(tasks.TaskWithReferenceAndCommonParameters):
                         PolicyDocument={
                             "Version": "2012-10-17",
                             "Statement": [
+                                {
+                                    "Action": ["sts:AssumeRole",],
+                                    "Resource": t.Sub(
+                                        "arn:${AWS::Partition}:iam::*:role/servicecatalog-puppet/c7n/Custodian"
+                                    ),
+                                    "Effect": "Allow",
+                                },
                                 {
                                     "Action": [
                                         "logs:CreateLogStream",
@@ -201,6 +204,4 @@ class CreateEventBusTask(tasks.TaskWithReferenceAndCommonParameters):
                 ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
                 Tags=self.initialiser_stack_tags,
             )
-        self.write_output(
-            dict(c7n_account_id=self.account_id, event_bus_name=self.event_bus_name,)
-        )
+        self.write_output(dict(c7n_account_id=self.account_id,))
