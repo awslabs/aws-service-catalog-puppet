@@ -645,10 +645,7 @@ def rewrite_aws_c7n_cloudtrails(manifest, puppet_account_id):
                     del account[attr]
             if not new_section.get(custodian):
                 new_section[custodian] = dict(
-                    policies=dict(),
-                    apply_to=dict(
-                        accounts=[account]
-                    ),  # TODO need to add role_name and role_path to this
+                    policies=dict(), apply_to=dict(accounts=[account]),
                 )
             new_section[custodian]["policies"][item] = details.get("policy")
     manifest[constants.C7N_AWS_CLOUDTRAILS] = new_section
