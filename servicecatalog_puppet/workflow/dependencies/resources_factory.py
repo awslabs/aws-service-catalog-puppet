@@ -496,7 +496,7 @@ def create(section_name, parameters_to_use, puppet_account_id):
             CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
         ]
 
-    elif section_name == constants.C7N_FORWARD_EVENTS_TASK:
+    elif section_name == constants.C7N_FORWARD_EVENTS_FOR_ACCOUNT_TASK:
         resources = [
             CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
         ]
@@ -507,6 +507,11 @@ def create(section_name, parameters_to_use, puppet_account_id):
         ]
 
     elif section_name == constants.C7N_AWS_CLOUDTRAILS:
+        resources = [
+            # TODO choose what goes in here
+        ]
+
+    elif section_name == constants.C7N_FORWARD_EVENTS_FOR_REGION_TASK:
         resources = [
             # TODO choose what goes in here
         ]

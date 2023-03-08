@@ -9,9 +9,8 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 c7nTrailBucket = "c7nTrailBucket"
 
 
-class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
+class ForwardEventsForRegionTask(tasks.TaskWithReferenceAndCommonParameters):
     c7n_account_id = luigi.Parameter()
-    event_bus_name = luigi.Parameter()
     cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
@@ -27,43 +26,6 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
             "event forwarder template for c7n created by service catalog puppet"
         )
         tpl.add_resource(
-            iam.Role(
-                "c7nEventForwarder",
-                RoleName="c7nEventForwarder",
-                Path="/servicecatalog-puppet/c7n/",
-                Policies=[
-                    iam.Policy(
-                        PolicyName="AllowPutEvents",
-                        PolicyDocument={
-                            "Version": "2012-10-17",
-                            "Statement": [
-                                {
-                                    "Action": ["events:PutEvents"],
-                                    "Resource": {
-                                        "Fn::Sub": "arn:${AWS::Partition}:events:${AWS::Region}:"
-                                        + self.c7n_account_id
-                                        + ":event-bus/default"
-                                    },
-                                    "Effect": "Allow",
-                                }
-                            ],
-                        },
-                    )
-                ],
-                AssumeRolePolicyDocument={
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Action": ["sts:AssumeRole"],
-                            "Effect": "Allow",
-                            "Principal": {"Service": ["events.amazonaws.com"]},
-                        }
-                    ],
-                },
-            )
-        )
-
-        tpl.add_resource(
             events.Rule(
                 "ForwardAll",
                 Description="Forward all events for c7n to do its job",
@@ -72,12 +34,16 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
                 Targets=[
                     events.Target(
                         Arn=t.Sub(
-                            "arn:${AWS::Partition}:events:${AWS::Region}:"
+                            "arn:${AWS::Partition}:events:"
+                            + constants.HOME_REGION
+                            + ":"
                             + self.c7n_account_id
                             + ":event-bus/default"
                         ),
                         Id="CloudCustodianHubEventBusArn",
-                        RoleArn=t.GetAtt("c7nEventForwarder", "Arn"),
+                        RoleArn=t.Sub(
+                            "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/servicecatalog-puppet/c7n/c7nEventForwarder"
+                        ),
                     )
                 ],
             )
@@ -87,7 +53,7 @@ class ForwardEventsTask(tasks.TaskWithReferenceAndCommonParameters):
             cloudformation.create_or_update(
                 Capabilities=["CAPABILITY_NAMED_IAM"],
                 ShouldUseChangeSets=False,
-                StackName="servicecatalog-puppet-c7n-eventforwarding",
+                StackName="servicecatalog-puppet-c7n-eventforwarding-region",
                 TemplateBody=template,
                 NotificationARNs=[
                     f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"

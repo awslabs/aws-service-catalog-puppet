@@ -96,7 +96,7 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
             s3.Bucket(
                 "c7nPoliciesBucket",
                 BucketName=t.Sub(
-                    "sc-puppet-c7n-artifacts-${AWS::AccountId}-${AWS::Region}"
+                    "sc-puppet-c7n-artifacts-${AWS::AccountId}-" + constants.HOME_REGION
                 ),
                 VersioningConfiguration=s3.VersioningConfiguration(Status="Enabled"),
                 BucketEncryption=s3.BucketEncryption(
@@ -160,7 +160,7 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                                 build={
                                     "commands": [
                                         "curl -L ${POLICIES_FILE_URL} > policies.yaml",
-                                        "custodian run -s output/logs -r ${REGIONS} --assume ${CUSTODIAN_ROLE_ARN} policies.yaml",
+                                        "for REGION in ${REGIONS}; do custodian run -s output/logs -r ${REGION} --assume ${CUSTODIAN_ROLE_ARN} policies.yaml; done",
                                     ]
                                 },
                             ),

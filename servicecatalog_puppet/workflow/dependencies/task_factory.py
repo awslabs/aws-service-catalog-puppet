@@ -815,13 +815,20 @@ def create(
             role_path=parameters_to_use.get("role_path",),
         )
 
-    elif section_name == constants.C7N_FORWARD_EVENTS_TASK:
-        from servicecatalog_puppet.workflow.c7n import forward_events_tasks
+    elif section_name == constants.C7N_FORWARD_EVENTS_FOR_ACCOUNT_TASK:
+        from servicecatalog_puppet.workflow.c7n import forward_events_for_account_tasks
 
-        return forward_events_tasks.ForwardEventsTask(
+        return forward_events_for_account_tasks.ForwardEventsForAccountTask(
             **common_parameters,
             c7n_account_id=parameters_to_use.get("c7n_account_id",),
-            event_bus_name=parameters_to_use.get("event_bus_name",),
+        )
+
+    elif section_name == constants.C7N_FORWARD_EVENTS_FOR_REGION_TASK:
+        from servicecatalog_puppet.workflow.c7n import forward_events_for_region_tasks
+
+        return forward_events_for_region_tasks.ForwardEventsForRegionTask(
+            **common_parameters,
+            c7n_account_id=parameters_to_use.get("c7n_account_id",),
         )
 
     elif section_name == constants.C7N_CREATE_CUSTODIAN_ROLE_TASK:
@@ -840,6 +847,7 @@ def create(
 
         return deploy_c7n_policies.DeployC7NPolicies(
             **common_parameters,
+            regions_enabled=parameters_to_use.get("regions_enabled",),
             role_name=parameters_to_use.get("role_name",),
             role_path=parameters_to_use.get("role_path",),
             policies=parameters_to_use.get("policies",),

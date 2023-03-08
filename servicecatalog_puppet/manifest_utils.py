@@ -635,9 +635,20 @@ def rewrite_aws_c7n_cloudtrails(manifest, puppet_account_id):
     for item, details in manifest.get(constants.C7N_AWS_CLOUDTRAILS, {}).items():
         for account in details.get("apply_to").get("accounts"):
             custodian = account.get("custodian")
+            for attr in [
+                "role_name",
+                "role_path",
+                "role_managed_policy_arns",
+                "regions_enabled",
+            ]:
+                if account.get(attr):
+                    del account[attr]
             if not new_section.get(custodian):
                 new_section[custodian] = dict(
                     policies=dict(),
+                    # role_name=account.get("role_name", constants.C7N_CUSTODIAN_ROLE_NAME_DEFAULT),
+                    # role_path=account.get("role_path", constants.C7N_CUSTODIAN_ROLE_PATH_DEFAULT),
+                    # role_managed_policy_arns=account.get("role_managed_policy_arns", constants.C7N_CUSTODIAN_MANAGED_POLICY_ARNS_DEFAULT),
                     apply_to=dict(
                         accounts=[account]
                     ),  # TODO need to add role_name and role_path to this
