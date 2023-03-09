@@ -1,4 +1,4 @@
-#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 import luigi
@@ -62,8 +62,12 @@ class DoExecuteCodeBuildRunTask(tasks.TaskWithParameters):
             parameters_to_use.append(
                 dict(name="TARGET_REGION", value=self.region, type="PLAINTEXT",)
             )
-            codebuild.start_build_and_wait_for_completion(
+            result = codebuild.start_build_and_wait_for_completion(
                 projectName=self.project_name,
                 environmentVariablesOverride=parameters_to_use,
             )
+            if result.get("buildStatus") != "SUCCEEDED":
+                raise Exception(
+                    f"Executing CodeBuild failed: {result.get('buildStatus')}"
+                )
         self.write_empty_output()

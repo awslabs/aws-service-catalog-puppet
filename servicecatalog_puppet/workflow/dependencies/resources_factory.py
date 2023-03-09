@@ -1,4 +1,4 @@
-#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
 from servicecatalog_puppet import constants
@@ -489,6 +489,36 @@ def create(section_name, parameters_to_use, puppet_account_id):
     elif section_name == constants.DESCRIBE_PORTFOLIO_SHARES:
         resources = [
             SERVICE_CATALOG_DESCRIBE_PORTFOLIO_SHARES_PER_REGION,
+        ]
+
+    elif section_name == constants.C7N_PREPARE_HUB_ACCOUNT_TASK:
+        resources = [
+            CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
+        ]
+
+    elif section_name == constants.C7N_FORWARD_EVENTS_FOR_ACCOUNT_TASK:
+        resources = [
+            CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
+        ]
+
+    elif section_name == constants.C7N_CREATE_CUSTODIAN_ROLE_TASK:
+        resources = [
+            CLOUDFORMATION_CREATE_OR_UPDATE_PER_REGION_OF_ACCOUNT,
+        ]
+
+    elif section_name == constants.C7N_AWS_CLOUDTRAILS:
+        resources = [
+            # TODO choose what goes in here
+        ]
+
+    elif section_name == constants.C7N_FORWARD_EVENTS_FOR_REGION_TASK:
+        resources = [
+            # TODO choose what goes in here
+        ]
+
+    elif section_name == constants.C7N_DEPLOY_POLICIES_TASK:
+        resources = [
+            # TODO choose what goes in here
         ]
 
     result = list()

@@ -1,4 +1,4 @@
-#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import copy
 
@@ -27,6 +27,7 @@ def generate(puppet_account_id, manifest, output_file_path):
     organizations_to_share_with = dict()
     ous_to_share_with = dict()
     accounts_to_share_with = dict()
+
     for a in manifest.get("accounts", []):
         if a.get("organization"):
             organizations_to_share_with[a.get("organization")] = True
@@ -86,7 +87,6 @@ def generate(puppet_account_id, manifest, output_file_path):
                 task_to_add["item_name"] = item_name
                 # set up for later pass
                 task_to_add["dependencies_by_reference"] = [constants.CREATE_POLICIES]
-
                 task_reference = graph.escape(
                     f"{task_to_add.get('ou_name', task_to_add.get('account_id'))}-{task_to_add.get('region')}"
                 )
@@ -190,6 +190,7 @@ def generate(puppet_account_id, manifest, output_file_path):
                     section_name,
                     task_reference,
                     task_to_add,
+                    manifest,
                 )
 
     #

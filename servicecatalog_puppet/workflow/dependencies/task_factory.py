@@ -1,4 +1,4 @@
-#  Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 import functools
 
@@ -802,6 +802,58 @@ def create(
             **common_parameters,
             portfolio_task_reference=parameters_to_use.get("portfolio_task_reference"),
             type=parameters_to_use.get("type"),
+        )
+
+    elif section_name == constants.C7N_PREPARE_HUB_ACCOUNT_TASK:
+        from servicecatalog_puppet.workflow.c7n import prepare_c7n_hub_account_task
+
+        return prepare_c7n_hub_account_task.PrepareC7NHubAccountTask(
+            **common_parameters,
+            custodian_region=parameters_to_use.get("custodian_region",),
+            c7n_version=parameters_to_use.get("c7n_version",),
+            organization=parameters_to_use.get("organization",),
+            role_name=parameters_to_use.get("role_name",),
+            role_path=parameters_to_use.get("role_path",),
+        )
+
+    elif section_name == constants.C7N_FORWARD_EVENTS_FOR_ACCOUNT_TASK:
+        from servicecatalog_puppet.workflow.c7n import forward_events_for_account_tasks
+
+        return forward_events_for_account_tasks.ForwardEventsForAccountTask(
+            **common_parameters,
+            c7n_account_id=parameters_to_use.get("c7n_account_id",),
+            custodian_region=parameters_to_use.get("custodian_region",),
+        )
+
+    elif section_name == constants.C7N_FORWARD_EVENTS_FOR_REGION_TASK:
+        from servicecatalog_puppet.workflow.c7n import forward_events_for_region_tasks
+
+        return forward_events_for_region_tasks.ForwardEventsForRegionTask(
+            **common_parameters,
+            c7n_account_id=parameters_to_use.get("c7n_account_id",),
+            custodian_region=parameters_to_use.get("custodian_region",),
+        )
+
+    elif section_name == constants.C7N_CREATE_CUSTODIAN_ROLE_TASK:
+        from servicecatalog_puppet.workflow.c7n import create_custodian_role_task
+
+        return create_custodian_role_task.CreateCustodianRoleTask(
+            **common_parameters,
+            c7n_account_id=parameters_to_use.get("c7n_account_id",),
+            role_name=parameters_to_use.get("role_name",),
+            role_path=parameters_to_use.get("role_path",),
+            role_managed_policy_arns=parameters_to_use.get("role_managed_policy_arns",),
+        )
+
+    elif section_name == constants.C7N_DEPLOY_POLICIES_TASK:
+        from servicecatalog_puppet.workflow.c7n import deploy_c7n_policies
+
+        return deploy_c7n_policies.DeployC7NPolicies(
+            **common_parameters,
+            policies=parameters_to_use.get("policies",),
+            deployments=parameters_to_use.get("deployments",),
+            role_name=parameters_to_use.get("role_name",),
+            role_path=parameters_to_use.get("role_path",),
         )
 
     else:
