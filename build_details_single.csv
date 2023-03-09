@@ -1,6 +1,0 @@
-id,startTime,duration_in_seconds,status
-servicecatalog-puppet-single-account-run:989fac9d-093c-4b58-9ff5-54f990f1c766,10/03/2021 01:13:47,211,SUCCEEDED
-servicecatalog-puppet-single-account-run:6376376b-bc85-462d-abd7-2e6d4a7d23f9,21/07/2021 15:12:29,30,FAILED
-servicecatalog-puppet-single-account-run:4e2ef004-b0fc-4da8-a8de-df4e914ad691,21/07/2021 15:14:05,145,FAILED
-servicecatalog-puppet-single-account-run:da4c3275-60d4-4fd6-83bf-76eb3c6dc386,22/03/2021 12:22:52,28,FAILED
-servicecatalog-puppet-single-account-run:10661286-73b0-42c7-b17c-756eac0c3180,22/03/2021 12:24:42,214,SUCCEEDED
