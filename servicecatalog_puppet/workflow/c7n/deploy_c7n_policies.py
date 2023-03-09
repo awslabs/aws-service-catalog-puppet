@@ -10,8 +10,8 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 class DeployC7NPolicies(tasks.TaskWithReferenceAndCommonParameters):
     role_name = luigi.Parameter()
     role_path = luigi.Parameter()
-    policies = luigi.DictParameter()
-    regions_enabled = luigi.ListParameter()
+    policies = luigi.ListParameter()
+    deployments = luigi.DictParameter()
     cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
@@ -20,21 +20,21 @@ class DeployC7NPolicies(tasks.TaskWithReferenceAndCommonParameters):
         }
 
     def run(self):
-        policies = dict(policies=[])
+        policies = list()
         member_role = "arn:aws:iam::{account_id}:role" + self.role_path + self.role_name
-        for policy_name, policy in self.policies.items():
-            p = unwrap(policy)
-            p["mode"]["type"] = "cloudtrail"
-            p["mode"]["member-role"] = member_role
-            p["name"] = policy_name
-            policies["policies"].append(p)
+        for policy in unwrap(self.policies):
+            policy["mode"]["type"] = "cloudtrail"
+            policy["mode"]["member-role"] = member_role
+            policies.append(policy)
 
-        bucket = f"sc-puppet-c7n-artifacts-{self.account_id}-{constants.HOME_REGION}"
+        bucket = f"sc-puppet-c7n-artifacts-{self.account_id}-{self.region}"
         key = str(datetime.now())
 
         with self.spoke_regional_client("s3") as s3:
             s3.put_object(
-                Bucket=bucket, Key=key, Body=serialisation_utils.dump(unwrap(policies)),
+                Bucket=bucket,
+                Key=key,
+                Body=serialisation_utils.dump(unwrap(dict(policies=policies))),
             )
             cached_output_signed_url = s3.generate_presigned_url(
                 "get_object",
@@ -45,11 +45,10 @@ class DeployC7NPolicies(tasks.TaskWithReferenceAndCommonParameters):
         custodian_role_arn = (
             f"arn:aws:iam::{self.account_id}:role" + self.role_path + self.role_name
         )
+        regions_to_run_in = list(self.deployments.keys())
         parameters_to_use = [
             dict(name="POLICIES_FILE_URL", value=policies_file_url, type="PLAINTEXT",),
-            dict(
-                name="REGIONS", value=" ".join(self.regions_enabled), type="PLAINTEXT",
-            ),
+            dict(name="REGIONS", value=" ".join(regions_to_run_in), type="PLAINTEXT",),
             dict(
                 name="CUSTODIAN_ROLE_ARN", value=custodian_role_arn, type="PLAINTEXT",
             ),

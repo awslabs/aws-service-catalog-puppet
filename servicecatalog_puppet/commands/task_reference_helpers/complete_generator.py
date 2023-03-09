@@ -28,153 +28,7 @@ def generate(puppet_account_id, manifest, output_file_path):
     ous_to_share_with = dict()
     accounts_to_share_with = dict()
 
-    c7n_aws_cloudtrail_dependencies = list()
-
-    # configure c7n hubs
-    custodians = dict()
-    if manifest.get("c7n", {}).get("aws", {}).get("modes", {}).get("cloudtrail", {}):
-        cloudtrail = (
-            manifest.get("c7n", {})
-            .get("aws", {})
-            .get("modes", {})
-            .get("cloudtrail", {})
-        )
-        for custodian_name, custodian_config in cloudtrail.get(
-            "custodians", {}
-        ).items():
-            custodian_account_id = custodian_config.get("account_id")
-
-            custodian_config["role_name"] = custodian_config.get(
-                "role_name", constants.C7N_CUSTODIAN_ROLE_NAME_DEFAULT
-            )
-            custodian_config["role_path"] = custodian_config.get(
-                "role_path", constants.C7N_CUSTODIAN_ROLE_PATH_DEFAULT
-            )
-            custodian_config["role_managed_policy_arns"] = custodian_config.get(
-                "role_managed_policy_arns",
-                constants.C7N_CUSTODIAN_MANAGED_POLICY_ARNS_DEFAULT,
-            )
-
-            for a in manifest.get("accounts", []):
-                if a.get("account_id") == custodian_account_id:
-                    custodian_config.update(a)
-                    break
-            else:
-                raise Exception(
-                    f"Could not find custodian {custodian_name} ({account_id}) in accounts section"
-                )
-            custodians[custodian_name] = custodian_config
-
-            custodian_c7n_version = custodian_config.get(
-                "c7n_version", constants.C7N_VERSION_DEFAULT
-            )
-            custodian_region = custodian_config.get("default_region")
-            custodian_role_name = custodian_config.get("role_name")
-            custodian_role_path = custodian_config.get("role_path")
-            custodian_role_managed_policy_arns = custodian_config.get(
-                "role_managed_policy_arns"
-            )
-            create_custodian_event_bus_task_ref = (
-                f"{constants.C7N_PREPARE_HUB_ACCOUNT_TASK}-{custodian_name}"
-            )
-            c7n_aws_cloudtrail_dependencies.append(create_custodian_event_bus_task_ref)
-            all_tasks[create_custodian_event_bus_task_ref] = dict(
-                task_reference=create_custodian_event_bus_task_ref,
-                section_name=constants.C7N_PREPARE_HUB_ACCOUNT_TASK,
-                role_name=custodian_role_name,
-                role_path=custodian_role_path,
-                account_id=custodian_account_id,
-                region=custodian_region,
-                organization=custodian_config.get("organization"),
-                c7n_version=custodian_c7n_version,
-                manifest_section_names=dict(),
-                manifest_item_names=dict(),
-                dependencies_by_reference=[],
-            )
-            create_custodian_role_ref = (
-                f"{constants.C7N_CREATE_CUSTODIAN_ROLE_TASK}-{custodian_account_id}"
-            )
-
-            all_tasks[create_custodian_role_ref] = dict(
-                section_name=constants.C7N_CREATE_CUSTODIAN_ROLE_TASK,
-                task_reference=create_custodian_role_ref,
-                account_id=custodian_account_id,
-                region=custodian_region,
-                c7n_account_id=custodian_account_id,
-                role_name=custodian_role_name,
-                role_path=custodian_role_path,
-                role_managed_policy_arns=custodian_role_managed_policy_arns,
-                manifest_section_names=dict(),
-                manifest_item_names=dict(),
-                dependencies_by_reference=[],
-            )
-            c7n_aws_cloudtrail_dependencies.append(create_custodian_role_ref)
-
     for a in manifest.get("accounts", []):
-        # configure c7n spokes
-        if a.get("c7n"):
-            cloudtrail = a["c7n"]["modes"]["cloudtrail"]
-
-            for custodian_name in cloudtrail.get("custodians", []):
-                custodian = custodians.get(custodian_name)
-                custodian_account_id = custodian.get("account_id")
-                custodian_region = custodian.get("default_region")
-                custodian_role_name = custodian.get(
-                    "role_name", constants.C7N_CUSTODIAN_ROLE_NAME_DEFAULT
-                )
-                custodian_role_path = custodian.get(
-                    "role_path", constants.C7N_CUSTODIAN_ROLE_PATH_DEFAULT
-                )
-                custodian_role_managed_policy_arns = custodian.get(
-                    "role_managed_policy_arns",
-                    constants.C7N_CUSTODIAN_MANAGED_POLICY_ARNS_DEFAULT,
-                )
-                account_id = a.get("account_id")
-                create_custodian_role_ref = (
-                    f"{constants.C7N_CREATE_CUSTODIAN_ROLE_TASK}-{account_id}"
-                )
-                all_tasks[create_custodian_role_ref] = dict(
-                    section_name=constants.C7N_CREATE_CUSTODIAN_ROLE_TASK,
-                    task_reference=create_custodian_role_ref,
-                    account_id=account_id,
-                    region=custodian_region,
-                    c7n_account_id=custodian_account_id,
-                    role_name=custodian_role_name,
-                    role_path=custodian_role_path,
-                    role_managed_policy_arns=custodian_role_managed_policy_arns,
-                    manifest_section_names=dict(),
-                    manifest_item_names=dict(),
-                    dependencies_by_reference=[],
-                )
-                forward_events_for_account_tasks = (
-                    f"{constants.C7N_FORWARD_EVENTS_FOR_ACCOUNT_TASK}-{account_id}"
-                )
-                all_tasks[forward_events_for_account_tasks] = dict(
-                    section_name=constants.C7N_FORWARD_EVENTS_FOR_ACCOUNT_TASK,
-                    task_reference=forward_events_for_account_tasks,
-                    account_id=account_id,
-                    region=custodian_region,
-                    c7n_account_id=custodian_account_id,
-                    manifest_section_names=dict(),
-                    manifest_item_names=dict(),
-                    dependencies_by_reference=[
-                        f"{constants.C7N_PREPARE_HUB_ACCOUNT_TASK}-{custodian_name}",
-                    ],
-                )
-                for r in a.get("regions_enabled", []) + a.get("enabled_regions", []):
-                    forward_events_for_region_task = f"{constants.C7N_FORWARD_EVENTS_FOR_REGION_TASK}-{account_id}-{r}"
-                    all_tasks[forward_events_for_region_task] = dict(
-                        section_name=constants.C7N_FORWARD_EVENTS_FOR_REGION_TASK,
-                        task_reference=forward_events_for_region_task,
-                        account_id=account_id,
-                        region=r,
-                        c7n_account_id=custodian_account_id,
-                        manifest_section_names=dict(),
-                        manifest_item_names=dict(),
-                        dependencies_by_reference=[forward_events_for_account_tasks,],
-                    )
-
-        # do other account stuff
         if a.get("organization"):
             organizations_to_share_with[a.get("organization")] = True
         if a.get("expanded_from"):
@@ -233,19 +87,6 @@ def generate(puppet_account_id, manifest, output_file_path):
                 task_to_add["item_name"] = item_name
                 # set up for later pass
                 task_to_add["dependencies_by_reference"] = [constants.CREATE_POLICIES]
-                if section_name_singular == constants.C7N_AWS_CLOUDTRAIL:
-                    custodian_name = task_to_add.get("item_name")
-                    custodian = custodians[custodian_name]
-                    task_to_add["regions_enabled"] = custodian["regions_enabled"]
-                    task_to_add["role_name"] = custodian["role_name"]
-                    task_to_add["role_path"] = custodian["role_path"]
-                    task_to_add["role_managed_policy_arns"] = custodian[
-                        "role_managed_policy_arns"
-                    ]
-                    task_to_add["dependencies_by_reference"].extend(
-                        c7n_aws_cloudtrail_dependencies
-                    )
-
                 task_reference = graph.escape(
                     f"{task_to_add.get('ou_name', task_to_add.get('account_id'))}-{task_to_add.get('region')}"
                 )
@@ -349,6 +190,7 @@ def generate(puppet_account_id, manifest, output_file_path):
                     section_name,
                     task_reference,
                     task_to_add,
+                    manifest,
                 )
 
     #

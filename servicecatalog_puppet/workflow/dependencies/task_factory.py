@@ -809,6 +809,7 @@ def create(
 
         return prepare_c7n_hub_account_task.PrepareC7NHubAccountTask(
             **common_parameters,
+            custodian_region=parameters_to_use.get("custodian_region",),
             c7n_version=parameters_to_use.get("c7n_version",),
             organization=parameters_to_use.get("organization",),
             role_name=parameters_to_use.get("role_name",),
@@ -821,6 +822,7 @@ def create(
         return forward_events_for_account_tasks.ForwardEventsForAccountTask(
             **common_parameters,
             c7n_account_id=parameters_to_use.get("c7n_account_id",),
+            custodian_region=parameters_to_use.get("custodian_region",),
         )
 
     elif section_name == constants.C7N_FORWARD_EVENTS_FOR_REGION_TASK:
@@ -829,6 +831,7 @@ def create(
         return forward_events_for_region_tasks.ForwardEventsForRegionTask(
             **common_parameters,
             c7n_account_id=parameters_to_use.get("c7n_account_id",),
+            custodian_region=parameters_to_use.get("custodian_region",),
         )
 
     elif section_name == constants.C7N_CREATE_CUSTODIAN_ROLE_TASK:
@@ -842,15 +845,15 @@ def create(
             role_managed_policy_arns=parameters_to_use.get("role_managed_policy_arns",),
         )
 
-    elif section_name == constants.C7N_AWS_CLOUDTRAILS:
+    elif section_name == constants.C7N_DEPLOY_POLICIES_TASK:
         from servicecatalog_puppet.workflow.c7n import deploy_c7n_policies
 
         return deploy_c7n_policies.DeployC7NPolicies(
             **common_parameters,
-            regions_enabled=parameters_to_use.get("regions_enabled",),
+            policies=parameters_to_use.get("policies",),
+            deployments=parameters_to_use.get("deployments",),
             role_name=parameters_to_use.get("role_name",),
             role_path=parameters_to_use.get("role_path",),
-            policies=parameters_to_use.get("policies",),
         )
 
     else:

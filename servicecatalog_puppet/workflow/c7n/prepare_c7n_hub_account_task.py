@@ -8,6 +8,7 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
+    custodian_region = luigi.Parameter()
     c7n_version = luigi.Parameter()
     organization = luigi.Parameter()
     role_name = luigi.Parameter()
@@ -96,7 +97,7 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
             s3.Bucket(
                 "c7nPoliciesBucket",
                 BucketName=t.Sub(
-                    "sc-puppet-c7n-artifacts-${AWS::AccountId}-" + constants.HOME_REGION
+                    "sc-puppet-c7n-artifacts-${AWS::AccountId}-" + self.custodian_region
                 ),
                 VersioningConfiguration=s3.VersioningConfiguration(Status="Enabled"),
                 BucketEncryption=s3.BucketEncryption(

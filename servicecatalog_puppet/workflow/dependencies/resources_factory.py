@@ -516,6 +516,11 @@ def create(section_name, parameters_to_use, puppet_account_id):
             # TODO choose what goes in here
         ]
 
+    elif section_name == constants.C7N_DEPLOY_POLICIES_TASK:
+        resources = [
+            # TODO choose what goes in here
+        ]
+
     result = list()
     for r in resources:
         try:

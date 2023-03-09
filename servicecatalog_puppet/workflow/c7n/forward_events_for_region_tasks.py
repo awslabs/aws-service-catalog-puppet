@@ -1,6 +1,6 @@
 import luigi
 import troposphere as t
-from troposphere import events, iam, s3
+from troposphere import events
 
 from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
@@ -11,6 +11,7 @@ c7nTrailBucket = "c7nTrailBucket"
 
 class ForwardEventsForRegionTask(tasks.TaskWithReferenceAndCommonParameters):
     c7n_account_id = luigi.Parameter()
+    custodian_region = luigi.Parameter()
     cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
@@ -35,7 +36,7 @@ class ForwardEventsForRegionTask(tasks.TaskWithReferenceAndCommonParameters):
                     events.Target(
                         Arn=t.Sub(
                             "arn:${AWS::Partition}:events:"
-                            + constants.HOME_REGION
+                            + self.custodian_region
                             + ":"
                             + self.c7n_account_id
                             + ":event-bus/default"

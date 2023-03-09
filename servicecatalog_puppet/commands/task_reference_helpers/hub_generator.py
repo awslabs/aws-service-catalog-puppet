@@ -31,7 +31,7 @@ def generate(puppet_account_id, all_tasks, output_file_path):
                     constants.PORTFOLIO_SHARE_AND_ACCEPT_AWS_ORGANIZATIONS,
                 ]
         else:
-            raise Exception("Unhandled execution")
+            raise Exception(f"Unhandled execution: {execution}")
 
         if should_include:
             tasks_to_include[task_name] = task

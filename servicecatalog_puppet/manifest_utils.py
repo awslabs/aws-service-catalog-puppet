@@ -616,41 +616,42 @@ def rewrite_scps(manifest, puppet_account_id):
     return manifest
 
 
-def rewrite_aws_c7n_cloudtrails(manifest, puppet_account_id):
-    for item, details in manifest.get(constants.C7N_AWS_CLOUDTRAILS, {}).items():
-        custodians = details.get("apply_to").get("custodians")
-        for custodian_details in custodians:
-            custodian_details.update(
-                manifest["c7n"]["aws"]["modes"]["cloudtrail"]["custodians"][
-                    custodian_details.get("custodian")
-                ]
-            )
-            for a in manifest.get("accounts"):
-                if a.get("account_id") == custodian_details.get("account_id"):
-                    custodian_details["regions"] = [a.get("default_region")]
-        details["apply_to"]["accounts"] = custodians
-        del details["apply_to"]["custodians"]
-
-    new_section = dict()
-    for item, details in manifest.get(constants.C7N_AWS_CLOUDTRAILS, {}).items():
-        for account in details.get("apply_to").get("accounts"):
-            custodian = account.get("custodian")
-            for attr in [
-                "role_name",
-                "role_path",
-                "role_managed_policy_arns",
-                "regions_enabled",
-            ]:
-                if account.get(attr):
-                    del account[attr]
-            if not new_section.get(custodian):
-                new_section[custodian] = dict(
-                    policies=dict(), apply_to=dict(accounts=[account]),
-                )
-            new_section[custodian]["policies"][item] = details.get("policy")
-    manifest[constants.C7N_AWS_CLOUDTRAILS] = new_section
-
-    return manifest
+#
+# def rewrite_aws_c7n_cloudtrails(manifest, puppet_account_id): #TODO remove
+#     for item, details in manifest.get(constants.C7N_AWS_CLOUDTRAILS, {}).items():
+#         custodians = details.get("apply_to").get("custodians")
+#         for custodian_details in custodians:
+#             custodian_details.update(
+#                 manifest["c7n"]["aws"]["modes"]["cloudtrail"]["custodians"][
+#                     custodian_details.get("custodian")
+#                 ]
+#             )
+#             for a in manifest.get("accounts"):
+#                 if a.get("account_id") == custodian_details.get("account_id"):
+#                     custodian_details["regions"] = [a.get("default_region")]
+#         details["apply_to"]["accounts"] = custodians
+#         del details["apply_to"]["custodians"]
+#
+#     new_section = dict()
+#     for item, details in manifest.get(constants.C7N_AWS_CLOUDTRAILS, {}).items():
+#         for account in details.get("apply_to").get("accounts"):
+#             custodian = account.get("custodian")
+#             for attr in [
+#                 "role_name",
+#                 "role_path",
+#                 "role_managed_policy_arns",
+#                 "regions_enabled",
+#             ]:
+#                 if account.get(attr):
+#                     del account[attr]
+#             if not new_section.get(custodian):
+#                 new_section[custodian] = dict(
+#                     policies=dict(), apply_to=dict(accounts=[account]),
+#                 )
+#             new_section[custodian]["policies"][item] = details.get("policy")
+#     manifest[constants.C7N_AWS_CLOUDTRAILS] = new_section
+#
+#     return manifest
 
 
 def expand_path(account, client, manifest):
@@ -953,7 +954,22 @@ class Manifest(dict):
                 name=item.get("name"),
                 tags=item.get("tags"),
             ),
-            constants.C7N_AWS_CLOUDTRAILS: dict(policies=item.get("policies")),
+            constants.C7N_AWS_CLOUDTRAILS: dict(
+                execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
+                policies=item.get("policies"),
+                custodian=item.get("custodian"),
+                role_name=item.get(
+                    "role_name", constants.C7N_CUSTODIAN_ROLE_NAME_DEFAULT
+                ),
+                role_path=item.get(
+                    "role_path", constants.C7N_CUSTODIAN_ROLE_PATH_DEFAULT
+                ),
+                role_managed_policy_arns=item.get(
+                    "role_managed_policy_arns",
+                    constants.C7N_CUSTODIAN_MANAGED_POLICY_ARNS_DEFAULT,
+                ),
+                c7n_version=item.get("c7n_version", constants.C7N_VERSION_DEFAULT),
+            ),
         }.get(section_name)
 
         common_parameters.update(
