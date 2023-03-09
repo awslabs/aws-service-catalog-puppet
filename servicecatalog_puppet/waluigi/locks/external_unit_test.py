@@ -1,3 +1,6 @@
+#  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 import unittest
 
 from servicecatalog_puppet.waluigi.constants import RESOURCES_REQUIRED

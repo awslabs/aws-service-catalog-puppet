@@ -1,3 +1,6 @@
+#  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  SPDX-License-Identifier: Apache-2.0
+
 from servicecatalog_puppet.waluigi.processes import runner as processes_runner
 from servicecatalog_puppet.waluigi.threads import runner as threads_runner
 
