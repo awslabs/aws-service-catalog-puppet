@@ -121,9 +121,6 @@ def expand(f, puppet_account_id, regions, single_account, subset=None):
     new_manifest = manifest_utils.rewrite_ssm_parameters(new_manifest)
     new_manifest = manifest_utils.rewrite_stacks(new_manifest, puppet_account_id)
     new_manifest = manifest_utils.rewrite_scps(new_manifest, puppet_account_id)
-    # new_manifest = manifest_utils.rewrite_aws_c7n_cloudtrails(
-    #     new_manifest, puppet_account_id
-    # )
     new_manifest = manifest_utils.parse_conditions(new_manifest)
 
     if subset and subset.get("section"):

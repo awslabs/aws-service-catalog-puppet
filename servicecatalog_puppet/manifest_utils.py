@@ -616,44 +616,6 @@ def rewrite_scps(manifest, puppet_account_id):
     return manifest
 
 
-#
-# def rewrite_aws_c7n_cloudtrails(manifest, puppet_account_id): #TODO remove
-#     for item, details in manifest.get(constants.C7N_AWS_CLOUDTRAILS, {}).items():
-#         custodians = details.get("apply_to").get("custodians")
-#         for custodian_details in custodians:
-#             custodian_details.update(
-#                 manifest["c7n"]["aws"]["modes"]["cloudtrail"]["custodians"][
-#                     custodian_details.get("custodian")
-#                 ]
-#             )
-#             for a in manifest.get("accounts"):
-#                 if a.get("account_id") == custodian_details.get("account_id"):
-#                     custodian_details["regions"] = [a.get("default_region")]
-#         details["apply_to"]["accounts"] = custodians
-#         del details["apply_to"]["custodians"]
-#
-#     new_section = dict()
-#     for item, details in manifest.get(constants.C7N_AWS_CLOUDTRAILS, {}).items():
-#         for account in details.get("apply_to").get("accounts"):
-#             custodian = account.get("custodian")
-#             for attr in [
-#                 "role_name",
-#                 "role_path",
-#                 "role_managed_policy_arns",
-#                 "regions_enabled",
-#             ]:
-#                 if account.get(attr):
-#                     del account[attr]
-#             if not new_section.get(custodian):
-#                 new_section[custodian] = dict(
-#                     policies=dict(), apply_to=dict(accounts=[account]),
-#                 )
-#             new_section[custodian]["policies"][item] = details.get("policy")
-#     manifest[constants.C7N_AWS_CLOUDTRAILS] = new_section
-#
-#     return manifest
-
-
 def expand_path(account, client, manifest):
     ou = client.convert_path_to_ou(account.get("ou"))
     account["ou_name"] = account["ou"]
