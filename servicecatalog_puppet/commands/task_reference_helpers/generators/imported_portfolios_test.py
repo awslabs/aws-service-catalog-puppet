@@ -1,5 +1,4 @@
 import unittest
-from unittest import skip
 
 from servicecatalog_puppet import constants
 

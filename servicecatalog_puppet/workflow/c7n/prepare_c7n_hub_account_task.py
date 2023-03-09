@@ -1,7 +1,7 @@
 import luigi
 import troposphere as t
 import yaml
-from troposphere import codebuild, events, iam, s3
+from troposphere import codebuild, iam, s3
 
 from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
