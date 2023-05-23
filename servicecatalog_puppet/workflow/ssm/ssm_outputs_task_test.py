@@ -12,6 +12,7 @@ class SSMOutputsTasksTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     param_name = "param_name"
     stack_output = "stack_output"
     task_generating_output = "task_generating_output"
+    force_operation = False
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.ssm import ssm_outputs_task
@@ -69,7 +70,6 @@ class TerminateSSMOutputsTasksTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
         self.sut = self.module.TerminateSSMOutputsTasks(
             **self.get_common_args(),
-            puppet_account_id=self.puppet_account_id,
             account_id=self.account_id,
             region=self.region,
             param_name=self.param_name
