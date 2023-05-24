@@ -322,9 +322,21 @@ def generate(puppet_account_id, manifest, output_file_path):
                         item_name_to_use = stack_ref_stack
 
                     boto3_parameter_task_reference = f"{constants.BOTO3_PARAMETERS}-{section_name_to_use}-{item_name_to_use}-{parameter_name}-{account_id_to_use_for_boto3_call}-{region_to_use_for_boto3_call}"
+                    task_execution = task.get(
+                        "execution", constants.EXECUTION_MODE_DEFAULT
+                    )
+                    if task.get(task_execution) in [
+                        constants.EXECUTION_MODE_HUB,
+                        constants.EXECUTION_MODE_ASYNC,
+                    ]:
+                        if account_id_to_use_for_boto3_call != puppet_account_id:
+                            raise Exception(
+                                f"Cannot use {task_execution} for a task that is not in the puppet account"
+                            )
                     if not new_tasks.get(boto3_parameter_task_reference):
                         new_tasks[boto3_parameter_task_reference] = dict(
                             status=task.get("status"),
+                            execution=task_execution,
                             task_reference=boto3_parameter_task_reference,
                             dependencies_by_reference=dependencies,
                             manifest_section_names=dict(),
