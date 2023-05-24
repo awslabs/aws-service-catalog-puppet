@@ -6,7 +6,7 @@ from servicecatalog_puppet.workflow import workflow_utils
 
 def generate(puppet_account_id, all_tasks, output_file_path):
     tasks_to_include = dict()
-    generate_manifest_ref = "generate-manifest"
+    generate_manifest_ref = constants.GENERATE_MANIFEST
     for task_name, task in all_tasks.get("all_tasks").items():
         execution = task.get("execution", constants.EXECUTION_MODE_DEFAULT)
         if execution in [constants.EXECUTION_MODE_HUB, constants.EXECUTION_MODE_ASYNC]:
