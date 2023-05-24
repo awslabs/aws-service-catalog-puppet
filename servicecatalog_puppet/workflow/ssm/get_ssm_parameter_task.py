@@ -20,10 +20,13 @@ class GetSSMParameterTask(tasks.TaskWithReference):
             "param_name": self.param_name,
         }
 
+    def get_parameter_name_to_use(self):
+        return self.param_name.replace("${AWS::Region}", self.region).replace(
+            "${AWS::AccountId}", self.account_id
+        )
+
     def run(self):
-        parameter_name_to_use = self.param_name.replace(
-            "${AWS::Region}", self.region
-        ).replace("${AWS::AccountId}", self.account_id)
+        parameter_name_to_use = self.get_parameter_name_to_use()
         result = {}
         with self.spoke_regional_client("ssm") as ssm:
             try:
@@ -31,6 +34,7 @@ class GetSSMParameterTask(tasks.TaskWithReference):
                 result = {parameter_name_to_use: parameter.get("Parameter")}
             except ssm.exceptions.ParameterNotFound:
                 pass
+
         self.write_output(result)
 
 
@@ -49,13 +53,17 @@ class GetSSMParameterByPathTask(tasks.TaskWithReference):
         }
 
     def run(self):
-        path = self.path.replace("${AWS::Region}", self.region).replace(
-            "${AWS::AccountId}", self.account_id
-        )
         parameters = dict()
         with self.spoke_regional_client("ssm") as ssm:
             paginator = ssm.get_paginator("get_parameters_by_path")
-            for page in paginator.paginate(Path=path, Recursive=True):
+            for page in paginator.paginate(
+                Path=self.get_parameter_path_to_use(), Recursive=True
+            ):
                 for parameter in page.get("Parameters", []):
                     parameters[parameter.get("Name")] = parameter
         self.write_output(parameters)
+
+    def get_parameter_path_to_use(self):
+        return self.path.replace("${AWS::Region}", self.region).replace(
+            "${AWS::AccountId}", self.account_id
+        )

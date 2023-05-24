@@ -40,14 +40,23 @@ class GetSSMParameterTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    @skip
     def test_run(self):
         # setup
+        parameter = dict(this="that",)
+        expected_output = {self.param_name: parameter}
+        self.add_expected_request_and_response(
+            tasks_unit_tests_helper.SPOKE_REGIONAL_CLIENT,
+            "ssm",
+            "get_parameter",
+            dict(Name=self.sut.get_parameter_name_to_use()),
+            dict(Parameter=parameter),
+        )
+
         # exercise
-        actual_result = self.sut.run()
+        self.sut.run()
 
         # verify
-        raise NotImplementedError()
+        self.assert_output(expected_output)
 
 
 class GetSSMParameterByPathTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
@@ -84,11 +93,19 @@ class GetSSMParameterByPathTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
         # verify
         self.assertEqual(expected_result, actual_result)
 
-    @skip
     def test_run(self):
-        # setup
+        parameter = dict(Name="that", Value="hello")
+        expected_output = dict(that=parameter)
+        self.add_expected_paginated_request_and_response(
+            tasks_unit_tests_helper.SPOKE_REGIONAL_CLIENT,
+            "ssm",
+            "get_parameters_by_path",
+            dict(Path=self.sut.get_parameter_path_to_use(), Recursive=True),
+            [dict(Parameters=[parameter]),],
+        )
+
         # exercise
-        actual_result = self.sut.run()
+        self.sut.run()
 
         # verify
-        raise NotImplementedError()
+        self.assert_output(expected_output)

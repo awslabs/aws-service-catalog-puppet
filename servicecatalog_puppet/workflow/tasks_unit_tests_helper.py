@@ -4,6 +4,8 @@
 import unittest
 from unittest import mock
 
+SPOKE_REGIONAL_CLIENT = "SPOKE_REGIONAL_CLIENT"
+
 
 def mocked_client():
     context_handler_mock = mock.MagicMock()
@@ -12,17 +14,141 @@ def mocked_client():
     return client_mock, context_handler_mock
 
 
-class FakeInput(object):
-    values = None
+class Paginator:
+    def __init__(self, items, expected_kwargs):
+        self.items = items
+        self.expected_kwargs = expected_kwargs
 
-    def __init__(self) -> None:
-        self.values = dict()
+    def paginate(self, **kwargs):
+        if self.expected_kwargs != kwargs:
+            raise Exception(
+                f"Expected paginate kwargs {self.expected_kwargs} but got {kwargs}"
+            )
+        return self.items
 
-    def get_value(self, name):
-        return self.values.get(name)
 
-    def set_value(self, name, value):
-        self.values[name] = value
+class Manager:
+    def __init__(self):
+        self.expected_requests_and_responses = []
+        self.index = 0
+
+    def add_expected_request_and_response(
+        self,
+        client_type,
+        client_name,
+        uses_paginator,
+        request_name,
+        request_parameters,
+        response_to_return,
+    ):
+        self.expected_requests_and_responses.append(
+            (
+                client_type,
+                client_name,
+                uses_paginator,
+                request_name,
+                request_parameters,
+                response_to_return,
+            )
+        )
+
+    def get_attribute_for(
+        self,
+        actual_client_type,
+        actual_service,
+        actual_method,
+        actual_region_name,
+        actual_retry_max_attempts,
+    ):
+        (
+            expected_client_type,
+            expected_client_name,
+            expected_uses_paginator,
+            expected_method,
+            expected_parameters,
+            response_to_return,
+        ) = self.expected_requests_and_responses[self.index]
+        # self.index += 1
+
+        if actual_client_type != actual_client_type:
+            raise Exception(
+                f"Expected client type {expected_client_type} but got {actual_client_type}"
+            )
+
+        if actual_service != expected_client_name:
+            raise Exception(
+                f"Expected client name {expected_client_name} but got {actual_service}"
+            )
+
+        if expected_uses_paginator:
+            if actual_method != "get_paginator":
+                raise Exception(
+                    f"Expected a paginator to be requested but {actual_method} was requested instead"
+                )
+
+            def paginator_to_return(*args, **kwargs):
+                if args[0] != expected_method:
+                    raise Exception(
+                        f"Expected paginator: {expected_method} does not match actual: {args[0]}"
+                    )
+                return Paginator(response_to_return, expected_parameters)
+
+            return paginator_to_return
+
+        else:
+            if actual_method != expected_method:
+                raise Exception(
+                    f"Expected request name {expected_method} but got {actual_method}"
+                )
+
+            def call_to_return(*args, **kwargs):
+                if kwargs != expected_parameters:
+                    raise Exception(
+                        f"Expected parameters: {expected_parameters} does not match actual: {kwargs}"
+                    )
+                return response_to_return
+
+            return call_to_return
+
+        mock_client = mock.MagicMock()
+        mock_client.return_value = response_to_return
+        return mock_client
+
+
+class FakeClientContextManager:
+    def __init__(
+        self, client_type, manager, service, region_name=None, retry_max_attempts=None
+    ):
+        self.client_type = client_type
+        self.manager = manager
+        self.service = service
+        self.region_name = region_name
+        self.retry_max_attempts = retry_max_attempts
+        self.expected_requests_and_responses = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.expected_requests_and_responses = []
+
+    def __getattr__(self, attr):
+        if attr == "manager":
+            return self.manager
+        elif attr == "client_type":
+            return self.client_type
+        elif attr == "args":
+            return self.args
+        elif attr == "kwargs":
+            return self.kwargs
+        else:
+            return self.manager.get_attribute_for(
+                SPOKE_REGIONAL_CLIENT,
+                self.service,
+                attr,
+                self.region_name,
+                self.retry_max_attempts,
+            )
 
 
 class PuppetTaskUnitTest(unittest.TestCase):
@@ -43,101 +169,60 @@ class PuppetTaskUnitTest(unittest.TestCase):
     run_token = "NOW"
 
     def wire_up_mocks(self):
-        self.spoke_client_mock, self.sut.spoke_client = mocked_client()
-        (
-            self.spoke_regional_client_mock,
-            self.sut.spoke_regional_client,
-        ) = mocked_client()
-
-        self.hub_client_mock, self.sut.hub_client = mocked_client()
-        self.hub_regional_client_mock, self.sut.hub_regional_client = mocked_client()
-
-        self.client_mock, self.sut.client = mocked_client()
-        self.regional_client_mock, self.sut.regional_client = mocked_client()
-
         self.sut.write_output = mock.MagicMock()
         self.sut.write_empty_output = mock.MagicMock()
-        self.sut.input = mock.MagicMock()
 
-        self.fake_inputs = FakeInput()
-        self.sut.read_from_input = self.fake_inputs.get_value
+        self.manager = Manager()
 
-    def assert_client_called_with(
+        # start of spoke_regional_client
+        def fake_spoke_regional_client(
+            service, region_name=None, retry_max_attempts=None
+        ):
+            return FakeClientContextManager(
+                SPOKE_REGIONAL_CLIENT,
+                self.manager,
+                service,
+                region_name,
+                retry_max_attempts,
+            )
+
+        self.sut.spoke_regional_client = mock.MagicMock(
+            side_effect=fake_spoke_regional_client
+        )
+
+    def add_expected_request_and_response(
         self,
-        spoke_regional_client,
-        spoke_regional_client_mock,
-        client_used,
-        function_name_called,
-        function_parameters,
-        extra_args={},
+        client_type,
+        client_name,
+        request_name,
+        request_parameters,
+        response_to_return,
     ):
-        spoke_regional_client.assert_called_once_with(client_used, **extra_args)
-
-        function_called = getattr(spoke_regional_client_mock, function_name_called)
-        function_called.assert_called_once_with(**function_parameters)
-
-    def assert_spoke_regional_client_called_with(
-        self, client_used, function_name_called, function_parameters
-    ):
-        self.assert_client_called_with(
-            self.sut.spoke_regional_client,
-            self.spoke_regional_client_mock,
-            client_used,
-            function_name_called,
-            function_parameters,
+        self.manager.add_expected_request_and_response(
+            client_type,
+            client_name,
+            False,
+            request_name,
+            request_parameters,
+            response_to_return,
         )
 
-    def assert_hub_regional_client_called_with(
-        self, client_used, function_name_called, function_parameters, extra_args={}
+    def add_expected_paginated_request_and_response(
+        self,
+        client_type,
+        client_name,
+        request_name,
+        request_parameters,
+        response_to_return,
     ):
-        self.assert_client_called_with(
-            self.sut.hub_regional_client,
-            self.hub_regional_client_mock,
-            client_used,
-            function_name_called,
-            function_parameters,
-            extra_args,
+        self.manager.add_expected_request_and_response(
+            client_type,
+            client_name,
+            True,
+            request_name,
+            request_parameters,
+            response_to_return,
         )
-
-    def assert_regional_client_called_with(
-        self, client_used, function_name_called, function_parameters, extra_args={}
-    ):
-        self.assert_client_called_with(
-            self.sut.regional_client,
-            self.regional_client_mock,
-            client_used,
-            function_name_called,
-            function_parameters,
-            extra_args,
-        )
-
-    def inject_client_with_response(self, client, function_name, response):
-        f = getattr(client, function_name)
-        f.return_value = response
-
-    def inject_hub_regional_client_called_with_response(
-        self, client_used, function_name_called, response
-    ):
-        self.inject_client_with_response(
-            self.hub_regional_client_mock, function_name_called, response
-        )
-
-    def inject_regional_client_called_with_response(
-        self, client_used, function_name_called, response
-    ):
-        self.inject_client_with_response(
-            self.regional_client_mock, function_name_called, response
-        )
-
-    def inject_spoke_regional_client_called_with_response(
-        self, client_used, function_name_called, response
-    ):
-        self.inject_client_with_response(
-            self.spoke_regional_client_mock, function_name_called, response
-        )
-
-    def inject_into_input(self, name, value):
-        self.fake_inputs.set_value(name, value)
 
     def assert_output(self, expected_output):
         self.sut.write_output.assert_called_once_with(expected_output)
