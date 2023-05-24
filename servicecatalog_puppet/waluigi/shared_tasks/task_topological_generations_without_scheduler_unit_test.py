@@ -12,6 +12,8 @@ from servicecatalog_puppet.waluigi.constants import (
     QUEUE_STATUS,
 )
 
+from servicecatalog_puppet import constants
+
 
 task_to_run_reference = "task_to_run"
 dependency_task_reference = "dependency"
@@ -389,14 +391,14 @@ class TestTaskTopologicalGenerationsWithoutScheduler(unittest.TestCase):
                 ],
                 QUEUE_STATUS: COMPLETED,
             },
-            "generate-manifest": {
-                "task_reference": "generate-manifest",
+            constants.GENERATE_MANIFEST: {
+                "task_reference": constants.GENERATE_MANIFEST,
                 "dependencies_by_reference": ["create-policies"],
                 QUEUE_STATUS: COMPLETED,
             },
             "run-deploy-in-spoke_YYYYY": {
                 "task_reference": "run-deploy-in-spoke_YYYYY",
-                "dependencies_by_reference": ["generate-manifest"],
+                "dependencies_by_reference": [constants.GENERATE_MANIFEST],
                 QUEUE_STATUS: IN_PROGRESS,
             },
         }
