@@ -110,10 +110,6 @@ class Manager:
 
             return call_to_return
 
-        mock_client = mock.MagicMock()
-        mock_client.return_value = response_to_return
-        return mock_client
-
 
 class FakeClientContextManager:
     def __init__(
