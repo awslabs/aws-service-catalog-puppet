@@ -339,6 +339,7 @@ def generate(puppet_account_id, manifest, output_file_path):
                             execution=task_execution,
                             task_reference=boto3_parameter_task_reference,
                             dependencies_by_reference=dependencies,
+                            dependencies=list(),
                             manifest_section_names=dict(),
                             manifest_item_names=dict(),
                             manifest_account_ids=dict(),
@@ -352,15 +353,17 @@ def generate(puppet_account_id, manifest, output_file_path):
                             section_name=constants.BOTO3_PARAMETERS,
                         )
 
-                    new_tasks[boto3_parameter_task_reference][
-                        "manifest_section_names"
-                    ].update(task.get("manifest_section_names"))
-                    new_tasks[boto3_parameter_task_reference][
-                        "manifest_item_names"
-                    ].update(task.get("manifest_item_names"))
-                    new_tasks[boto3_parameter_task_reference][
-                        "manifest_account_ids"
-                    ].update(task.get("manifest_account_ids"))
+                    boto3_task = new_tasks[boto3_parameter_task_reference]
+                    boto3_task["manifest_section_names"].update(
+                        task.get("manifest_section_names")
+                    )
+                    boto3_task["manifest_item_names"].update(
+                        task.get("manifest_item_names")
+                    )
+                    boto3_task["manifest_account_ids"].update(
+                        task.get("manifest_account_ids")
+                    )
+                    boto3_task["dependencies"].extend(task.get("dependencies"))
 
                     task["dependencies_by_reference"].append(
                         boto3_parameter_task_reference
