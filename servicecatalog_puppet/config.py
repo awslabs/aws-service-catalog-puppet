@@ -220,7 +220,10 @@ def get_output_cache_starting_point():
 
 
 def is_caching_enabled():
-    return os.environ.get(environmental_variables.IS_CACHING_ENABLED).lower() == "true"
+    return (
+        os.environ.get(environmental_variables.IS_CACHING_ENABLED, "false").lower()
+        == "true"
+    )
 
 
 def get_initialiser_stack_tags():
