@@ -7,6 +7,9 @@ from deepmerge import always_merger
 from servicecatalog_puppet import config, constants, serialisation_utils
 from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.commands.task_reference_helpers.generators import generator
+from servicecatalog_puppet.commands.task_reference_helpers.generators.boto3_parameter_handler import (
+    boto3_parameter_handler,
+)
 from servicecatalog_puppet.workflow import workflow_utils
 from servicecatalog_puppet.workflow.dependencies import resources_factory
 
@@ -288,86 +291,13 @@ def generate(puppet_account_id, manifest, output_file_path):
                         ssm_parameter_task_reference
                     )
                 # HANDLE BOTO3 PARAMS
-                if parameter_details.get("boto3"):
-                    boto3_parameter_details = parameter_details.get("boto3")
-                    account_id_to_use_for_boto3_call = (
-                        str(
-                            boto3_parameter_details.get("account_id", puppet_account_id)
-                        )
-                        .replace("${AWS::AccountId}", task.get("account_id"))
-                        .replace("${AWS::PuppetAccountId}", puppet_account_id)
-                    )
-                    region_to_use_for_boto3_call = boto3_parameter_details.get(
-                        "region", constants.HOME_REGION
-                    ).replace("${AWS::Region}", task.get("region"))
-
-                    dependencies = list()
-                    if parameter_details.get("cloudformation_stack_output"):
-                        cloudformation_stack_output = parameter_details[
-                            "cloudformation_stack_output"
-                        ]
-                        stack_ref_account_id = (
-                            str(cloudformation_stack_output.get("account_id"))
-                            .replace("${AWS::AccountId}", task.get("account_id"))
-                            .replace("${AWS::PuppetAccountId}", puppet_account_id)
-                        )
-                        stack_ref_region = cloudformation_stack_output.get(
-                            "region"
-                        ).replace("${AWS::Region}", task.get("region"))
-                        stack_ref_stack = cloudformation_stack_output.get("stack_name")
-                        stack_ref = f"{constants.STACKS}_{stack_ref_stack}_{stack_ref_account_id}-{stack_ref_region}"
-                        if all_tasks.get(stack_ref):
-                            dependencies.append(stack_ref)
-                        section_name_to_use = constants.STACKS
-                        item_name_to_use = stack_ref_stack
-
-                    boto3_parameter_task_reference = f"{constants.BOTO3_PARAMETERS}-{section_name_to_use}-{item_name_to_use}-{parameter_name}-{account_id_to_use_for_boto3_call}-{region_to_use_for_boto3_call}"
-                    task_execution = task.get(
-                        "execution", constants.EXECUTION_MODE_DEFAULT
-                    )
-                    if task.get(task_execution) in [
-                        constants.EXECUTION_MODE_HUB,
-                        constants.EXECUTION_MODE_ASYNC,
-                    ]:
-                        if account_id_to_use_for_boto3_call != puppet_account_id:
-                            raise Exception(
-                                f"Cannot use {task_execution} for a task that is not in the puppet account"
-                            )
-                    if not new_tasks.get(boto3_parameter_task_reference):
-                        new_tasks[boto3_parameter_task_reference] = dict(
-                            status=task.get("status"),
-                            execution=task_execution,
-                            task_reference=boto3_parameter_task_reference,
-                            dependencies_by_reference=dependencies,
-                            dependencies=list(),
-                            manifest_section_names=dict(),
-                            manifest_item_names=dict(),
-                            manifest_account_ids=dict(),
-                            account_id=account_id_to_use_for_boto3_call,
-                            region=region_to_use_for_boto3_call,
-                            arguments=boto3_parameter_details.get("arguments"),
-                            call=boto3_parameter_details.get("call"),
-                            client=boto3_parameter_details.get("client"),
-                            filter=boto3_parameter_details.get("filter"),
-                            use_paginator=boto3_parameter_details.get("use_paginator"),
-                            section_name=constants.BOTO3_PARAMETERS,
-                        )
-
-                    boto3_task = new_tasks[boto3_parameter_task_reference]
-                    boto3_task["manifest_section_names"].update(
-                        task.get("manifest_section_names")
-                    )
-                    boto3_task["manifest_item_names"].update(
-                        task.get("manifest_item_names")
-                    )
-                    boto3_task["manifest_account_ids"].update(
-                        task.get("manifest_account_ids")
-                    )
-                    boto3_task["dependencies"].extend(task.get("dependencies"))
-
-                    task["dependencies_by_reference"].append(
-                        boto3_parameter_task_reference
-                    )
+                boto3_parameter_handler(
+                    new_tasks,
+                    parameter_details,
+                    parameter_name,
+                    puppet_account_id,
+                    task,
+                )
 
     all_tasks.update(new_tasks)
 
