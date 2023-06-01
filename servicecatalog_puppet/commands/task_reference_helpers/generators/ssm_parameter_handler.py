@@ -4,12 +4,17 @@
 from servicecatalog_puppet import constants
 
 
-def assertCrossAccountAccessWillWork(owning_account, task, task_execution):
+def assertCrossAccountAccessWillWork(
+    owning_account, task, task_execution, puppet_account_id
+):
     if task_execution not in [
         constants.EXECUTION_MODE_HUB,
         constants.EXECUTION_MODE_ASYNC,
     ]:
-        if owning_account != task.get("account_id"):
+        if (
+            owning_account != task.get("account_id")
+            and owning_account != puppet_account_id
+        ):
             message = f"Cannot use cross account SSM parameters in execution mode: {task_execution}."
             message += f"For task {task.get('task_reference')}, "
             message += f"parameter is in account {owning_account} and task will execute in {task.get('account_id')}."
@@ -37,7 +42,9 @@ def ssm_parameter_handler(
         )
 
         task_execution = task.get("execution", constants.EXECUTION_MODE_DEFAULT)
-        assertCrossAccountAccessWillWork(owning_account, task, task_execution)
+        assertCrossAccountAccessWillWork(
+            owning_account, task, task_execution, puppet_account_id
+        )
 
         if task.get(task_execution) in [
             constants.EXECUTION_MODE_HUB,
