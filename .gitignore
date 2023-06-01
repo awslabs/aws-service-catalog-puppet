@@ -32,3 +32,8 @@ ignored.html
 *.html
 state1.json
 .fleet
+GetSSMParamTask.zip
+manifest-expanded.yaml
+manifest-task-reference.json
+resources.json
+tasks/
