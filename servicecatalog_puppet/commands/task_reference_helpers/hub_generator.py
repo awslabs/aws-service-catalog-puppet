@@ -71,6 +71,8 @@ def generate(puppet_account_id, all_tasks, output_file_path):
     for task_name, task_to_include in tasks_to_include.items():
         for dep in task_to_include.get("dependencies_by_reference"):
             if not tasks_to_include.get(dep):
+                import json
+
                 raise Exception(
                     f"{task_name} depends on: {dep} which is not listed in this reference"
                 )
