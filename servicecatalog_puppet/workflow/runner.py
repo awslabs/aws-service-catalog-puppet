@@ -60,7 +60,7 @@ def run_tasks(
     execution_mode="hub",
     on_complete_url=None,
     running_exploded=False,
-    tasks_to_run_filtered=[],
+    tasks_to_run_filtered=None,
     manifest_files_path="",
     manifest_task_reference_file_path="",
 ):

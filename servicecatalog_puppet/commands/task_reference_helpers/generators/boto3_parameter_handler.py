@@ -33,7 +33,7 @@ def boto3_parameter_handler(
         ]:
             if account_id_to_use_for_boto3_call != puppet_account_id:
                 raise Exception(
-                    f"Cannot use {task_execution} for a task that is not in the puppet account"
+                    f"Cannot use cross account Boto3 Parameters in execution mode: {task_execution}"
                 )
         if not new_tasks.get(boto3_parameter_task_reference):
             new_tasks[boto3_parameter_task_reference] = dict(

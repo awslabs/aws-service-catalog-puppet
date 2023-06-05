@@ -6,7 +6,7 @@ import unittest
 from servicecatalog_puppet import constants
 
 
-class CompleteGeneratorTest(unittest.TestCase):
+class Boto3ParameterHandlerTest(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
         from servicecatalog_puppet.commands.task_reference_helpers.generators import (

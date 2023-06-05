@@ -135,6 +135,16 @@ class TaskWithParameters(TaskWithReference):
         always_merger.merge(result, manifest_parameters)
         always_merger.merge(result, launch_parameters)
         always_merger.merge(result, account_parameters)
+
+        for p_name, p_details in result.items():
+            if p_details.get("ssm"):
+                for v_name, v_details in p_details.get("ssm").items():
+                    result[p_name]["ssm"][v_name] = (
+                        result[p_name]["ssm"][v_name]
+                        .replace("${AWS::AccountId}", self.account_id)
+                        .replace("${AWS::Region}", self.region)
+                    )
+
         return result
 
     def get_parameter_values(self):
