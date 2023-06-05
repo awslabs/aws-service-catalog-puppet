@@ -19,7 +19,7 @@ def ssm_outputs_handler(
         output_account_id = ssm_parameter_output.get(
             "account_id", puppet_account_id
         ).replace("${AWS::AccountId}", task_account_id)
-        ssm_parameter_output_task_reference = f'{constants.SSM_OUTPUTS}-{task_account_id}-{output_region}-{ssm_parameter_output.get("param_name")}'
+        ssm_parameter_output_task_reference = f'{constants.SSM_OUTPUTS}-{output_account_id}-{output_region}-{ssm_parameter_output.get("param_name")}'
         ssm_parameter_output_task_reference = ssm_parameter_output_task_reference.replace(
             "${AWS::Region}", task_to_add.get("region")
         ).replace(
@@ -27,7 +27,7 @@ def ssm_outputs_handler(
         )
         if all_tasks.get(ssm_parameter_output_task_reference):
             raise Exception(
-                f"You have two tasks outputting the same SSM parameter output: {ssm_parameter_output.get('param_name')}"
+                f"You have two tasks outputting the same SSM parameter output: {ssm_parameter_output.get('param_name')}: {ssm_parameter_output_task_reference}"
             )
 
         else:
@@ -58,5 +58,5 @@ def ssm_outputs_handler(
             item_name
         ] = True
         all_tasks[ssm_parameter_output_task_reference]["manifest_account_ids"][
-            task_account_id
+            output_account_id
         ] = True

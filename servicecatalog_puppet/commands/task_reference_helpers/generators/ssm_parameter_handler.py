@@ -42,6 +42,8 @@ def ssm_parameter_handler(
         )
 
         task_execution = task.get("execution", constants.EXECUTION_MODE_DEFAULT)
+        if owning_account == puppet_account_id:
+            task_execution = constants.EXECUTION_MODE_HUB
         assertCrossAccountAccessWillWork(
             owning_account, task, task_execution, puppet_account_id
         )
