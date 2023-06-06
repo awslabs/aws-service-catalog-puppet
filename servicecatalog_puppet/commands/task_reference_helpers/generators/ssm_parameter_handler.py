@@ -57,12 +57,12 @@ def ssm_parameter_handler(
                     f"Cannot use cross account SSM parameters in execution mode: {task_execution}"
                 )
 
-        task_def = dict(
+        ssm_task_params = dict(
             account_id=owning_account,
             region=owning_region,
-            manifest_section_names=dict(**task.get("manifest_section_names")),
-            manifest_item_names=dict(**task.get("manifest_item_names")),
-            manifest_account_ids=dict(**task.get("manifest_account_ids")),
+            manifest_section_names=dict(),
+            manifest_item_names=dict(),
+            manifest_account_ids=dict(),
             dependencies=[],
             execution=task_execution,
         )
@@ -71,34 +71,44 @@ def ssm_parameter_handler(
             ssm_parameter_task_reference = (
                 f"{constants.SSM_PARAMETERS}-{task_reference}-{param_name}"
             )
-            task_def["param_name"] = param_name
-            task_def["section_name"] = constants.SSM_PARAMETERS
+            ssm_task_params["param_name"] = param_name
+            ssm_task_params["section_name"] = constants.SSM_PARAMETERS
         else:
             ssm_parameter_task_reference = (
                 f"{constants.SSM_PARAMETERS_WITH_A_PATH}-{task_reference}-{path}"
             )
-            task_def["path"] = path
-            task_def["section_name"] = constants.SSM_PARAMETERS_WITH_A_PATH
-        task_def["task_reference"] = ssm_parameter_task_reference
+            ssm_task_params["path"] = path
+            ssm_task_params["section_name"] = constants.SSM_PARAMETERS_WITH_A_PATH
+        ssm_task_params["task_reference"] = ssm_parameter_task_reference
+
+        ssm_task_dependencies = []
 
         potential_output_task_ref = f"{constants.SSM_PARAMETERS}-{task_reference}-{param_name}".replace(
             f"{constants.SSM_PARAMETERS}-", f"{constants.SSM_OUTPUTS}-"
         )
         if all_tasks.get(potential_output_task_ref):
-            dependency = [potential_output_task_ref]
-        else:
-            dependency = []
-        task_def["dependencies_by_reference"] = dependency
+            ssm_task_dependencies.append(potential_output_task_ref)
+
+        ssm_task_params["dependencies_by_reference"] = ssm_task_dependencies
 
         # IF THERE ARE TWO TASKS USING THE SAME PARAMETER AND THE OTHER TASK ADDED IT FIRST
         if new_tasks.get(ssm_parameter_task_reference):
             existing_task_def = new_tasks[ssm_parameter_task_reference]
             # AVOID DUPLICATE DEPENDENCIES IN THE SAME LIST
-            for dep in dependency:
+            for dep in ssm_task_dependencies:
                 if dep not in existing_task_def["dependencies_by_reference"]:
                     existing_task_def["dependencies_by_reference"].append(dep)
         else:
-            new_tasks[ssm_parameter_task_reference] = task_def
+            new_tasks[ssm_parameter_task_reference] = ssm_task_params
+
+        # setup meta
+        ssm_task_params["manifest_section_names"].update(
+            **task.get("manifest_section_names")
+        )
+        ssm_task_params["manifest_item_names"].update(**task.get("manifest_item_names"))
+        ssm_task_params["manifest_account_ids"].update(
+            **task.get("manifest_account_ids")
+        )
 
         ssm_parameter_task = new_tasks[ssm_parameter_task_reference]
         ssm_parameter_task["manifest_section_names"].update(
@@ -110,6 +120,8 @@ def ssm_parameter_handler(
         ssm_parameter_task["manifest_account_ids"].update(
             task.get("manifest_account_ids")
         )
-        ssm_parameter_task["dependencies"].extend(task.get("dependencies"))
+        ssm_parameter_task["dependencies_by_reference"].extend(
+            task.get("dependencies_by_reference")
+        )
 
         task["dependencies_by_reference"].append(ssm_parameter_task_reference)

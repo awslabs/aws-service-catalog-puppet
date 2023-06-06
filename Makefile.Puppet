@@ -45,7 +45,7 @@ deploy-from-task-reference:
 	time poetry run servicecatalog-puppet --info deploy-from-task-reference --num-workers 5 \
 		ignored/src/ServiceCatalogPuppet/
 
-## @Puppet_commands Runs servicecatalog-puppet --info deploy-from-task-reference for the checked out manifest file
+## @uppet_commands Runs servicecatalog-puppet --info deploy-from-task-reference for the checked out manifest file
 deploy-from-task-reference-single-account:
 	time poetry run servicecatalog-puppet --info deploy-in-spoke-from-task-reference \
 	    --execution-mode spoke \
