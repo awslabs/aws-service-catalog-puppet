@@ -76,7 +76,6 @@ def generate(puppet_account_id, all_tasks, output_file_path):
                 )
 
     result = dict(all_tasks=tasks_to_include)
-    print("bbbbb")
     workflow_utils.ensure_no_cyclic_dependencies("hub task reference", tasks_to_include)
     # open(output_file_path, "w").write(serialisation_utils.dump(result))
     open(output_file_path, "w").write(serialisation_utils.dump_as_json(result))

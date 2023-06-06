@@ -330,7 +330,6 @@ class SSMParameterHandlerTest(unittest.TestCase):
                 "param_name": f"/sleeper/SleeperFunctionArn/{region}/stacks",
                 "section_name": constants.SSM_PARAMETERS,
                 "task_reference": expected_ssm_parameter_task_ref,
-                # "dependencies_by_reference": task.get("dependencies_by_reference"),
                 "dependencies_by_reference": [
                     "create-policies",
                     "prepare-account-for-stacks-spoke_account_id",

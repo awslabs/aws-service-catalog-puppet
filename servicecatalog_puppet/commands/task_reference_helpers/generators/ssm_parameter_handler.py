@@ -101,7 +101,6 @@ def ssm_parameter_handler(
         else:
             new_tasks[ssm_parameter_task_reference] = ssm_task_params
 
-        # setup meta
         ssm_task_params["manifest_section_names"].update(
             **task.get("manifest_section_names")
         )
