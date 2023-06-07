@@ -1378,8 +1378,8 @@ def generate_single_action_run_projects(
                 "commands": [
                     'echo "section: \\"${SECTION}\\"" > parameters.yaml',
                     'echo "item: \\"${ITEM}\\"" >> parameters.yaml',
-                    'echo "include_dependencies: \\"${INCLUDE_DEPENDENCIES}\\"" >> parameters.yaml',
-                    'echo "include_reverse_dependencies: \\"${INCLUDE_REVERSE_DEPENDENCIES}\\"" >> parameters.yaml',
+                    'echo "include_dependencies: ${INCLUDE_DEPENDENCIES}" >> parameters.yaml',
+                    'echo "include_reverse_dependencies: ${INCLUDE_REVERSE_DEPENDENCIES}" >> parameters.yaml',
                     "cat parameters.yaml",
                     "zip parameters.zip parameters.yaml",
                     "aws s3 cp parameters.zip s3://sc-puppet-parameterised-runs-${PUPPET_ACCOUNT_ID}/parameters.zip",
@@ -1428,12 +1428,12 @@ def generate_single_action_run_projects(
                 {
                     "Type": "PLAINTEXT",
                     "Name": "INCLUDE_DEPENDENCIES",
-                    "Value": "CHANGE_ME - should include your specified items dependencies true|false",
+                    "Value": "CHANGE_ME - should include your specified items dependencies as a YAML boolean: true|false|Yes|No",
                 },
                 {
                     "Type": "PLAINTEXT",
                     "Name": "INCLUDE_REVERSE_DEPENDENCIES",
-                    "Value": "CHANGE_ME - should include things that depend on your specified item true|false",
+                    "Value": "CHANGE_ME - should include things that depend on your specified item as a YAML boolean: true|false|Yes|No",
                 },
             ]
             + deploy_env_vars,
