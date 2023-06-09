@@ -182,7 +182,7 @@ class TaskWithParameters(TaskWithReference):
                     all_params[param_name] = requested_param_details.get("default")
                 else:
                     raise Exception(
-                        "Could not find parameter value and no default was set"
+                        f"Could not find parameter value and no default was set for {requested_param_name}"
                     )
 
             if param_details.get("boto3"):
