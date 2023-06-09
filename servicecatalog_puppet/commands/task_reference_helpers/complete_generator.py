@@ -281,6 +281,9 @@ def generate(puppet_account_id, manifest, output_file_path):
                         == parameter_task_reference
                     ):
                         dependencies_to_add.append(output_task_reference)
+                        all_tasks[parameter_task_reference][
+                            "dependencies_by_reference"
+                        ].append(output_task_reference)
         task["dependencies_by_reference"].extend(dependencies_to_add)
 
     reference = dict(all_tasks=all_tasks,)
