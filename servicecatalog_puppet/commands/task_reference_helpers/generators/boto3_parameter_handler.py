@@ -52,9 +52,6 @@ def boto3_parameter_handler(
                 client=boto3_parameter_details.get("client"),
                 filter=boto3_parameter_details.get("filter"),
                 use_paginator=boto3_parameter_details.get("use_paginator"),
-                # cloudformation_stack_output=parameter_details.get(
-                #     "cloudformation_stack_output"
-                # ),
                 section_name=constants.BOTO3_PARAMETERS,
             )
 
