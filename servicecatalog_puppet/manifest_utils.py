@@ -541,7 +541,9 @@ def rewrite_ssm_parameters(manifest):
                         account_id=existing_parameter.get(
                             "account_id", "${AWS::AccountId}"
                         ),
-                        region=existing_parameter.get("region", "${AWS::Region}"),
+                        region=existing_parameter.get(
+                            "region", "${AWS::PuppetAccountId}"
+                        ),
                         client="cloudformation",
                         call="describe_stacks",
                         use_paginator=True,

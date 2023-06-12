@@ -190,24 +190,38 @@ class TaskWithParameters(TaskWithReference):
                 boto3_task_account_id = requested_param_details.get("account_id")
                 boto3_task_region = requested_param_details.get("region")
                 if param_details.get("cloudformation_stack_output"):
-                    boto3_section = constants.STACKS
-                    boto3_item = param_details["cloudformation_stack_output"][
-                        "stack_name"
-                    ]
+                    task_ref = (
+                        f"{constants.BOTO3_PARAMETERS}"
+                        f"-cloudformation_stack_output"
+                        f"-{param_details.get('cloudformation_stack_output').get('stack_name')}"
+                        f"-{param_details.get('cloudformation_stack_output').get('output_key')}"
+                        f"-{boto3_task_account_id}"
+                        f"-{boto3_task_region}"
+                    )
+
                 elif param_details.get("servicecatalog_provisioned_product_output"):
+                    # TODO
                     boto3_section = constants.LAUNCHES
                     boto3_item = param_details[
                         "servicecatalog_provisioned_product_output"
                     ]["provisioned_product_name"]
                 else:
-                    boto3_section = constants.BOTO3_PARAMETERS
-                    boto3_item = ""  # TODO FIXME
+                    task_ref = (
+                        f"{constants.BOTO3_PARAMETERS}"
+                        f"-{self.section_name}"
+                        f"-{self.item_name}"
+                        f"-{param_name}"
+                        f"-{account_id_to_use_for_boto3_call}"
+                        f"-{region_to_use_for_boto3_call}"
+                    )
 
-                task_ref = f"{constants.BOTO3_PARAMETERS}-{boto3_section}-{boto3_item}-{param_name}-{boto3_task_account_id}-{boto3_task_region}"
                 task_ref = (
                     task_ref.replace("${AWS::AccountId}", self.account_id)
                     .replace("${AWS::PuppetAccountId}", self.puppet_account_id)
                     .replace("${AWS::Region}", self.region)
+                )
+                print(
+                    f"Getting output for task: {task_ref} within task {self.task_reference}"
                 )
                 parameter_task_output = self.get_output_from_reference_dependency(
                     task_ref
