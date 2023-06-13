@@ -62,6 +62,8 @@ class Boto3ParameterHandlerTest(unittest.TestCase):
 
         describe_stacks_filter = "xyz"
 
+        output_key = "SomeOutputKey"
+
         parameter_details = {
             "boto3": {
                 "account_id": "${AWS::AccountId}",
@@ -74,7 +76,7 @@ class Boto3ParameterHandlerTest(unittest.TestCase):
             },
             "cloudformation_stack_output": {
                 "account_id": "${AWS::AccountId}",
-                "output_key": "SomeOutputKey",
+                "output_key": output_key,
                 "region": "${AWS::Region}",
                 "stack_name": dependency_item_name,
             },
@@ -89,12 +91,13 @@ class Boto3ParameterHandlerTest(unittest.TestCase):
 
         # verify
         n_new_tasks = len(new_tasks.keys())
+        boto3_parameter_task_reference = f"{constants.BOTO3_PARAMETERS}-cloudformation_stack_output-{dependency_item_name}-{output_key}-{account_id}-{region}"
         self.assertEqual(
             [
                 "create-policies",
                 f"prepare-account-for-stacks-{account_id}",
                 f"get-template-from-s3-stacks-{item_name}",
-                f"{constants.BOTO3_PARAMETERS}-{section_name}-{item_name}-{parameter_name}-{account_id}-{region}",
+                boto3_parameter_task_reference,
             ],
             new_tasks[task_reference].get("dependencies_by_reference"),
             "assert new dependency is added to the task needing the parameter",
@@ -105,11 +108,9 @@ class Boto3ParameterHandlerTest(unittest.TestCase):
             {
                 "status": None,
                 "execution": "spoke",
-                "task_reference": expected_boto3_task_ref,
+                "task_reference": boto3_parameter_task_reference,
                 "dependencies_by_reference": [],
-                "dependencies": [
-                    {"affinity": "stack", "name": dependency_item_name, "type": "stack"}
-                ],
+                "dependencies": [],
                 "manifest_section_names": {constants.STACKS: True},
                 "manifest_item_names": {item_name: True},
                 "manifest_account_ids": {account_id: True},
@@ -122,7 +123,7 @@ class Boto3ParameterHandlerTest(unittest.TestCase):
                 "use_paginator": True,
                 "section_name": constants.BOTO3_PARAMETERS,
             },
-            new_tasks[expected_boto3_task_ref],
+            new_tasks[boto3_parameter_task_reference],
             "assert the boto3 task is generated correctly",
         )
 

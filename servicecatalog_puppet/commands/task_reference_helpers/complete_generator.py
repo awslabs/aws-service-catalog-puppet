@@ -16,6 +16,9 @@ from servicecatalog_puppet.commands.task_reference_helpers.generators.ssm_output
 from servicecatalog_puppet.commands.task_reference_helpers.generators.ssm_parameter_handler import (
     ssm_parameter_handler,
 )
+from servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_without_scheduler_unit_test import (
+    dependency_task_reference,
+)
 from servicecatalog_puppet.workflow import workflow_utils
 from servicecatalog_puppet.workflow.dependencies import resources_factory
 
@@ -163,46 +166,43 @@ def generate(puppet_account_id, manifest, output_file_path):
                     manifest,
                 )
 
-    #
-    # Second pass - adding get parameters
-    #
-    new_tasks = dict()
-    for task_reference, task in all_tasks.items():
-        parameters = {}
-        launch_parameters = (
-            manifest.get(task.get("section_name"), {})
-            .get(task.get("item_name"), {})
-            .get("parameters", {})
-        )
-        manifest_parameters = copy.deepcopy(manifest.get("parameters"))
-        account_parameters = manifest.get_parameters_for_account(task.get("account_id"))
-
-        always_merger.merge(parameters, manifest_parameters)
-        always_merger.merge(parameters, launch_parameters)
-        always_merger.merge(parameters, account_parameters)
-
-        if task.get("status") != constants.TERMINATED:
-            for parameter_name, parameter_details in parameters.items():
-                ssm_parameter_handler(
-                    all_tasks,
-                    default_region,
-                    new_tasks,
-                    parameter_details,
-                    puppet_account_id,
-                    task,
+                task = task_to_add  # TODO rename
+                new_tasks = all_tasks  # TODO rename
+                parameters = {}
+                launch_parameters = (
+                    manifest.get(task.get("section_name"), {})
+                    .get(task.get("item_name"), {})
+                    .get("parameters", {})
                 )
-                boto3_parameter_handler(
-                    new_tasks,
-                    parameter_details,
-                    parameter_name,
-                    puppet_account_id,
-                    task,
+                manifest_parameters = copy.deepcopy(manifest.get("parameters"))
+                account_parameters = manifest.get_parameters_for_account(
+                    task.get("account_id")
                 )
 
-    all_tasks.update(new_tasks)
+                always_merger.merge(parameters, manifest_parameters)
+                always_merger.merge(parameters, launch_parameters)
+                always_merger.merge(parameters, account_parameters)
+
+                if task.get("status") != constants.TERMINATED:
+                    for parameter_name, parameter_details in parameters.items():
+                        ssm_parameter_handler(
+                            all_tasks,
+                            default_region,
+                            new_tasks,
+                            parameter_details,
+                            puppet_account_id,
+                            task,
+                        )
+                        boto3_parameter_handler(
+                            new_tasks,
+                            parameter_details,
+                            parameter_name,
+                            puppet_account_id,
+                            task,
+                        )
 
     #
-    # Third pass - replacing dependencies with dependencies_by_reference and adding resources
+    # Second pass - replacing dependencies with dependencies_by_reference and adding resources
     #
     for task_reference, task in all_tasks.items():
         for dependency in task.get("dependencies", []):
@@ -262,6 +262,52 @@ def generate(puppet_account_id, manifest, output_file_path):
             task.get("section_name"), task, puppet_account_id
         )
         task["resources_required"] = resources
+
+    #
+    # Third pass - setting dependencies between parameters and outputs
+    #
+    for task_reference, task in all_tasks.items():
+        ssm_parameters = task.get("ssm_parameters_tasks_references", {}).items()
+        dependencies_to_add = []
+        for parameter_name, parameter_task_reference in ssm_parameters:
+            for dependency in task.get("dependencies_by_reference"):
+                ssm_outputs = (
+                    all_tasks.get(dependency)
+                    .get("ssm_outputs_tasks_references", {})
+                    .items()
+                )
+                for output_name, output_task_reference in ssm_outputs:
+                    if (
+                        output_task_reference.replace(
+                            constants.SSM_OUTPUTS, constants.SSM_PARAMETERS
+                        )
+                        == parameter_task_reference
+                    ):
+                        dependencies_to_add.append(output_task_reference)
+                        all_tasks[parameter_task_reference][
+                            "dependencies_by_reference"
+                        ].append(output_task_reference)
+        task["dependencies_by_reference"].extend(dependencies_to_add)
+
+        boto3_parameters = task.get("boto3_parameters_tasks_references", {}).items()
+        dependencies_to_add = []
+        for parameter_name, parameter_task_reference in boto3_parameters:
+            parameter_task = all_tasks.get(parameter_task_reference)
+            for dependency_task_reference in task.get("dependencies_by_reference"):
+                if dependency_task_reference not in parameter_task.get(
+                    "dependencies_by_reference"
+                ):
+                    if dependency_task_reference != parameter_task_reference:
+                        if (
+                            all_tasks[dependency_task_reference]["section_name"]
+                            in constants.ALL_SECTION_NAMES
+                        ):
+                            parameter_task["dependencies_by_reference"].append(
+                                dependency_task_reference
+                            )
+
+            if task_reference in parameter_task["dependencies_by_reference"]:
+                parameter_task["dependencies_by_reference"].remove(task_reference)
 
     reference = dict(all_tasks=all_tasks,)
     workflow_utils.ensure_no_cyclic_dependencies("complete task reference", all_tasks)
