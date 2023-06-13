@@ -90,7 +90,6 @@ def boto3_parameter_handler(
         boto3_task["manifest_section_names"].update(task.get("manifest_section_names"))
         boto3_task["manifest_item_names"].update(task.get("manifest_item_names"))
         boto3_task["manifest_account_ids"].update(task.get("manifest_account_ids"))
-        # boto3_task["dependencies"].extend(task.get("dependencies"))
 
         task["dependencies_by_reference"].append(boto3_parameter_task_reference)
 
