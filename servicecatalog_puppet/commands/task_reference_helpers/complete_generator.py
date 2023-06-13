@@ -309,26 +309,6 @@ def generate(puppet_account_id, manifest, output_file_path):
             if task_reference in parameter_task["dependencies_by_reference"]:
                 parameter_task["dependencies_by_reference"].remove(task_reference)
 
-            # raise Exception(parameter_task_reference)
-        #     for dependency in task.get("dependencies_by_reference"):
-        #         boto3_outputs = (
-        #             all_tasks.get(dependency)
-        #             .get("boto3_parameters_tasks_references", {})
-        #             .items()
-        #         )
-        #         for output_name, output_task_reference in boto3_outputs:
-        #             if (
-        #                 output_task_reference.replace(
-        #                     constants.SSM_OUTPUTS, constants.SSM_PARAMETERS
-        #                 )
-        #                 == parameter_task_reference
-        #             ):
-        #                 dependencies_to_add.append(output_task_reference)
-        #                 all_tasks[parameter_task_reference][
-        #                     "dependencies_by_reference"
-        #                 ].append(output_task_reference)
-        # task["dependencies_by_reference"].extend(dependencies_to_add)
-
     reference = dict(all_tasks=all_tasks,)
     workflow_utils.ensure_no_cyclic_dependencies("complete task reference", all_tasks)
     open(output_file_path, "w").write(serialisation_utils.dump_as_json(reference))

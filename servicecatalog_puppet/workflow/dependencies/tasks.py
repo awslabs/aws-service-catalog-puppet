@@ -200,11 +200,14 @@ class TaskWithParameters(TaskWithReference):
                     )
 
                 elif param_details.get("servicecatalog_provisioned_product_output"):
-                    # TODO
-                    boto3_section = constants.LAUNCHES
-                    boto3_item = param_details[
-                        "servicecatalog_provisioned_product_output"
-                    ]["provisioned_product_name"]
+                    task_ref = (
+                        f"{constants.BOTO3_PARAMETERS}"
+                        f"-servicecatalog_provisioned_product_output"
+                        f"-{param_details.get('servicecatalog_provisioned_product_output').get('provisioned_product_name')}"
+                        f"-{param_details.get('servicecatalog_provisioned_product_output').get('output_key')}"
+                        f"-{boto3_task_account_id}"
+                        f"-{boto3_task_region}"
+                    )
                 else:
                     task_ref = (
                         f"{constants.BOTO3_PARAMETERS}"
