@@ -267,6 +267,7 @@ def generate(puppet_account_id, manifest, output_file_path):
     # Third pass - setting dependencies between parameters and outputs
     #
     for task_reference, task in all_tasks.items():
+        # wire up dependencies for SSM parameters to outputs
         ssm_parameters = task.get("ssm_parameters_tasks_references", {}).items()
         dependencies_to_add = []
         for parameter_name, parameter_task_reference in ssm_parameters:
@@ -289,6 +290,7 @@ def generate(puppet_account_id, manifest, output_file_path):
                         ].append(output_task_reference)
         task["dependencies_by_reference"].extend(dependencies_to_add)
 
+        # wire up dependencies for boto3 parameters
         boto3_parameters = task.get("boto3_parameters_tasks_references", {}).items()
         dependencies_to_add = []
         for parameter_name, parameter_task_reference in boto3_parameters:
@@ -307,6 +309,18 @@ def generate(puppet_account_id, manifest, output_file_path):
                             )
 
             if task_reference in parameter_task["dependencies_by_reference"]:
+                parameter_task["dependencies_by_reference"].remove(task_reference)
+
+    #
+    # Fourth pass - removing cyclic dependencies caused by a->b->c when using boto3 parameters
+    #
+    for task_reference, task in all_tasks.items():
+        # remove dependencies on self
+        boto3_parameters = task.get("boto3_parameters_tasks_references", {}).items()
+        dependencies_to_add = []
+        for parameter_name, parameter_task_reference in boto3_parameters:
+            parameter_task = all_tasks.get(parameter_task_reference)
+            if task_reference in parameter_task.get("dependencies_by_reference"):
                 parameter_task["dependencies_by_reference"].remove(task_reference)
 
     reference = dict(all_tasks=all_tasks,)
