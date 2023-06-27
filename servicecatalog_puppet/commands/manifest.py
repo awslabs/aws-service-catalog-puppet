@@ -122,6 +122,7 @@ def expand(f, puppet_account_id, regions, single_account, subset=None):
     new_manifest = manifest_utils.rewrite_stacks(new_manifest, puppet_account_id)
     new_manifest = manifest_utils.rewrite_scps(new_manifest, puppet_account_id)
     new_manifest = manifest_utils.parse_conditions(new_manifest)
+    new_manifest = manifest_utils.rewrite_c7n_cloudtrails(new_manifest)
 
     if subset and subset.get("section"):
         click.echo(f"Filtering for subset: {subset}")

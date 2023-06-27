@@ -2,7 +2,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.commands.task_reference_helpers.generators import (
-    c7n_aws_cloudtrails,
+    c7n_aws_lambdas,
     imported_portfolios,
     launches,
     organizational_units,
@@ -113,8 +113,8 @@ def generate(
             task_to_add,
         )
 
-    if section_name == constants.C7N_AWS_CLOUDTRAILS:
-        c7n_aws_cloudtrails.handle_c7n_aws_cloudtrails(
+    if section_name == constants.C7N_AWS_LAMBDAS:
+        c7n_aws_lambdas.handle_c7n_aws_lambdas(
             all_tasks,
             all_tasks_task_reference,
             item_name,

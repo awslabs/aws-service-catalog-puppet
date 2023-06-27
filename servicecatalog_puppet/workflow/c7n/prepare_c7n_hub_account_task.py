@@ -4,7 +4,7 @@
 import luigi
 import troposphere as t
 import yaml
-from troposphere import codebuild, iam, s3
+from troposphere import codebuild, iam, s3, events
 
 from servicecatalog_puppet import config, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
@@ -16,6 +16,7 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
     organization = luigi.Parameter()
     role_name = luigi.Parameter()
     role_path = luigi.Parameter()
+    schedule_expression = luigi.Parameter()
 
     cachable_level = constants.CACHE_LEVEL_RUN
 
@@ -88,6 +89,64 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                                     ),
                                     "Effect": "Allow",
                                 },
+                                {
+                                    "Action": ["ssm:GetParameters",],
+                                    "Resource": [
+                                        t.Sub(
+                                            "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/servicecatalog-puppet/aws-c7n-lambdas/REGIONS"
+                                        ),
+                                        t.Sub(
+                                            "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/servicecatalog-puppet/aws-c7n-lambdas/CUSTODIAN_ROLE_ARN"
+                                        ),
+                                    ],
+                                    "Effect": "Allow",
+                                },
+                                {
+                                    "Action": ["s3:GetObject", "s3:GetObjectVersion",],
+                                    "Resource": [
+                                        t.Sub(
+                                            "arn:aws:s3:::sc-puppet-c7n-artifacts-${AWS::AccountId}-${AWS::Region}/latest"
+                                        ),
+                                    ],
+                                    "Effect": "Allow",
+                                },
+                            ],
+                        },
+                    )
+                ],
+                Path=config.get_puppet_role_path(),
+            )
+        )
+
+        codebuild_target = t.Sub(
+            "arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/servicecatalog-puppet-deploy-c7n"
+        )
+
+        tpl.add_resource(
+            iam.Role(
+                "C7NEventRuleRunRole",
+                RoleName="C7NEventRuleRunRole",
+                AssumeRolePolicyDocument={
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": ["sts:AssumeRole"],
+                            "Effect": "Allow",
+                            "Principal": {"Service": ["events.amazonaws.com"]},
+                        }
+                    ],
+                },
+                Policies=[
+                    iam.Policy(
+                        PolicyName="C7NEventRuleRunRoleActions",
+                        PolicyDocument={
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Action": ["codebuild:StartBuild",],
+                                    "Resource": [codebuild_target,],
+                                    "Effect": "Allow",
+                                },
                             ],
                         },
                     )
@@ -142,14 +201,23 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                         },
                         {
                             "Type": "PLAINTEXT",
-                            "Name": "POLICIES_FILE_URL",
-                            "Value": "CHANGE_ME",
+                            "Name": "ACCOUNT_ID",
+                            "Value": t.Ref("AWS::AccountId"),
                         },
-                        {"Type": "PLAINTEXT", "Name": "REGIONS", "Value": "CHANGE_ME",},
                         {
                             "Type": "PLAINTEXT",
+                            "Name": "REGION",
+                            "Value": t.Ref("AWS::Region"),
+                        },
+                        {
+                            "Type": "PARAMETER_STORE",
+                            "Name": "REGIONS",
+                            "Value": "/servicecatalog-puppet/aws-c7n-lambdas/REGIONS",
+                        },
+                        {
+                            "Type": "PARAMETER_STORE",
                             "Name": "CUSTODIAN_ROLE_ARN",
-                            "Value": "CHANGE_ME",
+                            "Value": "/servicecatalog-puppet/aws-c7n-lambdas/CUSTODIAN_ROLE_ARN",
                         },
                     ],
                 ),
@@ -163,7 +231,7 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                                 },
                                 build={
                                     "commands": [
-                                        "curl -L ${POLICIES_FILE_URL} > policies.yaml",
+                                        "aws s3 cp s3://sc-puppet-c7n-artifacts-${ACCOUNT_ID}-${REGION}/latest policies.yaml",
                                         "for REGION in ${REGIONS}; do custodian run -s output/logs -r ${REGION} --assume ${CUSTODIAN_ROLE_ARN} policies.yaml; done",
                                     ]
                                 },
@@ -173,6 +241,23 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                     Type="NO_SOURCE",
                 ),
                 Description="Run c7n",
+            )
+        )
+
+        tpl.add_resource(
+            events.Rule(
+                "Runner",
+                Name="servicecatalog-puppet-c7n-scheduled-runner",
+                RoleArn=t.GetAtt("C7NEventRuleRunRole", "Arn"),
+                ScheduleExpression=self.schedule_expression,
+                Targets=[
+                    events.Target(
+                        Id="RunCodeBuild",
+                        Arn=codebuild_target,
+                        RoleArn=t.GetAtt("C7NEventRuleRunRole", "Arn"),
+                    )
+                ],
+                State="ENABLED" if self.schedule_expression != "" else "DISABLED",
             )
         )
 
