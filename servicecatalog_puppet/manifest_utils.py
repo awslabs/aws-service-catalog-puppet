@@ -79,7 +79,7 @@ def load(f, puppet_account_id):
         constants.SERVICE_CONTROL_POLICIES: {},
         constants.SIMULATE_POLICIES: {},
         constants.TAG_POLICIES: {},
-        constants.C7N_AWS_CLOUDTRAILS: {},
+        constants.C7N_AWS_LAMBDAS: {},
     }
     intrinsic_functions_map = get_intrinsic_functions_map(
         manifest_name, puppet_account_id
@@ -764,7 +764,7 @@ class Manifest(dict):
             "tag-policies": "apply_to",
             "simulate-policies": "simulate_for",
             constants.ORGANIZATIONAL_UNITS: "create_in",
-            constants.C7N_AWS_CLOUDTRAILS: "apply_to",
+            constants.C7N_AWS_LAMBDAS: "apply_to",
         }.get(section_name)
 
         if (
@@ -918,7 +918,7 @@ class Manifest(dict):
                 name=item.get("name"),
                 tags=item.get("tags"),
             ),
-            constants.C7N_AWS_CLOUDTRAILS: dict(
+            constants.C7N_AWS_LAMBDAS: dict(
                 execution=item.get("execution", constants.EXECUTION_MODE_DEFAULT),
                 policies=item.get("policies"),
                 custodian=item.get("custodian"),
@@ -928,6 +928,7 @@ class Manifest(dict):
                 role_path=item.get(
                     "role_path", constants.C7N_CUSTODIAN_ROLE_PATH_DEFAULT
                 ),
+                schedule_expression=item.get("schedule_expression", ""),
                 role_managed_policy_arns=item.get(
                     "role_managed_policy_arns",
                     constants.C7N_CUSTODIAN_MANAGED_POLICY_ARNS_DEFAULT,
@@ -979,7 +980,7 @@ class Manifest(dict):
                     ),
                     "tag-policies": dict(account_id=account_id, ou_name="",),
                     constants.SIMULATE_POLICIES: dict(account_id=account_id,),
-                    constants.C7N_AWS_CLOUDTRAILS: dict(account_id=account_id,),
+                    constants.C7N_AWS_LAMBDAS: dict(account_id=account_id,),
                 }.get(section_name)
                 if tag_name in account.get("tags"):
                     if isinstance(regions, str):
@@ -1072,7 +1073,7 @@ class Manifest(dict):
                 "tag-policies": dict(account_id=account_id, ou_name="",),
                 constants.SIMULATE_POLICIES: dict(account_id=account_id,),
                 constants.ORGANIZATIONAL_UNITS: dict(account_id=account_id,),
-                constants.C7N_AWS_CLOUDTRAILS: dict(account_id=account_id,),
+                constants.C7N_AWS_LAMBDAS: dict(account_id=account_id,),
             }.get(section_name)
 
             if isinstance(regions, str):
@@ -1575,6 +1576,16 @@ def parse_conditions(manifest):
                         logger.info(
                             f"Removed {item_name} from {section_name} because condition ({item.get('condition')}) evaluated to false"
                         )
+    return manifest
+
+
+def rewrite_c7n_cloudtrails(manifest):
+    if manifest.get(constants.C7N_AWS_CLOUDTRAILS):
+        manifest[constants.C7N_AWS_LAMBDAS] = manifest[constants.C7N_AWS_CLOUDTRAILS]
+        del manifest[constants.C7N_AWS_CLOUDTRAILS]
+        for item_name, item in manifest[constants.C7N_AWS_LAMBDAS].items():
+            for policy in item["policies"]:
+                policy["mode"]["type"] = "cloudtrail"
     return manifest
 
 

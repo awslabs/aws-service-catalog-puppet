@@ -814,6 +814,7 @@ def create(
             organization=parameters_to_use.get("organization",),
             role_name=parameters_to_use.get("role_name",),
             role_path=parameters_to_use.get("role_path",),
+            schedule_expression=parameters_to_use.get("schedule_expression",),
         )
 
     elif section_name == constants.C7N_FORWARD_EVENTS_FOR_ACCOUNT_TASK:

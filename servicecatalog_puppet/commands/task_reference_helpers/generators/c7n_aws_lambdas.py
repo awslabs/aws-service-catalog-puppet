@@ -47,6 +47,7 @@ def prepare_account_as_hub(
     custodian_region,
     custodian_role_name,
     custodian_role_path,
+    schedule_expression,
     custodian_c7n_version,
     organization,
 ):
@@ -63,6 +64,7 @@ def prepare_account_as_hub(
         organization=organization,
         role_name=custodian_role_name,
         role_path=custodian_role_path,
+        schedule_expression=schedule_expression,
         dependencies_by_reference=[],
         execution=task_to_add.get("execution"),
         **manifest_related_args(task_to_add),
@@ -114,7 +116,7 @@ def forward_events_region_task(
     )
 
 
-def deploy_policies(
+def handle_deploy_policies(
     task_to_add,
     all_tasks,
     account_id,
@@ -151,7 +153,7 @@ def deploy_policies(
     deploy_policies_task["deployments"][region].append(account_id)
 
 
-def handle_c7n_aws_cloudtrails_for_custodian(
+def handle_c7n_aws_lambdas_for_custodian(
     task_to_add,
     all_tasks,
     region,
@@ -159,6 +161,7 @@ def handle_c7n_aws_cloudtrails_for_custodian(
     custodian_region,
     custodian_role_name,
     custodian_role_path,
+    schedule_expression,
     custodian_role_managed_policy_arns,
     custodian_c7n_version,
     organization,
@@ -180,6 +183,7 @@ def handle_c7n_aws_cloudtrails_for_custodian(
         custodian_region,
         custodian_role_name,
         custodian_role_path,
+        schedule_expression,
         custodian_c7n_version,
         organization,
     )
@@ -200,7 +204,7 @@ def handle_c7n_aws_cloudtrails_for_custodian(
     )
 
 
-def handle_c7n_aws_cloudtrails_for_spoke(
+def handle_c7n_aws_lambdas_for_spoke(
     task_to_add,
     all_tasks,
     account_id,
@@ -246,7 +250,7 @@ def get_custodian_region(manifest, account_id):
             return a["default_region"]
 
 
-def handle_c7n_aws_cloudtrails(
+def handle_c7n_aws_lambdas(
     all_tasks,
     all_tasks_task_reference,
     item_name,
@@ -261,12 +265,13 @@ def handle_c7n_aws_cloudtrails(
     custodian_account_id = task_to_add.get("custodian")
     custodian_role_name = task_to_add.get("role_name")
     custodian_role_path = task_to_add.get("role_path")
+    schedule_expression = task_to_add.get("schedule_expression", "")
     custodian_role_managed_policy_arns = task_to_add.get("role_managed_policy_arns")
     custodian_c7n_version = task_to_add.get("c7n_version")
     organization = get_organization_for_account(manifest, account_id)
     custodian_region = get_custodian_region(manifest, custodian_account_id)
 
-    handle_c7n_aws_cloudtrails_for_custodian(
+    handle_c7n_aws_lambdas_for_custodian(
         task_to_add,
         all_tasks,
         region,
@@ -274,11 +279,12 @@ def handle_c7n_aws_cloudtrails(
         custodian_region,
         custodian_role_name,
         custodian_role_path,
+        schedule_expression,
         custodian_role_managed_policy_arns,
         custodian_c7n_version,
         organization,
     )
-    handle_c7n_aws_cloudtrails_for_spoke(
+    handle_c7n_aws_lambdas_for_spoke(
         task_to_add,
         all_tasks,
         account_id,
@@ -290,7 +296,7 @@ def handle_c7n_aws_cloudtrails(
         custodian_role_managed_policy_arns,
     )
 
-    deploy_policies(
+    handle_deploy_policies(
         task_to_add,
         all_tasks,
         account_id,

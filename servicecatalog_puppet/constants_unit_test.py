@@ -64,7 +64,7 @@ def test_constants_values():
         constants.SERVICE_CONTROL_POLICIES,
         constants.SIMULATE_POLICIES,
         constants.TAG_POLICIES,
-        constants.C7N_AWS_CLOUDTRAILS,
+        constants.C7N_AWS_LAMBDAS,
     ]
     assert constants.RESULTS_DIRECTORY == "results"
     assert constants.NO_CHANGE == "NO_CHANGE"
@@ -145,7 +145,7 @@ def test_constants_values():
         (constants.SIMULATE_POLICY, constants.SIMULATE_POLICIES),
         (constants.TAG_POLICY, constants.TAG_POLICIES),
         (constants.ORGANIZATIONAL_UNIT, constants.ORGANIZATIONAL_UNITS),
-        (constants.C7N_AWS_CLOUDTRAIL, constants.C7N_AWS_CLOUDTRAILS),
+        (constants.C7N_AWS_LAMBDA, constants.C7N_AWS_LAMBDAS),
     ]
     assert constants.SECTION_NAME_SINGULAR_AND_PLURAL_LIST_THAT_SUPPORTS_PARAMETERS == [
         (constants.LAUNCH, constants.LAUNCHES),
@@ -167,5 +167,5 @@ def test_constants_values():
         constants.WORKSPACE: constants.WORKSPACES,
         constants.SIMULATE_POLICY: constants.SIMULATE_POLICIES,
         constants.SERVICE_CONTROL_POLICY: constants.SERVICE_CONTROL_POLICIES,
-        constants.C7N_AWS_CLOUDTRAIL: constants.C7N_AWS_CLOUDTRAILS,
+        constants.C7N_AWS_LAMBDA: constants.C7N_AWS_LAMBDAS,
     }
