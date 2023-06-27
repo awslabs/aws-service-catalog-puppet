@@ -520,6 +520,8 @@ def create(section_name, parameters_to_use, puppet_account_id):
         resources = [
             # TODO choose what goes in here
         ]
+    else:
+        print(f"WARNING: {section_name} did not generate any resources")
 
     result = list()
     for r in resources:
