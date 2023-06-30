@@ -164,6 +164,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "dependencies_by_reference": [
                     f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                     "create-policies",
+                    f"portfolio_share_and_accept-ou-do8d-me7f39on-{region}-{portfolio}",
                 ],
                 "execution": "hub",
                 "manifest_account_ids": {account_id: True},

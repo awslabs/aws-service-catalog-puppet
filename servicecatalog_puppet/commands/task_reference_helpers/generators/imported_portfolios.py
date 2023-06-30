@@ -142,7 +142,11 @@ def add_puppet_associations_for_when_not_sharing_with_puppet_account(
             puppet_account_id=puppet_account_id,
             task_reference=spoke_portfolio_puppet_association_ref,
             portfolio_task_reference=hub_portfolio_ref,
-            dependencies_by_reference=[hub_portfolio_ref, constants.CREATE_POLICIES,],
+            dependencies_by_reference=[
+                hub_portfolio_ref,
+                constants.CREATE_POLICIES,
+                share_and_accept_ref,
+            ],
             account_id=task_to_add.get("account_id"),
             region=task_to_add.get("region"),
             portfolio=task_to_add.get("portfolio"),
@@ -165,9 +169,6 @@ def add_puppet_associations_for_when_not_sharing_with_puppet_account(
     return hub_portfolio_ref
 
 
-#             imported_portfolio_name=item_name,
-
-
 def handle_imported_portfolios(
     all_tasks,
     all_tasks_task_reference,
@@ -180,12 +181,10 @@ def handle_imported_portfolios(
     is_sharing_with_puppet_account = task_to_add.get("account_id") == puppet_account_id
     #
     if task_to_add.get("status") == constants.TERMINATED:
-        deps = list()
         # DELETE THE ASSOCIATION IF IT EXISTS
         if task_to_add.get("associations"):
             shared_ref = f"{section_name}-{item_name}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
             ref = f"portfolio_associations-{shared_ref}"
-            deps.append(ref)
             if not all_tasks.get(ref):
                 all_tasks[ref] = dict(
                     status=task_to_add.get("status"),
@@ -215,7 +214,6 @@ def handle_imported_portfolios(
                 all_tasks_task_reference
             ]  # DO NOT NEED THIS TASK TO DO ANYTHING AT THE MOMENT
     else:
-        dependencies_for_constraints = list()
         if is_sharing_with_puppet_account:
             target_portfolio_ref = add_puppet_associations_for_when_sharing_with_puppet_account(
                 all_tasks, all_tasks_task_reference, puppet_account_id, task_to_add
@@ -338,27 +336,3 @@ def add_puppet_associations_for_when_sharing_with_puppet_account(
         task_to_add.get("manifest_account_ids")
     )
     return spoke_portfolio_puppet_association_ref
-
-
-#
-# if task_to_add.get("resource_update_constraints"):
-#     shared_ref = f"{section_name}-{item_name}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
-#     ref = f"resource_update_constraints-{shared_ref}"
-#     all_tasks[ref] = dict(
-#         **get_imported_portfolio_common_args(
-#             task_to_add, all_tasks_task_reference, dependencies_for_constraints,
-#         ),
-#         task_reference=ref,
-#         section_name=constants.PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE,
-#         imported_portfolio_name=item_name,
-#         resource_update_constraints=task_to_add["resource_update_constraints"],
-#         portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_after_ref,
-#         manifest_section_names=dict(
-#             **task_to_add.get("manifest_section_names")
-#         ),
-#         manifest_item_names=dict(**task_to_add.get("manifest_item_names")),
-#         manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
-#     )
-
-
-#
