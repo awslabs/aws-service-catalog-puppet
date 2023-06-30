@@ -9,6 +9,7 @@ from troposphere import servicecatalog
 
 from servicecatalog_puppet import config, constants, utils
 from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet.workflow.portfolio.associations import association_utils
 
 
 class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
@@ -90,7 +91,10 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
             v1_stack_name = f"associations-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
             cloudformation.ensure_deleted(StackName=v1_stack_name)
 
-            v2_stack_name = f"associations-v2-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
+            v2_stack_name = association_utils.generate_stack_name_for_associations_by_item_name(
+                self.spoke_local_portfolio_name
+            )
+
             if associations_to_use:
                 tpl = t.Template()
                 tpl.description = f"Associations for {self.portfolio}"
