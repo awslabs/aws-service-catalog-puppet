@@ -164,6 +164,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "dependencies_by_reference": [
                     f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                     "create-policies",
+                    f"portfolio_share_and_accept-ou-do8d-me7f39on-{region}-{portfolio}",
                 ],
                 "execution": "hub",
                 "manifest_account_ids": {account_id: True},
@@ -188,6 +189,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "dependencies_by_reference": [
                     f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                     "create-policies",
+                    f"portfolio_share_and_accept-ou-do8d-me7f39on-{region}-{portfolio}",
                 ],
                 "execution": "hub",
                 "spoke_local_portfolio_name": item_name,
@@ -348,7 +350,10 @@ class ImportedPortfoliosTest(unittest.TestCase):
             {
                 "spoke_local_portfolio_name": item_name,
                 "account_id": account_id,
-                "dependencies_by_reference": ["create-policies"],
+                "dependencies_by_reference": [
+                    "create-policies",
+                    f"portfolio_share_and_accept-ou-do8d-me7f39on-{region}-{portfolio}",
+                ],
                 "execution": "hub",
                 "launch_constraints": "thisisignored",
                 "manifest_account_ids": {account_id: True},
@@ -367,7 +372,10 @@ class ImportedPortfoliosTest(unittest.TestCase):
         self.assertEqual(
             {
                 "account_id": account_id,
-                "dependencies_by_reference": ["create-policies",],
+                "dependencies_by_reference": [
+                    "create-policies",
+                    f"portfolio_share_and_accept-ou-do8d-me7f39on-{region}-{portfolio}",
+                ],
                 "resource_update_constraints": "thisisignored",
                 "execution": "hub",
                 "manifest_account_ids": {account_id: True},

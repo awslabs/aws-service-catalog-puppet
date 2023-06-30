@@ -2,8 +2,9 @@
 #  SPDX-License-Identifier: Apache-2.0
 import luigi
 
-from servicecatalog_puppet import constants, utils
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
+from servicecatalog_puppet.workflow.portfolio.associations import association_utils
 
 
 class TerminateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
@@ -23,7 +24,9 @@ class TerminateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
         }
 
     def run(self):
-        stack_name = f"associations-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
+        stack_name = association_utils.generate_stack_name_for_associations_by_item_name(
+            self.spoke_local_portfolio_name
+        )
 
         with self.spoke_regional_client("cloudformation") as cloudformation:
             self.info(f"About to delete the stack: {stack_name}")
