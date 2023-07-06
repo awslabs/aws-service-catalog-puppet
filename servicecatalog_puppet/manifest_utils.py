@@ -3,6 +3,7 @@
 
 import configparser
 import json
+import functools
 import logging
 import os
 import re
@@ -164,7 +165,39 @@ def load(f, puppet_account_id):
     return manifest
 
 
-def expand_manifest(manifest, client):
+@functools.lru_cache(maxsize=32)
+def get_ssm_external_account_overrides():
+    result = dict()
+    with betterboto_client.ClientContextManager("ssm") as ssm:
+        paginator = ssm.get_paginator("get_parameters_by_path")
+        for page in paginator.paginate(
+            Path="/servicecatalog-puppet/manifest-external-account-overrides",
+            Recursive=True,
+        ):
+            for parameter in page.get("Parameters", []):
+                _, _, _, account_id, attribute = parameter.get("Name").split("/")
+                if not result.get(account_id):
+                    result[account_id] = dict()
+                result[account_id][attribute] = parameter.get("Value")
+
+    return result
+
+
+def get_ssm_external_account_overrides_for(account_id, value, fail_if_missing):
+    result = get_ssm_external_account_overrides().get(account_id, {})
+    if fail_if_missing and not result:
+        raise Exception(
+            f"There is no override for {account_id} - path /servicecatalog-puppet/manifest-external-account-overrides/{account_id}/xxxx is missing"
+        )
+    result = result.get(value)
+    if fail_if_missing and not result:
+        raise Exception(
+            f"There is no override for {value}.{account_id}. SSM parameter /servicecatalog-puppet/manifest-external-account-overrides/{account_id}/{value} is missing"
+        )
+    return result
+
+
+def expand_manifest(manifest, orgs_client):
     new_manifest = deepcopy(manifest)
     temp_accounts = []
     conversions = dict()
@@ -175,7 +208,9 @@ def expand_manifest(manifest, client):
         if account.get("account_id"):
             account_id = account.get("account_id")
             logger.info("Found an account: {}".format(account_id))
-            expanded_account = expand_account(account, client, account_id, manifest)
+            expanded_account = expand_account(
+                account, orgs_client, account_id, manifest
+            )
             if expanded_account is None:
                 raise Exception(
                     f"You have listed account: {account_id} which is not ACTIVE"
@@ -185,16 +220,18 @@ def expand_manifest(manifest, client):
             ou = account.get("ou")
             logger.info("Found an ou: {}".format(ou))
             if ou.startswith("/"):
-                ou = client.convert_path_to_ou(account.get("ou"))
+                ou = orgs_client.convert_path_to_ou(account.get("ou"))
                 conversions[account.get("ou")] = ou
                 account["ou_name"] = account["ou"]
                 account["ou"] = ou
-            temp_accounts += expand_ou(account, client, manifest)
+            temp_accounts += expand_ou(account, orgs_client, manifest)
 
     for parameter_name, parameter_details in new_manifest.get("parameters", {}).items():
         if parameter_details.get("macro"):
             macro_to_run = macros.get(parameter_details.get("macro").get("method"))
-            result = macro_to_run(client, parameter_details.get("macro").get("args"))
+            result = macro_to_run(
+                orgs_client, parameter_details.get("macro").get("args")
+            )
             parameter_details["default"] = result
             del parameter_details["macro"]
 
@@ -204,7 +241,7 @@ def expand_manifest(manifest, client):
             if parameter_details.get("macro"):
                 macro_to_run = macros.get(parameter_details.get("macro").get("method"))
                 result = macro_to_run(
-                    client, parameter_details.get("macro").get("args")
+                    orgs_client, parameter_details.get("macro").get("args")
                 )
                 parameter_details["default"] = result
                 del parameter_details["macro"]
@@ -237,7 +274,7 @@ def expand_manifest(manifest, client):
         )
         if organizations_account_tags != "ignored":
             tags = list()
-            paginator = client.get_paginator("list_tags_for_resource")
+            paginator = orgs_client.get_paginator("list_tags_for_resource")
             for page in paginator.paginate(ResourceId=stored_account_id,):
                 tags.extend(page.get("Tags", []))
             tags = [f"{t['Key']}:{t['Value']}" for t in tags]
@@ -246,6 +283,35 @@ def expand_manifest(manifest, client):
                 stored_account["tags"] = stored_account.get("tags", []) + tags
             elif organizations_account_tags == "honour":
                 stored_account["tags"] = tags
+
+        # Get tags from orgs if we should
+        external_account_overrides = stored_account.get(
+            "external_account_overrides", {}
+        )
+        if external_account_overrides.get("default_region"):
+            ####
+            if external_account_overrides.get("default_region").get("source") == "ssm":
+                default_region = get_ssm_external_account_overrides_for(
+                    stored_account.get("account_id"),
+                    "default_region",
+                    external_account_overrides.get("default_region").get(
+                        "fail_if_missing", True
+                    ),
+                )
+                if default_region:
+                    stored_account["default_region"] = default_region
+            if external_account_overrides.get("enabled_regions").get("source") == "ssm":
+                enabled_regions = get_ssm_external_account_overrides_for(
+                    stored_account.get("account_id"),
+                    "enabled_regions",
+                    external_account_overrides.get("enabled_regions").get(
+                        "fail_if_missing", True
+                    ),
+                )
+                if enabled_regions:
+                    stored_account["enabled_regions"] = serialisation_utils.load(
+                        enabled_regions
+                    )
 
         # append or overwrite if we should
         if stored_account.get("append"):
@@ -280,7 +346,7 @@ def expand_manifest(manifest, client):
                         parameter_details.get("macro").get("method")
                     )
                     result = macro_to_run(
-                        client, parameter_details.get("macro").get("args")
+                        orgs_client, parameter_details.get("macro").get("args")
                     )
                     parameter_details["default"] = result
                     del parameter_details["macro"]
