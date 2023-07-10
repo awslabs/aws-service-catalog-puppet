@@ -314,17 +314,7 @@ def expand_manifest(manifest, orgs_client):
                     )
 
         # append or overwrite if we should
-        if stored_account.get("append"):
-            append = stored_account.get("append")
-            for tag in append.get("tags", []):
-                stored_account["tags"] = stored_account.get("tags", []) + [tag]
-            for region_enabled in append.get("regions_enabled", []):
-                stored_account["regions_enabled"] = stored_account.get(
-                    "regions_enabled", []
-                ) + [region_enabled]
-            del stored_account["append"]
-
-        elif stored_account.get("overwrite"):
+        if stored_account.get("overwrite"):
             overwrite = stored_account.get("overwrite")
             if overwrite.get("tags"):
                 stored_account["tags"] = overwrite.get("tags")
@@ -333,6 +323,16 @@ def expand_manifest(manifest, orgs_client):
             if overwrite.get("default_region"):
                 stored_account["default_region"] = overwrite.get("default_region")
             del stored_account["overwrite"]
+
+        elif stored_account.get("append"):
+            append = stored_account.get("append")
+            for tag in append.get("tags", []):
+                stored_account["tags"] = stored_account.get("tags", []) + [tag]
+            for region_enabled in append.get("regions_enabled", []):
+                stored_account["regions_enabled"] = stored_account.get(
+                    "regions_enabled", []
+                ) + [region_enabled]
+            del stored_account["append"]
 
     new_manifest["accounts"] = list(accounts_by_id.values())
 
@@ -1021,34 +1021,35 @@ class Manifest(dict):
                 account_id = str(account.get("account_id"))
                 if single_account != "None" and single_account != account_id:
                     continue
-                additional_parameters = {
-                    "launches": dict(
-                        account_id=account_id, ou=account.get("expanded_from", ""),
-                    ),
-                    "apps": dict(account_id=account_id,),
-                    "workspaces": dict(account_id=account_id,),
-                    "stacks": dict(account_id=account_id,),
-                    "spoke-local-portfolios": dict(
-                        account_id=account_id,
-                        organization=account.get("organization", ""),
-                        ou=account.get("expanded_from", ""),
-                    ),
-                    "imported-portfolios": dict(
-                        account_id=account_id,
-                        organization=account.get("organization", ""),
-                        ou=account.get("expanded_from", ""),
-                    ),
-                    "assertions": dict(account_id=account_id,),
-                    "lambda-invocations": dict(account_id=account_id,),
-                    "code-build-runs": dict(account_id=account_id,),
-                    "service-control-policies": dict(
-                        account_id=account_id, ou_name="",
-                    ),
-                    "tag-policies": dict(account_id=account_id, ou_name="",),
-                    constants.SIMULATE_POLICIES: dict(account_id=account_id,),
-                    constants.C7N_AWS_LAMBDAS: dict(account_id=account_id,),
-                }.get(section_name)
+
                 if tag_name in account.get("tags"):
+                    additional_parameters = {
+                        "launches": dict(
+                            account_id=account_id, ou=account.get("expanded_from", ""),
+                        ),
+                        "apps": dict(account_id=account_id,),
+                        "workspaces": dict(account_id=account_id,),
+                        "stacks": dict(account_id=account_id,),
+                        "spoke-local-portfolios": dict(
+                            account_id=account_id,
+                            organization=account.get("organization", ""),
+                            ou=account.get("expanded_from", ""),
+                        ),
+                        "imported-portfolios": dict(
+                            account_id=account_id,
+                            organization=account.get("organization", ""),
+                            ou=account.get("expanded_from", ""),
+                        ),
+                        "assertions": dict(account_id=account_id,),
+                        "lambda-invocations": dict(account_id=account_id,),
+                        "code-build-runs": dict(account_id=account_id,),
+                        "service-control-policies": dict(
+                            account_id=account_id, ou_name="",
+                        ),
+                        "tag-policies": dict(account_id=account_id, ou_name="",),
+                        constants.SIMULATE_POLICIES: dict(account_id=account_id,),
+                        constants.C7N_AWS_LAMBDAS: dict(account_id=account_id,),
+                    }.get(section_name)
                     if isinstance(regions, str):
                         if regions in [
                             "enabled",
