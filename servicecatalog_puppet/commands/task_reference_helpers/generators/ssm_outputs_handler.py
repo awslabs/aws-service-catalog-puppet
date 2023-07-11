@@ -1,7 +1,7 @@
 #   Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #   SPDX-License-Identifier: Apache-2.0
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, task_reference_constants
 
 
 def ssm_outputs_handler(
@@ -55,9 +55,9 @@ def ssm_outputs_handler(
             section_name=constants.SSM_OUTPUTS,
             execution=task_to_add.get("execution", constants.EXECUTION_MODE_DEFAULT),
         )
-        all_tasks[ssm_parameter_output_task_reference]["manifest_section_names"][
-            section_name
-        ] = True
+        all_tasks[ssm_parameter_output_task_reference][
+            task_reference_constants.MANIFEST_SECTION_NAMES
+        ][section_name] = True
         all_tasks[ssm_parameter_output_task_reference]["manifest_item_names"][
             item_name
         ] = True

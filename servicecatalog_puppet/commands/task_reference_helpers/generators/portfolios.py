@@ -1,6 +1,6 @@
 #  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, task_reference_constants
 
 
 def get_or_create_describe_portfolio_shares_task_ref(
@@ -23,7 +23,9 @@ def get_or_create_describe_portfolio_shares_task_ref(
             manifest_account_ids=dict(),
         )
     task = all_tasks[describe_portfolio_shares_task_ref]
-    task["manifest_section_names"].update(task_to_add.get("manifest_section_names"))
+    task[task_reference_constants.MANIFEST_SECTION_NAMES].update(
+        task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES)
+    )
     task["manifest_item_names"].update(task_to_add.get("manifest_item_names"))
     task["manifest_account_ids"].update(task_to_add.get("manifest_account_ids"))
 

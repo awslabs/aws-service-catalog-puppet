@@ -3,7 +3,7 @@
 
 import unittest
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, task_reference_constants
 
 
 class SSMParameterHandlerTest(unittest.TestCase):
@@ -44,7 +44,7 @@ class SSMParameterHandlerTest(unittest.TestCase):
             ],
             "account_id": account_id,
             "region": region,
-            "manifest_section_names": {"stacks": True},
+            task_reference_constants.MANIFEST_SECTION_NAMES: {"stacks": True},
             "manifest_item_names": {item_name: True},
             "manifest_account_ids": {account_id: True},
             "section_name": "stacks",
@@ -94,7 +94,9 @@ class SSMParameterHandlerTest(unittest.TestCase):
             {
                 "account_id": account_id,
                 "region": default_region,
-                "manifest_section_names": task.get("manifest_section_names"),
+                task_reference_constants.MANIFEST_SECTION_NAMES: task.get(
+                    task_reference_constants.MANIFEST_SECTION_NAMES
+                ),
                 "manifest_item_names": task.get("manifest_item_names"),
                 "manifest_account_ids": task.get("manifest_account_ids"),
                 "execution": task.get("execution"),
@@ -139,7 +141,7 @@ class SSMParameterHandlerTest(unittest.TestCase):
             ],
             "account_id": account_id,
             "region": region,
-            "manifest_section_names": {"stacks": True},
+            task_reference_constants.MANIFEST_SECTION_NAMES: {"stacks": True},
             "manifest_item_names": {item_name: True},
             "manifest_account_ids": {account_id: True},
             "section_name": "stacks",
@@ -189,7 +191,9 @@ class SSMParameterHandlerTest(unittest.TestCase):
             {
                 "account_id": account_id,
                 "region": default_region,
-                "manifest_section_names": task.get("manifest_section_names"),
+                task_reference_constants.MANIFEST_SECTION_NAMES: task.get(
+                    task_reference_constants.MANIFEST_SECTION_NAMES
+                ),
                 "manifest_item_names": task.get("manifest_item_names"),
                 "manifest_account_ids": task.get("manifest_account_ids"),
                 "execution": task.get("execution"),
@@ -234,7 +238,7 @@ class SSMParameterHandlerTest(unittest.TestCase):
             "dependencies": [],
             "account_id": puppet_account_id,
             "region": region,
-            "manifest_section_names": {"stacks": True},
+            task_reference_constants.MANIFEST_SECTION_NAMES: {"stacks": True},
             "manifest_item_names": {dependency_item_name: True},
             "manifest_account_ids": {account_id: True},
             "section_name": "stacks",
@@ -267,7 +271,7 @@ class SSMParameterHandlerTest(unittest.TestCase):
             ],
             "account_id": account_id,
             "region": region,
-            "manifest_section_names": {"stacks": True},
+            task_reference_constants.MANIFEST_SECTION_NAMES: {"stacks": True},
             "manifest_item_names": {item_name: True},
             "manifest_account_ids": {account_id: True},
             "section_name": "stacks",
@@ -315,7 +319,9 @@ class SSMParameterHandlerTest(unittest.TestCase):
             {
                 "account_id": puppet_account_id,
                 "region": default_region,
-                "manifest_section_names": task.get("manifest_section_names"),
+                task_reference_constants.MANIFEST_SECTION_NAMES: task.get(
+                    task_reference_constants.MANIFEST_SECTION_NAMES
+                ),
                 "manifest_item_names": task.get("manifest_item_names"),
                 "manifest_account_ids": task.get("manifest_account_ids"),
                 "execution": dependency_task.get("execution"),

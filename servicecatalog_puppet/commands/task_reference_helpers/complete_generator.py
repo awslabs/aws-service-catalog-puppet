@@ -4,7 +4,12 @@ import copy
 
 from deepmerge import always_merger
 
-from servicecatalog_puppet import config, constants, serialisation_utils
+from servicecatalog_puppet import (
+    config,
+    constants,
+    serialisation_utils,
+    task_reference_constants,
+)
 from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.commands.task_reference_helpers.generators import generator
 from servicecatalog_puppet.commands.task_reference_helpers.generators.boto3_parameter_handler import (
@@ -48,20 +53,20 @@ def generate(puppet_account_id, manifest, output_file_path):
         else:
             accounts_to_share_with[a.get("account_id")] = True
 
-    all_tasks[constants.CREATE_POLICIES] = dict(
-        execution=constants.EXECUTION_MODE_HUB,
-        manifest_section_names=dict(),
-        manifest_item_names=dict(),
-        account_id=puppet_account_id,
-        region=default_region,
-        manifest_account_ids=dict(),
-        task_reference=constants.CREATE_POLICIES,
-        dependencies_by_reference=list(),
-        section_name=constants.CREATE_POLICIES,
-        organizations_to_share_with=list(organizations_to_share_with.keys()),
-        ous_to_share_with=list(ous_to_share_with.keys()),
-        accounts_to_share_with=list(accounts_to_share_with.keys()),
-    )
+    all_tasks[constants.CREATE_POLICIES] = {
+        execution: constants.EXECUTION_MODE_HUB,
+        task_reference_constants.MANIFEST_SECTION_NAMES: dict(),
+        manifest_item_names: dict(),
+        account_id: puppet_account_id,
+        region: default_region,
+        manifest_account_ids: dict(),
+        task_reference: constants.CREATE_POLICIES,
+        dependencies_by_reference: list(),
+        section_name: constants.CREATE_POLICIES,
+        organizations_to_share_with: list(organizations_to_share_with.keys()),
+        ous_to_share_with: list(ous_to_share_with.keys()),
+        accounts_to_share_with: list(accounts_to_share_with.keys()),
+    }
 
     #
     # First pass - handle tasks
@@ -90,7 +95,9 @@ def generate(puppet_account_id, manifest, output_file_path):
                 regions_in_use,
             )
             for task_to_add in tasks_to_add:
-                task_to_add["manifest_section_names"] = {section_name: True}
+                task_to_add[task_reference_constants.MANIFEST_SECTION_NAMES] = {
+                    section_name: True
+                }
                 task_to_add["manifest_item_names"] = {item_name: True}
                 task_to_add["manifest_account_ids"] = {
                     task_to_add.get("account_id"): True

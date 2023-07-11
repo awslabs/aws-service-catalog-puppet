@@ -8,6 +8,7 @@ from servicecatalog_puppet import (
     constants,
     manifest_utils,
     serialisation_utils,
+    task_reference_constants,
 )
 from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.commands.task_reference_helpers import (
@@ -105,7 +106,7 @@ def deploy_from_task_reference(path):
             tasks_to_run_filtered[task_reference] = task
 
         for a in [
-            "manifest_section_names",
+            task_reference_constants.MANIFEST_SECTION_NAMES,
             "manifest_item_names",
             "manifest_account_ids",
         ]:

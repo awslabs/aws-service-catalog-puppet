@@ -1,6 +1,6 @@
 #  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-from servicecatalog_puppet import config, constants
+from servicecatalog_puppet import config, constants, task_reference_constants
 from servicecatalog_puppet.commands.task_reference_helpers.generators import portfolios
 
 
@@ -43,9 +43,9 @@ def add_puppet_associations_for_when_not_sharing_with_puppet_account(
             manifest_item_names=dict(),
             manifest_account_ids=dict(),
         )
-    all_tasks[hub_portfolio_ref]["manifest_section_names"].update(
-        task_to_add.get("manifest_section_names")
-    )
+    all_tasks[hub_portfolio_ref][
+        task_reference_constants.MANIFEST_SECTION_NAMES
+    ].update(task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES))
     all_tasks[hub_portfolio_ref]["manifest_item_names"].update(
         task_to_add.get("manifest_item_names")
     )
@@ -75,9 +75,9 @@ def add_puppet_associations_for_when_not_sharing_with_puppet_account(
             manifest_item_names=dict(),
             manifest_account_ids=dict(),
         )
-    all_tasks[hub_portfolio_puppet_association_ref]["manifest_section_names"].update(
-        task_to_add.get("manifest_section_names")
-    )
+    all_tasks[hub_portfolio_puppet_association_ref][
+        task_reference_constants.MANIFEST_SECTION_NAMES
+    ].update(task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES))
     all_tasks[hub_portfolio_puppet_association_ref]["manifest_item_names"].update(
         task_to_add.get("manifest_item_names")
     )
@@ -103,9 +103,9 @@ def add_puppet_associations_for_when_not_sharing_with_puppet_account(
             manifest_item_names=dict(),
             manifest_account_ids=dict(),
         )
-    all_tasks[spoke_portfolio_puppet_association_ref]["manifest_section_names"].update(
-        task_to_add.get("manifest_section_names")
-    )
+    all_tasks[spoke_portfolio_puppet_association_ref][
+        task_reference_constants.MANIFEST_SECTION_NAMES
+    ].update(task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES))
     all_tasks[spoke_portfolio_puppet_association_ref]["manifest_item_names"].update(
         task_to_add.get("manifest_item_names")
     )
@@ -170,9 +170,9 @@ def setup_sharing_for_portfolio(
             manifest_item_names=dict(),
             manifest_account_ids=dict(),
         )
-    all_tasks[share_and_accept_ref]["manifest_section_names"].update(
-        task_to_add.get("manifest_section_names")
-    )
+    all_tasks[share_and_accept_ref][
+        task_reference_constants.MANIFEST_SECTION_NAMES
+    ].update(task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES))
     all_tasks[share_and_accept_ref]["manifest_item_names"].update(
         task_to_add.get("manifest_item_names")
     )
@@ -214,8 +214,8 @@ def handle_imported_portfolios(
                     manifest_item_names=dict(),
                     manifest_account_ids=dict(),
                 )
-            all_tasks[ref]["manifest_section_names"].update(
-                task_to_add.get("manifest_section_names")
+            all_tasks[ref][task_reference_constants.MANIFEST_SECTION_NAMES].update(
+                task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES)
             )
             all_tasks[ref]["manifest_item_names"].update(
                 task_to_add.get("manifest_item_names")
@@ -271,7 +271,7 @@ def handle_imported_portfolios(
                 section_name=constants.PORTFOLIO_ASSOCIATIONS,
                 associations=task_to_add.get("associations"),
                 manifest_section_names=dict(
-                    **task_to_add.get("manifest_section_names")
+                    **task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES)
                 ),
                 manifest_item_names=dict(**task_to_add.get("manifest_item_names")),
                 manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
@@ -298,8 +298,8 @@ def handle_imported_portfolios(
                 manifest_item_names=dict(),
                 manifest_account_ids=dict(),
             )
-        all_tasks[ref]["manifest_section_names"].update(
-            task_to_add.get("manifest_section_names")
+        all_tasks[ref][task_reference_constants.MANIFEST_SECTION_NAMES].update(
+            task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES)
         )
         all_tasks[ref]["manifest_item_names"].update(
             task_to_add.get("manifest_item_names")
@@ -329,8 +329,8 @@ def handle_imported_portfolios(
                 manifest_item_names=dict(),
                 manifest_account_ids=dict(),
             )
-        all_tasks[ref]["manifest_section_names"].update(
-            task_to_add.get("manifest_section_names")
+        all_tasks[ref][task_reference_constants.MANIFEST_SECTION_NAMES].update(
+            task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES)
         )
         all_tasks[ref]["manifest_item_names"].update(
             task_to_add.get("manifest_item_names")
@@ -363,9 +363,9 @@ def add_puppet_associations_for_when_sharing_with_puppet_account(
             manifest_item_names=dict(),
             manifest_account_ids=dict(),
         )
-    all_tasks[spoke_portfolio_puppet_association_ref]["manifest_section_names"].update(
-        task_to_add.get("manifest_section_names")
-    )
+    all_tasks[spoke_portfolio_puppet_association_ref][
+        task_reference_constants.MANIFEST_SECTION_NAMES
+    ].update(task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES))
     all_tasks[spoke_portfolio_puppet_association_ref]["manifest_item_names"].update(
         task_to_add.get("manifest_item_names")
     )

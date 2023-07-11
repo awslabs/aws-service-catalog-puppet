@@ -1,12 +1,14 @@
 #  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, task_reference_constants
 
 
 def manifest_related_args(task_to_add):
     return dict(
-        manifest_section_names=dict(**task_to_add.get("manifest_section_names")),
+        manifest_section_names=dict(
+            **task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES)
+        ),
         manifest_item_names=dict(**task_to_add.get("manifest_item_names")),
         manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
     )

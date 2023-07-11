@@ -3,7 +3,7 @@
 
 import unittest
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, task_reference_constants
 
 
 class Boto3ParameterHandlerTest(unittest.TestCase):
@@ -44,7 +44,7 @@ class Boto3ParameterHandlerTest(unittest.TestCase):
             ],
             "account_id": account_id,
             "region": region,
-            "manifest_section_names": {"stacks": True},
+            task_reference_constants.MANIFEST_SECTION_NAMES: {"stacks": True},
             "manifest_item_names": {item_name: True},
             "manifest_account_ids": {account_id: True},
             "section_name": "stacks",
@@ -111,7 +111,9 @@ class Boto3ParameterHandlerTest(unittest.TestCase):
                 "task_reference": boto3_parameter_task_reference,
                 "dependencies_by_reference": [],
                 "dependencies": [],
-                "manifest_section_names": {constants.STACKS: True},
+                task_reference_constants.MANIFEST_SECTION_NAMES: {
+                    constants.STACKS: True
+                },
                 "manifest_item_names": {item_name: True},
                 "manifest_account_ids": {account_id: True},
                 "account_id": account_id,

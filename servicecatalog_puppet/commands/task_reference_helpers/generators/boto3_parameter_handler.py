@@ -1,7 +1,7 @@
 #   Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #   SPDX-License-Identifier: Apache-2.0
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, task_reference_constants
 
 
 def generate_task_reference(
@@ -87,7 +87,9 @@ def boto3_parameter_handler(
             )
 
         boto3_task = new_tasks[boto3_parameter_task_reference]
-        boto3_task["manifest_section_names"].update(task.get("manifest_section_names"))
+        boto3_task[task_reference_constants.MANIFEST_SECTION_NAMES].update(
+            task.get(task_reference_constants.MANIFEST_SECTION_NAMES)
+        )
         boto3_task["manifest_item_names"].update(task.get("manifest_item_names"))
         boto3_task["manifest_account_ids"].update(task.get("manifest_account_ids"))
 

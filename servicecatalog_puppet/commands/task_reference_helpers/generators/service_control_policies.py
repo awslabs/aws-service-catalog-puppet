@@ -1,6 +1,6 @@
 #  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, task_reference_constants
 
 
 def handle_service_control_policies(
@@ -36,9 +36,9 @@ def handle_service_control_policies(
     all_tasks[all_tasks_task_reference]["dependencies_by_reference"].append(
         get_or_create_policy_ref
     )
-    all_tasks[get_or_create_policy_ref]["manifest_section_names"].update(
-        task_to_add.get("manifest_section_names")
-    )
+    all_tasks[get_or_create_policy_ref][
+        task_reference_constants.MANIFEST_SECTION_NAMES
+    ].update(task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES))
     all_tasks[get_or_create_policy_ref]["manifest_item_names"].update(
         task_to_add.get("manifest_item_names")
     )

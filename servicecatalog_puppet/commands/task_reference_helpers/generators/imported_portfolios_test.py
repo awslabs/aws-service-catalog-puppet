@@ -3,7 +3,7 @@
 
 import unittest
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, task_reference_constants
 
 
 class ImportedPortfoliosTest(unittest.TestCase):
@@ -40,7 +40,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
             "organization": "o-sw3edla4pd",
             "ou": "ou-do8d-me7f39on",
             "region": region,
-            "manifest_section_names": {"imported-portfolios": True},
+            task_reference_constants.MANIFEST_SECTION_NAMES: {
+                "imported-portfolios": True
+            },
             "manifest_item_names": {item_name: True},
             "manifest_account_ids": {account_id: True},
             "section_name": section_name,
@@ -76,7 +78,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "execution": "hub",
                 "manifest_account_ids": {account_id: True},
                 "manifest_item_names": {item_name: True},
-                "manifest_section_names": {"imported-portfolios": True},
+                task_reference_constants.MANIFEST_SECTION_NAMES: {
+                    "imported-portfolios": True
+                },
                 "portfolio": portfolio,
                 "puppet_account_id": puppet_account_id,
                 "region": region,
@@ -97,7 +101,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "execution": "hub",
                 "manifest_account_ids": {account_id: True},
                 "manifest_item_names": {item_name: True},
-                "manifest_section_names": {"imported-portfolios": True},
+                task_reference_constants.MANIFEST_SECTION_NAMES: {
+                    "imported-portfolios": True
+                },
                 "portfolio": portfolio,
                 "portfolio_task_reference": f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                 "puppet_account_id": puppet_account_id,
@@ -118,7 +124,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 ],
                 "manifest_account_ids": {account_id: True},
                 "manifest_item_names": {item_name: True},
-                "manifest_section_names": {"imported-portfolios": True},
+                task_reference_constants.MANIFEST_SECTION_NAMES: {
+                    "imported-portfolios": True
+                },
                 "portfolio_task_reference": f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                 "region": region,
                 "section_name": "describe-portfolio-shares",
@@ -142,7 +150,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "execution": "hub",
                 "manifest_account_ids": {account_id: True},
                 "manifest_item_names": {item_name: True},
-                "manifest_section_names": {"imported-portfolios": True},
+                task_reference_constants.MANIFEST_SECTION_NAMES: {
+                    "imported-portfolios": True
+                },
                 "ou_to_share_with": "ou-do8d-me7f39on",
                 "portfolio": portfolio,
                 "portfolio_task_reference": f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
@@ -169,7 +179,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "execution": "hub",
                 "manifest_account_ids": {account_id: True},
                 "manifest_item_names": {item_name: True},
-                "manifest_section_names": {"imported-portfolios": True},
+                task_reference_constants.MANIFEST_SECTION_NAMES: {
+                    "imported-portfolios": True
+                },
                 "portfolio": portfolio,
                 "portfolio_task_reference": f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                 "puppet_account_id": puppet_account_id,
@@ -195,7 +207,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "spoke_local_portfolio_name": item_name,
                 "manifest_account_ids": {account_id: True},
                 "manifest_item_names": {item_name: True},
-                "manifest_section_names": {"imported-portfolios": True},
+                task_reference_constants.MANIFEST_SECTION_NAMES: {
+                    "imported-portfolios": True
+                },
                 "portfolio": portfolio,
                 "portfolio_task_reference": f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                 "region": region,
@@ -236,7 +250,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
             "organization": "o-sw3edla4pd",
             "ou": "ou-do8d-me7f39on",
             "region": region,
-            "manifest_section_names": {"imported-portfolios": True},
+            task_reference_constants.MANIFEST_SECTION_NAMES: {
+                "imported-portfolios": True
+            },
             "manifest_item_names": {item_name: True},
             "manifest_account_ids": {account_id: True},
             "section_name": section_name,
@@ -276,7 +292,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "spoke_local_portfolio_name": item_name,
                 "manifest_account_ids": {account_id: True},
                 "manifest_item_names": {item_name: True},
-                "manifest_section_names": {"imported-portfolios": True},
+                task_reference_constants.MANIFEST_SECTION_NAMES: {
+                    "imported-portfolios": True
+                },
                 "portfolio": portfolio,
                 "region": region,
                 "section_name": "portfolio-associations",
@@ -314,7 +332,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
             "organization": "o-sw3edla4pd",
             "ou": "ou-do8d-me7f39on",
             "region": region,
-            "manifest_section_names": {"imported-portfolios": True},
+            task_reference_constants.MANIFEST_SECTION_NAMES: {
+                "imported-portfolios": True
+            },
             "manifest_item_names": {item_name: True},
             "manifest_account_ids": {account_id: True},
             "section_name": section_name,
@@ -358,7 +378,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "launch_constraints": "thisisignored",
                 "manifest_account_ids": {account_id: True},
                 "manifest_item_names": {item_name: True},
-                "manifest_section_names": {"imported-portfolios": True},
+                task_reference_constants.MANIFEST_SECTION_NAMES: {
+                    "imported-portfolios": True
+                },
                 "portfolio": portfolio,
                 "region": region,
                 "section_name": constants.PORTFOLIO_CONSTRAINTS_LAUNCH,
@@ -380,7 +402,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "execution": "hub",
                 "manifest_account_ids": {account_id: True},
                 "manifest_item_names": {item_name: True},
-                "manifest_section_names": {"imported-portfolios": True},
+                task_reference_constants.MANIFEST_SECTION_NAMES: {
+                    "imported-portfolios": True
+                },
                 "portfolio": portfolio,
                 "region": region,
                 "section_name": constants.PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE,

@@ -1,7 +1,7 @@
 #   Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #   SPDX-License-Identifier: Apache-2.0
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, task_reference_constants
 
 
 def assertCrossAccountAccessWillWork(
@@ -93,8 +93,8 @@ def ssm_parameter_handler(
 
             new_tasks[parameter_task_reference] = ssm_task_params
 
-        ssm_task_params["manifest_section_names"].update(
-            **task.get("manifest_section_names")
+        ssm_task_params[task_reference_constants.MANIFEST_SECTION_NAMES].update(
+            **task.get(task_reference_constants.MANIFEST_SECTION_NAMES)
         )
         ssm_task_params["manifest_item_names"].update(**task.get("manifest_item_names"))
         ssm_task_params["manifest_account_ids"].update(

@@ -1,6 +1,6 @@
 #  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import constants, task_reference_constants
 
 
 def handle_workspaces(
@@ -26,9 +26,9 @@ def handle_workspaces(
             manifest_item_names=dict(),
             manifest_account_ids=dict(),
         )
-    all_tasks[workspace_account_preparation_ref]["manifest_section_names"].update(
-        task_to_add.get("manifest_section_names")
-    )
+    all_tasks[workspace_account_preparation_ref][
+        task_reference_constants.MANIFEST_SECTION_NAMES
+    ].update(task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES))
     all_tasks[workspace_account_preparation_ref]["manifest_item_names"].update(
         task_to_add.get("manifest_item_names")
     )
