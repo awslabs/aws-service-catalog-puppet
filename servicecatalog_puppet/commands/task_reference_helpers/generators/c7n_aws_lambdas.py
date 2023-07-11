@@ -5,13 +5,17 @@ from servicecatalog_puppet import constants, task_reference_constants
 
 
 def manifest_related_args(task_to_add):
-    return dict(
-        manifest_section_names=dict(
+    return {
+        task_reference_constants.MANIFEST_SECTION_NAMES: dict(
             **task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES)
         ),
-        manifest_item_names=dict(**task_to_add.get("manifest_item_names")),
-        manifest_account_ids=dict(**task_to_add.get("manifest_account_ids")),
-    )
+        task_reference_constants.MANIFEST_ITEM_NAMES: dict(
+            **task_to_add.get(task_reference_constants.MANIFEST_ITEM_NAMES)
+        ),
+        task_reference_constants.MANIFEST_ACCOUNT_IDS: dict(
+            **task_to_add.get(task_reference_constants.MANIFEST_ACCOUNT_IDS)
+        ),
+    }
 
 
 def create_custodian_role(

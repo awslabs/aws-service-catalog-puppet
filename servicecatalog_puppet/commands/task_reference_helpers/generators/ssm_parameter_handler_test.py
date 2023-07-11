@@ -45,8 +45,8 @@ class SSMParameterHandlerTest(unittest.TestCase):
             "account_id": account_id,
             "region": region,
             task_reference_constants.MANIFEST_SECTION_NAMES: {"stacks": True},
-            "manifest_item_names": {item_name: True},
-            "manifest_account_ids": {account_id: True},
+            task_reference_constants.MANIFEST_ITEM_NAMES: {item_name: True},
+            task_reference_constants.MANIFEST_ACCOUNT_IDS: {account_id: True},
             "section_name": "stacks",
             "item_name": item_name,
             "dependencies_by_reference": [
@@ -97,8 +97,12 @@ class SSMParameterHandlerTest(unittest.TestCase):
                 task_reference_constants.MANIFEST_SECTION_NAMES: task.get(
                     task_reference_constants.MANIFEST_SECTION_NAMES
                 ),
-                "manifest_item_names": task.get("manifest_item_names"),
-                "manifest_account_ids": task.get("manifest_account_ids"),
+                task_reference_constants.MANIFEST_ITEM_NAMES: task.get(
+                    task_reference_constants.MANIFEST_ITEM_NAMES
+                ),
+                task_reference_constants.MANIFEST_ACCOUNT_IDS: task.get(
+                    task_reference_constants.MANIFEST_ACCOUNT_IDS
+                ),
                 "execution": task.get("execution"),
                 "param_name": f"/sleeper/SleeperFunctionArn/{region}/stacks",
                 "section_name": constants.SSM_PARAMETERS,
@@ -142,8 +146,8 @@ class SSMParameterHandlerTest(unittest.TestCase):
             "account_id": account_id,
             "region": region,
             task_reference_constants.MANIFEST_SECTION_NAMES: {"stacks": True},
-            "manifest_item_names": {item_name: True},
-            "manifest_account_ids": {account_id: True},
+            task_reference_constants.MANIFEST_ITEM_NAMES: {item_name: True},
+            task_reference_constants.MANIFEST_ACCOUNT_IDS: {account_id: True},
             "section_name": "stacks",
             "item_name": item_name,
             "dependencies_by_reference": [
@@ -194,8 +198,12 @@ class SSMParameterHandlerTest(unittest.TestCase):
                 task_reference_constants.MANIFEST_SECTION_NAMES: task.get(
                     task_reference_constants.MANIFEST_SECTION_NAMES
                 ),
-                "manifest_item_names": task.get("manifest_item_names"),
-                "manifest_account_ids": task.get("manifest_account_ids"),
+                task_reference_constants.MANIFEST_ITEM_NAMES: task.get(
+                    task_reference_constants.MANIFEST_ITEM_NAMES
+                ),
+                task_reference_constants.MANIFEST_ACCOUNT_IDS: task.get(
+                    task_reference_constants.MANIFEST_ACCOUNT_IDS
+                ),
                 "execution": task.get("execution"),
                 "param_name": f"/sleeper/SleeperFunctionArn/{region}/stacks",
                 "section_name": constants.SSM_PARAMETERS,
@@ -239,8 +247,8 @@ class SSMParameterHandlerTest(unittest.TestCase):
             "account_id": puppet_account_id,
             "region": region,
             task_reference_constants.MANIFEST_SECTION_NAMES: {"stacks": True},
-            "manifest_item_names": {dependency_item_name: True},
-            "manifest_account_ids": {account_id: True},
+            task_reference_constants.MANIFEST_ITEM_NAMES: {dependency_item_name: True},
+            task_reference_constants.MANIFEST_ACCOUNT_IDS: {account_id: True},
             "section_name": "stacks",
             "item_name": dependency_item_name,
             "dependencies_by_reference": [
@@ -272,8 +280,8 @@ class SSMParameterHandlerTest(unittest.TestCase):
             "account_id": account_id,
             "region": region,
             task_reference_constants.MANIFEST_SECTION_NAMES: {"stacks": True},
-            "manifest_item_names": {item_name: True},
-            "manifest_account_ids": {account_id: True},
+            task_reference_constants.MANIFEST_ITEM_NAMES: {item_name: True},
+            task_reference_constants.MANIFEST_ACCOUNT_IDS: {account_id: True},
             "section_name": "stacks",
             "item_name": item_name,
             "dependencies_by_reference": [
@@ -322,8 +330,12 @@ class SSMParameterHandlerTest(unittest.TestCase):
                 task_reference_constants.MANIFEST_SECTION_NAMES: task.get(
                     task_reference_constants.MANIFEST_SECTION_NAMES
                 ),
-                "manifest_item_names": task.get("manifest_item_names"),
-                "manifest_account_ids": task.get("manifest_account_ids"),
+                task_reference_constants.MANIFEST_ITEM_NAMES: task.get(
+                    task_reference_constants.MANIFEST_ITEM_NAMES
+                ),
+                task_reference_constants.MANIFEST_ACCOUNT_IDS: task.get(
+                    task_reference_constants.MANIFEST_ACCOUNT_IDS
+                ),
                 "execution": dependency_task.get("execution"),
                 "param_name": f"/sleeper/SleeperFunctionArn/{region}/stacks",
                 "section_name": constants.SSM_PARAMETERS,

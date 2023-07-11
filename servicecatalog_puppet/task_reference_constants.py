@@ -3,3 +3,5 @@
 
 
 MANIFEST_SECTION_NAMES = "manifest_section_names"
+MANIFEST_ITEM_NAMES = "manifest_item_names"
+MANIFEST_ACCOUNT_IDS = "manifest_account_ids"

@@ -72,17 +72,17 @@ def ssm_parameter_handler(
             ):
                 parameter_task_execution = constants.EXECUTION_MODE_HUB
 
-            ssm_task_params = dict(
-                task_reference=parameter_task_reference,
-                account_id=parameter_account_id,
-                region=parameter_region,
-                manifest_section_names=dict(),
-                manifest_item_names=dict(),
-                manifest_account_ids=dict(),
-                dependencies=[],
-                dependencies_by_reference=[],
-                execution=parameter_task_execution,
-            )
+            ssm_task_params = {
+                "task_reference": parameter_task_reference,
+                "account_id": parameter_account_id,
+                "region": parameter_region,
+                task_reference_constants.MANIFEST_SECTION_NAMES: dict(),
+                task_reference_constants.MANIFEST_ITEM_NAMES: dict(),
+                task_reference_constants.MANIFEST_ACCOUNT_IDS: dict(),
+                "dependencies": [],
+                "dependencies_by_reference": [],
+                "execution": parameter_task_execution,
+            }
 
             if path is None:
                 ssm_task_params["param_name"] = parameter_name
@@ -96,9 +96,11 @@ def ssm_parameter_handler(
         ssm_task_params[task_reference_constants.MANIFEST_SECTION_NAMES].update(
             **task.get(task_reference_constants.MANIFEST_SECTION_NAMES)
         )
-        ssm_task_params["manifest_item_names"].update(**task.get("manifest_item_names"))
-        ssm_task_params["manifest_account_ids"].update(
-            **task.get("manifest_account_ids")
+        ssm_task_params[task_reference_constants.MANIFEST_ITEM_NAMES].update(
+            **task.get(task_reference_constants.MANIFEST_ITEM_NAMES)
+        )
+        ssm_task_params[task_reference_constants.MANIFEST_ACCOUNT_IDS].update(
+            **task.get(task_reference_constants.MANIFEST_ACCOUNT_IDS)
         )
 
         task["dependencies_by_reference"].append(parameter_task_reference)

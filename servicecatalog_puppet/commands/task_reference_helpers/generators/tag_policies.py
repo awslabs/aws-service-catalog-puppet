@@ -16,20 +16,20 @@ def handle_tag_policies(
         f"{constants.GET_OR_CREATE_TAG_POLICIES_POLICY}-{item_name}"
     )
     if not all_tasks.get(get_or_create_policy_ref):
-        all_tasks[get_or_create_policy_ref] = dict(
-            task_reference=get_or_create_policy_ref,
-            execution="hub",
-            account_id=puppet_account_id,
-            region=task_to_add.get("region"),
-            policy_name=task_to_add.get("tag_policy_name"),
-            policy_description=task_to_add.get("description"),
-            policy_content=task_to_add.get("content"),
-            dependencies_by_reference=list(),
-            manifest_section_names=dict(),
-            manifest_item_names=dict(),
-            manifest_account_ids=dict(),
-            section_name=constants.GET_OR_CREATE_TAG_POLICIES_POLICY,
-        )
+        all_tasks[get_or_create_policy_ref] = {
+            "task_reference": get_or_create_policy_ref,
+            "execution": "hub",
+            "account_id": puppet_account_id,
+            "region": task_to_add.get("region"),
+            "policy_name": task_to_add.get("tag_policy_name"),
+            "policy_description": task_to_add.get("description"),
+            "policy_content": task_to_add.get("content"),
+            "dependencies_by_reference": list(),
+            task_reference_constants.MANIFEST_SECTION_NAMES: dict(),
+            task_reference_constants.MANIFEST_ITEM_NAMES: dict(),
+            task_reference_constants.MANIFEST_ACCOUNT_IDS: dict(),
+            "section_name": constants.GET_OR_CREATE_TAG_POLICIES_POLICY,
+        }
     all_tasks[all_tasks_task_reference][
         "get_or_create_policy_ref"
     ] = get_or_create_policy_ref
@@ -39,9 +39,9 @@ def handle_tag_policies(
     all_tasks[get_or_create_policy_ref][
         task_reference_constants.MANIFEST_SECTION_NAMES
     ].update(task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES))
-    all_tasks[get_or_create_policy_ref]["manifest_item_names"].update(
-        task_to_add.get("manifest_item_names")
-    )
-    all_tasks[get_or_create_policy_ref]["manifest_account_ids"].update(
-        task_to_add.get("manifest_account_ids")
-    )
+    all_tasks[get_or_create_policy_ref][
+        task_reference_constants.MANIFEST_ITEM_NAMES
+    ].update(task_to_add.get(task_reference_constants.MANIFEST_ITEM_NAMES))
+    all_tasks[get_or_create_policy_ref][
+        task_reference_constants.MANIFEST_ACCOUNT_IDS
+    ].update(task_to_add.get(task_reference_constants.MANIFEST_ACCOUNT_IDS))

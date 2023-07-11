@@ -39,31 +39,31 @@ def ssm_outputs_handler(
                 f"You have two tasks outputting the same SSM parameter output: {ssm_parameter_output.get('param_name')}: {ssm_parameter_output_task_reference}"
             )
 
-        all_tasks[ssm_parameter_output_task_reference] = dict(
-            manifest_section_names=dict(),
-            manifest_item_names=dict(),
-            manifest_account_ids=dict(),
-            task_reference=ssm_parameter_output_task_reference,
-            param_name=output_parameter_name,
-            stack_output=ssm_parameter_output.get("stack_output"),
-            force_operation=ssm_parameter_output.get("force_operation", False),
-            account_id=output_account_id,
-            region=output_region,
-            dependencies_by_reference=[all_tasks_task_reference],
-            task_generating_output=all_tasks_task_reference,
-            status=task_to_add.get("status"),
-            section_name=constants.SSM_OUTPUTS,
-            execution=task_to_add.get("execution", constants.EXECUTION_MODE_DEFAULT),
-        )
+        all_tasks[ssm_parameter_output_task_reference] = {
+            task_reference_constants.MANIFEST_SECTION_NAMES: dict(),
+            task_reference_constants.MANIFEST_ITEM_NAMES: dict(),
+            task_reference_constants.MANIFEST_ACCOUNT_IDS: dict(),
+            "task_reference": ssm_parameter_output_task_reference,
+            "param_name": output_parameter_name,
+            "stack_output": ssm_parameter_output.get("stack_output"),
+            "force_operation": ssm_parameter_output.get("force_operation", False),
+            "account_id": output_account_id,
+            "region": output_region,
+            "dependencies_by_reference": [all_tasks_task_reference],
+            "task_generating_output": all_tasks_task_reference,
+            "status": task_to_add.get("status"),
+            "section_name": constants.SSM_OUTPUTS,
+            "execution": task_to_add.get("execution", constants.EXECUTION_MODE_DEFAULT),
+        }
         all_tasks[ssm_parameter_output_task_reference][
             task_reference_constants.MANIFEST_SECTION_NAMES
         ][section_name] = True
-        all_tasks[ssm_parameter_output_task_reference]["manifest_item_names"][
-            item_name
-        ] = True
-        all_tasks[ssm_parameter_output_task_reference]["manifest_account_ids"][
-            output_account_id
-        ] = True
+        all_tasks[ssm_parameter_output_task_reference][
+            task_reference_constants.MANIFEST_ITEM_NAMES
+        ][item_name] = True
+        all_tasks[ssm_parameter_output_task_reference][
+            task_reference_constants.MANIFEST_ACCOUNT_IDS
+        ][output_account_id] = True
 
         if not task_to_add.get("ssm_outputs_tasks_references"):
             task_to_add["ssm_outputs_tasks_references"] = dict()

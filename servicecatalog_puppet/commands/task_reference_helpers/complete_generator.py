@@ -54,18 +54,18 @@ def generate(puppet_account_id, manifest, output_file_path):
             accounts_to_share_with[a.get("account_id")] = True
 
     all_tasks[constants.CREATE_POLICIES] = {
-        execution: constants.EXECUTION_MODE_HUB,
+        "execution": constants.EXECUTION_MODE_HUB,
         task_reference_constants.MANIFEST_SECTION_NAMES: dict(),
-        manifest_item_names: dict(),
-        account_id: puppet_account_id,
-        region: default_region,
-        manifest_account_ids: dict(),
-        task_reference: constants.CREATE_POLICIES,
-        dependencies_by_reference: list(),
-        section_name: constants.CREATE_POLICIES,
-        organizations_to_share_with: list(organizations_to_share_with.keys()),
-        ous_to_share_with: list(ous_to_share_with.keys()),
-        accounts_to_share_with: list(accounts_to_share_with.keys()),
+        task_reference_constants.MANIFEST_ITEM_NAMES: dict(),
+        "account_id": puppet_account_id,
+        "region": default_region,
+        task_reference_constants.MANIFEST_ACCOUNT_IDS: dict(),
+        "task_reference": constants.CREATE_POLICIES,
+        "dependencies_by_reference": list(),
+        "section_name": constants.CREATE_POLICIES,
+        "organizations_to_share_with": list(organizations_to_share_with.keys()),
+        "ous_to_share_with": list(ous_to_share_with.keys()),
+        "accounts_to_share_with": list(accounts_to_share_with.keys()),
     }
 
     #
@@ -98,8 +98,10 @@ def generate(puppet_account_id, manifest, output_file_path):
                 task_to_add[task_reference_constants.MANIFEST_SECTION_NAMES] = {
                     section_name: True
                 }
-                task_to_add["manifest_item_names"] = {item_name: True}
-                task_to_add["manifest_account_ids"] = {
+                task_to_add[task_reference_constants.MANIFEST_ITEM_NAMES] = {
+                    item_name: True
+                }
+                task_to_add[task_reference_constants.MANIFEST_ACCOUNT_IDS] = {
                     task_to_add.get("account_id"): True
                 }
                 task_to_add["section_name"] = section_name

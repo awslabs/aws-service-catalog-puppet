@@ -67,31 +67,35 @@ def boto3_parameter_handler(
                     f"Cannot use cross account Boto3 Parameters in execution mode: {task_execution}"
                 )
         if not new_tasks.get(boto3_parameter_task_reference):
-            new_tasks[boto3_parameter_task_reference] = dict(
-                status=task.get("status"),
-                execution=task_execution,
-                task_reference=boto3_parameter_task_reference,
-                dependencies_by_reference=[],
-                dependencies=[],
-                manifest_section_names=dict(),
-                manifest_item_names=dict(),
-                manifest_account_ids=dict(),
-                account_id=account_id_to_use_for_boto3_call,
-                region=region_to_use_for_boto3_call,
-                arguments=boto3_parameter_details.get("arguments"),
-                call=boto3_parameter_details.get("call"),
-                client=boto3_parameter_details.get("client"),
-                filter=boto3_parameter_details.get("filter"),
-                use_paginator=boto3_parameter_details.get("use_paginator"),
-                section_name=constants.BOTO3_PARAMETERS,
-            )
+            new_tasks[boto3_parameter_task_reference] = {
+                "status": task.get("status"),
+                "execution": task_execution,
+                "task_reference": boto3_parameter_task_reference,
+                "dependencies_by_reference": [],
+                "dependencies": [],
+                task_reference_constants.MANIFEST_SECTION_NAMES: dict(),
+                task_reference_constants.MANIFEST_ITEM_NAMES: dict(),
+                task_reference_constants.MANIFEST_ACCOUNT_IDS: dict(),
+                "account_id": account_id_to_use_for_boto3_call,
+                "region": region_to_use_for_boto3_call,
+                "arguments": boto3_parameter_details.get("arguments"),
+                "call": boto3_parameter_details.get("call"),
+                "client": boto3_parameter_details.get("client"),
+                "filter": boto3_parameter_details.get("filter"),
+                "use_paginator": boto3_parameter_details.get("use_paginator"),
+                "section_name": constants.BOTO3_PARAMETERS,
+            }
 
         boto3_task = new_tasks[boto3_parameter_task_reference]
         boto3_task[task_reference_constants.MANIFEST_SECTION_NAMES].update(
             task.get(task_reference_constants.MANIFEST_SECTION_NAMES)
         )
-        boto3_task["manifest_item_names"].update(task.get("manifest_item_names"))
-        boto3_task["manifest_account_ids"].update(task.get("manifest_account_ids"))
+        boto3_task[task_reference_constants.MANIFEST_ITEM_NAMES].update(
+            task.get(task_reference_constants.MANIFEST_ITEM_NAMES)
+        )
+        boto3_task[task_reference_constants.MANIFEST_ACCOUNT_IDS].update(
+            task.get(task_reference_constants.MANIFEST_ACCOUNT_IDS)
+        )
 
         task["dependencies_by_reference"].append(boto3_parameter_task_reference)
 

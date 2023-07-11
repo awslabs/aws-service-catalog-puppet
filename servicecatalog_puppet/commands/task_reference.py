@@ -84,10 +84,10 @@ def deploy_from_task_reference(path):
                 if task.get("section_name") == constants.SSM_OUTPUTS:
                     if not any(
                         [
-                            task.get("manifest_account_ids").get(
+                            task.get(task_reference_constants.MANIFEST_ACCOUNT_IDS).get(
                                 str(single_account_id)
                             ),
-                            task.get("manifest_account_ids").get(
+                            task.get(task_reference_constants.MANIFEST_ACCOUNT_IDS).get(
                                 str(puppet_account_id)
                             ),
                         ]
@@ -107,8 +107,8 @@ def deploy_from_task_reference(path):
 
         for a in [
             task_reference_constants.MANIFEST_SECTION_NAMES,
-            "manifest_item_names",
-            "manifest_account_ids",
+            task_reference_constants.MANIFEST_ITEM_NAMES,
+            task_reference_constants.MANIFEST_ACCOUNT_IDS,
         ]:
             if task.get(a):
                 del task[a]
