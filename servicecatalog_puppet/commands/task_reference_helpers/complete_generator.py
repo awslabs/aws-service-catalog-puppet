@@ -4,7 +4,12 @@ import copy
 
 from deepmerge import always_merger
 
-from servicecatalog_puppet import config, constants, serialisation_utils
+from servicecatalog_puppet import (
+    config,
+    constants,
+    serialisation_utils,
+    task_reference_constants,
+)
 from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.commands.task_reference_helpers.generators import generator
 from servicecatalog_puppet.commands.task_reference_helpers.generators.boto3_parameter_handler import (
@@ -23,7 +28,7 @@ from servicecatalog_puppet.workflow import workflow_utils
 from servicecatalog_puppet.workflow.dependencies import resources_factory
 
 
-def generate(puppet_account_id, manifest, output_file_path):
+def generate(puppet_account_id, manifest, output_file_directory_path):
     default_region = config.get_home_region(puppet_account_id)
     regions_in_use = config.get_regions()
 
@@ -48,20 +53,20 @@ def generate(puppet_account_id, manifest, output_file_path):
         else:
             accounts_to_share_with[a.get("account_id")] = True
 
-    all_tasks[constants.CREATE_POLICIES] = dict(
-        execution=constants.EXECUTION_MODE_HUB,
-        manifest_section_names=dict(),
-        manifest_item_names=dict(),
-        account_id=puppet_account_id,
-        region=default_region,
-        manifest_account_ids=dict(),
-        task_reference=constants.CREATE_POLICIES,
-        dependencies_by_reference=list(),
-        section_name=constants.CREATE_POLICIES,
-        organizations_to_share_with=list(organizations_to_share_with.keys()),
-        ous_to_share_with=list(ous_to_share_with.keys()),
-        accounts_to_share_with=list(accounts_to_share_with.keys()),
-    )
+    all_tasks[constants.CREATE_POLICIES] = {
+        "execution": constants.EXECUTION_MODE_HUB,
+        task_reference_constants.MANIFEST_SECTION_NAMES: dict(),
+        task_reference_constants.MANIFEST_ITEM_NAMES: dict(),
+        "account_id": puppet_account_id,
+        "region": default_region,
+        task_reference_constants.MANIFEST_ACCOUNT_IDS: dict(),
+        "task_reference": constants.CREATE_POLICIES,
+        "dependencies_by_reference": list(),
+        "section_name": constants.CREATE_POLICIES,
+        "organizations_to_share_with": list(organizations_to_share_with.keys()),
+        "ous_to_share_with": list(ous_to_share_with.keys()),
+        "accounts_to_share_with": list(accounts_to_share_with.keys()),
+    }
 
     #
     # First pass - handle tasks
@@ -90,9 +95,13 @@ def generate(puppet_account_id, manifest, output_file_path):
                 regions_in_use,
             )
             for task_to_add in tasks_to_add:
-                task_to_add["manifest_section_names"] = {section_name: True}
-                task_to_add["manifest_item_names"] = {item_name: True}
-                task_to_add["manifest_account_ids"] = {
+                task_to_add[task_reference_constants.MANIFEST_SECTION_NAMES] = {
+                    section_name: True
+                }
+                task_to_add[task_reference_constants.MANIFEST_ITEM_NAMES] = {
+                    item_name: True
+                }
+                task_to_add[task_reference_constants.MANIFEST_ACCOUNT_IDS] = {
                     task_to_add.get("account_id"): True
                 }
                 task_to_add["section_name"] = section_name
@@ -323,7 +332,23 @@ def generate(puppet_account_id, manifest, output_file_path):
             if task_reference in parameter_task.get("dependencies_by_reference"):
                 parameter_task["dependencies_by_reference"].remove(task_reference)
 
+    for _, tasks_by_section in tasks_by_account_id.items():
+        for section_name, section_tasks in tasks_by_section.items():
+            for account_id, account_tasks in section_tasks.items():
+                all_tasks_for_account = dict()
+                for task_for_account_reference in account_tasks:
+                    all_tasks_for_account[task_for_account_reference] = all_tasks.get(
+                        task_for_account_reference
+                    )
+                output_file_path = f"{output_file_directory_path}/manifest-task-reference-{account_id}.json"
+                open(output_file_path, "w").write(
+                    serialisation_utils.dump_as_json(
+                        dict(all_tasks=all_tasks_for_account)
+                    )
+                )
+
     reference = dict(all_tasks=all_tasks,)
     workflow_utils.ensure_no_cyclic_dependencies("complete task reference", all_tasks)
+    output_file_path = output_file_directory_path + "/manifest-task-reference-full.json"
     open(output_file_path, "w").write(serialisation_utils.dump_as_json(reference))
     return reference

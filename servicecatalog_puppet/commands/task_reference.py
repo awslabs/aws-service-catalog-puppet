@@ -8,6 +8,7 @@ from servicecatalog_puppet import (
     constants,
     manifest_utils,
     serialisation_utils,
+    task_reference_constants,
 )
 from servicecatalog_puppet.commands import graph
 from servicecatalog_puppet.commands.task_reference_helpers import (
@@ -29,7 +30,8 @@ def generate_task_reference(f):
     complete = complete_generator.generate(  # hub and spokes
         puppet_account_id,
         manifest,
-        f.name.replace("-expanded.yaml", "-task-reference-full.json"),
+        os.path.dirname(f.name),
+        # f.name.replace("-expanded.yaml", "-task-reference-full.json"),
     )
     hub_tasks = hub_generator.generate(  # hub only
         puppet_account_id,
@@ -83,10 +85,10 @@ def deploy_from_task_reference(path):
                 if task.get("section_name") == constants.SSM_OUTPUTS:
                     if not any(
                         [
-                            task.get("manifest_account_ids").get(
+                            task.get(task_reference_constants.MANIFEST_ACCOUNT_IDS).get(
                                 str(single_account_id)
                             ),
-                            task.get("manifest_account_ids").get(
+                            task.get(task_reference_constants.MANIFEST_ACCOUNT_IDS).get(
                                 str(puppet_account_id)
                             ),
                         ]
@@ -105,9 +107,9 @@ def deploy_from_task_reference(path):
             tasks_to_run_filtered[task_reference] = task
 
         for a in [
-            "manifest_section_names",
-            "manifest_item_names",
-            "manifest_account_ids",
+            task_reference_constants.MANIFEST_SECTION_NAMES,
+            task_reference_constants.MANIFEST_ITEM_NAMES,
+            task_reference_constants.MANIFEST_ACCOUNT_IDS,
         ]:
             if task.get(a):
                 del task[a]

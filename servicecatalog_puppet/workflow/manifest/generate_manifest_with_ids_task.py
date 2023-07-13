@@ -5,7 +5,13 @@ import glob
 import os
 import zipfile
 
-from servicecatalog_puppet import config, constants, environmental_variables
+from servicecatalog_puppet import (
+    config,
+    constants,
+    environmental_variables,
+    serialisation_utils,
+    task_reference_constants,
+)
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -66,11 +72,11 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
             },
             {"name": "VERSION", "value": version, "type": "PLAINTEXT"},
             {"name": "MANIFEST_URL", "value": manifest_signed_url, "type": "PLAINTEXT"},
-            {
-                "name": "TASK_REFERENCE_URL",
-                "value": reference_signed_url,
-                "type": "PLAINTEXT",
-            },
+            # {
+            #     "name": "TASK_REFERENCE_URL",
+            #     "value": reference_signed_url,
+            #     "type": "PLAINTEXT",
+            # },
             {
                 "name": "PUPPET_ACCOUNT_ID",
                 "value": self.puppet_account_id,
@@ -163,8 +169,8 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
 
         self.write_output(
             dict(
-                reference_task_reference_content=reference_task_reference_content,
-                reference_signed_url=reference_signed_url,
+                # reference_task_reference_content=reference_task_reference_content,
+                # reference_signed_url=reference_signed_url,
                 cached_output_signed_url=cached_output_signed_url,
                 manifest_signed_url=manifest_signed_url,
                 manifest_content=manifest_content,
@@ -178,6 +184,15 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
         task_reference_content = open(
             self.manifest_task_reference_file_path.replace(".json", "-full.json"), "r",
         ).read()
+        task_reference = serialisation_utils.load_as_json(task_reference_content)
+        for task_ref, task in task_reference.get("all_tasks", {}).items():
+            for a in [
+                task_reference_constants.MANIFEST_SECTION_NAMES,
+                task_reference_constants.MANIFEST_ITEM_NAMES,
+            ]:
+                if task.get(a):
+                    del task_reference["all_tasks"][task_ref][a]
+        task_reference_content = serialisation_utils.dump_as_json(task_reference)
         key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-reference.json"
         self.debug(f"Uploading task reference {key} to {bucket}")
         s3.put_object(
