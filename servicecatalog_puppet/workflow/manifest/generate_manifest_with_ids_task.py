@@ -72,11 +72,11 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
             },
             {"name": "VERSION", "value": version, "type": "PLAINTEXT"},
             {"name": "MANIFEST_URL", "value": manifest_signed_url, "type": "PLAINTEXT"},
-            {
-                "name": "TASK_REFERENCE_URL",
-                "value": reference_signed_url,
-                "type": "PLAINTEXT",
-            },
+            # {
+            #     "name": "TASK_REFERENCE_URL",
+            #     "value": reference_signed_url,
+            #     "type": "PLAINTEXT",
+            # },
             {
                 "name": "PUPPET_ACCOUNT_ID",
                 "value": self.puppet_account_id,
@@ -169,8 +169,8 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
 
         self.write_output(
             dict(
-                reference_task_reference_content=reference_task_reference_content,
-                reference_signed_url=reference_signed_url,
+                # reference_task_reference_content=reference_task_reference_content,
+                # reference_signed_url=reference_signed_url,
                 cached_output_signed_url=cached_output_signed_url,
                 manifest_signed_url=manifest_signed_url,
                 manifest_content=manifest_content,

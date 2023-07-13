@@ -30,7 +30,8 @@ def generate_task_reference(f):
     complete = complete_generator.generate(  # hub and spokes
         puppet_account_id,
         manifest,
-        f.name.replace("-expanded.yaml", "-task-reference-full.json"),
+        os.path.dirname(f.name),
+        # f.name.replace("-expanded.yaml", "-task-reference-full.json"),
     )
     hub_tasks = hub_generator.generate(  # hub only
         puppet_account_id,

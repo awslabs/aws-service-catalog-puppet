@@ -28,7 +28,7 @@ from servicecatalog_puppet.workflow import workflow_utils
 from servicecatalog_puppet.workflow.dependencies import resources_factory
 
 
-def generate(puppet_account_id, manifest, output_file_path):
+def generate(puppet_account_id, manifest, output_file_directory_path):
     default_region = config.get_home_region(puppet_account_id)
     regions_in_use = config.get_regions()
 
@@ -332,7 +332,23 @@ def generate(puppet_account_id, manifest, output_file_path):
             if task_reference in parameter_task.get("dependencies_by_reference"):
                 parameter_task["dependencies_by_reference"].remove(task_reference)
 
+    for _, tasks_by_section in tasks_by_account_id.items():
+        for section_name, section_tasks in tasks_by_section.items():
+            for account_id, account_tasks in section_tasks.items():
+                all_tasks_for_account = dict()
+                for task_for_account_reference in account_tasks:
+                    all_tasks_for_account[task_for_account_reference] = all_tasks.get(
+                        task_for_account_reference
+                    )
+                output_file_path = f"{output_file_directory_path}/manifest-task-reference-{account_id}.json"
+                open(output_file_path, "w").write(
+                    serialisation_utils.dump_as_json(
+                        dict(all_tasks=all_tasks_for_account)
+                    )
+                )
+
     reference = dict(all_tasks=all_tasks,)
     workflow_utils.ensure_no_cyclic_dependencies("complete task reference", all_tasks)
+    output_file_path = output_file_directory_path + "/manifest-task-reference-full.json"
     open(output_file_path, "w").write(serialisation_utils.dump_as_json(reference))
     return reference
