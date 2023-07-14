@@ -811,6 +811,7 @@ def create(
             **common_parameters,
             custodian_region=parameters_to_use.get("custodian_region",),
             c7n_version=parameters_to_use.get("c7n_version",),
+            c7n_org_version=parameters_to_use.get("c7n_org_version",),
             organization=parameters_to_use.get("organization",),
             role_name=parameters_to_use.get("role_name",),
             role_path=parameters_to_use.get("role_path",),
@@ -855,6 +856,7 @@ def create(
             deployments=parameters_to_use.get("deployments",),
             role_name=parameters_to_use.get("role_name",),
             role_path=parameters_to_use.get("role_path",),
+            uses_orgs=parameters_to_use.get("uses_orgs",),
         )
 
     else:

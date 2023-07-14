@@ -1000,6 +1000,7 @@ class Manifest(dict):
                     constants.C7N_CUSTODIAN_MANAGED_POLICY_ARNS_DEFAULT,
                 ),
                 c7n_version=item.get("c7n_version", constants.C7N_VERSION_DEFAULT),
+                c7n_org_version=item.get("c7n_org_version", ""),
             ),
         }.get(section_name)
 

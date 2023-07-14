@@ -13,6 +13,7 @@ from servicecatalog_puppet.workflow.dependencies import tasks
 class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
     custodian_region = luigi.Parameter()
     c7n_version = luigi.Parameter()
+    c7n_org_version = luigi.Parameter()
     organization = luigi.Parameter()
     role_name = luigi.Parameter()
     role_path = luigi.Parameter()
@@ -181,6 +182,35 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
             )
         )
 
+        if self.c7n_org_version == "":
+            build_spec = dict(
+                version=0.2,
+                phases=dict(
+                    install={"commands": ["pip install c7n==${C7N_VERSION}"]},
+                    build={
+                        "commands": [
+                            "aws s3 cp s3://sc-puppet-c7n-artifacts-${ACCOUNT_ID}-${REGION}/latest latest.zip",
+                            "unzip latest.zip",
+                            "for REGION in ${REGIONS}; do custodian run -s output/logs -r ${REGION} --assume ${CUSTODIAN_ROLE_ARN} policies.yaml; done",
+                        ]
+                    },
+                ),
+            )
+        else:
+            build_spec = dict(
+                version=0.2,
+                phases=dict(
+                    install={"commands": ["pip install c7n-org==${C7N_ORG_VERSION}"]},
+                    build={
+                        "commands": [
+                            "aws s3 cp s3://sc-puppet-c7n-artifacts-${ACCOUNT_ID}-${REGION}/latest latest.zip",
+                            "unzip latest.zip",
+                            "c7n-org run -c accounts.yaml -s output -u policies.yaml",
+                        ]
+                    },
+                ),
+            )
+
         tpl.add_resource(
             codebuild.Project(
                 "DeployC7N",
@@ -188,7 +218,7 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                 ServiceRole=t.GetAtt("C7NRunRole", "Arn"),
                 Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
                 Artifacts=codebuild.Artifacts(Type="NO_ARTIFACTS"),
-                TimeoutInMinutes=60,
+                TimeoutInMinutes=60 * 8,
                 Environment=codebuild.Environment(
                     ComputeType="BUILD_GENERAL1_SMALL",
                     Image=constants.CODEBUILD_DEFAULT_IMAGE,
@@ -198,6 +228,11 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                             "Type": "PLAINTEXT",
                             "Name": "C7N_VERSION",
                             "Value": self.c7n_version,
+                        },
+                        {
+                            "Type": "PLAINTEXT",
+                            "Name": "C7N_ORG_VERSION",
+                            "Value": self.c7n_org_version,
                         },
                         {
                             "Type": "PLAINTEXT",
@@ -222,23 +257,7 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                     ],
                 ),
                 Source=codebuild.Source(
-                    BuildSpec=yaml.safe_dump(
-                        dict(
-                            version=0.2,
-                            phases=dict(
-                                install={
-                                    "commands": ["pip install c7n==${C7N_VERSION}"]
-                                },
-                                build={
-                                    "commands": [
-                                        "aws s3 cp s3://sc-puppet-c7n-artifacts-${ACCOUNT_ID}-${REGION}/latest policies.yaml",
-                                        "for REGION in ${REGIONS}; do custodian run -s output/logs -r ${REGION} --assume ${CUSTODIAN_ROLE_ARN} policies.yaml; done",
-                                    ]
-                                },
-                            ),
-                        )
-                    ),
-                    Type="NO_SOURCE",
+                    BuildSpec=yaml.safe_dump(build_spec), Type="NO_SOURCE",
                 ),
                 Description="Run c7n",
             )

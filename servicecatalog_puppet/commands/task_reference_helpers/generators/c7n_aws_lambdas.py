@@ -55,6 +55,7 @@ def prepare_account_as_hub(
     custodian_role_path,
     schedule_expression,
     custodian_c7n_version,
+    custodian_c7n_org_version,
     organization,
 ):
     create_custodian_event_bus_task_ref = (
@@ -67,6 +68,7 @@ def prepare_account_as_hub(
         region=custodian_region,
         custodian_region=custodian_region,
         c7n_version=custodian_c7n_version,
+        c7n_org_version=custodian_c7n_org_version,
         organization=organization,
         role_name=custodian_role_name,
         role_path=custodian_role_path,
@@ -131,6 +133,7 @@ def handle_deploy_policies(
     custodian_region,
     role_name,
     role_path,
+    uses_orgs,
 ):
     deploy_policies_task_ref = (
         f"{constants.C7N_DEPLOY_POLICIES_TASK}-{custodian_account_id}"
@@ -145,6 +148,7 @@ def handle_deploy_policies(
             deployments=dict(),
             role_name=role_name,
             role_path=role_path,
+            uses_orgs=uses_orgs,
             dependencies_by_reference=[
                 # custodian dependencies
                 f"{constants.C7N_CREATE_CUSTODIAN_ROLE_TASK}-{custodian_account_id}",
@@ -170,6 +174,7 @@ def handle_c7n_aws_lambdas_for_custodian(
     schedule_expression,
     custodian_role_managed_policy_arns,
     custodian_c7n_version,
+    custodian_c7n_org_version,
     organization,
 ):
     create_custodian_role(
@@ -191,6 +196,7 @@ def handle_c7n_aws_lambdas_for_custodian(
         custodian_role_path,
         schedule_expression,
         custodian_c7n_version,
+        custodian_c7n_org_version,
         organization,
     )
     forward_events_account_task(
@@ -274,6 +280,7 @@ def handle_c7n_aws_lambdas(
     schedule_expression = task_to_add.get("schedule_expression", "")
     custodian_role_managed_policy_arns = task_to_add.get("role_managed_policy_arns")
     custodian_c7n_version = task_to_add.get("c7n_version")
+    custodian_c7n_org_version = task_to_add.get("c7n_org_version")
     organization = get_organization_for_account(manifest, account_id)
     custodian_region = get_custodian_region(manifest, custodian_account_id)
 
@@ -288,6 +295,7 @@ def handle_c7n_aws_lambdas(
         schedule_expression,
         custodian_role_managed_policy_arns,
         custodian_c7n_version,
+        custodian_c7n_org_version,
         organization,
     )
     handle_c7n_aws_lambdas_for_spoke(
@@ -311,6 +319,7 @@ def handle_c7n_aws_lambdas(
         custodian_region,
         custodian_role_name,
         custodian_role_path,
+        uses_orgs=custodian_c7n_org_version != "",
     )
 
     del all_tasks[all_tasks_task_reference]
