@@ -201,7 +201,7 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
             build_spec = dict(
                 version=0.2,
                 phases=dict(
-                    install={"commands": ["pip install c7n==${C7N_ORG_VERSION}"]},
+                    install={"commands": ["pip install c7n-org==${C7N_ORG_VERSION}"]},
                     build={
                         "commands": [
                             "aws s3 cp s3://sc-puppet-c7n-artifacts-${ACCOUNT_ID}-${REGION}/latest latest.zip",
