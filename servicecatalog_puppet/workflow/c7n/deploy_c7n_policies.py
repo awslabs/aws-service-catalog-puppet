@@ -7,12 +7,16 @@ from servicecatalog_puppet import constants, serialisation_utils, config
 from servicecatalog_puppet.serialisation_utils import unwrap
 from servicecatalog_puppet.workflow.dependencies import tasks
 
+import io
+import zipfile
+
 
 class DeployC7NPolicies(tasks.TaskWithReferenceAndCommonParameters):
     role_name = luigi.Parameter()
     role_path = luigi.Parameter()
     policies = luigi.ListParameter()
     deployments = luigi.DictParameter()
+    uses_orgs = luigi.BoolParameter()
     cachable_level = constants.CACHE_LEVEL_RUN
 
     def params_for_results_display(self):
@@ -20,9 +24,8 @@ class DeployC7NPolicies(tasks.TaskWithReferenceAndCommonParameters):
             "task_reference": self.task_reference,
         }
 
-    def run(self):
+    def generate_policies(self, partition):
         policies = list()
-        partition = config.get_partition()
         member_role = (
             "arn:"
             + partition
@@ -34,15 +37,47 @@ class DeployC7NPolicies(tasks.TaskWithReferenceAndCommonParameters):
             if policy.get("mode", {}).get("type") == "cloudtrail":
                 policy["mode"]["member-role"] = member_role
             policies.append(policy)
+        return serialisation_utils.dump(unwrap(dict(policies=policies)))
+
+    def generate_accounts(self, partition):
+        accounts = dict()
+        for deployment_region, deployment_accounts in self.deployments.items():
+            for deployment_account_id in deployment_accounts:
+                if accounts.get(deployment_account_id) is None:
+                    accounts[deployment_account_id] = []
+                accounts[deployment_account_id].append(deployment_region)
+
+        result = []
+        for account_id, regions in accounts.items():
+            result.append(
+                {
+                    "account_id": account_id,
+                    "name": str(account_id),
+                    "regions": regions,
+                    "role": f"arn:{partition}:iam::{account_id}:role{self.role_path}{self.role_name}",
+                }
+            )
+
+        return serialisation_utils.dump(unwrap(dict(accounts=accounts)))
+
+    def run(self):
+        partition = config.get_partition()
+        policies = self.generate_policies(partition)
+        accounts = self.generate_accounts(partition)
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+            zip_file.writestr("accounts.yaml", accounts)
+            zip_file.writestr("policies.yaml", policies)
+
+            # ('2.txt', io.BytesIO(b'222'))]:
 
         bucket = f"sc-puppet-c7n-artifacts-{self.account_id}-{self.region}"
         key = "latest"
 
         with self.spoke_regional_client("s3") as s3:
             s3.put_object(
-                Bucket=bucket,
-                Key=key,
-                Body=serialisation_utils.dump(unwrap(dict(policies=policies))),
+                Bucket=bucket, Key=key, Body=zip_buffer,
             )
         custodian_role_arn = (
             f"arn:{partition}:iam::{self.account_id}:role"
