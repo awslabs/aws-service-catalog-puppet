@@ -191,7 +191,6 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                         "commands": [
                             "aws s3 cp s3://sc-puppet-c7n-artifacts-${ACCOUNT_ID}-${REGION}/latest latest.zip",
                             "unzip latest.zip",
-                            "ls -la",
                             "for REGION in ${REGIONS}; do custodian run -s output/logs -r ${REGION} --assume ${CUSTODIAN_ROLE_ARN} policies.yaml; done",
                         ]
                     },
@@ -206,7 +205,6 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                         "commands": [
                             "aws s3 cp s3://sc-puppet-c7n-artifacts-${ACCOUNT_ID}-${REGION}/latest latest.zip",
                             "unzip latest.zip",
-                            "ls -la",
                             "c7n-org run -c accounts.yaml -s output -u policies.yaml",
                         ]
                     },
@@ -220,7 +218,7 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                 ServiceRole=t.GetAtt("C7NRunRole", "Arn"),
                 Tags=t.Tags.from_dict(**{"ServiceCatalogPuppet:Actor": "Framework"}),
                 Artifacts=codebuild.Artifacts(Type="NO_ARTIFACTS"),
-                TimeoutInMinutes=60,
+                TimeoutInMinutes=60 * 8,
                 Environment=codebuild.Environment(
                     ComputeType="BUILD_GENERAL1_SMALL",
                     Image=constants.CODEBUILD_DEFAULT_IMAGE,
