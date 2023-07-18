@@ -322,7 +322,9 @@ def generate(puppet_account_id, manifest, output_file_directory_path):
 
     #
     # Fourth pass - removing cyclic dependencies caused by a->b->c when using boto3 parameters
+    # setting up deploy in spoke collections
     #
+    accounts_output = dict()
     for task_reference, task in all_tasks.items():
         # remove dependencies on self
         boto3_parameters = task.get("boto3_parameters_tasks_references", {}).items()
@@ -332,20 +334,19 @@ def generate(puppet_account_id, manifest, output_file_directory_path):
             if task_reference in parameter_task.get("dependencies_by_reference"):
                 parameter_task["dependencies_by_reference"].remove(task_reference)
 
-    for _, tasks_by_section in tasks_by_account_id.items():
-        for section_name, section_tasks in tasks_by_section.items():
-            for account_id, account_tasks in section_tasks.items():
-                all_tasks_for_account = dict()
-                for task_for_account_reference in account_tasks:
-                    all_tasks_for_account[task_for_account_reference] = all_tasks.get(
-                        task_for_account_reference
-                    )
-                output_file_path = f"{output_file_directory_path}/manifest-task-reference-{account_id}.json"
-                open(output_file_path, "w").write(
-                    serialisation_utils.dump_as_json(
-                        dict(all_tasks=all_tasks_for_account)
-                    )
-                )
+        account_id = task.get("account_id")
+        if accounts_output.get(account_id) is None:
+            accounts_output[account_id] = dict()
+        accounts_output[account_id][task.get("task_reference")] = task
+
+    # write the tasks to disk
+    for account_id, tasks in accounts_output.items():
+        output_file_path = (
+            f"{output_file_directory_path}/manifest-task-reference-{account_id}.json"
+        )
+        open(output_file_path, "w").write(
+            serialisation_utils.dump_as_json(dict(all_tasks=tasks))
+        )
 
     reference = dict(all_tasks=all_tasks,)
     workflow_utils.ensure_no_cyclic_dependencies("complete task reference", all_tasks)
