@@ -3,7 +3,7 @@
 
 import luigi
 
-from servicecatalog_puppet import config, sdk
+from servicecatalog_puppet import config, sdk, serialisation_utils
 from servicecatalog_puppet.workflow import tasks
 
 
@@ -38,3 +38,13 @@ class BootstrapSpokeAsTask(tasks.PuppetTask):
             self.tag,
         )
         self.write_output(self.params_for_results_display())
+
+    def write_output(self, content):
+        with self.output().open("w") as f:
+            content_to_write = serialisation_utils.json_dumps(content).decode("utf-8")
+            f.write(content_to_write)
+
+    def output(self):
+        return luigi.LocalTarget(
+            f"output/{self.__class__.__name__}/{self.puppet_account_id}/{self.account_id}.json",
+        )

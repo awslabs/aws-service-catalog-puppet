@@ -2,8 +2,8 @@
 #  SPDX-License-Identifier: Apache-2.0
 
 import configparser
-import json
 import functools
+import json
 import logging
 import os
 import re
