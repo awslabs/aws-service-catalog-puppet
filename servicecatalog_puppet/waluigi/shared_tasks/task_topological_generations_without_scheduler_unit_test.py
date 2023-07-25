@@ -3,6 +3,7 @@
 
 import unittest
 
+from servicecatalog_puppet import constants
 from servicecatalog_puppet.waluigi.constants import (
     BLOCKED,
     COMPLETED,
@@ -11,8 +12,6 @@ from servicecatalog_puppet.waluigi.constants import (
     NOT_SET,
     QUEUE_STATUS,
 )
-
-from servicecatalog_puppet import constants
 
 
 task_to_run_reference = "task_to_run"

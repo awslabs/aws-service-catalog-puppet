@@ -4,6 +4,7 @@
 import unittest
 from unittest import mock
 
+
 SPOKE_REGIONAL_CLIENT = "SPOKE_REGIONAL_CLIENT"
 
 

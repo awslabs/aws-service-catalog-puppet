@@ -1,14 +1,14 @@
 #  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
 
-import luigi
-
-from servicecatalog_puppet import constants, serialisation_utils, config
-from servicecatalog_puppet.serialisation_utils import unwrap
-from servicecatalog_puppet.workflow.dependencies import tasks
-
 import io
 import zipfile
+
+import luigi
+
+from servicecatalog_puppet import config, constants, serialisation_utils
+from servicecatalog_puppet.serialisation_utils import unwrap
+from servicecatalog_puppet.workflow.dependencies import tasks
 
 
 class DeployC7NPolicies(tasks.TaskWithReferenceAndCommonParameters):
