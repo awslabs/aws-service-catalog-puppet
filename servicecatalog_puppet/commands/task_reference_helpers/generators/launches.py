@@ -160,6 +160,33 @@ def handle_launches(
             spoke_portfolio_puppet_association_ref
         )
 
+    # SETUP puppet association in hub so we can get the provisioning parameters
+    hub_portfolio_puppet_association_ref = f"{constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION}-{task_to_add.get('puppet_account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+    if not all_tasks.get(hub_portfolio_puppet_association_ref):
+        all_tasks[hub_portfolio_puppet_association_ref] = {
+            "puppet_account_id": puppet_account_id,
+            "task_reference": hub_portfolio_puppet_association_ref,
+            "portfolio_task_reference": hub_portfolio_ref,
+            "dependencies_by_reference": [hub_portfolio_ref],
+            "account_id": task_to_add.get("puppet_account_id"),
+            "region": task_to_add.get("region"),
+            "portfolio": task_to_add.get("portfolio"),
+            "execution": task_to_add.get("execution"),
+            "section_name": constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
+            task_reference_constants.MANIFEST_SECTION_NAMES: dict(),
+            task_reference_constants.MANIFEST_ITEM_NAMES: dict(),
+            task_reference_constants.MANIFEST_ACCOUNT_IDS: dict(),
+        }
+    all_tasks[hub_portfolio_puppet_association_ref][
+        task_reference_constants.MANIFEST_SECTION_NAMES
+    ].update(task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES))
+    all_tasks[hub_portfolio_puppet_association_ref][
+        task_reference_constants.MANIFEST_ITEM_NAMES
+    ].update(task_to_add.get(task_reference_constants.MANIFEST_ITEM_NAMES))
+    all_tasks[hub_portfolio_puppet_association_ref][
+        task_reference_constants.MANIFEST_ACCOUNT_IDS
+    ].update(task_to_add.get(task_reference_constants.MANIFEST_ACCOUNT_IDS))
+
     # GET the provisioning parameters
     describe_provisioning_params_ref = f"{constants.DESCRIBE_PROVISIONING_PARAMETERS}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}-{task_to_add.get('product')}-{task_to_add.get('version')}"
     if not all_tasks.get(describe_provisioning_params_ref):
@@ -168,8 +195,8 @@ def handle_launches(
             "task_reference": describe_provisioning_params_ref,
             "dependencies_by_reference": [
                 hub_portfolio_ref,
-                # TODO check this still works for a new portfolio after changing it from: portfolio_deploying_from
-            ],  # associations are added here and so this is a dependency
+                hub_portfolio_puppet_association_ref,
+            ],
             "account_id": puppet_account_id,
             "region": task_to_add.get("region"),
             "portfolio": task_to_add.get("portfolio"),
