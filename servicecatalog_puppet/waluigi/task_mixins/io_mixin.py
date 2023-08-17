@@ -14,7 +14,7 @@ logger = logging.getLogger(constants.PUPPET_LOGGER_NAME)
 
 
 def escape(input):
-    return "".join(x for x in input if x.isalnum() or x in "._- ")
+    return "".join(x for x in input if x.isalnum() or x in "._- /")
 
 
 class IOMixin:

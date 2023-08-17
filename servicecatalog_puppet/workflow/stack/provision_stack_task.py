@@ -56,7 +56,7 @@ class ProvisionStackTask(tasks.TaskWithParameters):
 
     @property
     def drift_token_parameters(self):
-        return (
+        result = (
             f"stack_name/{self.stack_name}/"
             f"launch_name/{self.launch_name}/"
             f"stack_set_name/{self.stack_set_name}/"
@@ -64,6 +64,7 @@ class ProvisionStackTask(tasks.TaskWithParameters):
             f"key/{self.key}/"
             f"execution/{self.execution}"
         )
+        return result
 
     def params_for_results_display(self):
         return {
