@@ -121,6 +121,8 @@ def deploy_from_task_reference(path):
     running_exploded = False
     output_cache_starting_point = ""
 
+    raise Exception("stop!!!")
+
     runner.run_tasks(
         puppet_account_id,
         executor_account_id,

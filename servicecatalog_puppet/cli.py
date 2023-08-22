@@ -640,6 +640,11 @@ def deploy_from_task_reference(
         )
         click.echo(f"Overridden parameters {params}")
 
+    params = {
+        "single_account": "521251754381",
+        "subset": {"single_account": "521251754381"},
+    }
+
     setup_config(
         puppet_account_id=puppet_account_id,
         single_account=single_account or params.get("single_account"),
