@@ -272,53 +272,7 @@ def generate(puppet_account_id, manifest, output_file_directory_path):
         )
         task["resources_required"] = resources
 
-    #
-    # Third pass - setting dependencies between parameters and outputs
-    #
-    for task_reference, task in all_tasks.items():
-        # wire up dependencies for SSM parameters to outputs
-        ssm_parameters = task.get("ssm_parameters_tasks_references", {}).items()
-        dependencies_to_add = []
-        for parameter_name, parameter_task_reference in ssm_parameters:
-            for dependency in task.get("dependencies_by_reference"):
-                ssm_outputs = (
-                    all_tasks.get(dependency)
-                    .get("ssm_outputs_tasks_references", {})
-                    .items()
-                )
-                for output_name, output_task_reference in ssm_outputs:
-                    if (
-                        output_task_reference.replace(
-                            constants.SSM_OUTPUTS, constants.SSM_PARAMETERS
-                        )
-                        == parameter_task_reference
-                    ):
-                        dependencies_to_add.append(output_task_reference)
-                        all_tasks[parameter_task_reference][
-                            "dependencies_by_reference"
-                        ].append(output_task_reference)
-        task["dependencies_by_reference"].extend(dependencies_to_add)
-
-        # wire up dependencies for boto3 parameters
-        boto3_parameters = task.get("boto3_parameters_tasks_references", {}).items()
-        dependencies_to_add = []
-        for parameter_name, parameter_task_reference in boto3_parameters:
-            parameter_task = all_tasks.get(parameter_task_reference)
-            for dependency_task_reference in task.get("dependencies_by_reference"):
-                if dependency_task_reference not in parameter_task.get(
-                    "dependencies_by_reference"
-                ):
-                    if dependency_task_reference != parameter_task_reference:
-                        if (
-                            all_tasks[dependency_task_reference]["section_name"]
-                            in constants.ALL_SECTION_NAMES
-                        ):
-                            parameter_task["dependencies_by_reference"].append(
-                                dependency_task_reference
-                            )
-
-            if task_reference in parameter_task["dependencies_by_reference"]:
-                parameter_task["dependencies_by_reference"].remove(task_reference)
+    set_dependencies_for_ssm_tasks(all_tasks)
 
     #
     # Fourth pass - removing cyclic dependencies caused by a->b->c when using boto3 parameters
@@ -353,3 +307,64 @@ def generate(puppet_account_id, manifest, output_file_directory_path):
     output_file_path = output_file_directory_path + "/manifest-task-reference-full.json"
     open(output_file_path, "w").write(serialisation_utils.dump_as_json(reference))
     return reference
+
+
+def set_dependencies_for_ssm_tasks(all_tasks):
+    for task_reference, task in all_tasks.items():
+        # wire up dependencies for SSM parameters to outputs
+        ssm_parameters = task.get("ssm_parameters_tasks_references", {}).items()
+        dependencies_to_add = []
+        # loop through parameters for the task we are checking
+        for parameter_name, parameter_task_reference in ssm_parameters:
+            for dependency in task.get("dependencies_by_reference"):
+                ssm_outputs = (
+                    all_tasks.get(dependency)
+                    .get("ssm_outputs_tasks_references", {})
+                    .items()
+                )
+                # loop through outputs for the parameter for the task we are checking
+                for output_name, output_task_reference in ssm_outputs:
+                    if (
+                        output_task_reference.replace(
+                            constants.SSM_OUTPUTS, constants.SSM_PARAMETERS
+                        )
+                        == parameter_task_reference
+                    ):
+                        dependencies_to_add.append(
+                            output_task_reference
+                        )  # add output as dependency to action task
+                        all_tasks[parameter_task_reference][
+                            "dependencies_by_reference"
+                        ].append(
+                            output_task_reference
+                        )  # add output as dependency to parameter task
+
+                        all_tasks[output_task_reference][
+                            task_reference_constants.MANIFEST_ACCOUNT_IDS
+                        ][task.get("account_id")] = True
+                        all_tasks[parameter_task_reference][
+                            task_reference_constants.MANIFEST_ACCOUNT_IDS
+                        ][task.get("account_id")] = True
+
+        task["dependencies_by_reference"].extend(dependencies_to_add)
+
+        # wire up dependencies for boto3 parameters
+        boto3_parameters = task.get("boto3_parameters_tasks_references", {}).items()
+        dependencies_to_add = []
+        for parameter_name, parameter_task_reference in boto3_parameters:
+            parameter_task = all_tasks.get(parameter_task_reference)
+            for dependency_task_reference in task.get("dependencies_by_reference"):
+                if dependency_task_reference not in parameter_task.get(
+                    "dependencies_by_reference"
+                ):
+                    if dependency_task_reference != parameter_task_reference:
+                        if (
+                            all_tasks[dependency_task_reference]["section_name"]
+                            in constants.ALL_SECTION_NAMES
+                        ):
+                            parameter_task["dependencies_by_reference"].append(
+                                dependency_task_reference
+                            )
+
+            if task_reference in parameter_task["dependencies_by_reference"]:
+                parameter_task["dependencies_by_reference"].remove(task_reference)
