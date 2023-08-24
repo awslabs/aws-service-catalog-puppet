@@ -3,7 +3,7 @@
 
 [tool.poetry]
 name = "aws-service-catalog-puppet"
-version = "0.240.0"
+version = "0.241.0"
 description = "Making it easier to deploy ServiceCatalog products"
 classifiers = ["Development Status :: 5 - Production/Stable", "Intended Audience :: Developers", "Programming Language :: Python :: 3", "License :: OSI Approved :: Apache Software License", "Operating System :: OS Independent", "Natural Language :: English"]
 homepage = "https://service-catalog-tools-workshop.com/"
@@ -43,7 +43,7 @@ to = {format = "poetry", path = "pyproject.toml"}
 [tool.poetry.dependencies]
 python = "^3.9"
 requests = "2.31.0"
-pyyaml = "==5.4"
+pyyaml = "6.0.1"
 jinja2 = "==2.11.3"
 click = "==7.0"
 boto3 = "1.26.15"
