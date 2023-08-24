@@ -63,7 +63,7 @@ install_requires = \
  'luigi==3.1.1',
  'networkx==2.6.3',
  'orjson>=3.8.0,<4.0.0',
- 'pyyaml==5.4',
+ 'pyyaml==6.0.1',
  'requests==2.31.0',
  'terminaltables==3.1.0',
  'troposphere==3.1.0',
