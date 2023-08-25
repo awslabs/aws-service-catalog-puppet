@@ -54,7 +54,28 @@ def ssm_outputs_handler(
             "status": task_to_add.get("status"),
             "section_name": constants.SSM_OUTPUTS,
             "execution": task_to_add.get("execution", constants.EXECUTION_MODE_DEFAULT),
+            "task_generating_output_account_id": task_to_add.get("account_id"),
+            "task_generating_output_region": task_to_add.get("region"),
+            "task_generating_output_section_name": task_to_add.get("section_name"),
         }
+        if task_to_add.get("section_name") == constants.LAUNCHES:
+            task_generating_output_entity_name = task_to_add.get("launch_name")
+        elif task_to_add.get("section_name") == constants.STACKS:
+            task_generating_output_entity_name = task_to_add.get("stack_name")
+            all_tasks[ssm_parameter_output_task_reference][
+                "task_generating_output_stack_set_name"
+            ] = task_to_add.get("stack_set_name")
+            all_tasks[ssm_parameter_output_task_reference][
+                "task_generating_output_launch_name"
+            ] = task_to_add.get("launch_name")
+
+        else:
+            raise Exception(f"Unknown section name: {task_to_add.get('section_name')}")
+
+        all_tasks[ssm_parameter_output_task_reference][
+            "task_generating_output_entity_name"
+        ] = task_generating_output_entity_name
+
         all_tasks[ssm_parameter_output_task_reference][
             task_reference_constants.MANIFEST_SECTION_NAMES
         ][section_name] = True

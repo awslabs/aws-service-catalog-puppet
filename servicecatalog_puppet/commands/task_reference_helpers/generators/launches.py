@@ -217,19 +217,18 @@ def handle_launches(
         task_reference_constants.MANIFEST_ACCOUNT_IDS
     ].update(task_to_add.get(task_reference_constants.MANIFEST_ACCOUNT_IDS))
 
-    # GET all the products for the spoke
-    if spoke_portfolio_puppet_association_ref is None:
-        deps = [portfolio_deploying_from]
-    else:
-        deps = [portfolio_deploying_from, spoke_portfolio_puppet_association_ref]
-    portfolio_get_all_products_and_their_versions_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{task_to_add.get('account_id')}-{section_name}-{item_name}--{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+    # GET all the products from the hub for the spoke
+    portfolio_get_all_products_and_their_versions_ref = f"{constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS}-{puppet_account_id}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
     if not all_tasks.get(portfolio_get_all_products_and_their_versions_ref):
         all_tasks[portfolio_get_all_products_and_their_versions_ref] = {
             "execution": task_to_add.get("execution"),
             "puppet_account_id": puppet_account_id,
             "task_reference": portfolio_get_all_products_and_their_versions_ref,
-            "dependencies_by_reference": deps,
-            "portfolio_task_reference": portfolio_deploying_from,
+            "dependencies_by_reference": [
+                hub_portfolio_ref,
+                hub_portfolio_puppet_association_ref,
+            ],
+            "portfolio_task_reference": hub_portfolio_ref,
             "account_id": puppet_account_id,
             "region": task_to_add.get("region"),
             "section_name": constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,

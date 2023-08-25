@@ -13,12 +13,10 @@ from pathlib import Path
 from urllib.request import urlretrieve
 
 import click
-import colorclass
 import luigi
 import terminaltables
 import yaml
 from betterboto import client as betterboto_client
-from colorclass import Color
 from luigi import LuigiStatusCode
 
 from servicecatalog_puppet import (
@@ -214,23 +212,9 @@ def run_tasks(
 
             for filename in dry_run_tasks:
                 result = serialisation_utils.json_loads(open(filename, "r").read())
-                current_version = (
-                    Color("{green}" + result.get("current_version") + "{/green}")
-                    if result.get("current_version") == result.get("new_version")
-                    else Color("{red}" + result.get("current_version") + "{/red}")
-                )
-
-                active = (
-                    Color("{green}" + str(result.get("active")) + "{/green}")
-                    if result.get("active")
-                    else Color("{red}" + str(result.get("active")) + "{/red}")
-                )
-
-                current_status = (
-                    Color("{green}" + result.get("current_status") + "{/green}")
-                    if result.get("current_status") == "AVAILABLE"
-                    else Color("{red}" + result.get("current_status") + "{/red}")
-                )
+                current_version = result.get("current_version")
+                active = str(result.get("active"))
+                current_status = result.get("current_status")
 
                 table.append(
                     [
@@ -386,11 +370,7 @@ def run_tasks(
                             f"OpsItem: {title} creation failed due to OpsItemLimitExceededException. OperationalData: {operational_data}"
                         )
                 if "RunDeployInSpoke" in filename:
-                    click.echo(
-                        colorclass.Color(
-                            "{red}" + result.get("task_type") + " failed{/red}"
-                        )
-                    )
+                    click.echo(result.get("task_type") + " failed")
                     click.echo(
                         f"{yaml.safe_dump({'parameters': result.get('task_params')})}"
                     )
@@ -493,9 +473,7 @@ def run_tasks_for_bootstrap_spokes_in_ou(tasks_to_run, num_workers):
 
     for filename in glob("results/failure/*.json"):
         result = serialisation_utils.json_loads(open(filename, "r").read())
-        click.echo(
-            colorclass.Color("{red}" + result.get("task_type") + " failed{/red}")
-        )
+        click.echo(result.get("task_type") + " failed")
         click.echo(f"{yaml.safe_dump({'parameters': result.get('task_params')})}")
         click.echo("\n".join(result.get("exception_stack_trace")))
         click.echo("")

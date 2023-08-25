@@ -1,8 +1,11 @@
 #  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
+import functools
+import re
+
 import luigi
 
-from servicecatalog_puppet import constants
+from servicecatalog_puppet import aws, constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
@@ -13,6 +16,12 @@ class SSMOutputsTasks(tasks.TaskWithReference):
     param_name = luigi.Parameter()
     stack_output = luigi.Parameter()
     task_generating_output = luigi.Parameter()
+    task_generating_output_account_id = luigi.Parameter()
+    task_generating_output_region = luigi.Parameter()
+    task_generating_output_section_name = luigi.Parameter()
+    task_generating_output_entity_name = luigi.Parameter()
+    task_generating_output_stack_set_name = luigi.Parameter()
+    task_generating_output_launch_name = luigi.Parameter()
     force_operation = luigi.BoolParameter()
     cachable_level = constants.CACHE_LEVEL_RUN
 
@@ -26,13 +35,81 @@ class SSMOutputsTasks(tasks.TaskWithReference):
             "force_operation": self.force_operation,
         }
 
-    def find_stack_output(
-        self, generating_account_id, generating_region, generating_stack_name
-    ):
+    @property
+    @functools.lru_cache(maxsize=32)
+    def stack_name_to_use(self):
+        if self.task_generating_output_launch_name != "":
+            with self.cross_account_client(
+                self.task_generating_output_account_id,
+                "servicecatalog",
+                region_name=self.task_generating_output_region,
+            ) as servicecatalog:
+                if "*" in self.task_generating_output_launch_name:
+                    paginator = servicecatalog.get_paginator(
+                        "scan_provisioned_products"
+                    )
+                    for page in paginator.paginate(
+                        AccessLevelFilter={"Key": "Account", "Value": "self"},
+                    ):
+                        for provisioned_product in page.get("ProvisionedProducts", []):
+                            name_as_a_regex = self.task_generating_output_launch_name.replace(
+                                "*", "(.*)"
+                            )
+                            if re.match(
+                                name_as_a_regex, provisioned_product.get("Name")
+                            ):
+                                pp_stack_name = aws.get_stack_name_for_pp_id(
+                                    servicecatalog, provisioned_product.get("Id")
+                                )
+                                return pp_stack_name
+
+                    return self.task_generating_output_entity_name
+                else:
+                    try:
+                        pp_id = (
+                            servicecatalog.describe_provisioned_product(
+                                Name=self.task_generating_output_launch_name
+                            )
+                            .get("ProvisionedProductDetail")
+                            .get("Id")
+                        )
+                    except servicecatalog.exceptions.ResourceNotFoundException as e:
+                        if (
+                            "Provisioned product not found"
+                            in e.response["Error"]["Message"]
+                        ):
+                            return self.task_generating_output_entity_name
+                        else:
+                            raise e
+                    pp_stack_name = aws.get_stack_name_for_pp_id(servicecatalog, pp_id)
+                    return pp_stack_name
+
+        elif self.task_generating_output_stack_set_name != "":
+            with self.cross_account_client(
+                self.task_generating_output_account_id,
+                "cloudformation",
+                region_name=self.task_generating_output_region,
+            ) as cloudformation:
+                paginator = cloudformation.get_paginator("list_stacks")
+                for page in paginator.paginate():
+                    for summary in page.get("StackSummaries", []):
+                        if summary.get("StackName").startswith(
+                            f"StackSet-{self.task_generating_output_stack_set_name}-"
+                        ):
+                            return summary.get("StackName")
+                raise Exception(
+                    f"Could not find a stack beginning with StackSet-{self.task_generating_output_stack_set_name}- in {self.task_generating_output_region} of {self.task_generating_output_account_id}"
+                )
+
+        return self.task_generating_output_entity_name
+
+    def find_stack_output(self):
         with self.cross_account_client(
-            generating_account_id, "cloudformation", region_name=generating_region
+            self.task_generating_output_account_id,
+            "cloudformation",
+            region_name=self.task_generating_output_region,
         ) as cloudformation:
-            response = cloudformation.describe_stacks(StackName=generating_stack_name,)
+            response = cloudformation.describe_stacks(StackName=self.stack_name_to_use,)
             for stack in response.get("Stacks", []):
                 for output in stack.get("Outputs", []):
                     if output.get("OutputKey") == self.stack_output:
@@ -40,55 +117,66 @@ class SSMOutputsTasks(tasks.TaskWithReference):
 
         raise Exception("Could not find stack output")
 
+    def get_ssm_parameter(self):
+        with self.spoke_regional_client("ssm") as ssm:
+            try:
+                parameter = ssm.get_parameter(Name=self.param_name_to_use(),)
+            except ssm.exceptions.ParameterNotFound:
+                return None
+            else:
+                return parameter.get("Parameter")
+
     def run(self):
-        task_generating_output = self.get_output_from_reference_dependency(
-            self.task_generating_output
-        )
-        generating_account_id = task_generating_output.get("account_id")
-        generating_region = task_generating_output.get("region")
+        existing_parameter = None
+        if not self.force_operation:
+            existing_parameter = self.get_ssm_parameter()
         parameter_details = "Parameter not updated - stack/launch did not change and there was no force_operation"
-        if task_generating_output.get("provisioned") or self.force_operation:
-            if task_generating_output.get("section_name") == constants.STACKS:
-                generating_stack_name = task_generating_output.get("stack_name_used")
-                stack_output_value = self.find_stack_output(
-                    generating_account_id, generating_region, generating_stack_name
-                )
-            elif task_generating_output.get("section_name") == constants.LAUNCHES:
-                with self.cross_account_client(
-                    generating_account_id,
-                    "servicecatalog",
-                    region_name=generating_region,
-                ) as servicecatalog:
-                    output = servicecatalog.get_provisioned_product_outputs(
-                        ProvisionedProductName=task_generating_output.get(
-                            "launch_name"
-                        ),
-                        OutputKeys=[self.stack_output],
-                    ).get("Outputs")[0]
-                    stack_output_value = output.get("OutputValue")
+        if self.force_operation or existing_parameter is None:
+            if self.task_generating_output_section_name == constants.STACKS:
+                stack_output_value = self.find_stack_output()
+            elif self.task_generating_output_section_name == constants.LAUNCHES:
+                stack_output_value = self.find_launch_output()
             else:
                 raise Exception(
-                    f"Unknown or not set section_name: {task_generating_output.get('section_name')}"
+                    f"Unknown or not set section_name: {self.task_generating_output_section_name}"
                 )
-
-            param_name_to_use = self.param_name.replace(
-                "${AWS::Region}", self.region
-            ).replace("${AWS::AccountId}", self.account_id)
 
             with self.spoke_regional_client("ssm") as ssm:
                 parameter_details = ssm.put_parameter(
-                    Name=param_name_to_use,
+                    Name=self.param_name_to_use(),
                     Value=stack_output_value,
                     Type="String",
                     Overwrite=True,
                 )
+        else:
+            stack_output_value = existing_parameter.get("Value")
+
         self.write_output(
             dict(
-                task_generating_output=task_generating_output,
+                # task_generating_output=task_generating_output,
+                value=stack_output_value,
                 parameter_details=parameter_details,
                 **self.params_for_results_display(),
             )
         )
+
+    @functools.lru_cache(maxsize=128)
+    def param_name_to_use(self):
+        return self.param_name.replace("${AWS::Region}", self.region).replace(
+            "${AWS::AccountId}", self.account_id
+        )
+
+    def find_launch_output(self):
+        with self.cross_account_client(
+            self.task_generating_output_account_id,
+            "servicecatalog",
+            region_name=self.task_generating_output_region,
+        ) as servicecatalog:
+            output = servicecatalog.get_provisioned_product_outputs(
+                ProvisionedProductName=self.task_generating_output_entity_name,
+                OutputKeys=[self.stack_output],
+            ).get("Outputs")[0]
+            return output.get("OutputValue")
 
 
 class TerminateSSMOutputsTasks(tasks.TaskWithReference):  # TODO add by path parameters

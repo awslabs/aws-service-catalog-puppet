@@ -12,6 +12,12 @@ class SSMOutputsTasksTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     param_name = "param_name"
     stack_output = "stack_output"
     task_generating_output = "task_generating_output"
+    task_generating_output_account_id = "task_generating_output_account_id"
+    task_generating_output_region = "task_generating_output_region"
+    task_generating_output_section_name = "task_generating_output_section_name"
+    task_generating_output_entity_name = "task_generating_output_entity_name"
+    task_generating_output_stack_set_name = "task_generating_output_stack_set_name"
+    task_generating_output_launch_name = "task_generating_output_launch_name"
     force_operation = False
 
     def setUp(self) -> None:
@@ -25,7 +31,13 @@ class SSMOutputsTasksTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             region=self.region,
             param_name=self.param_name,
             stack_output=self.stack_output,
-            task_generating_output=self.task_generating_output
+            task_generating_output=self.task_generating_output,
+            task_generating_output_account_id=self.task_generating_output_account_id,
+            task_generating_output_region=self.task_generating_output_region,
+            task_generating_output_section_name=self.task_generating_output_section_name,
+            task_generating_output_entity_name=self.task_generating_output_entity_name,
+            task_generating_output_stack_set_name=self.task_generating_output_stack_set_name,
+            task_generating_output_launch_name=self.task_generating_output_launch_name,
         )
 
         self.wire_up_mocks()
@@ -72,7 +84,7 @@ class TerminateSSMOutputsTasksTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             **self.get_common_args(),
             account_id=self.account_id,
             region=self.region,
-            param_name=self.param_name
+            param_name=self.param_name,
         )
 
         self.wire_up_mocks()

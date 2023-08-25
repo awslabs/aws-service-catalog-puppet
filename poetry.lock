@@ -230,16 +230,6 @@ files = [
 ]
 
 [[package]]
-name = "colorclass"
-version = "2.2.0"
-description = "Colorful worry-free console applications for Linux, Mac OS X, and Windows."
-optional = false
-python-versions = "*"
-files = [
-    {file = "colorclass-2.2.0.tar.gz", hash = "sha256:b05c2a348dfc1aff2d502527d78a5b7b7e2f85da94a96c5081210d8e9ee8e18b"},
-]
-
-[[package]]
 name = "coverage"
 version = "6.5.0"
 description = "Code coverage measurement for Python"
@@ -1328,4 +1318,4 @@ pyyaml = "*"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "3e240fadffcaa3cc40bc982a2c69ef841eb1ae7b07eb48b95aaa0a83de102d21"
+content-hash = "57c4d66684b2dc11a9647877c8acce0113d9e1f0dbe9048e4982693fdc7f583b"

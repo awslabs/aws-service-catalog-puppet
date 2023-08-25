@@ -100,6 +100,9 @@ def deploy_from_task_reference(path):
                         str(single_account_id),
                         str(puppet_account_id),
                     ]:
+                        print(
+                            f"Going to continue on {task_reference} {task_section_name} {str(task_account_id)}"
+                        )
                         continue
 
                 tasks_to_run_filtered[task_reference] = task
