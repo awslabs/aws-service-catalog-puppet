@@ -172,6 +172,24 @@ def create(
                 param_name=parameters_to_use.get("param_name"),
                 stack_output=parameters_to_use.get("stack_output"),
                 task_generating_output=parameters_to_use.get("task_generating_output"),
+                task_generating_output_account_id=parameters_to_use.get(
+                    "task_generating_output_account_id"
+                ),
+                task_generating_output_region=parameters_to_use.get(
+                    "task_generating_output_region"
+                ),
+                task_generating_output_section_name=parameters_to_use.get(
+                    "task_generating_output_section_name"
+                ),
+                task_generating_output_entity_name=parameters_to_use.get(
+                    "task_generating_output_entity_name"
+                ),
+                task_generating_output_stack_set_name=parameters_to_use.get(
+                    "task_generating_output_stack_set_name"
+                ),
+                task_generating_output_launch_name=parameters_to_use.get(
+                    "task_generating_output_launch_name"
+                ),
                 force_operation=parameters_to_use.get("force_operation"),
             )
     elif section_name == constants.TAG_POLICIES:
