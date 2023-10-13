@@ -21,13 +21,13 @@ def ssm_outputs_handler(
             "${AWS::Region}", task_region
         )
         output_account_id = (
-            ssm_parameter_output.get("account_id", puppet_account_id)
+            str(ssm_parameter_output.get("account_id", puppet_account_id))
             .replace("${AWS::AccountId}", task_account_id)
             .replace("${AWS::PuppetAccountId}", puppet_account_id)
         )
 
         output_parameter_name = (
-            ssm_parameter_output.get("param_name")
+            str(ssm_parameter_output.get("param_name"))
             .replace("${AWS::Region}", task_region)
             .replace("${AWS::AccountId}", task_account_id)
         )

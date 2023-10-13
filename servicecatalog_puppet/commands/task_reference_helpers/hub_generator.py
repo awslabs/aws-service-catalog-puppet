@@ -3,6 +3,27 @@
 from servicecatalog_puppet import constants, serialisation_utils
 from servicecatalog_puppet.workflow import workflow_utils
 
+SECTIONS_THAT_MUST_RUN_IN_HUB = [
+    constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT,
+]
+SECTIONS_THAT_MUST_RUN_IN_HUB_FOR_PUPPET_AS_A_SPOKE = [
+    constants.PORTFOLIO_PUPPET_ROLE_ASSOCIATION,
+    constants.PORTFOLIO_GET_ALL_PRODUCTS_AND_THEIR_VERSIONS,
+]
+
+
+def task_should_execute_before_spoke_execution(task, puppet_account_id):
+    if task.get("section_name") in SECTIONS_THAT_MUST_RUN_IN_HUB:
+        return True
+
+    if (
+        task.get("section_name") in SECTIONS_THAT_MUST_RUN_IN_HUB_FOR_PUPPET_AS_A_SPOKE
+        and task.get("account_id") == puppet_account_id
+    ):
+        return True
+
+    return False
+
 
 def generate(puppet_account_id, all_tasks, output_file_path):
     tasks_to_include = dict()
@@ -14,9 +35,17 @@ def generate(puppet_account_id, all_tasks, output_file_path):
         elif execution == constants.EXECUTION_MODE_SPOKE:
             # should_include = False
             # sharing should happen from the hub for launches in spoke mode
-            should_include = (
-                task.get("section_name") == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT
+            should_include = task_should_execute_before_spoke_execution(
+                task, puppet_account_id
             )
+
+            # if task.get("section_name") == constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT:
+            #     should_include = True
+            # else:
+            #     if task.get("section_name") in SECTIONS_THAT_MUST_RUN_IN_HUB and task.get("account_id") == puppet_account_id:
+            #         should_include = True
+            #     else:
+            #         should_include = False
 
         elif execution == constants.EXECUTION_MODE_HUB_AND_SPOKE_SPLIT:
             # cannot assume account_id role from spoke when it is the puppet account id
