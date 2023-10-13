@@ -29,7 +29,7 @@ def ssm_parameter_handler(
         task_account_id = task.get("account_id")
         task_region = task.get("region")
         parameter_account_id = (
-            ssm_parameter_details.get("account_id", puppet_account_id)
+            str(ssm_parameter_details.get("account_id", puppet_account_id))
             .replace("${AWS::AccountId}", task_account_id)
             .replace("${AWS::PuppetAccountId}", puppet_account_id)
         )
@@ -40,7 +40,7 @@ def ssm_parameter_handler(
             f"{parameter_account_id}-{parameter_region}"
         )
         parameter_name = (
-            ssm_parameter_details.get("name")
+            str(ssm_parameter_details.get("name"))
             .replace("${AWS::Region}", task_region)
             .replace("${AWS::AccountId}", task_account_id)
             .replace("${AWS::PuppetAccountId}", puppet_account_id)

@@ -140,7 +140,7 @@ class TaskWithParameters(TaskWithReference):
             if p_details.get("ssm"):
                 for v_name, v_details in p_details.get("ssm").items():
                     result[p_name]["ssm"][v_name] = (
-                        result[p_name]["ssm"][v_name]
+                        str(result[p_name]["ssm"][v_name])
                         .replace("${AWS::AccountId}", self.account_id)
                         .replace("${AWS::Region}", self.region)
                     )
@@ -160,7 +160,7 @@ class TaskWithParameters(TaskWithReference):
                     "account_id", self.puppet_account_id
                 )
                 requested_param_name = (
-                    requested_param_details.get("name")
+                    str(requested_param_details.get("name"))
                     .replace("${AWS::AccountId}", self.account_id)
                     .replace("${AWS::Region}", self.region)
                 )
@@ -219,7 +219,7 @@ class TaskWithParameters(TaskWithReference):
                     )
 
                 task_ref = (
-                    task_ref.replace("${AWS::AccountId}", self.account_id)
+                    str(task_ref.replace("${AWS::AccountId}", self.account_id))
                     .replace("${AWS::PuppetAccountId}", self.puppet_account_id)
                     .replace("${AWS::Region}", self.region)
                 )
@@ -233,7 +233,7 @@ class TaskWithParameters(TaskWithReference):
 
             if param_details.get("default"):
                 all_params[param_name] = (
-                    param_details.get("default")
+                    str(param_details.get("default"))
                     .replace("${AWS::AccountId}", self.account_id)
                     .replace("${AWS::Region}", self.region)
                 )
