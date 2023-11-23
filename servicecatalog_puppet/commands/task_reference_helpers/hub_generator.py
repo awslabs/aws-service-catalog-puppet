@@ -3,6 +3,7 @@
 from servicecatalog_puppet import constants, serialisation_utils
 from servicecatalog_puppet.workflow import workflow_utils
 
+
 SECTIONS_THAT_MUST_RUN_IN_HUB = [
     constants.PORTFOLIO_SHARE_AND_ACCEPT_ACCOUNT,
 ]

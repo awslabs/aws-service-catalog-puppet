@@ -213,7 +213,7 @@ class ProvisionStackTask(tasks.TaskWithParameters):
                 )
 
         existing_stack_params_dict = dict()
-        existing_template = ""
+        existing_template_from_cloudformation = ""
         if status != "NoStack":
             if status in constants.CLOUDFORMATION_HAPPY_STATUS:
                 with self.spoke_regional_client("cloudformation") as cloudformation:
@@ -232,25 +232,30 @@ class ProvisionStackTask(tasks.TaskWithParameters):
                         StackName=self.stack_name_to_use, TemplateStage="Original"
                     ).get("TemplateBody")
                     if isinstance(template_body, dict):
-                        existing_template = template_body
+                        existing_template_from_cloudformation = template_body
                     else:
                         try:
-                            existing_template = cfn_tools.load_yaml(template_body)
+                            existing_template_from_cloudformation = cfn_tools.load_yaml(
+                                template_body
+                            )
                         except Exception:
                             try:
-                                existing_template = cfn_tools.load_json(template_body)
+                                existing_template_from_cloudformation = cfn_tools.load_json(
+                                    template_body
+                                )
                             except Exception:
                                 raise Exception(
                                     "Could not parse existing template as YAML or JSON"
                                 )
 
-        template_to_use = cfn_tools.dump_yaml(template_to_provision)
         if status in ["UPDATE_ROLLBACK_COMPLETE", "NoStack"]:
             need_to_provision = True
         else:
             if existing_stack_params_dict == params_to_use:
                 self.info(f"params unchanged")
-                if template_to_use == cfn_tools.dump_yaml(existing_template):
+                if cfn_tools.dump_yaml(template_to_provision) == cfn_tools.dump_yaml(
+                    existing_template_from_cloudformation
+                ):
                     self.info(f"template the same")
                     need_to_provision = False
                 else:
@@ -269,7 +274,7 @@ class ProvisionStackTask(tasks.TaskWithParameters):
             with self.spoke_regional_client("cloudformation") as cloudformation:
                 a = dict(
                     StackName=self.stack_name_to_use,
-                    TemplateBody=template_to_use,
+                    TemplateBody=template_to_provision_source,
                     ShouldUseChangeSets=False,
                     Capabilities=self.capabilities,
                     Parameters=provisioning_parameters,
