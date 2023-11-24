@@ -274,7 +274,7 @@ class ProvisionStackTask(tasks.TaskWithParameters):
             with self.spoke_regional_client("cloudformation") as cloudformation:
                 a = dict(
                     StackName=self.stack_name_to_use,
-                    TemplateBody=template_to_provision_source,
+                    TemplateBody=template_to_provision_source.decode("utf-8"),
                     ShouldUseChangeSets=False,
                     Capabilities=self.capabilities,
                     Parameters=provisioning_parameters,
