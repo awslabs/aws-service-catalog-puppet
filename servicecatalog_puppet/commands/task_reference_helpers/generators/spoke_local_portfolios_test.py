@@ -20,6 +20,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
         puppet_account_id = "hub_account_id"
         account_id = "spoke_account_id"
         region = "eu-west-0"
+        ou_name = "ou-do8d-me7f39on"
         item_name = "depsrefactor"
         portfolio = "DepsRefactor"
 
@@ -38,7 +39,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
             "dependencies": [],
             "account_id": account_id,
             "organization": "o-sw3edla4pd",
-            "ou": "ou-do8d-me7f39on",
+            "ou": ou_name,
             "region": region,
             task_reference_constants.MANIFEST_SECTION_NAMES: {
                 "imported-portfolios": True
@@ -53,6 +54,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 f"SERVICE_CATALOG_LIST_PORTFOLIOS_{region}_OF_{account_id}",
                 f"SERVICE_CATALOG_CREATE_PORTFOLIOS_{region}_OF_{account_id}",
             ],
+            "product_generation_method": "import",
         }
         all_tasks_task_reference = task_to_add["task_reference"]
         all_tasks = {all_tasks_task_reference: task_to_add}
@@ -154,7 +156,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 task_reference_constants.MANIFEST_SECTION_NAMES: {
                     "imported-portfolios": True
                 },
-                "ou_to_share_with": "ou-do8d-me7f39on",
+                "ou_to_share_with": ou_name,
                 "portfolio": portfolio,
                 "portfolio_task_reference": f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                 "puppet_account_id": puppet_account_id,
@@ -162,10 +164,10 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "section_name": "portfolio-share-and-accept-aws_organizations",
                 "share_principals": "True",
                 "share_tag_options": "True",
-                "task_reference": f"portfolio_share_and_accept-ou-do8d-me7f39on-{region}-{portfolio}",
+                "task_reference": f"portfolio_share_and_accept-{ou_name}-{region}-{portfolio}",
             },
             all_tasks[
-                f"portfolio_share_and_accept-ou-do8d-me7f39on-{region}-{portfolio}"
+                f"portfolio_share_and_accept-{ou_name}-{region}-{portfolio}"
             ],
         )
 
@@ -199,6 +201,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "dependencies_by_reference": [
                     f"imported-portfolios_{item_name}_{account_id}_{region}",
                     "create-policies",
+                    f"portfolio_share_and_accept-{ou_name}-{region}-{portfolio}",
                 ],
                 "execution": "hub",
                 task_reference_constants.MANIFEST_ACCOUNT_IDS: {account_id: True},
@@ -250,8 +253,10 @@ class ImportedPortfoliosTest(unittest.TestCase):
                     f"imported-portfolios_{item_name}_{account_id}_{region}",
                     f"portfolio-get-all-products-and-their-versions-{account_id}-{region}-{portfolio}",
                     f"portfolio-get-all-products-and-their-versions-before-{puppet_account_id}-{region}-{portfolio}",
+                    f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                 ],
                 "execution": "hub",
+                "hub_portfolio_task_reference": f"portfolio-local-{puppet_account_id}-{region}-{portfolio}",
                 task_reference_constants.MANIFEST_ACCOUNT_IDS: {account_id: True},
                 task_reference_constants.MANIFEST_ITEM_NAMES: {item_name: True},
                 task_reference_constants.MANIFEST_SECTION_NAMES: {
@@ -261,14 +266,14 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "portfolio_get_all_products_and_their_versions_for_hub_ref": f"portfolio-get-all-products-and-their-versions-before-{puppet_account_id}-{region}-{portfolio}",
                 "portfolio_get_all_products_and_their_versions_ref": f"portfolio-get-all-products-and-their-versions-{account_id}-{region}-{portfolio}",
                 "portfolio_task_reference": f"imported-portfolios_{item_name}_{account_id}_{region}",
-                "product_generation_mathod": None,
+                "product_generation_method": "import",
                 "region": region,
-                "section_name": "portfolio-None",
+                "section_name": "portfolio-import",
                 "status": None,
-                "task_reference": f"portfolio_None-imported-portfolios-{item_name}-{account_id}-{region}-{portfolio}",
+                "task_reference": f"portfolio_import-imported-portfolios-{item_name}-{account_id}-{region}-{portfolio}",
             },
             all_tasks[
-                f"portfolio_None-imported-portfolios-{item_name}-{account_id}-{region}-{portfolio}"
+                f"portfolio_import-imported-portfolios-{item_name}-{account_id}-{region}-{portfolio}"
             ],
         )
 
@@ -305,7 +310,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "dependencies_by_reference": [
                     f"imported-portfolios_{item_name}_{account_id}_{region}",
                     f"portfolio-puppet-role-association-{account_id}-{region}-{portfolio}",
-                    f"portfolio_None-imported-portfolios-{item_name}-{account_id}-{region}-{portfolio}",
+                    f"portfolio_import-imported-portfolios-{item_name}-{account_id}-{region}-{portfolio}",
                 ],
                 "execution": "hub",
                 task_reference_constants.MANIFEST_ACCOUNT_IDS: {account_id: True},

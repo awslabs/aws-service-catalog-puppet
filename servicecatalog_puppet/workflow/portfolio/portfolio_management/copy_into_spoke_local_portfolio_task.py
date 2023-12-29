@@ -142,13 +142,15 @@ class CopyIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
         n_products_to_check = len(products_to_check)
         products_found = 0
         while products_found < n_products_to_check:
-            response = servicecatalog.search_products_as_admin_single_page(  # TODO optimise = swap for paginator
-                PortfolioId=spoke_portfolio_id,
-            )
-            products_ids = [
-                product_view_detail.get("ProductViewSummary").get("ProductId")
-                for product_view_detail in response.get("ProductViewDetails")
-            ]
+            products_ids = list()
+            paginator = servicecatalog.get_paginator('search_products_as_admin')
+            for page in paginator.paginate(
+                    PortfolioId=spoke_portfolio_id,
+            ):
+                for pvd in page.get("ProductViewDetails", []):
+                    products_ids.append(
+                        pvd.get("ProductViewSummary").get("ProductId")
+                    )
             products_found = 0
             for product_to_check in products_to_check:
                 if product_to_check in products_ids:
