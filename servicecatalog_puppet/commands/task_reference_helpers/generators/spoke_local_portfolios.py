@@ -472,6 +472,8 @@ def handle_spoke_local_portfolios(
                     "dependencies_by_reference": [
                         all_tasks_task_reference,
                         constants.CREATE_POLICIES,
+                        share_and_accept_ref,
+
                     ],
                     "account_id": task_to_add.get("account_id"),
                     "region": task_to_add.get("region"),
@@ -536,7 +538,7 @@ def handle_spoke_local_portfolios(
                     ],
                 ),
                 task_reference=portfolio_import_or_copy_ref,
-                product_generation_mathod=product_generation_method,
+                product_generation_method=product_generation_method,
                 section_name=f"portfolio-{product_generation_method}",
                 portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_ref,
                 portfolio_get_all_products_and_their_versions_for_hub_ref=hub_portfolio_all_products_and_versions_before_ref,
