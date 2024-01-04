@@ -16,7 +16,6 @@ from servicecatalog_puppet import (
     serialisation_utils,
 )
 
-
 logger = logging.getLogger()
 
 
@@ -240,6 +239,10 @@ def get_global_share_tag_options_default():
 
 def get_global_share_principals_default():
     return os.environ.get(environmental_variables.GLOBAL_SHARE_PRINCIPALS)
+
+
+def get_aws_sts_regional_endpoints():
+    return os.environ.get(environmental_variables.AWS_STS_REGIONAL_ENDPOINTS)
 
 
 def get_on_complete_url():

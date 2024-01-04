@@ -184,6 +184,16 @@ def get_global_share_principals_default(puppet_account_id, default_region=None):
     )
 
 
+@functools.lru_cache(maxsize=32)
+def get_aws_sts_regional_endpoints(puppet_account_id, default_region=None):
+    logger.info(
+        "getting aws_sts_regional_endpoints,  default_region: {}".format(default_region)
+    )
+    return get_config(puppet_account_id, default_region).get(
+        "aws_sts_regional_endpoints", constants.AWS_STS_REGIONAL_ENDPOINTS_DEFAULT
+    )
+
+
 def get_spoke_deploy_environment_compute_type(puppet_account_id, default_region):
     logger.info(
         "getting spoke_deploy_environment_compute_type,  default_region: {}".format(

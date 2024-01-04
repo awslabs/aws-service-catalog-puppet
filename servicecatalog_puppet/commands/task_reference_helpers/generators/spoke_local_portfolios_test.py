@@ -166,9 +166,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "share_tag_options": "True",
                 "task_reference": f"portfolio_share_and_accept-{ou_name}-{region}-{portfolio}",
             },
-            all_tasks[
-                f"portfolio_share_and_accept-{ou_name}-{region}-{portfolio}"
-            ],
+            all_tasks[f"portfolio_share_and_accept-{ou_name}-{region}-{portfolio}"],
         )
 
         self.assertEqual(

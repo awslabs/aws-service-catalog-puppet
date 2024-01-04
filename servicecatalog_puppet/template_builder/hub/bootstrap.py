@@ -15,7 +15,7 @@ from troposphere import (
     ssm,
 )
 
-from servicecatalog_puppet import config, constants
+from servicecatalog_puppet import config, constants, environmental_variables
 
 
 def get_template(
@@ -51,6 +51,18 @@ def get_template(
             Type="String",
             AllowedValues=["Yes", "No"],
             Default="No",
+        )
+    )
+    aws_sts_regional_endpoints_parameter = template.add_parameter(
+        t.Parameter(
+            "AWSSTSRegionalEndpoints",
+            Type="String",
+            Description="This setting specifies how the SDK determines the AWS service endpoint that it uses to talk to the AWS Security Token Service (AWS STS).",
+            Default=constants.AWS_STS_REGIONAL_ENDPOINTS_DEFAULT,
+            AllowedValues=[
+                constants.AWS_STS_REGIONAL_ENDPOINTS_LEGACY,
+                constants.AWS_STS_REGIONAL_ENDPOINTS_REGIONAL,
+            ],
         )
     )
     puppet_code_pipeline_role_permission_boundary_parameter = template.add_parameter(
@@ -585,6 +597,11 @@ def get_template(
             "Type": "PARAMETER_STORE",
             "Name": "PUPPET_ROLE_PATH",
             "Value": t.Ref(puppet_role_path_parameter),
+        },
+        {
+            "Type": "PLAINTEXT",
+            "Name": environmental_variables.AWS_STS_REGIONAL_ENDPOINTS,
+            "Value": t.Ref(aws_sts_regional_endpoints_parameter),
         },
     ]
 

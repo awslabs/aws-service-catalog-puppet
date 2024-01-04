@@ -580,6 +580,12 @@ def setup_config(
         os.environ[
             environmental_variables.SCHEDULER_ALGORITHM
         ] = remote_config.get_scheduler_algorithm(puppet_account_id_to_use, home_region)
+    if not os.environ.get(environmental_variables.AWS_STS_REGIONAL_ENDPOINTS):
+        os.environ[
+            environmental_variables.AWS_STS_REGIONAL_ENDPOINTS
+        ] = remote_config.get_aws_sts_regional_endpoints(
+            puppet_account_id_to_use, home_region
+        )
 
 
 @cli.command()

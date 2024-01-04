@@ -473,7 +473,6 @@ def handle_spoke_local_portfolios(
                         all_tasks_task_reference,
                         constants.CREATE_POLICIES,
                         share_and_accept_ref,
-
                     ],
                     "account_id": task_to_add.get("account_id"),
                     "region": task_to_add.get("region"),
