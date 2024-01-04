@@ -884,6 +884,7 @@ def set_config_value(name, value):
     is_a_boolean = dict(
         spoke_deploy_environment_compute_type=False,
         scheduler_threads_or_processes=False,
+        aws_sts_regional_endpoints=False,
     ).get(name, True)
     management_commands.set_config_value(name, value, is_a_boolean)
 
