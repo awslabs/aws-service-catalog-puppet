@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.223.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.245.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -13,6 +13,7 @@ Metadata:
           default: "General"
         Parameters:
           - EnabledRegions
+          - AWSSTSRegionalEndPoints
           - ShouldCollectCloudformationEvents
           - ShouldForwardEventsToEventbridge
           - ShouldForwardFailuresToOpscenter
@@ -127,6 +128,14 @@ Parameters:
       - True
       - False
     Default: True
+  AWSSTSRegionalEndPoints:
+    Type: String
+    Description: |
+      This setting specifies how the SDK determines the AWS service endpoint that it uses to talk to the AWS Security Token Service (AWS STS).
+    AllowedValues:
+      - legacy
+      - regional
+    Default: legacy
   ShouldUseStacksServiceRole:
     Type: String
     Description: |
@@ -420,6 +429,9 @@ Resources:
           - Name: SHOULD_SHARE_PRINCIPALS
             Type: PLAINTEXT
             Value: !Ref ShouldSharePrincipals
+          - Name: AWS_STS_REGIONAL_ENDPOINTS
+            Type: PLAINTEXT
+            Value: !Ref AWSSTSRegionalEndPoints
       Source:
         Type: NO_SOURCE
         BuildSpec: |
@@ -440,6 +452,7 @@ Resources:
                 - servicecatalog-puppet set-config-value spoke_deploy_environment_compute_type ${SPOKE_DEPLOY_ENVIRONMENT_COMPUTE_TYPE}
                 - servicecatalog-puppet set-config-value global_share_tag_options_default ${SHOULD_SHARE_TAG_OPTIONS}
                 - servicecatalog-puppet set-config-value global_share_principals_default ${SHOULD_SHARE_PRINCIPALS}
+                - servicecatalog-puppet set-config-value aws_sts_regional_endpoints ${AWS_STS_REGIONAL_ENDPOINTS}
                 - servicecatalog-puppet bootstrap-spoke ${PUPPET_ACCOUNT_ID} --permission-boundary ${PUPPET_ROLE_PERMISSION_BOUNDARY} --puppet-role-name ${PUPPET_ROLE_NAME} --puppet-role-path ${PUPPET_ROLE_PATH}
             build:
               commands:
@@ -471,7 +484,7 @@ Resources:
       Role: !GetAtt StartInstallRole.Arn
       Handler: "index.handler"
       Description: Lambda for starting Puppet CodeBuild Job
-      Runtime: python3.7
+      Runtime: python3.9
       Timeout: 900
       Code:
         ZipFile: |
@@ -583,6 +596,7 @@ Resources:
           - !Ref ShouldDeleteRollbackCompleteStacks
           - !Ref ShouldShareTagOptions
           - !Ref ShouldSharePrincipals
+          - !Ref AWSSTSRegionalEndPoints
 Outputs:
   ServiceCatalogPuppetRepoConsoleURL:
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codecommit/repositories/ServiceCatalogPuppet/browse"

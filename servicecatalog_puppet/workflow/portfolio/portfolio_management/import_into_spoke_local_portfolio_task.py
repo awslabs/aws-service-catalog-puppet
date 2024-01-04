@@ -61,10 +61,8 @@ class ImportIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
             products_found = 0
             while products_found < n_products_to_check:
                 products_ids = list()
-                paginator = servicecatalog.get_paginator('search_products_as_admin')
-                for page in paginator.paginate(
-                    PortfolioId=spoke_portfolio_id,
-                ):
+                paginator = servicecatalog.get_paginator("search_products_as_admin")
+                for page in paginator.paginate(PortfolioId=spoke_portfolio_id,):
                     for pvd in page.get("ProductViewDetails", []):
                         products_ids.append(
                             pvd.get("ProductViewSummary").get("ProductId")

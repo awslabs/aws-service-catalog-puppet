@@ -254,6 +254,11 @@ def bootstrap(
                 "ParameterValue": puppet_role_path,
                 "UsePreviousValue": False,
             },
+            {
+                "ParameterKey": "AWSSTSRegionalEndpoints",
+                "ParameterValue": config.get_aws_sts_regional_endpoints(),
+                "UsePreviousValue": False,
+            },
         ],
         "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}]
         + initialiser_stack_tags,

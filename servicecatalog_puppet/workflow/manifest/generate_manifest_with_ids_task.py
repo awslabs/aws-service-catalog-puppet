@@ -149,6 +149,11 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
                 "value": config.get_global_share_principals_default(),
                 "type": "PLAINTEXT",
             },
+            {
+                "name": environmental_variables.AWS_STS_REGIONAL_ENDPOINTS,
+                "value": config.get_aws_sts_regional_endpoints(),
+                "type": "PLAINTEXT",
+            },
         ]
 
         if "http" in version:
