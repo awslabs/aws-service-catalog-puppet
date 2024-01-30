@@ -16,6 +16,7 @@ from servicecatalog_puppet import (
     serialisation_utils,
 )
 
+
 logger = logging.getLogger()
 
 
