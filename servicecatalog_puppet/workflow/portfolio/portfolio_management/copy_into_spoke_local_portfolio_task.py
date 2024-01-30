@@ -129,6 +129,7 @@ class CopyIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
             )
         self.info("Finished associating products")
 
+        throttle = 0
         for product_id, product_details in versions_requiring_updates.items():
             for version_id, version_details in product_details.items():
                 servicecatalog.update_provisioning_artifact(
@@ -136,6 +137,10 @@ class CopyIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
                     ProvisioningArtifactId=version_id,
                     **version_details,
                 )
+                throttle += 1
+                if throttle == 4:
+                    time.sleep(1.1)
+                    throttle = 0
         self.info("Finished updating versions that were copied")
 
         products_to_check = list(products_requiring_adding_to_portfolio.values())
