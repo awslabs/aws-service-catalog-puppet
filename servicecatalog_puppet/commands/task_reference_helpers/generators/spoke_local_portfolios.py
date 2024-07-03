@@ -621,47 +621,133 @@ def handle_spoke_local_portfolios(
                 spoke_portfolio_all_products_and_versions_after_ref,
             )
 
+        shared_ref = f"{task_to_add.get('portfolio')}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
         if task_to_add.get("launch_constraints"):
-            shared_ref = f"{section_name}-{item_name}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
             ref = f"launch_constraints-{shared_ref}"
-            all_tasks[ref] = dict(
-                **get_spoke_local_portfolio_common_args(
-                    task_to_add, all_tasks_task_reference, dependencies_for_constraints,
-                ),
-                task_reference=ref,
-                section_name=constants.PORTFOLIO_CONSTRAINTS_LAUNCH,
-                spoke_local_portfolio_name=item_name,
-                launch_constraints=task_to_add["launch_constraints"],
-                portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_after_ref,
-            )
-            all_tasks[ref][task_reference_constants.MANIFEST_SECTION_NAMES] = dict(
+            if all_tasks.get(ref):
+                task = all_tasks[ref]
+                if task.get("execution") != task_to_add.get("execution"):
+                    raise Exception(
+                        f"{item_name} and another is setting launch_constraints for the same portfolio using different execution modes"
+                    )
+                task["dependencies_by_reference"] = (
+                    task["dependencies_by_reference"]
+                    + [all_tasks_task_reference]
+                    + dependencies_for_constraints
+                )
+
+            else:
+                task = all_tasks[ref] = dict(
+                    **get_spoke_local_portfolio_common_args(
+                        task_to_add,
+                        all_tasks_task_reference,
+                        dependencies_for_constraints,
+                    ),
+                    task_reference=ref,
+                    section_name=constants.PORTFOLIO_CONSTRAINTS_LAUNCH,
+                    spoke_local_portfolio_name=item_name,
+                    launch_constraints=dict(products=dict()),
+                    portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_after_ref,
+                )
+
+            for launch_constraint in task_to_add["launch_constraints"]:
+                if launch_constraint.get("product"):
+                    product = launch_constraint.get("product")
+                    if not task["launch_constraints"]["products"].get(product):
+                        task["launch_constraints"]["products"][product] = []
+                    task["launch_constraints"]["products"][
+                        product
+                    ] += launch_constraint.get("roles")
+                if launch_constraint.get("products"):
+                    for product in launch_constraint["products"]:
+                        if not task["launch_constraints"]["products"].get(product):
+                            task["launch_constraints"]["products"][product] = []
+                        task["launch_constraints"]["products"][
+                            product
+                        ] += launch_constraint.get("roles")
+
+            task[task_reference_constants.MANIFEST_SECTION_NAMES] = dict(
                 **task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES)
             )
-            all_tasks[ref][task_reference_constants.MANIFEST_ITEM_NAMES] = dict(
+            task[task_reference_constants.MANIFEST_ITEM_NAMES] = dict(
                 **task_to_add.get(task_reference_constants.MANIFEST_ITEM_NAMES)
             )
-            all_tasks[ref][task_reference_constants.MANIFEST_ACCOUNT_IDS] = dict(
+            task[task_reference_constants.MANIFEST_ACCOUNT_IDS] = dict(
                 **task_to_add.get(task_reference_constants.MANIFEST_ACCOUNT_IDS)
             )
+
         if task_to_add.get("resource_update_constraints"):
-            shared_ref = f"{section_name}-{item_name}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
             ref = f"resource_update_constraints-{shared_ref}"
-            all_tasks[ref] = dict(
-                **get_spoke_local_portfolio_common_args(
-                    task_to_add, all_tasks_task_reference, dependencies_for_constraints,
-                ),
-                task_reference=ref,
-                section_name=constants.PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE,
-                spoke_local_portfolio_name=item_name,
-                resource_update_constraints=task_to_add["resource_update_constraints"],
-                portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_after_ref,
-            )
-            all_tasks[ref][task_reference_constants.MANIFEST_SECTION_NAMES] = dict(
+            if all_tasks.get(ref):
+                task = all_tasks[ref]
+                if task.get("execution") != task_to_add.get("execution"):
+                    raise Exception(
+                        f"{item_name} and another is setting resource_update_constraints for the same portfolio using different execution modes"
+                    )
+                task["dependencies_by_reference"] = (
+                    task["dependencies_by_reference"]
+                    + [all_tasks_task_reference]
+                    + dependencies_for_constraints
+                )
+
+            else:
+                task = all_tasks[ref] = dict(
+                    **get_spoke_local_portfolio_common_args(
+                        task_to_add,
+                        all_tasks_task_reference,
+                        dependencies_for_constraints,
+                    ),
+                    task_reference=ref,
+                    section_name=constants.PORTFOLIO_CONSTRAINTS_RESOURCE_UPDATE,
+                    spoke_local_portfolio_name=item_name,
+                    resource_update_constraints=dict(products=dict()),
+                    portfolio_get_all_products_and_their_versions_ref=spoke_portfolio_all_products_and_versions_after_ref,
+                )
+
+            for resource_update_constraint in task_to_add[
+                "resource_update_constraints"
+            ]:
+                if resource_update_constraint.get("product"):
+                    product = resource_update_constraint.get("product")
+                    if task["resource_update_constraints"]["products"].get(
+                        product
+                    ) and task["resource_update_constraints"]["products"][
+                        product
+                    ] != resource_update_constraint.get(
+                        "tag_update_on_provisioned_product"
+                    ):
+                        raise Exception(
+                            f"{section_name} {item_name} is trying to override the resource_update_constraints"
+                        )
+                    task["resource_update_constraints"]["products"][
+                        product
+                    ] = resource_update_constraint.get(
+                        "tag_update_on_provisioned_product"
+                    )
+                if resource_update_constraint.get("products"):
+                    for product in resource_update_constraint["products"]:
+                        if task["resource_update_constraints"]["products"].get(
+                            product
+                        ) and task["resource_update_constraints"]["products"][
+                            product
+                        ] != resource_update_constraint.get(
+                            "tag_update_on_provisioned_product"
+                        ):
+                            raise Exception(
+                                f"{section_name} {item_name} is trying to override the resource_update_constraints"
+                            )
+                        task["resource_update_constraints"]["products"][
+                            product
+                        ] = resource_update_constraint.get(
+                            "tag_update_on_provisioned_product"
+                        )
+
+            task[task_reference_constants.MANIFEST_SECTION_NAMES] = dict(
                 **task_to_add.get(task_reference_constants.MANIFEST_SECTION_NAMES)
             )
-            all_tasks[ref][task_reference_constants.MANIFEST_ITEM_NAMES] = dict(
+            task[task_reference_constants.MANIFEST_ITEM_NAMES] = dict(
                 **task_to_add.get(task_reference_constants.MANIFEST_ITEM_NAMES)
             )
-            all_tasks[ref][task_reference_constants.MANIFEST_ACCOUNT_IDS] = dict(
+            task[task_reference_constants.MANIFEST_ACCOUNT_IDS] = dict(
                 **task_to_add.get(task_reference_constants.MANIFEST_ACCOUNT_IDS)
             )
