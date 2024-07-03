@@ -57,7 +57,7 @@ install_requires = \
  'colorama>=0.4.5,<0.5.0',
  'deepdiff>=5.3.0,<6.0.0',
  'deepmerge>=0.2.1,<0.3.0',
- 'jinja2==2.11.3',
+ 'jinja2==3.1.4',
  'jmespath>=0.10.0,<0.11.0',
  'luigi==3.1.1',
  'networkx==2.6.3',
