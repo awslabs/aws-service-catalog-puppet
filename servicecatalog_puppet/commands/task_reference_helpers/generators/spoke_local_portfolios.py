@@ -526,7 +526,8 @@ def handle_spoke_local_portfolios(
 
             # COPY OR IMPORT THE CHANGES BETWEEN THE TWO PORTFOLIOS
             product_generation_method = task_to_add.get("product_generation_method")
-            portfolio_import_or_copy_ref = f"portfolio_{product_generation_method}-{section_name}-{item_name}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+            portfolio_import_or_copy_ref = f"portfolio_{product_generation_method}-{task_to_add.get('account_id')}-{task_to_add.get('region')}-{task_to_add.get('portfolio')}"
+
             portfolio_import_or_copy_task = dict(
                 **get_spoke_local_portfolio_common_args(
                     task_to_add,

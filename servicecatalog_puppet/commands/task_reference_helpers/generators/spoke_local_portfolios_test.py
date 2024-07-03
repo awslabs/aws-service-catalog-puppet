@@ -244,6 +244,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
             ],
         )
 
+        t = all_tasks[f"portfolio_import-{account_id}-{region}-{portfolio}"]
         self.assertEqual(
             {
                 "account_id": account_id,
@@ -268,11 +269,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "region": region,
                 "section_name": "portfolio-import",
                 "status": None,
-                "task_reference": f"portfolio_import-imported-portfolios-{item_name}-{account_id}-{region}-{portfolio}",
+                "task_reference": f"portfolio_import-{account_id}-{region}-{portfolio}",
             },
-            all_tasks[
-                f"portfolio_import-imported-portfolios-{item_name}-{account_id}-{region}-{portfolio}"
-            ],
+            t,
         )
 
         self.assertEqual(
@@ -308,7 +307,7 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "dependencies_by_reference": [
                     f"imported-portfolios_{item_name}_{account_id}_{region}",
                     f"portfolio-puppet-role-association-{account_id}-{region}-{portfolio}",
-                    f"portfolio_import-imported-portfolios-{item_name}-{account_id}-{region}-{portfolio}",
+                    f"portfolio_import-{account_id}-{region}-{portfolio}",
                 ],
                 "execution": "hub",
                 task_reference_constants.MANIFEST_ACCOUNT_IDS: {account_id: True},
