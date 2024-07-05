@@ -88,13 +88,9 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
             associations_to_use = self.associations
 
         with self.spoke_regional_client("cloudformation") as cloudformation:
-            v1_stack_name = f"associations-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
-            cloudformation.ensure_deleted(StackName=v1_stack_name)
-
-            v2_stack_name = association_utils.generate_stack_name_for_associations_by_item_name(
-                self.spoke_local_portfolio_name
+            stack_name = association_utils.generate_stack_name_for_associations_by_item_name(
+                self.portfolio
             )
-
             if associations_to_use:
                 tpl = t.Template()
                 tpl.description = f"Associations for {self.portfolio}"
@@ -115,7 +111,7 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
                     )
                 template = tpl.to_yaml()
                 cloudformation.create_or_update(
-                    StackName=v2_stack_name,
+                    StackName=stack_name,
                     TemplateBody=template,
                     NotificationARNs=[
                         f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
@@ -126,5 +122,5 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
                     Tags=self.initialiser_stack_tags,
                 )
             else:
-                cloudformation.ensure_deleted(StackName=v2_stack_name)
+                cloudformation.ensure_deleted(StackName=stack_name)
         self.write_empty_output()

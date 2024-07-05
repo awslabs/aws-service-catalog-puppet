@@ -45,43 +45,34 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
         tpl = t.Template()
         tpl.description = f"update resource constraints for {self.portfolio}"
 
-        for resource_update_constraint in self.resource_update_constraints:
-            products_to_constrain = list()
-            constraint = resource_update_constraint.get(
-                "products"
-            ) or resource_update_constraint.get("product")
-            if isinstance(constraint, tuple):
-                for p in constraint:
-                    products_to_constrain.append(p)
-            elif isinstance(constraint, str):
-                products_to_constrain.append(constraint)
-            else:
-                raise Exception(f"Unexpected launch constraint type {type(constraint)}")
+        for (
+            product_to_constrain,
+            validate_tag_update,
+        ) in self.resource_update_constraints.get("products", {}).items():
+            found = False
+            for (product_name, product_details,) in products_and_their_versions.items():
+                if re.match(product_to_constrain, product_name,):
+                    found = True
+                    product_id = product_details.get("ProductId")
 
-            validate_tag_update = resource_update_constraint.get(
-                "tag_update_on_provisioned_product"
-            )
-            for product_to_constrain in products_to_constrain:
-                for (
-                    product_name,
-                    product_details,
-                ) in products_and_their_versions.items():
-                    if re.match(product_to_constrain, product_name,):
-                        product_id = product_details.get("ProductId")
-                        tpl.add_resource(
-                            servicecatalog.ResourceUpdateConstraint(
-                                f"L{ portfolio_id}B{product_id}C".replace("-", ""),
-                                PortfolioId=portfolio_id,
-                                Description=f"TagUpdate = {validate_tag_update}",
-                                ProductId=product_id,
-                                TagUpdateOnProvisionedProduct=validate_tag_update,
-                            )
+                    tpl.add_resource(
+                        servicecatalog.ResourceUpdateConstraint(
+                            f"L{ portfolio_id}B{product_id}C".replace("-", ""),
+                            PortfolioId=portfolio_id,
+                            Description=f"TagUpdate = {validate_tag_update}",
+                            ProductId=product_id,
+                            TagUpdateOnProvisionedProduct=validate_tag_update,
                         )
+                    )
+            if not found:
+                raise Exception(
+                    f"Did not find a matching product for: {product_to_constrain}"
+                )
 
         template_to_use = tpl.to_yaml()
 
         with self.spoke_regional_client("cloudformation") as cloudformation:
-            stack_name = f"update-resource-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
+            stack_name = f"update-resource-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.portfolio)}"
             cloudformation.create_or_update(
                 StackName=stack_name,
                 TemplateBody=template_to_use,

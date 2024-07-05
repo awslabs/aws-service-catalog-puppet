@@ -877,5 +877,16 @@ def create(
             uses_orgs=parameters_to_use.get("uses_orgs",),
         )
 
+    elif section_name == constants.TERMINATE_CLOUDFORMATION_STACK_TASK:
+        from servicecatalog_puppet.workflow.general import (
+            terminate_cloudformation_stack_task,
+        )
+
+        return terminate_cloudformation_stack_task.TerminateCloudFormationStackTask(
+            **common_parameters,
+            stack_name=parameters_to_use.get("stack_name"),
+            execution=parameters_to_use.get("execution"),
+        )
+
     else:
         raise Exception(f"Unknown section_name: {section_name}")
