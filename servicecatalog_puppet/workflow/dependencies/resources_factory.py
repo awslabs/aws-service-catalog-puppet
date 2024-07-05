@@ -520,6 +520,8 @@ def create(section_name, parameters_to_use, puppet_account_id):
         resources = [
             # TODO choose what goes in here
         ]
+    elif section_name == constants.TERMINATE_CLOUDFORMATION_STACK_TASK:
+        resources = [CLOUDFORMATION_ENSURE_DELETED_PER_REGION_OF_ACCOUNT]
     else:
         print(f"WARNING: {section_name} did not generate any resources")
 

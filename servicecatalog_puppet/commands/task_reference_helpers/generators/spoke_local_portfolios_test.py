@@ -281,6 +281,8 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "dependencies_by_reference": [
                     f"imported-portfolios_{item_name}_{account_id}_{region}",
                     "create-policies",
+                    f"{constants.TERMINATE_CLOUDFORMATION_STACK_TASK}-associations-for-{item_name}-{account_id}-{region}",
+                    f"{constants.TERMINATE_CLOUDFORMATION_STACK_TASK}-associations-v2-for-{item_name}-{account_id}-{region}",
                 ],
                 "execution": "hub",
                 "spoke_local_portfolio_name": item_name,
@@ -294,11 +296,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 "region": region,
                 "section_name": "portfolio-associations",
                 "status": None,
-                "task_reference": f"portfolio_associations-imported-portfolios-{item_name}-{account_id}-{region}",
+                "task_reference": f"portfolio_associations-{portfolio}-{account_id}-{region}",
             },
-            all_tasks[
-                f"portfolio_associations-imported-portfolios-{item_name}-{account_id}-{region}"
-            ],
+            all_tasks[f"portfolio_associations-{portfolio}-{account_id}-{region}"],
         )
 
         self.assertEqual(
@@ -326,4 +326,4 @@ class ImportedPortfoliosTest(unittest.TestCase):
                 f"portfolio-get-all-products-and-their-versions-after-{account_id}-{region}-{portfolio}"
             ],
         )
-        self.assertEqual(11, n_all_tasks)
+        self.assertEqual(13, n_all_tasks)

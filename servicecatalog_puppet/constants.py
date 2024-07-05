@@ -427,3 +427,4 @@ C7N_CUSTODIAN_MANAGED_POLICY_ARNS_DEFAULT = [
     "arn:aws:iam::${AWS::Partition}:policy/AdministratorAccess"
 ]
 C7N_VERSION_DEFAULT = "0.9.28"
+TERMINATE_CLOUDFORMATION_STACK_TASK = "terminate-CloudFormation-stack"

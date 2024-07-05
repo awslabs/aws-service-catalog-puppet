@@ -71,10 +71,6 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(tasks.TaskWithRefere
         template_to_use = tpl.to_yaml()
 
         with self.spoke_regional_client("cloudformation") as cloudformation:
-            ## TODO move into own task
-            cloudformation.ensure_deleted(
-                StackName=f"launch-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
-            )
             stack_name = f"launch-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.portfolio)}"
             cloudformation.create_or_update(
                 StackName=stack_name,
@@ -87,7 +83,4 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(tasks.TaskWithRefere
                 ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
                 Tags=self.initialiser_stack_tags,
             )
-            result = cloudformation.describe_stacks(StackName=stack_name,).get(
-                "Stacks"
-            )[0]
             self.write_empty_output()

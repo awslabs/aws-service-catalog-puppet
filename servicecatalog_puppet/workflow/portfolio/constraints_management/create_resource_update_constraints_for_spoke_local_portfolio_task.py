@@ -72,11 +72,6 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
         template_to_use = tpl.to_yaml()
 
         with self.spoke_regional_client("cloudformation") as cloudformation:
-            # TODO move to another task
-            cloudformation.ensure_deleted(
-                f"update-resource-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.spoke_local_portfolio_name)}"
-            )
-
             stack_name = f"update-resource-constraints-for-{utils.slugify_for_cloudformation_stack_name(self.portfolio)}"
             cloudformation.create_or_update(
                 StackName=stack_name,
