@@ -61,6 +61,7 @@ class ProvisionStackTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "puppet_account_id": self.puppet_account_id,
             "stack_name": self.stack_name,
             "account_id": self.account_id,
+            "need_to_provision": False,
             "region": self.region,
         }
 

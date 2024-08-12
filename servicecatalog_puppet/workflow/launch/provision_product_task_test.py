@@ -60,6 +60,7 @@ class ProvisionProductTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
+            "need_to_provision": False,
         }
 
         # exercise

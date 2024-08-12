@@ -51,6 +51,7 @@ class SSMOutputsTasksTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "param_name": self.param_name,
             "stack_output": self.stack_output,
             "force_operation": self.force_operation,
+            "updated": False,
         }
 
         # exercise

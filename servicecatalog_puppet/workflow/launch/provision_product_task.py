@@ -42,6 +42,7 @@ class ProvisionProductTask(tasks.TaskWithParameters):
 
     section_name = constants.LAUNCHES
     cachable_level = constants.CACHE_LEVEL_RUN
+    need_to_provision = False
 
     @property
     def item_name(self):
@@ -55,6 +56,7 @@ class ProvisionProductTask(tasks.TaskWithParameters):
             "launch_name": self.launch_name,
             "account_id": self.account_id,
             "region": self.region,
+            "need_to_provision": self.need_to_provision,
         }
 
     @property
@@ -116,7 +118,7 @@ class ProvisionProductTask(tasks.TaskWithParameters):
                         provisioned_product_detail, service_catalog
                     )
 
-                    need_to_provision = True
+                    self.need_to_provision = True
 
                     if provisioning_artifact_id == version_id:
                         self.info(f"found previous good provision")
@@ -136,15 +138,15 @@ class ProvisionProductTask(tasks.TaskWithParameters):
 
                             if provisioned_parameters == params_to_use:
                                 self.info(f"params unchanged")
-                                need_to_provision = False
+                                self.need_to_provision = False
                             else:
                                 self.info(f"params changed")
                 else:
-                    need_to_provision = True
+                    self.need_to_provision = True
 
-                task_output["provisioned"] = need_to_provision
+                task_output["provisioned"] = self.need_to_provision
                 task_output["section_name"] = self.section_name
-                if need_to_provision:
+                if self.need_to_provision:
                     self.info(
                         f"about to provision with params: {json.dumps(servicecatalog_puppet.serialisation_utils.unwrap(params_to_use))}"
                     )
