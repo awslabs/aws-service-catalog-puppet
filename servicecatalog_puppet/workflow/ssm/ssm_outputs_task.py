@@ -25,6 +25,8 @@ class SSMOutputsTasks(tasks.TaskWithReference):
     force_operation = luigi.BoolParameter()
     cachable_level = constants.CACHE_LEVEL_RUN
 
+    updated = False
+
     def params_for_results_display(self):
         return {
             "task_reference": self.task_reference,
@@ -33,6 +35,7 @@ class SSMOutputsTasks(tasks.TaskWithReference):
             "param_name": self.param_name,
             "stack_output": self.stack_output,
             "force_operation": self.force_operation,
+            "updated": self.updated,
         }
 
     @property
@@ -128,10 +131,15 @@ class SSMOutputsTasks(tasks.TaskWithReference):
 
     def run(self):
         existing_parameter = None
+
+        provisioned = self.get_attribute_from_output_from_reference_dependency(
+            "provisioned", self.task_generating_output
+        )
+
         if not self.force_operation:
             existing_parameter = self.get_ssm_parameter()
         parameter_details = "Parameter not updated - stack/launch did not change and there was no force_operation"
-        if self.force_operation or existing_parameter is None:
+        if provisioned or self.force_operation or existing_parameter is None:
             if self.task_generating_output_section_name == constants.STACKS:
                 stack_output_value = self.find_stack_output()
             elif self.task_generating_output_section_name == constants.LAUNCHES:
@@ -148,6 +156,7 @@ class SSMOutputsTasks(tasks.TaskWithReference):
                     Type="String",
                     Overwrite=True,
                 )
+            self.updated = True
         else:
             stack_output_value = existing_parameter.get("Value")
 

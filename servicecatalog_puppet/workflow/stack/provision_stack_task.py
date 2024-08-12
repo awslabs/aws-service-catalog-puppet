@@ -48,6 +48,8 @@ class ProvisionStackTask(tasks.TaskWithParameters):
     section_name = constants.STACKS
     cachable_level = constants.CACHE_LEVEL_TASK
 
+    need_to_provision = False
+
     @property
     def item_name(self):
         return self.stack_name
@@ -72,6 +74,7 @@ class ProvisionStackTask(tasks.TaskWithParameters):
             "stack_name": self.stack_name,
             "account_id": self.account_id,
             "region": self.region,
+            "need_to_provision": self.need_to_provision,
         }
 
     @property
@@ -249,7 +252,7 @@ class ProvisionStackTask(tasks.TaskWithParameters):
                                 )
 
         if status in ["UPDATE_ROLLBACK_COMPLETE", "NoStack"]:
-            need_to_provision = True
+            self.need_to_provision = True
         else:
             if existing_stack_params_dict == params_to_use:
                 self.info(f"params unchanged")
@@ -257,15 +260,15 @@ class ProvisionStackTask(tasks.TaskWithParameters):
                     existing_template_from_cloudformation
                 ):
                     self.info(f"template the same")
-                    need_to_provision = False
+                    self.need_to_provision = False
                 else:
                     self.info(f"template changed")
-                    need_to_provision = True
+                    self.need_to_provision = True
             else:
                 self.info(f"params changed")
-                need_to_provision = True
+                self.need_to_provision = True
 
-        if need_to_provision:
+        if self.need_to_provision:
             provisioning_parameters = []
             for p in params_to_use.keys():
                 provisioning_parameters.append(
@@ -289,6 +292,6 @@ class ProvisionStackTask(tasks.TaskWithParameters):
                     ]
                 cloudformation.create_or_update(**a)
 
-        task_output["provisioned"] = need_to_provision
+        task_output["provisioned"] = self.need_to_provision
         task_output["section_name"] = self.section_name
         self.write_output(task_output)
