@@ -376,7 +376,7 @@ RUN_DEPLOY_IN_SPOKE_BUILDSPEC = """
       phases:
         install:
           runtime-versions:
-            python: 3.9
+            python: 3.11
           commands:
             - {}
         build:

@@ -5,7 +5,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9]
+        python-version: [3.11]
         poetry-version: [1.4.2]
         os: [ubuntu-20.04]
     runs-on: ${{ matrix.os }}
@@ -19,8 +19,8 @@ jobs:
         with:
           poetry-version: ${{ matrix.poetry-version }}
       # https://github.com/python-poetry/poetry/issues/4511
-      - name: setuptools
-        run: poetry run pip install 'setuptools==65.5.1'
+      #- name: setuptools
+      #  run: poetry run pip install 'setuptools==65.5.1'
       - name: Install
         run: make install
       - name: run tests

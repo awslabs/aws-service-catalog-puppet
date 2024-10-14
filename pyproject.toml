@@ -25,7 +25,7 @@ issues = "https://github.com/awslabs/aws-service-catalog-puppet-framework/issues
 codecov = "^2.1.7"
 behave = "^1.2.6"
 pylint = "^2.5.3"
-black = "^19.10b0"
+black = "24.10.0"
 pycodestyle = "^2.6.0"
 nose2 = "^0.10.0"
 
@@ -41,11 +41,11 @@ envs = ["main"]
 to = {format = "poetry", path = "pyproject.toml"}
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 requests = "2.32.2"
 pyyaml = "6.0.1"
 jinja2 = "3.1.4"
-click = "==7.0"
+click = "8.1.7"
 boto3 = "1.26.15"
 better-boto = "0.42.0"
 terminaltables = "==3.1.0"
