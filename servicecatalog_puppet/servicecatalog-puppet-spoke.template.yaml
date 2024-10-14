@@ -137,7 +137,7 @@ Resources:
       Environment:
         Type: linuxContainer
         ComputeType: !Ref DeployEnvironmentComputeType
-        Image: aws/codebuild/standard:5.0
+        Image: aws/codebuild/standard:7.0
         EnvironmentVariables:
           - Name: VERSION
             Type: PLAINTEXT

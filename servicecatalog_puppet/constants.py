@@ -224,7 +224,7 @@ SECTION_SINGULAR_TO_PLURAL = {
     C7N_AWS_LAMBDA: C7N_AWS_LAMBDAS,
 }
 
-CODEBUILD_DEFAULT_IMAGE = "aws/codebuild/standard:5.0"
+CODEBUILD_DEFAULT_IMAGE = "aws/codebuild/standard:7.0"
 
 DEFAULT_TERRAFORM_VERSION_PARAMETER_NAME = (
     "/servicecatalog-puppet/terraform/default-version"

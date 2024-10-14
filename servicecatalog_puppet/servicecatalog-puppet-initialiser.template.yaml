@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.245.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.250.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -89,7 +89,7 @@ Metadata:
 Parameters:
   CodeBuildEnvironmentImage:
     Type: String
-    Default: "aws/codebuild/standard:5.0"
+    Default: "aws/codebuild/standard:7.0"
   EnabledRegions:
     Type: String
     Description: |
