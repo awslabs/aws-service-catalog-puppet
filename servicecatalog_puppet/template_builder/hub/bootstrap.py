@@ -983,6 +983,8 @@ def get_template(
                 ),
             ),
             RestartExecutionOnUpdate=True,
+            ExecutionMode="QUEUED",
+            PipelineType="V2",
         )
     )
 
