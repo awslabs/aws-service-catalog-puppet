@@ -369,27 +369,27 @@ def list_launches(expanded_manifest, format):
 @click.argument("f", type=click.File())
 @click.option(
     "--single-account",
-    default="{}",
+    default="None",
     envvar="SINGLE_ACCOUNT",
 )
 @click.option(
     "--single-action-section",
-    default="{}",
+    default="*",
     envvar="SINGLE_ACTION_SECTION",
 )
 @click.option(
     "--single-action-item",
-    default="{}",
+    default="*",
     envvar="SINGLE_ACTION_ITEM",
 )
 @click.option(
     "--single-action-include-dependencies",
-    default="{}",
+    default="True",
     envvar="SINGLE_ACTION_INCLUDE_DEPENDENCIES",
 )
 @click.option(
     "--single-action-include-reverse-dependencies",
-    default="{}",
+    default="True",
     envvar="SINGLE_ACTION_INCLUDE_REVERSE_DEPENDENCIES",
 )
 def expand(f, single_account, single_action_section, single_action_item, single_action_include_dependencies,
@@ -640,27 +640,27 @@ def setup_config(
 )
 @click.option(
     "--single-account",
-    default="{}",
+    default="None",
     envvar="SINGLE_ACCOUNT",
 )
 @click.option(
     "--single-action-section",
-    default="{}",
+    default="*",
     envvar="SINGLE_ACTION_SECTION",
 )
 @click.option(
     "--single-action-item",
-    default="{}",
+    default="*",
     envvar="SINGLE_ACTION_ITEM",
 )
 @click.option(
     "--single-action-include-dependencies",
-    default="{}",
+    default="True",
     envvar="SINGLE_ACTION_INCLUDE_DEPENDENCIES",
 )
 @click.option(
     "--single-action-include-reverse-dependencies",
-    default="{}",
+    default="True",
     envvar="SINGLE_ACTION_INCLUDE_REVERSE_DEPENDENCIES",
 )
 @click.option("--on-complete-url", default=None)
