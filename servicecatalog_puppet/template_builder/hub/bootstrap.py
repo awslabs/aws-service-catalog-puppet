@@ -1039,13 +1039,13 @@ def get_template(
             },
             pre_build={
                 "commands": [
-                    "servicecatalog-puppet --info expand --parameter-override-file $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml manifest.yaml",
+                    "servicecatalog-puppet --info expand manifest.yaml",
                     "servicecatalog-puppet --info generate-task-reference $PWD/manifest-expanded.yaml",
                 ]
             },
             build={
                 "commands": [
-                    "servicecatalog-puppet --info deploy-from-task-reference --parameter-override-file $CODEBUILD_SRC_DIR_ParameterisedSource/parameters.yaml --num-workers ${NUM_WORKERS} .",
+                    "servicecatalog-puppet --info deploy-from-task-reference --num-workers ${NUM_WORKERS} .",
                 ]
             },
         ),
@@ -1320,10 +1320,7 @@ def generate_single_account_run_projects(
             install=install_spec,
             build={
                 "commands": [
-                    'echo "single_account: \\"${SINGLE_ACCOUNT_ID}\\"" > parameters.yaml',
-                    "cat parameters.yaml",
-                    "zip parameters.zip parameters.yaml",
-                    "aws s3 cp parameters.zip s3://sc-puppet-parameterised-runs-${PUPPET_ACCOUNT_ID}/parameters.zip",
+                    'aws codepipeline start-pipeline-execution --name servicecatalog-puppet-pipeline --variables name=single_account_or_action_configuration,value="single_account: \\"${SINGLE_ACCOUNT_ID}\\""'
                 ]
             },
             post_build={
