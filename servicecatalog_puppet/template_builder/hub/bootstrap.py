@@ -1347,12 +1347,12 @@ def generate_single_account_run_projects(
             install=install_spec,
             build={
                 "commands": [
-                    "aws codepipeline start-pipeline-execution --name servicecatalog-puppet-pipeline --variables name=SINGLE_ACCOUNT,value=${SINGLE_ACCOUNT_ID}"
+                    "export execution=$(aws codepipeline start-pipeline-execution --name servicecatalog-puppet-pipeline --variables name=SINGLE_ACCOUNT,value=${SINGLE_ACCOUNT_ID} --query pipelineExecutionId --output text)"
                 ]
             },
             post_build={
                 "commands": [
-                    "servicecatalog-puppet wait-for-parameterised-run-to-complete",
+                    "servicecatalog-puppet wait-for-run-to-complete $execution"
                 ]
             },
         ),
@@ -1397,7 +1397,7 @@ def generate_single_account_run_projects(
         codebuild.Project("SingleAccountRunProject", **single_account_run_project_args)
     )
     single_account_run_project_build_spec["phases"]["post_build"]["commands"] = [
-        "servicecatalog-puppet wait-for-parameterised-run-to-complete --on-complete-url $CALLBACK_URL"
+        "servicecatalog-puppet wait-for-run-to-complete $execution --on-complete-url $CALLBACK_URL"
     ]
     single_account_run_project_args[
         "Name"
@@ -1432,12 +1432,12 @@ def generate_single_action_run_projects(
             install=install_spec,
             build={
                 "commands": [
-                    "aws codepipeline start-pipeline-execution --name servicecatalog-puppet-pipeline --variables name=SINGLE_ACTION_SECTION,value=${SINGLE_ACTION_SECTION} name=SINGLE_ACTION_ITEM,value=${SINGLE_ACTION_ITEM} name=SINGLE_ACTION_INCLUDE_DEPENDENCIES,value=${SINGLE_ACTION_INCLUDE_DEPENDENCIES} name=SINGLE_ACTION_INCLUDE_REVERSE_DEPENDENCIES,value=${SINGLE_ACTION_INCLUDE_REVERSE_DEPENDENCIES}"
+                    "export execution=$(aws codepipeline start-pipeline-execution --name servicecatalog-puppet-pipeline --variables name=SINGLE_ACTION_SECTION,value=${SINGLE_ACTION_SECTION} name=SINGLE_ACTION_ITEM,value=${SINGLE_ACTION_ITEM} name=SINGLE_ACTION_INCLUDE_DEPENDENCIES,value=${SINGLE_ACTION_INCLUDE_DEPENDENCIES} name=SINGLE_ACTION_INCLUDE_REVERSE_DEPENDENCIES,value=${SINGLE_ACTION_INCLUDE_REVERSE_DEPENDENCIES} --query pipelineExecutionId --output text)"
                 ]
             },
             post_build={
                 "commands": [
-                    "servicecatalog-puppet wait-for-parameterised-run-to-complete",
+                    "servicecatalog-puppet wait-for-run-to-complete $execution",
                 ]
             },
         ),
@@ -1497,7 +1497,7 @@ def generate_single_action_run_projects(
         codebuild.Project("SingleActionRunProject", **single_action_run_project_args)
     )
     single_action_run_project_build_spec["phases"]["post_build"]["commands"] = [
-        "servicecatalog-puppet wait-for-parameterised-run-to-complete --on-complete-url $CALLBACK_URL"
+        "servicecatalog-puppet wait-for-run-to-complete $execution --on-complete-url $CALLBACK_URL"
     ]
     single_action_run_project_args[
         "Name"
