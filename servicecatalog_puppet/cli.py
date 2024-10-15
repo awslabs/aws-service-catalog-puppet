@@ -384,12 +384,12 @@ def list_launches(expanded_manifest, format):
 )
 @click.option(
     "--single-action-include-dependencies",
-    default="True",
+    default="Yes",
     envvar="SINGLE_ACTION_INCLUDE_DEPENDENCIES",
 )
 @click.option(
     "--single-action-include-reverse-dependencies",
-    default="True",
+    default="Yes",
     envvar="SINGLE_ACTION_INCLUDE_REVERSE_DEPENDENCIES",
 )
 def expand(f, single_account, single_action_section, single_action_item, single_action_include_dependencies,
@@ -403,8 +403,8 @@ def expand(f, single_account, single_action_section, single_action_item, single_
         overrides["single_action_section"] = single_action_section
     if single_action_item != "*":
         overrides["single_action_item"] = single_action_item
-    overrides["single_action_include_dependencies"] = single_action_include_dependencies
-    overrides["single_action_include_reverse_dependencies"] = single_action_include_reverse_dependencies
+    overrides["single_action_include_dependencies"] = str(single_action_include_dependencies).lower() == "yes"
+    overrides["single_action_include_reverse_dependencies"] = str(single_action_include_reverse_dependencies).lower() == "yes"
 
     print(f"overrides is {overrides}")
 
@@ -655,12 +655,12 @@ def setup_config(
 )
 @click.option(
     "--single-action-include-dependencies",
-    default="True",
+    default="Yes",
     envvar="SINGLE_ACTION_INCLUDE_DEPENDENCIES",
 )
 @click.option(
     "--single-action-include-reverse-dependencies",
-    default="True",
+    default="Yes",
     envvar="SINGLE_ACTION_INCLUDE_REVERSE_DEPENDENCIES",
 )
 @click.option("--on-complete-url", default=None)
@@ -689,8 +689,8 @@ def deploy_from_task_reference(
         overrides["single_action_section"] = single_action_section
     if single_action_item != "*":
         overrides["single_action_item"] = single_action_item
-    overrides["single_action_include_dependencies"] = single_action_include_dependencies
-    overrides["single_action_include_reverse_dependencies"] = single_action_include_reverse_dependencies
+    overrides["single_action_include_dependencies"] = str(single_action_include_dependencies).lower() == "yes"
+    overrides["single_action_include_reverse_dependencies"] = str(single_action_include_reverse_dependencies).lower() == "yes"
 
     if overrides.get("subset"):
         subset = overrides.get("subset")
