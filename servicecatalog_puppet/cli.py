@@ -367,33 +367,33 @@ def list_launches(expanded_manifest, format):
 
 @cli.command()
 @click.argument("f", type=click.File())
-@click.option("--single-account", default=None)
-@click.option("--parameter-override-file", type=click.File())
 @click.option(
-    "--parameter-override-forced/--no-parameter-override-forced", default=False
+    "--single-account-or-action-configuration",
+    default="{}",
+    envvar="SINGLE_ACCOUNT_OR_ACTION_CONFIGURATION",
 )
-def expand(f, single_account, parameter_override_file, parameter_override_forced):
+def expand(f, single_account_or_action_configuration):
     puppet_account_id = remote_config.get_puppet_account_id()
     regions = remote_config.get_regions(puppet_account_id, constants.HOME_REGION)
-    extra_params = dict(single_account=None)
-    if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
-        overrides = dict(**yaml.safe_load(parameter_override_file.read()))
+    print(f"single_account_or_action_configuration is {single_account_or_action_configuration}")
+    overrides = yaml.safe_load(single_account_or_action_configuration)
+    print(f"overrides is {overrides}")
 
-        if overrides.get("subset"):
-            subset = dict(**overrides.get("subset"))
-        else:
-            subset = dict(**overrides)
+    if overrides.get("subset"):
+        subset = dict(**overrides.get("subset"))
+    else:
+        subset = dict(**overrides)
 
-        if subset.get("single_account"):
-            del subset["single_account"]
+    if subset.get("single_account"):
+        del subset["single_account"]
 
-        if overrides.get("single_account"):
-            del overrides["single_account"]
+    if overrides.get("single_account"):
+        del overrides["single_account"]
 
-        extra_params = dict(
-            single_account=overrides.get("single_account"), subset=subset
-        )
-        click.echo(f"Overridden parameters {extra_params}")
+    extra_params = dict(
+        single_account=overrides.get("single_account"), subset=subset
+    )
+    click.echo(f"Overridden parameters {extra_params}")
 
     manifest_commands.expand(f, puppet_account_id, regions, **extra_params)
     if config.get_should_explode_manifest(puppet_account_id):
@@ -593,7 +593,6 @@ def setup_config(
 @click.option("--num-workers", default=10)
 @click.option("--execution-mode", default="hub")
 @click.option("--puppet-account-id", default=None)
-@click.option("--single-account", default=None)
 @click.option("--home-region", default=None)
 @click.option("--regions", default="")
 @click.option("--should-collect-cloudformation-events", default=None, type=bool)
@@ -608,9 +607,10 @@ def setup_config(
 @click.option(
     "--is-caching-enabled", default="", envvar="SCT_IS_CACHING_ENABLED",
 )
-@click.option("--parameter-override-file", type=click.File())
 @click.option(
-    "--parameter-override-forced/--no-parameter-override-forced", default=False
+    "--single-account-or-action-configuration",
+    default="{}",
+    envvar="SINGLE_ACCOUNT_OR_ACTION_CONFIGURATION",
 )
 @click.option("--on-complete-url", default=None)
 def deploy_from_task_reference(
@@ -618,7 +618,6 @@ def deploy_from_task_reference(
     num_workers,
     execution_mode,
     puppet_account_id,
-    single_account,
     home_region,
     regions,
     should_collect_cloudformation_events,
@@ -626,29 +625,28 @@ def deploy_from_task_reference(
     should_forward_failures_to_opscenter,
     output_cache_starting_point,
     is_caching_enabled,
-    parameter_override_file,
-    parameter_override_forced,
+    single_account_or_action_configuration,
     on_complete_url,
 ):
     params = dict()
-    if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
-        overrides = dict(**yaml.safe_load(parameter_override_file.read()))
-        if overrides.get("subset"):
-            subset = overrides.get("subset")
-            overrides = dict(
-                section=subset.get("section"),
-                item=subset.get("name"),
-                include_dependencies=subset.get("include_dependencies"),
-                include_reverse_dependencies=subset.get("include_reverse_dependencies"),
-            )
-        params.update(
-            dict(single_account=overrides.get("single_account"), subset=overrides,)
+
+    overrides = dict(**yaml.safe_load(single_account_or_action_configuration))
+    if overrides.get("subset"):
+        subset = overrides.get("subset")
+        overrides = dict(
+            section=subset.get("section"),
+            item=subset.get("name"),
+            include_dependencies=subset.get("include_dependencies"),
+            include_reverse_dependencies=subset.get("include_reverse_dependencies"),
         )
-        click.echo(f"Overridden parameters {params}")
+    params.update(
+        dict(single_account=str(overrides.get("single_account")), subset=overrides,)
+    )
+    click.echo(f"Overridden parameters {params}")
 
     setup_config(
         puppet_account_id=puppet_account_id,
-        single_account=single_account or params.get("single_account"),
+        single_account=params.get("single_account"),
         num_workers=str(num_workers),
         execution_mode=execution_mode,
         home_region=home_region,

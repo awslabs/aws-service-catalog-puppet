@@ -17,6 +17,7 @@ from troposphere import (
 
 from servicecatalog_puppet import config, constants, environmental_variables
 
+single_account_or_action_configuration_parameter_name="single_account_or_action_configuration"
 
 def get_template(
     puppet_version,
@@ -961,7 +962,7 @@ def get_template(
                     Configuration={
                         "ProjectName": t.Ref("DeployProject"),
                         "PrimarySource": "Source",
-                        "EnvironmentVariables": '[{"name":"EXECUTION_ID","value":"#{codepipeline.PipelineExecutionId}","type":"PLAINTEXT"}]',
+                        "EnvironmentVariables": '[{"name":"EXECUTION_ID","value":"#{codepipeline.PipelineExecutionId}","type":"PLAINTEXT"},{"name":"SINGLE_ACCOUNT_OR_ACTION_CONFIGURATION","value":"#{variables.'+single_account_or_action_configuration_parameter_name+'}","type":"PLAINTEXT"}]', #EPF
                     },
                     RunOrder=1,
                 ),
@@ -985,6 +986,13 @@ def get_template(
             RestartExecutionOnUpdate=True,
             ExecutionMode="QUEUED",
             PipelineType="V2",
+            Variables=[
+                codepipeline.VariableDeclaration(
+                    Name=single_account_or_action_configuration_parameter_name,
+                    Description="YAML configuration to configure this solution to run a subset of the pipeline",
+                    DefaultValue="{}"
+                ),
+            ]
         )
     )
 
@@ -1075,6 +1083,11 @@ def get_template(
                     "Name": "SPOKE_EXECUTION_MODE_DEPLOY_ENV",
                     "Value": constants.SPOKE_EXECUTION_MODE_DEPLOY_ENV_PARAMETER_NAME,
                 },
+                {
+                    "Type": "PLAINTEXT",
+                    "Name": "SINGLE_ACCOUNT_OR_ACTION_CONFIGURATION",
+                    "Value": "{}"
+                }
             ]
             + deploy_env_vars,
         ),
