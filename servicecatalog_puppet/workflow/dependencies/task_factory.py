@@ -147,14 +147,16 @@ def create(
         from servicecatalog_puppet.workflow.ssm import get_ssm_parameter_task
 
         return get_ssm_parameter_task.GetSSMParameterByPathTask(
-            **common_parameters, path=parameters_to_use.get("path"),
+            **common_parameters,
+            path=parameters_to_use.get("path"),
         )
 
     elif section_name == constants.SSM_PARAMETERS:
         from servicecatalog_puppet.workflow.ssm import get_ssm_parameter_task
 
         return get_ssm_parameter_task.GetSSMParameterTask(
-            **common_parameters, param_name=parameters_to_use.get("param_name"),
+            **common_parameters,
+            param_name=parameters_to_use.get("param_name"),
         )
 
     elif section_name == constants.SSM_OUTPUTS:
@@ -163,7 +165,8 @@ def create(
         if parameters_to_use.get("status") == constants.TERMINATED:
 
             return ssm_outputs_task.TerminateSSMOutputsTasks(
-                **common_parameters, param_name=parameters_to_use.get("param_name"),
+                **common_parameters,
+                param_name=parameters_to_use.get("param_name"),
             )
 
         else:
@@ -326,8 +329,11 @@ def create(
                 terminate_spoke_local_portfolio_task,
             )
 
-            return terminate_spoke_local_portfolio_task.TerminateSpokeLocalPortfolioTask(
-                **common_parameters, portfolio=parameters_to_use.get("portfolio"),
+            return (
+                terminate_spoke_local_portfolio_task.TerminateSpokeLocalPortfolioTask(
+                    **common_parameters,
+                    portfolio=parameters_to_use.get("portfolio"),
+                )
             )
         else:
             from servicecatalog_puppet.workflow.portfolio.portfolio_management import (
@@ -516,17 +522,19 @@ def create(
                 share_and_accept_portfolio_task,
             )
 
-            return share_and_accept_portfolio_task.ShareAndAcceptPortfolioForAccountTask(
-                **common_parameters,
-                portfolio=parameters_to_use.get("portfolio"),
-                share_tag_options=parameters_to_use.get("share_tag_options"),
-                share_principals=parameters_to_use.get("share_principals"),
-                portfolio_task_reference=parameters_to_use.get(
-                    "portfolio_task_reference"
-                ),
-                describe_portfolio_shares_task_ref=parameters_to_use.get(
-                    "describe_portfolio_shares_task_ref"
-                ),
+            return (
+                share_and_accept_portfolio_task.ShareAndAcceptPortfolioForAccountTask(
+                    **common_parameters,
+                    portfolio=parameters_to_use.get("portfolio"),
+                    share_tag_options=parameters_to_use.get("share_tag_options"),
+                    share_principals=parameters_to_use.get("share_principals"),
+                    portfolio_task_reference=parameters_to_use.get(
+                        "portfolio_task_reference"
+                    ),
+                    describe_portfolio_shares_task_ref=parameters_to_use.get(
+                        "describe_portfolio_shares_task_ref"
+                    ),
+                )
             )
 
     elif section_name == constants.PORTFOLIO_SHARE_AND_ACCEPT_AWS_ORGANIZATIONS:
@@ -827,13 +835,27 @@ def create(
 
         return prepare_c7n_hub_account_task.PrepareC7NHubAccountTask(
             **common_parameters,
-            custodian_region=parameters_to_use.get("custodian_region",),
-            c7n_version=parameters_to_use.get("c7n_version",),
-            c7n_org_version=parameters_to_use.get("c7n_org_version",),
-            organization=parameters_to_use.get("organization",),
-            role_name=parameters_to_use.get("role_name",),
-            role_path=parameters_to_use.get("role_path",),
-            schedule_expression=parameters_to_use.get("schedule_expression",),
+            custodian_region=parameters_to_use.get(
+                "custodian_region",
+            ),
+            c7n_version=parameters_to_use.get(
+                "c7n_version",
+            ),
+            c7n_org_version=parameters_to_use.get(
+                "c7n_org_version",
+            ),
+            organization=parameters_to_use.get(
+                "organization",
+            ),
+            role_name=parameters_to_use.get(
+                "role_name",
+            ),
+            role_path=parameters_to_use.get(
+                "role_path",
+            ),
+            schedule_expression=parameters_to_use.get(
+                "schedule_expression",
+            ),
         )
 
     elif section_name == constants.C7N_FORWARD_EVENTS_FOR_ACCOUNT_TASK:
@@ -841,8 +863,12 @@ def create(
 
         return forward_events_for_account_tasks.ForwardEventsForAccountTask(
             **common_parameters,
-            c7n_account_id=parameters_to_use.get("c7n_account_id",),
-            custodian_region=parameters_to_use.get("custodian_region",),
+            c7n_account_id=parameters_to_use.get(
+                "c7n_account_id",
+            ),
+            custodian_region=parameters_to_use.get(
+                "custodian_region",
+            ),
         )
 
     elif section_name == constants.C7N_FORWARD_EVENTS_FOR_REGION_TASK:
@@ -850,8 +876,12 @@ def create(
 
         return forward_events_for_region_tasks.ForwardEventsForRegionTask(
             **common_parameters,
-            c7n_account_id=parameters_to_use.get("c7n_account_id",),
-            custodian_region=parameters_to_use.get("custodian_region",),
+            c7n_account_id=parameters_to_use.get(
+                "c7n_account_id",
+            ),
+            custodian_region=parameters_to_use.get(
+                "custodian_region",
+            ),
         )
 
     elif section_name == constants.C7N_CREATE_CUSTODIAN_ROLE_TASK:
@@ -859,10 +889,18 @@ def create(
 
         return create_custodian_role_task.CreateCustodianRoleTask(
             **common_parameters,
-            c7n_account_id=parameters_to_use.get("c7n_account_id",),
-            role_name=parameters_to_use.get("role_name",),
-            role_path=parameters_to_use.get("role_path",),
-            role_managed_policy_arns=parameters_to_use.get("role_managed_policy_arns",),
+            c7n_account_id=parameters_to_use.get(
+                "c7n_account_id",
+            ),
+            role_name=parameters_to_use.get(
+                "role_name",
+            ),
+            role_path=parameters_to_use.get(
+                "role_path",
+            ),
+            role_managed_policy_arns=parameters_to_use.get(
+                "role_managed_policy_arns",
+            ),
         )
 
     elif section_name == constants.C7N_DEPLOY_POLICIES_TASK:
@@ -870,11 +908,21 @@ def create(
 
         return deploy_c7n_policies.DeployC7NPolicies(
             **common_parameters,
-            policies=parameters_to_use.get("policies",),
-            deployments=parameters_to_use.get("deployments",),
-            role_name=parameters_to_use.get("role_name",),
-            role_path=parameters_to_use.get("role_path",),
-            uses_orgs=parameters_to_use.get("uses_orgs",),
+            policies=parameters_to_use.get(
+                "policies",
+            ),
+            deployments=parameters_to_use.get(
+                "deployments",
+            ),
+            role_name=parameters_to_use.get(
+                "role_name",
+            ),
+            role_path=parameters_to_use.get(
+                "role_path",
+            ),
+            uses_orgs=parameters_to_use.get(
+                "uses_orgs",
+            ),
         )
 
     elif section_name == constants.TERMINATE_CLOUDFORMATION_STACK_TASK:

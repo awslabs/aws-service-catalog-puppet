@@ -72,7 +72,9 @@ def get_initialiser_stack_tags():
                 "cloudformation"
             ) as cloudformation:
                 paginator = cloudformation.get_paginator("describe_stacks")
-                for page in paginator.paginate(StackName=initialiser_stack_name,):
+                for page in paginator.paginate(
+                    StackName=initialiser_stack_name,
+                ):
                     for stack in page.get("Stacks", []):
                         if stack.get("StackStatus") in [
                             "CREATE_IN_PROGRESS",
@@ -223,5 +225,6 @@ def get_scheduler_algorithm(puppet_account_id, default_region):
         "getting scheduler_algorithm,  default_region: {}".format(default_region)
     )
     return get_config(puppet_account_id, default_region).get(
-        "scheduler_algorithm", constants.SCHEDULER_ALGORITHM_DEFAULT,
+        "scheduler_algorithm",
+        constants.SCHEDULER_ALGORITHM_DEFAULT,
     )

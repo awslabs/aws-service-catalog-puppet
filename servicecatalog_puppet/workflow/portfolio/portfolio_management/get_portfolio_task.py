@@ -7,7 +7,10 @@ from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
 
 
-sharing_mode_map = dict(ACCOUNT="IMPORTED", AWS_ORGANIZATIONS="AWS_ORGANIZATIONS",)
+sharing_mode_map = dict(
+    ACCOUNT="IMPORTED",
+    AWS_ORGANIZATIONS="AWS_ORGANIZATIONS",
+)
 
 
 class GetPortfolioLocalTask(tasks.TaskWithReference):
@@ -63,7 +66,9 @@ class GetPortfolioImportedTask(tasks.TaskWithReference):
         mode = sharing_mode_map.get(self.sharing_mode)
         with self.spoke_regional_client("servicecatalog") as servicecatalog:
             paginator = servicecatalog.get_paginator("list_accepted_portfolio_shares")
-            for page in paginator.paginate(PortfolioShareType=mode,):
+            for page in paginator.paginate(
+                PortfolioShareType=mode,
+            ):
                 for portfolio_details in page.get("PortfolioDetails", []):
                     if portfolio_details.get("DisplayName") == self.portfolio:
                         return portfolio_details
@@ -71,9 +76,9 @@ class GetPortfolioImportedTask(tasks.TaskWithReference):
         with self.spoke_regional_client("servicecatalog") as servicecatalog:
             paginator = servicecatalog.get_paginator("list_accepted_portfolio_shares")
             for page in paginator.paginate(
-                PortfolioShareType="IMPORTED"
-                if mode == "AWS_ORGANIZATIONS"
-                else "AWS_ORGANIZATIONS",
+                PortfolioShareType=(
+                    "IMPORTED" if mode == "AWS_ORGANIZATIONS" else "AWS_ORGANIZATIONS"
+                ),
             ):
                 for portfolio_details in page.get("PortfolioDetails", []):
                     if portfolio_details.get("DisplayName") == self.portfolio:

@@ -46,7 +46,9 @@ class RunDeployInSpokeTask(tasks.TaskWithReference):
             key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-reference-for-{self.account_id}.json"
             self.debug(f"Uploading task reference {key} to {bucket}")
             s3.put_object(
-                Body=task_reference_content, Bucket=bucket, Key=key,
+                Body=task_reference_content,
+                Bucket=bucket,
+                Key=key,
             )
             self.debug(f"Generating presigned URL for {key}")
             reference_signed_url = s3.generate_presigned_url(

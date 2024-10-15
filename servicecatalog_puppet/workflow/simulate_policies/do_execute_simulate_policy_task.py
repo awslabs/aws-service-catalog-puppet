@@ -51,9 +51,9 @@ class DoExecuteSimulatePolicyTask(tasks.TaskWithReference):
                 kwargs["PolicyInputList"] = self.policy_input_list
 
             if len(self.permissions_boundary_policy_input_list) > 0:
-                kwargs[
-                    "PermissionsBoundaryPolicyInputList"
-                ] = self.permissions_boundary_policy_input_list
+                kwargs["PermissionsBoundaryPolicyInputList"] = (
+                    self.permissions_boundary_policy_input_list
+                )
 
             if len(self.resource_arns) > 0:
                 kwargs["ResourceArns"] = self.resource_arns
@@ -68,10 +68,10 @@ class DoExecuteSimulatePolicyTask(tasks.TaskWithReference):
                 kwargs["CallerArn"] = self.caller_arn
 
             if len(self.context_entries) > 0:
-                kwargs[
-                    "ContextEntries"
-                ] = servicecatalog_puppet.serialisation_utils.unwrap(
-                    self.context_entries
+                kwargs["ContextEntries"] = (
+                    servicecatalog_puppet.serialisation_utils.unwrap(
+                        self.context_entries
+                    )
                 )
 
             if self.resource_handling_option != "":

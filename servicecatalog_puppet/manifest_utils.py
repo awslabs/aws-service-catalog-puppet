@@ -275,7 +275,9 @@ def expand_manifest(manifest, orgs_client):
         if organizations_account_tags != "ignored":
             tags = list()
             paginator = orgs_client.get_paginator("list_tags_for_resource")
-            for page in paginator.paginate(ResourceId=stored_account_id,):
+            for page in paginator.paginate(
+                ResourceId=stored_account_id,
+            ):
                 tags.extend(page.get("Tags", []))
             tags = [f"{t['Key']}:{t['Value']}" for t in tags]
 
@@ -426,14 +428,21 @@ def rewrite_cfct(manifest):
                     m = re.match(r"\$\[alfred_ssm_(.*)\]", parameter_value)
                     if m:
                         parameters[parameter_key] = dict(
-                            ssm=dict(name=m.group(1), region=default_region,)
+                            ssm=dict(
+                                name=m.group(1),
+                                region=default_region,
+                            )
                         )
                     else:
                         parameters[parameter_key] = dict(default=parameter_value)
 
                 if prev is not None:
                     depends_on.append(
-                        dict(name=prev, type=constants.STACK, affinity=constants.STACK,)
+                        dict(
+                            name=prev,
+                            type=constants.STACK,
+                            affinity=constants.STACK,
+                        )
                     )
 
                 for output in resource.get("export_outputs", []):
@@ -572,7 +581,8 @@ def rewrite_depends_on(manifest):
             for i in range(len(details.get("depends_on", []))):
                 if isinstance(details["depends_on"][i], str):
                     manifest[section_name][item]["depends_on"][i] = dict(
-                        name=details["depends_on"][i], type="launch",
+                        name=details["depends_on"][i],
+                        type="launch",
                     )
                 if isinstance(details["depends_on"][i], dict):
                     if details["depends_on"][i].get(constants.AFFINITY) is None:
@@ -650,13 +660,13 @@ def rewrite_stacks(manifest, puppet_account_id):
         for item, details in manifest.get(section, {}).items():
             if not details.get("key"):
                 if category == constants.STACK:
-                    details[
-                        "key"
-                    ] = f"{category}/{details['name']}/{details['version']}/{category}.template-${{AWS::Region}}.yaml"
+                    details["key"] = (
+                        f"{category}/{details['name']}/{details['version']}/{category}.template-${{AWS::Region}}.yaml"
+                    )
                 else:
-                    details[
-                        "key"
-                    ] = f"{category}/{details['name']}/{details['version']}/{category}.zip"
+                    details["key"] = (
+                        f"{category}/{details['name']}/{details['version']}/{category}.zip"
+                    )
                 del details["name"]
                 del details["version"]
                 if category == constants.STACK:
@@ -664,9 +674,9 @@ def rewrite_stacks(manifest, puppet_account_id):
                         details.get(constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE)
                         is None
                     ):
-                        details[
-                            constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE
-                        ] = config.get_should_use_stacks_service_role(puppet_account_id)
+                        details[constants.MANIFEST_SHOULD_USE_STACKS_SERVICE_ROLE] = (
+                            config.get_should_use_stacks_service_role(puppet_account_id)
+                        )
     return manifest
 
 
@@ -1026,11 +1036,18 @@ class Manifest(dict):
                 if tag_name in account.get("tags"):
                     additional_parameters = {
                         "launches": dict(
-                            account_id=account_id, ou=account.get("expanded_from", ""),
+                            account_id=account_id,
+                            ou=account.get("expanded_from", ""),
                         ),
-                        "apps": dict(account_id=account_id,),
-                        "workspaces": dict(account_id=account_id,),
-                        "stacks": dict(account_id=account_id,),
+                        "apps": dict(
+                            account_id=account_id,
+                        ),
+                        "workspaces": dict(
+                            account_id=account_id,
+                        ),
+                        "stacks": dict(
+                            account_id=account_id,
+                        ),
                         "spoke-local-portfolios": dict(
                             account_id=account_id,
                             organization=account.get("organization", ""),
@@ -1041,15 +1058,29 @@ class Manifest(dict):
                             organization=account.get("organization", ""),
                             ou=account.get("expanded_from", ""),
                         ),
-                        "assertions": dict(account_id=account_id,),
-                        "lambda-invocations": dict(account_id=account_id,),
-                        "code-build-runs": dict(account_id=account_id,),
-                        "service-control-policies": dict(
-                            account_id=account_id, ou_name="",
+                        "assertions": dict(
+                            account_id=account_id,
                         ),
-                        "tag-policies": dict(account_id=account_id, ou_name="",),
-                        constants.SIMULATE_POLICIES: dict(account_id=account_id,),
-                        constants.C7N_AWS_LAMBDAS: dict(account_id=account_id,),
+                        "lambda-invocations": dict(
+                            account_id=account_id,
+                        ),
+                        "code-build-runs": dict(
+                            account_id=account_id,
+                        ),
+                        "service-control-policies": dict(
+                            account_id=account_id,
+                            ou_name="",
+                        ),
+                        "tag-policies": dict(
+                            account_id=account_id,
+                            ou_name="",
+                        ),
+                        constants.SIMULATE_POLICIES: dict(
+                            account_id=account_id,
+                        ),
+                        constants.C7N_AWS_LAMBDAS: dict(
+                            account_id=account_id,
+                        ),
                     }.get(section_name)
                     if isinstance(regions, str):
                         if regions in [
@@ -1130,18 +1161,44 @@ class Manifest(dict):
             if single_account != "None" and single_account != account_id:
                 continue
             additional_parameters = {
-                "launches": dict(account_id=account_id,),
-                "stacks": dict(account_id=account_id,),
-                "spoke-local-portfolios": dict(account_id=account_id,),
-                "imported-portfolios": dict(account_id=account_id,),
-                "assertions": dict(account_id=account_id,),
-                "lambda-invocations": dict(account_id=account_id,),
-                "code-build-runs": dict(account_id=account_id,),
-                "service-control-policies": dict(account_id=account_id, ou_name="",),
-                "tag-policies": dict(account_id=account_id, ou_name="",),
-                constants.SIMULATE_POLICIES: dict(account_id=account_id,),
-                constants.ORGANIZATIONAL_UNITS: dict(account_id=account_id,),
-                constants.C7N_AWS_LAMBDAS: dict(account_id=account_id,),
+                "launches": dict(
+                    account_id=account_id,
+                ),
+                "stacks": dict(
+                    account_id=account_id,
+                ),
+                "spoke-local-portfolios": dict(
+                    account_id=account_id,
+                ),
+                "imported-portfolios": dict(
+                    account_id=account_id,
+                ),
+                "assertions": dict(
+                    account_id=account_id,
+                ),
+                "lambda-invocations": dict(
+                    account_id=account_id,
+                ),
+                "code-build-runs": dict(
+                    account_id=account_id,
+                ),
+                "service-control-policies": dict(
+                    account_id=account_id,
+                    ou_name="",
+                ),
+                "tag-policies": dict(
+                    account_id=account_id,
+                    ou_name="",
+                ),
+                constants.SIMULATE_POLICIES: dict(
+                    account_id=account_id,
+                ),
+                constants.ORGANIZATIONAL_UNITS: dict(
+                    account_id=account_id,
+                ),
+                constants.C7N_AWS_LAMBDAS: dict(
+                    account_id=account_id,
+                ),
             }.get(section_name)
 
             if isinstance(regions, str):
@@ -1222,8 +1279,14 @@ class Manifest(dict):
                 continue
 
             additional_parameters = {
-                "service-control-policies": dict(account_id="", ou_name=ou_name,),
-                "tag-policies": dict(account_id="", ou_name=ou_name,),
+                "service-control-policies": dict(
+                    account_id="",
+                    ou_name=ou_name,
+                ),
+                "tag-policies": dict(
+                    account_id="",
+                    ou_name=ou_name,
+                ),
             }.get(section_name)
 
             if isinstance(regions, str) and regions == "home_region":
@@ -1355,7 +1418,10 @@ class Manifest(dict):
         for launch_name, launch_details in self.get(section, {}).items():
             portfolio = launch_details.get("portfolio")
             tasks = self.get_task_defs_from_details(
-                puppet_account_id, launch_name, configuration, section,
+                puppet_account_id,
+                launch_name,
+                configuration,
+                section,
             )
             for task in tasks:
                 account_id = task.get("account_id")
@@ -1536,10 +1602,15 @@ def convert_to_graph(expanded_manifest, G):
     for section in constants.ALL_SECTION_NAMES:
         for item_name, item_details in expanded_manifest.get(section, {}).items():
             uid = f"{section}|{item_name}"
-            data = dict(section=section, item_name=item_name,)
+            data = dict(
+                section=section,
+                item_name=item_name,
+            )
             data.update(item_details)
             G.add_nodes_from(
-                [(uid, data),]
+                [
+                    (uid, data),
+                ]
             )
 
     for section in constants.ALL_SECTION_NAMES:
@@ -1573,8 +1644,8 @@ def explode(expanded_manifest):
 
 
 def isolate(expanded_manifest, subset):
-    section = subset["section"]
-    item = subset["item"]
+    section = subset["single_action_section"]
+    item = subset["single_action_item"]
     uid = f"{section}|{item}"
 
     m = create_minimal_manifest(expanded_manifest)
@@ -1585,7 +1656,7 @@ def isolate(expanded_manifest, subset):
     del data["item_name"]
     m[node.get("section")][node.get("item_name")] = data
 
-    if subset.get("include_dependencies", False):
+    if subset.get("single_action_include_dependencies", False):
         click.echo("Including dependencies")
         for dependency in nx.edge_dfs(G, uid, orientation="original"):
             link, dependency_name, direction = dependency
@@ -1595,7 +1666,7 @@ def isolate(expanded_manifest, subset):
             del data["item_name"]
             m[node.get("section")][node.get("item_name")] = data
 
-    if subset.get("include_reverse_dependencies", False):
+    if subset.get("single_action_include_reverse_dependencies", False):
         click.echo("Including reverse dependencies")
         for reverse_dependency in nx.edge_dfs(G, uid, orientation="reverse"):
             reverse_dependency_name, link, direction = reverse_dependency

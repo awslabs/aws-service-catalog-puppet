@@ -55,8 +55,10 @@ class SSMOutputsTasks(tasks.TaskWithReference):
                         AccessLevelFilter={"Key": "Account", "Value": "self"},
                     ):
                         for provisioned_product in page.get("ProvisionedProducts", []):
-                            name_as_a_regex = self.task_generating_output_launch_name.replace(
-                                "*", "(.*)"
+                            name_as_a_regex = (
+                                self.task_generating_output_launch_name.replace(
+                                    "*", "(.*)"
+                                )
                             )
                             if re.match(
                                 name_as_a_regex, provisioned_product.get("Name")
@@ -112,7 +114,9 @@ class SSMOutputsTasks(tasks.TaskWithReference):
             "cloudformation",
             region_name=self.task_generating_output_region,
         ) as cloudformation:
-            response = cloudformation.describe_stacks(StackName=self.stack_name_to_use,)
+            response = cloudformation.describe_stacks(
+                StackName=self.stack_name_to_use,
+            )
             for stack in response.get("Stacks", []):
                 for output in stack.get("Outputs", []):
                     if output.get("OutputKey") == self.stack_output:
@@ -123,7 +127,9 @@ class SSMOutputsTasks(tasks.TaskWithReference):
     def get_ssm_parameter(self):
         with self.spoke_regional_client("ssm") as ssm:
             try:
-                parameter = ssm.get_parameter(Name=self.param_name_to_use(),)
+                parameter = ssm.get_parameter(
+                    Name=self.param_name_to_use(),
+                )
             except ssm.exceptions.ParameterNotFound:
                 return None
             else:
@@ -216,7 +222,9 @@ class TerminateSSMOutputsTasks(tasks.TaskWithReference):  # TODO add by path par
             "ssm"
         ) as ssm:  # TODO what happens when the param is deleted already
             try:
-                parameter_details = ssm.delete_parameter(Name=param_name_to_use,)
+                parameter_details = ssm.delete_parameter(
+                    Name=param_name_to_use,
+                )
                 self.write_output(dict(parameter_details))
             except ssm.exceptions.ParameterNotFound:
                 self.write_output(dict(result="parameter not found"))

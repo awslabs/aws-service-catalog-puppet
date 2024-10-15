@@ -43,7 +43,8 @@ def assemble_manifest_from_ssm(target_directory):
             constants.TAG_POLICIES: {},
         }
         for page in paginator.paginate(
-            Path=constants.SERVICE_CATALOG_PUPPET_MANIFEST_SSM_PREFIX, Recursive=True,
+            Path=constants.SERVICE_CATALOG_PUPPET_MANIFEST_SSM_PREFIX,
+            Recursive=True,
         ):
             for parameter in page.get("Parameters", []):
                 parts = parameter.get("Name").split("/")
@@ -124,7 +125,7 @@ def expand(f, puppet_account_id, regions, single_account, subset=None):
     new_manifest = manifest_utils.parse_conditions(new_manifest)
     new_manifest = manifest_utils.rewrite_c7n_cloudtrails(new_manifest)
 
-    if subset and subset.get("section"):
+    if subset and subset.get("single_action_section"):
         click.echo(f"Filtering for subset: {subset}")
         new_manifest = manifest_utils.isolate(new_manifest, subset)
 
@@ -290,8 +291,10 @@ def validate(f):
                                             )
                                         else:
                                             dependency = d
-                                        plural = constants.SECTION_SINGULAR_TO_PLURAL.get(
-                                            dependency.get("type", constants.LAUNCH)
+                                        plural = (
+                                            constants.SECTION_SINGULAR_TO_PLURAL.get(
+                                                dependency.get("type", constants.LAUNCH)
+                                            )
                                         )
                                         if (
                                             dependency.get("name") == needle_action_name
@@ -309,7 +312,9 @@ def validate(f):
             uid = f"{collection_type}|{collection_name}"
             data = collection_item
             graph.add_nodes_from(
-                [(uid, data),]
+                [
+                    (uid, data),
+                ]
             )
             for d in collection_item.get("depends_on", []):
                 if isinstance(d, str):

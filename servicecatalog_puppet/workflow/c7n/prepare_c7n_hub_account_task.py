@@ -64,7 +64,9 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                             "Version": "2012-10-17",
                             "Statement": [
                                 {
-                                    "Action": ["sts:AssumeRole",],
+                                    "Action": [
+                                        "sts:AssumeRole",
+                                    ],
                                     "Resource": t.Sub(
                                         "arn:${AWS::Partition}:iam::*:role"
                                         + self.role_path
@@ -84,14 +86,18 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                                     "Effect": "Allow",
                                 },
                                 {
-                                    "Action": ["logs:GetLogEvents",],
+                                    "Action": [
+                                        "logs:GetLogEvents",
+                                    ],
                                     "Resource": t.Sub(
                                         "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/servicecatalog-puppet-deploy-c7n:log-stream:*"
                                     ),
                                     "Effect": "Allow",
                                 },
                                 {
-                                    "Action": ["ssm:GetParameters",],
+                                    "Action": [
+                                        "ssm:GetParameters",
+                                    ],
                                     "Resource": [
                                         t.Sub(
                                             "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/servicecatalog-puppet/aws-c7n-lambdas/REGIONS"
@@ -103,7 +109,10 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                                     "Effect": "Allow",
                                 },
                                 {
-                                    "Action": ["s3:GetObject", "s3:GetObjectVersion",],
+                                    "Action": [
+                                        "s3:GetObject",
+                                        "s3:GetObjectVersion",
+                                    ],
                                     "Resource": [
                                         t.Sub(
                                             "arn:aws:s3:::sc-puppet-c7n-artifacts-${AWS::AccountId}-${AWS::Region}/latest"
@@ -144,8 +153,12 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                             "Version": "2012-10-17",
                             "Statement": [
                                 {
-                                    "Action": ["codebuild:StartBuild",],
-                                    "Resource": [codebuild_target,],
+                                    "Action": [
+                                        "codebuild:StartBuild",
+                                    ],
+                                    "Resource": [
+                                        codebuild_target,
+                                    ],
                                     "Effect": "Allow",
                                 },
                             ],
@@ -257,7 +270,8 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                     ],
                 ),
                 Source=codebuild.Source(
-                    BuildSpec=yaml.safe_dump(build_spec), Type="NO_SOURCE",
+                    BuildSpec=yaml.safe_dump(build_spec),
+                    Type="NO_SOURCE",
                 ),
                 Description="Run c7n",
             )
@@ -288,12 +302,18 @@ class PrepareC7NHubAccountTask(tasks.TaskWithReferenceAndCommonParameters):
                 StackName="servicecatalog-puppet-c7n-eventbus",
                 Capabilities=["CAPABILITY_NAMED_IAM"],
                 TemplateBody=template,
-                NotificationARNs=[
-                    f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-                ]
-                if self.should_use_sns
-                else [],
+                NotificationARNs=(
+                    [
+                        f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                    ]
+                    if self.should_use_sns
+                    else []
+                ),
                 ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
                 Tags=self.initialiser_stack_tags,
             )
-        self.write_output(dict(c7n_account_id=self.account_id,))
+        self.write_output(
+            dict(
+                c7n_account_id=self.account_id,
+            )
+        )

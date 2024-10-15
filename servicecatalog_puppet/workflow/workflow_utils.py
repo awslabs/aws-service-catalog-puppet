@@ -9,7 +9,9 @@ def ensure_no_cyclic_dependencies(name, tasks):
         uid = t_name
         data = t
         g.add_nodes_from(
-            [(uid, data),]
+            [
+                (uid, data),
+            ]
         )
         for duid in t.get("dependencies_by_reference", []):
             g.add_edge(uid, duid)

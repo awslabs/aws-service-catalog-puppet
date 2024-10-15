@@ -40,7 +40,11 @@ class Boto3ParameterHandlerTest(unittest.TestCase):
             "status": None,
             "requested_priority": 0,
             "dependencies": [
-                {"affinity": "stack", "name": dependency_item_name, "type": "stack",}
+                {
+                    "affinity": "stack",
+                    "name": dependency_item_name,
+                    "type": "stack",
+                }
             ],
             "account_id": account_id,
             "region": region,
@@ -86,7 +90,11 @@ class Boto3ParameterHandlerTest(unittest.TestCase):
 
         # exercise
         self.sut.boto3_parameter_handler(
-            new_tasks, parameter_details, parameter_name, puppet_account_id, task,
+            new_tasks,
+            parameter_details,
+            parameter_name,
+            puppet_account_id,
+            task,
         )
 
         # verify

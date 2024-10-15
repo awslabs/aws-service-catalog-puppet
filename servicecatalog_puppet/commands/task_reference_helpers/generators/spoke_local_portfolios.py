@@ -1,6 +1,11 @@
 #  Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  SPDX-License-Identifier: Apache-2.0
-from servicecatalog_puppet import config, constants, task_reference_constants, utils
+from servicecatalog_puppet import (
+    config,
+    constants,
+    task_reference_constants,
+    utils,
+)
 from servicecatalog_puppet.commands.task_reference_helpers.generators import portfolios
 from servicecatalog_puppet.workflow.portfolio.associations import association_utils
 
@@ -393,12 +398,14 @@ def handle_spoke_local_portfolios(
             else:
                 raise Exception(f"Unknown sharing mode: {sharing_mode}")
 
-            describe_portfolio_shares_task_ref = portfolios.get_or_create_describe_portfolio_shares_task_ref(
-                all_tasks,
-                puppet_account_id,
-                sharing_type,
-                hub_portfolio_ref,
-                task_to_add,
+            describe_portfolio_shares_task_ref = (
+                portfolios.get_or_create_describe_portfolio_shares_task_ref(
+                    all_tasks,
+                    puppet_account_id,
+                    sharing_type,
+                    hub_portfolio_ref,
+                    task_to_add,
+                )
             )
 
             if not all_tasks.get(share_and_accept_ref):
@@ -554,9 +561,9 @@ def handle_spoke_local_portfolios(
                 task_reference_constants.MANIFEST_ACCOUNT_IDS
             ] = dict(**task_to_add.get(task_reference_constants.MANIFEST_ACCOUNT_IDS))
             if product_generation_method == constants.PRODUCT_GENERATION_METHOD_IMPORT:
-                portfolio_import_or_copy_task[
-                    "hub_portfolio_task_reference"
-                ] = hub_portfolio_ref
+                portfolio_import_or_copy_task["hub_portfolio_task_reference"] = (
+                    hub_portfolio_ref
+                )
                 portfolio_import_or_copy_task["dependencies_by_reference"].append(
                     hub_portfolio_ref
                 )
@@ -577,8 +584,10 @@ def handle_spoke_local_portfolios(
                     stack_name=v1_stack_name,
                 )
 
-            v2_stack_name = association_utils.generate_stack_name_for_associations_by_item_name(
-                item_name
+            v2_stack_name = (
+                association_utils.generate_stack_name_for_associations_by_item_name(
+                    item_name
+                )
             )
             task_ref_for_v2_stack = f"{constants.TERMINATE_CLOUDFORMATION_STACK_TASK}-{v2_stack_name}-{task_to_add.get('account_id')}-{task_to_add.get('region')}"
             if not all_tasks.get(task_ref_for_v2_stack):
@@ -802,10 +811,10 @@ def handle_spoke_local_portfolios(
                         raise Exception(
                             f"{section_name} {item_name} is trying to override the resource_update_constraints"
                         )
-                    task["resource_update_constraints"]["products"][
-                        product
-                    ] = resource_update_constraint.get(
-                        "tag_update_on_provisioned_product"
+                    task["resource_update_constraints"]["products"][product] = (
+                        resource_update_constraint.get(
+                            "tag_update_on_provisioned_product"
+                        )
                     )
                 if resource_update_constraint.get("products"):
                     for product in resource_update_constraint["products"]:
@@ -819,10 +828,10 @@ def handle_spoke_local_portfolios(
                             raise Exception(
                                 f"{section_name} {item_name} is trying to override the resource_update_constraints"
                             )
-                        task["resource_update_constraints"]["products"][
-                            product
-                        ] = resource_update_constraint.get(
-                            "tag_update_on_provisioned_product"
+                        task["resource_update_constraints"]["products"][product] = (
+                            resource_update_constraint.get(
+                                "tag_update_on_provisioned_product"
+                            )
                         )
 
             task[task_reference_constants.MANIFEST_SECTION_NAMES] = dict(

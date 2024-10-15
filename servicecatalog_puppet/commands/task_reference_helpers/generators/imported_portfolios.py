@@ -95,7 +95,10 @@ def add_puppet_associations_for_when_not_sharing_with_puppet_account(
             "puppet_account_id": puppet_account_id,
             "task_reference": spoke_portfolio_puppet_association_ref,
             "portfolio_task_reference": hub_portfolio_ref,
-            "dependencies_by_reference": [hub_portfolio_ref, constants.CREATE_POLICIES,]
+            "dependencies_by_reference": [
+                hub_portfolio_ref,
+                constants.CREATE_POLICIES,
+            ]
             + dependencies_for_import_portfolios_sub_tasks,
             "account_id": task_to_add.get("account_id"),
             "region": task_to_add.get("region"),
@@ -146,8 +149,14 @@ def setup_sharing_for_portfolio(
     else:
         raise Exception(f"Unknown sharing mode: {sharing_mode}")
 
-    describe_portfolio_shares_task_ref = portfolios.get_or_create_describe_portfolio_shares_task_ref(
-        all_tasks, puppet_account_id, sharing_type, hub_portfolio_ref, task_to_add,
+    describe_portfolio_shares_task_ref = (
+        portfolios.get_or_create_describe_portfolio_shares_task_ref(
+            all_tasks,
+            puppet_account_id,
+            sharing_type,
+            hub_portfolio_ref,
+            task_to_add,
+        )
     )
 
     if not all_tasks.get(share_and_accept_ref):
@@ -232,8 +241,10 @@ def handle_imported_portfolios(
     else:
         dependencies_for_import_portfolios_sub_tasks = list()
         if is_sharing_with_puppet_account:
-            target_portfolio_ref = add_puppet_associations_for_when_sharing_with_puppet_account(
-                all_tasks, all_tasks_task_reference, puppet_account_id, task_to_add
+            target_portfolio_ref = (
+                add_puppet_associations_for_when_sharing_with_puppet_account(
+                    all_tasks, all_tasks_task_reference, puppet_account_id, task_to_add
+                )
             )
 
         else:
@@ -249,13 +260,15 @@ def handle_imported_portfolios(
                 hub_portfolio_ref,
             )
             dependencies_for_import_portfolios_sub_tasks.append(share_and_accept_ref)
-            target_portfolio_ref = add_puppet_associations_for_when_not_sharing_with_puppet_account(
-                all_tasks,
-                all_tasks_task_reference,
-                puppet_account_id,
-                task_to_add,
-                hub_portfolio_ref,
-                dependencies_for_import_portfolios_sub_tasks,
+            target_portfolio_ref = (
+                add_puppet_associations_for_when_not_sharing_with_puppet_account(
+                    all_tasks,
+                    all_tasks_task_reference,
+                    puppet_account_id,
+                    task_to_add,
+                    hub_portfolio_ref,
+                    dependencies_for_import_portfolios_sub_tasks,
+                )
             )
 
         # need to add the sharing tasks to the dependencies

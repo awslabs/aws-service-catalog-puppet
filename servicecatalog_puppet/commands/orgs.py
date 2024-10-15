@@ -48,7 +48,9 @@ def bootstrap_scp_master(puppet_account_id, tag):
 
 
 def bootstrap_master(puppet_account_id, tag, stack_name, template_name):
-    with betterboto_client.ClientContextManager("cloudformation",) as cloudformation:
+    with betterboto_client.ClientContextManager(
+        "cloudformation",
+    ) as cloudformation:
         org_iam_role_arn = None
         logger.info("Starting bootstrap of org master")
 
@@ -71,7 +73,12 @@ def bootstrap_master(puppet_account_id, tag, stack_name, template_name):
                     "UsePreviousValue": False,
                 },
             ],
-            "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}]
+            "Tags": [
+                {
+                    "Key": "ServiceCatalogPuppet:Actor",
+                    "Value": "Framework",
+                }
+            ]
             + tag,
         }
         cloudformation.create_or_update(**args)

@@ -168,7 +168,10 @@ def get_org_scp_role_arn(puppet_account_id):
 
 
 template_dir = asset_helpers.resolve_from_site_packages("templates")
-env = Environment(loader=FileSystemLoader(template_dir), extensions=["jinja2.ext.do"],)
+env = Environment(
+    loader=FileSystemLoader(template_dir),
+    extensions=["jinja2.ext.do"],
+)
 
 
 def get_num_workers():

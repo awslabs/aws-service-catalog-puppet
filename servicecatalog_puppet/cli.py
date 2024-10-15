@@ -232,7 +232,8 @@ def bootstrap_spokes_in_ou(
     envvar="SCT_SHOULD_VALIDATE",
 )
 @click.option(
-    "--custom-source-action-git-url", envvar="SCM_CUSTOM_SOURCE_ACTION_GIT_URL",
+    "--custom-source-action-git-url",
+    envvar="SCM_CUSTOM_SOURCE_ACTION_GIT_URL",
 )
 @click.option(
     "--custom-source-action-git-web-hook-ip-address",
@@ -318,10 +319,20 @@ def bootstrap(
         custom_source_action_custom_action_type_provider=None,
     )
     if source_provider == "CodeCommit":
-        parameters.update(dict(repo=repository_name, branch=branch_name,))
+        parameters.update(
+            dict(
+                repo=repository_name,
+                branch=branch_name,
+            )
+        )
     elif source_provider == "GitHub":
         parameters.update(
-            dict(owner=owner, repo=repo, branch=branch, webhook_secret=webhook_secret,)
+            dict(
+                owner=owner,
+                repo=repo,
+                branch=branch,
+                webhook_secret=webhook_secret,
+            )
         )
     elif source_provider == "CodeStarSourceConnection":
         parameters.update(
@@ -333,7 +344,10 @@ def bootstrap(
         )
     elif source_provider == "S3":
         parameters.update(
-            dict(scm_bucket_name=scm_bucket_name, scm_object_key=scm_object_key,)
+            dict(
+                scm_bucket_name=scm_bucket_name,
+                scm_object_key=scm_object_key,
+            )
         )
     elif source_provider == "Custom":
         parameters.update(
@@ -367,33 +381,70 @@ def list_launches(expanded_manifest, format):
 
 @cli.command()
 @click.argument("f", type=click.File())
-@click.option("--single-account", default=None)
-@click.option("--parameter-override-file", type=click.File())
 @click.option(
-    "--parameter-override-forced/--no-parameter-override-forced", default=False
+    "--single-account",
+    default="None",
+    envvar="SINGLE_ACCOUNT",
 )
-def expand(f, single_account, parameter_override_file, parameter_override_forced):
+@click.option(
+    "--single-action-section",
+    default="*",
+    envvar="SINGLE_ACTION_SECTION",
+)
+@click.option(
+    "--single-action-item",
+    default="*",
+    envvar="SINGLE_ACTION_ITEM",
+)
+@click.option(
+    "--single-action-include-dependencies",
+    default="Yes",
+    envvar="SINGLE_ACTION_INCLUDE_DEPENDENCIES",
+)
+@click.option(
+    "--single-action-include-reverse-dependencies",
+    default="Yes",
+    envvar="SINGLE_ACTION_INCLUDE_REVERSE_DEPENDENCIES",
+)
+def expand(
+    f,
+    single_account,
+    single_action_section,
+    single_action_item,
+    single_action_include_dependencies,
+    single_action_include_reverse_dependencies,
+):
     puppet_account_id = remote_config.get_puppet_account_id()
     regions = remote_config.get_regions(puppet_account_id, constants.HOME_REGION)
-    extra_params = dict(single_account=None)
-    if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
-        overrides = dict(**yaml.safe_load(parameter_override_file.read()))
+    overrides = dict()
+    if single_account != "" and single_account != "None":
+        overrides["single_account"] = single_account
+    if single_action_section != "*":
+        overrides["single_action_section"] = single_action_section
+    if single_action_item != "*":
+        overrides["single_action_item"] = single_action_item
+    overrides["single_action_include_dependencies"] = (
+        str(single_action_include_dependencies).lower() == "yes"
+    )
+    overrides["single_action_include_reverse_dependencies"] = (
+        str(single_action_include_reverse_dependencies).lower() == "yes"
+    )
 
-        if overrides.get("subset"):
-            subset = dict(**overrides.get("subset"))
-        else:
-            subset = dict(**overrides)
+    print(f"overrides is {overrides}")
 
-        if subset.get("single_account"):
-            del subset["single_account"]
+    if overrides.get("subset"):
+        subset = dict(**overrides.get("subset"))
+    else:
+        subset = dict(**overrides)
 
-        if overrides.get("single_account"):
-            del overrides["single_account"]
+    if subset.get("single_account"):
+        del subset["single_account"]
 
-        extra_params = dict(
-            single_account=overrides.get("single_account"), subset=subset
-        )
-        click.echo(f"Overridden parameters {extra_params}")
+    if overrides.get("single_account"):
+        del overrides["single_account"]
+
+    extra_params = dict(single_account=overrides.get("single_account"), subset=subset)
+    click.echo(f"Overridden parameters {extra_params}")
 
     manifest_commands.expand(f, puppet_account_id, regions, **extra_params)
     if config.get_should_explode_manifest(puppet_account_id):
@@ -402,7 +453,9 @@ def expand(f, single_account, parameter_override_file, parameter_override_forced
 
 @cli.command()
 @click.argument("f", type=click.File())
-def generate_task_reference(f,):
+def generate_task_reference(
+    f,
+):
     setup_config()
     task_reference_commands.generate_task_reference(f)
 
@@ -430,7 +483,9 @@ def setup_config(
     else:
         puppet_account_id_to_use = puppet_account_id
     os.environ[environmental_variables.PUPPET_ACCOUNT_ID] = puppet_account_id_to_use
+    print(f"single_account is {single_account}")
     if single_account:
+        print("I AM SETTING single_account uh oh")
         os.environ[environmental_variables.SINGLE_ACCOUNT_ID] = single_account
 
     os.environ[environmental_variables.EXECUTION_MODE] = execution_mode
@@ -495,11 +550,11 @@ def setup_config(
     if not os.environ.get(
         environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS
     ):
-        os.environ[
-            environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS
-        ] = str(
-            remote_config.get_should_delete_rollback_complete_stacks(
-                puppet_account_id_to_use
+        os.environ[environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS] = (
+            str(
+                remote_config.get_should_delete_rollback_complete_stacks(
+                    puppet_account_id_to_use
+                )
             )
         )
 
@@ -511,16 +566,14 @@ def setup_config(
         )
 
     if not os.environ.get(environmental_variables.INITIALISER_STACK_TAGS):
-        os.environ[
-            environmental_variables.INITIALISER_STACK_TAGS
-        ] = json.dumps(  # TODO make dynamic
+        os.environ[environmental_variables.INITIALISER_STACK_TAGS] = json.dumps(
             remote_config.get_initialiser_stack_tags()
-        )
+        )  # TODO make dynamic
 
     os.environ[environmental_variables.VERSION] = constants.VERSION
-    os.environ[
-        environmental_variables.OUTPUT_CACHE_STARTING_POINT
-    ] = output_cache_starting_point
+    os.environ[environmental_variables.OUTPUT_CACHE_STARTING_POINT] = (
+        output_cache_starting_point
+    )
 
     if is_caching_enabled == "":
         os.environ[environmental_variables.IS_CACHING_ENABLED] = str(
@@ -530,10 +583,10 @@ def setup_config(
         os.environ[environmental_variables.IS_CACHING_ENABLED] = str(is_caching_enabled)
 
     if global_sharing_mode_default == "":
-        os.environ[
-            environmental_variables.GLOBAL_SHARING_MODE
-        ] = remote_config.get_global_sharing_mode_default(
-            puppet_account_id_to_use, home_region
+        os.environ[environmental_variables.GLOBAL_SHARING_MODE] = (
+            remote_config.get_global_sharing_mode_default(
+                puppet_account_id_to_use, home_region
+            )
         )
     else:
         os.environ[environmental_variables.GLOBAL_SHARING_MODE] = str(
@@ -547,9 +600,9 @@ def setup_config(
             )
         )
     else:
-        os.environ[
-            environmental_variables.GLOBAL_SHARE_TAG_OPTIONS
-        ] = global_share_tag_options_default
+        os.environ[environmental_variables.GLOBAL_SHARE_TAG_OPTIONS] = (
+            global_share_tag_options_default
+        )
 
     if global_share_principals_default == "":
         os.environ[environmental_variables.GLOBAL_SHARE_PRINCIPALS] = str(
@@ -558,33 +611,33 @@ def setup_config(
             )
         )
     else:
-        os.environ[
-            environmental_variables.GLOBAL_SHARE_PRINCIPALS
-        ] = global_share_principals_default
+        os.environ[environmental_variables.GLOBAL_SHARE_PRINCIPALS] = (
+            global_share_principals_default
+        )
 
     if on_complete_url:
         os.environ[environmental_variables.ON_COMPLETE_URL] = on_complete_url
     if not os.environ.get(environmental_variables.SPOKE_EXECUTION_MODE_DEPLOY_ENV):
-        os.environ[
-            environmental_variables.SPOKE_EXECUTION_MODE_DEPLOY_ENV
-        ] = remote_config.get_spoke_deploy_environment_compute_type(
-            puppet_account_id_to_use, home_region
+        os.environ[environmental_variables.SPOKE_EXECUTION_MODE_DEPLOY_ENV] = (
+            remote_config.get_spoke_deploy_environment_compute_type(
+                puppet_account_id_to_use, home_region
+            )
         )
     if not os.environ.get(environmental_variables.SCHEDULER_THREADS_OR_PROCESSES):
-        os.environ[
-            environmental_variables.SCHEDULER_THREADS_OR_PROCESSES
-        ] = remote_config.get_scheduler_threads_or_processes(
-            puppet_account_id_to_use, home_region
+        os.environ[environmental_variables.SCHEDULER_THREADS_OR_PROCESSES] = (
+            remote_config.get_scheduler_threads_or_processes(
+                puppet_account_id_to_use, home_region
+            )
         )
     if not os.environ.get(environmental_variables.SCHEDULER_ALGORITHM):
-        os.environ[
-            environmental_variables.SCHEDULER_ALGORITHM
-        ] = remote_config.get_scheduler_algorithm(puppet_account_id_to_use, home_region)
+        os.environ[environmental_variables.SCHEDULER_ALGORITHM] = (
+            remote_config.get_scheduler_algorithm(puppet_account_id_to_use, home_region)
+        )
     if not os.environ.get(environmental_variables.AWS_STS_REGIONAL_ENDPOINTS):
-        os.environ[
-            environmental_variables.AWS_STS_REGIONAL_ENDPOINTS
-        ] = remote_config.get_aws_sts_regional_endpoints(
-            puppet_account_id_to_use, home_region
+        os.environ[environmental_variables.AWS_STS_REGIONAL_ENDPOINTS] = (
+            remote_config.get_aws_sts_regional_endpoints(
+                puppet_account_id_to_use, home_region
+            )
         )
 
 
@@ -593,7 +646,6 @@ def setup_config(
 @click.option("--num-workers", default=10)
 @click.option("--execution-mode", default="hub")
 @click.option("--puppet-account-id", default=None)
-@click.option("--single-account", default=None)
 @click.option("--home-region", default=None)
 @click.option("--regions", default="")
 @click.option("--should-collect-cloudformation-events", default=None, type=bool)
@@ -606,11 +658,34 @@ def setup_config(
     envvar="OUTPUT_CACHE_STARTING_POINT",
 )
 @click.option(
-    "--is-caching-enabled", default="", envvar="SCT_IS_CACHING_ENABLED",
+    "--is-caching-enabled",
+    default="",
+    envvar="SCT_IS_CACHING_ENABLED",
 )
-@click.option("--parameter-override-file", type=click.File())
 @click.option(
-    "--parameter-override-forced/--no-parameter-override-forced", default=False
+    "--single-account",
+    default="None",
+    envvar="SINGLE_ACCOUNT",
+)
+@click.option(
+    "--single-action-section",
+    default="*",
+    envvar="SINGLE_ACTION_SECTION",
+)
+@click.option(
+    "--single-action-item",
+    default="*",
+    envvar="SINGLE_ACTION_ITEM",
+)
+@click.option(
+    "--single-action-include-dependencies",
+    default="Yes",
+    envvar="SINGLE_ACTION_INCLUDE_DEPENDENCIES",
+)
+@click.option(
+    "--single-action-include-reverse-dependencies",
+    default="Yes",
+    envvar="SINGLE_ACTION_INCLUDE_REVERSE_DEPENDENCIES",
 )
 @click.option("--on-complete-url", default=None)
 def deploy_from_task_reference(
@@ -618,7 +693,6 @@ def deploy_from_task_reference(
     num_workers,
     execution_mode,
     puppet_account_id,
-    single_account,
     home_region,
     regions,
     should_collect_cloudformation_events,
@@ -626,29 +700,53 @@ def deploy_from_task_reference(
     should_forward_failures_to_opscenter,
     output_cache_starting_point,
     is_caching_enabled,
-    parameter_override_file,
-    parameter_override_forced,
+    single_account,
+    single_action_section,
+    single_action_item,
+    single_action_include_dependencies,
+    single_action_include_reverse_dependencies,
     on_complete_url,
 ):
     params = dict()
-    if parameter_override_forced or misc_commands.is_a_parameter_override_execution():
-        overrides = dict(**yaml.safe_load(parameter_override_file.read()))
-        if overrides.get("subset"):
-            subset = overrides.get("subset")
-            overrides = dict(
-                section=subset.get("section"),
-                item=subset.get("name"),
-                include_dependencies=subset.get("include_dependencies"),
-                include_reverse_dependencies=subset.get("include_reverse_dependencies"),
-            )
-        params.update(
-            dict(single_account=overrides.get("single_account"), subset=overrides,)
+
+    overrides = dict()
+    if single_account != "" and single_account != "None":
+        overrides["single_account"] = single_account
+    if single_action_section != "*":
+        overrides["single_action_section"] = single_action_section
+    if single_action_item != "*":
+        overrides["single_action_item"] = single_action_item
+    overrides["single_action_include_dependencies"] = (
+        str(single_action_include_dependencies).lower() == "yes"
+    )
+    overrides["single_action_include_reverse_dependencies"] = (
+        str(single_action_include_reverse_dependencies).lower() == "yes"
+    )
+
+    if overrides.get("subset"):
+        subset = overrides.get("subset")
+        overrides = dict(
+            section=subset.get("section"),
+            item=subset.get("name"),
+            include_dependencies=subset.get("include_dependencies"),
+            include_reverse_dependencies=subset.get("include_reverse_dependencies"),
         )
-        click.echo(f"Overridden parameters {params}")
+    single_account = (
+        str(overrides.get("single_account"))
+        if overrides.get("single_account")
+        else None
+    )
+    params.update(
+        dict(
+            single_account=single_account,
+            subset=overrides,
+        )
+    )
+    click.echo(f"Overridden parameters {params}")
 
     setup_config(
         puppet_account_id=puppet_account_id,
-        single_account=single_account or params.get("single_account"),
+        single_account=params.get("single_account"),
         num_workers=str(num_workers),
         execution_mode=execution_mode,
         home_region=home_region,
@@ -701,10 +799,14 @@ def deploy_from_task_reference(
     envvar="OUTPUT_CACHE_STARTING_POINT",
 )
 @click.option(
-    "--is-caching-enabled", default="", envvar="SCT_IS_CACHING_ENABLED",
+    "--is-caching-enabled",
+    default="",
+    envvar="SCT_IS_CACHING_ENABLED",
 )
 @click.option(
-    "--global-sharing-mode-default", default="", envvar="SCT_GLOBAL_SHARING_MODE",
+    "--global-sharing-mode-default",
+    default="",
+    envvar="SCT_GLOBAL_SHARING_MODE",
 )
 @click.option(
     "--global-share-tag-options-default",
@@ -962,11 +1064,12 @@ def wait_for_code_build_in(iam_role_arns):
 
 
 @cli.command()
+@click.argument("execution")
 @click.option("--on-complete-url", default=None)
-def wait_for_parameterised_run_to_complete(on_complete_url):
+def wait_for_run_to_complete(execution, on_complete_url):
     setup_config(puppet_account_id=remote_config.get_puppet_account_id())
     click.echo("Starting to wait for parameterised run to complete")
-    succeeded = misc_commands.wait_for_parameterised_run_to_complete(on_complete_url)
+    succeeded = misc_commands.wait_for_run_to_complete(execution, on_complete_url)
     if succeeded:
         click.echo(f"Finished: 'SUCCESS'")
         sys.exit(0)

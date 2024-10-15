@@ -15,6 +15,6 @@ Building locally
 ----------------
 
 You can build and run this framework locally.  There is a Makefile to make this easier for you.  In order to run the
-Make targets you will need to have python poetry and python 3.7 installed.  We recommend using pipx to install poetry.
+Make targets you will need to have python poetry and python 3.11 installed.  We recommend using pipx to install poetry.
 
 Running ``make help`` will display a description of the targets along with a description of what they do.

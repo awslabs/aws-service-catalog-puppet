@@ -59,8 +59,19 @@ def _do_bootstrap_spoke(
                 "UsePreviousValue": False,
             },
         ],
-        "Tags": [{"Key": "ServiceCatalogPuppet:Actor", "Value": "Framework",}]
-        + [{"Key": t.get("Key"), "Value": t.get("Value"),} for t in tag],
+        "Tags": [
+            {
+                "Key": "ServiceCatalogPuppet:Actor",
+                "Value": "Framework",
+            }
+        ]
+        + [
+            {
+                "Key": t.get("Key"),
+                "Value": t.get("Value"),
+            }
+            for t in tag
+        ],
     }
     cloudformation.create_or_update(**args)
     logger.info("Finished bootstrap of spoke")

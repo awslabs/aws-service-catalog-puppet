@@ -40,7 +40,8 @@ class DisassociateProductsFromPortfolio(tasks.TaskWithReference):
                             "ProductViewSummary", {}
                         ).get("ProductId")
                         servicecatalog.disassociate_product_from_portfolio(
-                            PortfolioId=portfolio_id, ProductId=product_id,
+                            PortfolioId=portfolio_id,
+                            ProductId=product_id,
                         )
                         disassociations.append(
                             dict(portfolio_id=portfolio_id, product_id=product_id)

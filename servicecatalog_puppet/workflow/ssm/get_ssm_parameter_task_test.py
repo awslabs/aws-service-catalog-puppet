@@ -42,7 +42,9 @@ class GetSSMParameterTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
 
     def test_run(self):
         # setup
-        parameter = dict(this="that",)
+        parameter = dict(
+            this="that",
+        )
         expected_output = {self.param_name: parameter}
         self.add_expected_request_and_response(
             tasks_unit_tests_helper.SPOKE_REGIONAL_CLIENT,
@@ -101,7 +103,9 @@ class GetSSMParameterByPathTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "ssm",
             "get_parameters_by_path",
             dict(Path=self.sut.get_parameter_path_to_use(), Recursive=True),
-            [dict(Parameters=[parameter]),],
+            [
+                dict(Parameters=[parameter]),
+            ],
         )
 
         # exercise

@@ -40,7 +40,11 @@ class SSMParameterHandlerTest(unittest.TestCase):
             "status": None,
             "requested_priority": 0,
             "dependencies": [
-                {"affinity": "stack", "name": dependency_item_name, "type": "stack",}
+                {
+                    "affinity": "stack",
+                    "name": dependency_item_name,
+                    "type": "stack",
+                }
             ],
             "account_id": account_id,
             "region": region,
@@ -141,7 +145,11 @@ class SSMParameterHandlerTest(unittest.TestCase):
             "status": None,
             "requested_priority": 0,
             "dependencies": [
-                {"affinity": "stack", "name": dependency_item_name, "type": "stack",}
+                {
+                    "affinity": "stack",
+                    "name": dependency_item_name,
+                    "type": "stack",
+                }
             ],
             "account_id": account_id,
             "region": region,
@@ -275,7 +283,11 @@ class SSMParameterHandlerTest(unittest.TestCase):
             "status": None,
             "requested_priority": 0,
             "dependencies": [
-                {"affinity": "stack", "name": dependency_item_name, "type": "stack",}
+                {
+                    "affinity": "stack",
+                    "name": dependency_item_name,
+                    "type": "stack",
+                }
             ],
             "account_id": account_id,
             "region": region,
@@ -297,7 +309,11 @@ class SSMParameterHandlerTest(unittest.TestCase):
 
         parameter_path = "/sleeper/SleeperFunctionArn/${AWS::Region}/stacks"
 
-        parameter_details = {"ssm": {"name": parameter_path,}}
+        parameter_details = {
+            "ssm": {
+                "name": parameter_path,
+            }
+        }
 
         # exercise
         self.sut.ssm_parameter_handler(

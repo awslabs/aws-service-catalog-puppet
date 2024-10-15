@@ -37,7 +37,9 @@ class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
         with self.spoke_regional_client("cloudformation") as cloudformation:
             try:
                 paginator = cloudformation.get_paginator("describe_stacks")
-                for page in paginator.paginate(StackName=self.stack_name,):
+                for page in paginator.paginate(
+                    StackName=self.stack_name,
+                ):
                     for stack in page.get("Stacks", []):
                         status = stack.get("StackStatus")
                         if status != "DELETE_COMPLETE":
@@ -135,13 +137,13 @@ class ProvisionStackDryRunTask(provision_stack_task.ProvisionStackTask):
                         StackName=self.stack_name,
                     )
                     for parameter in summary_response.get("Parameters"):
-                        existing_stack_params_dict[
-                            parameter.get("ParameterKey")
-                        ] = parameter.get("DefaultValue")
+                        existing_stack_params_dict[parameter.get("ParameterKey")] = (
+                            parameter.get("DefaultValue")
+                        )
                     for stack_param in stack.get("Parameters", []):
-                        existing_stack_params_dict[
-                            stack_param.get("ParameterKey")
-                        ] = stack_param.get("ParameterValue")
+                        existing_stack_params_dict[stack_param.get("ParameterKey")] = (
+                            stack_param.get("ParameterValue")
+                        )
                     template_body = cloudformation.get_template(
                         StackName=self.stack_name, TemplateStage="Original"
                     ).get("TemplateBody")

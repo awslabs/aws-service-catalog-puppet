@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   Initialiser template used to bring up the install ServiceCatalog-Puppet
-  {"version": "0.245.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
+  {"version": "0.250.0", "framework": "servicecatalog-puppet", "role": "initialiser"}
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -89,7 +89,7 @@ Metadata:
 Parameters:
   CodeBuildEnvironmentImage:
     Type: String
-    Default: "aws/codebuild/standard:5.0"
+    Default: "aws/codebuild/standard:7.0"
   EnabledRegions:
     Type: String
     Description: |
@@ -439,7 +439,7 @@ Resources:
           phases:
             install:
               runtime-versions:
-                python: 3.9
+                python: 3.11
               commands:
                 - pip install ${VERSION}
                 - servicecatalog-puppet --info set-regions ${ENABLED_REGIONS}
@@ -484,7 +484,7 @@ Resources:
       Role: !GetAtt StartInstallRole.Arn
       Handler: "index.handler"
       Description: Lambda for starting Puppet CodeBuild Job
-      Runtime: python3.9
+      Runtime: python3.11
       Timeout: 900
       Code:
         ZipFile: |

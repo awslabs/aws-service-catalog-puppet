@@ -13,5 +13,6 @@ def slugify_for_cloudformation_stack_name(raw) -> str:
 
 
 ENV = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(TEMPLATE_DIR), extensions=["jinja2.ext.do"],
+    loader=jinja2.FileSystemLoader(TEMPLATE_DIR),
+    extensions=["jinja2.ext.do"],
 )

@@ -47,8 +47,10 @@ class ShareAndAcceptPortfolioForAccountTask(tasks.TaskWithReference):
         )
 
         changes = dict()
-        existing_share_details = self.get_attribute_from_output_from_reference_dependency(
-            self.account_id, self.describe_portfolio_shares_task_ref
+        existing_share_details = (
+            self.get_attribute_from_output_from_reference_dependency(
+                self.account_id, self.describe_portfolio_shares_task_ref
+            )
         )
 
         if existing_share_details:

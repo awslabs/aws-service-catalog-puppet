@@ -61,7 +61,10 @@ class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
                     "Version": "2012-10-17",
                     "Statement": [
                         {
-                            "Action": ["s3:GetObject*", "s3:PutObject*",],
+                            "Action": [
+                                "s3:GetObject*",
+                                "s3:PutObject*",
+                            ],
                             "Principal": {"AWS": self.puppet_account_id},
                             "Resource": t.Join("/", [t.GetAtt(state, "Arn"), "*"]),
                             "Effect": "Allow",
@@ -98,7 +101,11 @@ class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
                         "terraform init",
                     ],
                 ),
-                build=dict(commands=["terraform apply -auto-approve",]),
+                build=dict(
+                    commands=[
+                        "terraform apply -auto-approve",
+                    ]
+                ),
                 post_build=dict(
                     commands=[
                         "terraform output -json > outputs.json",
@@ -110,7 +117,11 @@ class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
                     ]
                 ),
             ),
-            artifacts=dict(files=["outputs.json",],),
+            artifacts=dict(
+                files=[
+                    "outputs.json",
+                ],
+            ),
         )
         execute_terraform = dict(
             Name=constants.EXECUTE_TERRAFORM_PROJECT_NAME,
@@ -137,13 +148,16 @@ class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
                 ]
                 + [
                     codebuild.EnvironmentVariable(
-                        Name=name, Type="PLAINTEXT", Value="CHANGE_ME",
+                        Name=name,
+                        Type="PLAINTEXT",
+                        Value="CHANGE_ME",
                     )
                     for name in ["TARGET_ACCOUNT", "ZIP", "STATE_FILE"]
                 ],
             ),
             Source=codebuild.Source(
-                BuildSpec=yaml.safe_dump(execute_build_spec), Type="NO_SOURCE",
+                BuildSpec=yaml.safe_dump(execute_build_spec),
+                Type="NO_SOURCE",
             ),
             Description="Execute the given terraform in the given account using the given state file",
         )
@@ -155,9 +169,9 @@ class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
 
         # execute dry run
         execute_dry_run_terraform = copy.deepcopy(execute_terraform)
-        execute_dry_run_terraform[
-            "Name"
-        ] = constants.EXECUTE_DRY_RUN_TERRAFORM_PROJECT_NAME
+        execute_dry_run_terraform["Name"] = (
+            constants.EXECUTE_DRY_RUN_TERRAFORM_PROJECT_NAME
+        )
         execute_dry_run_terraform["Description"] = execute_dry_run_terraform[
             "Description"
         ].replace("Execute", "DRY RUN of Execute")
@@ -168,10 +182,14 @@ class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
         ]
         del execute_dry_run_build_spec["phases"]["post_build"]
         execute_dry_run_build_spec["artifacts"] = dict(
-            files=["plan.bin", "plan.json",],
+            files=[
+                "plan.bin",
+                "plan.json",
+            ],
         )
         execute_dry_run_terraform["Source"] = codebuild.Source(
-            BuildSpec=yaml.safe_dump(execute_dry_run_build_spec), Type="NO_SOURCE",
+            BuildSpec=yaml.safe_dump(execute_dry_run_build_spec),
+            Type="NO_SOURCE",
         )
         execute_dry_run_terraform["Artifacts"] = codebuild.Artifacts(
             Type="S3",
@@ -205,7 +223,8 @@ class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
         ]
         del terminate_build_spec["artifacts"]
         terminate_terraform["Source"] = codebuild.Source(
-            BuildSpec=yaml.safe_dump(terminate_build_spec), Type="NO_SOURCE",
+            BuildSpec=yaml.safe_dump(terminate_build_spec),
+            Type="NO_SOURCE",
         )
         terminate_terraform["Artifacts"] = codebuild.Artifacts(
             Type="S3",
@@ -220,9 +239,9 @@ class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
 
         # terminate dry run
         termminate_dry_run_terraform = copy.deepcopy(execute_terraform)
-        termminate_dry_run_terraform[
-            "Name"
-        ] = constants.TERMINATE_DRY_RUN_TERRAFORM_PROJECT_NAME
+        termminate_dry_run_terraform["Name"] = (
+            constants.TERMINATE_DRY_RUN_TERRAFORM_PROJECT_NAME
+        )
         new_description = termminate_dry_run_terraform["Description"].replace(
             "Execute", "DRY RUN of Terminate"
         )
@@ -234,10 +253,14 @@ class PrepareAccountForWorkspaceTask(tasks.TaskWithReference):
         ]
         del termminate_dry_run_build_spec["phases"]["post_build"]
         termminate_dry_run_build_spec["artifacts"] = dict(
-            files=["plan.bin", "plan.json",],
+            files=[
+                "plan.bin",
+                "plan.json",
+            ],
         )
         termminate_dry_run_terraform["Source"] = codebuild.Source(
-            BuildSpec=yaml.safe_dump(termminate_dry_run_build_spec), Type="NO_SOURCE",
+            BuildSpec=yaml.safe_dump(termminate_dry_run_build_spec),
+            Type="NO_SOURCE",
         )
         termminate_dry_run_terraform["Artifacts"] = codebuild.Artifacts(
             Type="S3",

@@ -220,9 +220,11 @@ def run_tasks(
                     [
                         result.get("params").get("account_id"),
                         result.get("params").get("region"),
-                        f'Launch:{result.get("params").get("launch_name")}'
-                        if result.get("params").get("launch_name")
-                        else f'Stack:{result.get("params").get("stack_name")}',
+                        (
+                            f'Launch:{result.get("params").get("launch_name")}'
+                            if result.get("params").get("launch_name")
+                            else f'Stack:{result.get("params").get("stack_name")}'
+                        ),
                         result.get("params").get("portfolio"),
                         result.get("params").get("product"),
                         result.get("new_version"),
@@ -255,7 +257,13 @@ def run_tasks(
                     status=result.get("current_status"),
                 )
 
-            click.echo(json.dumps(results, indent=4, default=str,))
+            click.echo(
+                json.dumps(
+                    results,
+                    indent=4,
+                    default=str,
+                )
+            )
 
         else:
             raise Exception(f"Unsupported format: {is_list_launches}")
@@ -280,9 +288,11 @@ def run_tasks(
                 table_data.append(
                     [
                         result.get("effect"),
-                        f'Launch:{result.get("params").get("launch_name")}'
-                        if result.get("params").get("launch_name")
-                        else f'Stack:{result.get("params").get("stack_name")}',
+                        (
+                            f'Launch:{result.get("params").get("launch_name")}'
+                            if result.get("params").get("launch_name")
+                            else f'Stack:{result.get("params").get("stack_name")}'
+                        ),
                         result.get("params").get("account_id"),
                         result.get("params").get("region"),
                         result.get("current_version"),
@@ -315,9 +325,11 @@ def run_tasks(
                             "Resources": [],
                             "DetailType": result.get("task_type"),
                             "Detail": json.dumps(result),
-                            "EventBusName": constants.EVENT_BUS_IN_SPOKE_NAME
-                            if execution_mode == constants.EXECUTION_MODE_SPOKE
-                            else constants.EVENT_BUS_NAME,
+                            "EventBusName": (
+                                constants.EVENT_BUS_IN_SPOKE_NAME
+                                if execution_mode == constants.EXECUTION_MODE_SPOKE
+                                else constants.EVENT_BUS_NAME
+                            ),
                         }
                     )
 

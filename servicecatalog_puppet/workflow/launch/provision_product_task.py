@@ -131,7 +131,8 @@ class ProvisionProductTask(tasks.TaskWithParameters):
                                 "cloudformation"
                             ) as cloudformation:
                                 provisioned_parameters = aws.get_parameters_for_stack(
-                                    cloudformation, pp_stack_name,
+                                    cloudformation,
+                                    pp_stack_name,
                                 )
                             self.info(f"current params: {provisioned_parameters}")
                             self.info(f"new params: {params_to_use}")
@@ -155,7 +156,10 @@ class ProvisionProductTask(tasks.TaskWithParameters):
                         pp_stack_name = aws.get_stack_name_for_pp_id(
                             service_catalog, provisioned_product_id
                         )
-                        stack = aws.get_stack_output_for(cloudformation, pp_stack_name,)
+                        stack = aws.get_stack_output_for(
+                            cloudformation,
+                            pp_stack_name,
+                        )
                         stack_status = stack.get("StackStatus")
                         self.info(f"current cfn stack_status is {stack_status}")
                         if stack_status not in [

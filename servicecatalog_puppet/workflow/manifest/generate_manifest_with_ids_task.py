@@ -39,7 +39,9 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
         with self.hub_client("s3") as s3:
             key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-cached-output.zip"
             s3.upload_file(
-                Filename="output/GetSSMParamTask.zip", Bucket=bucket, Key=key,
+                Filename="output/GetSSMParamTask.zip",
+                Bucket=bucket,
+                Key=key,
             )
             cached_output_signed_url = s3.generate_presigned_url(
                 "get_object",
@@ -48,9 +50,10 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
             )
 
         with self.hub_client("s3") as s3:
-            (manifest_signed_url, manifest_content,) = self.get_signed_url_for_manifest(
-                bucket, s3
-            )
+            (
+                manifest_signed_url,
+                manifest_content,
+            ) = self.get_signed_url_for_manifest(bucket, s3)
 
         version = constants.VERSION
         home_region = constants.HOME_REGION
@@ -73,7 +76,11 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
                 "value": self.puppet_account_id,
                 "type": "PLAINTEXT",
             },
-            {"name": "HOME_REGION", "value": home_region, "type": "PLAINTEXT",},
+            {
+                "name": "HOME_REGION",
+                "value": home_region,
+                "type": "PLAINTEXT",
+            },
             {
                 "name": "REGIONS",
                 "value": ",".join(config.get_regions()),
@@ -176,15 +183,20 @@ class GenerateManifestWithIdsTask(tasks.TaskWithReference):
 
     def get_signed_url_for_manifest(self, bucket, s3):
         task_reference_content = open(
-            f"{self.manifest_files_path}/manifest-expanded.yaml", "r",
+            f"{self.manifest_files_path}/manifest-expanded.yaml",
+            "r",
         ).read()
         key = f"{os.getenv('CODEBUILD_BUILD_NUMBER', '0')}-manifest.yaml"
         self.debug(f"Uploading manifest {key} to {bucket}")
         s3.put_object(
-            Body=task_reference_content, Bucket=bucket, Key=key,
+            Body=task_reference_content,
+            Bucket=bucket,
+            Key=key,
         )
         self.debug(f"Generating presigned URL for {key}")
         signed_url = s3.generate_presigned_url(
-            "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=60 * 60 * 24,
+            "get_object",
+            Params={"Bucket": bucket, "Key": key},
+            ExpiresIn=60 * 60 * 24,
         )
         return signed_url, task_reference_content

@@ -348,7 +348,9 @@ def generate(puppet_account_id, manifest, output_file_directory_path):
             serialisation_utils.dump_as_json(dict(all_tasks=tasks))
         )
 
-    reference = dict(all_tasks=all_tasks,)
+    reference = dict(
+        all_tasks=all_tasks,
+    )
     workflow_utils.ensure_no_cyclic_dependencies("complete task reference", all_tasks)
     output_file_path = output_file_directory_path + "/manifest-task-reference-full.json"
     open(output_file_path, "w").write(serialisation_utils.dump_as_json(reference))

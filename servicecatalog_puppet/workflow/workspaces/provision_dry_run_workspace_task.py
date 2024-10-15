@@ -61,9 +61,21 @@ class ProvisionDryRunWorkspaceTask(tasks.TaskWithParameters):
         state_file_path = f"s3://sc-puppet-state-{self.account_id}/workspace/{self.workspace_name}/{self.account_id}/{self.region}.zip"
         with self.spoke_client("codebuild") as codebuild:
             parameters_to_use = [
-                dict(name="TARGET_ACCOUNT", value=self.account_id, type="PLAINTEXT",),
-                dict(name="STATE_FILE", value=state_file_path, type="PLAINTEXT",),
-                dict(name="ZIP", value=zip_file_path, type="PLAINTEXT",),
+                dict(
+                    name="TARGET_ACCOUNT",
+                    value=self.account_id,
+                    type="PLAINTEXT",
+                ),
+                dict(
+                    name="STATE_FILE",
+                    value=state_file_path,
+                    type="PLAINTEXT",
+                ),
+                dict(
+                    name="ZIP",
+                    value=zip_file_path,
+                    type="PLAINTEXT",
+                ),
             ]
 
             for parameter_name, parameter_value in self.get_parameter_values().items():

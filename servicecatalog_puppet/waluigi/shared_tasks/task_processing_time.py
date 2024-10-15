@@ -30,7 +30,10 @@ def on_task_processing_time_task(
                     continue
                 else:
                     dimensions = [
-                        dict(Name="task_type", Value=task_type,),
+                        dict(
+                            Name="task_type",
+                            Value=task_type,
+                        ),
                         dict(
                             Name="codebuild_build_id",
                             Value=os.getenv("CODEBUILD_BUILD_ID", "LOCAL_BUILD"),

@@ -136,7 +136,9 @@ def run(
 
     if scheduler_task_to_use:
         scheduler_thread = ExecutorKlass(
-            name="scheduler", target=scheduler_task_to_use, args=scheduler_task_args,
+            name="scheduler",
+            target=scheduler_task_to_use,
+            args=scheduler_task_args,
         )
     on_task_processing_time_thread = ExecutorKlass(
         name="on_task_processing_time",
@@ -144,7 +146,9 @@ def run(
         args=task_processing_time_args,
     )
     on_task_trace_thread = ExecutorKlass(
-        name="on_task_trace", target=task_trace.on_task_trace, args=task_trace_args,
+        name="on_task_trace",
+        target=task_trace.on_task_trace,
+        args=task_trace_args,
     )
 
     on_task_processing_time_thread.start()
