@@ -548,22 +548,6 @@ def get_template(
     source_stage = codepipeline.Stages(
         Name="Source",
         Actions=[
-            codepipeline.Actions(
-                RunOrder=1,
-                RoleArn=t.GetAtt("SourceRole", "Arn"),
-                ActionTypeId=codepipeline.ActionTypeId(
-                    Category="Source", Owner="AWS", Version="1", Provider="S3",
-                ),
-                OutputArtifacts=[
-                    codepipeline.OutputArtifacts(Name="ParameterisedSource")
-                ],
-                Configuration={
-                    "S3Bucket": t.Ref(parameterised_source_bucket),
-                    "S3ObjectKey": "parameters.zip",
-                    "PollForSourceChanges": True,
-                },
-                Name="ParameterisedSource",
-            )
         ],
     )
 
@@ -884,7 +868,6 @@ def get_template(
                 codepipeline.Actions(
                     InputArtifacts=[
                         codepipeline.InputArtifacts(Name="Source"),
-                        codepipeline.InputArtifacts(Name="ParameterisedSource"),
                     ],
                     Name="DryRun",
                     ActionTypeId=codepipeline.ActionTypeId(
@@ -919,7 +902,6 @@ def get_template(
                 codepipeline.Actions(
                     InputArtifacts=[
                         codepipeline.InputArtifacts(Name="Source"),
-                        codepipeline.InputArtifacts(Name="ParameterisedSource"),
                     ],
                     Name="Deploy",
                     ActionTypeId=codepipeline.ActionTypeId(
@@ -946,7 +928,6 @@ def get_template(
                 codepipeline.Actions(
                     InputArtifacts=[
                         codepipeline.InputArtifacts(Name="Source"),
-                        codepipeline.InputArtifacts(Name="ParameterisedSource"),
                     ],
                     Name="Deploy",
                     ActionTypeId=codepipeline.ActionTypeId(
