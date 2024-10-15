@@ -113,7 +113,7 @@ def worker_task(
                             ).split("\n"):
                                 logger.error(l)
                             for l in traceback.format_exception(
-                                etype=type(e), value=e, tb=e.__traceback__,
+                                e, value=e, tb=e.__traceback__,
                             ):
                                 for sl in l.split("\n"):
                                     logger.error(f"{sl}")

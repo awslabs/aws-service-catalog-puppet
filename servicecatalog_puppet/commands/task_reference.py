@@ -66,6 +66,7 @@ def deploy_from_task_reference(path):
 
     for task_reference, task in all_tasks.items():
         if single_account_id: # running single account mode
+            print("Running in single account mode")
             task_section_name = task.get("section_name")
             task_account_id = task.get("account_id")
             spoke_execution = str(config.get_executor_account_id()) != str(

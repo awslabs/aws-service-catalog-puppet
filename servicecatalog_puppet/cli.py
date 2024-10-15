@@ -430,7 +430,9 @@ def setup_config(
     else:
         puppet_account_id_to_use = puppet_account_id
     os.environ[environmental_variables.PUPPET_ACCOUNT_ID] = puppet_account_id_to_use
+    print(f"single_account is {single_account}")
     if single_account:
+        print("I AM SETTING single_account uh oh")
         os.environ[environmental_variables.SINGLE_ACCOUNT_ID] = single_account
 
     os.environ[environmental_variables.EXECUTION_MODE] = execution_mode
@@ -639,8 +641,9 @@ def deploy_from_task_reference(
             include_dependencies=subset.get("include_dependencies"),
             include_reverse_dependencies=subset.get("include_reverse_dependencies"),
         )
+    single_account = str(overrides.get("single_account")) if overrides.get("single_account") else None
     params.update(
-        dict(single_account=str(overrides.get("single_account")), subset=overrides,)
+        dict(single_account=single_account, subset=overrides,)
     )
     click.echo(f"Overridden parameters {params}")
 

@@ -43,7 +43,7 @@ class TaskExecutorMixin:
         exception_details = {
             "exception_type": type(exception),
             "exception_stack_trace": traceback.format_exception(
-                etype=type(exception), value=exception, tb=exception.__traceback__,
+                exception, value=exception, tb=exception.__traceback__,
             ),
             "duration": duration,
         }
