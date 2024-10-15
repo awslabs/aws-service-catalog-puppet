@@ -376,7 +376,7 @@ def expand(f, single_account_or_action_configuration):
     puppet_account_id = remote_config.get_puppet_account_id()
     regions = remote_config.get_regions(puppet_account_id, constants.HOME_REGION)
     print(f"single_account_or_action_configuration is {single_account_or_action_configuration}")
-    overrides = yaml.safe_load(single_account_or_action_configuration)
+    overrides = json.loads(single_account_or_action_configuration)
     print(f"overrides is {overrides}")
 
     if overrides.get("subset"):
@@ -632,7 +632,7 @@ def deploy_from_task_reference(
 ):
     params = dict()
 
-    overrides = dict(**yaml.safe_load(single_account_or_action_configuration))
+    overrides = dict(json.loads(single_account_or_action_configuration))
     if overrides.get("subset"):
         subset = overrides.get("subset")
         overrides = dict(

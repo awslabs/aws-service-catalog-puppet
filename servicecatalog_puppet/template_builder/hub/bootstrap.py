@@ -1320,7 +1320,7 @@ def generate_single_account_run_projects(
             install=install_spec,
             build={
                 "commands": [
-                    'aws codepipeline start-pipeline-execution --name servicecatalog-puppet-pipeline --variables name=single_account_or_action_configuration,value="single_account: \\"${SINGLE_ACCOUNT_ID}\\""'
+                    "aws codepipeline start-pipeline-execution --name servicecatalog-puppet-pipeline --variables name=single_account_or_action_configuration,value='{\"single_account\": \"${SINGLE_ACCOUNT_ID}\"}'"
                 ]
             },
             post_build={
@@ -1405,13 +1405,7 @@ def generate_single_action_run_projects(
             install=install_spec,
             build={
                 "commands": [
-                    'echo "section: \\"${SECTION}\\"" > parameters.yaml',
-                    'echo "item: \\"${ITEM}\\"" >> parameters.yaml',
-                    'echo "include_dependencies: ${INCLUDE_DEPENDENCIES}" >> parameters.yaml',
-                    'echo "include_reverse_dependencies: ${INCLUDE_REVERSE_DEPENDENCIES}" >> parameters.yaml',
-                    "cat parameters.yaml",
-                    "zip parameters.zip parameters.yaml",
-                    "aws s3 cp parameters.zip s3://sc-puppet-parameterised-runs-${PUPPET_ACCOUNT_ID}/parameters.zip",
+                    'aws codepipeline start-pipeline-execution --name servicecatalog-puppet-pipeline --variables name=single_account_or_action_configuration,value="section: ${SECTION}\\nitem: ${item}\\ninclude_dependencies: ${INCLUDE_DEPENDENCIES}\\ninclude_reverse_dependencies: ${INCLUDE_REVERSE_DEPENDENCIES}"'
                 ]
             },
             post_build={
