@@ -70,12 +70,12 @@ def parse_tags(ctx, param, value):
 @click.option("--puppet-role-path", default="/servicecatalog-puppet/")
 @click.option("--tag", multiple=True, callback=parse_tags, default=[])
 def bootstrap_spoke_as(
-    puppet_account_id,
-    iam_role_arns,
-    permission_boundary,
-    puppet_role_name,
-    puppet_role_path,
-    tag,
+        puppet_account_id,
+        iam_role_arns,
+        permission_boundary,
+        puppet_role_name,
+        puppet_role_path,
+        tag,
 ):
     spoke_management_commands.bootstrap_spoke_as(
         puppet_account_id,
@@ -96,7 +96,7 @@ def bootstrap_spoke_as(
 @click.option("--puppet-role-path", default="/servicecatalog-puppet/")
 @click.option("--tag", multiple=True, callback=parse_tags, default=[])
 def bootstrap_spoke(
-    puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path, tag
+        puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path, tag
 ):
     spoke_management_commands.bootstrap_spoke(
         puppet_account_id, permission_boundary, puppet_role_name, puppet_role_path, tag
@@ -115,14 +115,14 @@ def bootstrap_spoke(
 @click.option("--puppet-role-path", default="/servicecatalog-puppet/")
 @click.option("--tag", multiple=True, callback=parse_tags, default=[])
 def bootstrap_spokes_in_ou(
-    ou_path_or_id,
-    role_name,
-    iam_role_arns,
-    permission_boundary,
-    num_workers,
-    puppet_role_name,
-    puppet_role_path,
-    tag,
+        ou_path_or_id,
+        role_name,
+        iam_role_arns,
+        permission_boundary,
+        num_workers,
+        puppet_role_name,
+        puppet_role_path,
+        tag,
 ):
     setup_config()
     spoke_management_commands.bootstrap_spokes_in_ou(
@@ -250,37 +250,37 @@ def bootstrap_spokes_in_ou(
     envvar="SCM_CUSTOM_SOURCE_ACTION_CUSTOM_ACTION_TYPE_PROVIDER",
 )
 def bootstrap(
-    with_manual_approvals,
-    puppet_code_pipeline_role_permission_boundary,
-    source_role_permissions_boundary,
-    puppet_generate_role_permission_boundary,
-    puppet_deploy_role_permission_boundary,
-    puppet_provisioning_role_permissions_boundary,
-    cloud_formation_deploy_role_permissions_boundary,
-    deploy_environment_compute_type,
-    spoke_deploy_environment_compute_type,
-    deploy_num_workers,
-    source_provider,
-    repository_name,
-    branch_name,
-    owner,
-    repo,
-    branch,
-    poll_for_source_changes,
-    webhook_secret,
-    puppet_role_name,
-    puppet_role_path,
-    scm_connection_arn,
-    scm_full_repository_id,
-    scm_branch_name,
-    scm_bucket_name,
-    scm_object_key,
-    create_repo,
-    should_validate,
-    custom_source_action_git_url,
-    custom_source_action_git_web_hook_ip_address,
-    custom_source_action_custom_action_type_version,
-    custom_source_action_custom_action_type_provider,
+        with_manual_approvals,
+        puppet_code_pipeline_role_permission_boundary,
+        source_role_permissions_boundary,
+        puppet_generate_role_permission_boundary,
+        puppet_deploy_role_permission_boundary,
+        puppet_provisioning_role_permissions_boundary,
+        cloud_formation_deploy_role_permissions_boundary,
+        deploy_environment_compute_type,
+        spoke_deploy_environment_compute_type,
+        deploy_num_workers,
+        source_provider,
+        repository_name,
+        branch_name,
+        owner,
+        repo,
+        branch,
+        poll_for_source_changes,
+        webhook_secret,
+        puppet_role_name,
+        puppet_role_path,
+        scm_connection_arn,
+        scm_full_repository_id,
+        scm_branch_name,
+        scm_bucket_name,
+        scm_object_key,
+        create_repo,
+        should_validate,
+        custom_source_action_git_url,
+        custom_source_action_git_web_hook_ip_address,
+        custom_source_action_custom_action_type_version,
+        custom_source_action_custom_action_type_provider,
 ):
     setup_config()
     puppet_account_id = config.get_puppet_account_id()
@@ -318,10 +318,10 @@ def bootstrap(
         custom_source_action_custom_action_type_provider=None,
     )
     if source_provider == "CodeCommit":
-        parameters.update(dict(repo=repository_name, branch=branch_name,))
+        parameters.update(dict(repo=repository_name, branch=branch_name, ))
     elif source_provider == "GitHub":
         parameters.update(
-            dict(owner=owner, repo=repo, branch=branch, webhook_secret=webhook_secret,)
+            dict(owner=owner, repo=repo, branch=branch, webhook_secret=webhook_secret, )
         )
     elif source_provider == "CodeStarSourceConnection":
         parameters.update(
@@ -333,7 +333,7 @@ def bootstrap(
         )
     elif source_provider == "S3":
         parameters.update(
-            dict(scm_bucket_name=scm_bucket_name, scm_object_key=scm_object_key,)
+            dict(scm_bucket_name=scm_bucket_name, scm_object_key=scm_object_key, )
         )
     elif source_provider == "Custom":
         parameters.update(
@@ -368,15 +368,44 @@ def list_launches(expanded_manifest, format):
 @cli.command()
 @click.argument("f", type=click.File())
 @click.option(
-    "--single-account-or-action-configuration",
+    "--single-account",
     default="{}",
-    envvar="SINGLE_ACCOUNT_OR_ACTION_CONFIGURATION",
+    envvar="SINGLE_ACCOUNT",
 )
-def expand(f, single_account_or_action_configuration):
+@click.option(
+    "--single-action-section",
+    default="{}",
+    envvar="SINGLE_ACTION_SECTION",
+)
+@click.option(
+    "--single-action-item",
+    default="{}",
+    envvar="SINGLE_ACTION_ITEM",
+)
+@click.option(
+    "--single-action-include-dependencies",
+    default="{}",
+    envvar="SINGLE_ACTION_INCLUDE_DEPENDENCIES",
+)
+@click.option(
+    "--single-action-include-reverse-dependencies",
+    default="{}",
+    envvar="SINGLE_ACTION_INCLUDE_REVERSE_DEPENDENCIES",
+)
+def expand(f, single_account, single_action_section, single_action_item, single_action_include_dependencies,
+           single_action_include_reverse_dependencies):
     puppet_account_id = remote_config.get_puppet_account_id()
     regions = remote_config.get_regions(puppet_account_id, constants.HOME_REGION)
-    print(f"single_account_or_action_configuration is {single_account_or_action_configuration}")
-    overrides = json.loads(single_account_or_action_configuration)
+    overrides = dict()
+    if single_account != "" and single_account != "None":
+        overrides["single_account"] = single_account
+    if single_action_section != "*":
+        overrides["single_action_section"] = single_action_section
+    if single_action_item != "*":
+        overrides["single_action_item"] = single_action_item
+    overrides["single_action_include_dependencies"] = single_action_include_dependencies
+    overrides["single_action_include_reverse_dependencies"] = single_action_include_reverse_dependencies
+
     print(f"overrides is {overrides}")
 
     if overrides.get("subset"):
@@ -402,27 +431,27 @@ def expand(f, single_account_or_action_configuration):
 
 @cli.command()
 @click.argument("f", type=click.File())
-def generate_task_reference(f,):
+def generate_task_reference(f, ):
     setup_config()
     task_reference_commands.generate_task_reference(f)
 
 
 def setup_config(
-    puppet_account_id=None,
-    single_account=None,
-    execution_mode="hub",
-    num_workers="10",
-    home_region=None,
-    regions="",
-    should_collect_cloudformation_events="None",
-    should_forward_events_to_eventbridge="None",
-    should_forward_failures_to_opscenter="None",
-    output_cache_starting_point="",
-    is_caching_enabled="",
-    global_sharing_mode_default="",
-    global_share_tag_options_default="",
-    global_share_principals_default="",
-    on_complete_url=None,
+        puppet_account_id=None,
+        single_account=None,
+        execution_mode="hub",
+        num_workers="10",
+        home_region=None,
+        regions="",
+        should_collect_cloudformation_events="None",
+        should_forward_events_to_eventbridge="None",
+        should_forward_failures_to_opscenter="None",
+        output_cache_starting_point="",
+        is_caching_enabled="",
+        global_sharing_mode_default="",
+        global_share_tag_options_default="",
+        global_share_principals_default="",
+        on_complete_url=None,
 ):
     home_region_to_use = home_region or constants.HOME_REGION
     if puppet_account_id is None:
@@ -495,7 +524,7 @@ def setup_config(
     )
 
     if not os.environ.get(
-        environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS
+            environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS
     ):
         os.environ[
             environmental_variables.SHOULD_DELETE_ROLLBACK_COMPLETE_STACKS
@@ -610,29 +639,59 @@ def setup_config(
     "--is-caching-enabled", default="", envvar="SCT_IS_CACHING_ENABLED",
 )
 @click.option(
-    "--single-account-or-action-configuration",
+    "--single-account",
     default="{}",
-    envvar="SINGLE_ACCOUNT_OR_ACTION_CONFIGURATION",
+    envvar="SINGLE_ACCOUNT",
+)
+@click.option(
+    "--single-action-section",
+    default="{}",
+    envvar="SINGLE_ACTION_SECTION",
+)
+@click.option(
+    "--single-action-item",
+    default="{}",
+    envvar="SINGLE_ACTION_ITEM",
+)
+@click.option(
+    "--single-action-include-dependencies",
+    default="{}",
+    envvar="SINGLE_ACTION_INCLUDE_DEPENDENCIES",
+)
+@click.option(
+    "--single-action-include-reverse-dependencies",
+    default="{}",
+    envvar="SINGLE_ACTION_INCLUDE_REVERSE_DEPENDENCIES",
 )
 @click.option("--on-complete-url", default=None)
 def deploy_from_task_reference(
-    path,
-    num_workers,
-    execution_mode,
-    puppet_account_id,
-    home_region,
-    regions,
-    should_collect_cloudformation_events,
-    should_forward_events_to_eventbridge,
-    should_forward_failures_to_opscenter,
-    output_cache_starting_point,
-    is_caching_enabled,
-    single_account_or_action_configuration,
-    on_complete_url,
+        path,
+        num_workers,
+        execution_mode,
+        puppet_account_id,
+        home_region,
+        regions,
+        should_collect_cloudformation_events,
+        should_forward_events_to_eventbridge,
+        should_forward_failures_to_opscenter,
+        output_cache_starting_point,
+        is_caching_enabled,
+        single_account, single_action_section, single_action_item, single_action_include_dependencies,
+        single_action_include_reverse_dependencies,
+        on_complete_url,
 ):
     params = dict()
 
-    overrides = dict(json.loads(single_account_or_action_configuration))
+    overrides = dict()
+    if single_account != "" and single_account != "None":
+        overrides["single_account"] = single_account
+    if single_action_section != "*":
+        overrides["single_action_section"] = single_action_section
+    if single_action_item != "*":
+        overrides["single_action_item"] = single_action_item
+    overrides["single_action_include_dependencies"] = single_action_include_dependencies
+    overrides["single_action_include_reverse_dependencies"] = single_action_include_reverse_dependencies
+
     if overrides.get("subset"):
         subset = overrides.get("subset")
         overrides = dict(
@@ -643,7 +702,7 @@ def deploy_from_task_reference(
         )
     single_account = str(overrides.get("single_account")) if overrides.get("single_account") else None
     params.update(
-        dict(single_account=single_account, subset=overrides,)
+        dict(single_account=single_account, subset=overrides, )
     )
     click.echo(f"Overridden parameters {params}")
 
@@ -718,21 +777,21 @@ def deploy_from_task_reference(
     envvar="SCT_GLOBAL_SHARE_PRINCIPALS",
 )
 def deploy_in_spoke_from_task_reference(
-    p,
-    num_workers,
-    execution_mode,
-    puppet_account_id,
-    single_account,
-    home_region,
-    regions,
-    should_collect_cloudformation_events,
-    should_forward_events_to_eventbridge,
-    should_forward_failures_to_opscenter,
-    output_cache_starting_point,
-    is_caching_enabled,
-    global_sharing_mode_default,
-    global_share_tag_options_default,
-    global_share_principals_default,
+        p,
+        num_workers,
+        execution_mode,
+        puppet_account_id,
+        single_account,
+        home_region,
+        regions,
+        should_collect_cloudformation_events,
+        should_forward_events_to_eventbridge,
+        should_forward_failures_to_opscenter,
+        output_cache_starting_point,
+        is_caching_enabled,
+        global_sharing_mode_default,
+        global_share_tag_options_default,
+        global_share_principals_default,
 ):
     setup_config(
         puppet_account_id=puppet_account_id,
