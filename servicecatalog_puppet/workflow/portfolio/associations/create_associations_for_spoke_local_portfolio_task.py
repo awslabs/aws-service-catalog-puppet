@@ -88,8 +88,10 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
             associations_to_use = self.associations
 
         with self.spoke_regional_client("cloudformation") as cloudformation:
-            stack_name = association_utils.generate_stack_name_for_associations_by_item_name(
-                self.portfolio
+            stack_name = (
+                association_utils.generate_stack_name_for_associations_by_item_name(
+                    self.portfolio
+                )
             )
             if associations_to_use:
                 tpl = t.Template()
@@ -113,11 +115,13 @@ class CreateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
                 cloudformation.create_or_update(
                     StackName=stack_name,
                     TemplateBody=template,
-                    NotificationARNs=[
-                        f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-                    ]
-                    if self.should_use_sns
-                    else [],
+                    NotificationARNs=(
+                        [
+                            f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                        ]
+                        if self.should_use_sns
+                        else []
+                    ),
                     ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
                     Tags=self.initialiser_stack_tags,
                 )

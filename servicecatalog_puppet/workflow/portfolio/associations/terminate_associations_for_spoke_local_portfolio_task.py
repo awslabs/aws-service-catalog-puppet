@@ -24,8 +24,10 @@ class TerminateAssociationsForSpokeLocalPortfolioTask(tasks.TaskWithReference):
         }
 
     def run(self):
-        stack_name = association_utils.generate_stack_name_for_associations_by_item_name(
-            self.spoke_local_portfolio_name
+        stack_name = (
+            association_utils.generate_stack_name_for_associations_by_item_name(
+                self.spoke_local_portfolio_name
+            )
         )
 
         with self.spoke_regional_client("cloudformation") as cloudformation:

@@ -4,5 +4,7 @@
 import luigi
 
 
-class PuppetTask(luigi.Task,):
+class PuppetTask(
+    luigi.Task,
+):
     pass

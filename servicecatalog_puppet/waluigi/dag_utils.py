@@ -22,7 +22,9 @@ def build_the_dag(tasks_to_run: dict):
     # print("-- BUILDING THE DAG!!!")
     for uid, task in tasks_to_run.items():
         g.add_nodes_from(
-            [(uid, task),]
+            [
+                (uid, task),
+            ]
         )
         for duid in task.get("dependencies_by_reference", []):
             if tasks_to_run.get(duid):

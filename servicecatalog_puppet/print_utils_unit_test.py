@@ -28,7 +28,9 @@ def test_warn(mocked_click_secho):
 
     # verify
     mocked_click_secho.assert_called_once_with(
-        message, err=True, fg="yellow",
+        message,
+        err=True,
+        fg="yellow",
     )
 
 
@@ -43,5 +45,7 @@ def test_error(mocked_click_secho):
 
     # verify
     mocked_click_secho.assert_called_once_with(
-        message, err=True, fg="red",
+        message,
+        err=True,
+        fg="red",
     )

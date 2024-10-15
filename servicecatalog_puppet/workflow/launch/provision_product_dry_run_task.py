@@ -69,8 +69,8 @@ class ProvisionProductDryRunTask(provision_product_task.ProvisionProductTask):
                     with self.input().get("provisioning_artifact_parameters").open(
                         "r"
                     ) as f:
-                        provisioning_artifact_parameters = serialisation_utils.json_loads(
-                            f.read()
+                        provisioning_artifact_parameters = (
+                            serialisation_utils.json_loads(f.read())
                         )
 
                     params_to_use = {}
@@ -88,7 +88,8 @@ class ProvisionProductDryRunTask(provision_product_task.ProvisionProductTask):
                                 service_catalog, provisioned_product_id
                             )
                             provisioned_parameters = aws.get_parameters_for_stack(
-                                cloudformation, pp_stack_name,
+                                cloudformation,
+                                pp_stack_name,
                             )
                             self.info(f"current params: {provisioned_parameters}")
                             self.info(f"new params: {params_to_use}")
@@ -132,7 +133,8 @@ class ProvisionProductDryRunTask(provision_product_task.ProvisionProductTask):
         self, provisioning_artifact_id, product_id, service_catalog
     ):
         return service_catalog.describe_provisioning_artifact(
-            ProvisioningArtifactId=provisioning_artifact_id, ProductId=product_id,
+            ProvisioningArtifactId=provisioning_artifact_id,
+            ProductId=product_id,
         ).get("ProvisioningArtifactDetail")
 
     def write_result(

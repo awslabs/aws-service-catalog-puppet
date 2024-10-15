@@ -40,7 +40,8 @@ class TerminateAssociationTask(tasks.TaskWithReference):
                 )
                 if was_present:
                     servicecatalog.disassociate_principal_from_portfolio(
-                        PortfolioId=portfolio_id, PrincipalARN=principal_to_associate,
+                        PortfolioId=portfolio_id,
+                        PrincipalARN=principal_to_associate,
                     )
                 is_still_present = True
                 while is_still_present:

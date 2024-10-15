@@ -101,7 +101,9 @@ class TerminateStackTask(tasks.TaskWithReference):
             self.info(f"deleting SSM Param: {param_name}")
             with self.hub_client("ssm") as ssm:
                 try:
-                    ssm.delete_parameter(Name=param_name,)
+                    ssm.delete_parameter(
+                        Name=param_name,
+                    )
                     self.info(f"deleting SSM Param: {param_name}")
                 except ssm.exceptions.ParameterNotFound:
                     self.info(f"SSM Param: {param_name} not found")

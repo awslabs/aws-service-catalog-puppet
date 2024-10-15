@@ -287,7 +287,9 @@ class ImportedPortfoliosTest(unittest.TestCase):
             {
                 "account_id": account_id,
                 "associations": ["arn:aws:iam::${AWS::AccountId}:role/Admin"],
-                "dependencies_by_reference": ["create-policies",],
+                "dependencies_by_reference": [
+                    "create-policies",
+                ],
                 "execution": "hub",
                 "spoke_local_portfolio_name": item_name,
                 task_reference_constants.MANIFEST_ACCOUNT_IDS: {account_id: True},

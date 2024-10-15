@@ -85,7 +85,9 @@ def generate(puppet_account_id, all_tasks, output_file_path):
                     section_name=constants.RUN_DEPLOY_IN_SPOKE,
                     task_reference=replacement_ref,
                     generate_manifest_ref=generate_manifest_ref,
-                    dependencies_by_reference=[generate_manifest_ref,],
+                    dependencies_by_reference=[
+                        generate_manifest_ref,
+                    ],
                 )
 
     # make sure everything runs before we zip up the output directory

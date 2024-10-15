@@ -21,4 +21,8 @@ def version():
             )
         )
         response = ssm.get_parameter(Name="service-catalog-puppet-version")
-        click.echo("stack version: {}".format(response.get("Parameter").get("Value"),))
+        click.echo(
+            "stack version: {}".format(
+                response.get("Parameter").get("Value"),
+            )
+        )

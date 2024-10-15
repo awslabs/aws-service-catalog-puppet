@@ -33,7 +33,9 @@ class ForwardEventsForRegionTask(tasks.TaskWithReferenceAndCommonParameters):
             events.Rule(
                 "ForwardAll",
                 Description="Forward all events for c7n to do its job",
-                EventPattern={"account": [self.account_id],},
+                EventPattern={
+                    "account": [self.account_id],
+                },
                 State="ENABLED",
                 Targets=[
                     events.Target(
@@ -59,11 +61,13 @@ class ForwardEventsForRegionTask(tasks.TaskWithReferenceAndCommonParameters):
                 ShouldUseChangeSets=False,
                 StackName="servicecatalog-puppet-c7n-eventforwarding-region",
                 TemplateBody=template,
-                NotificationARNs=[
-                    f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-                ]
-                if self.should_use_sns
-                else [],
+                NotificationARNs=(
+                    [
+                        f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                    ]
+                    if self.should_use_sns
+                    else []
+                ),
                 ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
                 Tags=self.initialiser_stack_tags,
             )

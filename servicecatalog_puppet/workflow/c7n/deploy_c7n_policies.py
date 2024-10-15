@@ -77,7 +77,9 @@ class DeployC7NPolicies(tasks.TaskWithReferenceAndCommonParameters):
 
         with self.spoke_regional_client("s3") as s3:
             s3.put_object(
-                Bucket=bucket, Key=key, Body=zip_buffer.getvalue(),
+                Bucket=bucket,
+                Key=key,
+                Body=zip_buffer.getvalue(),
             )
         custodian_role_arn = (
             f"arn:{partition}:iam::{self.account_id}:role"

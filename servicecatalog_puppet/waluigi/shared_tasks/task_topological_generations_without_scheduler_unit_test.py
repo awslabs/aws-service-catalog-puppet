@@ -196,9 +196,10 @@ class TestTaskTopologicalGenerationsWithoutScheduler(unittest.TestCase):
         expected_should_shut_down = False
 
         # exercise
-        (actual_next_task, actual_should_shut_down,) = self.sut.get_next_task_to_run(
-            tasks_to_run, resources, all_tasks
-        )
+        (
+            actual_next_task,
+            actual_should_shut_down,
+        ) = self.sut.get_next_task_to_run(tasks_to_run, resources, all_tasks)
 
         # verify
         self.assertEqual(expected_next_task, actual_next_task)
@@ -254,9 +255,10 @@ class TestTaskTopologicalGenerationsWithoutScheduler(unittest.TestCase):
         expected_should_shutdown = True
 
         # exercise
-        (actual_next_task, actual_should_shutdown,) = self.sut.get_next_task_to_run(
-            tasks_to_run, resources, all_tasks
-        )
+        (
+            actual_next_task,
+            actual_should_shutdown,
+        ) = self.sut.get_next_task_to_run(tasks_to_run, resources, all_tasks)
 
         # verify
         self.assertEqual(expected_next_task, actual_next_task)
@@ -347,9 +349,15 @@ class TestTaskTopologicalGenerationsWithoutScheduler(unittest.TestCase):
 
         return task_to_run, all_tasks, list(all_tasks.keys())
 
-    def test_has_dependencies_remaining_with_blocked_dependencies(self,):
+    def test_has_dependencies_remaining_with_blocked_dependencies(
+        self,
+    ):
         # setup
-        (task_to_run, all_tasks, _,) = self.generate_blocked_dependencies()
+        (
+            task_to_run,
+            all_tasks,
+            _,
+        ) = self.generate_blocked_dependencies()
 
         expected_is_currently_blocked = True
         expected_is_permanently_blocked = True
@@ -364,9 +372,15 @@ class TestTaskTopologicalGenerationsWithoutScheduler(unittest.TestCase):
         self.assertEqual(expected_is_currently_blocked, actual_is_currently_blocked)
         self.assertEqual(expected_is_permanently_blocked, actual_is_permanently_blocked)
 
-    def test_get_next_task_to_run_with_blocked_dependencies(self,):
+    def test_get_next_task_to_run_with_blocked_dependencies(
+        self,
+    ):
         # setup
-        (_, all_tasks, tasks_to_run,) = self.generate_blocked_dependencies()
+        (
+            _,
+            all_tasks,
+            tasks_to_run,
+        ) = self.generate_blocked_dependencies()
         resources = dict()
 
         expected_next_task = None
@@ -406,9 +420,15 @@ class TestTaskTopologicalGenerationsWithoutScheduler(unittest.TestCase):
 
         return task_to_run, all_tasks, list(all_tasks.keys())
 
-    def test_has_dependencies_remaining_with_spoke_execution(self,):
+    def test_has_dependencies_remaining_with_spoke_execution(
+        self,
+    ):
         # setup
-        (task_to_run, all_tasks, _,) = self.generate_spoke_execution()
+        (
+            task_to_run,
+            all_tasks,
+            _,
+        ) = self.generate_spoke_execution()
 
         expected_is_currently_blocked = False
         expected_is_permanently_blocked = False
@@ -423,9 +443,15 @@ class TestTaskTopologicalGenerationsWithoutScheduler(unittest.TestCase):
         self.assertEqual(expected_is_currently_blocked, actual_is_currently_blocked)
         self.assertEqual(expected_is_permanently_blocked, actual_is_permanently_blocked)
 
-    def test_get_next_task_to_run_with_spoke_execution(self,):
+    def test_get_next_task_to_run_with_spoke_execution(
+        self,
+    ):
         # setup
-        (_, all_tasks, tasks_to_run,) = self.generate_spoke_execution()
+        (
+            _,
+            all_tasks,
+            tasks_to_run,
+        ) = self.generate_spoke_execution()
         resources = dict()
 
         expected_next_task = None
@@ -452,9 +478,15 @@ class TestTaskTopologicalGenerationsWithoutScheduler(unittest.TestCase):
 
         return task_to_run, all_tasks, list(all_tasks.keys())
 
-    def test_has_dependencies_remaining_with_missing_generate_policies(self,):
+    def test_has_dependencies_remaining_with_missing_generate_policies(
+        self,
+    ):
         # setup
-        (task_to_run, all_tasks, _,) = self.generate_missing_generate_policies()
+        (
+            task_to_run,
+            all_tasks,
+            _,
+        ) = self.generate_missing_generate_policies()
 
         expected_is_currently_blocked = False
         expected_is_permanently_blocked = False
@@ -469,9 +501,15 @@ class TestTaskTopologicalGenerationsWithoutScheduler(unittest.TestCase):
         self.assertEqual(expected_is_currently_blocked, actual_is_currently_blocked)
         self.assertEqual(expected_is_permanently_blocked, actual_is_permanently_blocked)
 
-    def test_get_next_task_to_run_with_missing_generate_policies(self,):
+    def test_get_next_task_to_run_with_missing_generate_policies(
+        self,
+    ):
         # setup
-        (_, all_tasks, tasks_to_run,) = self.generate_missing_generate_policies()
+        (
+            _,
+            all_tasks,
+            tasks_to_run,
+        ) = self.generate_missing_generate_policies()
         resources = dict()
 
         expected_next_task = all_tasks.get("non-specific-task")

@@ -59,7 +59,11 @@ def list_resources():
         template = cfn_tools.load_yaml(template_contents)
         click.echo(f"## Resources for stack: {file.name.split('.')[0]}")
         table_data = [
-            ["Logical Name", "Resource Type", "Name",],
+            [
+                "Logical Name",
+                "Resource Type",
+                "Name",
+            ],
         ]
         table = terminaltables.AsciiTable(table_data)
         for logical_name, resource in template.get("Resources").items():
@@ -115,7 +119,10 @@ def set_named_config_value(name, value):
         "ssm", region_name=constants.HOME_REGION
     ) as ssm:
         ssm.put_parameter(
-            Name=name, Type="String", Value=value, Overwrite=True,
+            Name=name,
+            Type="String",
+            Value=value,
+            Overwrite=True,
         )
         click.echo("Uploaded named config")
 
@@ -151,7 +158,10 @@ def handle_action_execution_detail(puppet_account_id, action_execution_detail):
                 )
                 action_execution_id = action_execution_detail.get("actionExecutionId")
                 output_file_name = f"log-{project_name}--{action_execution_id}.log"
-                with open(output_file_name, "w",) as f:
+                with open(
+                    output_file_name,
+                    "w",
+                ) as f:
                     params = {
                         "logGroupName": log_details.get("groupName"),
                         "logStreamName": log_details.get("streamName"),
@@ -247,7 +257,11 @@ def generate_data_for_viz(path_to_results, group_by_pid):
             starting_time = start.get("datetime")
             ending_time = end.get("datetime")
             pid = start.get("pid")
-            groups[pid] = dict(id=pid, content=pid, value=pid,)
+            groups[pid] = dict(
+                id=pid,
+                content=pid,
+                value=pid,
+            )
             for name2, value2 in start.get("params_for_results", {}).items():
                 body += f"<b>{name2}</b>:{value2}<br />"
             body += f"<b>pid</b>:{pid}<br />"
@@ -310,7 +324,11 @@ def export_deploy_viz(codebuild_execution_id, group_by_pid, puppet_account_id):
     else:
         params = "container, items, options"
     output = viz_template.CONTENT.format(
-        DATASET=results, START=start, END=end, GROUPS=groups, PARAMS=params,
+        DATASET=results,
+        START=start,
+        END=end,
+        GROUPS=groups,
+        PARAMS=params,
     )
     f = open(f"{output_file_name_prefix}.html", "w")
     f.write(output)
@@ -331,7 +349,10 @@ def export_traces(codebuild_execution_id, puppet_account_id):
     results = list()
     with betterboto_client.ClientContextManager("s3") as s3:
         paginator = s3.get_paginator("list_objects_v2")
-        for page in paginator.paginate(Bucket=bucket, Prefix=key_prefix,):
+        for page in paginator.paginate(
+            Bucket=bucket,
+            Prefix=key_prefix,
+        ):
             for obj in page.get("Contents", []):
                 key = obj.get("Key")
                 results.append(

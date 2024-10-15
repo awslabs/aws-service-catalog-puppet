@@ -113,7 +113,9 @@ def worker_task(
                             ).split("\n"):
                                 logger.error(l)
                             for l in traceback.format_exception(
-                                e, value=e, tb=e.__traceback__,
+                                e,
+                                value=e,
+                                tb=e.__traceback__,
                             ):
                                 for sl in l.split("\n"):
                                     logger.error(f"{sl}")
@@ -130,7 +132,11 @@ def worker_task(
                         task.on_task_success(duration)
 
                     task_processing_time_queue.put(
-                        (duration, task_type, task_details,),
+                        (
+                            duration,
+                            task_type,
+                            task_details,
+                        ),
                     )
                     task_trace_queue.put(
                         (end, task_type, task_details, False, thread_name),

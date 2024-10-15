@@ -140,7 +140,9 @@ def worker_task(
         task.on_task_start()
         start = time.time()
         task_type, task_details = task.get_processing_time_details()
-        task_trace_queue.put((start, task_type, task_details, True, thread_name),)
+        task_trace_queue.put(
+            (start, task_type, task_details, True, thread_name),
+        )
         try:
             task.execute()
         except Exception as e:
@@ -154,7 +156,9 @@ def worker_task(
                 for l in serialisation_utils.dump(unwrap(task_details)).split("\n"):
                     logger.error(l)
                 for l in traceback.format_exception(
-                    e, value=e, tb=e.__traceback__,
+                    e,
+                    value=e,
+                    tb=e.__traceback__,
                 ):
                     for sl in l.split("\n"):
                         logger.error(f"{sl}")
@@ -169,8 +173,16 @@ def worker_task(
             logger.info(f"executed task [{result}]: {task_reference}")
             task.on_task_success(duration)
 
-        task_processing_time_queue.put((duration, task_type, task_details,),)
-        task_trace_queue.put((end, task_type, task_details, False, thread_name),)
+        task_processing_time_queue.put(
+            (
+                duration,
+                task_type,
+                task_details,
+            ),
+        )
+        task_trace_queue.put(
+            (end, task_type, task_details, False, thread_name),
+        )
 
         # print(f"{pid} Worker {task_reference} waiting for lock to unlock resources", flush=True)
         logger.info(f"executed task [success]: {task_reference}")

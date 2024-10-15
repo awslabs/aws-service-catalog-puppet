@@ -50,14 +50,16 @@ class CopyIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
                 args_to_use = dict(
                     SourceProductArn=hub_product_details.get("ProductArn"),
                     SourceProvisioningArtifactIdentifiers=versions_to_copy,
-                    CopyOptions=["CopyTags",],
+                    CopyOptions=[
+                        "CopyTags",
+                    ],
                 )
                 hub_versions_details = hub_product_details.get("Versions", {})
                 if spoke_products_and_their_versions.get(hub_product_name):
-                    args_to_use[
-                        "TargetProductId"
-                    ] = spoke_products_and_their_versions.get(hub_product_name).get(
-                        "ProductId"
+                    args_to_use["TargetProductId"] = (
+                        spoke_products_and_their_versions.get(hub_product_name).get(
+                            "ProductId"
+                        )
                     )
                 else:
                     products_requiring_adding_to_portfolio[hub_product_name] = True
@@ -72,7 +74,11 @@ class CopyIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
                     hub_version_details,
                 ) in hub_versions_details.items():
                     if hub_version_name not in version_names_to_ignore:
-                        versions_to_copy.append(dict(Id=hub_version_details.get("Id"),))
+                        versions_to_copy.append(
+                            dict(
+                                Id=hub_version_details.get("Id"),
+                            )
+                        )
                     else:
                         if hub_version_name == "-":
                             continue
@@ -111,9 +117,9 @@ class CopyIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
                 copy_product_status = response.get("CopyProductStatus")
                 if copy_product_status == "SUCCEEDED":
                     if products_requiring_adding_to_portfolio.get(product_name):
-                        products_requiring_adding_to_portfolio[
-                            product_name
-                        ] = response.get("TargetProductId")
+                        products_requiring_adding_to_portfolio[product_name] = (
+                            response.get("TargetProductId")
+                        )
                     copy_product_tokens.remove(first_item_in_list)
                 elif copy_product_status == "FAILED":
                     raise Exception(f"Failed to copy product {copy_product_status}")
@@ -125,7 +131,8 @@ class CopyIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
 
         for product_name, product_id in products_requiring_adding_to_portfolio.items():
             servicecatalog.associate_product_with_portfolio(
-                ProductId=product_id, PortfolioId=spoke_portfolio_id,
+                ProductId=product_id,
+                PortfolioId=spoke_portfolio_id,
             )
         self.info("Finished associating products")
 
@@ -149,7 +156,9 @@ class CopyIntoSpokeLocalPortfolioTask(tasks.TaskWithReference):
         while products_found < n_products_to_check:
             products_ids = list()
             paginator = servicecatalog.get_paginator("search_products_as_admin")
-            for page in paginator.paginate(PortfolioId=spoke_portfolio_id,):
+            for page in paginator.paginate(
+                PortfolioId=spoke_portfolio_id,
+            ):
                 for pvd in page.get("ProductViewDetails", []):
                     products_ids.append(pvd.get("ProductViewSummary").get("ProductId"))
             products_found = 0

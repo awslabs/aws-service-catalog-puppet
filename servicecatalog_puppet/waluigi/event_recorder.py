@@ -31,4 +31,10 @@ def record_event(event_type, task, extra_event_data=None):
         / f"{task_type}-{task.task_id}.json",
         "w",
     ) as f:
-        f.write(json.dumps(event, default=str, indent=4,))
+        f.write(
+            json.dumps(
+                event,
+                default=str,
+                indent=4,
+            )
+        )

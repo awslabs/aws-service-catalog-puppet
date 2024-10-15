@@ -67,11 +67,13 @@ class CreateCustodianRoleTask(tasks.TaskWithReferenceAndCommonParameters):
                 ShouldUseChangeSets=False,
                 StackName="servicecatalog-puppet-c7n-custodian",
                 TemplateBody=template,
-                NotificationARNs=[
-                    f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-                ]
-                if self.should_use_sns
-                else [],
+                NotificationARNs=(
+                    [
+                        f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                    ]
+                    if self.should_use_sns
+                    else []
+                ),
                 ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
                 Tags=self.initialiser_stack_tags,
             )

@@ -23,12 +23,14 @@ class TerminateResourceUpdateConstraintsForSpokeLocalPortfolioTaskTest(
             terminate_resource_update_constraints_for_spoke_local_portfolio_task
         )
 
-        self.sut = self.module.TerminateResourceUpdateConstraintsForSpokeLocalPortfolioTask(
-            **self.get_common_args(),
-            account_id=self.account_id,
-            region=self.region,
-            portfolio=self.portfolio,
-            spoke_local_portfolio_name=self.spoke_local_portfolio_name
+        self.sut = (
+            self.module.TerminateResourceUpdateConstraintsForSpokeLocalPortfolioTask(
+                **self.get_common_args(),
+                account_id=self.account_id,
+                region=self.region,
+                portfolio=self.portfolio,
+                spoke_local_portfolio_name=self.spoke_local_portfolio_name
+            )
         )
 
         self.wire_up_mocks()

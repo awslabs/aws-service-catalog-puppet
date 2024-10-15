@@ -12,7 +12,7 @@ class Equals(yaml.YAMLObject):
     yaml_loader = yaml.SafeLoader
     yaml_dumper = yaml.SafeDumper
 
-    yaml_tag = u"!Equals"
+    yaml_tag = "!Equals"
 
     def __init__(self, values):
         self.values = values
@@ -34,7 +34,7 @@ class Not(yaml.YAMLObject):
     yaml_loader = yaml.SafeLoader
     yaml_dumper = yaml.SafeDumper
 
-    yaml_tag = u"!Not"
+    yaml_tag = "!Not"
 
     def __init__(self, values):
         self.values = values

@@ -18,7 +18,8 @@ def get_codebuild_build_ids_for(codebuild_project_name, limit):
     with betterboto_client.ClientContextManager("codebuild") as codebuild:
         paginator = codebuild.get_paginator("list_builds_for_project")
         iterator = paginator.paginate(
-            projectName=codebuild_project_name, sortOrder="DESCENDING",
+            projectName=codebuild_project_name,
+            sortOrder="DESCENDING",
         )
         for page in iterator:
             for i in page["ids"]:
@@ -55,7 +56,7 @@ def get_build_info(build_id_list: list):
 
         Parameters:
             build_id_list (list): List of CodeBuild build Ids
-        
+
         Returns:
             build_info (list): List of dict objects with the information for each of the supplied build Ids
     """

@@ -43,7 +43,8 @@ def assemble_manifest_from_ssm(target_directory):
             constants.TAG_POLICIES: {},
         }
         for page in paginator.paginate(
-            Path=constants.SERVICE_CATALOG_PUPPET_MANIFEST_SSM_PREFIX, Recursive=True,
+            Path=constants.SERVICE_CATALOG_PUPPET_MANIFEST_SSM_PREFIX,
+            Recursive=True,
         ):
             for parameter in page.get("Parameters", []):
                 parts = parameter.get("Name").split("/")
@@ -290,8 +291,10 @@ def validate(f):
                                             )
                                         else:
                                             dependency = d
-                                        plural = constants.SECTION_SINGULAR_TO_PLURAL.get(
-                                            dependency.get("type", constants.LAUNCH)
+                                        plural = (
+                                            constants.SECTION_SINGULAR_TO_PLURAL.get(
+                                                dependency.get("type", constants.LAUNCH)
+                                            )
                                         )
                                         if (
                                             dependency.get("name") == needle_action_name
@@ -309,7 +312,9 @@ def validate(f):
             uid = f"{collection_type}|{collection_name}"
             data = collection_item
             graph.add_nodes_from(
-                [(uid, data),]
+                [
+                    (uid, data),
+                ]
             )
             for d in collection_item.get("depends_on", []):
                 if isinstance(d, str):

@@ -51,7 +51,10 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(tasks.TaskWithRefere
                     product_name,
                     product_details,
                 ) in products_and_their_versions.items():
-                    if re.match(product_to_constrain, product_name,):
+                    if re.match(
+                        product_to_constrain,
+                        product_name,
+                    ):
                         product_id = product_details.get("ProductId")
                         tpl.add_resource(
                             servicecatalog.LaunchRoleConstraint(
@@ -75,11 +78,13 @@ class CreateLaunchRoleConstraintsForSpokeLocalPortfolioTask(tasks.TaskWithRefere
             cloudformation.create_or_update(
                 StackName=stack_name,
                 TemplateBody=template_to_use,
-                NotificationARNs=[
-                    f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-                ]
-                if self.should_use_sns
-                else [],
+                NotificationARNs=(
+                    [
+                        f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                    ]
+                    if self.should_use_sns
+                    else []
+                ),
                 ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
                 Tags=self.initialiser_stack_tags,
             )

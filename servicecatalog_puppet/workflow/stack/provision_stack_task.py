@@ -189,7 +189,8 @@ class ProvisionStackTask(tasks.TaskWithParameters):
                         )
 
         task_output = dict(
-            **self.params_for_results_display(), stack_name_used=self.stack_name_to_use,
+            **self.params_for_results_display(),
+            stack_name_used=self.stack_name_to_use,
         )
 
         all_params = self.get_parameter_values()
@@ -224,13 +225,13 @@ class ProvisionStackTask(tasks.TaskWithParameters):
                         StackName=self.stack_name_to_use,
                     )
                     for parameter in summary_response.get("Parameters", []):
-                        existing_stack_params_dict[
-                            parameter.get("ParameterKey")
-                        ] = parameter.get("DefaultValue")
+                        existing_stack_params_dict[parameter.get("ParameterKey")] = (
+                            parameter.get("DefaultValue")
+                        )
                     for stack_param in stack.get("Parameters", []):
-                        existing_stack_params_dict[
-                            stack_param.get("ParameterKey")
-                        ] = stack_param.get("ParameterValue")
+                        existing_stack_params_dict[stack_param.get("ParameterKey")] = (
+                            stack_param.get("ParameterValue")
+                        )
                     template_body = cloudformation.get_template(
                         StackName=self.stack_name_to_use, TemplateStage="Original"
                     ).get("TemplateBody")
@@ -243,8 +244,8 @@ class ProvisionStackTask(tasks.TaskWithParameters):
                             )
                         except Exception:
                             try:
-                                existing_template_from_cloudformation = cfn_tools.load_json(
-                                    template_body
+                                existing_template_from_cloudformation = (
+                                    cfn_tools.load_json(template_body)
                                 )
                             except Exception:
                                 raise Exception(

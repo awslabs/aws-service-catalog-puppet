@@ -15,21 +15,27 @@ class TestManifestForExpand(unittest.TestCase):
         "account_id": "012345678910",
         "default_region": "eu-west-1",
         "name": "accounta",
-        "regions_enabled": ["eu-west-2",],
+        "regions_enabled": [
+            "eu-west-2",
+        ],
         "tags": ["group:A"],
     }
     account_b = {
         "account_id": "009876543210",
         "default_region": "us-west-1",
         "name": "accountb",
-        "regions_enabled": ["us-west-2",],
+        "regions_enabled": [
+            "us-west-2",
+        ],
         "tags": ["group:B"],
     }
     account_c = {
         "account_id": "432100098765",
         "default_region": "ap-west-1",
         "name": "accountc",
-        "regions_enabled": ["ap-west-2",],
+        "regions_enabled": [
+            "ap-west-2",
+        ],
         "tags": ["group:C"],
     }
     accounts = [
@@ -42,7 +48,9 @@ class TestManifestForExpand(unittest.TestCase):
         "ou": "ou-aaaa-aaaaaaaa",
         "default_region": "eu-west-1",
         "name": "oua",
-        "regions_enabled": ["eu-west-2",],
+        "regions_enabled": [
+            "eu-west-2",
+        ],
         "tags": ["group:A"],
     }
     account_ou_b = {
@@ -50,14 +58,18 @@ class TestManifestForExpand(unittest.TestCase):
         "ou_name": "/OrgUnitB",
         "default_region": "us-west-1",
         "name": "oub",
-        "regions_enabled": ["us-west-2",],
+        "regions_enabled": [
+            "us-west-2",
+        ],
         "tags": ["group:B"],
     }
     account_ou_c = {
         "ou": "ou-aaaa-cccccccc",
         "default_region": "ap-west-1",
         "name": "ouc",
-        "regions_enabled": ["ap-west-2",],
+        "regions_enabled": [
+            "ap-west-2",
+        ],
         "tags": ["group:C"],
     }
 

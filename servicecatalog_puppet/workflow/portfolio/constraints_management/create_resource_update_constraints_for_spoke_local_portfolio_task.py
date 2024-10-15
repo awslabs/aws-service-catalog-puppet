@@ -50,8 +50,14 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
             validate_tag_update,
         ) in self.resource_update_constraints.get("products", {}).items():
             found = False
-            for (product_name, product_details,) in products_and_their_versions.items():
-                if re.match(product_to_constrain, product_name,):
+            for (
+                product_name,
+                product_details,
+            ) in products_and_their_versions.items():
+                if re.match(
+                    product_to_constrain,
+                    product_name,
+                ):
                     found = True
                     product_id = product_details.get("ProductId")
 
@@ -76,15 +82,19 @@ class CreateUpdateResourceConstraintsForSpokeLocalPortfolioTask(
             cloudformation.create_or_update(
                 StackName=stack_name,
                 TemplateBody=template_to_use,
-                NotificationARNs=[
-                    f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
-                ]
-                if self.should_use_sns
-                else [],
+                NotificationARNs=(
+                    [
+                        f"arn:{config.get_partition()}:sns:{self.region}:{self.puppet_account_id}:servicecatalog-puppet-cloudformation-regional-events"
+                    ]
+                    if self.should_use_sns
+                    else []
+                ),
                 ShouldDeleteRollbackComplete=self.should_delete_rollback_complete_stacks,
                 Tags=self.initialiser_stack_tags,
             )
-            result = cloudformation.describe_stacks(StackName=stack_name,).get(
+            result = cloudformation.describe_stacks(
+                StackName=stack_name,
+            ).get(
                 "Stacks"
             )[0]
             self.write_empty_output()

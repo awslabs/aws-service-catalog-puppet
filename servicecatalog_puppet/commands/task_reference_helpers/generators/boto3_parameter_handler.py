@@ -5,7 +5,9 @@ from servicecatalog_puppet import constants, task_reference_constants
 
 
 def generate_task_reference(
-    parameter_details, account_id_to_use_for_boto3_call, region_to_use_for_boto3_call,
+    parameter_details,
+    account_id_to_use_for_boto3_call,
+    region_to_use_for_boto3_call,
 ):
     if parameter_details.get("cloudformation_stack_output"):
         return (

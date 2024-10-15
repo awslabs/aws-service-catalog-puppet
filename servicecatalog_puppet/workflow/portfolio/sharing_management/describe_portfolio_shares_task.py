@@ -28,14 +28,17 @@ class DescribePortfolioSharesTask(tasks.TaskWithReferenceAndCommonParameters):
 
         with self.spoke_regional_client("servicecatalog") as servicecatalog:
             has_more = True
-            args = dict(PortfolioId=portfolio_id, Type=self.type,)
+            args = dict(
+                PortfolioId=portfolio_id,
+                Type=self.type,
+            )
             shares = dict()
             while has_more:
                 result = servicecatalog.describe_portfolio_shares(**args)
                 for portfolio_share_detail in result.get("PortfolioShareDetails", []):
-                    shares[
-                        portfolio_share_detail.get("PrincipalId")
-                    ] = portfolio_share_detail
+                    shares[portfolio_share_detail.get("PrincipalId")] = (
+                        portfolio_share_detail
+                    )
                 if result.get("NextPageToken"):
                     has_more = True
                     args["PageToken"] = result.get("NextPageToken")

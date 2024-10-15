@@ -64,8 +64,14 @@ def handle_launches(
         else:
             raise Exception(f"Unknown sharing mode: {sharing_mode}")
 
-        describe_portfolio_shares_task_ref = portfolios.get_or_create_describe_portfolio_shares_task_ref(
-            all_tasks, puppet_account_id, sharing_type, hub_portfolio_ref, task_to_add
+        describe_portfolio_shares_task_ref = (
+            portfolios.get_or_create_describe_portfolio_shares_task_ref(
+                all_tasks,
+                puppet_account_id,
+                sharing_type,
+                hub_portfolio_ref,
+                task_to_add,
+            )
         )
 
         if not all_tasks.get(share_and_accept_ref):

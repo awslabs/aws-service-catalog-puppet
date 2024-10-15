@@ -15,7 +15,9 @@ trigger_look_up = dict(StartPipelineExecution="Manual Full Run")
 
 
 def show_pipelines(format):
-    pipelines_to_check = dict(core={"servicecatalog-puppet-pipeline": dict()},)
+    pipelines_to_check = dict(
+        core={"servicecatalog-puppet-pipeline": dict()},
+    )
 
     fake_date = datetime.datetime.now()
     with betterboto_client.ClientContextManager("codepipeline") as codepipeline:

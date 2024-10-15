@@ -41,7 +41,11 @@ class ClientMixin:
         region = region_name or self.region
         kwargs = dict(region_name=region)
         if retry_max_attempts is not None:
-            kwargs["config"] = Config(retries={"max_attempts": retry_max_attempts,})
+            kwargs["config"] = Config(
+                retries={
+                    "max_attempts": retry_max_attempts,
+                }
+            )
         if os.environ.get(f"CUSTOM_ENDPOINT_{service}"):
             kwargs["endpoint_url"] = os.environ.get(f"CUSTOM_ENDPOINT_{service}")
 

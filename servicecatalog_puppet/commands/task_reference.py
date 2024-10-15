@@ -65,21 +65,21 @@ def deploy_from_task_reference(path):
     single_account_id = config.get_single_account_id()
 
     for task_reference, task in all_tasks.items():
-        if single_account_id: # running single account mode
+        if single_account_id:  # running single account mode
             print("Running in single account mode")
             task_section_name = task.get("section_name")
             task_account_id = task.get("account_id")
             spoke_execution = str(config.get_executor_account_id()) != str(
                 puppet_account_id
             )
-            if spoke_execution: # is a spoke execution
+            if spoke_execution:  # is a spoke execution
                 if (
                     task_account_id == single_account_id
                     and task_section_name != constants.RUN_DEPLOY_IN_SPOKE
                 ):
                     tasks_to_run_filtered[task_reference] = task
 
-            else: # is running in a hub
+            else:  # is running in a hub
                 # need to continue any tasks that should not be executed in single account mode
                 if task.get("task_reference") == constants.CREATE_POLICIES:
                     continue
@@ -97,7 +97,7 @@ def deploy_from_task_reference(path):
                     ):
                         continue
 
-                    if str(task.get('task_generating_output_account_id')) not in [
+                    if str(task.get("task_generating_output_account_id")) not in [
                         str(puppet_account_id),
                         str(single_account_id),
                     ]:
