@@ -10,6 +10,7 @@ class GetSSMParameterTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     account_id = "account_id"
     param_name = "param_name"
     region = "region"
+    jmespath_location = None
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.ssm import get_ssm_parameter_task
@@ -20,7 +21,8 @@ class GetSSMParameterTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             **self.get_common_args(),
             account_id=self.account_id,
             param_name=self.param_name,
-            region=self.region
+            region=self.region,
+            jmespath_location=self.jmespath_location,
         )
 
         self.wire_up_mocks()
@@ -32,6 +34,7 @@ class GetSSMParameterTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "account_id": self.account_id,
             "region": self.region,
             "param_name": self.param_name,
+            "jmespath_location": self.jmespath_location,
         }
 
         # exercise
@@ -65,6 +68,7 @@ class GetSSMParameterByPathTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
     account_id = "account_id"
     path = "path"
     region = "region"
+    jmespath_location = None
 
     def setUp(self) -> None:
         from servicecatalog_puppet.workflow.ssm import get_ssm_parameter_task
@@ -75,7 +79,8 @@ class GetSSMParameterByPathTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             **self.get_common_args(),
             account_id=self.account_id,
             path=self.path,
-            region=self.region
+            region=self.region,
+            jmespath_location=self.jmespath_location,
         )
 
         self.wire_up_mocks()
@@ -87,6 +92,7 @@ class GetSSMParameterByPathTaskTest(tasks_unit_tests_helper.PuppetTaskUnitTest):
             "account_id": self.account_id,
             "region": self.region,
             "path": self.path,
+            "jmespath_location": self.jmespath_location,
         }
 
         # exercise

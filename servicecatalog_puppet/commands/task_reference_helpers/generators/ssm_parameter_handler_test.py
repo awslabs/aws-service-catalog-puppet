@@ -108,6 +108,7 @@ class SSMParameterHandlerTest(unittest.TestCase):
                     task_reference_constants.MANIFEST_ACCOUNT_IDS
                 ),
                 "execution": task.get("execution"),
+                "jmespath": None,
                 "param_name": f"/sleeper/SleeperFunctionArn/{region}/stacks",
                 "section_name": constants.SSM_PARAMETERS,
                 "task_reference": expected_ssm_parameter_task_ref,
@@ -213,6 +214,7 @@ class SSMParameterHandlerTest(unittest.TestCase):
                     task_reference_constants.MANIFEST_ACCOUNT_IDS
                 ),
                 "execution": task.get("execution"),
+                "jmespath": None,
                 "param_name": f"/sleeper/SleeperFunctionArn/{region}/stacks",
                 "section_name": constants.SSM_PARAMETERS,
                 "task_reference": expected_ssm_parameter_task_ref,
@@ -353,6 +355,7 @@ class SSMParameterHandlerTest(unittest.TestCase):
                     task_reference_constants.MANIFEST_ACCOUNT_IDS
                 ),
                 "execution": dependency_task.get("execution"),
+                "jmespath": None,
                 "param_name": f"/sleeper/SleeperFunctionArn/{region}/stacks",
                 "section_name": constants.SSM_PARAMETERS,
                 "task_reference": expected_ssm_parameter_task_ref,

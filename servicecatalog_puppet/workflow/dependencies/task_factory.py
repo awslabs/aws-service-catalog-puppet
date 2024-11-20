@@ -149,6 +149,7 @@ def create(
         return get_ssm_parameter_task.GetSSMParameterByPathTask(
             **common_parameters,
             path=parameters_to_use.get("path"),
+            jmespath_location=parameters_to_use.get("jmespath"),
         )
 
     elif section_name == constants.SSM_PARAMETERS:
@@ -157,6 +158,7 @@ def create(
         return get_ssm_parameter_task.GetSSMParameterTask(
             **common_parameters,
             param_name=parameters_to_use.get("param_name"),
+            jmespath_location=parameters_to_use.get("jmespath"),
         )
 
     elif section_name == constants.SSM_OUTPUTS:

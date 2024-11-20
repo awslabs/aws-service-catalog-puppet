@@ -76,6 +76,7 @@ def ssm_parameter_handler(
                 "task_reference": parameter_task_reference,
                 "account_id": parameter_account_id,
                 "region": parameter_region,
+                "jmespath": ssm_parameter_details.get("jmespath", None),
                 task_reference_constants.MANIFEST_SECTION_NAMES: dict(),
                 task_reference_constants.MANIFEST_ITEM_NAMES: dict(),
                 task_reference_constants.MANIFEST_ACCOUNT_IDS: dict(),
