@@ -23,6 +23,7 @@ class GetSSMParameterTask(tasks.TaskWithReference):
             "account_id": self.account_id,
             "region": self.region,
             "param_name": self.param_name,
+            "jmespath_location": self.jmespath_location,
         }
 
     def get_parameter_name_to_use(self):
@@ -52,6 +53,7 @@ class GetSSMParameterTask(tasks.TaskWithReference):
 class GetSSMParameterByPathTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     path = luigi.Parameter()
+    jmespath_location = luigi.Parameter()
     region = luigi.Parameter()
     cachable_level = constants.CACHE_LEVEL_RUN
 
@@ -61,6 +63,7 @@ class GetSSMParameterByPathTask(tasks.TaskWithReference):
             "account_id": self.account_id,
             "region": self.region,
             "path": self.path,
+            "jmespath_location": self.jmespath_location,
         }
 
     def run(self):
@@ -71,7 +74,12 @@ class GetSSMParameterByPathTask(tasks.TaskWithReference):
                 Path=self.get_parameter_path_to_use(), Recursive=True
             ):
                 for parameter in page.get("Parameters", []):
-                    parameters[parameter.get("Name")] = parameter
+                    p = deepcopy(parameter)
+                    if self.jmespath_location:
+                        p["Value"] = jmespath.search(
+                            self.jmespath_location, json.loads(p.get("Value"))
+                        )
+                    parameters[parameter.get("Name")] = p
         self.write_output(parameters)
 
     def get_parameter_path_to_use(self):
