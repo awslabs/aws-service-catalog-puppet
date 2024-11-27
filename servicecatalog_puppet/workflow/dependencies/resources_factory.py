@@ -144,6 +144,8 @@ SSM_GET_PARAMETER_BY_PATH_PER_REGION_OF_ACCOUNT = (
     "SSM_GET_PARAMETER_BY_PATH" + PER_REGION_OF_ACCOUNT
 )
 
+S3_GET_OBJECT_PER_REGION_OF_ACCOUNT = "S3_GET_OBJECT" + PER_REGION_OF_ACCOUNT
+
 
 ORGANIZATIONS_ATTACH_POLICY_PER_REGION = "ORGANIZATIONS_ATTACH_POLICY" + PER_REGION
 ORGANIZATIONS_DETACH_POLICY_PER_REGION = "ORGANIZATIONS_DETACH_POLICY" + PER_REGION
@@ -226,6 +228,9 @@ def create(section_name, parameters_to_use, puppet_account_id):
 
     elif section_name == constants.BOTO3_PARAMETERS:
         resources = []
+
+    elif section_name == constants.S3_PARAMETERS:
+        resources = [S3_GET_OBJECT_PER_REGION_OF_ACCOUNT]
 
     elif section_name == constants.SSM_PARAMETERS_WITH_A_PATH:
         resources = [
