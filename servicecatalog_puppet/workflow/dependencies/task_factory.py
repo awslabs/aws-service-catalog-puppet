@@ -161,6 +161,15 @@ def create(
             jmespath_location=parameters_to_use.get("jmespath"),
         )
 
+    elif section_name == constants.S3_PARAMETERS:
+        from servicecatalog_puppet.workflow.s3 import get_s3_parameter_task
+
+        return get_s3_parameter_task.GetS3ParameterTask(
+            **common_parameters,
+            key=parameters_to_use.get("key"),
+            jmespath_location=parameters_to_use.get("jmespath"),
+        )
+
     elif section_name == constants.SSM_OUTPUTS:
         from servicecatalog_puppet.workflow.ssm import ssm_outputs_task
 

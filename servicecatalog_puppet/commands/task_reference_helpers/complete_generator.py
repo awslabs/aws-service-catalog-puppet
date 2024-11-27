@@ -21,6 +21,9 @@ from servicecatalog_puppet.commands.task_reference_helpers.generators.ssm_output
 from servicecatalog_puppet.commands.task_reference_helpers.generators.ssm_parameter_handler import (
     ssm_parameter_handler,
 )
+from servicecatalog_puppet.commands.task_reference_helpers.generators.s3_parameter_handler import (
+    s3_parameter_handler,
+)
 from servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_without_scheduler_unit_test import (
     dependency_task_reference,
 )
@@ -209,6 +212,14 @@ def generate(puppet_account_id, manifest, output_file_directory_path):
                             puppet_account_id,
                             task,
                         )
+                        s3_parameter_handler(
+                            all_tasks,
+                            default_region,
+                            new_tasks,
+                            parameter_details,
+                            puppet_account_id,
+                            task,
+                        )
 
     #
     # Second pass - replacing dependencies with dependencies_by_reference and adding resources
@@ -301,8 +312,27 @@ def generate(puppet_account_id, manifest, output_file_directory_path):
 
         # wire up dependencies for boto3 parameters
         boto3_parameters = task.get("boto3_parameters_tasks_references", {}).items()
-        dependencies_to_add = []
         for parameter_name, parameter_task_reference in boto3_parameters:
+            parameter_task = all_tasks.get(parameter_task_reference)
+            for dependency_task_reference in task.get("dependencies_by_reference"):
+                if dependency_task_reference not in parameter_task.get(
+                    "dependencies_by_reference"
+                ):
+                    if dependency_task_reference != parameter_task_reference:
+                        if (
+                            all_tasks[dependency_task_reference]["section_name"]
+                            in constants.ALL_SECTION_NAMES
+                        ):
+                            parameter_task["dependencies_by_reference"].append(
+                                dependency_task_reference
+                            )
+
+            if task_reference in parameter_task["dependencies_by_reference"]:
+                parameter_task["dependencies_by_reference"].remove(task_reference)
+
+        # wire up dependencies for s3 parameters
+        s3_parameters = task.get("s3_parameters_tasks_references", {}).items()
+        for parameter_name, parameter_task_reference in s3_parameters:
             parameter_task = all_tasks.get(parameter_task_reference)
             for dependency_task_reference in task.get("dependencies_by_reference"):
                 if dependency_task_reference not in parameter_task.get(

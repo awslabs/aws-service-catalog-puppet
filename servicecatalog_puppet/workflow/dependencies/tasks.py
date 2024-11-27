@@ -231,6 +231,28 @@ class TaskWithParameters(TaskWithReference):
                 )
                 all_params[param_name] = parameter_task_output
 
+            if param_details.get("s3"):
+                requested_param_details = param_details.get("s3")
+                task_ref = (
+                    f"{constants.S3_PARAMETERS}"
+                    f"-{requested_param_details.get('key')}"
+                    f"-{requested_param_details.get('jmespath')}"
+                )
+
+                task_ref = (
+                    str(task_ref.replace("${AWS::AccountId}", self.account_id))
+                    .replace("${AWS::PuppetAccountId}", self.puppet_account_id)
+                    .replace("${AWS::Region}", self.region)
+                )
+
+                print(
+                    f"Getting output for task: {task_ref} within task {self.task_reference}"
+                )
+                parameter_task_output = self.get_output_from_reference_dependency(
+                    task_ref
+                )
+                all_params[param_name] = parameter_task_output
+
             if param_details.get("default"):
                 all_params[param_name] = (
                     str(param_details.get("default"))
