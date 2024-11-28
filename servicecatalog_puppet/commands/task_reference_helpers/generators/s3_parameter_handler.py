@@ -10,6 +10,7 @@ def s3_parameter_handler(
         s3_parameter_details = parameter_details.get("s3")
         key = s3_parameter_details.get("key")
         jmespath = s3_parameter_details.get("jmespath")
+        default = s3_parameter_details.get("default")
 
         task_account_id = task.get("account_id")
         task_region = task.get("region")
@@ -21,6 +22,11 @@ def s3_parameter_handler(
         )
         jmespath = (
             jmespath.replace("${AWS::Region}", task_region)
+            .replace("${AWS::AccountId}", task_account_id)
+            .replace("${AWS::PuppetAccountId}", puppet_account_id)
+        )
+        default = (
+            default.replace("${AWS::Region}", task_region)
             .replace("${AWS::AccountId}", task_account_id)
             .replace("${AWS::PuppetAccountId}", puppet_account_id)
         )
@@ -36,6 +42,7 @@ def s3_parameter_handler(
                 "region": home_region,
                 "key": key,
                 "jmespath": jmespath,
+                "default": default,
                 task_reference_constants.MANIFEST_SECTION_NAMES: dict(),
                 task_reference_constants.MANIFEST_ITEM_NAMES: dict(),
                 task_reference_constants.MANIFEST_ACCOUNT_IDS: dict(),

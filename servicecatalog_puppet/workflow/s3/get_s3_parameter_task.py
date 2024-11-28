@@ -14,6 +14,7 @@ class GetS3ParameterTask(tasks.TaskWithReference):
     account_id = luigi.Parameter()
     key = luigi.Parameter()
     jmespath_location = luigi.Parameter()
+    default = luigi.Parameter()
     region = luigi.Parameter()
     cachable_level = constants.CACHE_LEVEL_RUN
 
@@ -36,4 +37,12 @@ class GetS3ParameterTask(tasks.TaskWithReference):
                 .read()
             )
             result = jmespath.search(self.jmespath_location, json.loads(object))
+            if result is None:
+                print("result was none")
+                if self.default is None:
+                    raise Exception("Could not find value in the s3 JSON object and there is no default value. Check your JMESPath is correct")
+                else:
+                    print("defauilt was nmot none")
+                    result = self.default
+            print("result is", result)
             self.write_output(result)

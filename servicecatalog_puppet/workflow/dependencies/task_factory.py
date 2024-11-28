@@ -168,6 +168,7 @@ def create(
             **common_parameters,
             key=parameters_to_use.get("key"),
             jmespath_location=parameters_to_use.get("jmespath"),
+            default=parameters_to_use.get("default"),
         )
 
     elif section_name == constants.SSM_OUTPUTS:
