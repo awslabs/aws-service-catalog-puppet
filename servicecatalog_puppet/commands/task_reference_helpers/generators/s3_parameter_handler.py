@@ -8,9 +8,9 @@ def s3_parameter_handler(
 ):
     if parameter_details.get("s3"):
         s3_parameter_details = parameter_details.get("s3")
-        key = s3_parameter_details.get("key")
-        jmespath = s3_parameter_details.get("jmespath")
-        default = s3_parameter_details.get("default")
+        key = str(s3_parameter_details.get("key"))
+        jmespath = str(s3_parameter_details.get("jmespath"))
+        default = str(s3_parameter_details.get("default"))
 
         task_account_id = task.get("account_id")
         task_region = task.get("region")
