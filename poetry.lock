@@ -607,13 +607,13 @@ files = [
 
 [[package]]
 name = "luigi"
-version = "3.1.1"
+version = "3.6.0"
 description = "Workflow mgmgt + task scheduling + dependency resolution."
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "luigi-3.1.1.tar.gz", hash = "sha256:29961582db2704d8df4ec01f6b8f7f0d529cc8f27cff67733ccd809299771218"},
+    {file = "luigi-3.6.0.tar.gz", hash = "sha256:41b14850223c619d9006b30acda733e756b883fc7e60814205576647190c96e3"},
 ]
 
 [package.dependencies]
@@ -623,6 +623,7 @@ tenacity = ">=8,<9"
 tornado = ">=5.0,<7"
 
 [package.extras]
+jsonschema = ["jsonschema"]
 prometheus = ["prometheus-client (>=0.5,<0.15)"]
 toml = ["toml (<2.0.0)"]
 
@@ -1403,4 +1404,4 @@ pyyaml = "*"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "288a422105ce27558eeefd61c978fd4ccd73d43b2f684633e7a673978363f4ac"
+content-hash = "bb4ed8d85e4317b4c1e8e5c0f20661229ac80cbbce2918b1f6ff708039653e6a"
