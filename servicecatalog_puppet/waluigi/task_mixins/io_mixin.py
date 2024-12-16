@@ -73,10 +73,16 @@ class IOMixin:
             with self.output().open("wb") as f:
                 f.write(b"{}")
 
-    def write_output(self, content):
+    def write_output(self, content, skip_json_encode=False):
         if self.should_use_caching:
             with self.output().open("w") as f:
-                f.write(serialisation_utils.json_dumps(content).decode("utf-8"))
+                if skip_json_encode:
+                    f.write(content.decode("utf-8"))
+                else:
+                    f.write(serialisation_utils.json_dumps(content).decode("utf-8"))
         else:
             with self.output().open("wb") as f:
-                f.write(serialisation_utils.json_dumps(content))
+                if skip_json_encode:
+                    f.write(content)
+                else:
+                    f.write(serialisation_utils.json_dumps(content))
