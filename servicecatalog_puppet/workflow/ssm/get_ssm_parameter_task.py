@@ -3,11 +3,11 @@
 import json
 from copy import deepcopy
 
+import jmespath
 import luigi
 
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
-import jmespath
 
 
 class GetSSMParameterTask(tasks.TaskWithReference):

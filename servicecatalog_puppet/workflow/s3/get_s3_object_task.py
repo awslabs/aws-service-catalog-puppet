@@ -3,11 +3,11 @@
 import json
 from copy import deepcopy
 
+import jmespath
 import luigi
 
 from servicecatalog_puppet import constants
 from servicecatalog_puppet.workflow.dependencies import tasks
-import jmespath
 
 
 class GetS3ObjectTask(tasks.TaskWithReference):
@@ -33,4 +33,4 @@ class GetS3ObjectTask(tasks.TaskWithReference):
                 .get("Body")
                 .read()
             )
-            self.write_output(object)
+            self.write_output(object, skip_json_encode=True)

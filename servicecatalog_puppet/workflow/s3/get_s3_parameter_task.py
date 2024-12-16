@@ -28,10 +28,10 @@ class GetS3ParameterTask(tasks.TaskWithReference):
         }
 
     def run(self):
-        object = self.get_output_from_reference_dependency_raw(
+        object = self.get_output_from_reference_dependency(
             self.s3_object_task_reference
         )
-        result = jmespath.search(self.jmespath_location, json.loads(object))
+        result = jmespath.search(self.jmespath_location, object)
         if result is None:
             if self.default is None:
                 raise Exception(

@@ -15,14 +15,14 @@ from servicecatalog_puppet.commands.task_reference_helpers.generators import gen
 from servicecatalog_puppet.commands.task_reference_helpers.generators.boto3_parameter_handler import (
     boto3_parameter_handler,
 )
+from servicecatalog_puppet.commands.task_reference_helpers.generators.s3_parameter_handler import (
+    s3_parameter_handler,
+)
 from servicecatalog_puppet.commands.task_reference_helpers.generators.ssm_outputs_handler import (
     ssm_outputs_handler,
 )
 from servicecatalog_puppet.commands.task_reference_helpers.generators.ssm_parameter_handler import (
     ssm_parameter_handler,
-)
-from servicecatalog_puppet.commands.task_reference_helpers.generators.s3_parameter_handler import (
-    s3_parameter_handler,
 )
 from servicecatalog_puppet.waluigi.shared_tasks.task_topological_generations_without_scheduler_unit_test import (
     dependency_task_reference,
