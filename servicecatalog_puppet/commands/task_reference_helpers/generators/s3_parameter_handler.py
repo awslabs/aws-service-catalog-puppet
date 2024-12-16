@@ -32,6 +32,22 @@ def s3_parameter_handler(
         )
 
         parameter_task_reference = f"{constants.S3_PARAMETERS}-{key}-{jmespath}"
+        s3_object_task_reference = f"{constants.S3_GET_OBJECT}-{key}"
+
+        if not all_tasks.get(s3_object_task_reference):
+            new_tasks[s3_object_task_reference] = {
+                "task_reference": s3_object_task_reference,
+                "account_id": puppet_account_id,
+                "region": home_region,
+                "key": key,
+                task_reference_constants.MANIFEST_SECTION_NAMES: dict(),
+                task_reference_constants.MANIFEST_ITEM_NAMES: dict(),
+                task_reference_constants.MANIFEST_ACCOUNT_IDS: dict(),
+                "dependencies": [],
+                "dependencies_by_reference": [],
+                "execution": constants.EXECUTION_MODE_HUB,
+                "section_name": constants.S3_GET_OBJECT,
+            }
 
         if all_tasks.get(parameter_task_reference):
             s3_task_params = all_tasks.get(parameter_task_reference)
@@ -40,6 +56,7 @@ def s3_parameter_handler(
                 "task_reference": parameter_task_reference,
                 "account_id": puppet_account_id,
                 "region": home_region,
+                "s3_object_task_reference": s3_object_task_reference,
                 "key": key,
                 "jmespath": jmespath,
                 "default": default,
@@ -47,7 +64,7 @@ def s3_parameter_handler(
                 task_reference_constants.MANIFEST_ITEM_NAMES: dict(),
                 task_reference_constants.MANIFEST_ACCOUNT_IDS: dict(),
                 "dependencies": [],
-                "dependencies_by_reference": [],
+                "dependencies_by_reference": [s3_object_task_reference],
                 "execution": constants.EXECUTION_MODE_HUB,
                 "section_name": constants.S3_PARAMETERS,
             }

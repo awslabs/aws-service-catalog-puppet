@@ -332,6 +332,7 @@ CLOUDFORMATION_IN_PROGRESS_STATUS = [
 SSM_OUTPUTS = "ssm_outputs"
 SSM_PARAMETERS = "ssm_parameters"
 S3_PARAMETERS = "s3_parameters"
+S3_GET_OBJECT = "s3_get_object"
 BOTO3_PARAMETERS = "boto3_parameters"
 SSM_PARAMETERS_WITH_A_PATH = "ssm_parameters_with_a_path"
 PORTFOLIO_ASSOCIATIONS = "portfolio-associations"

@@ -230,6 +230,9 @@ def create(section_name, parameters_to_use, puppet_account_id):
         resources = []
 
     elif section_name == constants.S3_PARAMETERS:
+        resources = []
+
+    elif section_name == constants.S3_GET_OBJECT:
         resources = [S3_GET_OBJECT_PER_REGION_OF_ACCOUNT]
 
     elif section_name == constants.SSM_PARAMETERS_WITH_A_PATH:
