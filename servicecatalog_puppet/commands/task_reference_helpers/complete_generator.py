@@ -331,7 +331,7 @@ def generate(puppet_account_id, manifest, output_file_directory_path):
                 parameter_task["dependencies_by_reference"].remove(task_reference)
 
         # wire up dependencies for s3 parameters
-        s3_parameters = task.get("s3_parameters_tasks_references", {}).items()
+        s3_parameters = task.get("s3_object_task_reference", {}).items()
         for parameter_name, parameter_task_reference in s3_parameters:
             parameter_task = all_tasks.get(parameter_task_reference)
             for dependency_task_reference in task.get("dependencies_by_reference"):

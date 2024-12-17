@@ -31,7 +31,6 @@ def s3_parameter_handler(
             .replace("${AWS::PuppetAccountId}", puppet_account_id)
         )
 
-        parameter_task_reference = f"{constants.S3_PARAMETERS}-{key}-{jmespath}"
         s3_object_task_reference = f"{constants.S3_GET_OBJECT}-{key}"
 
         if not all_tasks.get(s3_object_task_reference):
@@ -49,41 +48,20 @@ def s3_parameter_handler(
                 "section_name": constants.S3_GET_OBJECT,
             }
 
-        if all_tasks.get(parameter_task_reference):
-            s3_task_params = all_tasks.get(parameter_task_reference)
-        else:
-            s3_task_params = {
-                "task_reference": parameter_task_reference,
-                "account_id": puppet_account_id,
-                "region": home_region,
-                "s3_object_task_reference": s3_object_task_reference,
-                "key": key,
-                "jmespath": jmespath,
-                "default": default,
-                task_reference_constants.MANIFEST_SECTION_NAMES: dict(),
-                task_reference_constants.MANIFEST_ITEM_NAMES: dict(),
-                task_reference_constants.MANIFEST_ACCOUNT_IDS: dict(),
-                "dependencies": [],
-                "dependencies_by_reference": [s3_object_task_reference],
-                "execution": constants.EXECUTION_MODE_HUB,
-                "section_name": constants.S3_PARAMETERS,
-            }
-            new_tasks[parameter_task_reference] = s3_task_params
+        new_tasks[s3_object_task_reference][
+            task_reference_constants.MANIFEST_SECTION_NAMES
+        ].update(**task.get(task_reference_constants.MANIFEST_SECTION_NAMES))
+        new_tasks[s3_object_task_reference][
+            task_reference_constants.MANIFEST_ITEM_NAMES
+        ].update(**task.get(task_reference_constants.MANIFEST_ITEM_NAMES))
+        new_tasks[s3_object_task_reference][
+            task_reference_constants.MANIFEST_ACCOUNT_IDS
+        ].update(**task.get(task_reference_constants.MANIFEST_ACCOUNT_IDS))
 
-        s3_task_params[task_reference_constants.MANIFEST_SECTION_NAMES].update(
-            **task.get(task_reference_constants.MANIFEST_SECTION_NAMES)
-        )
-        s3_task_params[task_reference_constants.MANIFEST_ITEM_NAMES].update(
-            **task.get(task_reference_constants.MANIFEST_ITEM_NAMES)
-        )
-        s3_task_params[task_reference_constants.MANIFEST_ACCOUNT_IDS].update(
-            **task.get(task_reference_constants.MANIFEST_ACCOUNT_IDS)
-        )
+        task["dependencies_by_reference"].append(s3_object_task_reference)
 
-        task["dependencies_by_reference"].append(parameter_task_reference)
-
-        if not task.get("s3_parameters_tasks_references"):
-            task["s3_parameters_tasks_references"] = dict()
+        if not task.get("s3_object_task_reference"):
+            task["s3_object_task_reference"] = dict()
 
         parameter_name = (
             str(s3_parameter_details.get("name"))
@@ -92,6 +70,4 @@ def s3_parameter_handler(
             .replace("${AWS::PuppetAccountId}", puppet_account_id)
         )
 
-        task["s3_parameters_tasks_references"][
-            parameter_name
-        ] = parameter_task_reference
+        task["s3_object_task_reference"][parameter_name] = s3_object_task_reference

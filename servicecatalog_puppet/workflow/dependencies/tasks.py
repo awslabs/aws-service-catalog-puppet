@@ -3,6 +3,7 @@
 import functools
 import logging
 
+import jmespath
 import luigi
 from deepmerge import always_merger
 
@@ -233,17 +234,14 @@ class TaskWithParameters(TaskWithReference):
 
             if param_details.get("s3"):
                 requested_param_details = param_details.get("s3")
-                task_ref = (
-                    f"{constants.S3_PARAMETERS}"
-                    f"-{requested_param_details.get('key')}"
-                    f"-{requested_param_details.get('jmespath')}"
+                key = requested_param_details.get("key")
+                key = (
+                    key.replace("${AWS::Region}", self.region)
+                    .replace("${AWS::AccountId}", self.account_id)
+                    .replace("${AWS::PuppetAccountId}", self.puppet_account_id)
                 )
 
-                task_ref = (
-                    str(task_ref.replace("${AWS::AccountId}", self.account_id))
-                    .replace("${AWS::PuppetAccountId}", self.puppet_account_id)
-                    .replace("${AWS::Region}", self.region)
-                )
+                task_ref = f"{constants.S3_GET_OBJECT}" f"-{key}"
 
                 print(
                     f"Getting output for task: {task_ref} within task {self.task_reference}"
@@ -251,6 +249,31 @@ class TaskWithParameters(TaskWithReference):
                 parameter_task_output = self.get_output_from_reference_dependency(
                     task_ref
                 )
+                jmespath_location = requested_param_details.get("jmespath")
+                jmespath_location = (
+                    jmespath_location.replace("${AWS::Region}", self.region)
+                    .replace("${AWS::AccountId}", self.account_id)
+                    .replace("${AWS::PuppetAccountId}", self.puppet_account_id)
+                )
+                default = requested_param_details.get("default")
+                default = (
+                    default.replace("${AWS::Region}", self.region)
+                    .replace("${AWS::AccountId}", self.account_id)
+                    .replace("${AWS::PuppetAccountId}", self.puppet_account_id)
+                )
+
+                parameter_task_output = jmespath.search(
+                    jmespath_location, parameter_task_output
+                )
+                if parameter_task_output is None:
+                    if default is None:
+                        raise Exception(
+                            "Could not find value in the s3 JSON object and there is no default value."
+                            "Check your JMESPath is correct."
+                        )
+                    else:
+                        parameter_task_output = default
+
                 all_params[param_name] = parameter_task_output
 
             if param_details.get("default"):
