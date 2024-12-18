@@ -234,7 +234,7 @@ class TaskWithParameters(TaskWithReference):
 
             if param_details.get("s3"):
                 requested_param_details = param_details.get("s3")
-                key = requested_param_details.get("key")
+                key = str(requested_param_details.get("key"))
                 key = (
                     key.replace("${AWS::Region}", self.region)
                     .replace("${AWS::AccountId}", self.account_id)
@@ -249,13 +249,13 @@ class TaskWithParameters(TaskWithReference):
                 parameter_task_output = self.get_output_from_reference_dependency(
                     task_ref
                 )
-                jmespath_location = requested_param_details.get("jmespath")
+                jmespath_location = str(requested_param_details.get("jmespath"))
                 jmespath_location = (
                     jmespath_location.replace("${AWS::Region}", self.region)
                     .replace("${AWS::AccountId}", self.account_id)
                     .replace("${AWS::PuppetAccountId}", self.puppet_account_id)
                 )
-                default = requested_param_details.get("default")
+                default = str(requested_param_details.get("default"))
                 default = (
                     default.replace("${AWS::Region}", self.region)
                     .replace("${AWS::AccountId}", self.account_id)
