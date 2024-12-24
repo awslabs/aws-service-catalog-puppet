@@ -291,7 +291,11 @@ class ProvisionStackTask(tasks.TaskWithParameters):
                     a["Tags"] = [
                         dict(Key=t.get("key"), Value=t.get("value")) for t in self.tags
                     ]
-                cloudformation.create_or_update(**a)
+                try:
+                    cloudformation.create_or_update(**a)
+                except Exception as e:
+                    self.exception(f"Error creating or updating stack. Parameters: {a}")
+                    raise e
 
         task_output["provisioned"] = self.need_to_provision
         task_output["section_name"] = self.section_name

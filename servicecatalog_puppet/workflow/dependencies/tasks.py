@@ -112,6 +112,9 @@ class TaskWithReference(
     def error(self, message):
         logger.error(f"{self.task_reference}: {message}")
 
+    def exception(self, message):
+        logger.exception(f"{self.task_reference}: {message}")
+
     def warning(self, message):
         logger.warning(f"{self.task_reference}: {message}")
 
