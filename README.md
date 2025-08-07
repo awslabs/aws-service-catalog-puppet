@@ -39,4 +39,3 @@ With Service Catalog Factory you can create pipelines that deploy multi region p
 ## License
 
 This library is licensed under the Apache 2.0 License. 
- 
