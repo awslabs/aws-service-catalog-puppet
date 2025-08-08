@@ -89,5 +89,5 @@ Feature: Provision App Task
       | worker_timeout        | 300                       |
     When I run the task
     Then the task should be configured for 3 retries
-    And the worker timeout should be set to 300 seconds
+    And the worker timeout should be 300 seconds
     And the app should be provisioned successfully

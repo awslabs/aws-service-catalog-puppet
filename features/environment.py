@@ -5,26 +5,13 @@ Sets up AWS mocking and test context.
 
 import os
 import tempfile
-from unittest.mock import Mock, patch
-import boto3
-from moto import mock_aws
+from unittest.mock import Mock, patch, MagicMock
 
 
 def before_all(context):
     """
     Set up global test environment before all scenarios.
     """
-    # Set up AWS mocking with the new mock_aws context manager approach
-    context.aws_mock = mock_aws()
-    context.aws_mock.start()
-    
-    # Set up AWS credentials for moto
-    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
-    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
-    os.environ['AWS_SESSION_TOKEN'] = 'testing'
-    os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
-    
     # Create test working directory
     context.test_dir = tempfile.mkdtemp()
     context.manifest_files_path = os.path.join(context.test_dir, 'manifest_files')
@@ -34,14 +21,18 @@ def before_all(context):
     # Initialize task registry
     context.tasks = {}
     context.task_outputs = {}
+    
+    # Set up shared mock patches that will be used across tests
+    context.patches = []
 
 
 def after_all(context):
     """
     Clean up after all scenarios.
     """
-    # Stop AWS mock
-    context.aws_mock.stop()
+    # Stop all patches
+    for patcher in getattr(context, 'patches', []):
+        patcher.stop()
     
     # Clean up test directory
     import shutil
@@ -58,14 +49,29 @@ def before_scenario(context, scenario):
     context.task_parameters = {}
     context.task_result = None
     context.task_error = None
+    context.task_attributes = {}
     
-    # Mock AWS clients to avoid real AWS calls
-    context.aws_clients = {}
+    # Mock AWS clients - use normal Python mocks instead of moto
+    context.mock_aws_clients = {}
+    context.mock_responses = {}
     
-    # Create default test S3 bucket
-    s3 = boto3.client('s3', region_name='us-east-1')
-    s3.create_bucket(Bucket='test-deployment-bucket')
-    s3.create_bucket(Bucket='my-deployment-bucket')
+    # Set up commonly used mock clients
+    context.mock_service_catalog = MagicMock()
+    context.mock_cloudformation = MagicMock()
+    context.mock_s3 = MagicMock()
+    context.mock_organizations = MagicMock()
+    context.mock_workspaces = MagicMock()
+    context.mock_ssm = MagicMock()
+    
+    # Store mocks in a registry for easy access
+    context.mock_aws_clients = {
+        'servicecatalog': context.mock_service_catalog,
+        'cloudformation': context.mock_cloudformation,
+        's3': context.mock_s3,
+        'organizations': context.mock_organizations,
+        'workspaces': context.mock_workspaces,
+        'ssm': context.mock_ssm,
+    }
 
 
 def after_scenario(context, scenario):
@@ -77,6 +83,11 @@ def after_scenario(context, scenario):
     context.task_parameters = {}
     context.task_result = None
     context.task_error = None
+    context.task_attributes = {}
+    
+    # Reset all mocks
+    for mock_client in context.mock_aws_clients.values():
+        mock_client.reset_mock()
 
 
 def before_step(context, step):
