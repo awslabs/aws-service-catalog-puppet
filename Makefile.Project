@@ -2,15 +2,18 @@
 
 ## @Project_setup Increment patch number
 bump-patch:
-	poetry version patch
+	uv add --dev tomli-w
+	uv run python -c "import tomllib; import tomli_w; f=open('pyproject.toml','rb'); data=tomllib.load(f); f.close(); v=data['project']['version'].split('.'); v[2]=str(int(v[2])+1); data['project']['version']='.'.join(v); f=open('pyproject.toml','wb'); tomli_w.dump(data,f); f.close()"
 
 ## @Project_setup Increment minor number
 bump-minor:
-	poetry version minor
+	uv add --dev tomli-w
+	uv run python -c "import tomllib; import tomli_w; f=open('pyproject.toml','rb'); data=tomllib.load(f); f.close(); v=data['project']['version'].split('.'); v[1]=str(int(v[1])+1); v[2]='0'; data['project']['version']='.'.join(v); f=open('pyproject.toml','wb'); tomli_w.dump(data,f); f.close()"
 
 ## @Project_setup Increment major number
 bump-major:
-	poetry version major
+	uv add --dev tomli-w
+	uv run python -c "import tomllib; import tomli_w; f=open('pyproject.toml','rb'); data=tomllib.load(f); f.close(); v=data['project']['version'].split('.'); v[0]=str(int(v[0])+1); v[1]='0'; v[2]='0'; data['project']['version']='.'.join(v); f=open('pyproject.toml','wb'); tomli_w.dump(data,f); f.close()"
 
 ## @Project_setup Cleans up after a build
 clean:
@@ -18,7 +21,6 @@ clean:
 	rm -rf dist aws-service-catalog-puppet-* aws_service_catalog_puppet.egg-info/ reports
 	rm -rf ignored/src/ServiceCatalogPuppet/tasks
 
-## @Project_setup Generates a setup.py so you can test bootstrapped branches in AWS Codecommit
+## @Project_setup Prepares the project for testing (no longer needs setup.py with uv)
 prepare-for-testing: build
-	tar -zxvf dist/aws_service_catalog_puppet-$$(poetry version -s).tar.gz -C dist aws_service_catalog_puppet-$$(poetry version -s)/setup.py
-	cp dist/aws_service_catalog_puppet-$$(poetry version -s)/setup.py setup.py
+	@echo "Project built successfully for testing with uv"
