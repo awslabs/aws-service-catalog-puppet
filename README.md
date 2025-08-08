@@ -1,6 +1,5 @@
-# aws-service-catalog-puppet
+# cloud-multi-account-workflow-engine
 
-![logo](./docs/logo.png) 
 
 ## Badges
 

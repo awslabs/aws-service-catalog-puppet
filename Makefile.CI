@@ -1,15 +1,13 @@
 .PHONY: install pre-build build
 
-## @CI_actions Installs the checked out version of the code to your poetry managed venv
+## @CI_actions Installs the checked out version of the code using uv
 install:
-	poetry env use 3.11
-	poetry install
+	uv sync --dev
 
 ## @CI_actions Runs code quality checks
 pre-build: unit-tests
 	rm setup.py || echo "There was no setup.py"
-	poetry show --no-dev | awk '{print "poetry add "$$1"=="$$2}' | sort | sh
 
 ## @CI_actions Builds the project into an sdist
 build:
-	poetry build -f sdist
+	uv build
