@@ -8,6 +8,7 @@ Feature: Create Custodian Role Task
     And the target account and region are accessible
     And I have CloudFormation deployment capabilities
 
+  @happy
   Scenario: Create custodian role successfully
     Given a CreateCustodianRoleTask with the following attributes:
       | attribute                  | value                                           |
@@ -23,6 +24,7 @@ Feature: Create Custodian Role Task
     And the role should allow the c7n account to assume it
     And an empty output file should be written
 
+  @happy
   Scenario: Create custodian role with multiple managed policies
     Given a CreateCustodianRoleTask with the following attributes:
       | attribute                  | value                                                                    |
@@ -36,6 +38,7 @@ Feature: Create Custodian Role Task
     And the assume role policy should include both Lambda and c7n account principals
     And the stack should be created with CAPABILITY_NAMED_IAM
 
+  @happy
   Scenario: Create custodian role with custom role path
     Given a CreateCustodianRoleTask with the following attributes:
       | attribute                  | value                                           |
@@ -48,6 +51,7 @@ Feature: Create Custodian Role Task
     And the role should be accessible at the specified path
     And proper CloudFormation tags should be applied
 
+  @happy
   Scenario: Handle CloudFormation stack update
     Given a CreateCustodianRoleTask with the following attributes:
       | attribute                  | value                                           |
@@ -62,6 +66,7 @@ Feature: Create Custodian Role Task
     And change sets should not be used for the update
     And an empty output file should be written
 
+  @happy
   Scenario: Create custodian role with SNS notifications
     Given a CreateCustodianRoleTask with the following attributes:
       | attribute                  | value                                           |
@@ -75,6 +80,7 @@ Feature: Create Custodian Role Task
     And notifications should be sent to the regional events topic
     And the stack should complete successfully
 
+  @unhappy
   Scenario: Handle role creation failure
     Given a CreateCustodianRoleTask with the following attributes:
       | attribute                  | value                                           |

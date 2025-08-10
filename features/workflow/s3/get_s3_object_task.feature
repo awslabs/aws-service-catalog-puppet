@@ -8,6 +8,7 @@ Feature: Get S3 Object Task
     And the target account and region are accessible
     And S3 service is available
 
+  @happy
   Scenario: Get S3 object successfully
     Given a GetS3ObjectTask with the following attributes:
       | attribute              | value                     |
@@ -21,6 +22,7 @@ Feature: Get S3 Object Task
     And the object content should be written to output without JSON encoding
     And the task should complete successfully
 
+  @happy
   Scenario: Get S3 object with nested key path
     Given a GetS3ObjectTask with the following attributes:
       | attribute              | value                     |
@@ -34,6 +36,7 @@ Feature: Get S3 Object Task
     And the full object content should be preserved
     And the task should complete successfully
 
+  @happy
   Scenario: Get S3 object from different regions
     Given a GetS3ObjectTask with the following attributes:
       | attribute              | value                     |
@@ -47,6 +50,7 @@ Feature: Get S3 Object Task
     And the template content should be accessible
     And cross-region access should work correctly
 
+  @happy
   Scenario: Get large S3 object
     Given a GetS3ObjectTask with the following attributes:
       | attribute              | value                     |
@@ -60,6 +64,7 @@ Feature: Get S3 Object Task
     And the entire content should be written to output
     And memory usage should be managed appropriately
 
+  @unhappy
   Scenario: Handle S3 object not found
     Given a GetS3ObjectTask with the following attributes:
       | attribute              | value                     |
@@ -73,6 +78,7 @@ Feature: Get S3 Object Task
     And appropriate error information should be logged
     And the task should fail with a clear error message
 
+  @unhappy
   Scenario: Handle S3 bucket access denied
     Given a GetS3ObjectTask with the following attributes:
       | attribute              | value                     |
@@ -86,6 +92,7 @@ Feature: Get S3 Object Task
     And the error should indicate permission issues
     And the task should fail gracefully
 
+  @happy
   Scenario: Get S3 object with binary content
     Given a GetS3ObjectTask with the following attributes:
       | attribute              | value                     |
@@ -99,6 +106,7 @@ Feature: Get S3 Object Task
     And the binary content should be preserved without corruption
     And no JSON encoding should be applied to the binary data
 
+  @happy
   Scenario: Get S3 object using standard puppet parameters bucket naming
     Given a GetS3ObjectTask with the following attributes:
       | attribute              | value                     |

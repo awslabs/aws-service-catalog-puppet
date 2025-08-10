@@ -9,6 +9,7 @@ Feature: Create Spoke Local Portfolio Task
     And I have Service Catalog portfolio management permissions
     And the hub portfolio information is available
 
+  @happy
   Scenario: Create spoke local portfolio in same account as hub
     Given a CreateSpokeLocalPortfolioTask with the following attributes:
       | attribute                  | value                        |
@@ -22,6 +23,7 @@ Feature: Create Spoke Local Portfolio Task
     And no new portfolio should be created
     And the portfolio details should be written to output
 
+  @happy
   Scenario: Create new spoke local portfolio in different account
     Given a CreateSpokeLocalPortfolioTask with the following attributes:
       | attribute                  | value                        |
@@ -41,6 +43,7 @@ Feature: Create Spoke Local Portfolio Task
     And the portfolio should be named "SharedServicesPortfolio"
     And the portfolio details should be written to output
 
+  @happy
   Scenario: Ensure existing spoke portfolio is maintained
     Given a CreateSpokeLocalPortfolioTask with the following attributes:
       | attribute                  | value                        |
@@ -56,6 +59,7 @@ Feature: Create Spoke Local Portfolio Task
     And the portfolio ID should remain the same if no changes are needed
     And the portfolio details should be written to output
 
+  @happy
   Scenario: Handle cross-region portfolio creation
     Given a CreateSpokeLocalPortfolioTask with the following attributes:
       | attribute                  | value                        |
@@ -69,6 +73,7 @@ Feature: Create Spoke Local Portfolio Task
     And the regional Service Catalog client should be used
     And the portfolio should be available in us-west-2
 
+  @happy
   Scenario: Create portfolio with detailed hub portfolio information
     Given a CreateSpokeLocalPortfolioTask with the following attributes:
       | attribute                  | value                        |
@@ -88,6 +93,7 @@ Feature: Create Spoke Local Portfolio Task
     And the description should match the hub portfolio
     And the portfolio should be properly configured for the spoke account
 
+  @happy
   Scenario: Handle portfolio creation with dependency resolution
     Given a CreateSpokeLocalPortfolioTask with the following attributes:
       | attribute                  | value                        |
@@ -102,6 +108,7 @@ Feature: Create Spoke Local Portfolio Task
     And the spoke portfolio should be created with the dependency data
     And proper task ordering should be maintained
 
+  @unhappy
   Scenario: Handle Service Catalog API errors gracefully
     Given a CreateSpokeLocalPortfolioTask with the following attributes:
       | attribute                  | value                        |
@@ -115,6 +122,7 @@ Feature: Create Spoke Local Portfolio Task
     And relevant error information should be logged
     And the task should fail with meaningful error messages
 
+  @happy
   Scenario: Verify portfolio output structure
     Given a CreateSpokeLocalPortfolioTask with the following attributes:
       | attribute                  | value                        |

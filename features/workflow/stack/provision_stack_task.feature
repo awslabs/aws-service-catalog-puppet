@@ -9,6 +9,7 @@ Feature: Provision Stack Task
     And I have CloudFormation deployment permissions
     And the S3 template source is available
 
+  @happy
   Scenario: Provision new CloudFormation stack successfully
     Given a ProvisionStackTask with the following attributes:
       | attribute              | value                           |
@@ -34,6 +35,7 @@ Feature: Provision Stack Task
     And the need_to_provision flag should be true
     And the task output should indicate successful provisioning
 
+  @happy
   Scenario: Update existing CloudFormation stack with template changes
     Given a ProvisionStackTask with the following attributes:
       | attribute              | value                           |
@@ -59,6 +61,7 @@ Feature: Provision Stack Task
     And the stack should reflect the new template changes
     And the task output should indicate successful update
 
+  @happy
   Scenario: Skip provisioning when stack and parameters are unchanged
     Given a ProvisionStackTask with the following attributes:
       | attribute              | value                           |
@@ -85,6 +88,7 @@ Feature: Provision Stack Task
     And the task should complete without CloudFormation operations
     And the task output should indicate no provisioning was needed
 
+  @happy
   Scenario: Provision stack with Service Catalog launch name resolution
     Given a ProvisionStackTask with the following attributes:
       | attribute              | value                           |
@@ -108,6 +112,7 @@ Feature: Provision Stack Task
     And the actual CloudFormation stack should be identified
     And the stack should be managed using the resolved stack name
 
+  @happy
   Scenario: Provision stack with StackSet name resolution
     Given a ProvisionStackTask with the following attributes:
       | attribute              | value                           |
@@ -131,6 +136,7 @@ Feature: Provision Stack Task
     And the StackSet-managed stack should be identified
     And the stack should be managed appropriately for StackSet deployment
 
+  @happy
   Scenario: Handle stack in ROLLBACK_COMPLETE status with deletion enabled
     Given a ProvisionStackTask with the following attributes:
       | attribute              | value                           |
@@ -155,6 +161,7 @@ Feature: Provision Stack Task
     And a new stack should be created with the same name
     And the provisioning should succeed
 
+  @happy
   Scenario: Provision stack with service role
     Given a ProvisionStackTask with the following attributes:
       | attribute              | value                           |
@@ -177,6 +184,7 @@ Feature: Provision Stack Task
     And the service role should be used for CloudFormation operations
     And the stack deployment should respect the service role permissions
 
+  @happy
   Scenario: Provision stack with custom tags
     Given a ProvisionStackTask with the following attributes:
       | attribute              | value                                                      |
@@ -199,6 +207,7 @@ Feature: Provision Stack Task
     And the custom tags should be applied in addition to standard framework tags
     And the tags should be visible in the CloudFormation console
 
+  @unhappy
   Scenario: Handle stack provisioning failure
     Given a ProvisionStackTask with the following attributes:
       | attribute              | value                           |

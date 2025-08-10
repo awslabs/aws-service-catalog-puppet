@@ -8,6 +8,7 @@ Feature: Get SSM Parameter Task
     And the target account and region are accessible
     And I have SSM parameter read permissions
 
+  @happy
   Scenario: Get single SSM parameter successfully
     Given a GetSSMParameterTask with the following attributes:
       | attribute        | value                           |
@@ -22,6 +23,7 @@ Feature: Get SSM Parameter Task
     And the output should contain the complete Parameter object with Value, Type, etc.
     And the task should complete successfully
 
+  @happy
   Scenario: Get SSM parameter with dynamic region replacement
     Given a GetSSMParameterTask with the following attributes:
       | attribute        | value                           |
@@ -34,6 +36,7 @@ Feature: Get SSM Parameter Task
     And the parameter should be retrieved using the resolved name
     And the output should use the resolved parameter name as key
 
+  @happy
   Scenario: Get SSM parameter with dynamic account ID replacement
     Given a GetSSMParameterTask with the following attributes:
       | attribute        | value                                     |
@@ -46,6 +49,7 @@ Feature: Get SSM Parameter Task
     And the parameter should be retrieved using the resolved name
     And the output should contain the account-specific parameter
 
+  @happy
   Scenario: Get SSM parameter with JMESPath filtering
     Given a GetSSMParameterTask with the following attributes:
       | attribute        | value                           |
@@ -60,6 +64,7 @@ Feature: Get SSM Parameter Task
     And the output Parameter object should have the filtered value
     And the original parameter structure should be preserved with new Value
 
+  @happy
   Scenario: Handle non-existent SSM parameter gracefully
     Given a GetSSMParameterTask with the following attributes:
       | attribute        | value                           |
@@ -74,6 +79,7 @@ Feature: Get SSM Parameter Task
     And no error should be raised
     And the task should complete successfully
 
+  @happy
   Scenario: Get SSM parameter with complex JMESPath expression
     Given a GetSSMParameterTask with the following attributes:
       | attribute        | value                           |
@@ -87,6 +93,7 @@ Feature: Get SSM Parameter Task
     And the specific service endpoint should be extracted
     And the filtered result should be set as the parameter value
 
+  @happy
   Scenario: Get parameters by path with pagination
     Given a GetSSMParameterByPathTask with the following attributes:
       | attribute        | value                           |
@@ -101,6 +108,7 @@ Feature: Get SSM Parameter Task
     And the output should contain all parameters with their full names as keys
     And each parameter should include the complete Parameter object
 
+  @happy
   Scenario: Get parameters by path with dynamic replacements
     Given a GetSSMParameterByPathTask with the following attributes:
       | attribute        | value                           |
@@ -113,6 +121,7 @@ Feature: Get SSM Parameter Task
     And all parameters under the resolved path should be retrieved
     And the recursive search should find nested parameters
 
+  @happy
   Scenario: Get parameters by path with JMESPath filtering
     Given a GetSSMParameterByPathTask with the following attributes:
       | attribute        | value                           |

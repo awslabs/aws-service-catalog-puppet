@@ -8,6 +8,7 @@ Feature: Do Terminate Product Task
     And the target account and region are accessible
     And Service Catalog service is available
 
+  @happy
   Scenario: Terminate existing provisioned product successfully
     Given a DoTerminateProductTask with the following attributes:
       | attribute              | value                     |
@@ -24,6 +25,7 @@ Feature: Do Terminate Product Task
     And the termination should complete successfully
     And an empty output file should be written
 
+  @happy
   Scenario: Handle termination when product does not exist
     Given a DoTerminateProductTask with the following attributes:
       | attribute              | value                     |
@@ -41,6 +43,7 @@ Feature: Do Terminate Product Task
     And an empty output file should be written
     And the task should complete successfully
 
+  @happy
   Scenario: Terminate product with custom retry and timeout settings
     Given a DoTerminateProductTask with the following attributes:
       | attribute              | value                     |
@@ -59,6 +62,7 @@ Feature: Do Terminate Product Task
     And the worker timeout should be 900 seconds
     And the provisioned product should be terminated
 
+  @happy
   Scenario: Terminate product with launch parameters and SSM inputs
     Given a DoTerminateProductTask with the following attributes:
       | attribute              | value                     |
@@ -82,6 +86,7 @@ Feature: Do Terminate Product Task
     Then the provisioned product should be terminated
     And the task should complete with all parameters logged
 
+  @happy
   Scenario: Wait for termination to complete when product is under change
     Given a DoTerminateProductTask with the following attributes:
       | attribute              | value                     |

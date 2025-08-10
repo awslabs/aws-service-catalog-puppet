@@ -9,6 +9,7 @@ Feature: Prepare C7N Hub Account Task
     And I have CloudFormation deployment capabilities
     And I have the organization ID and custodian configuration parameters
 
+  @happy
   Scenario: Prepare C7N hub account with standard c7n
     Given a PrepareC7NHubAccountTask with the following attributes:
       | attribute           | value                           |
@@ -29,6 +30,7 @@ Feature: Prepare C7N Hub Account Task
     And an EventBridge rule should be created with the specified schedule
     And the output should contain the c7n account ID
 
+  @happy
   Scenario: Prepare C7N hub account with c7n-org
     Given a PrepareC7NHubAccountTask with the following attributes:
       | attribute           | value                           |
@@ -46,6 +48,7 @@ Feature: Prepare C7N Hub Account Task
     And the S3 bucket should be named with the custodian region
     And the EventBridge rule should be enabled with the daily schedule
 
+  @happy
   Scenario: Prepare C7N hub account without scheduled execution
     Given a PrepareC7NHubAccountTask with the following attributes:
       | attribute           | value                           |
@@ -61,6 +64,7 @@ Feature: Prepare C7N Hub Account Task
     And c7n policies will only run when triggered manually
     And all other infrastructure should be created normally
 
+  @happy
   Scenario: Verify IAM roles and permissions
     Given a PrepareC7NHubAccountTask with the following attributes:
       | attribute           | value                           |
@@ -81,6 +85,7 @@ Feature: Prepare C7N Hub Account Task
     And the C7NEventRuleRunRole should have codebuild:StartBuild permission
     And the EventBus policy should allow the specified organization
 
+  @happy
   Scenario: Verify S3 bucket configuration
     Given a PrepareC7NHubAccountTask with the following attributes:
       | attribute           | value                           |
@@ -98,6 +103,7 @@ Feature: Prepare C7N Hub Account Task
     And the bucket should block all public access
     And the bucket should have ServiceCatalogPuppet:Actor tag
 
+  @happy
   Scenario: Verify CodeBuild project configuration
     Given a PrepareC7NHubAccountTask with the following attributes:
       | attribute           | value                           |
@@ -115,6 +121,7 @@ Feature: Prepare C7N Hub Account Task
     And the project should have environment variables for c7n version and account details
     And the project should reference SSM parameters for regions and role ARN
 
+  @unhappy
   Scenario: Handle hub account preparation failure
     Given a PrepareC7NHubAccountTask with the following attributes:
       | attribute           | value                           |

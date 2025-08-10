@@ -8,6 +8,7 @@ Feature: Do Execute Code Build Run Task
     And the project has environment variables defined
     And I have the necessary AWS permissions
 
+  @happy
   Scenario: Execute CodeBuild run successfully
     Given a DoExecuteCodeBuildRunTask with the following attributes:
       | attribute             | value                    |
@@ -23,6 +24,7 @@ Feature: Do Execute Code Build Run Task
     And the build should complete successfully
     And an empty output file should be written
 
+  @happy
   Scenario: Execute CodeBuild run with parameters
     Given a DoExecuteCodeBuildRunTask with the following attributes:
       | attribute             | value                    |
@@ -42,6 +44,7 @@ Feature: Do Execute Code Build Run Task
     Then the CodeBuild project should be executed with the custom parameters
     And the build should complete successfully
 
+  @unhappy
   Scenario: Handle CodeBuild execution failure
     Given a DoExecuteCodeBuildRunTask with the following attributes:
       | attribute             | value                    |

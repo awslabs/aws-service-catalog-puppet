@@ -9,6 +9,7 @@ Feature: Do Execute Service Control Policies Task
     And AWS Organizations service is available
     And service control policies are enabled in the organization
 
+  @happy
   Scenario: Execute service control policy for an account successfully
     Given a DoExecuteServiceControlPoliciesTask with the following attributes:
       | attribute                    | value                          |
@@ -29,6 +30,7 @@ Feature: Do Execute Service Control Policies Task
     And the policy should enforce the defined restrictions
     And the task should complete successfully
 
+  @happy
   Scenario: Execute service control policy for an organizational unit
     Given a DoExecuteServiceControlPoliciesTask with the following attributes:
       | attribute                    | value                          |
@@ -49,6 +51,7 @@ Feature: Do Execute Service Control Policies Task
     And all accounts in the OU should inherit the policy restrictions
     And the task should complete successfully
 
+  @happy
   Scenario: Execute service control policy with high priority
     Given a DoExecuteServiceControlPoliciesTask with the following attributes:
       | attribute                    | value                          |
@@ -69,6 +72,7 @@ Feature: Do Execute Service Control Policies Task
     And the service control policy should be attached to the account
     And critical security restrictions should be enforced
 
+  @happy
   Scenario: Execute service control policy with complex JSON content
     Given a DoExecuteServiceControlPoliciesTask with the following attributes:
       | attribute                    | value                          |
@@ -86,6 +90,7 @@ Feature: Do Execute Service Control Policies Task
     And the service control policy should be attached with all conditions
     And the task should complete successfully
 
+  @happy
   Scenario: Handle organizational unit lookup by name
     Given a DoExecuteServiceControlPoliciesTask with the following attributes:
       | attribute                    | value                          |

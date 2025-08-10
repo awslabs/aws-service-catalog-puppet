@@ -8,6 +8,7 @@ Feature: Provision App Task
     And the target account and region are accessible
     And the S3 bucket contains the application artifacts
 
+  @happy
   Scenario: Provision app successfully
     Given a ProvisionAppTask with the following attributes:
       | attribute              | value                     |
@@ -23,6 +24,7 @@ Feature: Provision App Task
     And an empty output file should be written
     And the task should complete successfully
 
+  @happy
   Scenario: Provision app with launch parameters
     Given a ProvisionAppTask with the following attributes:
       | attribute              | value                     |
@@ -41,6 +43,7 @@ Feature: Provision App Task
     Then the app should be provisioned with the specified parameters
     And an empty output file should be written
 
+  @happy
   Scenario: Provision app with SSM parameter inputs
     Given a ProvisionAppTask with the following attributes:
       | attribute              | value                     |
@@ -60,6 +63,7 @@ Feature: Provision App Task
     And the app should be provisioned successfully
     And an empty output file should be written
 
+  @unhappy
   Scenario: Handle provisioning failure
     Given a ProvisionAppTask with the following attributes:
       | attribute              | value                     |
@@ -75,6 +79,7 @@ Feature: Provision App Task
     Then the task should handle the error appropriately
     And relevant error information should be logged
 
+  @happy
   Scenario: Provision app with retry configuration
     Given a ProvisionAppTask with the following attributes:
       | attribute              | value                     |

@@ -8,6 +8,7 @@ Feature: Terminate CloudFormation Stack Task
     And the target account and region are accessible
     And I have CloudFormation delete permissions
 
+  @happy
   Scenario: Terminate existing CloudFormation stack successfully
     Given a TerminateCloudFormationStackTask with the following attributes:
       | attribute    | value                        |
@@ -21,6 +22,7 @@ Feature: Terminate CloudFormation Stack Task
     And the stack deletion should complete successfully
     And an empty output file should be written
 
+  @happy
   Scenario: Attempt to terminate non-existent stack
     Given a TerminateCloudFormationStackTask with the following attributes:
       | attribute    | value                        |
@@ -34,6 +36,7 @@ Feature: Terminate CloudFormation Stack Task
     And no error should be raised for missing stack
     And an empty output file should be written
 
+  @happy
   Scenario: Terminate stack in different region
     Given a TerminateCloudFormationStackTask with the following attributes:
       | attribute    | value                        |
@@ -46,6 +49,7 @@ Feature: Terminate CloudFormation Stack Task
     And the regional CloudFormation client should be used
     And the stack should be terminated successfully
 
+  @happy
   Scenario: Terminate stack with dependencies
     Given a TerminateCloudFormationStackTask with the following attributes:
       | attribute    | value                        |
@@ -59,6 +63,7 @@ Feature: Terminate CloudFormation Stack Task
     And any dependency conflicts should be handled appropriately
     And proper error handling should occur if deletion fails due to dependencies
 
+  @happy
   Scenario: Terminate stack in cross-account scenario
     Given a TerminateCloudFormationStackTask with the following attributes:
       | attribute    | value                        |
@@ -72,6 +77,7 @@ Feature: Terminate CloudFormation Stack Task
     And proper cross-account permissions should be validated
     And an empty output file should be written
 
+  @happy
   Scenario: Handle stack in DELETE_FAILED state
     Given a TerminateCloudFormationStackTask with the following attributes:
       | attribute    | value                        |
@@ -85,6 +91,7 @@ Feature: Terminate CloudFormation Stack Task
     And the ensure_deleted method should handle the failed state
     And the stack should eventually be cleaned up
 
+  @happy
   Scenario: Terminate stack with retain policy resources
     Given a TerminateCloudFormationStackTask with the following attributes:
       | attribute    | value                        |
@@ -98,6 +105,7 @@ Feature: Terminate CloudFormation Stack Task
     And resources with retain policy should remain in the account
     And the stack metadata should be removed from CloudFormation
 
+  @unhappy
   Scenario: Handle termination with insufficient permissions
     Given a TerminateCloudFormationStackTask with the following attributes:
       | attribute    | value                        |

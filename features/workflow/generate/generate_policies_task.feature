@@ -8,6 +8,7 @@ Feature: Generate Policies Task
     And the target account and region are accessible
     And CloudFormation service is available
 
+  @happy
   Scenario: Generate policies successfully
     Given a GeneratePolicies task with the following attributes:
       | attribute                    | value                          |
@@ -22,6 +23,7 @@ Feature: Generate Policies Task
     And an empty output file should be written
     And the task should complete successfully
 
+  @happy
   Scenario: Generate policies with organizations
     Given a GeneratePolicies task with the following attributes:
       | attribute                    | value                          |
@@ -35,6 +37,7 @@ Feature: Generate Policies Task
     And the stack should contain sharing policies for the specified organization
     And an empty output file should be written
 
+  @unhappy
   Scenario: Generate policies with too many accounts warning
     Given a GeneratePolicies task with the following attributes:
       | attribute                    | value                          |
@@ -49,6 +52,7 @@ Feature: Generate Policies Task
     And spoke execution mode should not work
     And the task should still complete
 
+  @happy
   Scenario: Generate policies with SNS notifications
     Given a GeneratePolicies task with the following attributes:
       | attribute                    | value                          |

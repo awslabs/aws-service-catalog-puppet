@@ -8,6 +8,7 @@ Feature: Provision Product Task
     And the target account and region are accessible
     And Service Catalog service is available
 
+  @happy
   Scenario: Provision product successfully for the first time
     Given a ProvisionProductTask with the following attributes:
       | attribute                                      | value                          |
@@ -27,6 +28,7 @@ Feature: Provision Product Task
     And the task output should indicate provisioned: true
     And the task should complete successfully
 
+  @happy
   Scenario: Update existing provisioned product with changed parameters
     Given a ProvisionProductTask with the following attributes:
       | attribute                                      | value                          |
@@ -50,6 +52,7 @@ Feature: Provision Product Task
     And the task output should indicate provisioned: true
     And the new parameters should be applied
 
+  @happy
   Scenario: Skip provisioning when parameters are unchanged
     Given a ProvisionProductTask with the following attributes:
       | attribute                                      | value                          |
@@ -73,6 +76,7 @@ Feature: Provision Product Task
     And the task output should indicate provisioned: false
     And the existing product should remain unchanged
 
+  @happy
   Scenario: Provision product with SSM parameter inputs
     Given a ProvisionProductTask with the following attributes:
       | attribute                                      | value                          |
@@ -92,6 +96,7 @@ Feature: Provision Product Task
     And the product should be provisioned with the SSM parameter values
     And the task should complete successfully
 
+  @happy
   Scenario: Handle clean up of tainted provisioned product
     Given a ProvisionProductTask with the following attributes:
       | attribute                                      | value                          |
@@ -111,6 +116,7 @@ Feature: Provision Product Task
     And the product should be reprovisioned
     And the task should complete successfully
 
+  @happy
   Scenario: Provision product with custom priority and retry settings
     Given a ProvisionProductTask with the following attributes:
       | attribute                                      | value                          |

@@ -9,6 +9,7 @@ Feature: Forward Events For Account Task
     And I have CloudFormation deployment capabilities
     And the Cloud Custodian hub account is configured
 
+  @happy
   Scenario: Create event forwarding role successfully
     Given a ForwardEventsForAccountTask with the following attributes:
       | attribute        | value           |
@@ -22,6 +23,7 @@ Feature: Forward Events For Account Task
     And the role should allow Amazon EventBridge to assume it
     And an empty output file should be written
 
+  @happy
   Scenario: Create event forwarding for different custodian region
     Given a ForwardEventsForAccountTask with the following attributes:
       | attribute        | value           |
@@ -33,6 +35,7 @@ Feature: Forward Events For Account Task
     And the role should be created with proper permissions
     And the CloudFormation stack should deploy successfully
 
+  @happy
   Scenario: Update existing event forwarding configuration
     Given a ForwardEventsForAccountTask with the following attributes:
       | attribute        | value           |
@@ -45,6 +48,7 @@ Feature: Forward Events For Account Task
     And change sets should not be used for the update
     And an empty output file should be written
 
+  @happy
   Scenario: Create event forwarding with SNS notifications
     Given a ForwardEventsForAccountTask with the following attributes:
       | attribute        | value           |
@@ -57,6 +61,7 @@ Feature: Forward Events For Account Task
     And the stack should complete successfully
     And the event forwarding role should be functional
 
+  @happy
   Scenario: Handle multiple partition support
     Given a ForwardEventsForAccountTask with the following attributes:
       | attribute        | value           |
@@ -67,6 +72,7 @@ Feature: Forward Events For Account Task
     And the role should be created with partition-aware permissions
     And the CloudFormation template should handle partition references correctly
 
+  @unhappy
   Scenario: Handle event forwarding setup failure
     Given a ForwardEventsForAccountTask with the following attributes:
       | attribute        | value           |
@@ -77,6 +83,7 @@ Feature: Forward Events For Account Task
     Then the task should handle the error appropriately
     And relevant error information should be logged
 
+  @happy
   Scenario: Verify event forwarding role permissions
     Given a ForwardEventsForAccountTask with the following attributes:
       | attribute        | value           |

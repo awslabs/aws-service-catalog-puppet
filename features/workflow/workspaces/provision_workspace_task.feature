@@ -9,6 +9,7 @@ Feature: Provision Workspace Task
     And AWS Workspaces service is available
     And the S3 bucket contains workspace artifacts
 
+  @happy
   Scenario: Provision workspace successfully
     Given a ProvisionWorkspaceTask with the following attributes:
       | attribute              | value                     |
@@ -25,6 +26,7 @@ Feature: Provision Workspace Task
     And the workspace artifacts should be downloaded from S3
     And the task should complete successfully
 
+  @happy
   Scenario: Provision workspace with launch parameters
     Given a ProvisionWorkspaceTask with the following attributes:
       | attribute              | value                     |
@@ -46,6 +48,7 @@ Feature: Provision Workspace Task
     And the correct bundle and directory should be used
     And the task should complete successfully
 
+  @happy
   Scenario: Provision workspace with SSM parameter inputs
     Given a ProvisionWorkspaceTask with the following attributes:
       | attribute              | value                     |
@@ -63,6 +66,7 @@ Feature: Provision Workspace Task
     And the workspace should be provisioned with SSM parameter values
     And the task should complete successfully
 
+  @happy
   Scenario: Provision workspace with custom priority and retry settings
     Given a ProvisionWorkspaceTask with the following attributes:
       | attribute              | value                     |
@@ -83,6 +87,7 @@ Feature: Provision Workspace Task
     And the worker timeout should be 900 seconds
     And the workspace should be provisioned successfully
 
+  @happy
   Scenario: Provision workspace with manifest and account parameters
     Given a ProvisionWorkspaceTask with the following attributes:
       | attribute              | value                     |
@@ -107,6 +112,7 @@ Feature: Provision Workspace Task
     And the correct VPC and subnets should be used
     And the task should complete successfully
 
+  @happy
   Scenario: Handle workspace provisioning with S3 artifact processing
     Given a ProvisionWorkspaceTask with the following attributes:
       | attribute              | value                     |

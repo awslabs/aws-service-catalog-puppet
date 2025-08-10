@@ -8,6 +8,7 @@ Feature: Terminate Stack Task
     And the target account and region are accessible
     And CloudFormation service is available
 
+  @happy
   Scenario: Terminate stack successfully
     Given a TerminateStackTask with the following attributes:
       | attribute              | value                     |
@@ -31,6 +32,7 @@ Feature: Terminate Stack Task
     And the stack deletion should complete successfully
     And an empty output file should be written
 
+  @happy
   Scenario: Terminate stack with service role
     Given a TerminateStackTask with the following attributes:
       | attribute              | value                     |
@@ -53,6 +55,7 @@ Feature: Terminate Stack Task
     And proper IAM permissions should be used for termination
     And the task should complete successfully
 
+  @happy
   Scenario: Terminate stack with SSM parameter inputs
     Given a TerminateStackTask with the following attributes:
       | attribute              | value                     |
@@ -72,6 +75,7 @@ Feature: Terminate Stack Task
     And the stack should be terminated appropriately
     And SSM parameter values should be logged for reference
 
+  @happy
   Scenario: Terminate stack set instance
     Given a TerminateStackTask with the following attributes:
       | attribute              | value                     |
@@ -95,6 +99,7 @@ Feature: Terminate Stack Task
     And the StackSet operation should complete successfully
     And the task should handle StackSet-specific termination logic
 
+  @happy
   Scenario: Handle termination when stack does not exist
     Given a TerminateStackTask with the following attributes:
       | attribute              | value                     |
@@ -114,6 +119,7 @@ Feature: Terminate Stack Task
     And appropriate logging should indicate stack was not found
     And the task should complete successfully without error
 
+  @happy
   Scenario: Terminate stack with custom retry and timeout settings
     Given a TerminateStackTask with the following attributes:
       | attribute              | value                     |
@@ -139,6 +145,7 @@ Feature: Terminate Stack Task
     And the worker timeout should be 1800 seconds
     And the stack termination should proceed with these settings
 
+  @happy
   Scenario: Terminate stack with launch and manifest parameters
     Given a TerminateStackTask with the following attributes:
       | attribute              | value                     |

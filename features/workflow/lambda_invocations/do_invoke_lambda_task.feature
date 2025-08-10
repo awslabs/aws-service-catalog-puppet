@@ -9,6 +9,7 @@ Feature: Do Invoke Lambda Task
     And I have Lambda invoke permissions
     And the specified Lambda function exists
 
+  @happy
   Scenario: Invoke Lambda function with RequestResponse invocation type
     Given a DoInvokeLambdaTask with the following attributes:
       | attribute                | value                           |
@@ -25,6 +26,7 @@ Feature: Do Invoke Lambda Task
     And the response status code should be 200
     And an empty output file should be written if successful
 
+  @happy
   Scenario: Invoke Lambda function with Event invocation type
     Given a DoInvokeLambdaTask with the following attributes:
       | attribute                | value                           |
@@ -41,6 +43,7 @@ Feature: Do Invoke Lambda Task
     And the task should complete without waiting for function completion
     And an empty output file should be written
 
+  @happy
   Scenario: Invoke Lambda function with DryRun invocation type
     Given a DoInvokeLambdaTask with the following attributes:
       | attribute                | value                           |
@@ -57,6 +60,7 @@ Feature: Do Invoke Lambda Task
     And no actual processing should occur in the Lambda function
     And an empty output file should be written
 
+  @happy
   Scenario: Invoke Lambda function with custom parameters
     Given a DoInvokeLambdaTask with the following attributes:
       | attribute                | value                           |
@@ -73,6 +77,7 @@ Feature: Do Invoke Lambda Task
     And the parameters should be properly serialized in the payload
     And the Lambda function should receive all necessary context data
 
+  @unhappy
   Scenario: Handle Lambda function execution error
     Given a DoInvokeLambdaTask with the following attributes:
       | attribute                | value                           |
@@ -89,6 +94,7 @@ Feature: Do Invoke Lambda Task
     And the error details should be properly reported
     And the task should fail with appropriate error information
 
+  @unhappy
   Scenario: Handle Lambda invocation failure with wrong status code
     Given a DoInvokeLambdaTask with the following attributes:
       | attribute                | value                           |
@@ -104,6 +110,7 @@ Feature: Do Invoke Lambda Task
     Then an exception should be raised indicating invocation failure
     And the exception should include the lambda invocation name, account, and region
 
+  @happy
   Scenario: Invoke Lambda function in hub account home region
     Given a DoInvokeLambdaTask with the following attributes:
       | attribute                | value                           |
@@ -119,6 +126,7 @@ Feature: Do Invoke Lambda Task
     And the hub regional client should be used for the invocation
     And the cross-region invocation should complete successfully
 
+  @happy
   Scenario: Invoke Lambda function with specific version qualifier
     Given a DoInvokeLambdaTask with the following attributes:
       | attribute                | value                           |

@@ -8,6 +8,7 @@ Feature: Do Assert Task
     And the target account and region are accessible
     And I have assertion definitions with expected and actual configurations
 
+  @happy
   Scenario: Assert string value matches exactly
     Given a DoAssertTask with the following attributes:
       | attribute        | value                     |
@@ -30,6 +31,7 @@ Feature: Do Assert Task
     Then the assertion should pass
     And an empty output file should be written
 
+  @happy
   Scenario: Assert list values match ignoring order
     Given a DoAssertTask with the following attributes:
       | attribute        | value                     |
@@ -52,6 +54,7 @@ Feature: Do Assert Task
     Then the assertion should pass because order is ignored
     And an empty output file should be written
 
+  @happy
   Scenario: Assert with paginated API call
     Given a DoAssertTask with the following attributes:
       | attribute        | value                     |
@@ -75,6 +78,7 @@ Feature: Do Assert Task
     And verify the total bucket count
     And an empty output file should be written
 
+  @unhappy
   Scenario: Handle assertion failure with detailed diff
     Given a DoAssertTask with the following attributes:
       | attribute        | value                     |
@@ -97,6 +101,7 @@ Feature: Do Assert Task
     Then an exception should be raised with detailed diff information
     And the diff should show expected "running" vs actual "stopped"
 
+  @happy
   Scenario: Assert with complex nested object comparison
     Given a DoAssertTask with the following attributes:
       | attribute        | value                     |
@@ -119,6 +124,7 @@ Feature: Do Assert Task
     Then the assertion should pass
     And an empty output file should be written
 
+  @happy
   Scenario: Handle string whitespace normalization
     Given a DoAssertTask with the following attributes:
       | attribute        | value                     |

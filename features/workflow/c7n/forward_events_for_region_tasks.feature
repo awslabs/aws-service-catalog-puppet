@@ -9,6 +9,7 @@ Feature: Forward Events For Region Task
     And I have CloudFormation deployment capabilities
     And the Cloud Custodian event forwarder role exists
 
+  @happy
   Scenario: Create regional event forwarding rule successfully
     Given a ForwardEventsForRegionTask with the following attributes:
       | attribute        | value           |
@@ -22,6 +23,7 @@ Feature: Forward Events For Region Task
     And the rule should use the c7nEventForwarder role for cross-account access
     And an empty output file should be written
 
+  @happy
   Scenario: Create event forwarding for different custodian region
     Given a ForwardEventsForRegionTask with the following attributes:
       | attribute        | value           |
@@ -33,6 +35,7 @@ Feature: Forward Events For Region Task
     And the rule should be created with proper partition awareness
     And the CloudFormation stack should deploy successfully
 
+  @happy
   Scenario: Create event forwarding rule with account filtering
     Given a ForwardEventsForRegionTask with the following attributes:
       | attribute        | value           |
@@ -44,6 +47,7 @@ Feature: Forward Events For Region Task
     And only events from the current account should be forwarded
     And the rule description should indicate it forwards events for c7n
 
+  @happy
   Scenario: Update existing regional event forwarding configuration
     Given a ForwardEventsForRegionTask with the following attributes:
       | attribute        | value           |
@@ -56,6 +60,7 @@ Feature: Forward Events For Region Task
     And change sets should not be used for the update
     And an empty output file should be written
 
+  @happy
   Scenario: Create event forwarding with SNS notifications
     Given a ForwardEventsForRegionTask with the following attributes:
       | attribute        | value           |
@@ -68,6 +73,7 @@ Feature: Forward Events For Region Task
     And the stack should complete successfully
     And the event forwarding rule should be active
 
+  @happy
   Scenario: Handle multiple partition support for event forwarding
     Given a ForwardEventsForRegionTask with the following attributes:
       | attribute        | value           |
@@ -78,6 +84,7 @@ Feature: Forward Events For Region Task
     And the forwarder role ARN should use the correct partition
     And the CloudFormation template should handle partition references correctly
 
+  @happy
   Scenario: Verify event rule configuration
     Given a ForwardEventsForRegionTask with the following attributes:
       | attribute        | value           |
@@ -89,6 +96,7 @@ Feature: Forward Events For Region Task
     And the target should reference the c7nEventForwarder role
     And the rule state should be "ENABLED"
 
+  @unhappy
   Scenario: Handle regional event forwarding setup failure
     Given a ForwardEventsForRegionTask with the following attributes:
       | attribute        | value              |

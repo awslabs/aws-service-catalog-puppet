@@ -8,6 +8,7 @@ Feature: Get Or Create Organizational Unit Task
     And the target account and region are accessible
     And AWS Organizations service is available
 
+  @happy
   Scenario: Create new organizational unit successfully
     Given a GetOrCreateOrganizationalUnitTask with the following attributes:
       | attribute         | value                          |
@@ -28,6 +29,7 @@ Feature: Get Or Create Organizational Unit Task
     And the task should return the organizational unit ID
     And the task should complete successfully
 
+  @happy
   Scenario: Get existing organizational unit
     Given a GetOrCreateOrganizationalUnitTask with the following attributes:
       | attribute         | value                          |
@@ -48,6 +50,7 @@ Feature: Get Or Create Organizational Unit Task
     And the task should return the existing organizational unit ID
     And the task should complete successfully
 
+  @happy
   Scenario: Handle organizational unit creation with nested path
     Given a GetOrCreateOrganizationalUnitTask with the following attributes:
       | attribute         | value                          |
@@ -66,6 +69,7 @@ Feature: Get Or Create Organizational Unit Task
     And the full path should be maintained
     And the task should complete successfully
 
+  @happy
   Scenario: Create organizational unit with dependency on parent OU task
     Given a GetOrCreateOrganizationalUnitTask with the following attributes:
       | attribute         | value                          |
@@ -81,6 +85,7 @@ Feature: Get Or Create Organizational Unit Task
     And then create the organizational unit
     And the task should complete successfully
 
+  @unhappy
   Scenario: Handle organizational unit creation failure
     Given a GetOrCreateOrganizationalUnitTask with the following attributes:
       | attribute         | value                          |

@@ -8,6 +8,7 @@ Feature: Boto3 Task
     And the target account and region are accessible
     And I have proper client configurations
 
+  @happy
   Scenario: Execute simple boto3 API call without pagination
     Given a Boto3Task with the following attributes:
       | attribute      | value                                   |
@@ -24,6 +25,7 @@ Feature: Boto3 Task
     And the filtered result should be written to output
     And the task should complete successfully
 
+  @happy
   Scenario: Execute boto3 API call with pagination
     Given a Boto3Task with the following attributes:
       | attribute      | value                                   |
@@ -40,6 +42,7 @@ Feature: Boto3 Task
     And the result should be filtered using the JMESPath expression
     And the filtered result should be written to output
 
+  @happy
   Scenario: Execute API call with complex arguments and filter
     Given a Boto3Task with the following attributes:
       | attribute      | value                                                    |
@@ -56,6 +59,7 @@ Feature: Boto3 Task
     And the result should be a list of running instance IDs
     And the filtered result should be written to output
 
+  @happy
   Scenario: Handle string result with whitespace trimming
     Given a Boto3Task with the following attributes:
       | attribute      | value                                   |
@@ -71,6 +75,7 @@ Feature: Boto3 Task
     Then the whitespace should be automatically trimmed
     And the cleaned string result should be written to output
 
+  @happy
   Scenario: Execute CloudFormation API call with pagination
     Given a Boto3Task with the following attributes:
       | attribute      | value                                   |
@@ -87,6 +92,7 @@ Feature: Boto3 Task
     And the result should be a list of stack names
     And the filtered result should be written to output
 
+  @happy
   Scenario: Execute IAM API call for role information
     Given a Boto3Task with the following attributes:
       | attribute      | value                                   |
@@ -102,6 +108,7 @@ Feature: Boto3 Task
     And the role ARN should be extracted using JMESPath
     And the ARN should be written to output
 
+  @happy
   Scenario: Handle complex nested filter with multiple conditions
     Given a Boto3Task with the following attributes:
       | attribute      | value                                                           |
@@ -117,6 +124,7 @@ Feature: Boto3 Task
     And the filter should extract CIDR blocks for port 80 rules
     And the specific CIDR block should be written to output
 
+  @unhappy
   Scenario: Handle API call failure gracefully
     Given a Boto3Task with the following attributes:
       | attribute      | value                                   |

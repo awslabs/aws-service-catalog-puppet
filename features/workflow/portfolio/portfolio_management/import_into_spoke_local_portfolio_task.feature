@@ -9,6 +9,7 @@ Feature: Import Into Spoke Local Portfolio Task
     And Service Catalog service is available
     And both hub and spoke portfolios exist
 
+  @happy
   Scenario: Import products into spoke local portfolio successfully
     Given an ImportIntoSpokeLocalPortfolioTask with the following attributes:
       | attribute                                                 | value                          |
@@ -26,6 +27,7 @@ Feature: Import Into Spoke Local Portfolio Task
     And product versions should be synchronized
     And the task should complete successfully
 
+  @happy
   Scenario: Skip import when products are already synchronized
     Given an ImportIntoSpokeLocalPortfolioTask with the following attributes:
       | attribute                                                 | value                          |
@@ -43,6 +45,7 @@ Feature: Import Into Spoke Local Portfolio Task
     And the task should complete without making changes
     And appropriate logging should indicate products are already synchronized
 
+  @happy
   Scenario: Import specific product versions from hub to spoke
     Given an ImportIntoSpokeLocalPortfolioTask with the following attributes:
       | attribute                                                 | value                          |
@@ -61,6 +64,7 @@ Feature: Import Into Spoke Local Portfolio Task
     And new products should be added to the spoke portfolio
     And version synchronization should be completed
 
+  @happy
   Scenario: Handle import when spoke portfolio is empty
     Given an ImportIntoSpokeLocalPortfolioTask with the following attributes:
       | attribute                                                 | value                          |
@@ -79,6 +83,7 @@ Feature: Import Into Spoke Local Portfolio Task
     And the spoke portfolio should match the hub portfolio content
     And the task should complete successfully
 
+  @happy
   Scenario: Import with cross-region portfolio synchronization
     Given an ImportIntoSpokeLocalPortfolioTask with the following attributes:
       | attribute                                                 | value                          |
@@ -96,6 +101,7 @@ Feature: Import Into Spoke Local Portfolio Task
     And regional constraints should be handled appropriately
     And the task should complete successfully
 
+  @unhappy
   Scenario: Handle import failure when hub portfolio is not accessible
     Given an ImportIntoSpokeLocalPortfolioTask with the following attributes:
       | attribute                                                 | value                          |
