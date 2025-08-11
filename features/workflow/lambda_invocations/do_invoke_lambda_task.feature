@@ -1,5 +1,5 @@
 Feature: Do Invoke Lambda Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to invoke AWS Lambda functions as part of my deployment pipeline
   So that I can execute custom business logic and integrations during infrastructure deployments
 

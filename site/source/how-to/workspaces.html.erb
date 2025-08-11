@@ -1,0 +1,182 @@
+---
+title: Working with Workspaces  
+---
+
+<h1>Working with Workspaces</h1>
+
+<p>Workspaces allow you to provision Terraform Cloud/Enterprise workspaces as part of your Cloud Workflow Engine workflow, enabling Infrastructure as Code deployments across multiple AWS accounts and regions.</p>
+
+<h2>Overview</h2>
+
+<p>The workspaces action type allows you to:</p>
+<ul>
+  <li>Provision Terraform workspaces from S3 artifacts</li>
+  <li>Deploy infrastructure using Terraform configurations</li>
+  <li>Handle cross-account deployments</li>
+  <li>Support both hub and spoke execution modes</li>
+  <li>Process workspace artifacts from zip files</li>
+</ul>
+
+<h2>Workspace Configuration</h2>
+
+<p>To configure a workspace in your manifest, you need to specify:</p>
+
+<h3>Required Parameters</h3>
+<ul>
+  <li><strong>workspace_name</strong>: Name of the Terraform workspace</li>
+  <li><strong>region</strong>: AWS region for deployment</li>
+  <li><strong>account_id</strong>: Target AWS account ID</li>
+  <li><strong>bucket</strong>: S3 bucket containing the workspace artifacts</li>
+  <li><strong>key</strong>: S3 key path to the workspace zip file</li>
+  <li><strong>version_id</strong>: S3 version ID of the artifact</li>
+  <li><strong>execution</strong>: Execution mode (hub or spoke)</li>
+  <li><strong>manifest_file_path</strong>: Path to the manifest file</li>
+</ul>
+
+<h3>Optional Parameters</h3>
+<ul>
+  <li><strong>ssm_param_inputs</strong>: SSM parameters to retrieve for workspace variables</li>
+  <li><strong>launch_parameters</strong>: Parameters for workspace configuration</li>
+  <li><strong>manifest_parameters</strong>: Parameters from the manifest</li>
+  <li><strong>account_parameters</strong>: Account-specific parameters</li>
+  <li><strong>retry_count</strong>: Number of retry attempts</li>
+  <li><strong>worker_timeout</strong>: Timeout for the task</li>
+  <li><strong>requested_priority</strong>: Task priority</li>
+</ul>
+
+<h2>Example Configuration</h2>
+
+<pre><code class="language-yaml">workspaces:
+  infrastructure-workspace:
+    workspace_name: my-infra-workspace
+    template:
+      path: terraform/infrastructure.zip
+    parameters:
+      instance_type: t3.medium
+      environment: production
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h2>Workspace Artifacts</h2>
+
+<p>Workspace artifacts are stored as zip files in S3 and should contain:</p>
+<ul>
+  <li>Terraform configuration files (.tf)</li>
+  <li>Variable definitions (.tfvars)</li>
+  <li>Terraform modules (if not using remote modules)</li>
+  <li>Any additional scripts or resources needed</li>
+</ul>
+
+<h3>Artifact Structure</h3>
+<pre><code class="language-yaml">workspace.zip
+├── main.tf
+├── variables.tf
+├── outputs.tf
+├── terraform.tfvars
+└── modules/
+    └── custom-module/
+        ├── main.tf
+        └── variables.tf
+</code></pre>
+
+<h2>Parameter Passing</h2>
+
+<p>Parameters can be passed to workspaces through multiple mechanisms:</p>
+
+<h3>Launch Parameters</h3>
+<p>Direct parameters specified in the manifest configuration.</p>
+
+<h3>SSM Parameters</h3>
+<p>Dynamic parameters retrieved from AWS Systems Manager Parameter Store.</p>
+
+<h3>Manifest Parameters</h3>
+<p>Parameters derived from the manifest context (region, account, etc.).</p>
+
+<h3>Account Parameters</h3>
+<p>Account-specific parameters like VPC IDs, subnet IDs, etc.</p>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Use descriptive workspace names that indicate purpose and environment</li>
+  <li>Version your workspace artifacts to ensure consistent deployments</li>
+  <li>Use SSM parameters for sensitive values like secrets and keys</li>
+  <li>Structure your Terraform code with clear modules and documentation</li>
+  <li>Test workspace configurations in development environments first</li>
+  <li>Use remote state backends for production workspaces</li>
+  <li>Implement proper resource tagging strategies</li>
+</ul>
+
+<h2>Terraform Configuration Tips</h2>
+
+<h3>Provider Configuration</h3>
+<pre><code class="language-yaml">terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+  
+  assume_role {
+    role_arn = var.execution_role_arn
+  }
+}
+</code></pre>
+
+<h3>Variable Definitions</h3>
+<pre><code class="language-yaml">variable "instance_type" {
+  description = "EC2 instance type"
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+}
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+}
+</code></pre>
+
+<h2>Common Use Cases</h2>
+
+<h3>Infrastructure Provisioning</h3>
+<p>Deploy complex infrastructure patterns that require Terraform's advanced features.</p>
+
+<h3>Multi-Provider Deployments</h3>
+<p>Use Terraform to deploy resources across multiple cloud providers or services.</p>
+
+<h3>Custom Resource Logic</h3>
+<p>Implement complex provisioning logic that goes beyond standard CloudFormation capabilities.</p>
+
+<h3>State Management</h3>
+<p>Leverage Terraform's state management for complex resource relationships.</p>
+
+<h2>Monitoring and Troubleshooting</h2>
+
+<ul>
+  <li>Monitor workspace execution logs for errors and warnings</li>
+  <li>Verify S3 artifact accessibility and permissions</li>
+  <li>Check Terraform version compatibility</li>
+  <li>Validate provider configurations and credentials</li>
+  <li>Review state file integrity and locking</li>
+</ul>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "Stacks", "/how-to/stacks/" %> - For CloudFormation-based deployments</li>
+  <li><%= link_to "Launches", "/how-to/launches/" %> - For Service Catalog product deployments</li>
+  <li><%= link_to "Assertions", "/how-to/assertions/" %> - For validating workspace outputs</li>
+</ul>

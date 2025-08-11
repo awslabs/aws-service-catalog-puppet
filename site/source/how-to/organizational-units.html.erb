@@ -1,0 +1,272 @@
+---
+title: Working with Organizational Units
+---
+
+<h1>Working with Organizational Units</h1>
+
+<p>Organizational Units (OUs) allow you to create and manage hierarchical account organization structures in AWS Organizations as part of your Cloud Workflow Engine workflow.</p>
+
+<h2>Overview</h2>
+
+<p>The organizational-units action type allows you to:</p>
+<ul>
+  <li>Create new organizational units in AWS Organizations</li>
+  <li>Get existing organizational units by name</li>
+  <li>Apply tags to organizational units for organization and governance</li>
+  <li>Handle nested OU hierarchies with dependencies</li>
+  <li>Support idempotent operations (create if not exists, get if exists)</li>
+</ul>
+
+<h2>Organizational Unit Configuration</h2>
+
+<p>To configure an organizational unit in your manifest, you need to specify:</p>
+
+<h3>Required Parameters</h3>
+<ul>
+  <li><strong>region</strong>: AWS region (Organizations is global, but region context is needed)</li>
+  <li><strong>account_id</strong>: AWS account ID where Organizations management resides (typically the master account)</li>
+  <li><strong>path</strong>: Hierarchical path of the organizational unit</li>
+  <li><strong>parent_ou_id</strong>: ID of the parent organizational unit</li>
+  <li><strong>name</strong>: Name of the organizational unit</li>
+</ul>
+
+<h3>Optional Parameters</h3>
+<ul>
+  <li><strong>tags</strong>: Tags to apply to the organizational unit</li>
+  <li><strong>parent_ou_task_ref</strong>: Reference to parent OU task for dependency management</li>
+</ul>
+
+<h2>Example Configurations</h2>
+
+<h3>Simple Organizational Unit</h3>
+<pre><code class="language-yaml">organizational-units:
+  production-ou:
+    name: Production
+    path: /Production
+    parent_ou_id: r-abc123def456  # Root OU ID
+    tags:
+      - Key: Environment
+        Value: Production
+      - Key: Purpose
+        Value: Production Workloads
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"  # Master account
+</code></pre>
+
+<h3>Nested Organizational Units</h3>
+<pre><code class="language-yaml">organizational-units:
+  # Parent OU
+  security-ou:
+    name: Security
+    path: /Security  
+    parent_ou_id: r-abc123def456
+    tags:
+      - Key: Department
+        Value: Security
+      - Key: Level
+        Value: L2
+
+  # Child OU depends on parent
+  security-compliance-ou:
+    name: Compliance
+    path: /Security/Compliance
+    parent_ou_task_ref: security-ou
+    tags:
+      - Key: Department
+        Value: Security
+      - Key: Level
+        Value: L3
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h3>Multi-level Hierarchy</h3>
+<pre><code class="language-yaml">organizational-units:
+  company-ou:
+    name: Company
+    path: /Company
+    parent_ou_id: r-abc123def456
+    
+  it-department-ou:
+    name: IT
+    path: /Company/IT
+    parent_ou_task_ref: company-ou
+    
+  security-team-ou:
+    name: Security
+    path: /Company/IT/Security
+    parent_ou_task_ref: it-department-ou
+    
+  compliance-ou:
+    name: Compliance
+    path: /Company/IT/Security/Compliance
+    parent_ou_task_ref: security-team-ou
+    tags:
+      - Key: Department
+        Value: Security
+      - Key: Team
+        Value: Compliance
+      - Key: Level
+        Value: L4
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h2>Dependency Management</h2>
+
+<p>When creating nested OUs, use task references to ensure proper ordering:</p>
+
+<h3>Parent-Child Dependencies</h3>
+<ul>
+  <li>Child OUs must reference their parent OU task using <code>parent_ou_task_ref</code></li>
+  <li>Cloud Workflow Engine will ensure parent OUs are created before children</li>
+  <li>Dependencies are resolved automatically based on the task graph</li>
+</ul>
+
+<h3>Task Reference Example</h3>
+<pre><code class="language-yaml"># Parent task
+marketing-ou:
+  name: Marketing
+  path: /Marketing
+  parent_ou_id: r-abc123def456
+
+# Child task references parent
+digital-marketing-ou:  
+  name: Digital
+  path: /Marketing/Digital
+  parent_ou_task_ref: marketing-ou  # References the parent task name
+</code></pre>
+
+<h2>Organizational Unit Operations</h2>
+
+<h3>Create or Get Logic</h3>
+<p>Cloud Workflow Engine implements idempotent OU management:</p>
+<ol>
+  <li>Check if an OU with the specified name exists in the parent</li>
+  <li>If it exists, return the existing OU details</li>
+  <li>If it doesn't exist, create a new OU with the specified configuration</li>
+  <li>Apply tags to the OU (new or existing)</li>
+</ol>
+
+<h3>Tagging</h3>
+<p>Tags are applied to organizational units for:</p>
+<ul>
+  <li>Organization and categorization</li>
+  <li>Cost allocation and tracking</li>
+  <li>Access control and governance</li>
+  <li>Automation and policy application</li>
+</ul>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Design your OU hierarchy before implementation</li>
+  <li>Use descriptive names that clearly indicate purpose</li>
+  <li>Keep hierarchies reasonably flat (avoid excessive nesting)</li>
+  <li>Use consistent naming conventions across OUs</li>
+  <li>Tag OUs appropriately for governance and organization</li>
+  <li>Document the purpose and intended use of each OU</li>
+  <li>Consider future growth when designing the structure</li>
+  <li>Use task references to manage dependencies properly</li>
+</ul>
+
+<h2>Common OU Structures</h2>
+
+<h3>Environment-Based</h3>
+<pre><code class="language-yaml">/
+├── Production
+├── Staging  
+├── Development
+└── Sandbox
+</code></pre>
+
+<h3>Department-Based</h3>
+<pre><code class="language-yaml">/
+├── Engineering
+│   ├── Backend
+│   └── Frontend
+├── Marketing
+│   ├── Digital
+│   └── Traditional
+└── Finance
+    ├── Accounting
+    └── Treasury
+</code></pre>
+
+<h3>Mixed Hierarchy</h3>
+<pre><code class="language-yaml">/
+├── Core
+│   ├── Security
+│   ├── Logging
+│   └── Networking
+├── Workloads
+│   ├── Production
+│   ├── Staging
+│   └── Development
+└── Sandboxes
+    ├── Engineering
+    └── Data Science
+</code></pre>
+
+<h2>Integration with Other Actions</h2>
+
+<p>Organizational Units work well with other governance actions:</p>
+<ul>
+  <li><strong>Service Control Policies</strong>: Apply policies to OUs</li>
+  <li><strong>Tag Policies</strong>: Enforce tagging standards at the OU level</li>
+  <li><strong>Account Management</strong>: Move accounts into appropriate OUs</li>
+</ul>
+
+<h2>Error Handling</h2>
+
+<h3>Common Errors</h3>
+<ul>
+  <li><strong>Invalid Parent OU</strong>: Parent OU ID doesn't exist</li>
+  <li><strong>Permission Denied</strong>: Insufficient Organizations permissions</li>
+  <li><strong>Duplicate Names</strong>: OU name already exists in parent (handled gracefully)</li>
+  <li><strong>Dependency Failures</strong>: Parent OU task failed</li>
+</ul>
+
+<h3>Troubleshooting</h3>
+<ul>
+  <li>Verify AWS Organizations is enabled and configured</li>
+  <li>Check IAM permissions for Organizations operations</li>
+  <li>Validate parent OU IDs and task references</li>
+  <li>Review dependency ordering and task graph</li>
+  <li>Monitor CloudTrail for Organizations API calls</li>
+</ul>
+
+<h2>Required Permissions</h2>
+
+<p>The execution role needs these AWS Organizations permissions:</p>
+<ul>
+  <li><code>organizations:CreateOrganizationalUnit</code></li>
+  <li><code>organizations:ListOrganizationalUnitsForParent</code></li>
+  <li><code>organizations:DescribeOrganizationalUnit</code></li>
+  <li><code>organizations:TagResource</code></li>
+  <li><code>organizations:ListTagsForResource</code></li>
+</ul>
+
+<h2>Monitoring and Governance</h2>
+
+<ul>
+  <li>Monitor OU creation and modification through CloudTrail</li>
+  <li>Use AWS Config to track OU configuration changes</li>
+  <li>Implement governance policies to control OU creation</li>
+  <li>Regular audits of OU structure and usage</li>
+</ul>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "Service Control Policies", "/how-to/service-control-policies/" %> - Apply policies to OUs</li>
+  <li><%= link_to "Tag Policies", "/how-to/tag-policies/" %> - Enforce tagging standards</li>
+</ul>

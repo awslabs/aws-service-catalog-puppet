@@ -1,5 +1,5 @@
 Feature: Generate Policies Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to generate sharing policies for portfolios and event bus
   So that I can enable cross-account access and spoke execution mode
 

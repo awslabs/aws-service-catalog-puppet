@@ -1,5 +1,5 @@
 Feature: Terminate CloudFormation Stack Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to safely terminate CloudFormation stacks in target accounts
   So that I can clean up infrastructure and manage stack lifecycles
 

@@ -1,12 +1,12 @@
 Feature: Provision Workspace Task
-  As a Service Catalog Puppet user
-  I want to provision AWS Workspaces
+  As a Cloud Multi Account Workflow Engine user
+  I want to provision Terraform Workspaces
   So that I can deploy virtual desktop infrastructure as part of my managed workflows
 
   Background:
     Given I have the necessary AWS permissions
     And the target account and region are accessible
-    And AWS Workspaces service is available
+    And Terraform Workspaces service is available
     And the S3 bucket contains workspace artifacts
 
   @happy

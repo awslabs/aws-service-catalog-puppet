@@ -1,5 +1,5 @@
 Feature: Forward Events For Region Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to create EventBridge rules that forward regional events to the Cloud Custodian hub account
   So that Cloud Custodian can monitor and act on events across all regions and accounts
 

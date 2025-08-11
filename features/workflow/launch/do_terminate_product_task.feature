@@ -1,5 +1,5 @@
 Feature: Do Terminate Product Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to terminate Service Catalog provisioned products
   So that I can clean up resources when they are no longer needed
 

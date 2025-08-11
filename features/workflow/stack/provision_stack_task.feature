@@ -1,5 +1,5 @@
 Feature: Provision Stack Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to provision CloudFormation stacks in target accounts
   So that I can deploy infrastructure using Infrastructure as Code
 

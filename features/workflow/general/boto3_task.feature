@@ -1,5 +1,5 @@
 Feature: Boto3 Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to execute AWS API calls and extract specific data using JMESPath filters
   So that I can retrieve and process AWS resource information for my workflows
 

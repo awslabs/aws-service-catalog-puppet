@@ -1,5 +1,5 @@
 Feature: Provision App Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to provision applications in target accounts
   So that I can deploy applications as part of my infrastructure management pipeline
 

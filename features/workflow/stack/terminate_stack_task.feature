@@ -1,5 +1,5 @@
 Feature: Terminate Stack Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to terminate CloudFormation stacks
   So that I can clean up infrastructure when it's no longer needed
 

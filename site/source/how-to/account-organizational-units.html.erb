@@ -1,0 +1,332 @@
+---
+title: Organizational Units Setup - Cloud Workflow Engine
+---
+
+<h1>Organizational Units Setup</h1>
+
+<p>This guide explains how to configure and use AWS Organizations Organizational Units (OUs) with Cloud Workflow Engine for efficient account management and deployment targeting.</p>
+
+<h2>OU Configuration Structure</h2>
+
+<p>Organizational Units are defined in your Cloud Workflow Engine configuration and referenced by accounts and deployment targets:</p>
+
+<pre><code class="language-yaml">organizational_units:
+  - name: "production"
+    path: "/production/"
+    accounts:
+      - "123456789012"
+      - "234567890123"
+    
+  - name: "non-production"
+    path: "/non-production/"
+    children:
+      - name: "staging"
+        path: "/non-production/staging/"
+        accounts:
+          - "345678901234"
+      - name: "development"
+        path: "/non-production/development/"
+        accounts:
+          - "456789012345"
+          - "567890123456"</code></pre>
+
+<h2>OU Fields</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Description</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>name</code></td>
+      <td>Logical name for the OU</td>
+      <td><code>"production"</code></td>
+    </tr>
+    <tr>
+      <td><code>path</code></td>
+      <td>AWS Organizations OU path</td>
+      <td><code>"/production/"</code></td>
+    </tr>
+    <tr>
+      <td><code>accounts</code></td>
+      <td>List of account IDs in this OU</td>
+      <td><code>["123456789012"]</code></td>
+    </tr>
+    <tr>
+      <td><code>children</code></td>
+      <td>Nested OUs (optional)</td>
+      <td>Array of OU objects</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>OU-Based Targeting</h2>
+
+<p>Use OUs to target multiple accounts in your Cloud Workflow Engine workflows:</p>
+
+<h3>Target Entire OU</h3>
+
+<pre><code class="language-yaml">launches:
+  security-baseline:
+    portfolio: "security-portfolio"
+    product: "security-baseline"
+    version: "v1.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+        - "non-production"</code></pre>
+
+<h3>Target Specific OU Path</h3>
+
+<pre><code class="language-yaml">launches:
+  development-tools:
+    portfolio: "development-portfolio"
+    product: "dev-tools"
+    version: "v2.1.0"
+    deploy_to:
+      organizational_units:
+        - path: "/non-production/development/"</code></pre>
+
+<h2>Hierarchical Configuration</h2>
+
+<p>Cloud Workflow Engine supports hierarchical OU structures that mirror your AWS Organizations setup:</p>
+
+<h3>Example: Multi-Environment, Multi-Region Structure</h3>
+
+<pre><code class="language-yaml">organizational_units:
+  - name: "root"
+    path: "/"
+    children:
+      - name: "production"
+        path: "/production/"
+        children:
+          - name: "prod-us-east-1"
+            path: "/production/us-east-1/"
+            accounts:
+              - "111111111111"
+          - name: "prod-us-west-2"
+            path: "/production/us-west-2/"
+            accounts:
+              - "222222222222"
+      
+      - name: "non-production"
+        path: "/non-production/"
+        children:
+          - name: "staging"
+            path: "/non-production/staging/"
+            accounts:
+              - "333333333333"
+          - name: "development"
+            path: "/non-production/development/"
+            accounts:
+              - "444444444444"
+              - "555555555555"
+      
+      - name: "shared-services"
+        path: "/shared-services/"
+        accounts:
+          - "666666666666"
+          - "777777777777"</code></pre>
+
+<h2>OU-Based Parameters</h2>
+
+<p>Define parameters at the OU level that are inherited by all accounts in that OU:</p>
+
+<pre><code class="language-yaml">organizational_units:
+  - name: "production"
+    path: "/production/"
+    parameters:
+      backup_enabled: true
+      monitoring_level: "detailed"
+      log_retention_days: 365
+    accounts:
+      - "123456789012"
+  
+  - name: "development"
+    path: "/non-production/development/"
+    parameters:
+      auto_cleanup: true
+      monitoring_level: "basic"
+      log_retention_days: 30
+    accounts:
+      - "456789012345"</code></pre>
+
+<h2>OU Targeting in Launches</h2>
+
+<h3>Single OU Deployment</h3>
+
+<pre><code class="language-yaml">launches:
+  compliance-scanning:
+    portfolio: "security-portfolio"
+    product: "compliance-scanner"
+    version: "v1.2.0"
+    deploy_to:
+      organizational_units:
+        - "production"</code></pre>
+
+<h3>Multiple OU Deployment</h3>
+
+<pre><code class="language-yaml">launches:
+  logging-solution:
+    portfolio: "platform-portfolio"
+    product: "centralized-logging"
+    version: "v3.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+        - "staging"
+        - "shared-services"</code></pre>
+
+<h3>Mixed Targeting (OUs and Accounts)</h3>
+
+<pre><code class="language-yaml">launches:
+  monitoring-stack:
+    portfolio: "monitoring-portfolio"
+    product: "cloudwatch-dashboards"
+    version: "v2.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+      accounts:
+        - "999999999999"  # Special monitoring account</code></pre>
+
+<h2>OU Management Commands</h2>
+
+<h3>List OUs and Accounts</h3>
+
+<pre><code class="language-bash"># Show all configured OUs
+cloud-workflow-engine show-organizations
+
+# Show accounts in specific OU
+cloud-workflow-engine show-accounts-for-ou --ou-path "/production/"</code></pre>
+
+<h3>Validate OU Configuration</h3>
+
+<pre><code class="language-bash"># Validate OU paths exist in AWS Organizations
+cloud-workflow-engine validate-ous
+
+# Check OU-account mappings
+cloud-workflow-engine validate-account-mappings</code></pre>
+
+<h2>Best Practices</h2>
+
+<h3>OU Design Patterns</h3>
+
+<ul>
+  <li><strong>Environment-Based</strong> - Separate by production, staging, development</li>
+  <li><strong>Region-Based</strong> - Organize by geographical regions</li>
+  <li><strong>Service-Based</strong> - Group by application or service domains</li>
+  <li><strong>Hybrid</strong> - Combine patterns (environment + region + service)</li>
+</ul>
+
+<h3>Naming Conventions</h3>
+
+<pre><code class="language-yaml"># Environment-based
+/production/
+/staging/
+/development/
+
+# Region-based
+/us-east-1/production/
+/us-west-2/production/
+/eu-west-1/production/
+
+# Service-based
+/platform-services/
+/application-services/
+/data-services/
+
+# Hybrid approach
+/production/us-east-1/platform/
+/production/us-east-1/applications/</code></pre>
+
+<h3>Configuration Tips</h3>
+
+<ul>
+  <li><strong>Keep It Simple</strong> - Start with basic environment separation</li>
+  <li><strong>Plan for Growth</strong> - Design OU structure to accommodate future accounts</li>
+  <li><strong>Consistent Naming</strong> - Use predictable naming patterns</li>
+  <li><strong>Document Structure</strong> - Maintain clear documentation of your OU hierarchy</li>
+  <li><strong>Regular Reviews</strong> - Periodically review and optimize OU structure</li>
+</ul>
+
+<h2>Advanced OU Features</h2>
+
+<h3>Conditional OU Targeting</h3>
+
+<pre><code class="language-yaml">launches:
+  conditional-deployment:
+    portfolio: "conditional-portfolio"
+    product: "environment-specific"
+    version: "v1.0.0"
+    deploy_to:
+      organizational_units:
+        - name: "production"
+          conditions:
+            - key: "deployment_window"
+              value: "maintenance"
+        - name: "staging"
+          conditions:
+            - key: "always"
+              value: "true"</code></pre>
+
+<h3>OU-Specific Excludes</h3>
+
+<pre><code class="language-yaml">launches:
+  security-baseline:
+    portfolio: "security-portfolio"
+    product: "baseline"
+    version: "v1.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+        - "staging"
+    exclude:
+      organizational_units:
+        - path: "/staging/experimental/"</code></pre>
+
+<h2>Troubleshooting</h2>
+
+<h3>Common OU Issues</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Issue</th>
+      <th>Cause</th>
+      <th>Solution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>OU path not found</td>
+      <td>Path doesn't exist in AWS Organizations</td>
+      <td>Create OU in AWS Organizations or fix path</td>
+    </tr>
+    <tr>
+      <td>Account not in expected OU</td>
+      <td>Account moved in AWS Organizations</td>
+      <td>Update configuration or move account back</td>
+    </tr>
+    <tr>
+      <td>Deployment not reaching all accounts</td>
+      <td>Accounts missing from OU configuration</td>
+      <td>Add missing accounts to OU definition</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Debugging Commands</h3>
+
+<pre><code class="language-bash"># Check which accounts are in an OU
+aws organizations list-accounts-for-parent --parent-id ou-root-xxxxxxxxx
+
+# Verify OU structure
+aws organizations list-organizational-units-for-parent --parent-id r-xxxx
+
+# Test OU targeting
+cloud-workflow-engine dry-run --ou-path "/production/"</code></pre>

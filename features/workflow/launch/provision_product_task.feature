@@ -1,5 +1,5 @@
 Feature: Provision Product Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to provision Service Catalog products
   So that I can deploy infrastructure as part of my orchestrated workflows
 

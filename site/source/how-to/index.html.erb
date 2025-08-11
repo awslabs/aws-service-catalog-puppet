@@ -1,0 +1,296 @@
+---
+title: How-To Guides
+---
+
+<h1>Cloud Workflow Engine How-To Guides</h1>
+
+<p>Welcome to the Cloud Workflow Engine How-To guides. These guides provide detailed information about each action type available in Cloud Workflow Engine, helping you understand how to configure and use them effectively in your workflows.</p>
+
+<h2>Account Setup and Management</h2>
+
+<div class="action-grid">
+  <div class="action-card">
+    <h3><%= link_to "Adding Accounts", "/how-to/adding-accounts/" %></h3>
+    <p>Learn how to add new AWS accounts to your Cloud Workflow Engine configuration and set up cross-account roles.</p>
+    <ul>
+      <li>Account configuration syntax</li>
+      <li>Cross-account IAM roles</li>
+      <li>Account validation</li>
+      <li>Hub-spoke architecture</li>
+    </ul>
+  </div>
+
+  <div class="action-card">
+    <h3><%= link_to "Account Organizational Units", "/how-to/account-organizational-units/" %></h3>
+    <p>Configure AWS Organizations organizational units for efficient account management and deployment targeting.</p>
+    <ul>
+      <li>OU structure design</li>
+      <li>OU-based targeting</li>
+      <li>Hierarchical configuration</li>
+      <li>Account organization</li>
+    </ul>
+  </div>
+
+  <div class="action-card">
+    <h3><%= link_to "Using Excludes", "/how-to/excludes/" %></h3>
+    <p>Control which accounts are excluded from specific operations with fine-grained deployment control.</p>
+    <ul>
+      <li>Account-level excludes</li>
+      <li>OU-level excludes</li>
+      <li>Conditional exclusions</li>
+      <li>Deployment targeting</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Infrastructure and Deployment Actions</h2>
+
+<div class="action-grid">
+  <div class="action-card">
+    <h3><%= link_to "Stacks", "/how-to/stacks/" %></h3>
+    <p>Deploy CloudFormation stacks across multiple AWS accounts and regions with template versioning and parameter management.</p>
+    <ul>
+      <li>CloudFormation deployments</li>
+      <li>Cross-account provisioning</li>
+      <li>Template versioning</li>
+    </ul>
+  </div>
+
+  <div class="action-card">
+    <h3><%= link_to "Launches", "/how-to/launches/" %></h3>
+    <p>Provision Service Catalog products from shared portfolios with parameter management and lifecycle control.</p>
+    <ul>
+      <li>Service Catalog provisioning</li>
+      <li>Product lifecycle management</li>
+      <li>Parameter handling</li>
+    </ul>
+  </div>
+
+  <div class="action-card">
+    <h3><%= link_to "Workspaces", "/how-to/workspaces/" %></h3>
+    <p>Deploy Terraform workspaces from S3 artifacts with parameter passing and environment management.</p>
+    <ul>
+      <li>Terraform deployments</li>
+      <li>Workspace management</li>
+      <li>Artifact processing</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Portfolio and Product Management</h2>
+
+<div class="action-grid">
+  <div class="action-card">
+    <h3><%= link_to "Spoke Local Portfolios", "/how-to/spoke-local-portfolios/" %></h3>
+    <p>Create and manage Service Catalog portfolios in spoke accounts with product synchronization.</p>
+    <ul>
+      <li>Cross-account portfolio management</li>
+      <li>Product importing</li>
+      <li>Hub-and-spoke architecture</li>
+    </ul>
+  </div>
+
+  <div class="action-card">
+    <h3><%= link_to "Imported Portfolios", "/how-to/imported-portfolios/" %></h3>
+    <p>Share Service Catalog portfolios across AWS accounts using built-in sharing mechanisms.</p>
+    <ul>
+      <li>Portfolio sharing</li>
+      <li>Cross-account access</li>
+      <li>Organizational sharing</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Governance and Compliance</h2>
+
+<div class="action-grid">
+  <div class="action-card">
+    <h3><%= link_to "Service Control Policies", "/how-to/service-control-policies/" %></h3>
+    <p>Define and apply governance policies to AWS accounts and organizational units for security and compliance.</p>
+    <ul>
+      <li>Policy enforcement</li>
+      <li>Organizational governance</li>
+      <li>Security boundaries</li>
+    </ul>
+  </div>
+
+  <div class="action-card">
+    <h3><%= link_to "Tag Policies", "/how-to/tag-policies/" %></h3>
+    <p>Standardize and enforce tagging across your AWS organization with compliance monitoring.</p>
+    <ul>
+      <li>Tagging standards</li>
+      <li>Compliance enforcement</li>
+      <li>Cost allocation</li>
+    </ul>
+  </div>
+
+  <div class="action-card">
+    <h3><%= link_to "Organizational Units", "/how-to/organizational-units/" %></h3>
+    <p>Create and manage hierarchical account organization structures in AWS Organizations.</p>
+    <ul>
+      <li>OU management</li>
+      <li>Hierarchical organization</li>
+      <li>Dependency handling</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Validation and Testing</h2>
+
+<div class="action-grid">
+  <div class="action-card">
+    <h3><%= link_to "Assertions", "/how-to/assertions/" %></h3>
+    <p>Validate AWS infrastructure configurations against expected values using AWS API responses and JMESPath filters.</p>
+    <ul>
+      <li>Infrastructure validation</li>
+      <li>Compliance checking</li>
+      <li>API response filtering</li>
+    </ul>
+  </div>
+
+  <div class="action-card">
+    <h3><%= link_to "Simulate Policies", "/how-to/simulate-policies/" %></h3>
+    <p>Test and validate IAM policies using AWS IAM Policy Simulator before production deployment.</p>
+    <ul>
+      <li>Policy testing</li>
+      <li>IAM validation</li>
+      <li>Security verification</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Custom Operations</h2>
+
+<div class="action-grid">
+  <div class="action-card">
+    <h3><%= link_to "Lambda Invocations", "/how-to/lambda-invocations/" %></h3>
+    <p>Execute AWS Lambda functions for custom business logic and integrations during deployments.</p>
+    <ul>
+      <li>Custom logic execution</li>
+      <li>External integrations</li>
+      <li>Event-driven processing</li>
+    </ul>
+  </div>
+
+  <div class="action-card">
+    <h3><%= link_to "Code Build Runs", "/how-to/code-build-runs/" %></h3>
+    <p>Execute AWS CodeBuild projects for complex build, test, and deployment operations.</p>
+    <ul>
+      <li>Custom build processes</li>
+      <li>Testing and validation</li>
+      <li>CI/CD integration</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Cloud Custodian Integration</h2>
+
+<div class="action-grid">
+  <div class="action-card">
+    <h3><%= link_to "C7N AWS Lambdas", "/how-to/c7n-aws-lambdas/" %></h3>
+    <p>Deploy Cloud Custodian policies as AWS Lambda functions for serverless compliance automation.</p>
+    <ul>
+      <li>Policy enforcement</li>
+      <li>Compliance automation</li>
+      <li>Real-time monitoring</li>
+    </ul>
+  </div>
+
+  <div class="action-card">
+    <h3><%= link_to "C7N AWS CloudTrails", "/how-to/c7n-aws-cloudtrails/" %></h3>
+    <p>Configure CloudTrail event streams for real-time Cloud Custodian policy triggers and monitoring.</p>
+    <ul>
+      <li>Event-driven policies</li>
+      <li>Real-time enforcement</li>
+      <li>Security monitoring</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Getting Started</h2>
+
+<p>New to Cloud Workflow Engine? Start with these fundamental actions:</p>
+
+<ol>
+  <li><strong><%= link_to "Adding Accounts", "/how-to/adding-accounts/" %></strong> - Set up your first accounts and cross-account roles</li>
+  <li><strong><%= link_to "Stacks", "/how-to/stacks/" %></strong> - Learn the basics of deploying CloudFormation infrastructure</li>
+  <li><strong><%= link_to "Assertions", "/how-to/assertions/" %></strong> - Validate your deployments work as expected</li>
+  <li><strong><%= link_to "Account Organizational Units", "/how-to/account-organizational-units/" %></strong> - Set up account organization</li>
+  <li><strong><%= link_to "Service Control Policies", "/how-to/service-control-policies/" %></strong> - Apply governance policies</li>
+</ol>
+
+<h2>Common Workflow Patterns</h2>
+
+<h3>Basic Infrastructure Deployment</h3>
+<ol>
+  <li>Use <strong>Stacks</strong> to deploy foundational infrastructure</li>
+  <li>Use <strong>Assertions</strong> to validate the deployment</li>
+  <li>Use <strong>Lambda Invocations</strong> for post-deployment configuration</li>
+</ol>
+
+<h3>Service Catalog Hub-and-Spoke</h3>
+<ol>
+  <li>Create portfolios and products in the hub account</li>
+  <li>Use <strong>Spoke Local Portfolios</strong> to distribute to spoke accounts</li>
+  <li>Use <strong>Launches</strong> to provision products in target accounts</li>
+  <li>Use <strong>Assertions</strong> to validate product deployments</li>
+</ol>
+
+<h3>Governance and Compliance</h3>
+<ol>
+  <li>Set up <strong>Organizational Units</strong> for account hierarchy</li>
+  <li>Apply <strong>Service Control Policies</strong> for security boundaries</li>
+  <li>Implement <strong>Tag Policies</strong> for standardization</li>
+  <li>Use <strong>C7N AWS Lambdas</strong> for automated compliance</li>
+  <li>Use <strong>Assertions</strong> to validate compliance status</li>
+</ol>
+
+<h2>Need Help?</h2>
+
+<p>Each guide includes:</p>
+<ul>
+  <li>Configuration examples and best practices</li>
+  <li>Common use cases and implementation patterns</li>
+  <li>Troubleshooting tips and error handling</li>
+  <li>Integration guidance with other actions</li>
+</ul>
+
+<p>For additional support, refer to the main Cloud Workflow Engine documentation and community resources.</p>
+
+<style>
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin: 20px 0;
+}
+
+.action-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  background: #f9f9f9;
+}
+
+.action-card h3 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+
+.action-card h3 a {
+  text-decoration: none;
+  color: #2c3e50;
+}
+
+.action-card h3 a:hover {
+  text-decoration: underline;
+}
+
+.action-card ul {
+  margin-bottom: 0;
+}
+
+.action-card li {
+  margin-bottom: 5px;
+}
+</style>

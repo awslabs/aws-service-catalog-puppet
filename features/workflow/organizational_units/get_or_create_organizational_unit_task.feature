@@ -1,5 +1,5 @@
 Feature: Get Or Create Organizational Unit Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to get or create organizational units in AWS Organizations
   So that I can manage account organization structure
 

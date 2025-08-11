@@ -6,12 +6,12 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "aws-service-catalog-puppet"
-version = "0.255.0"
-description = "Making it easier to deploy ServiceCatalog products"
+name = "cloud-multi-account-workflow-engine"
+version = "0.1.0"
+description = "Provision and configure your cloud resources"
 readme = "README.md"
 authors = [
-    {name = "Eamonn Faherty", email = "aws-service-catalog-tools@amazon.com"},
+    {name = "Eamonn Faherty", email = "eamonn.faherty@gmail.com"},
 ]
 license = {text = "Apache-2.0"}
 classifiers = [
@@ -63,8 +63,8 @@ servicecatalog-puppet = "servicecatalog_puppet.cli:cli"
 
 [project.urls]
 Homepage = "https://service-catalog-tools-workshop.com/"
-Repository = "https://github.com/awslabs/aws-service-catalog-puppet-framework"
-Issues = "https://github.com/awslabs/aws-service-catalog-puppet-framework/issues"
+Repository = "https://github.com/eamonnfaherty/cloud-multi-account-workflow-engine"
+Issues = "https://github.com/eamonnfaherty/cloud-multi-account-workflow-engine/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["servicecatalog_puppet"]

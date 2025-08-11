@@ -1,0 +1,258 @@
+---
+title: Working with Spoke Local Portfolios
+---
+
+<h1>Working with Spoke Local Portfolios</h1>
+
+<p>Spoke local portfolios enable you to create and manage Service Catalog portfolios in spoke accounts, allowing for distributed portfolio management and local product access.</p>
+
+<h2>Overview</h2>
+
+<p>The spoke-local-portfolios action type allows you to:</p>
+<ul>
+  <li>Create Service Catalog portfolios in target accounts</li>
+  <li>Import products from hub portfolios to spoke portfolios</li>
+  <li>Manage cross-account portfolio relationships</li>
+  <li>Support both same-account and cross-account scenarios</li>
+  <li>Handle portfolio synchronization and updates</li>
+</ul>
+
+<h2>Spoke Local Portfolio Configuration</h2>
+
+<p>To configure a spoke local portfolio in your manifest, you need to specify:</p>
+
+<h3>Required Parameters</h3>
+<ul>
+  <li><strong>account_id</strong>: Target AWS account ID for the spoke portfolio</li>
+  <li><strong>region</strong>: AWS region for the portfolio</li>
+  <li><strong>portfolio</strong>: Name of the portfolio</li>
+  <li><strong>portfolio_task_reference</strong>: Reference to the hub portfolio task</li>
+</ul>
+
+<h3>Optional Parameters</h3>
+<ul>
+  <li><strong>hub_portfolio_task_reference</strong>: Reference to hub portfolio details</li>
+  <li><strong>portfolio_get_all_products_and_their_versions_ref</strong>: Reference for spoke products</li>
+  <li><strong>portfolio_get_all_products_and_their_versions_for_hub_ref</strong>: Reference for hub products</li>
+</ul>
+
+<h2>Example Configurations</h2>
+
+<h3>Basic Spoke Local Portfolio</h3>
+<pre><code class="language-yaml">spoke-local-portfolios:
+  infrastructure-spoke:
+    portfolio: InfrastructurePortfolio
+    hub_portfolio: infrastructure-hub
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"  # Spoke account
+</code></pre>
+
+<h3>Cross-Account Portfolio with Product Import</h3>
+<pre><code class="language-yaml">spoke-local-portfolios:
+  shared-services-spoke:
+    portfolio: SharedServicesPortfolio
+    portfolio_task_reference: hub-shared-services-portfolio
+    hub_portfolio_task_reference: hub-shared-services-details
+    import_products: true
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "987654321098"  # Spoke account
+</code></pre>
+
+<h3>Regional Spoke Portfolio</h3>
+<pre><code class="language-yaml">spoke-local-portfolios:
+  regional-services:
+    portfolio: RegionalServicesPortfolio
+    portfolio_task_reference: hub-regional-portfolio
+    deploy_to:
+      tags:
+        - regions: 
+            - us-east-1
+            - us-west-2
+            - eu-west-1
+          accounts:
+            - "111122223333"
+            - "444455556666"
+</code></pre>
+
+<h2>Portfolio Creation Logic</h2>
+
+<h3>Same Account Scenario</h3>
+<p>When the puppet account ID equals the target account ID:</p>
+<ol>
+  <li>Cloud Workflow Engine finds the existing hub portfolio</li>
+  <li>Returns the portfolio details without creating a new one</li>
+  <li>Uses the hub portfolio directly for launches</li>
+</ol>
+
+<h3>Cross-Account Scenario</h3>
+<p>When the puppet account ID differs from the target account ID:</p>
+<ol>
+  <li>Creates a new portfolio in the spoke account</li>
+  <li>Copies portfolio metadata from the hub (name, description, provider)</li>
+  <li>Sets up cross-account portfolio sharing if needed</li>
+  <li>Imports products from hub portfolio to spoke portfolio</li>
+</ol>
+
+<h2>Product Import Process</h2>
+
+<h3>Import Operations</h3>
+<p>When importing products from hub to spoke portfolios:</p>
+<ol>
+  <li>Retrieve all products and versions from hub portfolio</li>
+  <li>Compare with existing products in spoke portfolio</li>
+  <li>Import new products that don't exist in spoke</li>
+  <li>Update existing products if versions have changed</li>
+  <li>Skip products that are already synchronized</li>
+</ol>
+
+<h3>Version Synchronization</h3>
+<ul>
+  <li>Latest product versions are imported from hub</li>
+  <li>Existing products are updated to match hub versions</li>
+  <li>Version history is maintained where possible</li>
+  <li>Synchronization is idempotent (safe to run multiple times)</li>
+</ul>
+
+<h2>Cross-Region Considerations</h2>
+
+<h3>Regional Portfolio Management</h3>
+<ul>
+  <li>Portfolios are created in each specified region</li>
+  <li>Regional Service Catalog clients are used</li>
+  <li>Product availability may vary by region</li>
+  <li>Cross-region product sharing requires careful planning</li>
+</ul>
+
+<h3>Regional Dependencies</h3>
+<ul>
+  <li>Hub portfolios must exist in source regions</li>
+  <li>Network connectivity between regions</li>
+  <li>IAM permissions for cross-region operations</li>
+</ul>
+
+<h2>Portfolio Metadata</h2>
+
+<h3>Inherited Properties</h3>
+<p>Spoke portfolios inherit these properties from hub portfolios:</p>
+<ul>
+  <li><strong>ProviderName</strong>: Organization or team providing the portfolio</li>
+  <li><strong>Description</strong>: Portfolio description and purpose</li>
+  <li><strong>Tags</strong>: Tags applied to the hub portfolio</li>
+</ul>
+
+<h3>Spoke-Specific Properties</h3>
+<ul>
+  <li><strong>Portfolio Name</strong>: May be customized for the spoke account</li>
+  <li><strong>Local Tags</strong>: Additional tags specific to the spoke</li>
+  <li><strong>Access Permissions</strong>: Spoke-specific access controls</li>
+</ul>
+
+<h2>Dependency Management</h2>
+
+<h3>Task References</h3>
+<p>Use task references to manage dependencies:</p>
+<ul>
+  <li><strong>portfolio_task_reference</strong>: Ensures hub portfolio exists first</li>
+  <li><strong>hub_portfolio_task_reference</strong>: References detailed hub portfolio data</li>
+  <li><strong>product_references</strong>: Ensures required products are available</li>
+</ul>
+
+<h3>Execution Order</h3>
+<ol>
+  <li>Hub portfolios are created first</li>
+  <li>Hub products are added to hub portfolios</li>
+  <li>Spoke portfolios are created</li>
+  <li>Products are imported from hub to spoke</li>
+  <li>Portfolio sharing and access controls are configured</li>
+</ol>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Use descriptive portfolio names that indicate scope and purpose</li>
+  <li>Plan your hub-and-spoke architecture before implementation</li>
+  <li>Test portfolio creation in development environments first</li>
+  <li>Use consistent naming conventions across hub and spoke</li>
+  <li>Document portfolio purposes and target audiences</li>
+  <li>Implement proper access controls and permissions</li>
+  <li>Monitor portfolio usage and product adoption</li>
+  <li>Regular synchronization of products between hub and spoke</li>
+</ul>
+
+<h2>Common Use Cases</h2>
+
+<h3>Shared Services Distribution</h3>
+<p>Distribute common infrastructure services to multiple accounts while maintaining central control.</p>
+
+<h3>Department-Specific Portfolios</h3>
+<p>Create department-specific portfolios with curated product sets for different teams.</p>
+
+<h3>Environment-Specific Services</h3>
+<p>Distribute different product versions to development, staging, and production environments.</p>
+
+<h3>Compliance and Governance</h3>
+<p>Ensure consistent service offerings while meeting regulatory requirements in different accounts.</p>
+
+<h2>Monitoring and Management</h2>
+
+<h3>Portfolio Health</h3>
+<ul>
+  <li>Monitor portfolio creation and update operations</li>
+  <li>Track product import synchronization status</li>
+  <li>Verify cross-account sharing permissions</li>
+  <li>Monitor product usage and launch success rates</li>
+</ul>
+
+<h3>Troubleshooting</h3>
+<ul>
+  <li>Verify Service Catalog permissions in spoke accounts</li>
+  <li>Check cross-account sharing configuration</li>
+  <li>Validate task references and dependencies</li>
+  <li>Monitor CloudTrail for Service Catalog API calls</li>
+  <li>Review product version compatibility</li>
+</ul>
+
+<h2>Error Handling</h2>
+
+<h3>Common Issues</h3>
+<ul>
+  <li><strong>Permission Denied</strong>: Insufficient Service Catalog permissions</li>
+  <li><strong>Portfolio Not Found</strong>: Hub portfolio doesn't exist or is inaccessible</li>
+  <li><strong>Product Import Failures</strong>: Cross-account sharing issues</li>
+  <li><strong>Version Conflicts</strong>: Product version synchronization problems</li>
+</ul>
+
+<h3>Required Permissions</h3>
+<ul>
+  <li><code>servicecatalog:CreatePortfolio</code></li>
+  <li><code>servicecatalog:UpdatePortfolio</code></li>
+  <li><code>servicecatalog:DescribePortfolio</code></li>
+  <li><code>servicecatalog:ListPortfolios</code></li>
+  <li><code>servicecatalog:AssociateProductWithPortfolio</code></li>
+  <li><code>servicecatalog:DisassociateProductFromPortfolio</code></li>
+  <li><code>servicecatalog:ListProductsForPortfolio</code></li>
+  <li><code>servicecatalog:CreatePortfolioShare</code></li>
+  <li><code>servicecatalog:AcceptPortfolioShare</code></li>
+</ul>
+
+<h2>Integration with Other Actions</h2>
+
+<p>Spoke local portfolios work with:</p>
+<ul>
+  <li><strong>Launches</strong>: Deploy products from spoke portfolios</li>
+  <li><strong>Imported Portfolios</strong>: Share portfolios from hub accounts</li>
+  <li><strong>Assertions</strong>: Validate portfolio configuration and access</li>
+</ul>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "Launches", "/how-to/launches/" %> - Deploy products from spoke portfolios</li>
+  <li><%= link_to "Imported Portfolios", "/how-to/imported-portfolios/" %> - Alternative sharing method</li>
+  <li><%= link_to "Assertions", "/how-to/assertions/" %> - Validate portfolio operations</li>
+</ul>

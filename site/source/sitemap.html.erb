@@ -1,0 +1,269 @@
+---
+title: Site Map - Cloud Workflow Engine
+---
+
+<h1>Site Map</h1>
+
+<p>Navigate through all the documentation and guides available for Cloud Workflow Engine.</p>
+
+<div class="sitemap-grid">
+  <div class="sitemap-section">
+    <h2>How-To Guides</h2>
+    <p>Detailed guides for each action type available in the workflow engine.</p>
+    
+    <h3>Account Setup and Management</h3>
+    <ul>
+      <li><%= link_to "Adding Accounts", "/how-to/adding-accounts/" %> - Learn how to add new AWS accounts and set up cross-account roles</li>
+      <li><%= link_to "Account Organizational Units", "/how-to/account-organizational-units/" %> - Configure AWS Organizations organizational units for account management</li>
+      <li><%= link_to "Using Excludes", "/how-to/excludes/" %> - Control which accounts are excluded from specific operations</li>
+    </ul>
+
+    <h3>Infrastructure and Deployment Actions</h3>
+    <ul>
+      <li><%= link_to "Stacks", "/how-to/stacks/" %> - Deploy CloudFormation stacks across multiple AWS accounts</li>
+      <li><%= link_to "Launches", "/how-to/launches/" %> - Provision Service Catalog products from shared portfolios</li>
+      <li><%= link_to "Workspaces", "/how-to/workspaces/" %> - Deploy Terraform workspaces from S3 artifacts</li>
+    </ul>
+
+    <h3>Portfolio and Product Management</h3>
+    <ul>
+      <li><%= link_to "Spoke Local Portfolios", "/how-to/spoke-local-portfolios/" %> - Create and manage Service Catalog portfolios in spoke accounts</li>
+      <li><%= link_to "Imported Portfolios", "/how-to/imported-portfolios/" %> - Share Service Catalog portfolios across AWS accounts</li>
+    </ul>
+
+    <h3>Governance and Compliance</h3>
+    <ul>
+      <li><%= link_to "Service Control Policies", "/how-to/service-control-policies/" %> - Define and apply governance policies to AWS accounts and OUs</li>
+      <li><%= link_to "Tag Policies", "/how-to/tag-policies/" %> - Standardize and enforce tagging across your AWS organization</li>
+      <li><%= link_to "Organizational Units", "/how-to/organizational-units/" %> - Create and manage hierarchical account organization structures</li>
+    </ul>
+
+    <h3>Validation and Testing</h3>
+    <ul>
+      <li><%= link_to "Assertions", "/how-to/assertions/" %> - Validate AWS infrastructure configurations against expected values</li>
+      <li><%= link_to "Simulate Policies", "/how-to/simulate-policies/" %> - Test and validate IAM policies using AWS IAM Policy Simulator</li>
+    </ul>
+
+    <h3>Custom Operations</h3>
+    <ul>
+      <li><%= link_to "Lambda Invocations", "/how-to/lambda-invocations/" %> - Execute AWS Lambda functions for custom business logic</li>
+      <li><%= link_to "Code Build Runs", "/how-to/code-build-runs/" %> - Execute AWS CodeBuild projects for complex operations</li>
+    </ul>
+
+    <h3>Cloud Custodian Integration</h3>
+    <ul>
+      <li><%= link_to "C7N AWS Lambdas", "/how-to/c7n-aws-lambdas/" %> - Deploy Cloud Custodian policies as AWS Lambda functions</li>
+      <li><%= link_to "C7N AWS CloudTrails", "/how-to/c7n-aws-cloudtrails/" %> - Configure CloudTrail event streams for real-time policy triggers</li>
+    </ul>
+  </div>
+
+  <div class="sitemap-section">
+    <h2>Using the CLI <span class="advanced-badge">Advanced</span></h2>
+    <p>Command-line interface for advanced users and automation workflows.</p>
+    
+    <ul>
+      <li><%= link_to "CLI Reference", "/using-the-cli/" %> - Complete CLI command reference and documentation</li>
+    </ul>
+
+    <h3>Command Categories</h3>
+    <ul>
+      <li><strong>Bootstrap Commands</strong> - Initialize hub and spoke accounts</li>
+      <li><strong>Deployment Commands</strong> - Execute and manage deployments</li>
+      <li><strong>Management Commands</strong> - Manage accounts, launches, and configuration</li>
+      <li><strong>Configuration Commands</strong> - Update remote configuration settings</li>
+      <li><strong>Utility Commands</strong> - Debugging, monitoring, and maintenance tools</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Quick Navigation</h2>
+
+<div class="quick-nav-grid">
+  <div class="quick-nav-card">
+    <h3>Getting Started</h3>
+    <p>New to Cloud Workflow Engine? Start here:</p>
+    <ol>
+      <li><%= link_to "Adding Accounts", "/how-to/adding-accounts/" %> - Set up your first accounts and cross-account roles</li>
+      <li><%= link_to "Stacks", "/how-to/stacks/" %> - Basic CloudFormation deployment</li>
+      <li><%= link_to "Assertions", "/how-to/assertions/" %> - Validate deployments</li>
+    </ol>
+  </div>
+
+  <div class="quick-nav-card">
+    <h3>Common Workflows</h3>
+    <p>Popular workflow patterns:</p>
+    <ul>
+      <li><strong>Infrastructure Deployment</strong>: Stacks → Assertions → Lambda Invocations</li>
+      <li><strong>Service Catalog Hub-and-Spoke</strong>: Spoke Local Portfolios → Launches → Assertions</li>
+      <li><strong>Governance and Compliance</strong>: Organizational Units → Service Control Policies → Tag Policies</li>
+    </ul>
+  </div>
+
+  <div class="quick-nav-card">
+    <h3>Advanced Features</h3>
+    <p>For experienced users:</p>
+    <ul>
+      <li><%= link_to "Using the CLI", "/using-the-cli/" %> - Command-line interface and automation</li>
+      <li><%= link_to "Using Excludes", "/how-to/excludes/" %> - Fine-grained deployment control</li>
+      <li><%= link_to "C7N AWS Lambdas", "/how-to/c7n-aws-lambdas/" %> - Automated compliance policies</li>
+      <li><%= link_to "Code Build Runs", "/how-to/code-build-runs/" %> - Custom build processes</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Action Types by Category</h2>
+
+<div class="action-categories">
+  <div class="category-card">
+    <h3>Core Infrastructure</h3>
+    <ul>
+      <li><%= link_to "Stacks", "/how-to/stacks/" %></li>
+      <li><%= link_to "Workspaces", "/how-to/workspaces/" %></li>
+    </ul>
+  </div>
+
+  <div class="category-card">
+    <h3>Service Catalog</h3>
+    <ul>
+      <li><%= link_to "Launches", "/how-to/launches/" %></li>
+      <li><%= link_to "Spoke Local Portfolios", "/how-to/spoke-local-portfolios/" %></li>
+      <li><%= link_to "Imported Portfolios", "/how-to/imported-portfolios/" %></li>
+    </ul>
+  </div>
+
+  <div class="category-card">
+    <h3>Governance</h3>
+    <ul>
+      <li><%= link_to "Service Control Policies", "/how-to/service-control-policies/" %></li>
+      <li><%= link_to "Tag Policies", "/how-to/tag-policies/" %></li>
+      <li><%= link_to "Organizational Units", "/how-to/organizational-units/" %></li>
+    </ul>
+  </div>
+
+  <div class="category-card">
+    <h3>Validation</h3>
+    <ul>
+      <li><%= link_to "Assertions", "/how-to/assertions/" %></li>
+      <li><%= link_to "Simulate Policies", "/how-to/simulate-policies/" %></li>
+    </ul>
+  </div>
+
+  <div class="category-card">
+    <h3>Custom Execution</h3>
+    <ul>
+      <li><%= link_to "Lambda Invocations", "/how-to/lambda-invocations/" %></li>
+      <li><%= link_to "Code Build Runs", "/how-to/code-build-runs/" %></li>
+    </ul>
+  </div>
+
+  <div class="category-card">
+    <h3>Cloud Custodian</h3>
+    <ul>
+      <li><%= link_to "C7N AWS Lambdas", "/how-to/c7n-aws-lambdas/" %></li>
+      <li><%= link_to "C7N AWS CloudTrails", "/how-to/c7n-aws-cloudtrails/" %></li>
+    </ul>
+  </div>
+</div>
+
+<style>
+.sitemap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+@media (max-width: 768px) {
+  .sitemap-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sitemap-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.sitemap-section h2 {
+  color: #2c3e50;
+  margin-top: 0;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 0.5rem;
+}
+
+.sitemap-section h3 {
+  color: #495057;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sitemap-section ul {
+  margin-bottom: 1rem;
+}
+
+.sitemap-section li {
+  margin-bottom: 0.5rem;
+}
+
+.quick-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.quick-nav-card {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.quick-nav-card h3 {
+  color: #007bff;
+  margin-top: 0;
+}
+
+.action-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.category-card {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+  border-top: 3px solid #28a745;
+}
+
+.category-card h3 {
+  color: #495057;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.category-card ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.category-card li {
+  margin-bottom: 0.25rem;
+}
+
+.advanced-badge {
+  background: #dc3545;
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-weight: normal;
+  margin-left: 0.5rem;
+}
+</style>

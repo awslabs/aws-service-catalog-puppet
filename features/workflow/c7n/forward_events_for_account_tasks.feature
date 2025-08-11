@@ -1,5 +1,5 @@
 Feature: Forward Events For Account Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to set up event forwarding from spoke accounts to the Cloud Custodian hub account
   So that Cloud Custodian can receive and process events from all monitored accounts
 

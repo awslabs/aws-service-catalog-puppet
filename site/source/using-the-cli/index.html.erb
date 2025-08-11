@@ -1,0 +1,985 @@
+---
+title: Using the CLI - Cloud Workflow Engine
+---
+
+<div class="advanced-topic-banner">
+  <h1>🚀 Using the CLI</h1>
+  <p class="advanced-label"><strong>Advanced Topic</strong> - For experienced users and automation</p>
+</div>
+
+<p>This section documents the command-line interface (CLI) commands available in Cloud Workflow Engine. These commands provide direct access to the engine's functionality for advanced users, automation, and CI/CD pipelines.</p>
+
+<div class="important-notice">
+  <h3>⚠️ Important</h3>
+  <p>CLI commands are intended for advanced users who understand the workflow engine architecture. For getting started, please refer to the <%= link_to "How-To Guides", "/how-to/" %> section first, especially <%= link_to "Adding Accounts", "/how-to/adding-accounts/" %>.</p>
+</div>
+
+## Table of Contents
+
+<div class="toc-grid">
+  <div class="toc-section">
+    <h3>Bootstrap Commands</h3>
+    <ul>
+      <li><a href="#bootstrap">bootstrap</a></li>
+      <li><a href="#bootstrap-org-master">bootstrap-org-master</a></li>
+      <li><a href="#bootstrap-scp-master">bootstrap-scp-master</a></li>
+      <li><a href="#bootstrap-spoke">bootstrap-spoke</a></li>
+      <li><a href="#bootstrap-spoke-as">bootstrap-spoke-as</a></li>
+      <li><a href="#bootstrap-spokes-in-ou">bootstrap-spokes-in-ou</a></li>
+    </ul>
+  </div>
+  
+  <div class="toc-section">
+    <h3>Deployment Commands</h3>
+    <ul>
+      <li><a href="#deploy-from-task-reference">deploy-from-task-reference</a></li>
+      <li><a href="#deploy-in-spoke-from-task-reference">deploy-in-spoke-from-task-reference</a></li>
+      <li><a href="#dry-run">dry-run</a></li>
+      <li><a href="#expand">expand</a></li>
+    </ul>
+  </div>
+  
+  <div class="toc-section">
+    <h3>Management Commands</h3>
+    <ul>
+      <li><a href="#add-to-accounts">add-to-accounts</a></li>
+      <li><a href="#add-to-launches">add-to-launches</a></li>
+      <li><a href="#list-launches">list-launches</a></li>
+      <li><a href="#list-resources">list-resources</a></li>
+      <li><a href="#remove-from-accounts">remove-from-accounts</a></li>
+      <li><a href="#remove-from-launches">remove-from-launches</a></li>
+      <li><a href="#seed">seed</a></li>
+    </ul>
+  </div>
+  
+  <div class="toc-section">
+    <h3>Configuration Commands</h3>
+    <ul>
+      <li><a href="#set-config-value">set-config-value</a></li>
+      <li><a href="#set-named-config-value">set-named-config-value</a></li>
+      <li><a href="#set-org-iam-role-arn">set-org-iam-role-arn</a></li>
+      <li><a href="#set-org-scp-role-arn">set-org-scp-role-arn</a></li>
+      <li><a href="#set-regions">set-regions</a></li>
+      <li><a href="#upload-config">upload-config</a></li>
+    </ul>
+  </div>
+  
+  <div class="toc-section">
+    <h3>Utility Commands</h3>
+    <ul>
+      <li><a href="#export-puppet-pipeline-logs">export-puppet-pipeline-logs</a></li>
+      <li><a href="#export-traces">export-traces</a></li>
+      <li><a href="#generate-deploy-viz">generate-deploy-viz</a></li>
+      <li><a href="#generate-task-reference">generate-task-reference</a></li>
+      <li><a href="#graph">graph</a></li>
+      <li><a href="#import-product-set">import-product-set</a></li>
+      <li><a href="#release-spoke">release-spoke</a></li>
+      <li><a href="#reset-provisioned-product-owner">reset-provisioned-product-owner</a></li>
+      <li><a href="#run">run</a></li>
+      <li><a href="#show-codebuilds">show-codebuilds</a></li>
+      <li><a href="#show-pipelines">show-pipelines</a></li>
+      <li><a href="#uninstall">uninstall</a></li>
+      <li><a href="#validate">validate</a></li>
+      <li><a href="#version">version</a></li>
+      <li><a href="#wait-for-code-build-in">wait-for-code-build-in</a></li>
+      <li><a href="#wait-for-run-to-complete">wait-for-run-to-complete</a></li>
+    </ul>
+  </div>
+</div>
+
+---
+
+## Bootstrap Commands
+
+### <a id="bootstrap"></a>`bootstrap`
+
+Initialize Cloud Workflow Engine in the hub account with CI/CD pipeline setup.
+
+<pre><code class="language-bash">cloud-workflow-engine bootstrap [OPTIONS]</code></pre>
+
+**Options:**
+- `--with-manual-approvals/--with-no-manual-approvals` - Enable manual approvals in pipeline (default: False)
+- `--puppet-code-pipeline-role-permission-boundary` - Permission boundary for pipeline role
+- `--source-role-permissions-boundary` - Permission boundary for source role  
+- `--puppet-generate-role-permission-boundary` - Permission boundary for generate role
+- `--puppet-deploy-role-permission-boundary` - Permission boundary for deploy role
+- `--puppet-provisioning-role-permissions-boundary` - Permission boundary for provisioning role
+- `--cloud-formation-deploy-role-permissions-boundary` - Permission boundary for CloudFormation role
+- `--deploy-environment-compute-type` - CodeBuild compute type (default: BUILD_GENERAL1_SMALL)
+- `--spoke-deploy-environment-compute-type` - Spoke CodeBuild compute type
+- `--deploy-num-workers` - Number of deployment workers (default: 10)
+- `--source-provider` - Source provider: CodeCommit, GitHub, CodeStarSourceConnection, S3, Custom
+- `--repository-name` - Repository name (default: CloudWorkflowEngine)
+- `--branch-name` - Branch name (default: master)
+- `--puppet-role-name` - Cross-account role name (default: PuppetRole)
+- `--puppet-role-path` - Cross-account role path (default: /cloud-workflow-engine/)
+
+**Usage:**
+<pre><code class="language-bash"># Basic bootstrap with CodeCommit
+cloud-workflow-engine bootstrap --source-provider CodeCommit
+
+# Bootstrap with GitHub source
+cloud-workflow-engine bootstrap \
+  --source-provider GitHub \
+  --owner myorg \
+  --repo my-puppet-config \
+  --branch main
+
+# Bootstrap with manual approvals enabled
+cloud-workflow-engine bootstrap \
+  --with-manual-approvals \
+  --deploy-num-workers 20</code></pre>
+
+---
+
+### <a id="bootstrap-org-master"></a>`bootstrap-org-master`
+
+Bootstrap the organization master account for AWS Organizations integration.
+
+<pre><code class="language-bash">cloud-workflow-engine bootstrap-org-master PUPPET_ACCOUNT_ID [OPTIONS]</code></pre>
+
+**Arguments:**
+- `PUPPET_ACCOUNT_ID` - The hub account ID
+
+**Options:**
+- `--tag` - Tags to apply (format: Key=Value)
+
+**Usage:**
+<pre><code class="language-bash"># Bootstrap org master account
+cloud-workflow-engine bootstrap-org-master 123456789012 \
+  --tag Environment=Production \
+  --tag Owner=Platform</code></pre>
+
+---
+
+### <a id="bootstrap-scp-master"></a>`bootstrap-scp-master`
+
+Bootstrap the organization master account for Service Control Policy management.
+
+<pre><code class="language-bash">cloud-workflow-engine bootstrap-scp-master PUPPET_ACCOUNT_ID [OPTIONS]</code></pre>
+
+**Arguments:**
+- `PUPPET_ACCOUNT_ID` - The hub account ID
+
+**Options:**
+- `--tag` - Tags to apply (format: Key=Value)
+
+**Usage:**
+<pre><code class="language-bash"># Bootstrap SCP master account
+cloud-workflow-engine bootstrap-scp-master 123456789012 \
+  --tag Purpose=Governance</code></pre>
+
+---
+
+### <a id="bootstrap-spoke"></a>`bootstrap-spoke`
+
+Bootstrap a single spoke account to work with the hub account.
+
+<pre><code class="language-bash">cloud-workflow-engine bootstrap-spoke PUPPET_ACCOUNT_ID [OPTIONS]</code></pre>
+
+**Arguments:**
+- `PUPPET_ACCOUNT_ID` - The hub account ID
+
+**Options:**
+- `--permission-boundary` - Permission boundary ARN (default: AdministratorAccess)
+- `--puppet-role-name` - Cross-account role name (default: PuppetRole)
+- `--puppet-role-path` - Cross-account role path (default: /cloud-workflow-engine/)
+- `--tag` - Tags to apply (format: Key=Value)
+
+**Usage:**
+<pre><code class="language-bash"># Bootstrap spoke account
+cloud-workflow-engine bootstrap-spoke 123456789012
+
+# Bootstrap with custom role name and permission boundary
+cloud-workflow-engine bootstrap-spoke 123456789012 \
+  --puppet-role-name CustomPuppetRole \
+  --permission-boundary arn:aws:iam::aws:policy/PowerUserAccess</code></pre>
+
+---
+
+### <a id="bootstrap-spoke-as"></a>`bootstrap-spoke-as`
+
+Bootstrap a spoke account while assuming a specific IAM role.
+
+<pre><code class="language-bash">cloud-workflow-engine bootstrap-spoke-as PUPPET_ACCOUNT_ID IAM_ROLE_ARNS [OPTIONS]</code></pre>
+
+**Arguments:**
+- `PUPPET_ACCOUNT_ID` - The hub account ID
+- `IAM_ROLE_ARNS` - One or more IAM role ARNs to assume
+
+**Options:**
+- `--permission-boundary` - Permission boundary ARN
+- `--puppet-role-name` - Cross-account role name (default: PuppetRole)
+- `--puppet-role-path` - Cross-account role path (default: /cloud-workflow-engine/)
+- `--tag` - Tags to apply (format: Key=Value)
+
+**Usage:**
+<pre><code class="language-bash"># Bootstrap spoke via assumed role
+cloud-workflow-engine bootstrap-spoke-as 123456789012 \
+  arn:aws:iam::987654321098:role/OrganizationAccountAccessRole</code></pre>
+
+---
+
+### <a id="bootstrap-spokes-in-ou"></a>`bootstrap-spokes-in-ou`
+
+Bootstrap all accounts in an Organizational Unit.
+
+<pre><code class="language-bash">cloud-workflow-engine bootstrap-spokes-in-ou OU_PATH_OR_ID ROLE_NAME IAM_ROLE_ARNS [OPTIONS]</code></pre>
+
+**Arguments:**
+- `OU_PATH_OR_ID` - OU path or ID (e.g., /Production/ or ou-12345678)
+- `ROLE_NAME` - Role name to assume in target accounts
+- `IAM_ROLE_ARNS` - One or more IAM role ARNs to assume
+
+**Options:**
+- `--permission-boundary` - Permission boundary ARN
+- `--num-workers` - Number of parallel workers (default: 10)
+- `--puppet-role-name` - Cross-account role name (default: PuppetRole)
+- `--puppet-role-path` - Cross-account role path (default: /cloud-workflow-engine/)
+- `--tag` - Tags to apply (format: Key=Value)
+
+**Usage:**
+<pre><code class="language-bash"># Bootstrap all accounts in Production OU
+cloud-workflow-engine bootstrap-spokes-in-ou /Production/ \
+  OrganizationAccountAccessRole \
+  arn:aws:iam::123456789012:role/BootstrapRole \
+  --num-workers 5</code></pre>
+
+---
+
+## Deployment Commands
+
+### <a id="deploy-from-task-reference"></a>`deploy-from-task-reference`
+
+Deploy infrastructure from a task reference file (used by CI/CD pipelines).
+
+<pre><code class="language-bash">cloud-workflow-engine deploy-from-task-reference PATH [OPTIONS]</code></pre>
+
+**Arguments:**
+- `PATH` - Path to task reference file
+
+**Options:**
+- `--num-workers` - Number of parallel workers (default: 10)
+- `--execution-mode` - Execution mode: hub or spoke (default: hub)
+- `--puppet-account-id` - Hub account ID
+- `--home-region` - Home region for operations
+- `--regions` - Comma-separated list of regions
+- `--single-account` - Target single account only
+- `--single-action-section` - Target specific action section
+- `--single-action-item` - Target specific action item
+- `--should-collect-cloudformation-events` - Enable CloudFormation event collection
+- `--should-forward-events-to-eventbridge` - Forward events to EventBridge
+- `--should-forward-failures-to-opscenter` - Forward failures to OpsCenter
+- `--output-cache-starting-point` - Cache starting point
+- `--is-caching-enabled` - Enable caching
+- `--on-complete-url` - Webhook URL to call on completion
+
+**Usage:**
+<pre><code class="language-bash"># Deploy from task reference with default settings
+cloud-workflow-engine deploy-from-task-reference ./tasks.yaml
+
+# Deploy with specific configuration
+cloud-workflow-engine deploy-from-task-reference ./tasks.yaml \
+  --num-workers 20 \
+  --single-account 123456789012 \
+  --home-region us-east-1</code></pre>
+
+---
+
+### <a id="deploy-in-spoke-from-task-reference"></a>`deploy-in-spoke-from-task-reference`
+
+Deploy from task reference in spoke mode.
+
+<pre><code class="language-bash">cloud-workflow-engine deploy-in-spoke-from-task-reference PATH [OPTIONS]</code></pre>
+
+**Arguments:**
+- `PATH` - Path to task reference file
+
+**Options:** (Same as deploy-from-task-reference but optimized for spoke accounts)
+
+**Usage:**
+<pre><code class="language-bash"># Deploy in spoke mode
+cloud-workflow-engine deploy-in-spoke-from-task-reference ./tasks.yaml \
+  --execution-mode spoke \
+  --puppet-account-id 123456789012</code></pre>
+
+---
+
+### <a id="dry-run"></a>`dry-run`
+
+Perform a dry run to preview changes without executing them.
+
+<pre><code class="language-bash">cloud-workflow-engine dry-run MANIFEST_FILE [OPTIONS]</code></pre>
+
+**Arguments:**
+- `MANIFEST_FILE` - Path to manifest file
+
+**Options:**
+- `--single-account` - Target single account
+- `--puppet-account-id` - Hub account ID
+
+**Note:** Currently disabled due to performance issues.
+
+---
+
+### <a id="expand"></a>`expand`
+
+Expand a manifest file to show all resolved tasks and dependencies.
+
+<pre><code class="language-bash">cloud-workflow-engine expand MANIFEST_FILE [OPTIONS]</code></pre>
+
+**Arguments:**
+- `MANIFEST_FILE` - Path to manifest file
+
+**Options:**
+- `--single-account` - Target single account
+- `--single-action-section` - Target specific action section
+- `--single-action-item` - Target specific action item
+- `--single-action-include-dependencies` - Include dependencies (default: Yes)
+- `--single-action-include-reverse-dependencies` - Include reverse dependencies (default: Yes)
+
+**Usage:**
+<pre><code class="language-bash"># Expand full manifest
+cloud-workflow-engine expand manifest.yaml
+
+# Expand for single account
+cloud-workflow-engine expand manifest.yaml \
+  --single-account 123456789012
+
+# Expand specific action with dependencies
+cloud-workflow-engine expand manifest.yaml \
+  --single-action-section launches \
+  --single-action-item my-application</code></pre>
+
+---
+
+## Management Commands
+
+### <a id="add-to-accounts"></a>`add-to-accounts`
+
+Add accounts or organizational units to the configuration.
+
+<pre><code class="language-bash">cloud-workflow-engine add-to-accounts ACCOUNT_OR_OU_FILE</code></pre>
+
+**Arguments:**
+- `ACCOUNT_OR_OU_FILE` - YAML file containing account or OU definitions
+
+**Usage:**
+<pre><code class="language-yaml"># accounts.yaml
+accounts:
+  - account_id: "123456789012"
+    name: "production-us-east-1"
+    email: "aws-prod@company.com"
+    organization_unit: "/production/"
+
+organizational_units:
+  - name: "production"
+    path: "/production/"</code></pre>
+
+<pre><code class="language-bash">cloud-workflow-engine add-to-accounts accounts.yaml</code></pre>
+
+---
+
+### <a id="add-to-launches"></a>`add-to-launches`
+
+Add launch configurations to the manifest.
+
+<pre><code class="language-bash">cloud-workflow-engine add-to-launches LAUNCH_FILE</code></pre>
+
+**Arguments:**
+- `LAUNCH_FILE` - YAML file containing launch definitions
+
+**Usage:**
+<pre><code class="language-yaml"># launches.yaml
+launches:
+  my-application:
+    portfolio: shared-services
+    product: web-application
+    version: v1.0.0
+    deploy_to:
+      accounts:
+        - "123456789012"</code></pre>
+
+<pre><code class="language-bash">cloud-workflow-engine add-to-launches launches.yaml</code></pre>
+
+---
+
+### <a id="generate-task-reference"></a>`generate-task-reference`
+
+Generate a task reference file from a manifest for pipeline execution.
+
+<pre><code class="language-bash">cloud-workflow-engine generate-task-reference MANIFEST_FILE</code></pre>
+
+**Arguments:**
+- `MANIFEST_FILE` - Path to manifest file
+
+**Usage:**
+<pre><code class="language-bash"># Generate task reference
+cloud-workflow-engine generate-task-reference manifest.yaml > tasks.yaml</code></pre>
+
+---
+
+### <a id="graph"></a>`graph`
+
+Generate a dependency graph of the workflow.
+
+<pre><code class="language-bash">cloud-workflow-engine graph MANIFEST_FILE</code></pre>
+
+**Arguments:**
+- `MANIFEST_FILE` - Path to manifest file
+
+**Usage:**
+<pre><code class="language-bash"># Generate graph
+cloud-workflow-engine graph manifest.yaml > workflow-graph.dot
+
+# Convert to image using Graphviz
+dot -Tpng workflow-graph.dot -o workflow-graph.png</code></pre>
+
+---
+
+### <a id="import-product-set"></a>`import-product-set`
+
+Import a product set into a portfolio.
+
+<pre><code class="language-bash">cloud-workflow-engine import-product-set MANIFEST_FILE NAME PORTFOLIO_NAME</code></pre>
+
+**Arguments:**
+- `MANIFEST_FILE` - Path to manifest file
+- `NAME` - Product set name
+- `PORTFOLIO_NAME` - Target portfolio name
+
+---
+
+### <a id="list-launches"></a>`list-launches`
+
+List all launches in the expanded manifest.
+
+<pre><code class="language-bash">cloud-workflow-engine list-launches EXPANDED_MANIFEST [OPTIONS]</code></pre>
+
+**Arguments:**
+- `EXPANDED_MANIFEST` - Path to expanded manifest file
+
+**Options:**
+- `--format/-f` - Output format: table, json (default: table)
+
+**Note:** Currently disabled due to performance issues.
+
+---
+
+### <a id="list-resources"></a>`list-resources`
+
+List all AWS resources managed by the workflow engine.
+
+<pre><code class="language-bash">cloud-workflow-engine list-resources</code></pre>
+
+**Usage:**
+<pre><code class="language-bash"># List managed resources
+cloud-workflow-engine list-resources</code></pre>
+
+---
+
+### <a id="remove-from-accounts"></a>`remove-from-accounts`
+
+Remove an account or OU from configuration.
+
+<pre><code class="language-bash">cloud-workflow-engine remove-from-accounts ACCOUNT_ID_OR_OU_ID_OR_OU_PATH</code></pre>
+
+**Arguments:**
+- `ACCOUNT_ID_OR_OU_ID_OR_OU_PATH` - Account ID, OU ID, or OU path to remove
+
+**Usage:**
+<pre><code class="language-bash"># Remove account by ID
+cloud-workflow-engine remove-from-accounts 123456789012
+
+# Remove OU by path
+cloud-workflow-engine remove-from-accounts /staging/</code></pre>
+
+---
+
+### <a id="remove-from-launches"></a>`remove-from-launches`
+
+Remove a launch from the manifest.
+
+<pre><code class="language-bash">cloud-workflow-engine remove-from-launches LAUNCH_NAME</code></pre>
+
+**Arguments:**
+- `LAUNCH_NAME` - Name of launch to remove
+
+**Usage:**
+<pre><code class="language-bash">cloud-workflow-engine remove-from-launches my-old-application</code></pre>
+
+---
+
+### <a id="reset-provisioned-product-owner"></a>`reset-provisioned-product-owner`
+
+Reset the owner of provisioned products.
+
+<pre><code class="language-bash">cloud-workflow-engine reset-provisioned-product-owner MANIFEST_FILE</code></pre>
+
+**Note:** This command is deprecated and not supported in current versions.
+
+---
+
+### <a id="run"></a>`run`
+
+Run the workflow engine with specified configuration.
+
+<pre><code class="language-bash">cloud-workflow-engine run [WHAT] [OPTIONS]</code></pre>
+
+**Arguments:**
+- `WHAT` - What to run (default: puppet)
+
+**Options:**
+- `--tail/--no-tail` - Tail logs (default: False)
+
+**Usage:**
+<pre><code class="language-bash"># Run with log tailing
+cloud-workflow-engine run --tail
+
+# Run specific component
+cloud-workflow-engine run deploy --tail</code></pre>
+
+---
+
+### <a id="seed"></a>`seed`
+
+Generate sample configuration files to get started.
+
+<pre><code class="language-bash">cloud-workflow-engine seed [COMPLEXITY] PATH</code></pre>
+
+**Arguments:**
+- `COMPLEXITY` - Configuration complexity: simple (default)
+- `PATH` - Directory to create seed files
+
+**Usage:**
+<pre><code class="language-bash"># Create simple seed configuration
+cloud-workflow-engine seed simple ./config
+
+# Create complex seed configuration  
+cloud-workflow-engine seed complex ./advanced-config</code></pre>
+
+---
+
+### <a id="validate"></a>`validate`
+
+Validate a manifest file for syntax and configuration errors.
+
+<pre><code class="language-bash">cloud-workflow-engine validate MANIFEST_FILE</code></pre>
+
+**Arguments:**
+- `MANIFEST_FILE` - Path to manifest file to validate
+
+**Usage:**
+<pre><code class="language-bash"># Validate manifest
+cloud-workflow-engine validate manifest.yaml</code></pre>
+
+---
+
+## Configuration Commands
+
+### <a id="set-config-value"></a>`set-config-value`
+
+Set a configuration value in the remote configuration.
+
+<pre><code class="language-bash">cloud-workflow-engine set-config-value NAME VALUE</code></pre>
+
+**Arguments:**
+- `NAME` - Configuration parameter name
+- `VALUE` - Configuration parameter value
+
+**Common Parameters:**
+- `regions` - List of AWS regions
+- `should_use_sns` - Enable SNS notifications
+- `should_use_eventbridge` - Enable EventBridge integration
+- `deploy_num_workers` - Number of deployment workers
+
+**Usage:**
+<pre><code class="language-bash"># Set number of workers
+cloud-workflow-engine set-config-value deploy_num_workers 20
+
+# Enable SNS notifications
+cloud-workflow-engine set-config-value should_use_sns true</code></pre>
+
+---
+
+### <a id="set-named-config-value"></a>`set-named-config-value`
+
+Set a named configuration value.
+
+<pre><code class="language-bash">cloud-workflow-engine set-named-config-value NAME VALUE</code></pre>
+
+**Arguments:**
+- `NAME` - Configuration name
+- `VALUE` - Configuration value
+
+---
+
+### <a id="set-org-iam-role-arn"></a>`set-org-iam-role-arn`
+
+Set the IAM role ARN for AWS Organizations operations.
+
+<pre><code class="language-bash">cloud-workflow-engine set-org-iam-role-arn ORG_IAM_ROLE_ARN</code></pre>
+
+**Arguments:**
+- `ORG_IAM_ROLE_ARN` - IAM role ARN for Organizations operations
+
+**Usage:**
+<pre><code class="language-bash">cloud-workflow-engine set-org-iam-role-arn \
+  arn:aws:iam::123456789012:role/OrganizationRole</code></pre>
+
+---
+
+### <a id="set-org-scp-role-arn"></a>`set-org-scp-role-arn`
+
+Set the IAM role ARN for Service Control Policy operations.
+
+<pre><code class="language-bash">cloud-workflow-engine set-org-scp-role-arn ORG_SCP_ROLE_ARN</code></pre>
+
+**Arguments:**
+- `ORG_SCP_ROLE_ARN` - IAM role ARN for SCP operations
+
+**Usage:**
+<pre><code class="language-bash">cloud-workflow-engine set-org-scp-role-arn \
+  arn:aws:iam::123456789012:role/SCPManagementRole</code></pre>
+
+---
+
+### <a id="set-regions"></a>`set-regions`
+
+Set the list of AWS regions for operations.
+
+<pre><code class="language-bash">cloud-workflow-engine set-regions REGIONS...</code></pre>
+
+**Arguments:**
+- `REGIONS` - One or more AWS region names
+
+**Usage:**
+<pre><code class="language-bash"># Set multiple regions
+cloud-workflow-engine set-regions us-east-1 us-west-2 eu-west-1
+
+# Set single region
+cloud-workflow-engine set-regions us-east-1</code></pre>
+
+---
+
+### <a id="upload-config"></a>`upload-config`
+
+Upload configuration from a local file to remote storage.
+
+<pre><code class="language-bash">cloud-workflow-engine upload-config CONFIG_FILE</code></pre>
+
+**Arguments:**
+- `CONFIG_FILE` - Path to YAML configuration file
+
+**Usage:**
+<pre><code class="language-bash"># Upload configuration
+cloud-workflow-engine upload-config config.yaml</code></pre>
+
+---
+
+## Utility Commands
+
+### <a id="export-puppet-pipeline-logs"></a>`export-puppet-pipeline-logs`
+
+Export pipeline execution logs for debugging.
+
+<pre><code class="language-bash">cloud-workflow-engine export-puppet-pipeline-logs EXECUTION_ID [OPTIONS]</code></pre>
+
+**Arguments:**
+- `EXECUTION_ID` - Pipeline execution ID
+
+**Options:**
+- `--puppet-account-id` - Hub account ID
+
+**Usage:**
+<pre><code class="language-bash"># Export pipeline logs
+cloud-workflow-engine export-puppet-pipeline-logs abc123-def456-ghi789</code></pre>
+
+---
+
+### <a id="export-traces"></a>`export-traces`
+
+Export execution traces for performance analysis.
+
+<pre><code class="language-bash">cloud-workflow-engine export-traces CODEBUILD_EXECUTION_ID [OPTIONS]</code></pre>
+
+**Arguments:**
+- `CODEBUILD_EXECUTION_ID` - CodeBuild execution ID
+
+**Options:**
+- `--puppet-account-id` - Hub account ID
+
+---
+
+### <a id="generate-deploy-viz"></a>`generate-deploy-viz`
+
+Generate deployment visualization from execution logs.
+
+<pre><code class="language-bash">cloud-workflow-engine generate-deploy-viz CODEBUILD_EXECUTION_ID [OPTIONS]</code></pre>
+
+**Arguments:**
+- `CODEBUILD_EXECUTION_ID` - CodeBuild execution ID
+
+**Options:**
+- `--puppet-account-id` - Hub account ID
+- `--group-by-pid/--no-group-by-pid` - Group by process ID (default: False)
+
+---
+
+### <a id="release-spoke"></a>`release-spoke`
+
+Release/cleanup spoke account resources.
+
+<pre><code class="language-bash">cloud-workflow-engine release-spoke [OPTIONS]</code></pre>
+
+**Options:**
+- `--puppet-account-id` - Hub account ID
+
+**Usage:**
+<pre><code class="language-bash"># Release spoke resources
+cloud-workflow-engine release-spoke --puppet-account-id 123456789012</code></pre>
+
+---
+
+### <a id="show-codebuilds"></a>`show-codebuilds`
+
+Show CodeBuild execution history and status.
+
+<pre><code class="language-bash">cloud-workflow-engine show-codebuilds [OPTIONS]</code></pre>
+
+**Options:**
+- `--filter` - Filter type: none, single-runs, full-runs (default: none)
+- `--format` - Output format: csv, json (default: csv)
+- `--limit` - Number of results to show (default: 20)
+
+**Usage:**
+<pre><code class="language-bash"># Show recent CodeBuild runs
+cloud-workflow-engine show-codebuilds --format json --limit 10
+
+# Show only full runs
+cloud-workflow-engine show-codebuilds --filter full-runs</code></pre>
+
+---
+
+### <a id="show-pipelines"></a>`show-pipelines`
+
+Show pipeline status and information.
+
+<pre><code class="language-bash">cloud-workflow-engine show-pipelines [OPTIONS]</code></pre>
+
+**Options:**
+- `--format/-f` - Output format: table, json, html (default: table)
+
+**Usage:**
+<pre><code class="language-bash"># Show pipelines in table format
+cloud-workflow-engine show-pipelines
+
+# Show pipelines in JSON format
+cloud-workflow-engine show-pipelines --format json</code></pre>
+
+---
+
+### <a id="uninstall"></a>`uninstall`
+
+Uninstall Cloud Workflow Engine from the hub account.
+
+<pre><code class="language-bash">cloud-workflow-engine uninstall [OPTIONS]</code></pre>
+
+**Options:**
+- `--puppet-account-id` - Hub account ID
+
+**Usage:**
+<pre><code class="language-bash"># Uninstall from current account
+cloud-workflow-engine uninstall
+
+# Uninstall from specific account
+cloud-workflow-engine uninstall --puppet-account-id 123456789012</code></pre>
+
+---
+
+### <a id="version"></a>`version`
+
+Display version information.
+
+<pre><code class="language-bash">cloud-workflow-engine version</code></pre>
+
+**Usage:**
+<pre><code class="language-bash"># Show version
+cloud-workflow-engine version</code></pre>
+
+---
+
+### <a id="wait-for-code-build-in"></a>`wait-for-code-build-in`
+
+Wait for CodeBuild service to be available in specified accounts.
+
+<pre><code class="language-bash">cloud-workflow-engine wait-for-code-build-in IAM_ROLE_ARNS...</code></pre>
+
+**Arguments:**
+- `IAM_ROLE_ARNS` - One or more IAM role ARNs to assume for checking
+
+**Usage:**
+<pre><code class="language-bash"># Wait for CodeBuild availability
+cloud-workflow-engine wait-for-code-build-in \
+  arn:aws:iam::123456789012:role/TestRole \
+  arn:aws:iam::234567890123:role/TestRole</code></pre>
+
+---
+
+### <a id="wait-for-run-to-complete"></a>`wait-for-run-to-complete`
+
+Wait for a pipeline execution to complete.
+
+<pre><code class="language-bash">cloud-workflow-engine wait-for-run-to-complete EXECUTION [OPTIONS]</code></pre>
+
+**Arguments:**
+- `EXECUTION` - Execution ID to monitor
+
+**Options:**
+- `--on-complete-url` - Webhook URL to call on completion
+
+**Usage:**
+<pre><code class="language-bash"># Wait for execution to complete
+cloud-workflow-engine wait-for-run-to-complete abc123-def456-ghi789
+
+# Wait with webhook notification
+cloud-workflow-engine wait-for-run-to-complete abc123-def456-ghi789 \
+  --on-complete-url https://webhook.example.com/notify</code></pre>
+
+---
+
+## Environment Variables
+
+Many CLI commands support environment variables for configuration:
+
+- `PUPPET_ACCOUNT_ID` - Hub account ID
+- `SINGLE_ACCOUNT` - Target single account
+- `HOME_REGION` - Home region for operations
+- `DEPLOY_NUM_WORKERS` - Number of deployment workers
+- `SCM_SOURCE_PROVIDER` - Source code management provider
+- `SCM_REPOSITORY_NAME` - Repository name
+- `SCM_BRANCH_NAME` - Branch name
+- `SHOULD_COLLECT_CLOUDFORMATION_EVENTS` - Enable CloudFormation events
+- `SHOULD_FORWARD_EVENTS_TO_EVENTBRIDGE` - Forward to EventBridge
+- `SHOULD_FORWARD_FAILURES_TO_OPSCENTER` - Forward failures to OpsCenter
+
+## Best Practices
+
+### 1. Environment Management
+- Use environment variables for account IDs and common configuration
+- Separate dev/staging/production configurations
+- Use parameter files for complex configurations
+
+### 2. Error Handling
+- Always validate manifests before deployment
+- Use dry-run when available to preview changes
+- Monitor pipeline logs for debugging
+
+### 3. Performance Optimization
+- Adjust `--num-workers` based on account limits and complexity
+- Use caching options for repeated deployments
+- Consider regional limitations and quotas
+
+### 4. Security
+- Use IAM roles with minimal necessary permissions
+- Regularly rotate access keys and tokens
+- Audit pipeline execution logs
+
+### 5. Monitoring
+- Use `show-pipelines` to monitor execution status
+- Export logs and traces for performance analysis
+- Set up EventBridge integration for real-time monitoring
+
+<style>
+.advanced-topic-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.advanced-topic-banner h1 {
+  margin: 0;
+  font-size: 2.5rem;
+}
+
+.advanced-label {
+  background: rgba(255,255,255,0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  display: inline-block;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.important-notice {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  padding: 1rem;
+  border-radius: 6px;
+  margin: 1.5rem 0;
+}
+
+.important-notice h3 {
+  margin-top: 0;
+  color: #856404;
+}
+
+.toc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.toc-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.toc-section h3 {
+  margin-top: 0;
+  color: #495057;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.5rem;
+}
+
+.toc-section ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.toc-section li {
+  margin-bottom: 0.25rem;
+}
+
+.toc-section a {
+  color: #007bff;
+  text-decoration: none;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.toc-section a:hover {
+  text-decoration: underline;
+}
+
+h2 {
+  border-top: 3px solid #007bff;
+  padding-top: 1rem;
+  margin-top: 3rem;
+}
+
+h3 a {
+  color: #495057;
+  text-decoration: none;
+}
+
+h3 code {
+  background: #e9ecef;
+  color: #495057;
+}
+</style>

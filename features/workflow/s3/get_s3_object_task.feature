@@ -1,5 +1,5 @@
 Feature: Get S3 Object Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to retrieve objects from S3 buckets
   So that I can access configuration files, templates, and other artifacts during workflow execution
 

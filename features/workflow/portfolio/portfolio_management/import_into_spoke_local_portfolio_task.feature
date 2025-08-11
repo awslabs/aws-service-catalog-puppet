@@ -1,5 +1,5 @@
 Feature: Import Into Spoke Local Portfolio Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to import products from hub portfolio into spoke local portfolios
   So that I can make products available in specific accounts with local portfolio management
 

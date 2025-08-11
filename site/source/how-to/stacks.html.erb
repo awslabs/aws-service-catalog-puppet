@@ -1,0 +1,89 @@
+---
+title: Working with Stacks
+---
+
+<h1>Working with Stacks</h1>
+
+<p>Stacks are CloudFormation infrastructure deployments that can be provisioned and terminated across multiple AWS accounts and regions as part of your Cloud Workflow Engine workflow.</p>
+
+<h2>Overview</h2>
+
+<p>The stack action type allows you to:</p>
+<ul>
+  <li>Deploy CloudFormation stacks from S3 templates</li>
+  <li>Update existing stacks when templates or parameters change</li>
+  <li>Terminate stacks when they're no longer needed</li>
+  <li>Handle cross-account deployments using execution roles</li>
+  <li>Support both hub and spoke execution modes</li>
+</ul>
+
+<h2>Stack Configuration</h2>
+
+<p>To configure a stack in your manifest, you need to specify:</p>
+
+<h3>Required Parameters</h3>
+<ul>
+  <li><strong>stack_name</strong>: Name of the CloudFormation stack</li>
+  <li><strong>region</strong>: AWS region for deployment</li>
+  <li><strong>account_id</strong>: Target AWS account ID</li>
+  <li><strong>bucket</strong>: S3 bucket containing the CloudFormation template</li>
+  <li><strong>key</strong>: S3 key path to the template</li>
+  <li><strong>version_id</strong>: S3 version ID of the template</li>
+  <li><strong>execution</strong>: Execution mode (hub or spoke)</li>
+  <li><strong>capabilities</strong>: CloudFormation capabilities (e.g., CAPABILITY_IAM)</li>
+</ul>
+
+<h3>Optional Parameters</h3>
+<ul>
+  <li><strong>use_service_role</strong>: Whether to use a CloudFormation service role</li>
+  <li><strong>launch_name</strong>: Service Catalog launch name (if applicable)</li>
+  <li><strong>stack_set_name</strong>: StackSet name (if applicable)</li>
+  <li><strong>tags</strong>: Additional tags for the stack</li>
+  <li><strong>retry_count</strong>: Number of retry attempts</li>
+  <li><strong>worker_timeout</strong>: Timeout for the task</li>
+  <li><strong>requested_priority</strong>: Task priority</li>
+</ul>
+
+<h2>Example Configuration</h2>
+
+<pre><code class="language-yaml">stacks:
+  my-infrastructure:
+    stack_name: my-infrastructure-stack
+    template:
+      path: infrastructure/vpc.yaml
+    capabilities:
+      - CAPABILITY_IAM
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Use descriptive stack names that indicate their purpose</li>
+  <li>Always specify the minimum required capabilities</li>
+  <li>Consider using service roles for enhanced security</li>
+  <li>Tag your stacks appropriately for cost tracking and organization</li>
+  <li>Test templates in a development environment first</li>
+  <li>Use version IDs to ensure template consistency</li>
+</ul>
+
+<h2>Common Use Cases</h2>
+
+<h3>VPC Infrastructure</h3>
+<p>Deploy foundational networking infrastructure across multiple accounts.</p>
+
+<h3>Security Baselines</h3>
+<p>Establish consistent security configurations and guardrails.</p>
+
+<h3>Application Infrastructure</h3>
+<p>Deploy application-specific resources like databases, load balancers, and compute resources.</p>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "Launches", "/how-to/launches/" %> - For Service Catalog product deployments</li>
+  <li><%= link_to "Assertions", "/how-to/assertions/" %> - For validating stack outputs</li>
+</ul>

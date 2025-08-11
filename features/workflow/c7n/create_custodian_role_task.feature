@@ -1,5 +1,5 @@
 Feature: Create Custodian Role Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to create IAM roles for Cloud Custodian (c7n) in target accounts
   So that Cloud Custodian can execute policies with appropriate permissions
 

@@ -1,5 +1,5 @@
 Feature: Do Execute Service Control Policies Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to execute and attach service control policies
   So that I can enforce governance and compliance across AWS accounts and organizational units
 

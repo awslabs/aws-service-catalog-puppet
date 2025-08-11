@@ -1,5 +1,5 @@
 Feature: Create Spoke Local Portfolio Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to create Service Catalog portfolios in spoke accounts
   So that I can make products available for deployment in target accounts
 

@@ -1,5 +1,5 @@
 Feature: Prepare C7N Hub Account Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to set up the Cloud Custodian hub account infrastructure
   So that I can centrally manage and execute Cloud Custodian policies across my organization
 

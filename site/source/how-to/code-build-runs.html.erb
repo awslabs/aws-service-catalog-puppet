@@ -1,0 +1,261 @@
+---
+title: Working with Code Build Runs
+---
+
+<h1>Working with Code Build Runs</h1>
+
+<p>Code Build runs allow you to execute AWS CodeBuild projects as part of your Cloud Workflow Engine workflow, enabling custom build and deployment operations during infrastructure management.</p>
+
+<h2>Overview</h2>
+
+<p>The code-build-runs action type allows you to:</p>
+<ul>
+  <li>Execute CodeBuild projects with custom environment variables</li>
+  <li>Run complex build, test, and deployment scripts</li>
+  <li>Integrate with CI/CD pipelines during infrastructure deployments</li>
+  <li>Handle cross-account CodeBuild project execution</li>
+  <li>Pass dynamic parameters and context to build projects</li>
+</ul>
+
+<h2>Code Build Run Configuration</h2>
+
+<p>To configure a code build run in your manifest, you need to specify:</p>
+
+<h3>Required Parameters</h3>
+<ul>
+  <li><strong>code_build_run_name</strong>: Unique name for the build run</li>
+  <li><strong>region</strong>: AWS region where the CodeBuild project resides</li>
+  <li><strong>account_id</strong>: AWS account ID containing the project</li>
+  <li><strong>project_name</strong>: Name of the CodeBuild project to execute</li>
+  <li><strong>manifest_file_path</strong>: Path to the manifest file</li>
+</ul>
+
+<h3>Optional Parameters</h3>
+<ul>
+  <li><strong>parameters</strong>: Custom parameters to pass as environment variables</li>
+</ul>
+
+<h2>Example Configuration</h2>
+
+<pre><code class="language-yaml">code-build-runs:
+  deployment-validator:
+    project_name: validate-deployment
+    parameters:
+      ENVIRONMENT: production
+      VALIDATION_LEVEL: strict
+      TARGET_ACCOUNT: "123456789012"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h2>Environment Variables</h2>
+
+<p>Cloud Workflow Engine automatically sets these environment variables for your CodeBuild project:</p>
+
+<ul>
+  <li><strong>TARGET_ACCOUNT_ID</strong>: Account ID where the build is running</li>
+  <li><strong>TARGET_REGION</strong>: Region where the build is running</li>
+  <li><strong>MANIFEST_FILE_PATH</strong>: Path to the Cloud Workflow Engine manifest</li>
+</ul>
+
+<p>Plus any custom parameters you specify in the configuration.</p>
+
+<h2>CodeBuild Project Setup</h2>
+
+<h3>Build Specification Example</h3>
+<pre><code class="language-yaml">version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.9
+  pre_build:
+    commands:
+      - echo "Starting validation for account $TARGET_ACCOUNT_ID in region $TARGET_REGION"
+      - pip install -r requirements.txt
+  build:
+    commands:
+      - echo "Running deployment validation"
+      - python validate_deployment.py --account $TARGET_ACCOUNT_ID --region $TARGET_REGION
+      - echo "Validation completed successfully"
+  post_build:
+    commands:
+      - echo "Build completed on `date`"
+
+artifacts:
+  files:
+    - validation_report.json
+    - logs/**/*
+</code></pre>
+
+<h3>Service Role Configuration</h3>
+<p>Your CodeBuild project service role needs permissions to:</p>
+<ul>
+  <li>Assume roles in target accounts (if cross-account)</li>
+  <li>Access AWS services required by your build scripts</li>
+  <li>Write to CloudWatch Logs</li>
+  <li>Access S3 artifacts if needed</li>
+</ul>
+
+<h2>Parameter Handling</h2>
+
+<p>Parameters from the manifest are automatically converted to environment variables:</p>
+
+<pre><code class="language-yaml"># Manifest configuration
+parameters:
+  database_endpoint: "prod-db.example.com"
+  backup_enabled: true
+  max_connections: 100
+
+# Available as environment variables in CodeBuild
+# DATABASE_ENDPOINT=prod-db.example.com
+# BACKUP_ENABLED=true  
+# MAX_CONNECTIONS=100
+</code></pre>
+
+<h2>Build Script Examples</h2>
+
+<h3>Infrastructure Validation (Python)</h3>
+<pre><code class="language-python">#!/usr/bin/env python3
+import os
+import boto3
+import json
+
+def main():
+    account_id = os.environ['TARGET_ACCOUNT_ID']
+    region = os.environ['TARGET_REGION']
+    
+    print(f"Validating infrastructure in {account_id}:{region}")
+    
+    # Create AWS clients
+    ec2 = boto3.client('ec2', region_name=region)
+    
+    # Validate VPC configuration
+    vpcs = ec2.describe_vpcs()['Vpcs']
+    if not vpcs:
+        raise Exception("No VPCs found in target account")
+    
+    # Validate security groups
+    sgs = ec2.describe_security_groups()['SecurityGroups']
+    for sg in sgs:
+        validate_security_group(sg)
+    
+    print("Validation completed successfully")
+
+def validate_security_group(sg):
+    # Custom validation logic
+    for rule in sg.get('IpPermissions', []):
+        if rule.get('FromPort') == 22:  # SSH
+            for ip_range in rule.get('IpRanges', []):
+                if ip_range.get('CidrIp') == '0.0.0.0/0':
+                    print(f"WARNING: SSH open to world in {sg['GroupId']}")
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+
+<h3>Deployment Script (Bash)</h3>
+<pre><code class="language-bash">#!/bin/bash
+set -e
+
+echo "Starting custom deployment for account $TARGET_ACCOUNT_ID"
+
+# Install dependencies
+pip install awscli boto3
+
+# Assume role in target account if needed
+if [ "$TARGET_ACCOUNT_ID" != "$AWS_ACCOUNT_ID" ]; then
+    echo "Assuming role in target account"
+    # Role assumption logic here
+fi
+
+# Run deployment steps
+echo "Deploying application components"
+python deploy_application.py --region $TARGET_REGION
+
+# Verify deployment
+echo "Verifying deployment"
+python verify_deployment.py --account $TARGET_ACCOUNT_ID --region $TARGET_REGION
+
+echo "Deployment completed successfully"
+</code></pre>
+
+<h2>Error Handling</h2>
+
+<p>Code Build runs handle errors as follows:</p>
+
+<h3>Build Failures</h3>
+<p>If the CodeBuild project fails:</p>
+<ul>
+  <li>Cloud Workflow Engine raises an exception</li>
+  <li>The workflow task fails</li>
+  <li>Build logs are available in CloudWatch</li>
+  <li>Retry logic applies based on task configuration</li>
+</ul>
+
+<h3>Timeout Handling</h3>
+<p>Configure appropriate timeouts for:</p>
+<ul>
+  <li>CodeBuild project timeout (in project settings)</li>
+  <li>Cloud Workflow Engine worker timeout</li>
+</ul>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Use descriptive project names that indicate their purpose</li>
+  <li>Implement proper error handling and logging in build scripts</li>
+  <li>Use appropriate compute types based on workload requirements</li>
+  <li>Cache dependencies to improve build performance</li>
+  <li>Use artifacts to preserve important outputs</li>
+  <li>Test build scripts independently before using in workflows</li>
+  <li>Use least-privilege IAM permissions</li>
+  <li>Monitor build duration and costs</li>
+</ul>
+
+<h2>Common Use Cases</h2>
+
+<h3>Infrastructure Testing</h3>
+<p>Run comprehensive tests against deployed infrastructure to ensure it meets requirements.</p>
+
+<h3>Configuration Validation</h3>
+<p>Validate complex configuration files or settings that can't be checked with simple assertions.</p>
+
+<h3>Custom Deployments</h3>
+<p>Deploy applications or configurations that require complex logic or multiple steps.</p>
+
+<h3>Compliance Checking</h3>
+<p>Run compliance scans and generate reports on deployed infrastructure.</p>
+
+<h3>Data Migration</h3>
+<p>Execute data migration scripts as part of infrastructure updates.</p>
+
+<h2>Monitoring and Troubleshooting</h2>
+
+<ul>
+  <li>Monitor CodeBuild project logs in CloudWatch</li>
+  <li>Check build project permissions and service roles</li>
+  <li>Verify environment variable values and parameter passing</li>
+  <li>Review build specification and script syntax</li>
+  <li>Monitor build duration and resource usage</li>
+  <li>Check network connectivity for builds that access external resources</li>
+</ul>
+
+<h2>Integration with Other Actions</h2>
+
+<p>Code Build runs work well with other actions:</p>
+<ul>
+  <li>Run after stack deployments to validate configurations</li>
+  <li>Use before launches to prepare environments</li>
+  <li>Combine with assertions to validate both infrastructure and application state</li>
+</ul>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "Lambda Invocations", "/how-to/lambda-invocations/" %> - For simpler custom logic</li>
+  <li><%= link_to "Assertions", "/how-to/assertions/" %> - For validating build outputs</li>
+  <li><%= link_to "Stacks", "/how-to/stacks/" %> - For deploying the infrastructure to test</li>
+</ul>

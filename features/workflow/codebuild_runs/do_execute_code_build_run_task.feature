@@ -1,5 +1,5 @@
 Feature: Do Execute Code Build Run Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to execute CodeBuild runs in target accounts
   So that I can perform custom operations as part of my deployment pipeline
 

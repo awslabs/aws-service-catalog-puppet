@@ -1,5 +1,5 @@
 Feature: Do Assert Task
-  As a Service Catalog Puppet user
+  As a Cloud Multi Account Workflow Engine user
   I want to validate expected values against actual AWS API responses
   So that I can ensure my infrastructure meets defined criteria and compliance requirements
 

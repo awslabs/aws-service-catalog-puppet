@@ -1,0 +1,248 @@
+---
+title: Adding Accounts - Cloud Workflow Engine
+---
+
+<h1>Adding Accounts</h1>
+
+<p>This guide explains how to add AWS accounts to your Cloud Workflow Engine configuration, enabling the hub account to manage and deploy resources to spoke accounts.</p>
+
+<h2>Account Configuration Structure</h2>
+
+<p>Accounts are defined in your Cloud Workflow Engine configuration file (typically <code>config.yaml</code>) under the <code>accounts</code> section:</p>
+
+<pre><code class="language-yaml">accounts:
+  - account_id: "123456789012"
+    name: "production"
+    email: "aws-production@company.com"
+    organization_unit: "/production/"
+    tags:
+      - Key: "Environment"
+        Value: "Production"
+      - Key: "Owner"
+        Value: "Platform Team"
+    
+  - account_id: "234567890123"
+    name: "staging"
+    email: "aws-staging@company.com"
+    organization_unit: "/non-production/staging/"
+    tags:
+      - Key: "Environment"
+        Value: "Staging"
+      - Key: "Owner"
+        Value: "Development Team"</code></pre>
+
+<h2>Required Fields</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Description</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>account_id</code></td>
+      <td>12-digit AWS account ID</td>
+      <td><code>"123456789012"</code></td>
+    </tr>
+    <tr>
+      <td><code>name</code></td>
+      <td>Logical name for the account</td>
+      <td><code>"production"</code></td>
+    </tr>
+    <tr>
+      <td><code>email</code></td>
+      <td>Email address associated with the account</td>
+      <td><code>"aws-prod@company.com"</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Optional Fields</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Description</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>organization_unit</code></td>
+      <td>AWS Organizations OU path</td>
+      <td><code>"/production/"</code></td>
+    </tr>
+    <tr>
+      <td><code>tags</code></td>
+      <td>Account-level tags for organization</td>
+      <td>See example above</td>
+    </tr>
+    <tr>
+      <td><code>default_region</code></td>
+      <td>Default AWS region for deployments</td>
+      <td><code>"us-east-1"</code></td>
+    </tr>
+    <tr>
+      <td><code>parameters</code></td>
+      <td>Account-specific parameters</td>
+      <td>Custom key-value pairs</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Cross-Account Role Setup</h2>
+
+<p>For Cloud Workflow Engine to manage spoke accounts, you need to set up cross-account IAM roles:</p>
+
+<h3>1. Create Execution Role in Spoke Accounts</h3>
+
+<p>In each spoke account, create an IAM role that the hub account can assume:</p>
+
+<pre><code class="language-json">{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::HUB-ACCOUNT-ID:root"
+      },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": {
+          "sts:ExternalId": "cloud-workflow-engine"
+        }
+      }
+    }
+  ]
+}</code></pre>
+
+<h3>2. Configure Role Name</h3>
+
+<p>By default, Cloud Workflow Engine looks for a role named <code>CloudWorkflowEngineRole</code>. You can customize this in your configuration:</p>
+
+<pre><code class="language-yaml">config:
+  spoke_execution_role_name: "CustomCloudWorkflowEngineRole"</code></pre>
+
+<h2>Account Validation</h2>
+
+<p>After adding accounts, validate your configuration:</p>
+
+<h3>Test Account Connectivity</h3>
+
+<pre><code class="language-bash"># Test if hub can assume roles in all spoke accounts
+cloud-workflow-engine test-connectivity
+
+# Test specific account
+cloud-workflow-engine test-connectivity --account-id 123456789012</code></pre>
+
+<h3>Validate Configuration Syntax</h3>
+
+<pre><code class="language-bash"># Validate the entire configuration
+cloud-workflow-engine validate-config
+
+# Check for account-specific issues
+cloud-workflow-engine show-pipelines --account-id 123456789012</code></pre>
+
+<h2>Account Types and Patterns</h2>
+
+<h3>Production Accounts</h3>
+
+<pre><code class="language-yaml">accounts:
+  - account_id: "111111111111"
+    name: "prod-us-east-1"
+    email: "aws-prod-us-east@company.com"
+    organization_unit: "/production/us-east-1/"
+    default_region: "us-east-1"
+    tags:
+      - Key: "Environment"
+        Value: "Production"
+      - Key: "Region"
+        Value: "us-east-1"</code></pre>
+
+<h3>Non-Production Accounts</h3>
+
+<pre><code class="language-yaml">accounts:
+  - account_id: "222222222222"
+    name: "dev-sandbox"
+    email: "aws-dev@company.com"
+    organization_unit: "/non-production/development/"
+    parameters:
+      auto_cleanup: true
+      max_resources: 100
+    tags:
+      - Key: "Environment"
+        Value: "Development"
+      - Key: "AutoCleanup"
+        Value: "true"</code></pre>
+
+<h3>Shared Services Accounts</h3>
+
+<pre><code class="language-yaml">accounts:
+  - account_id: "333333333333"
+    name: "shared-logging"
+    email: "aws-shared-logging@company.com"
+    organization_unit: "/shared-services/"
+    parameters:
+      log_retention_days: 365
+      backup_enabled: true
+    tags:
+      - Key: "Service"
+        Value: "Logging"
+      - Key: "Criticality"
+        Value: "High"</code></pre>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li><strong>Naming Convention</strong> - Use consistent naming patterns like <code>env-service-region</code></li>
+  <li><strong>Email Management</strong> - Use distribution lists or role-based emails</li>
+  <li><strong>Tagging Strategy</strong> - Apply consistent tags for cost allocation and governance</li>
+  <li><strong>Region Strategy</strong> - Consider multi-region deployments early in design</li>
+  <li><strong>Organizational Units</strong> - Align OUs with your governance and access patterns</li>
+  <li><strong>Parameter Management</strong> - Use account-level parameters for environment-specific values</li>
+</ul>
+
+<h2>Troubleshooting</h2>
+
+<h3>Common Issues</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Error</th>
+      <th>Cause</th>
+      <th>Solution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>AssumeRole Access Denied</td>
+      <td>Cross-account role not configured</td>
+      <td>Create CloudWorkflowEngineRole in spoke account</td>
+    </tr>
+    <tr>
+      <td>Account ID not found</td>
+      <td>Typo in account_id</td>
+      <td>Verify 12-digit account ID is correct</td>
+    </tr>
+    <tr>
+      <td>Invalid OU path</td>
+      <td>OU doesn't exist in AWS Organizations</td>
+      <td>Create OU or fix path in configuration</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Debugging Steps</h3>
+
+<ol>
+  <li>Verify account ID is correct and accessible</li>
+  <li>Check cross-account role exists and has correct trust policy</li>
+  <li>Validate OU path exists in AWS Organizations</li>
+  <li>Test connectivity with <code>cloud-workflow-engine test-connectivity</code></li>
+  <li>Review CloudTrail logs for AssumeRole events</li>
+</ol>

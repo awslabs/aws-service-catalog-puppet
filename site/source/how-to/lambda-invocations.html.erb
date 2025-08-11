@@ -1,0 +1,238 @@
+---
+title: Working with Lambda Invocations
+---
+
+<h1>Working with Lambda Invocations</h1>
+
+<p>Lambda invocations allow you to execute AWS Lambda functions as part of your Cloud Workflow Engine workflow, enabling custom business logic and integrations during infrastructure deployments.</p>
+
+<h2>Overview</h2>
+
+<p>The lambda-invocations action type allows you to:</p>
+<ul>
+  <li>Invoke AWS Lambda functions with custom payloads</li>
+  <li>Execute custom business logic during deployments</li>
+  <li>Integrate with external systems and APIs</li>
+  <li>Support different invocation types (synchronous, asynchronous, dry-run)</li>
+  <li>Handle cross-account function execution</li>
+</ul>
+
+<h2>Lambda Invocation Configuration</h2>
+
+<p>To configure a lambda invocation in your manifest, you need to specify:</p>
+
+<h3>Required Parameters</h3>
+<ul>
+  <li><strong>lambda_invocation_name</strong>: Unique name for the invocation</li>
+  <li><strong>region</strong>: AWS region where the Lambda function resides</li>
+  <li><strong>account_id</strong>: AWS account ID containing the function</li>
+  <li><strong>function_name</strong>: Name of the Lambda function to invoke</li>
+  <li><strong>invocation_type</strong>: Type of invocation (RequestResponse, Event, DryRun)</li>
+  <li><strong>manifest_file_path</strong>: Path to the manifest file</li>
+</ul>
+
+<h3>Optional Parameters</h3>
+<ul>
+  <li><strong>qualifier</strong>: Function version or alias (default: $LATEST)</li>
+  <li><strong>parameters</strong>: Custom parameters to pass in the payload</li>
+</ul>
+
+<h2>Invocation Types</h2>
+
+<h3>RequestResponse (Synchronous)</h3>
+<p>Invokes the function synchronously and waits for the response.</p>
+<ul>
+  <li>Best for functions that return important data</li>
+  <li>Blocks workflow execution until completion</li>
+  <li>Returns status code 200 on success</li>
+</ul>
+
+<h3>Event (Asynchronous)</h3>
+<p>Invokes the function asynchronously without waiting for completion.</p>
+<ul>
+  <li>Best for fire-and-forget operations</li>
+  <li>Does not block workflow execution</li>
+  <li>Returns status code 202 immediately</li>
+</ul>
+
+<h3>DryRun</h3>
+<p>Validates the payload and parameters without executing the function.</p>
+<ul>
+  <li>Best for testing and validation</li>
+  <li>Returns status code 204</li>
+  <li>No actual processing occurs</li>
+</ul>
+
+<h2>Example Configurations</h2>
+
+<h3>Synchronous Invocation</h3>
+<pre><code class="language-yaml">lambda-invocations:
+  data-processor:
+    function_name: process-deployment-data
+    invocation_type: RequestResponse
+    qualifier: PROD
+    parameters:
+      environment: production
+      region: us-east-1
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h3>Asynchronous Invocation</h3>
+<pre><code class="language-yaml">lambda-invocations:
+  notification-sender:
+    function_name: send-deployment-notification
+    invocation_type: Event
+    parameters:
+      webhook_url: "https://example.com/webhook"
+      deployment_id: "{{ deployment_id }}"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h3>Validation Only</h3>
+<pre><code class="language-yaml">lambda-invocations:
+  config-validator:
+    function_name: validate-configuration
+    invocation_type: DryRun
+    parameters:
+      config_version: "v2.1.0"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h2>Lambda Function Payload</h2>
+
+<p>Cloud Workflow Engine automatically includes context information in the payload:</p>
+
+<pre><code class="language-json">{
+  "account_id": "123456789012",
+  "region": "us-east-1",
+  "parameters": {
+    // Custom parameters from configuration
+  },
+  "manifest_file_path": "/path/to/manifest.yaml",
+  "puppet_account_id": "111122223333",
+  "execution": "hub"
+}
+</code></pre>
+
+<h2>Function Versioning</h2>
+
+<p>Use the <code>qualifier</code> parameter to specify:</p>
+<ul>
+  <li><strong>$LATEST</strong>: Latest version (default)</li>
+  <li><strong>Version number</strong>: Specific version (e.g., "15")</li>
+  <li><strong>Alias name</strong>: Named alias (e.g., "PROD", "DEV")</li>
+</ul>
+
+<h2>Error Handling</h2>
+
+<p>Lambda invocations handle different types of errors:</p>
+
+<h3>Function Errors</h3>
+<p>If the Lambda function returns an error, Cloud Workflow Engine will:</p>
+<ul>
+  <li>Raise an exception with the error details</li>
+  <li>Include the error payload in the exception</li>
+  <li>Fail the workflow task</li>
+</ul>
+
+<h3>Invocation Errors</h3>
+<p>If the invocation itself fails (wrong status code, timeout, etc.):</p>
+<ul>
+  <li>The task will raise an exception</li>
+  <li>Include invocation details for debugging</li>
+  <li>Retry according to the retry configuration</li>
+</ul>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Use descriptive function names that indicate their purpose</li>
+  <li>Implement proper error handling in your Lambda functions</li>
+  <li>Use appropriate invocation types based on your use case</li>
+  <li>Version your Lambda functions for consistency</li>
+  <li>Test functions independently before using in workflows</li>
+  <li>Keep function execution times reasonable</li>
+  <li>Use IAM roles with minimal required permissions</li>
+  <li>Log important information for debugging</li>
+</ul>
+
+<h2>Common Use Cases</h2>
+
+<h3>Data Processing</h3>
+<p>Process deployment data, transform configurations, or validate inputs.</p>
+
+<h3>External Integrations</h3>
+<p>Send notifications to Slack, update CMDB systems, or trigger external workflows.</p>
+
+<h3>Custom Validation</h3>
+<p>Implement complex validation logic that goes beyond standard assertions.</p>
+
+<h3>Cleanup Operations</h3>
+<p>Perform cleanup tasks after deployments or handle resource dependencies.</p>
+
+<h2>Lambda Function Example</h2>
+
+<h3>Python Function</h3>
+<pre><code class="language-python">import json
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+def lambda_handler(event, context):
+    try:
+        # Extract Cloud Workflow Engine context
+        account_id = event.get('account_id')
+        region = event.get('region')
+        parameters = event.get('parameters', {})
+        
+        logger.info(f"Processing deployment for account {account_id} in region {region}")
+        
+        # Your custom logic here
+        result = process_deployment(parameters)
+        
+        return {
+            'statusCode': 200,
+            'body': json.dumps({
+                'message': 'Success',
+                'result': result
+            })
+        }
+        
+    except Exception as e:
+        logger.error(f"Error processing deployment: {str(e)}")
+        raise
+
+def process_deployment(parameters):
+    # Implement your custom logic
+    return {"status": "completed"}
+</code></pre>
+
+<h2>Monitoring and Troubleshooting</h2>
+
+<ul>
+  <li>Monitor Lambda function logs in CloudWatch</li>
+  <li>Check function permissions and execution role</li>
+  <li>Verify payload format and required parameters</li>
+  <li>Test functions using the AWS CLI or console</li>
+  <li>Monitor function duration and timeout settings</li>
+  <li>Review VPC and networking configuration if applicable</li>
+</ul>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "Assertions", "/how-to/assertions/" %> - For validating function outputs</li>
+  <li><%= link_to "Code Build Runs", "/how-to/code-build-runs/" %> - For more complex custom operations</li>
+</ul>
