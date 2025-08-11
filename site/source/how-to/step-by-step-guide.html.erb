@@ -1,0 +1,687 @@
+---
+title: "Step-by-Step Guide to Building Foundation OUs"
+---
+
+<h1>Step-by-Step Guide to Building Foundation OUs</h1>
+
+<p>This guide walks you through creating the foundational organizational units (OUs) for your AWS multi-account environment using the Cloud Workflow Engine. We'll build the core infrastructure that supports security, governance, and shared services across your organization.</p>
+
+<h2>Overview of Foundation OUs</h2>
+
+<p>Foundation OUs form the backbone of your AWS Organizations structure. They contain accounts that provide common security and infrastructure capabilities to secure and support your overall AWS environment.</p>
+
+<div class="ou-diagram">
+  <h3>Foundational OU Structure</h3>
+  <ul>
+    <li><strong>Security OU</strong> - Security policies, governance, and compliance controls</li>
+    <li><strong>Infrastructure OU</strong> - Core infrastructure and networking services</li>
+  </ul>
+</div>
+
+<h2>Prerequisites</h2>
+
+<p>Before starting, ensure you have:</p>
+<ul>
+  <li>AWS Organizations set up with a management account</li>
+  <li>Cloud Workflow Engine installed and configured</li>
+  <li>Appropriate permissions to create OUs and accounts</li>
+  <li>A manifest file ready for configuration</li>
+</ul>
+
+<h2>Step 1: Create the Security OU</h2>
+
+<p>The Security OU is a foundational OU that groups AWS accounts for security policies, governance, and compliance controls across the organization.</p>
+
+<h3>Configuration</h3>
+
+<p>Add the following organizational unit configuration to your manifest:</p>
+
+<pre><code class="language-yaml">organizational-units:
+  Security:
+    OU: SecurityOU
+    Accounts:
+      - Account: LogArchive
+        Email: log-archive@yourcompany.com
+        DisplayName: Log Archive Account
+        Organizations:
+          - o-example123456
+      - Account: SecurityTooling
+        Email: security-tooling@yourcompany.com
+        DisplayName: Security Tooling (Audit) Account
+        Organizations:
+          - o-example123456</code></pre>
+
+<h3>What This Creates</h3>
+
+<ul>
+  <li><strong>Security OU:</strong> Parent organizational unit for security accounts</li>
+  <li><strong>Log Archive Account:</strong> Consolidates audit, configuration compliance, and operational logs</li>
+  <li><strong>Security Tooling Account:</strong> Centralized security services like AWS Security Hub, GuardDuty, and Macie</li>
+</ul>
+
+<h3>Deploy Security OU</h3>
+
+<p>Run the following command to create the Security OU:</p>
+
+<pre><code class="language-bash">servicecatalog-puppet expand manifest.yaml
+servicecatalog-puppet deploy</code></pre>
+
+<h3>Summary - Security OU Complete Configuration</h3>
+
+<details>
+<summary>Click to view complete Security OU configuration</summary>
+
+<pre><code class="language-yaml">organizational-units:
+  Security:
+    OU: SecurityOU
+    Accounts:
+      - Account: LogArchive
+        Email: log-archive@yourcompany.com
+        DisplayName: Log Archive Account
+        Tags:
+          - Key: Purpose
+            Value: Security
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+      - Account: SecurityTooling
+        Email: security-tooling@yourcompany.com
+        DisplayName: Security Tooling (Audit) Account
+        Tags:
+          - Key: Purpose
+            Value: Security
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+
+# Service Control Policies for Security OU
+service-control-policies:
+  RestrictRootAccess:
+    Description: "Prevent root user access and secure the Security OU"
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: Deny
+          Principal: "*"
+          Action: "*"
+          Resource: "*"
+          Condition:
+            StringEquals:
+              "aws:PrincipalType": "Root"
+    Targets:
+      - Path: "/SecurityOU"
+        Type: ou</code></pre>
+</details>
+
+<h2>Step 2: Create the Infrastructure OU</h2>
+
+<p>The Infrastructure OU contains AWS accounts with infrastructure resources shared across the organization, including centralized operations and monitoring.</p>
+
+<h3>Configuration</h3>
+
+<p>Add the Infrastructure OU configuration to your manifest:</p>
+
+<pre><code class="language-yaml">organizational-units:
+  Infrastructure:
+    OU: InfrastructureOU
+    Accounts:
+      - Account: Network
+        Email: network@yourcompany.com
+        DisplayName: Network Account
+        Organizations:
+          - o-example123456
+      - Account: Operations
+        Email: operations@yourcompany.com
+        DisplayName: Operations Tooling Account
+        Organizations:
+          - o-example123456</code></pre>
+
+<h3>What This Creates</h3>
+
+<ul>
+  <li><strong>Infrastructure OU:</strong> Parent organizational unit for infrastructure accounts</li>
+  <li><strong>Network Account:</strong> Centralized networking resources like VPCs, Transit Gateways</li>
+  <li><strong>Operations Account:</strong> Operational tooling, monitoring, and management services</li>
+</ul>
+
+<h3>Optional Infrastructure Accounts</h3>
+
+<p>Depending on your needs, you may also want to add:</p>
+
+<pre><code class="language-yaml">      - Account: Backup
+        Email: backup@yourcompany.com
+        DisplayName: Backup Account
+        Organizations:
+          - o-example123456
+      - Account: Identity
+        Email: identity@yourcompany.com
+        DisplayName: Identity Account
+        Organizations:
+          - o-example123456
+      - Account: Monitoring
+        Email: monitoring@yourcompany.com
+        DisplayName: Monitoring Account
+        Organizations:
+          - o-example123456
+      - Account: SharedServices
+        Email: shared-services@yourcompany.com
+        DisplayName: Shared Services Account
+        Organizations:
+          - o-example123456</code></pre>
+
+<h3>Deploy Infrastructure OU</h3>
+
+<p>Update your manifest and deploy:</p>
+
+<pre><code class="language-bash">servicecatalog-puppet expand manifest.yaml
+servicecatalog-puppet deploy</code></pre>
+
+<h3>Summary - Infrastructure OU Complete Configuration</h3>
+
+<details>
+<summary>Click to view complete Infrastructure OU configuration</summary>
+
+<pre><code class="language-yaml">organizational-units:
+  Infrastructure:
+    OU: InfrastructureOU
+    Accounts:
+      - Account: Network
+        Email: network@yourcompany.com
+        DisplayName: Network Account
+        Tags:
+          - Key: Purpose
+            Value: Infrastructure
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+      - Account: Operations
+        Email: operations@yourcompany.com
+        DisplayName: Operations Tooling Account
+        Tags:
+          - Key: Purpose
+            Value: Infrastructure
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+      - Account: Backup
+        Email: backup@yourcompany.com
+        DisplayName: Backup Account
+        Tags:
+          - Key: Purpose
+            Value: Infrastructure
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+      - Account: Identity
+        Email: identity@yourcompany.com
+        DisplayName: Identity Account
+        Tags:
+          - Key: Purpose
+            Value: Infrastructure
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+      - Account: Monitoring
+        Email: monitoring@yourcompany.com
+        DisplayName: Monitoring Account
+        Tags:
+          - Key: Purpose
+            Value: Infrastructure
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+      - Account: SharedServices
+        Email: shared-services@yourcompany.com
+        DisplayName: Shared Services Account
+        Tags:
+          - Key: Purpose
+            Value: Infrastructure
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+
+# Service Control Policies for Infrastructure OU
+service-control-policies:
+  RestrictRegions:
+    Description: "Restrict operations to approved regions"
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: Deny
+          Action: "*"
+          Resource: "*"
+          Condition:
+            StringNotEquals:
+              "aws:RequestedRegion":
+                - "us-east-1"
+                - "us-west-2"
+                - "eu-west-1"
+    Targets:
+      - Path: "/InfrastructureOU"
+        Type: ou</code></pre>
+</details>
+
+<h2>Step 3: Apply Security Policies</h2>
+
+<p>Implement Service Control Policies (SCPs) to enforce governance across your foundational OUs.</p>
+
+<h3>Basic Security Policy</h3>
+
+<p>Add foundational security policies to your manifest:</p>
+
+<pre><code class="language-yaml">service-control-policies:
+  DenyRootUserActions:
+    Description: "Prevent root user from performing most actions"
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: Deny
+          Principal: "*"
+          Action:
+            - "iam:*"
+            - "organizations:*"
+            - "account:*"
+          Resource: "*"
+          Condition:
+            StringEquals:
+              "aws:PrincipalType": "Root"
+    Targets:
+      - Path: "/SecurityOU"
+        Type: ou
+      - Path: "/InfrastructureOU"
+        Type: ou
+
+  RequireEncryption:
+    Description: "Require encryption for storage services"
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: Deny
+          Action:
+            - "s3:PutObject"
+          Resource: "*"
+          Condition:
+            StringNotEquals:
+              "s3:x-amz-server-side-encryption": "AES256"
+    Targets:
+      - Path: "/SecurityOU"
+        Type: ou
+      - Path: "/InfrastructureOU"
+        Type: ou</code></pre>
+
+<h3>Deploy Security Policies</h3>
+
+<pre><code class="language-bash">servicecatalog-puppet expand manifest.yaml
+servicecatalog-puppet deploy</code></pre>
+
+<h2>Step 4: Configure Cross-Account Roles</h2>
+
+<p>Set up IAM roles for cross-account access and management.</p>
+
+<h3>Cross-Account Access Role</h3>
+
+<pre><code class="language-yaml">stacks:
+  CrossAccountRole:
+    Name: CrossAccountAccessRole
+    TemplateBody: |
+      AWSTemplateFormatVersion: '2010-09-09'
+      Description: 'Cross-account access role for foundational accounts'
+      Resources:
+        CrossAccountRole:
+          Type: AWS::IAM::Role
+          Properties:
+            RoleName: CrossAccountAccessRole
+            AssumeRolePolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Principal:
+                    AWS: !Sub 'arn:aws:iam::${ManagementAccountId}:root'
+                  Action: sts:AssumeRole
+                  Condition:
+                    StringEquals:
+                      'sts:ExternalId': !Ref ExternalId
+            ManagedPolicyArns:
+              - arn:aws:iam::aws:policy/ReadOnlyAccess
+      Parameters:
+        ManagementAccountId:
+          Type: String
+          Default: '123456789012'  # Replace with your management account ID
+        ExternalId:
+          Type: String
+          Default: 'unique-external-id'
+    Targets:
+      Accounts:
+        - LogArchive
+        - SecurityTooling
+        - Network
+        - Operations</code></pre>
+
+<h2>Step 5: Validation and Testing</h2>
+
+<p>After deployment, validate your foundational OU structure.</p>
+
+<h3>Validation Steps</h3>
+
+<ol>
+  <li><strong>Verify OU Creation:</strong> Check AWS Organizations console for proper OU hierarchy</li>
+  <li><strong>Confirm Account Placement:</strong> Ensure accounts are in correct OUs</li>
+  <li><strong>Test SCPs:</strong> Verify policies are attached and working</li>
+  <li><strong>Check Cross-Account Access:</strong> Test role assumption from management account</li>
+</ol>
+
+<h3>Validation Commands</h3>
+
+<pre><code class="language-bash"># List organizational units
+aws organizations list-organizational-units-for-parent --parent-id r-example
+
+# List accounts in Security OU
+aws organizations list-accounts-for-parent --parent-id ou-root-example-security
+
+# Test SCP attachment
+aws organizations list-policies-for-target --target-id ou-root-example-security --filter SERVICE_CONTROL_POLICY</code></pre>
+
+<h2>Step 6: Complete Foundation Manifest</h2>
+
+<p>Here's your complete foundational OU configuration ready for production deployment:</p>
+
+<h3>Summary - Complete Foundation Configuration</h3>
+
+<details>
+<summary>Click to view complete foundation manifest</summary>
+
+<pre><code class="language-yaml"># Complete Foundational OU Configuration
+# Replace email addresses and organization IDs with your values
+
+accounts:
+  - Account: LogArchive
+    Email: log-archive@yourcompany.com
+  - Account: SecurityTooling
+    Email: security-tooling@yourcompany.com
+  - Account: Network
+    Email: network@yourcompany.com
+  - Account: Operations
+    Email: operations@yourcompany.com
+  - Account: Backup
+    Email: backup@yourcompany.com
+  - Account: Identity
+    Email: identity@yourcompany.com
+  - Account: Monitoring
+    Email: monitoring@yourcompany.com
+  - Account: SharedServices
+    Email: shared-services@yourcompany.com
+
+organizational-units:
+  Security:
+    OU: SecurityOU
+    Accounts:
+      - Account: LogArchive
+        Email: log-archive@yourcompany.com
+        DisplayName: Log Archive Account
+        Tags:
+          - Key: Purpose
+            Value: Security
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+      - Account: SecurityTooling
+        Email: security-tooling@yourcompany.com
+        DisplayName: Security Tooling (Audit) Account
+        Tags:
+          - Key: Purpose
+            Value: Security
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+
+  Infrastructure:
+    OU: InfrastructureOU
+    Accounts:
+      - Account: Network
+        Email: network@yourcompany.com
+        DisplayName: Network Account
+        Tags:
+          - Key: Purpose
+            Value: Infrastructure
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+      - Account: Operations
+        Email: operations@yourcompany.com
+        DisplayName: Operations Tooling Account
+        Tags:
+          - Key: Purpose
+            Value: Infrastructure
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+      - Account: Backup
+        Email: backup@yourcompany.com
+        DisplayName: Backup Account
+        Tags:
+          - Key: Purpose
+            Value: Infrastructure
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+      - Account: Identity
+        Email: identity@yourcompany.com
+        DisplayName: Identity Account
+        Tags:
+          - Key: Purpose
+            Value: Infrastructure
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+      - Account: Monitoring
+        Email: monitoring@yourcompany.com
+        DisplayName: Monitoring Account
+        Tags:
+          - Key: Purpose
+            Value: Infrastructure
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+      - Account: SharedServices
+        Email: shared-services@yourcompany.com
+        DisplayName: Shared Services Account
+        Tags:
+          - Key: Purpose
+            Value: Infrastructure
+          - Key: Environment
+            Value: Production
+        Organizations:
+          - o-example123456
+
+service-control-policies:
+  DenyRootUserActions:
+    Description: "Prevent root user from performing sensitive actions"
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: Deny
+          Principal: "*"
+          Action:
+            - "iam:*"
+            - "organizations:*"
+            - "account:*"
+          Resource: "*"
+          Condition:
+            StringEquals:
+              "aws:PrincipalType": "Root"
+    Targets:
+      - Path: "/SecurityOU"
+        Type: ou
+      - Path: "/InfrastructureOU"
+        Type: ou
+
+  RequireEncryption:
+    Description: "Require encryption for storage services"
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: Deny
+          Action:
+            - "s3:PutObject"
+          Resource: "*"
+          Condition:
+            StringNotEquals:
+              "s3:x-amz-server-side-encryption": 
+                - "AES256"
+                - "aws:kms"
+    Targets:
+      - Path: "/SecurityOU"
+        Type: ou
+      - Path: "/InfrastructureOU"
+        Type: ou
+
+  RestrictRegions:
+    Description: "Restrict operations to approved regions"
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: Deny
+          Action: "*"
+          Resource: "*"
+          Condition:
+            StringNotEquals:
+              "aws:RequestedRegion":
+                - "us-east-1"
+                - "us-west-2"
+                - "eu-west-1"
+            ForAllValues:StringNotEquals:
+              "aws:PrincipalServiceName":
+                - "cloudformation.amazonaws.com"
+                - "config.amazonaws.com"
+    Targets:
+      - Path: "/SecurityOU"
+        Type: ou
+      - Path: "/InfrastructureOU"
+        Type: ou
+
+stacks:
+  CrossAccountRole:
+    Name: CrossAccountAccessRole
+    TemplateBody: |
+      AWSTemplateFormatVersion: '2010-09-09'
+      Description: 'Cross-account access role for foundational accounts'
+      Parameters:
+        ManagementAccountId:
+          Type: String
+          Default: '123456789012'  # Replace with your management account ID
+        ExternalId:
+          Type: String
+          Default: 'unique-external-id'  # Replace with your external ID
+      Resources:
+        CrossAccountRole:
+          Type: AWS::IAM::Role
+          Properties:
+            RoleName: CrossAccountAccessRole
+            AssumeRolePolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Principal:
+                    AWS: !Sub 'arn:aws:iam::${ManagementAccountId}:root'
+                  Action: sts:AssumeRole
+                  Condition:
+                    StringEquals:
+                      'sts:ExternalId': !Ref ExternalId
+            ManagedPolicyArns:
+              - arn:aws:iam::aws:policy/ReadOnlyAccess
+            Policies:
+              - PolicyName: AdditionalPermissions
+                PolicyDocument:
+                  Version: '2012-10-17'
+                  Statement:
+                    - Effect: Allow
+                      Action:
+                        - "logs:CreateLogGroup"
+                        - "logs:CreateLogStream"
+                        - "logs:PutLogEvents"
+                      Resource: "*"
+    Targets:
+      Accounts:
+        - LogArchive
+        - SecurityTooling
+        - Network
+        - Operations
+        - Backup
+        - Identity
+        - Monitoring
+        - SharedServices</code></pre>
+</details>
+
+<h2>Next Steps</h2>
+
+<p>With your foundational OUs in place, you can now:</p>
+
+<ol>
+  <li><strong>Create Workload OUs:</strong> Add application and experimental OUs for your workloads</li>
+  <li><strong>Implement Logging:</strong> Configure centralized logging to the Log Archive account</li>
+  <li><strong>Set Up Monitoring:</strong> Deploy monitoring solutions in the dedicated accounts</li>
+  <li><strong>Configure Networking:</strong> Establish shared networking infrastructure</li>
+  <li><strong>Add Security Services:</strong> Enable AWS Security Hub, GuardDuty, and other security tools</li>
+</ol>
+
+<p>Your foundational OUs provide the security and infrastructure foundation needed to safely expand your AWS multi-account environment as your organization grows.</p>
+
+<style>
+.ou-diagram {
+  background: #f5f5f5;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.ou-diagram ul {
+  margin: 10px 0;
+}
+
+.ou-diagram li {
+  margin: 8px 0;
+}
+
+details {
+  margin: 20px 0;
+}
+
+summary {
+  cursor: pointer;
+  padding: 10px;
+  background: #e8f4fd;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+details[open] summary {
+  margin-bottom: 10px;
+}
+
+pre {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 5px;
+  padding: 15px;
+  overflow-x: auto;
+}
+
+code {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+</style>

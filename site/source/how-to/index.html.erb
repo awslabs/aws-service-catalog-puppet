@@ -2,11 +2,95 @@
 title: How-To Guides
 ---
 
-<h1>Cloud Workflow Engine How-To Guides</h1>
+<h1>AWS How-To Guides</h1>
 
 <p>Welcome to the Cloud Workflow Engine How-To guides. These guides provide detailed information about each action type available in Cloud Workflow Engine, helping you understand how to configure and use them effectively in your workflows.</p>
 
-<h2>Account Setup and Management</h2>
+<h2>Table of Contents</h2>
+
+<div class="table-of-contents">
+  <ul>
+    <li><a href="#setting-up-aws-multi-account">Setting up an AWS Multi-Account Environment</a>
+      <ul>
+        <li><a href="/how-to/creating-aws-multi-account-environment/">Creating an AWS Multi-Account Environment</a></li>
+        <li><a href="/how-to/step-by-step-guide/">Step-by-Step Guide to Building Foundation OUs</a></li>
+      </ul>
+    </li>
+    <li><a href="#account-setup-management">Account Setup and Management</a>
+      <ul>
+        <li><a href="/how-to/adding-accounts/">Adding Accounts</a></li>
+        <li><a href="/how-to/account-organizational-units/">Account Organizational Units</a></li>
+        <li><a href="/how-to/excludes/">Using Excludes</a></li>
+      </ul>
+    </li>
+    <li><a href="#infrastructure-deployment">Infrastructure and Deployment Actions</a>
+      <ul>
+        <li><a href="/how-to/stacks/">Stacks</a></li>
+        <li><a href="/how-to/launches/">Launches</a></li>
+        <li><a href="/how-to/workspaces/">Workspaces</a></li>
+      </ul>
+    </li>
+    <li><a href="#portfolio-product-management">Portfolio and Product Management</a>
+      <ul>
+        <li><a href="/how-to/spoke-local-portfolios/">Spoke Local Portfolios</a></li>
+        <li><a href="/how-to/imported-portfolios/">Imported Portfolios</a></li>
+      </ul>
+    </li>
+    <li><a href="#governance-compliance">Governance and Compliance</a>
+      <ul>
+        <li><a href="/how-to/service-control-policies/">Service Control Policies</a></li>
+        <li><a href="/how-to/tag-policies/">Tag Policies</a></li>
+        <li><a href="/how-to/organizational-units/">Organizational Units</a></li>
+      </ul>
+    </li>
+    <li><a href="#validation-testing">Validation and Testing</a>
+      <ul>
+        <li><a href="/how-to/assertions/">Assertions</a></li>
+        <li><a href="/how-to/simulate-policies/">Simulate Policies</a></li>
+      </ul>
+    </li>
+    <li><a href="#custom-operations">Custom Operations</a>
+      <ul>
+        <li><a href="/how-to/lambda-invocations/">Lambda Invocations</a></li>
+        <li><a href="/how-to/code-build-runs/">Code Build Runs</a></li>
+      </ul>
+    </li>
+    <li><a href="#cloud-custodian-integration">Cloud Custodian Integration</a>
+      <ul>
+        <li><a href="/how-to/c7n-aws-lambdas/">C7N AWS Lambdas</a></li>
+        <li><a href="/how-to/c7n-aws-cloudtrails/">C7N AWS CloudTrails</a></li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<h2 id="setting-up-aws-multi-account">Setting up an AWS Multi-Account Environment</h2>
+
+<div class="action-grid">
+  <div class="action-card">
+    <h3><%= link_to "Creating an AWS Multi-Account Environment", "/how-to/creating-aws-multi-account-environment/" %></h3>
+    <p>Understand AWS multi-account strategy fundamentals, benefits, and implementation best practices for organizing your cloud environment.</p>
+    <ul>
+      <li>Multi-account strategy overview</li>
+      <li>Security and isolation benefits</li>
+      <li>Cost management advantages</li>
+      <li>Implementation best practices</li>
+    </ul>
+  </div>
+
+  <div class="action-card">
+    <h3><%= link_to "Step-by-Step Guide to Building Foundation OUs", "/how-to/step-by-step-guide/" %></h3>
+    <p>Practical implementation guide for creating foundational organizational units using Cloud Workflow Engine, with complete configuration examples.</p>
+    <ul>
+      <li>Security OU setup with Log Archive and Security Tooling accounts</li>
+      <li>Infrastructure OU with Network, Operations, and Shared Services</li>
+      <li>Service Control Policies and cross-account roles</li>
+      <li>Complete manifest configurations and validation steps</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="account-setup-management">Account Setup and Management</h2>
 
 <div class="action-grid">
   <div class="action-card">
@@ -43,7 +127,7 @@ title: How-To Guides
   </div>
 </div>
 
-<h2>Infrastructure and Deployment Actions</h2>
+<h2 id="infrastructure-deployment">Infrastructure and Deployment Actions</h2>
 
 <div class="action-grid">
   <div class="action-card">
@@ -77,7 +161,7 @@ title: How-To Guides
   </div>
 </div>
 
-<h2>Portfolio and Product Management</h2>
+<h2 id="portfolio-product-management">Portfolio and Product Management</h2>
 
 <div class="action-grid">
   <div class="action-card">
@@ -101,7 +185,7 @@ title: How-To Guides
   </div>
 </div>
 
-<h2>Governance and Compliance</h2>
+<h2 id="governance-compliance">Governance and Compliance</h2>
 
 <div class="action-grid">
   <div class="action-card">
@@ -135,7 +219,7 @@ title: How-To Guides
   </div>
 </div>
 
-<h2>Validation and Testing</h2>
+<h2 id="validation-testing">Validation and Testing</h2>
 
 <div class="action-grid">
   <div class="action-card">
@@ -159,7 +243,7 @@ title: How-To Guides
   </div>
 </div>
 
-<h2>Custom Operations</h2>
+<h2 id="custom-operations">Custom Operations</h2>
 
 <div class="action-grid">
   <div class="action-card">
@@ -183,7 +267,7 @@ title: How-To Guides
   </div>
 </div>
 
-<h2>Cloud Custodian Integration</h2>
+<h2 id="cloud-custodian-integration">Cloud Custodian Integration</h2>
 
 <div class="action-grid">
   <div class="action-card">
@@ -212,6 +296,7 @@ title: How-To Guides
 <p>New to Cloud Workflow Engine? Start with these fundamental actions:</p>
 
 <ol>
+  <li><strong><%= link_to "Creating an AWS Multi-Account Environment", "/how-to/creating-aws-multi-account-environment/" %></strong> - Understand multi-account strategy and benefits</li>
   <li><strong><%= link_to "Adding Accounts", "/how-to/adding-accounts/" %></strong> - Set up your first accounts and cross-account roles</li>
   <li><strong><%= link_to "Stacks", "/how-to/stacks/" %></strong> - Learn the basics of deploying CloudFormation infrastructure</li>
   <li><strong><%= link_to "Assertions", "/how-to/assertions/" %></strong> - Validate your deployments work as expected</li>
@@ -292,5 +377,48 @@ title: How-To Guides
 
 .action-card li {
   margin-bottom: 5px;
+}
+
+.table-of-contents {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.table-of-contents ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.table-of-contents > ul > li {
+  margin-bottom: 15px;
+}
+
+.table-of-contents > ul > li > ul {
+  margin-top: 8px;
+  padding-left: 20px;
+}
+
+.table-of-contents > ul > li > ul > li {
+  margin-bottom: 5px;
+}
+
+.table-of-contents a {
+  text-decoration: none;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.table-of-contents > ul > li > a {
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
+.table-of-contents a:hover {
+  text-decoration: underline;
+  color: #1a73e8;
 }
 </style>
