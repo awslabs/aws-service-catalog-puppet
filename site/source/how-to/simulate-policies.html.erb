@@ -1,0 +1,311 @@
+---
+title: Working with Simulate Policies
+---
+
+<h1>Working with Simulate Policies</h1>
+
+<p>Simulate policies allow you to test and validate IAM policies using AWS IAM Policy Simulator, helping ensure your policies work as expected before deployment in production environments.</p>
+
+<h2>Overview</h2>
+
+<p>The simulate-policies action type allows you to:</p>
+<ul>
+  <li>Test IAM policies using AWS IAM Policy Simulator</li>
+  <li>Validate policy behavior with different actions and resources</li>
+  <li>Test policy conditions and context keys</li>
+  <li>Verify policy effects (Allow/Deny) for specific scenarios</li>
+  <li>Integrate policy testing into your deployment workflow</li>
+</ul>
+
+<h2>Policy Simulation Configuration</h2>
+
+<p>To configure policy simulation in your manifest, you need to specify:</p>
+
+<h3>Required Parameters</h3>
+<ul>
+  <li><strong>simulate_policy_name</strong>: Unique name for the simulation</li>
+  <li><strong>region</strong>: AWS region for IAM operations</li>
+  <li><strong>account_id</strong>: AWS account ID where simulation runs</li>
+  <li><strong>policy_source_arn</strong>: ARN of the principal to simulate (user, role, group)</li>
+  <li><strong>action_names</strong>: List of AWS actions to simulate</li>
+  <li><strong>resource_arns</strong>: List of resource ARNs to test against</li>
+</ul>
+
+<h3>Optional Parameters</h3>
+<ul>
+  <li><strong>policy_input_list</strong>: Additional policies to include in simulation</li>
+  <li><strong>context_entries</strong>: Context keys and values for conditional testing</li>
+  <li><strong>resource_policy</strong>: Resource-based policy to include in simulation</li>
+  <li><strong>resource_owner</strong>: Account ID that owns the resource</li>
+  <li><strong>caller_arn</strong>: ARN of the calling principal</li>
+</ul>
+
+<h2>Example Configurations</h2>
+
+<h3>Basic Policy Simulation</h3>
+<pre><code class="language-yaml">simulate-policies:
+  test-s3-access:
+    simulate_policy_name: TestS3Access
+    policy_source_arn: "arn:aws:iam::123456789012:role/TestRole"
+    action_names:
+      - "s3:GetObject"
+      - "s3:PutObject"
+      - "s3:DeleteObject"
+    resource_arns:
+      - "arn:aws:s3:::my-test-bucket/*"
+      - "arn:aws:s3:::my-prod-bucket/*"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h3>Conditional Policy Testing</h3>
+<pre><code class="language-yaml">simulate-policies:
+  test-mfa-conditions:
+    simulate_policy_name: TestMFAConditions
+    policy_source_arn: "arn:aws:iam::123456789012:user/TestUser"
+    action_names:
+      - "ec2:TerminateInstances"
+      - "ec2:StopInstances"
+      - "rds:DeleteDBInstance"
+    resource_arns:
+      - "arn:aws:ec2:us-east-1:123456789012:instance/*"
+      - "arn:aws:rds:us-east-1:123456789012:db/*"
+    context_entries:
+      - context_key_name: "aws:MultiFactorAuthPresent"
+        context_key_values: 
+          - "true"
+        context_key_type: "boolean"
+      - context_key_name: "aws:RequestedRegion"
+        context_key_values:
+          - "us-east-1"
+        context_key_type: "string"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h3>Cross-Account Resource Testing</h3>
+<pre><code class="language-yaml">simulate-policies:
+  test-cross-account-access:
+    simulate_policy_name: TestCrossAccountAccess
+    policy_source_arn: "arn:aws:iam::123456789012:role/CrossAccountRole"
+    action_names:
+      - "s3:GetObject"
+      - "kms:Decrypt"
+    resource_arns:
+      - "arn:aws:s3:::shared-bucket/*"
+      - "arn:aws:kms:us-east-1:987654321098:key/abc123de-f456-7890-abcd-ef1234567890"
+    resource_owner: "987654321098"
+    resource_policy: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::123456789012:role/CrossAccountRole"
+            },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::shared-bucket/*"
+          }
+        ]
+      }
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h2>Simulation Results</h2>
+
+<h3>Result Interpretation</h3>
+<p>Policy simulation results include:</p>
+<ul>
+  <li><strong>EvaluationDecision</strong>: allowed, explicitDeny, implicitDeny</li>
+  <li><strong>MatchedStatements</strong>: Policy statements that matched the request</li>
+  <li><strong>MissingContextValues</strong>: Required context values not provided</li>
+  <li><strong>EvalDecisionDetails</strong>: Detailed evaluation information</li>
+  <li><strong>ResourceSpecificResults</strong>: Results for each resource tested</li>
+</ul>
+
+<h3>Decision Types</h3>
+<ul>
+  <li><strong>allowed</strong>: Action is explicitly allowed by policy</li>
+  <li><strong>explicitDeny</strong>: Action is explicitly denied by policy</li>
+  <li><strong>implicitDeny</strong>: Action is not allowed (no matching allow statement)</li>
+</ul>
+
+<h2>Context Keys and Conditions</h2>
+
+<h3>Common Context Keys</h3>
+<ul>
+  <li><strong>aws:RequestedRegion</strong>: AWS region of the request</li>
+  <li><strong>aws:MultiFactorAuthPresent</strong>: Whether MFA was used</li>
+  <li><strong>aws:CurrentTime</strong>: Date and time of the request</li>
+  <li><strong>aws:SourceIp</strong>: IP address of the request</li>
+  <li><strong>aws:SecureTransport</strong>: Whether request used SSL/TLS</li>
+  <li><strong>aws:PrincipalTag/TagName</strong>: Tags on the principal</li>
+  <li><strong>aws:ResourceTag/TagName</strong>: Tags on the resource</li>
+</ul>
+
+<h3>Service-Specific Context Keys</h3>
+<ul>
+  <li><strong>s3:ExistingObjectTag/TagName</strong>: S3 object tags</li>
+  <li><strong>ec2:InstanceType</strong>: EC2 instance type</li>
+  <li><strong>iam:PassedToService</strong>: Service receiving an IAM role</li>
+  <li><strong>kms:ViaService</strong>: Service using KMS key</li>
+</ul>
+
+<h2>Testing Strategies</h2>
+
+<h3>Positive Testing</h3>
+<p>Test scenarios that should be allowed:</p>
+<pre><code class="language-yaml">simulate-policies:
+  test-allowed-actions:
+    simulate_policy_name: TestAllowedActions
+    policy_source_arn: "arn:aws:iam::123456789012:role/DeveloperRole"
+    action_names:
+      - "s3:GetObject"
+      - "s3:PutObject"
+    resource_arns:
+      - "arn:aws:s3:::dev-bucket/*"
+    expected_result: "allowed"
+</code></pre>
+
+<h3>Negative Testing</h3>
+<p>Test scenarios that should be denied:</p>
+<pre><code class="language-yaml">simulate-policies:
+  test-denied-actions:
+    simulate_policy_name: TestDeniedActions
+    policy_source_arn: "arn:aws:iam::123456789012:role/ReadOnlyRole"
+    action_names:
+      - "s3:DeleteObject"
+      - "ec2:TerminateInstances"
+    resource_arns:
+      - "arn:aws:s3:::prod-bucket/*"
+      - "arn:aws:ec2:us-east-1:123456789012:instance/*"
+    expected_result: "explicitDeny"
+</code></pre>
+
+<h3>Conditional Testing</h3>
+<p>Test policy conditions with different context values:</p>
+<pre><code class="language-yaml">simulate-policies:
+  test-time-conditions:
+    simulate_policy_name: TestTimeConditions
+    policy_source_arn: "arn:aws:iam::123456789012:user/TimeLimitedUser"
+    action_names:
+      - "ec2:DescribeInstances"
+    resource_arns:
+      - "*"
+    context_entries:
+      - context_key_name: "aws:CurrentTime"
+        context_key_values:
+          - "2024-01-15T09:00:00Z"  # Business hours
+        context_key_type: "date"
+</code></pre>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Test both positive and negative scenarios</li>
+  <li>Include realistic context values in your simulations</li>
+  <li>Test edge cases and boundary conditions</li>
+  <li>Simulate with actual resource ARNs when possible</li>
+  <li>Test cross-account scenarios separately</li>
+  <li>Document expected results for each test</li>
+  <li>Automate policy testing as part of CI/CD pipeline</li>
+  <li>Regular testing after policy changes</li>
+  <li>Test with different principal types (users, roles, groups)</li>
+</ul>
+
+<h2>Common Use Cases</h2>
+
+<h3>Policy Development</h3>
+<p>Test new policies before applying them to production principals.</p>
+
+<h3>Compliance Validation</h3>
+<p>Ensure policies meet compliance requirements and security standards.</p>
+
+<h3>Access Troubleshooting</p>
+<p>Debug access issues by simulating problematic scenarios.</p>
+
+<h3>Policy Refactoring</h3>
+<p>Validate that policy changes don't break existing functionality.</p>
+
+<h3>Security Reviews</h3>
+<p>Systematically test policy effectiveness during security assessments.</p>
+
+<h2>Integration with CI/CD</h2>
+
+<h3>Automated Testing</h3>
+<pre><code class="language-yaml">simulate-policies:
+  ci-policy-tests:
+    simulate_policy_name: CIPolicyTests
+    policy_source_arn: "arn:aws:iam::123456789012:role/{{ role_name }}"
+    action_names: "{{ test_actions }}"
+    resource_arns: "{{ test_resources }}"
+    context_entries: "{{ test_contexts }}"
+    on_failure: fail_build
+</code></pre>
+
+<h3>Test Reporting</h3>
+<ul>
+  <li>Generate test reports with pass/fail results</li>
+  <li>Include detailed evaluation decisions</li>
+  <li>Track policy test coverage metrics</li>
+  <li>Alert on unexpected test failures</li>
+</ul>
+
+<h2>Limitations and Considerations</h2>
+
+<ul>
+  <li>Simulation may not cover all real-world scenarios</li>
+  <li>Some services have simulation limitations</li>
+  <li>Resource-based policies require additional configuration</li>
+  <li>Context values must be provided for conditional policies</li>
+  <li>Simulation doesn't account for service-specific business logic</li>
+  <li>Rate limits apply to simulation API calls</li>
+</ul>
+
+<h2>Troubleshooting</h2>
+
+<h3>Common Issues</h3>
+<ul>
+  <li><strong>Missing Context Values</strong>: Required conditions not provided</li>
+  <li><strong>Invalid ARNs</strong>: Malformed resource or principal ARNs</li>
+  <li><strong>Unsupported Actions</strong>: Actions not supported by simulator</li>
+  <li><strong>Permission Denied</strong>: Insufficient permissions for simulation</li>
+</ul>
+
+<h3>Debugging Tips</h3>
+<ul>
+  <li>Start with simple simulations and add complexity gradually</li>
+  <li>Verify principal and resource ARNs are correct</li>
+  <li>Check IAM permissions for simulation operations</li>
+  <li>Review AWS documentation for service-specific limitations</li>
+  <li>Use CloudTrail to debug simulation API calls</li>
+</ul>
+
+<h2>Required Permissions</h2>
+
+<ul>
+  <li><code>iam:SimulatePrincipalPolicy</code></li>
+  <li><code>iam:SimulateCustomPolicy</code></li>
+  <li><code>iam:GetRole</code> (if simulating role policies)</li>
+  <li><code>iam:GetUser</code> (if simulating user policies)</li>
+  <li><code>iam:GetGroup</code> (if simulating group policies)</li>
+  <li><code>iam:ListAttachedRolePolicies</code></li>
+  <li><code>iam:ListRolePolicies</code></li>
+</ul>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "Service Control Policies", "/how-to/service-control-policies/" %> - Test SCP policy effects</li>
+  <li><%= link_to "Assertions", "/how-to/assertions/" %> - Validate actual policy behavior</li>
+</ul>

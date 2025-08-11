@@ -1,0 +1,106 @@
+---
+title: Working with Launches
+---
+
+<h1>Working with Launches</h1>
+
+<p>Launches are Service Catalog product provisioning operations that allow you to deploy standardized products across multiple AWS accounts and regions.</p>
+
+<h2>Overview</h2>
+
+<p>The launches action type allows you to:</p>
+<ul>
+  <li>Provision Service Catalog products from shared portfolios</li>
+  <li>Update existing provisioned products when parameters change</li>
+  <li>Terminate provisioned products when no longer needed</li>
+  <li>Handle cross-account product sharing and provisioning</li>
+  <li>Support both hub and spoke execution modes</li>
+</ul>
+
+<h2>Launch Configuration</h2>
+
+<p>To configure a launch in your manifest, you need to specify:</p>
+
+<h3>Required Parameters</h3>
+<ul>
+  <li><strong>launch_name</strong>: Unique name for the provisioned product</li>
+  <li><strong>portfolio</strong>: Name of the Service Catalog portfolio</li>
+  <li><strong>product</strong>: Name of the product to provision</li>
+  <li><strong>version</strong>: Version of the product to deploy</li>
+  <li><strong>region</strong>: AWS region for deployment</li>
+  <li><strong>account_id</strong>: Target AWS account ID</li>
+  <li><strong>execution</strong>: Execution mode (hub or spoke)</li>
+</ul>
+
+<h3>Optional Parameters</h3>
+<ul>
+  <li><strong>parameters</strong>: Product launch parameters</li>
+  <li><strong>ssm_param_inputs</strong>: SSM parameters to retrieve for input</li>
+  <li><strong>tags</strong>: Tags to apply to the provisioned product</li>
+  <li><strong>retry_count</strong>: Number of retry attempts</li>
+  <li><strong>worker_timeout</strong>: Timeout for the task</li>
+  <li><strong>requested_priority</strong>: Task priority</li>
+</ul>
+
+<h2>Example Configuration</h2>
+
+<pre><code class="language-yaml">launches:
+  my-application:
+    portfolio: shared-services
+    product: web-application
+    version: v1.2.0
+    parameters:
+      InstanceType: t3.medium
+      Environment: production
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h2>Launch Lifecycle</h2>
+
+<h3>Provisioning</h3>
+<p>When a launch is first executed, Cloud Workflow Engine will:</p>
+<ol>
+  <li>Check if a provisioned product with the launch name already exists</li>
+  <li>If not, create a new provisioned product with the specified parameters</li>
+  <li>If exists, compare parameters and update if they have changed</li>
+  <li>Skip provisioning if parameters are unchanged</li>
+</ol>
+
+<h3>Parameter Updates</h3>
+<p>When parameters change, the existing provisioned product is updated rather than recreated, preserving resource continuity where possible.</p>
+
+<h3>Termination</h3>
+<p>Provisioned products can be terminated by removing them from the manifest or using the terminate action.</p>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Use descriptive launch names that indicate the purpose and environment</li>
+  <li>Version your products to ensure consistent deployments</li>
+  <li>Use SSM parameters for sensitive or dynamic values</li>
+  <li>Tag launches appropriately for cost tracking and organization</li>
+  <li>Test product updates in development environments first</li>
+  <li>Document parameter requirements and defaults</li>
+</ul>
+
+<h2>Common Use Cases</h2>
+
+<h3>Application Deployments</h3>
+<p>Deploy standardized application stacks with consistent configuration across environments.</p>
+
+<h3>Database Provisioning</h3>
+<p>Provision databases with standardized security and backup configurations.</p>
+
+<h3>Development Environment Setup</h3>
+<p>Quickly spin up consistent development environments for teams.</p>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "Stacks", "/how-to/stacks/" %> - For direct CloudFormation deployments</li>
+  <li><%= link_to "Spoke Local Portfolios", "/how-to/spoke-local-portfolios/" %> - For portfolio management</li>
+  <li><%= link_to "Assertions", "/how-to/assertions/" %> - For validating launch outputs</li>
+</ul>

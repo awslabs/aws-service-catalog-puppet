@@ -1,1 +1,0 @@
-BOUNDARY_ARN_TO_USE = 'arn:aws:iam::aws:policy/AWSCodePipelineFullAccess'

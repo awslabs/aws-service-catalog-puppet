@@ -1,0 +1,188 @@
+---
+title: Working with Assertions
+---
+
+<h1>Working with Assertions</h1>
+
+<p>Assertions allow you to validate that your AWS infrastructure meets expected criteria by comparing actual AWS API responses against expected values.</p>
+
+<h2>Overview</h2>
+
+<p>The assertions action type allows you to:</p>
+<ul>
+  <li>Validate AWS resource configurations against expected values</li>
+  <li>Ensure compliance requirements are met</li>
+  <li>Verify deployment outcomes automatically</li>
+  <li>Use JMESPath expressions to extract specific data points</li>
+  <li>Support both simple and complex object comparisons</li>
+</ul>
+
+<h2>Assertion Configuration</h2>
+
+<p>To configure an assertion in your manifest, you need to specify:</p>
+
+<h3>Required Parameters</h3>
+<ul>
+  <li><strong>assertion_name</strong>: Unique name for the assertion</li>
+  <li><strong>region</strong>: AWS region to query</li>
+  <li><strong>account_id</strong>: Target AWS account ID</li>
+  <li><strong>execution</strong>: Execution mode (hub or spoke)</li>
+  <li><strong>expected</strong>: Expected value or configuration</li>
+  <li><strong>actual</strong>: Configuration for AWS API call to get actual value</li>
+</ul>
+
+<h3>Optional Parameters</h3>
+<ul>
+  <li><strong>requested_priority</strong>: Task priority</li>
+</ul>
+
+<h2>Actual Configuration Structure</h2>
+
+<p>The <code>actual</code> configuration defines how to retrieve the value from AWS:</p>
+
+<pre><code class="language-yaml">actual:
+  config:
+    client: ec2                    # AWS service client
+    call: describe_vpcs            # API method to call
+    use_paginator: false           # Whether to use pagination
+    arguments:                     # Arguments to pass to the API call
+      VpcIds: ["vpc-12345678"]
+    filter: Vpcs[0].VpcId         # JMESPath expression to extract value
+</code></pre>
+
+<h2>Example Configurations</h2>
+
+<h3>Simple String Comparison</h3>
+<pre><code class="language-yaml">assertions:
+  vpc-name-check:
+    expected:
+      value: "my-production-vpc"
+    actual:
+      config:
+        client: ec2
+        call: describe_vpcs
+        use_paginator: false
+        arguments:
+          VpcIds: ["vpc-12345678"]
+        filter: Vpcs[0].Tags[?Key=='Name'].Value[0]
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h3>List Comparison (Order Ignored)</h3>
+<pre><code class="language-yaml">assertions:
+  security-group-ports:
+    expected:
+      value: ["80", "443", "22"]
+    actual:
+      config:
+        client: ec2
+        call: describe_security_groups
+        use_paginator: false
+        arguments:
+          SecurityGroupIds: ["sg-abc123def"]
+        filter: SecurityGroups[0].IpPermissions[*].FromPort
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h3>Complex Object Comparison</h3>
+<pre><code class="language-yaml">assertions:
+  cloudformation-outputs:
+    expected:
+      value:
+        VpcId: "vpc-abc123"
+        SubnetIds: ["subnet-def456"]
+    actual:
+      config:
+        client: cloudformation
+        call: describe_stacks
+        use_paginator: false
+        arguments:
+          StackName: "my-infrastructure-stack"
+        filter: Stacks[0].Outputs
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h2>Supported Comparisons</h2>
+
+<ul>
+  <li><strong>String values</strong>: Exact match with automatic whitespace trimming</li>
+  <li><strong>Numeric values</strong>: Exact numeric comparison</li>
+  <li><strong>Lists</strong>: Order-independent comparison</li>
+  <li><strong>Objects</strong>: Deep object comparison</li>
+  <li><strong>Boolean values</strong>: True/false comparison</li>
+</ul>
+
+<h2>JMESPath Filter Examples</h2>
+
+<ul>
+  <li><code>Vpcs[0].VpcId</code> - Get VPC ID from first VPC</li>
+  <li><code>Instances[*].InstanceId</code> - Get all instance IDs</li>
+  <li><code>Tags[?Key=='Environment'].Value[0]</code> - Get Environment tag value</li>
+  <li><code>SecurityGroups[0].IpPermissions[?FromPort==80]</code> - Filter rules by port</li>
+  <li><code>length(Buckets)</code> - Count number of S3 buckets</li>
+</ul>
+
+<h2>Paginated API Calls</h2>
+
+<p>For APIs that return paginated results, set <code>use_paginator: true</code>:</p>
+
+<pre><code class="language-yaml">actual:
+  config:
+    client: s3
+    call: list_buckets
+    use_paginator: true
+    arguments: {}
+    filter: length(Buckets)
+</code></pre>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Use descriptive assertion names that clearly indicate what is being validated</li>
+  <li>Start with simple assertions and build complexity gradually</li>
+  <li>Test JMESPath filters independently before using in assertions</li>
+  <li>Consider whitespace normalization for string comparisons</li>
+  <li>Use assertions to validate critical security configurations</li>
+  <li>Group related assertions logically</li>
+</ul>
+
+<h2>Common Use Cases</h2>
+
+<h3>Security Validation</h3>
+<p>Verify that security groups, NACLs, and IAM policies are configured correctly.</p>
+
+<h3>Resource Compliance</h3>
+<p>Ensure resources have required tags, encryption settings, or other compliance requirements.</p>
+
+<h3>Deployment Verification</h3>
+<p>Validate that deployments completed successfully and resources are in expected states.</p>
+
+<h3>Cost Optimization</h3>
+<p>Check that resources are using cost-effective instance types or storage classes.</p>
+
+<h2>Troubleshooting</h2>
+
+<ul>
+  <li>Use the AWS CLI to test API calls and JMESPath filters before implementing</li>
+  <li>Check IAM permissions if assertions fail unexpectedly</li>
+  <li>Verify resource names and IDs in the arguments</li>
+  <li>Consider pagination for APIs that return large result sets</li>
+</ul>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "Stacks", "/how-to/stacks/" %> - For validating stack outputs</li>
+  <li><%= link_to "Launches", "/how-to/launches/" %> - For validating product deployments</li>
+</ul>

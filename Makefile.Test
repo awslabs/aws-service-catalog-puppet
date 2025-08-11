@@ -1,4 +1,4 @@
-.PHONY: unit-tests test-factory-install test-factory-configure test-puppet-hub-install test-puppet-hub-configure test-bootstrap-spoke test-setup-manifest
+.PHONY: unit-tests test-factory-install test-factory-configure test-puppet-hub-install test-puppet-hub-configure test-bootstrap-spoke test-setup-manifest gherkin-tests gherkin-tests-verbose
 
 WS=ignored/testing/$(ENV_NUMBER)
 FACTORY_VENV=${WS}/factory
@@ -58,11 +58,11 @@ export MANIFEST
 
 unit-tests: ## runs unit tests for the project
 	mkdir -p reports/junit/
-	poetry run nose2 --pretty-assert -F --verbose --coverage-report html --coverage-report term --coverage-report xml -C
+	uv run nose2 --pretty-assert -F --verbose --coverage-report html --coverage-report term --coverage-report xml -C
 
 unit-test-watcher: ## runs unit tests for the project
 	mkdir -p reports/junit/
-	find servicecatalog_puppet -name '*.py' | entr poetry run nose2 --pretty-assert --verbose
+	find tests -name '*.py' | entr uv run nose2 --pretty-assert --verbose
 
 test-factory-install:
 	@echo "Installing factory"
@@ -114,3 +114,9 @@ test-setup-manifest:
 	echo "$${MANIFEST}" > ${WS}/ServiceCatalogPuppet/manifest.yaml
 	${PUPPET_VENV}/bin/servicecatalog-puppet import-product-set ${WS}/ServiceCatalogPuppet/manifest.yaml aws-iam core-central-it-team-portfolio
 	cd ${WS}/ServiceCatalogPuppet && git add . && git commit -am "adding" && git push || echo "nothing to commit"
+
+gherkin-tests: ## runs BDD/Gherkin tests using behave
+	uv run behave
+
+gherkin-tests-verbose: ## runs BDD/Gherkin tests with verbose output
+	uv run behave --verbose --format=pretty

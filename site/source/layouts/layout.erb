@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Use the title from a page's frontmatter if it has one -->
+    <title><%= page_title %></title>
+    <%= stylesheet_link_tag "site" %>
+    <!-- Prism.js for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css" rel="stylesheet">
+    <%= javascript_include_tag "site" %>
+  </head>
+  <body>
+    <nav class="main-nav">
+      <%= link_to "Home", "/", class: "nav-link" %>
+      <%= link_to "AWS How-To Guides", "/how-to/", class: "nav-link" %>
+      <%= link_to "Using the CLI", "/using-the-cli/", class: "nav-link" %>
+      <%= link_to "Site Map", "/sitemap/", class: "nav-link" %>
+    </nav>
+    
+    <main class="main-content">
+      <%= yield %>
+    </main>
+    
+    <% if current_page.path.start_with?('how-to/') && current_page.path != 'how-to/index.html' %>
+      <nav class="page-nav">
+        <h4>Other How-To Guides</h4>
+        <ul class="guide-list">
+          <% how_to_pages.each do |page| %>
+            <% unless page.path == current_page.path %>
+              <li><%= link_to page.data.title || page.path.gsub('how-to/', '').gsub('.html', '').titleize, "/" + page.path.gsub('.html', '/') %></li>
+            <% end %>
+          <% end %>
+        </ul>
+      </nav>
+    <% end %>
+    
+    
+    <!-- Prism.js for syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
+  </body>
+</html>

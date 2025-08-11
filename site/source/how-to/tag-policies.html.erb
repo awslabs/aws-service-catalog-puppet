@@ -1,0 +1,350 @@
+---
+title: Working with Tag Policies
+---
+
+<h1>Working with Tag Policies</h1>
+
+<p>Tag policies allow you to standardize tags across your AWS organization by defining tagging rules and enforcing compliance at the organizational unit or account level.</p>
+
+<h2>Overview</h2>
+
+<p>The tag-policies action type allows you to:</p>
+<ul>
+  <li>Create and manage tag policies in AWS Organizations</li>
+  <li>Define standardized tagging requirements</li>
+  <li>Enforce tag compliance across accounts and resources</li>
+  <li>Specify allowed tag values and formats</li>
+  <li>Apply policies to organizational units or individual accounts</li>
+</ul>
+
+<h2>Tag Policy Configuration</h2>
+
+<p>To configure a tag policy in your manifest, you need to specify:</p>
+
+<h3>Required Parameters</h3>
+<ul>
+  <li><strong>tag_policy_name</strong>: Name of the tag policy</li>
+  <li><strong>region</strong>: AWS region (Organizations is global, but region context is needed)</li>
+  <li><strong>description</strong>: Description of the policy purpose</li>
+  <li><strong>content</strong>: Policy document defining tagging rules</li>
+</ul>
+
+<h3>Target Parameters (one required)</h3>
+<ul>
+  <li><strong>account_id</strong>: AWS account ID to attach policy to</li>
+  <li><strong>ou_name</strong>: Organizational unit name to attach policy to</li>
+</ul>
+
+<h3>Optional Parameters</h3>
+<ul>
+  <li><strong>requested_priority</strong>: Task priority for execution order</li>
+</ul>
+
+<h2>Example Configurations</h2>
+
+<h3>Basic Tag Policy for Cost Allocation</h3>
+<pre><code class="language-yaml">tag-policies:
+  cost-allocation-tags:
+    tag_policy_name: CostAllocationTags
+    description: Enforce cost allocation tags across all resources
+    ou_name: Production
+    content:
+      tags:
+        CostCenter:
+          tag_key:
+            "@@assign": "CostCenter"
+          tag_value:
+            "@@assign":
+              - "Engineering"
+              - "Marketing" 
+              - "Finance"
+              - "Operations"
+        Project:
+          tag_key:
+            "@@assign": "Project"
+          tag_value:
+            "@@assign": "ANYVALUE"
+        Environment:
+          tag_key:
+            "@@assign": "Environment"
+          tag_value:
+            "@@assign":
+              - "Production"
+              - "Staging" 
+              - "Development"
+              - "Testing"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h3>Security Classification Tags</h3>
+<pre><code class="language-yaml">tag-policies:
+  security-classification:
+    tag_policy_name: SecurityClassification
+    description: Enforce security classification tags
+    account_id: "987654321098"
+    content:
+      tags:
+        DataClassification:
+          tag_key:
+            "@@assign": "DataClassification"
+          tag_value:
+            "@@assign":
+              - "Public"
+              - "Internal"
+              - "Confidential" 
+              - "Restricted"
+          enforced_for:
+            "@@assign":
+              - "s3:bucket"
+              - "rds:db"
+              - "dynamodb:table"
+        Owner:
+          tag_key:
+            "@@assign": "Owner"
+          tag_value:
+            "@@assign": "ANYVALUE"
+          enforced_for:
+            "@@assign": "ANYRESOURCE"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h3>Compliance and Governance Tags</h3>
+<pre><code class="language-yaml">tag-policies:
+  compliance-tags:
+    tag_policy_name: ComplianceTags
+    description: Enforce compliance-related tagging
+    ou_name: Compliance-OU
+    content:
+      tags:
+        ComplianceFramework:
+          tag_key:
+            "@@assign": "ComplianceFramework"
+          tag_value:
+            "@@assign":
+              - "SOX"
+              - "HIPAA"
+              - "PCI-DSS"
+              - "GDPR"
+              - "SOC2"
+        DataRetention:
+          tag_key:
+            "@@assign": "DataRetention"
+          tag_value:
+            "@@assign":
+              - "7years"
+              - "3years"
+              - "1year"
+              - "90days"
+        BackupRequired:
+          tag_key:
+            "@@assign": "BackupRequired"
+          tag_value:
+            "@@assign":
+              - "true"
+              - "false"
+          enforced_for:
+            "@@assign":
+              - "ec2:volume"
+              - "rds:db"
+              - "dynamodb:table"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h2>Tag Policy Syntax</h2>
+
+<h3>Basic Structure</h3>
+<pre><code class="language-yaml">content:
+  tags:
+    TagName:
+      tag_key:
+        "@@assign": "ActualTagKey"
+      tag_value:
+        "@@assign": 
+          - "AllowedValue1"
+          - "AllowedValue2"
+      enforced_for:
+        "@@assign":
+          - "resource-type1"
+          - "resource-type2"
+</code></pre>
+
+<h3>Key Components</h3>
+<ul>
+  <li><strong>@@assign</strong>: Defines allowed values or resource types</li>
+  <li><strong>tag_key</strong>: Specifies the tag key name</li>
+  <li><strong>tag_value</strong>: Defines allowed tag values</li>
+  <li><strong>enforced_for</strong>: Specifies which resource types must have this tag</li>
+</ul>
+
+<h3>Special Values</h3>
+<ul>
+  <li><strong>ANYVALUE</strong>: Allows any value for the tag</li>
+  <li><strong>ANYRESOURCE</strong>: Applies to all resource types</li>
+</ul>
+
+<h2>Resource Type Specification</h2>
+
+<h3>Common Resource Types</h3>
+<ul>
+  <li><strong>ec2:instance</strong>: EC2 instances</li>
+  <li><strong>ec2:volume</strong>: EBS volumes</li>
+  <li><strong>s3:bucket</strong>: S3 buckets</li>
+  <li><strong>rds:db</strong>: RDS databases</li>
+  <li><strong>lambda:function</strong>: Lambda functions</li>
+  <li><strong>dynamodb:table</strong>: DynamoDB tables</li>
+  <li><strong>iam:role</strong>: IAM roles</li>
+  <li><strong>iam:user</strong>: IAM users</li>
+</ul>
+
+<h3>Service-Specific Examples</h3>
+<pre><code class="language-yaml">enforced_for:
+  "@@assign":
+    - "autoscaling:auto-scaling-group"
+    - "elasticloadbalancing:loadbalancer"
+    - "cloudformation:stack"
+    - "logs:log-group"
+    - "sns:topic"
+    - "sqs:queue"
+</code></pre>
+
+<h2>Policy Enforcement Modes</h2>
+
+<h3>Compliance Mode</h3>
+<p>Tag policies operate in compliance mode by default:</p>
+<ul>
+  <li>Resources can be created without required tags</li>
+  <li>Non-compliance is reported but doesn't block operations</li>
+  <li>Used for monitoring and reporting compliance status</li>
+</ul>
+
+<h3>Enforcement Mode</h3>
+<p>Some services support enforcement mode:</p>
+<ul>
+  <li>Resource creation is blocked if required tags are missing</li>
+  <li>Invalid tag values are rejected</li>
+  <li>Provides stronger compliance guarantees</li>
+</ul>
+
+<h2>Tag Policy Inheritance</h2>
+
+<h3>Organizational Hierarchy</h3>
+<ul>
+  <li>Policies attached to root apply to entire organization</li>
+  <li>OU-level policies apply to all accounts in the OU</li>
+  <li>Account-level policies apply to specific accounts</li>
+  <li>Child OUs inherit policies from parent OUs</li>
+</ul>
+
+<h3>Policy Merging</h3>
+<p>When multiple tag policies apply:</p>
+<ul>
+  <li>All applicable policies are merged</li>
+  <li>More restrictive policies take precedence</li>
+  <li>Required tags from all policies must be present</li>
+</ul>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Start with a small set of essential tags</li>
+  <li>Use clear, descriptive tag names</li>
+  <li>Define consistent tag value formats</li>
+  <li>Consider automation for tag value generation</li>
+  <li>Regularly review and update tag policies</li>
+  <li>Monitor compliance and address violations</li>
+  <li>Document tag policy purposes and usage</li>
+  <li>Train teams on tagging requirements</li>
+  <li>Use tag policies for cost allocation and governance</li>
+</ul>
+
+<h2>Common Tagging Strategies</h2>
+
+<h3>Cost Management Tags</h3>
+<pre><code class="language-yaml">tags:
+  CostCenter: ["Engineering", "Marketing", "Sales"]
+  Project: "ANYVALUE"
+  Environment: ["prod", "staging", "dev", "test"]
+  Application: "ANYVALUE"
+</code></pre>
+
+<h3>Security Tags</h3>
+<pre><code class="language-yaml">tags:
+  DataClassification: ["public", "internal", "confidential", "restricted"]
+  Encryption: ["required", "optional", "none"]
+  Access: ["public", "private", "restricted"]
+  Backup: ["required", "optional", "none"]
+</code></pre>
+
+<h3>Operational Tags</h3>
+<pre><code class="language-yaml">tags:
+  Owner: "ANYVALUE"
+  Team: "ANYVALUE" 
+  Schedule: ["24x7", "business-hours", "maintenance-window"]
+  AutoShutdown: ["enabled", "disabled"]
+</code></pre>
+
+<h2>Monitoring and Compliance</h2>
+
+<h3>Compliance Reporting</h3>
+<ul>
+  <li>Use AWS Config to monitor tag compliance</li>
+  <li>Generate compliance reports for auditing</li>
+  <li>Set up CloudWatch alarms for non-compliant resources</li>
+  <li>Track compliance trends over time</li>
+</ul>
+
+<h3>Remediation</h3>
+<ul>
+  <li>Implement automated tag remediation using Lambda</li>
+  <li>Use AWS Systems Manager for bulk tag updates</li>
+  <li>Create workflows for tag compliance resolution</li>
+  <li>Regular cleanup of improperly tagged resources</li>
+</ul>
+
+<h2>Error Handling and Troubleshooting</h2>
+
+<h3>Common Issues</h3>
+<ul>
+  <li><strong>Invalid Policy Syntax</strong>: Check JSON formatting and structure</li>
+  <li><strong>OU Not Found</strong>: Verify organizational unit names</li>
+  <li><strong>Permission Denied</strong>: Check Organizations permissions</li>
+  <li><strong>Policy Conflicts</strong>: Review overlapping policy requirements</li>
+</ul>
+
+<h3>Required Permissions</h3>
+<ul>
+  <li><code>organizations:CreatePolicy</code></li>
+  <li><code>organizations:AttachPolicy</code></li>
+  <li><code>organizations:DescribePolicy</code></li>
+  <li><code>organizations:ListTagsForResource</code></li>
+  <li><code>organizations:ListOrganizationalUnits</code></li>
+</ul>
+
+<h2>Integration with Other Services</h2>
+
+<ul>
+  <li><strong>AWS Config</strong>: Monitor tag compliance</li>
+  <li><strong>Cost Explorer</strong>: Use tags for cost analysis</li>
+  <li><strong>Resource Groups</strong>: Group resources by tags</li>
+  <li><strong>IAM</strong>: Implement tag-based access control</li>
+  <li><strong>Systems Manager</strong>: Bulk tag operations</li>
+</ul>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "Service Control Policies", "/how-to/service-control-policies/" %> - Enforce tag-based access controls</li>
+  <li><%= link_to "Organizational Units", "/how-to/organizational-units/" %> - Apply tag policies to OUs</li>
+  <li><%= link_to "Assertions", "/how-to/assertions/" %> - Validate tag compliance</li>
+</ul>

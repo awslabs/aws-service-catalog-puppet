@@ -1,0 +1,407 @@
+---
+title: Using Excludes - Cloud Workflow Engine
+---
+
+<h1>Using Excludes</h1>
+
+<p>This guide explains how to use excludes in Cloud Workflow Engine to control which accounts or organizational units are excluded from specific operations, giving you fine-grained control over deployments.</p>
+
+<h2>Exclude Configuration Syntax</h2>
+
+<p>Excludes can be applied at multiple levels in your Cloud Workflow Engine configuration:</p>
+
+<pre><code class="language-yaml">launches:
+  security-baseline:
+    portfolio: "security-portfolio"
+    product: "baseline"
+    version: "v1.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+        - "staging"
+      accounts:
+        - "123456789012"
+    exclude:
+      accounts:
+        - "999999999999"  # Exclude specific account
+      organizational_units:
+        - "experimental"  # Exclude entire OU
+      tags:
+        - key: "Environment"
+          value: "Sandbox"</code></pre>
+
+<h2>Types of Excludes</h2>
+
+<h3>Account-Level Excludes</h3>
+
+<p>Exclude specific AWS accounts by account ID or name:</p>
+
+<pre><code class="language-yaml">launches:
+  compliance-scanning:
+    portfolio: "security-portfolio"
+    product: "compliance-scanner"
+    version: "v1.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+    exclude:
+      accounts:
+        - "111111111111"           # By account ID
+        - "legacy-production-1"    # By account name</code></pre>
+
+<h3>OU-Level Excludes</h3>
+
+<p>Exclude entire organizational units and all their accounts:</p>
+
+<pre><code class="language-yaml">launches:
+  monitoring-stack:
+    portfolio: "monitoring-portfolio"
+    product: "cloudwatch-enhanced"
+    version: "v2.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+        - "staging"
+    exclude:
+      organizational_units:
+        - "staging-experimental"   # By OU name
+        - path: "/staging/temp/"   # By OU path</code></pre>
+
+<h3>Tag-Based Excludes</h3>
+
+<p>Exclude accounts based on their tags:</p>
+
+<pre><code class="language-yaml">launches:
+  cost-optimization:
+    portfolio: "platform-portfolio"
+    product: "cost-controls"
+    version: "v1.5.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+        - "staging"
+    exclude:
+      tags:
+        - key: "CostOptimization"
+          value: "Disabled"
+        - key: "Environment"
+          value: "Testing"</code></pre>
+
+<h2>Global Excludes</h2>
+
+<p>Define excludes at the global level to apply across all operations:</p>
+
+<pre><code class="language-yaml">config:
+  global_excludes:
+    accounts:
+      - "000000000000"  # Master/Management account
+      - "111111111111"  # Log Archive account
+    organizational_units:
+      - "quarantined"
+    tags:
+      - key: "Status"
+        value: "Decommissioned"
+
+launches:
+  # These launches will automatically exclude the globally excluded accounts
+  security-baseline:
+    portfolio: "security-portfolio"
+    product: "baseline"
+    version: "v1.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"</code></pre>
+
+<h2>Conditional Excludes</h2>
+
+<p>Apply excludes based on conditions or parameters:</p>
+
+<h3>Time-Based Excludes</h3>
+
+<pre><code class="language-yaml">launches:
+  maintenance-window:
+    portfolio: "maintenance-portfolio"
+    product: "system-updates"
+    version: "v1.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+    exclude:
+      accounts:
+        - name: "critical-production"
+          conditions:
+            - parameter: "maintenance_window"
+              value: "false"</code></pre>
+
+<h3>Environment-Based Excludes</h3>
+
+<pre><code class="language-yaml">launches:
+  experimental-feature:
+    portfolio: "experimental-portfolio"
+    product: "new-feature"
+    version: "v0.1.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+        - "staging"
+    exclude:
+      organizational_units:
+        - name: "production"
+          conditions:
+            - parameter: "experimental_features_enabled"
+              value: "false"</code></pre>
+
+<h2>Exclude Precedence</h2>
+
+<p>Excludes are applied in the following order of precedence:</p>
+
+<ol>
+  <li><strong>Global Excludes</strong> - Applied first to all operations</li>
+  <li><strong>Launch-Level Excludes</strong> - Applied to specific launches</li>
+  <li><strong>Stack-Level Excludes</strong> - Applied to specific stacks</li>
+  <li><strong>Action-Level Excludes</strong> - Applied to specific actions</li>
+</ol>
+
+<pre><code class="language-yaml"># Example showing exclude precedence
+config:
+  global_excludes:
+    accounts:
+      - "000000000000"  # Always excluded
+
+launches:
+  my-launch:
+    portfolio: "test-portfolio"
+    product: "test-product"
+    version: "v1.0.0"
+    deploy_to:
+      accounts:
+        - "111111111111"
+        - "222222222222"
+        - "333333333333"
+    exclude:
+      accounts:
+        - "222222222222"  # Excluded from this launch only
+
+# Result: Deploys only to "333333333333"</code></pre>
+
+<h2>Advanced Exclude Patterns</h2>
+
+<h3>Regex-Based Excludes</h3>
+
+<pre><code class="language-yaml">launches:
+  production-only:
+    portfolio: "prod-portfolio"
+    product: "prod-service"
+    version: "v1.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+    exclude:
+      accounts:
+        - pattern: "dev-.*"        # Exclude accounts starting with "dev-"
+        - pattern: ".*-test-.*"    # Exclude accounts containing "-test-"</code></pre>
+
+<h3>Multi-Criteria Excludes</h3>
+
+<pre><code class="language-yaml">launches:
+  complex-exclusion:
+    portfolio: "complex-portfolio"
+    product: "selective-deploy"
+    version: "v1.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+        - "staging"
+    exclude:
+      # Exclude accounts that match ANY of these criteria
+      any:
+        - accounts: ["111111111111"]
+        - tags:
+            - key: "Maintenance"
+              value: "InProgress"
+        - organizational_units: ["experimental"]
+      # Exclude accounts that match ALL of these criteria  
+      all:
+        - tags:
+            - key: "Environment"
+              value: "Development"
+            - key: "Owner"
+              value: "TempTeam"</code></pre>
+
+<h2>Stack-Specific Excludes</h2>
+
+<p>Apply excludes at the stack level for more granular control:</p>
+
+<pre><code class="language-yaml">stacks:
+  vpc-stack:
+    template_url: "https://s3.bucket/vpc-template.yaml"
+    parameters:
+      VpcCidr: "10.0.0.0/16"
+    deploy_to:
+      organizational_units:
+        - "production"
+        - "staging"
+    exclude:
+      accounts:
+        - "shared-services-account"  # VPC already exists here
+
+  security-stack:
+    template_url: "https://s3.bucket/security-template.yaml" 
+    deploy_to:
+      organizational_units:
+        - "production"
+        - "staging"
+    exclude:
+      tags:
+        - key: "SecurityExemption"
+          value: "true"</code></pre>
+
+<h2>Testing Excludes</h2>
+
+<h3>Dry Run with Excludes</h3>
+
+<pre><code class="language-bash"># Test which accounts would be targeted/excluded
+cloud-workflow-engine dry-run --config config.yaml
+
+# Show excluded accounts for specific launch
+cloud-workflow-engine show-excluded-accounts --launch security-baseline</code></pre>
+
+<h3>Validation Commands</h3>
+
+<pre><code class="language-bash"># Validate exclude configuration
+cloud-workflow-engine validate-excludes
+
+# Show effective targets after excludes
+cloud-workflow-engine show-deployment-targets --launch my-launch</code></pre>
+
+<h2>Best Practices</h2>
+
+<h3>Exclude Strategy</h3>
+
+<ul>
+  <li><strong>Use Global Excludes</strong> - For permanently excluded accounts (master, log archive)</li>
+  <li><strong>Document Exclusions</strong> - Always comment why accounts are excluded</li>
+  <li><strong>Regular Reviews</strong> - Periodically review and clean up excludes</li>
+  <li><strong>Least Privilege</strong> - Exclude by default, include explicitly where needed</li>
+  <li><strong>Test Thoroughly</strong> - Always dry-run deployments to verify excludes work correctly</li>
+</ul>
+
+<h3>Common Exclude Patterns</h3>
+
+<pre><code class="language-yaml"># Management and security accounts
+global_excludes:
+  accounts:
+    - "000000000000"  # Organization master account
+    - "111111111111"  # Security/audit account  
+    - "222222222222"  # Log archive account
+
+# Temporary exclusions with comments
+launches:
+  rolling-update:
+    # ... config ...
+    exclude:
+      accounts:
+        - "333333333333"  # Excluded until migration complete - Ticket #12345
+        - "444444444444"  # Critical system, deploy in next window - Owner: Platform Team</code></pre>
+
+<h2>Troubleshooting Excludes</h2>
+
+<h3>Common Issues</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Issue</th>
+      <th>Cause</th>
+      <th>Solution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Deployment not happening</td>
+      <td>All accounts excluded</td>
+      <td>Check global and launch-level excludes</td>
+    </tr>
+    <tr>
+      <td>Exclude not working</td>
+      <td>Incorrect account ID or name</td>
+      <td>Verify account ID and name spelling</td>
+    </tr>
+    <tr>
+      <td>Tag exclude not working</td>
+      <td>Tag key/value mismatch</td>
+      <td>Check exact tag keys and values</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Debugging Commands</h3>
+
+<pre><code class="language-bash"># Show all accounts that would be targeted
+cloud-workflow-engine list-accounts --deployment-target
+
+# Show why an account was excluded
+cloud-workflow-engine explain-exclusion --account 123456789012 --launch my-launch
+
+# Validate exclude patterns
+cloud-workflow-engine test-exclude-patterns</code></pre>
+
+<h2>Examples by Use Case</h2>
+
+<h3>Blue-Green Deployments</h3>
+
+<pre><code class="language-yaml">launches:
+  blue-deployment:
+    portfolio: "app-portfolio"
+    product: "web-app"
+    version: "v2.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+    exclude:
+      tags:
+        - key: "DeploymentSlot"
+          value: "green"
+
+  green-deployment:
+    portfolio: "app-portfolio"
+    product: "web-app"
+    version: "v2.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+    exclude:
+      tags:
+        - key: "DeploymentSlot"
+          value: "blue"</code></pre>
+
+<h3>Phased Rollouts</h3>
+
+<pre><code class="language-yaml">launches:
+  phase-1-rollout:
+    portfolio: "update-portfolio"
+    product: "system-update"
+    version: "v3.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+    exclude:
+      tags:
+        - key: "RolloutPhase"
+          value: "2"
+        - key: "RolloutPhase"
+          value: "3"
+
+  phase-2-rollout:
+    portfolio: "update-portfolio"
+    product: "system-update"
+    version: "v3.0.0"
+    deploy_to:
+      organizational_units:
+        - "production"
+    exclude:
+      tags:
+        - key: "RolloutPhase"
+          value: "1"
+        - key: "RolloutPhase"
+          value: "3"</code></pre>

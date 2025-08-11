@@ -1,0 +1,294 @@
+---
+title: Working with Imported Portfolios
+---
+
+<h1>Working with Imported Portfolios</h1>
+
+<p>Imported portfolios enable cross-account Service Catalog portfolio sharing, allowing spoke accounts to access products from hub portfolios through AWS Service Catalog's built-in sharing mechanisms.</p>
+
+<h2>Overview</h2>
+
+<p>The imported-portfolios action type allows you to:</p>
+<ul>
+  <li>Share Service Catalog portfolios across AWS accounts</li>
+  <li>Accept portfolio shares in target accounts</li>
+  <li>Manage cross-account product access</li>
+  <li>Support organizational-level portfolio sharing</li>
+  <li>Handle portfolio sharing permissions and access controls</li>
+</ul>
+
+<h2>Portfolio Sharing Models</h2>
+
+<h3>Account-to-Account Sharing</h3>
+<p>Direct sharing between specific AWS accounts:</p>
+<ul>
+  <li>Hub account shares portfolio with specific spoke accounts</li>
+  <li>Spoke accounts accept the portfolio share</li>
+  <li>Products become available in spoke accounts</li>
+  <li>Hub account maintains control over products and versions</li>
+</ul>
+
+<h3>Organizational Sharing</h3>
+<p>Sharing portfolios across AWS Organizations:</p>
+<ul>
+  <li>Hub account shares portfolio with entire organization</li>
+  <li>All accounts in organization can access shared products</li>
+  <li>Automatic access for new accounts added to organization</li>
+  <li>Centralized management and governance</li>
+</ul>
+
+<h2>Example Configurations</h2>
+
+<h3>Basic Portfolio Import</h3>
+<pre><code class="language-yaml">imported-portfolios:
+  shared-infrastructure:
+    portfolio: InfrastructurePortfolio
+    hub_account_id: "123456789012"
+    sharing_type: account
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "987654321098"  # Spoke account
+</code></pre>
+
+<h3>Organizational Portfolio Sharing</h3>
+<pre><code class="language-yaml">imported-portfolios:
+  company-services:
+    portfolio: CompanyServicesPortfolio  
+    hub_account_id: "123456789012"
+    sharing_type: organization
+    organization_id: "o-abc123def456"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "987654321098"
+            - "111122223333"
+            - "444455556666"
+</code></pre>
+
+<h3>Regional Portfolio Import</h3>
+<pre><code class="language-yaml">imported-portfolios:
+  regional-services:
+    portfolio: RegionalServicesPortfolio
+    hub_account_id: "123456789012"
+    sharing_type: account
+    deploy_to:
+      tags:
+        - regions:
+            - us-east-1
+            - us-west-2
+            - eu-west-1
+          accounts:
+            - "555666777888"
+</code></pre>
+
+<h2>Portfolio Sharing Process</h2>
+
+<h3>Hub Account Actions</h3>
+<ol>
+  <li>Create portfolio in hub account</li>
+  <li>Add products to the portfolio</li>
+  <li>Create portfolio share to target accounts or organization</li>
+  <li>Configure sharing permissions and access controls</li>
+</ol>
+
+<h3>Spoke Account Actions</h3>
+<ol>
+  <li>Accept the portfolio share from hub account</li>
+  <li>Configure local access permissions</li>
+  <li>Associate principals (users, roles, groups) with imported portfolio</li>
+  <li>Begin using shared products for launches</li>
+</ol>
+
+<h2>Access Control and Permissions</h2>
+
+<h3>Hub Account Permissions</h3>
+<p>The hub account needs permissions to:</p>
+<ul>
+  <li>Create and manage portfolios</li>
+  <li>Create portfolio shares</li>
+  <li>Manage product associations</li>
+  <li>Update sharing configurations</li>
+</ul>
+
+<h3>Spoke Account Permissions</h3>
+<p>Spoke accounts need permissions to:</p>
+<ul>
+  <li>Accept portfolio shares</li>
+  <li>List shared portfolios</li>
+  <li>Associate principals with imported portfolios</li>
+  <li>Launch products from imported portfolios</li>
+</ul>
+
+<h2>Portfolio Lifecycle Management</h2>
+
+<h3>Initial Sharing</h3>
+<pre><code class="language-yaml"># Hub account shares portfolio
+aws servicecatalog create-portfolio-share \
+  --portfolio-id port-abc123def456 \
+  --account-id 987654321098 \
+  --share-principals
+
+# Spoke account accepts share  
+aws servicecatalog accept-portfolio-share \
+  --portfolio-id port-abc123def456 \
+  --accept-language en
+</code></pre>
+
+<h3>Managing Shared Products</h3>
+<ul>
+  <li>Hub account controls product availability</li>
+  <li>Product updates automatically propagate to spoke accounts</li>
+  <li>Hub account can revoke access to specific products</li>
+  <li>Spoke accounts see real-time product catalog updates</li>
+</ul>
+
+<h3>Share Termination</h3>
+<ul>
+  <li>Hub account can terminate portfolio shares</li>
+  <li>Spoke accounts lose access to shared products</li>
+  <li>Existing provisioned products may continue to run</li>
+  <li>New launches from shared products are blocked</li>
+</ul>
+
+<h2>Principal Association</h2>
+
+<h3>User Access</h3>
+<pre><code class="language-yaml">imported-portfolios:
+  development-tools:
+    portfolio: DevelopmentToolsPortfolio
+    hub_account_id: "123456789012"
+    principals:
+      - type: user
+        name: developer-user-1
+      - type: group  
+        name: development-team
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "987654321098"
+</code></pre>
+
+<h3>Role-Based Access</h3>
+<pre><code class="language-yaml">imported-portfolios:
+  admin-tools:
+    portfolio: AdminToolsPortfolio
+    hub_account_id: "123456789012"
+    principals:
+      - type: role
+        arn: "arn:aws:iam::987654321098:role/ServiceCatalogAdminRole"
+      - type: role
+        arn: "arn:aws:iam::987654321098:role/InfrastructureRole"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "987654321098"
+</code></pre>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Plan your hub-and-spoke architecture carefully</li>
+  <li>Use organizational sharing for enterprise-wide services</li>
+  <li>Implement least-privilege access for portfolio principals</li>
+  <li>Document shared portfolio purposes and intended audiences</li>
+  <li>Monitor portfolio usage and access patterns</li>
+  <li>Regular review of sharing permissions and access</li>
+  <li>Version control portfolio configurations</li>
+  <li>Test sharing in development environments first</li>
+  <li>Use consistent naming conventions across accounts</li>
+</ul>
+
+<h2>Common Use Cases</h2>
+
+<h3>Centralized Service Catalog</h3>
+<p>Maintain a central catalog of approved services while allowing distributed consumption.</p>
+
+<h3>Development Tools Distribution</h3>
+<p>Share development and testing tools across multiple development accounts.</p>
+
+<h3>Security Services</h3>
+<p>Distribute security tools and configurations from a central security account.</p>
+
+<h3>Compliance Templates</h3>
+<p>Share compliance-approved infrastructure templates across the organization.</p>
+
+<h2>Monitoring and Troubleshooting</h2>
+
+<h3>Share Status Monitoring</h3>
+<ul>
+  <li>Monitor portfolio share creation and acceptance</li>
+  <li>Track principal associations and access grants</li>
+  <li>Verify product availability in spoke accounts</li>
+  <li>Monitor launch success rates from imported portfolios</li>
+</ul>
+
+<h3>Common Issues</h3>
+<ul>
+  <li><strong>Share Not Accepted</strong>: Spoke account hasn't accepted the portfolio share</li>
+  <li><strong>No Access</strong>: Principals not associated with imported portfolio</li>
+  <li><strong>Product Not Available</strong>: Product not associated with shared portfolio</li>
+  <li><strong>Permission Denied</strong>: Insufficient IAM permissions for sharing operations</li>
+</ul>
+
+<h3>Troubleshooting Steps</h3>
+<ol>
+  <li>Verify portfolio sharing status in both hub and spoke accounts</li>
+  <li>Check IAM permissions for Service Catalog operations</li>
+  <li>Confirm principal associations are configured correctly</li>
+  <li>Review CloudTrail logs for Service Catalog API calls</li>
+  <li>Test product launches manually to isolate issues</li>
+</ol>
+
+<h2>Required IAM Permissions</h2>
+
+<h3>Hub Account</h3>
+<ul>
+  <li><code>servicecatalog:CreatePortfolioShare</code></li>
+  <li><code>servicecatalog:DescribePortfolioShares</code></li>
+  <li><code>servicecatalog:UpdatePortfolioShare</code></li>
+  <li><code>servicecatalog:DeletePortfolioShare</code></li>
+  <li><code>servicecatalog:ListPortfolioAccess</code></li>
+</ul>
+
+<h3>Spoke Account</h3>
+<ul>
+  <li><code>servicecatalog:AcceptPortfolioShare</code></li>
+  <li><code>servicecatalog:RejectPortfolioShare</code></li>
+  <li><code>servicecatalog:ListAcceptedPortfolioShares</code></li>
+  <li><code>servicecatalog:AssociatePrincipalWithPortfolio</code></li>
+  <li><code>servicecatalog:DisassociatePrincipalFromPortfolio</code></li>
+  <li><code>servicecatalog:ListPrincipalsForPortfolio</code></li>
+</ul>
+
+<h2>Security Considerations</h2>
+
+<ul>
+  <li>Implement least-privilege access for portfolio sharing</li>
+  <li>Regular audit of portfolio shares and access</li>
+  <li>Monitor for unauthorized portfolio access attempts</li>
+  <li>Use CloudTrail to track portfolio sharing activities</li>
+  <li>Implement approval processes for new portfolio shares</li>
+  <li>Consider data classification when sharing portfolios</li>
+</ul>
+
+<h2>Performance and Scalability</h2>
+
+<ul>
+  <li>Organize portfolios logically to minimize sharing complexity</li>
+  <li>Use organizational sharing for large-scale deployments</li>
+  <li>Monitor Service Catalog service limits and quotas</li>
+  <li>Consider regional distribution for global organizations</li>
+  <li>Optimize portfolio structure for efficient management</li>
+</ul>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "Spoke Local Portfolios", "/how-to/spoke-local-portfolios/" %> - Alternative distribution method</li>
+  <li><%= link_to "Launches", "/how-to/launches/" %> - Deploy products from imported portfolios</li>
+  <li><%= link_to "Assertions", "/how-to/assertions/" %> - Validate portfolio sharing and access</li>
+</ul>

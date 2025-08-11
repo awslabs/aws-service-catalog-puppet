@@ -1,0 +1,330 @@
+---
+title: Working with C7N AWS CloudTrails
+---
+
+<h1>Working with C7N AWS CloudTrails</h1>
+
+<p>C7N AWS CloudTrails enable real-time security and compliance monitoring by configuring CloudTrail event streams that trigger Cloud Custodian policy enforcement through Lambda functions.</p>
+
+<h2>Overview</h2>
+
+<p>The c7n-aws-cloudtrails action type allows you to:</p>
+<ul>
+  <li>Configure CloudTrail event sources for Cloud Custodian policies</li>
+  <li>Enable real-time policy enforcement based on AWS API calls</li>
+  <li>Set up event filtering and routing for specific policy triggers</li>
+  <li>Integrate CloudTrail events with Lambda-based policy execution</li>
+  <li>Support multi-account and cross-region event monitoring</li>
+</ul>
+
+<h2>CloudTrail Integration Configuration</h2>
+
+<p>To configure C7N AWS CloudTrails in your manifest, you need to specify:</p>
+
+<h3>Required Parameters</h3>
+<ul>
+  <li><strong>cloudtrail_name</strong>: Name of the CloudTrail configuration</li>
+  <li><strong>region</strong>: AWS region for CloudTrail and event processing</li>
+  <li><strong>account_id</strong>: Target AWS account ID</li>
+  <li><strong>trail_arn</strong>: ARN of the CloudTrail to monitor</li>
+  <li><strong>event_rules</strong>: CloudWatch Events rules for policy triggers</li>
+</ul>
+
+<h3>Optional Parameters</h3>
+<ul>
+  <li><strong>s3_bucket</strong>: S3 bucket for CloudTrail log storage</li>
+  <li><strong>s3_key_prefix</strong>: S3 key prefix for log organization</li>
+  <li><strong>sns_topic_arn</strong>: SNS topic for CloudTrail notifications</li>
+  <li><strong>kms_key_id</strong>: KMS key for CloudTrail log encryption</li>
+  <li><strong>include_global_services</strong>: Whether to include global service events</li>
+  <li><strong>is_multi_region_trail</strong>: Whether trail covers multiple regions</li>
+</ul>
+
+<h2>Example Configurations</h2>
+
+<h3>Security Event Monitoring</h3>
+<pre><code class="language-yaml">c7n-aws-cloudtrails:
+  security-event-monitor:
+    cloudtrail_name: security-monitoring-trail
+    trail_arn: "arn:aws:cloudtrail:us-east-1:123456789012:trail/security-trail"
+    s3_bucket: security-cloudtrail-logs-bucket
+    s3_key_prefix: security-events/
+    kms_key_id: "arn:aws:kms:us-east-1:123456789012:key/abc123de-f456-7890-abcd-ef1234567890"
+    include_global_services: true
+    is_multi_region_trail: true
+    event_rules:
+      - rule_name: ec2-security-violations
+        event_pattern:
+          source: ["aws.ec2"]
+          detail-type: ["AWS API Call via CloudTrail"]
+          detail:
+            eventSource: ["ec2.amazonaws.com"]
+            eventName: ["RunInstances", "AuthorizeSecurityGroupIngress"]
+        target_lambda_arn: "arn:aws:lambda:us-east-1:123456789012:function:ec2-compliance-enforcer"
+      - rule_name: iam-privilege-changes
+        event_pattern:
+          source: ["aws.iam"]
+          detail-type: ["AWS API Call via CloudTrail"]
+          detail:
+            eventSource: ["iam.amazonaws.com"]
+            eventName: ["CreateRole", "AttachRolePolicy", "PutRolePolicy"]
+        target_lambda_arn: "arn:aws:lambda:us-east-1:123456789012:function:iam-compliance-monitor"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h3>Cost Control Event Monitoring</h3>
+<pre><code class="language-yaml">c7n-aws-cloudtrails:
+  cost-control-monitor:
+    cloudtrail_name: cost-control-trail
+    trail_arn: "arn:aws:cloudtrail:us-east-1:123456789012:trail/cost-trail"
+    s3_bucket: cost-monitoring-logs
+    event_rules:
+      - rule_name: expensive-instance-launches
+        event_pattern:
+          source: ["aws.ec2"]
+          detail-type: ["AWS API Call via CloudTrail"]
+          detail:
+            eventSource: ["ec2.amazonaws.com"]
+            eventName: ["RunInstances"]
+            requestParameters:
+              instanceType: ["m5.large", "m5.xlarge", "m5.2xlarge", "m5.4xlarge"]
+        target_lambda_arn: "arn:aws:lambda:us-east-1:123456789012:function:cost-control-enforcer"
+      - rule_name: rds-instance-modifications
+        event_pattern:
+          source: ["aws.rds"]
+          detail-type: ["AWS API Call via CloudTrail"]
+          detail:
+            eventSource: ["rds.amazonaws.com"]
+            eventName: ["CreateDBInstance", "ModifyDBInstance"]
+        target_lambda_arn: "arn:aws:lambda:us-east-1:123456789012:function:rds-cost-monitor"
+    sns_topic_arn: "arn:aws:sns:us-east-1:123456789012:cost-alerts"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h3>Compliance Monitoring</h3>
+<pre><code class="language-yaml">c7n-aws-cloudtrails:
+  compliance-monitor:
+    cloudtrail_name: compliance-audit-trail
+    trail_arn: "arn:aws:cloudtrail:us-east-1:123456789012:trail/compliance-trail"
+    s3_bucket: compliance-audit-logs
+    s3_key_prefix: compliance/
+    is_multi_region_trail: true
+    include_global_services: true
+    event_rules:
+      - rule_name: s3-bucket-policy-changes
+        event_pattern:
+          source: ["aws.s3"]
+          detail-type: ["AWS API Call via CloudTrail"]
+          detail:
+            eventSource: ["s3.amazonaws.com"]
+            eventName: ["PutBucketPolicy", "DeleteBucketPolicy", "PutBucketAcl"]
+        target_lambda_arn: "arn:aws:lambda:us-east-1:123456789012:function:s3-compliance-enforcer"
+      - rule_name: kms-key-policy-changes
+        event_pattern:
+          source: ["aws.kms"]
+          detail-type: ["AWS API Call via CloudTrail"]
+          detail:
+            eventSource: ["kms.amazonaws.com"]
+            eventName: ["PutKeyPolicy", "CreateKey", "ScheduleKeyDeletion"]
+        target_lambda_arn: "arn:aws:lambda:us-east-1:123456789012:function:kms-compliance-monitor"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h2>Event Rule Patterns</h2>
+
+<h3>Basic Event Pattern Structure</h3>
+<pre><code class="language-yaml">event_pattern:
+  source: ["aws.service-name"]
+  detail-type: ["AWS API Call via CloudTrail"]
+  detail:
+    eventSource: ["service.amazonaws.com"]
+    eventName: ["APIMethod1", "APIMethod2"]
+    requestParameters:
+      parameter-name: ["value1", "value2"]
+</code></pre>
+
+<h3>Common Event Patterns</h3>
+
+<h4>EC2 Instance Operations</h4>
+<pre><code class="language-yaml">event_pattern:
+  source: ["aws.ec2"]
+  detail-type: ["AWS API Call via CloudTrail"]
+  detail:
+    eventSource: ["ec2.amazonaws.com"]
+    eventName: ["RunInstances", "TerminateInstances", "StopInstances"]
+    requestParameters:
+      instanceType: ["t3.large", "m5.large"]
+</code></pre>
+
+<h4>IAM Policy Changes</h4>
+<pre><code class="language-yaml">event_pattern:
+  source: ["aws.iam"]
+  detail-type: ["AWS API Call via CloudTrail"]
+  detail:
+    eventSource: ["iam.amazonaws.com"]
+    eventName: ["CreateUser", "AttachUserPolicy", "CreateRole"]
+    errorCode: {"exists": false}  # Only successful operations
+</code></pre>
+
+<h4>S3 Bucket Operations</h4>
+<pre><code class="language-yaml">event_pattern:
+  source: ["aws.s3"]
+  detail-type: ["AWS API Call via CloudTrail"]
+  detail:
+    eventSource: ["s3.amazonaws.com"]
+    eventName: ["CreateBucket", "PutBucketPolicy", "PutBucketAcl"]
+    requestParameters:
+      bucketName: [{"prefix": "prod-"}]
+</code></pre>
+
+<h2>CloudTrail Configuration</h2>
+
+<h3>Trail Setup Requirements</h3>
+<ul>
+  <li>CloudTrail must be configured to log to CloudWatch Logs</li>
+  <li>Appropriate IAM permissions for CloudTrail service</li>
+  <li>S3 bucket with proper access policies</li>
+  <li>KMS key for log encryption (recommended)</li>
+</ul>
+
+<h3>Multi-Region Considerations</h3>
+<ul>
+  <li>Use multi-region trails for comprehensive coverage</li>
+  <li>Consider costs of cross-region log shipping</li>
+  <li>Regional CloudWatch Events rules for local processing</li>
+  <li>Global service events typically processed in us-east-1</li>
+</ul>
+
+<h2>Event Processing Flow</h2>
+
+<h3>Real-Time Processing</h3>
+<ol>
+  <li>AWS API call generates CloudTrail event</li>
+  <li>CloudTrail logs event to CloudWatch Logs (if configured)</li>
+  <li>CloudWatch Events rule matches event pattern</li>
+  <li>Event triggers target Lambda function</li>
+  <li>Lambda executes Cloud Custodian policy</li>
+  <li>Policy actions are executed (remediation, notification, etc.)</li>
+</ol>
+
+<h3>Batch Processing</h3>
+<ol>
+  <li>CloudTrail logs events to S3 bucket</li>
+  <li>S3 events trigger processing Lambda</li>
+  <li>Lambda processes batch of log files</li>
+  <li>Policies are evaluated against historical data</li>
+  <li>Batch remediation and reporting</li>
+</ol>
+
+<h2>Performance and Scaling</h2>
+
+<h3>Event Volume Management</h3>
+<ul>
+  <li>Filter events at CloudWatch Events rule level</li>
+  <li>Use specific event patterns to reduce noise</li>
+  <li>Implement dead letter queues for failed processing</li>
+  <li>Monitor Lambda concurrency limits</li>
+</ul>
+
+<h3>Cost Optimization</h3>
+<ul>
+  <li>Fine-tune event patterns to reduce unnecessary invocations</li>
+  <li>Use appropriate Lambda memory and timeout settings</li>
+  <li>Consider lifecycle policies for CloudTrail logs</li>
+  <li>Monitor data transfer costs for multi-region setups</li>
+</ul>
+
+<h2>Security Considerations</h2>
+
+<h3>Access Control</h3>
+<ul>
+  <li>Restrict access to CloudTrail configuration</li>
+  <li>Use least-privilege IAM policies for Lambda execution</li>
+  <li>Encrypt CloudTrail logs with KMS</li>
+  <li>Monitor for unauthorized CloudTrail modifications</li>
+</ul>
+
+<h3>Event Integrity</h3>
+<ul>
+  <li>Enable CloudTrail log file validation</li>
+  <li>Use CloudTrail Insights for anomaly detection</li>
+  <li>Implement log tampering detection</li>
+  <li>Regular audit of CloudTrail configuration</li>
+</ul>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Start with monitoring before enabling automated remediation</li>
+  <li>Use specific event patterns to avoid unnecessary processing</li>
+  <li>Implement proper error handling in Lambda functions</li>
+  <li>Monitor CloudTrail and Lambda costs regularly</li>
+  <li>Test event patterns thoroughly before production deployment</li>
+  <li>Use CloudFormation for consistent CloudTrail setup</li>
+  <li>Implement alerting for CloudTrail processing failures</li>
+  <li>Regular review and optimization of event rules</li>
+  <li>Document event patterns and their business purposes</li>
+</ul>
+
+<h2>Monitoring and Troubleshooting</h2>
+
+<h3>CloudWatch Metrics</h3>
+<ul>
+  <li>Monitor CloudTrail log delivery latency</li>
+  <li>Track CloudWatch Events rule invocation counts</li>
+  <li>Monitor Lambda function errors and duration</li>
+  <li>Track policy execution success rates</li>
+</ul>
+
+<h3>Common Issues</h3>
+<ul>
+  <li><strong>Missing Events</strong>: Check CloudTrail configuration and event patterns</li>
+  <li><strong>High Costs</strong>: Review event filtering and Lambda efficiency</li>
+  <li><strong>Processing Delays</strong>: Monitor CloudTrail delivery times</li>
+  <li><strong>Permission Errors</strong>: Verify IAM roles and policies</li>
+</ul>
+
+<h3>Debugging Techniques</h3>
+<ul>
+  <li>Use CloudWatch Logs Insights for event analysis</li>
+  <li>Test event patterns with sample events</li>
+  <li>Enable detailed logging in Lambda functions</li>
+  <li>Use AWS X-Ray for distributed tracing</li>
+</ul>
+
+<h2>Integration Patterns</h2>
+
+<h3>Multi-Account Setup</h3>
+<ul>
+  <li>Central logging account for all CloudTrail logs</li>
+  <li>Cross-account IAM roles for policy execution</li>
+  <li>Centralized monitoring and alerting</li>
+  <li>Account-specific policy enforcement</li>
+</ul>
+
+<h3>Hybrid Processing</h3>
+<ul>
+  <li>Real-time processing for critical security events</li>
+  <li>Batch processing for compliance reporting</li>
+  <li>Different processing patterns for different event types</li>
+  <li>Tiered response based on event severity</li>
+</ul>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "C7N AWS Lambdas", "/how-to/c7n-aws-lambdas/" %> - Deploy policy enforcement functions</li>
+  <li><%= link_to "Assertions", "/how-to/assertions/" %> - Validate CloudTrail configuration</li>
+  <li><%= link_to "Lambda Invocations", "/how-to/lambda-invocations/" %> - Custom event processing</li>
+</ul>

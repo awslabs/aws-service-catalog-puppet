@@ -74,4 +74,4 @@ class TestUsersOfGetConfig(unittest.TestCase):
                         self.puppet_account_id, self.default_region
                     )
                     # verify
-                    self.assertEquals(expected_result, actual_result)
+                    self.assertEqual(expected_result, actual_result)

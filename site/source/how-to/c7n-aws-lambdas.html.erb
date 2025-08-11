@@ -1,0 +1,380 @@
+---
+title: Working with C7N AWS Lambdas
+---
+
+<h1>Working with C7N AWS Lambdas</h1>
+
+<p>C7N (Cloud Custodian) AWS Lambdas enable serverless policy enforcement and compliance automation across your AWS environment using Cloud Custodian's powerful policy engine.</p>
+
+<h2>Overview</h2>
+
+<p>The c7n-aws-lambdas action type allows you to:</p>
+<ul>
+  <li>Deploy Cloud Custodian policies as AWS Lambda functions</li>
+  <li>Enable real-time policy enforcement using CloudWatch Events</li>
+  <li>Automate compliance remediation and notifications</li>
+  <li>Schedule periodic compliance checks and reporting</li>
+  <li>Integrate Cloud Custodian with your Cloud Workflow Engine workflows</li>
+</ul>
+
+<h2>Cloud Custodian Lambda Configuration</h2>
+
+<p>To configure C7N AWS Lambdas in your manifest, you need to specify:</p>
+
+<h3>Required Parameters</h3>
+<ul>
+  <li><strong>lambda_name</strong>: Name of the Lambda function</li>
+  <li><strong>region</strong>: AWS region for deployment</li>
+  <li><strong>account_id</strong>: Target AWS account ID</li>
+  <li><strong>policy_content</strong>: Cloud Custodian policy definition</li>
+  <li><strong>execution_role_arn</strong>: IAM role for Lambda execution</li>
+</ul>
+
+<h3>Optional Parameters</h3>
+<ul>
+  <li><strong>runtime</strong>: Lambda runtime (default: python3.9)</li>
+  <li><strong>timeout</strong>: Function timeout in seconds</li>
+  <li><strong>memory_size</strong>: Memory allocation in MB</li>
+  <li><strong>schedule</strong>: CloudWatch Events schedule expression</li>
+  <li><strong>environment_variables</strong>: Environment variables for the function</li>
+  <li><strong>tags</strong>: Tags to apply to the Lambda function</li>
+</ul>
+
+<h2>Example Configurations</h2>
+
+<h3>Real-time EC2 Instance Compliance</h3>
+<pre><code class="language-yaml">c7n-aws-lambdas:
+  ec2-compliance-enforcer:
+    lambda_name: ec2-compliance-enforcer
+    execution_role_arn: "arn:aws:iam::123456789012:role/CloudCustodianRole"
+    policy_content:
+      policies:
+        - name: ec2-require-tags
+          resource: ec2
+          mode:
+            type: cloudtrail
+            events:
+              - RunInstances
+          filters:
+            - "tag:Environment": absent
+            - "tag:Owner": absent
+          actions:
+            - type: terminate
+              force: true
+            - type: notify
+              template: default.html
+              priority_header: "1"
+              subject: "EC2 Instance Terminated - Missing Required Tags"
+              to:
+                - security-team@company.com
+              transport:
+                type: sns
+                topic: arn:aws:sns:us-east-1:123456789012:security-alerts
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h3>Scheduled S3 Bucket Compliance Check</h3>
+<pre><code class="language-yaml">c7n-aws-lambdas:
+  s3-compliance-scanner:
+    lambda_name: s3-compliance-scanner
+    execution_role_arn: "arn:aws:iam::123456789012:role/CloudCustodianRole"
+    schedule: "cron(0 6 * * ? *)"  # Daily at 6 AM UTC
+    timeout: 300
+    memory_size: 512
+    policy_content:
+      policies:
+        - name: s3-encryption-compliance
+          resource: s3
+          filters:
+            - type: bucket-encryption
+              state: false
+          actions:
+            - type: set-bucket-encryption
+              crypto: AES256
+            - type: notify
+              template: default.html
+              subject: "S3 Bucket Encryption Enabled"
+              to:
+                - compliance-team@company.com
+              transport:
+                type: sns
+                topic: arn:aws:sns:us-east-1:123456789012:compliance-alerts
+        - name: s3-public-access-block
+          resource: s3
+          filters:
+            - type: bucket-public-access-block
+              BlockPublicAcls: false
+          actions:
+            - type: set-bucket-public-access-block
+              BlockPublicAcls: true
+              BlockPublicPolicy: true
+              IgnorePublicAcls: true
+              RestrictPublicBuckets: true
+    environment_variables:
+      ENVIRONMENT: production
+      LOG_LEVEL: INFO
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h3>Cost Optimization Lambda</h3>
+<pre><code class="language-yaml">c7n-aws-lambdas:
+  cost-optimization:
+    lambda_name: cost-optimization
+    execution_role_arn: "arn:aws:iam::123456789012:role/CloudCustodianRole"
+    schedule: "cron(0 2 * * ? *)"  # Daily at 2 AM UTC
+    timeout: 600
+    memory_size: 1024
+    policy_content:
+      policies:
+        - name: unused-ebs-volumes
+          resource: ebs
+          filters:
+            - State: available
+            - type: age
+              days: 30
+              op: gte
+          actions:
+            - type: delete
+            - type: notify
+              template: default.html
+              subject: "Unused EBS Volumes Deleted"
+              to:
+                - cost-optimization@company.com
+        - name: unattached-elastic-ips
+          resource: elastic-ip
+          filters:
+            - AssociationId: null
+          actions:
+            - type: release
+            - type: notify
+              template: default.html
+              subject: "Unattached Elastic IPs Released"
+              to:
+                - cost-optimization@company.com
+    tags:
+      - Key: Purpose
+        Value: CostOptimization
+      - Key: Schedule
+        Value: Daily
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "123456789012"
+</code></pre>
+
+<h2>Cloud Custodian Policy Structure</h2>
+
+<h3>Basic Policy Components</h3>
+<pre><code class="language-yaml">policies:
+  - name: policy-name
+    resource: aws-resource-type
+    mode:
+      type: execution-mode
+      schedule: schedule-expression
+      events: [list-of-events]
+    filters:
+      - filter-conditions
+    actions:
+      - action-definitions
+</code></pre>
+
+<h3>Execution Modes</h3>
+<ul>
+  <li><strong>periodic</strong>: Scheduled execution using CloudWatch Events</li>
+  <li><strong>cloudtrail</strong>: Real-time execution triggered by CloudTrail events</li>
+  <li><strong>config-rule</strong>: Execution triggered by AWS Config rule evaluation</li>
+  <li><strong>pull</strong>: One-time execution (not suitable for Lambda deployment)</li>
+</ul>
+
+<h2>Common Policy Patterns</h2>
+
+<h3>Resource Tagging Enforcement</h3>
+<pre><code class="language-yaml">- name: enforce-required-tags
+  resource: ec2
+  mode:
+    type: cloudtrail
+    events: [RunInstances]
+  filters:
+    - or:
+        - "tag:Environment": absent
+        - "tag:Owner": absent
+        - "tag:Project": absent
+  actions:
+    - type: stop
+    - type: mark-for-op
+      op: terminate
+      days: 7
+    - type: notify
+      template: default.html
+      subject: "EC2 Instance Missing Required Tags"
+</code></pre>
+
+<h3>Security Compliance</h3>
+<pre><code class="language-yaml">- name: security-group-compliance
+  resource: security-group
+  mode:
+    type: cloudtrail
+    events: [AuthorizeSecurityGroupIngress]
+  filters:
+    - type: ingress
+      Ports: [22, 3389]
+      Cidr: "0.0.0.0/0"
+  actions:
+    - type: remove-permissions
+      ingress: matched
+    - type: notify
+      template: default.html
+      subject: "Security Group Rule Violation Remediated"
+</code></pre>
+
+<h3>Cost Management</h3>
+<pre><code class="language-yaml">- name: oversized-instances
+  resource: ec2
+  filters:
+    - type: instance-attribute
+      attribute: InstanceType
+      value: ["m5.large", "m5.xlarge", "m5.2xlarge"]
+      op: in
+    - type: metrics
+      name: CPUUtilization
+      days: 14
+      period: 86400
+      value: 20
+      op: less-than
+  actions:
+    - type: resize
+      instance-type: t3.medium
+    - type: notify
+      template: default.html
+      subject: "EC2 Instance Resized for Cost Optimization"
+</code></pre>
+
+<h2>IAM Role Requirements</h2>
+
+<h3>Basic Execution Role</h3>
+<p>The Lambda execution role needs these base permissions:</p>
+<ul>
+  <li><code>lambda:InvokeFunction</code></li>
+  <li><code>logs:CreateLogGroup</code></li>
+  <li><code>logs:CreateLogStream</code></li>
+  <li><code>logs:PutLogEvents</code></li>
+  <li><code>xray:PutTraceSegments</code> (if X-Ray tracing enabled)</li>
+</ul>
+
+<h3>Resource-Specific Permissions</h3>
+<p>Add permissions based on resources and actions:</p>
+<ul>
+  <li><strong>EC2</strong>: <code>ec2:DescribeInstances</code>, <code>ec2:TerminateInstances</code>, <code>ec2:StopInstances</code></li>
+  <li><strong>S3</strong>: <code>s3:ListBucket</code>, <code>s3:GetBucketEncryption</code>, <code>s3:PutBucketEncryption</code></li>
+  <li><strong>SNS</strong>: <code>sns:Publish</code> (for notifications)</li>
+  <li><strong>SES</strong>: <code>ses:SendEmail</code> (for email notifications)</li>
+</ul>
+
+<h2>Notification and Reporting</h2>
+
+<h3>SNS Notifications</h3>
+<pre><code class="language-yaml">actions:
+  - type: notify
+    template: default.html
+    priority_header: "1"
+    subject: "Policy Violation Detected"
+    to:
+      - security-team@company.com
+    transport:
+      type: sns
+      topic: arn:aws:sns:us-east-1:123456789012:security-alerts
+</code></pre>
+
+<h3>Email Notifications</h3>
+<pre><code class="language-yaml">actions:
+  - type: notify
+    template: violation.html
+    subject: "Compliance Violation Remediated"
+    to:
+      - compliance@company.com
+    transport:
+      type: ses
+      from: custodian@company.com
+</code></pre>
+
+<h3>Custom Templates</h3>
+<p>Create custom notification templates:</p>
+<ul>
+  <li>HTML templates for rich email formatting</li>
+  <li>Include resource details and remediation actions</li>
+  <li>Add company branding and contact information</li>
+  <li>Support for Jinja2 templating syntax</li>
+</ul>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Start with reporting-only policies before enabling remediation</li>
+  <li>Test policies thoroughly in development environments</li>
+  <li>Use appropriate Lambda timeout and memory settings</li>
+  <li>Implement proper error handling and retries</li>
+  <li>Monitor Lambda function metrics and logs</li>
+  <li>Use least-privilege IAM permissions</li>
+  <li>Version control your Cloud Custodian policies</li>
+  <li>Implement gradual rollout for policy changes</li>
+  <li>Set up alerts for policy execution failures</li>
+</ul>
+
+<h2>Monitoring and Troubleshooting</h2>
+
+<h3>CloudWatch Metrics</h3>
+<ul>
+  <li>Monitor Lambda function duration and errors</li>
+  <li>Track policy execution success/failure rates</li>
+  <li>Set up alarms for unusual patterns</li>
+  <li>Monitor resource remediation counts</li>
+</ul>
+
+<h3>Logging and Debugging</h3>
+<ul>
+  <li>Review CloudWatch Logs for execution details</li>
+  <li>Enable detailed logging in Cloud Custodian policies</li>
+  <li>Use AWS X-Ray for distributed tracing</li>
+  <li>Implement structured logging for better analysis</li>
+</ul>
+
+<h3>Common Issues</h3>
+<ul>
+  <li><strong>Timeout Errors</strong>: Increase timeout or optimize policy filters</li>
+  <li><strong>Permission Denied</strong>: Review IAM role permissions</li>
+  <li><strong>Resource Not Found</strong>: Check resource filters and existence</li>
+  <li><strong>Rate Limiting</strong>: Implement exponential backoff</li>
+</ul>
+
+<h2>Integration with Cloud Workflow Engine</h2>
+
+<h3>Workflow Integration</h3>
+<ul>
+  <li>Deploy C7N Lambdas as part of infrastructure setup</li>
+  <li>Use assertions to validate policy deployment</li>
+  <li>Coordinate with other governance actions</li>
+  <li>Support for multi-account, multi-region deployments</li>
+</ul>
+
+<h3>Dependency Management</h3>
+<ul>
+  <li>Ensure IAM roles are created before Lambda deployment</li>
+  <li>Deploy SNS topics before policies that use them</li>
+  <li>Consider regional dependencies for cross-region policies</li>
+</ul>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "Service Control Policies", "/how-to/service-control-policies/" %> - Preventive controls</li>
+  <li><%= link_to "Assertions", "/how-to/assertions/" %> - Validate policy effectiveness</li>
+  <li><%= link_to "Lambda Invocations", "/how-to/lambda-invocations/" %> - Custom compliance logic</li>
+</ul>

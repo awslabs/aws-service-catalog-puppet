@@ -2,37 +2,37 @@
 
 ## @Puppet_commands Runs servicecatalog-puppet version
 version:
-	poetry run servicecatalog-puppet version
+	uv run servicecatalog-puppet version
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap
 bootstrap:
-	poetry run servicecatalog-puppet --info bootstrap --branch-name main --should-validate
+	uv run servicecatalog-puppet --info bootstrap --branch-name main --should-validate
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap to a branch
 bootstrap-branch:
 	export SCP_VERSION_OVERRIDE="https://github.com/awslabs/aws-service-catalog-puppet/archive/issues/yaml-to-json-for-task-reference.zip"
 	export SCM_BRANCH_NAME=main
-	poetry run servicecatalog-puppet --info bootstrap --branch-name main
+	uv run servicecatalog-puppet --info bootstrap --branch-name main
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap-spoke for the current aws profile
 bootstrap-self-as-spoke:
 	@echo "Bootstrapping $$(aws sts get-caller-identity --query Account --output text) as a spoke for $$(aws sts get-caller-identity --query Account --output text)"
-	poetry run servicecatalog-puppet --info bootstrap-spoke $$(aws sts get-caller-identity --query Account --output text)
+	uv run servicecatalog-puppet --info bootstrap-spoke $$(aws sts get-caller-identity --query Account --output text)
 
 ## @Puppet_commands Runs servicecatalog-puppet bootstrap-spoke for the current aws profile
 bootstrap-spoke:
 	@echo "Bootstrapping $$(aws sts get-caller-identity --query Account --output text) as a spoke for $(PUPPET_ACCOUNT_ID)"
-	poetry run servicecatalog-puppet --info bootstrap-spoke $(PUPPET_ACCOUNT_ID)
+	uv run servicecatalog-puppet --info bootstrap-spoke $(PUPPET_ACCOUNT_ID)
 
 
 ## @Puppet_commands Runs servicecatalog-puppet --info expand for the checked out manifest file
 expand:
-	poetry run servicecatalog-puppet --info expand \
+	uv run servicecatalog-puppet --info expand \
 		ignored/src/ServiceCatalogPuppet/manifest.yaml
 
 ## @Puppet_commands Runs servicecatalog-puppet --info generate-task-reference for the checked out manifest file
 generate-task-reference:
-	poetry run servicecatalog-puppet --info generate-task-reference \
+	uv run servicecatalog-puppet --info generate-task-reference \
 		ignored/src/ServiceCatalogPuppet/manifest-expanded.yaml
 
 ## @Puppet_commands Runs servicecatalog-puppet --info deploy-from-task-reference for the checked out manifest file
@@ -42,12 +42,12 @@ deploy-from-task-reference-with-viz:
 
 ## @Puppet_commands Runs servicecatalog-puppet --info deploy-from-task-reference for the checked out manifest file
 deploy-from-task-reference:
-	time poetry run servicecatalog-puppet --info deploy-from-task-reference --num-workers 40 \
+	time uv run servicecatalog-puppet --info deploy-from-task-reference --num-workers 40 \
 		ignored/src/ServiceCatalogPuppet/
 
 ## @uppet_commands Runs servicecatalog-puppet --info deploy-from-task-reference for the checked out manifest file
 deploy-from-task-reference-single-account:
-	time poetry run servicecatalog-puppet --info deploy-in-spoke-from-task-reference \
+	time uv run servicecatalog-puppet --info deploy-in-spoke-from-task-reference \
 	    --execution-mode spoke \
 	    --puppet-account-id 105463962595 \
 	    --single-account 648052676434 \
@@ -61,19 +61,19 @@ deploy-from-task-reference-single-account:
 
 ## @Puppet_commands Runs servicecatalog-puppet validate for a spoke
 validate:
-	poetry run servicecatalog-puppet validate ignored/src/ServiceCatalogPuppet/manifest.yaml
+	uv run servicecatalog-puppet validate ignored/src/ServiceCatalogPuppet/manifest.yaml
 
 ## @Puppet_commands Runs servicecatalog-puppet codebuild full-pipeline export functionality
 export-full-puppet-stats:
-	poetry run servicecatalog-puppet export-full-puppet-stats -f csv
+	uv run servicecatalog-puppet export-full-puppet-stats -f csv
 
 ## @Puppet_commands Runs servicecatalog-puppet codebuild single-account export functionality
 export-singleaccount-stats:
-	poetry run servicecatalog-puppet export-singleaccount-stats -f csv
+	uv run servicecatalog-puppet export-singleaccount-stats -f csv
 
 ## @puppet_commands Runs servicecatalog-puppet --info show-pipelines
 show-pipelines:
-	poetry run servicecatalog-puppet --info show-pipelines
+	uv run servicecatalog-puppet --info show-pipelines
 
 vizviewer:
-	poetry run vizviewer result.json
+	uv run vizviewer result.json

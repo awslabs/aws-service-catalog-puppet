@@ -1,0 +1,319 @@
+---
+title: Working with Service Control Policies
+---
+
+<h1>Working with Service Control Policies</h1>
+
+<p>Service Control Policies (SCPs) allow you to define and apply governance policies to AWS accounts and organizational units, enforcing compliance and security boundaries across your organization.</p>
+
+<h2>Overview</h2>
+
+<p>The service-control-policies action type allows you to:</p>
+<ul>
+  <li>Create and manage Service Control Policies in AWS Organizations</li>
+  <li>Attach policies to AWS accounts or organizational units</li>
+  <li>Define policy content with complex JSON structures</li>
+  <li>Support high-priority policy deployment</li>
+  <li>Handle organizational unit lookups by name</li>
+</ul>
+
+<h2>Service Control Policy Configuration</h2>
+
+<p>To configure a service control policy in your manifest, you need to specify:</p>
+
+<h3>Required Parameters</h3>
+<ul>
+  <li><strong>service_control_policy_name</strong>: Name of the SCP</li>
+  <li><strong>region</strong>: AWS region (Organizations is global, but region context is needed)</li>
+  <li><strong>description</strong>: Description of the policy purpose</li>
+  <li><strong>content</strong>: Policy document content (JSON)</li>
+  <li><strong>manifest_file_path</strong>: Path to the manifest file</li>
+</ul>
+
+<h3>Target Parameters (one required)</h3>
+<ul>
+  <li><strong>account_id</strong>: AWS account ID to attach policy to</li>
+  <li><strong>ou_name</strong>: Organizational unit name to attach policy to</li>
+</ul>
+
+<h3>Optional Parameters</h3>
+<ul>
+  <li><strong>requested_priority</strong>: Task priority for execution order</li>
+  <li><strong>get_or_create_policy_ref</strong>: Reference to policy creation task</li>
+</ul>
+
+<h2>Example Configurations</h2>
+
+<h3>Account-Level Policy</h3>
+<pre><code class="language-yaml">service-control-policies:
+  restrict-regions-policy:
+    service_control_policy_name: RestrictRegions
+    description: Restrict access to specific AWS regions
+    account_id: "123456789012"
+    requested_priority: 5
+    content:
+      Version: "2012-10-17"
+      Statement:
+        - Sid: RestrictRegions
+          Effect: Deny
+          Action: "*"
+          Resource: "*"
+          Condition:
+            StringNotEquals:
+              "aws:RequestedRegion":
+                - "us-east-1"
+                - "us-west-2"
+            ForAllValues:StringNotEquals:
+              "aws:PrincipalOrgID": "o-abc123def456"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "111122223333"  # Master account
+</code></pre>
+
+<h3>Organizational Unit Policy</h3>
+<pre><code class="language-yaml">service-control-policies:
+  security-baseline:
+    service_control_policy_name: SecurityBaseline
+    description: Security baseline for all accounts in Security OU
+    ou_name: Security-OU
+    requested_priority: 10
+    content:
+      Version: "2012-10-17"
+      Statement:
+        - Sid: DenyRootAccess
+          Effect: Deny
+          Action:
+            - "iam:CreateUser"
+            - "iam:CreateRole"
+            - "iam:AttachUserPolicy"
+            - "iam:AttachRolePolicy"
+          Resource: "*"
+          Condition:
+            StringEquals:
+              "aws:PrincipalType": "Root"
+        - Sid: RequireMFA
+          Effect: Deny
+          Action: "*"
+          Resource: "*"
+          Condition:
+            BoolIfExists:
+              "aws:MultiFactorAuthPresent": "false"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "111122223333"
+</code></pre>
+
+<h3>High-Priority Critical Policy</h3>
+<pre><code class="language-yaml">service-control-policies:
+  critical-security:
+    service_control_policy_name: CriticalSecurity
+    description: Critical security restrictions
+    account_id: "987654321098"
+    requested_priority: 1  # Highest priority
+    content:
+      Version: "2012-10-17"
+      Statement:
+        - Sid: DenyRootAccess
+          Effect: Deny
+          Action: "*"
+          Resource: "*"
+          Principal: "*"
+          Condition:
+            StringEquals:
+              "aws:PrincipalType": "Root"
+        - Sid: DenyUnencryptedStorage
+          Effect: Deny
+          Action:
+            - "s3:PutObject"
+            - "rds:CreateDBInstance"
+            - "ec2:RunInstances"
+          Resource: "*"
+          Condition:
+            Bool:
+              "aws:SecureTransport": "false"
+    deploy_to:
+      tags:
+        - regions: us-east-1
+          accounts:
+            - "111122223333"
+</code></pre>
+
+<h2>Policy Content Structure</h2>
+
+<h3>Basic Policy Document</h3>
+<pre><code class="language-yaml">content:
+  Version: "2012-10-17"
+  Statement:
+    - Sid: PolicyStatementIdentifier
+      Effect: Allow | Deny
+      Action:
+        - "service:action"
+      Resource:
+        - "arn:aws:service:region:account:resource"
+      Condition:
+        ConditionOperator:
+          ConditionKey: "ConditionValue"
+</code></pre>
+
+<h3>Common Policy Patterns</h3>
+
+<h4>Region Restriction</h4>
+<pre><code class="language-yaml">Statement:
+  - Sid: RestrictRegions
+    Effect: Deny
+    Action: "*"
+    Resource: "*"
+    Condition:
+      StringNotEquals:
+        "aws:RequestedRegion":
+          - "us-east-1"
+          - "us-west-2"
+          - "eu-west-1"
+</code></pre>
+
+<h4>Service Restriction</h4>
+<pre><code class="language-yaml">Statement:
+  - Sid: DenyHighRiskServices
+    Effect: Deny
+    Action:
+      - "sagemaker:*"
+      - "databrew:*"
+      - "comprehend:*"
+    Resource: "*"
+</code></pre>
+
+<h4>Resource Size Limits</h4>
+<pre><code class="language-yaml">Statement:
+  - Sid: LimitInstanceSizes
+    Effect: Deny
+    Action: "ec2:RunInstances"
+    Resource: "arn:aws:ec2:*:*:instance/*"
+    Condition:
+      StringNotEquals:
+        "ec2:InstanceType":
+          - "t3.micro"
+          - "t3.small"
+          - "t3.medium"
+</code></pre>
+
+<h2>Organizational Unit Lookup</h2>
+
+<p>When using <code>ou_name</code>, Cloud Workflow Engine will:</p>
+<ol>
+  <li>Search for an organizational unit with the specified name</li>
+  <li>Find the OU ID automatically</li>
+  <li>Attach the policy to that organizational unit</li>
+  <li>Apply to all accounts within the OU</li>
+</ol>
+
+<h2>Policy Priority and Execution</h2>
+
+<h3>Priority Levels</h3>
+<ul>
+  <li><strong>1-3</strong>: Critical security policies (highest priority)</li>
+  <li><strong>4-6</strong>: Important governance policies</li>
+  <li><strong>7-10</strong>: Standard operational policies (lowest priority)</li>
+</ul>
+
+<h3>Execution Order</h3>
+<p>Policies with higher priority (lower numbers) are deployed first, ensuring critical security controls are in place before other policies.</p>
+
+<h2>Best Practices</h2>
+
+<ul>
+  <li>Start with least restrictive policies and gradually tighten</li>
+  <li>Test policies in development environments first</li>
+  <li>Use descriptive policy names and descriptions</li>
+  <li>Implement emergency break-glass procedures</li>
+  <li>Document policy intent and business justification</li>
+  <li>Use conditions to avoid blocking legitimate operations</li>
+  <li>Monitor policy violations and adjust as needed</li>
+  <li>Version control your policy definitions</li>
+  <li>Regular review and audit of applied policies</li>
+</ul>
+
+<h2>Common Policy Use Cases</h2>
+
+<h3>Security Baseline</h3>
+<p>Enforce fundamental security requirements across all accounts.</p>
+
+<h3>Compliance Controls</h3>
+<p>Implement regulatory compliance requirements (SOX, HIPAA, PCI-DSS).</p>
+
+<h3>Cost Control</h3>
+<p>Prevent deployment of expensive resources or services.</p>
+
+<h3>Regional Restrictions</h3>
+<p>Limit operations to approved AWS regions for data sovereignty.</p>
+
+<h3>Service Restrictions</h3>
+<p>Block access to services not approved for use in the organization.</p>
+
+<h2>Policy Testing and Validation</h2>
+
+<h3>Testing Approach</h3>
+<ol>
+  <li>Create test policies in a sandbox environment</li>
+  <li>Use AWS Policy Simulator to validate policy logic</li>
+  <li>Test with different IAM principals and scenarios</li>
+  <li>Monitor CloudTrail for policy denials during testing</li>
+  <li>Gradually roll out to production environments</li>
+</ol>
+
+<h3>Monitoring Policy Impact</h3>
+<ul>
+  <li>Monitor CloudTrail for AccessDenied events</li>
+  <li>Set up CloudWatch alarms for policy violations</li>
+  <li>Use AWS Config to track compliance status</li>
+  <li>Regular review of policy effectiveness</li>
+</ul>
+
+<h2>Error Handling and Troubleshooting</h2>
+
+<h3>Common Issues</h3>
+<ul>
+  <li><strong>Invalid Policy JSON</strong>: Validate JSON syntax and structure</li>
+  <li><strong>Overly Restrictive</strong>: Policies blocking legitimate operations</li>
+  <li><strong>OU Not Found</strong>: Verify organizational unit names and structure</li>
+  <li><strong>Permission Denied</strong>: Check Organizations and IAM permissions</li>
+</ul>
+
+<h3>Required Permissions</h3>
+<ul>
+  <li><code>organizations:CreatePolicy</code></li>
+  <li><code>organizations:AttachPolicy</code></li>
+  <li><code>organizations:ListPolicies</code></li>
+  <li><code>organizations:DescribePolicy</code></li>
+  <li><code>organizations:ListOrganizationalUnits</code></li>
+  <li><code>organizations:ListRoots</code></li>
+</ul>
+
+<h2>Policy Lifecycle Management</h2>
+
+<h3>Update Process</h3>
+<ol>
+  <li>Modify policy content in manifest</li>
+  <li>Test changes in development environment</li>
+  <li>Deploy updates through Cloud Workflow Engine</li>
+  <li>Monitor for unexpected denials</li>
+  <li>Adjust as needed based on operational feedback</li>
+</ol>
+
+<h3>Removal Process</h3>
+<ol>
+  <li>Remove policy from manifest</li>
+  <li>Cloud Workflow Engine will detach policy</li>
+  <li>Policy document remains for audit purposes</li>
+  <li>Manual cleanup if complete removal is required</li>
+</ol>
+
+<h2>Related Actions</h2>
+<ul>
+  <li><%= link_to "Organizational Units", "/how-to/organizational-units/" %> - Create OUs to apply policies to</li>
+  <li><%= link_to "Tag Policies", "/how-to/tag-policies/" %> - Enforce tagging standards</li>
+  <li><%= link_to "Assertions", "/how-to/assertions/" %> - Validate policy compliance</li>
+</ul>
