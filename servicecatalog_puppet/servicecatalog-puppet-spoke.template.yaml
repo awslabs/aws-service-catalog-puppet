@@ -99,11 +99,6 @@ Resources:
               AWS: !Sub "arn:${AWS::Partition}:iam::${PuppetAccountId}:root"
             Action:
               - "sts:AssumeRole"
-          - Effect: "Allow"
-            Principal:
-              AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
-            Action:
-              - "sts:AssumeRole"
       ManagedPolicyArns:
         - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSServiceCatalogEndUserFullAccess
         - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess
